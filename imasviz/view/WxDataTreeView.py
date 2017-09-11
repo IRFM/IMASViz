@@ -64,6 +64,8 @@ class WxDataTreeView(wx.TreeCtrl):
         #Keep a reference to shared data (frames, figures, ...) - This is a BrowserAPI instance
         self.imas_viz_api = None
 
+        self.dataCurrentlyLoaded = False
+
         self.log = Logger()
 
 
@@ -88,8 +90,8 @@ class WxDataTreeView(wx.TreeCtrl):
                 itemDataDict['Path']= itemDataDict['Tag']
                 itemDataDict['availableIDSData'] = 0
                 # Add the ids nodes
-                item = wx.TreeItemData(itemDataDict)
-                idsNode = self.AppendItem(self.root, idsName, -1, -1, item)
+                #item = wx.TreeItemData(itemDataDict)
+                idsNode = self.AppendItem(self.root, idsName, -1, -1, itemDataDict)
                 if self.dataSource.exists(idsName) == 1:
                     itemDataDict['availableIDSData'] = 1
                     self.SetItemTextColour(idsNode, wx.BLUE)
@@ -170,6 +172,7 @@ class WxDataTreeView(wx.TreeCtrl):
             self.EnsureVisible(self.GetLastChild(ids_root_node))
             self.EnsureVisible(ids_root_node)
         #print strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        self.dataCurrentlyLoaded = False
 
     def getNodeAttributes(self, dataName):
         if self.node_attributes != None and dataName in self.node_attributes:

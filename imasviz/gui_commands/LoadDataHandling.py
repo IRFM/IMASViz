@@ -28,13 +28,13 @@ class LoadDataHandling:
         if IDSDataLoaded == 1:
             return
 
-        #First, build the popup menu for the selected IDS
-        self.view.popupmenu = wx.Menu()
-
-        self.view.popupmenu.Append(self.menuIDS.GET_IDS_DATA, 'Get ' + IDSName + ' data...')
+        #First, build the popup menu for the selected IDS if there is not a current IDS loading in progress
+        if self.view.dataCurrentlyLoaded == False:
+            self.view.popupmenu = wx.Menu()
+            self.view.popupmenu.Append(self.menuIDS.GET_IDS_DATA, 'Get ' + IDSName + ' data...')
 
         #For native IMAS data, we propose to load a given occurence
-        if self.view.dataSource.name == GlobalValues.IMAS_NATIVE:
+        if self.view.dataSource.name == GlobalValues.IMAS_NATIVE and self.view.dataCurrentlyLoaded == False:
             showMenu = wx.Menu()
             self.view.popupmenu.Append(wx.ID_ANY, 'Get ' + IDSName + ' data for occurrence', showMenu)
             for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):

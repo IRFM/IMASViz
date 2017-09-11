@@ -47,6 +47,7 @@ class IMASDataSource:
                 raise ValueError("Can not open IMAS data base " + self.imasDbName + " from user " + self.userName)
 
         generatedDataTree.ids = self.ids
+        view.dataCurrentlyLoaded = True
         generatedDataTree.start() #This will call the get() operation for fetching IMAS data
 
     @staticmethod
@@ -71,9 +72,9 @@ class IMASDataSource:
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):
-        dico = dataDict.GetData()
-        if 'dataName' in dico:
-            return dico['dataName']
+        #dico = dataDict.GetData()
+        if 'dataName' in dataDict:
+            return dataDict['dataName']
         return None
 
     # The displayed name of the node
