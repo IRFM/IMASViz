@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapping>
+	<interfero_polarimeter documentation="Interfero-polarimeter diagnostic" type="IDS">
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="1">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">2.007d0</r>
+					<z data_type="FLT_0D" documentation="Height">2.187d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">2.191d0</r>
+					<z data_type="FLT_0D" documentation="Height">-1.000d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">-9d40</r>
+					<z data_type="FLT_0D" documentation="Height">-9d40</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">-9d40</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%1</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%1</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="2">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">2.112d0</r>
+					<z data_type="FLT_0D" documentation="Height">2.187d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">2.037d0</r>
+					<z data_type="FLT_0D" documentation="Height">-1.000d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">-9d40</r>
+					<z data_type="FLT_0D" documentation="Height">-9d40</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">-9d40</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%2</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%2</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="3">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">2.239d0</r>
+					<z data_type="FLT_0D" documentation="Height">2.188d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1571d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">2.179d0</r>
+					<z data_type="FLT_0D" documentation="Height">-1.000d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1571d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">-9d40</r>
+					<z data_type="FLT_0D" documentation="Height">-9d40</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">-9d40</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%3</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%3</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="4">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">2.455d0</r>
+					<z data_type="FLT_0D" documentation="Height">2.192d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">2.504d0</r>
+					<z data_type="FLT_0D" documentation="Height">-1.000d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">-9d40</r>
+					<z data_type="FLT_0D" documentation="Height">-9d40</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">-9d40</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%4</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%4</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="5">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">2.605d0</r>
+					<z data_type="FLT_0D" documentation="Height">2.192d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">2.556d0</r>
+					<z data_type="FLT_0D" documentation="Height">-1.000d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.1745d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">-9d40</r>
+					<z data_type="FLT_0D" documentation="Height">-9d40</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">-9d40</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%5</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%5</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="6">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.277d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">1.545d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.237d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.277d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%6</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%6</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="7">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.156d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">1.529d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.116d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.156d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%7</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%7</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="8">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">-0.104d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">1.516d0</r>
+					<z data_type="FLT_0D" documentation="Height">-0.060d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">-0.104d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%8</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%8</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="9">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.035d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">1.578d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.347d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.035d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%9</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%9</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="10" index="10">
+			<line_of_sight documentation="Description of the line of sight of the channel, defined by two points when the beam is not reflected, a third point is added to define the reflected beam path">
+				<first_point documentation="Position of the first point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.144d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</first_point>
+				<second_point documentation="Position of the second point">
+					<r data_type="FLT_0D" documentation="Major radius">2.019d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.819d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</second_point>
+				<third_point documentation="Position of the third point">
+					<r data_type="FLT_0D" documentation="Major radius">3.500d0</r>
+					<z data_type="FLT_0D" documentation="Height">0.144d0</z>
+					<phi data_type="FLT_0D" documentation="Toroidal angle">0.2356d0</phi>
+				</third_point>
+			</line_of_sight>
+			<wavelength_interferometry documentation="Set of wavelengths used for interferometry" data_type="struct_array" dim="1" index="1">
+				<n_e_line documentation="Line integrated density estimated from this wavelength">
+					<data data_type="FLT_1D">
+						<name documentation="Name of the signal in the local database" data_type="STR_0D">GNL%10</name>
+						<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+						<size documentation="Size of the local DB signal (number of columns in the data matrix) mandatory only for 2D signals" data_type="xs:integer">1</size>
+					</data>
+				</n_e_line>
+			</wavelength_interferometry>
+			<n_e_line documentation="Line integrated density estimated from this wavelength">
+				<data data_type="FLT_1D">
+					<name data_type="STR_0D">GALPHA%10</name>
+					<dimension data_type="INT_0D">2</dimension>
+					<time_dim data_type="INT_0D">1</time_dim>
+				</data>
+			</n_e_line>
+		</channel>
+	</interfero_polarimeter>
+</mapping>

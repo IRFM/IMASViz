@@ -1,0 +1,126 @@
+from imasviz.gui_commands.AbstractCommand import AbstractCommand
+from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+import matplotlib.pyplot as plt
+import wxmplot
+import wx
+import traceback
+import sys
+
+
+class PlotSelectedSignals(AbstractCommand):
+    def __init__(self, view, selectedsignals, numfig=0, update=0):
+        AbstractCommand.__init__(self, view, None)
+        self.selectedsignals = selectedsignals
+        self.numfig = numfig
+        self.update = update
+
+    def execute(self):
+
+        if len(self.selectedsignals) == 0:
+                raise ValueError("No signal selected.")
+
+        plotDimension = self.getDimension()
+
+        if plotDimension == "1D":
+            self.plot1DSelectedSignals(self.numfig, self.update)
+
+        elif plotDimension == "2D" or plotDimension == "3D":
+            raise ValueError("2D/3D plots are not currently supported.")
+
+    def getDimension(self):
+
+        # Finding the plot dimension
+        signalNodeDataValue = self.selectedsignals.itervalues().next()
+        signalNodeData = signalNodeDataValue[1]
+        data_type = signalNodeData['data_type']
+
+        plotDimension = None
+        if data_type == 'FLT_1D' or data_type == 'INT_1D':
+            plotDimension = "1D"
+        elif data_type == 'FLT_2D' or data_type == 'INT_2D':
+            plotDimension = "2D"
+        elif data_type == 'FLT_3D' or data_type == 'INT_3D':
+            plotDimension = "3D"
+        else:
+            raise ValueError("Plots dimension larger than 3D are not supported.")
+        return plotDimension
+
+    def getFigure(self, numfig):
+        api = self.view.imas_viz_api
+        if numfig in api.figures:
+            fig = api.figures[numfig]
+        else:
+            fig = plt.figure()
+            api.figures[numfig] = fig
+        return fig
+
+    def getFrame(self, numfig, rows=1, cols=1):
+        api = self.view.imas_viz_api
+        if numfig in api.figureframes:
+            frame = api.figureframes[numfig]
+        else:
+            frame = wxmplot.PlotFrame(None, size=(600, 500), title='Figure ' + str(numfig + 1))
+            frame.panel.toggle_legend(None, True)
+            api.figureframes[numfig] = frame
+        return frame
+
+
+    # Plot the set of 1D signals selected by the user as a function of time
+    def plot1DSelectedSignals(self, numfig=0, update=0):
+
+        try:
+            selectedsignals = self.view.selectedSignals
+            api = self.view.imas_viz_api
+            fig = self.getFigure(numfig)
+            fig.add_subplot(111)
+
+            frame = self.getFrame(numfig)
+
+            def lambda_f(evt, i=numfig, api=api):
+                self.onHide(api, i)
+
+            frame.Bind(wx.EVT_CLOSE, lambda_f)
+
+            i = 0
+
+            for value in selectedsignals.itervalues():
+                signalNodeData = value[1]
+                
+                key = self.view.dataSource.dataKey(signalNodeData)
+                tup = (self.view.dataSource.shotNumber, signalNodeData)
+                api.addNodeToFigure(numfig, key, tup)
+            
+                s = PlotSignal.getSignal(self.view, signalNodeData)
+                t = PlotSignal.getTime(s)
+
+                v = PlotSignal.get1DSignalValue(s)
+
+                shotNumber = value[0]
+
+                nbRows = v.shape[0]
+
+                label, xlabel, ylabel, title = PlotSignal.plotOptions(self.view, signalNodeData, shotNumber)
+
+                if i == 0 and update == 0:
+                    for j in range(0, nbRows):
+                        u = v[j]
+                        ti = t[0]
+                        frame.plot(ti, u, title='', xlabel=xlabel, ylabel=ylabel, label=label)
+                    frame.Center()
+                    frame.Show()
+                else:
+                    for j in range(0, nbRows):
+                        u = v[j]
+                        ti = t[0]
+                        frame.oplot(ti, u, label=label)
+                i += 1
+        except:
+            traceback.print_exc(file=sys.stdout)
+            raise ValueError("Error while plotting 1D selected signal(s).")
+        
+        
+    def onHide(self, api, numfig):
+        if numfig in api.figures:
+            api.figureframes[numfig].Hide()
+            
+    

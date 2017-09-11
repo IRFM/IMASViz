@@ -1,0 +1,115 @@
+import os
+import imas
+import wx
+
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
+from imasviz.util.GlobalOperations import GlobalOperations
+
+
+class GeneratedClassFactory:
+    def __init__(self, IMASDataSource, view, occurrence=0, threadingEvent=None):
+        self.IMASDataSource = IMASDataSource
+        self.view = view
+        self.occurrence = occurrence
+        self.threadingEvent = threadingEvent
+
+    def create(self):
+        imas__dd_version = os.environ['IMAS_DATA_DICTIONARY_VERSION']
+        if imas__dd_version == "3.7.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
+                                                           imasDbName=self.IMASDataSource.imasDbName,
+                                                           shotNumber=self.IMASDataSource.shotNumber,
+                                                           runNumber=self.IMASDataSource.runNumber, view=self.view,
+                                                           occurrence=self.occurrence,
+                                                           threadingEvent=self.threadingEvent)
+            return generatedDataTree
+        else:
+            raise ValueError("IMAS dictionary version not supported")
+
+class IMASDataSource:
+
+    def __init__(self, name, userName, imasDbName, shotNumber, runNumber):
+        self.name = name
+        self.userName =  userName
+        self.imasDbName = imasDbName
+        self.shotNumber = shotNumber
+        self.runNumber = runNumber
+        self.ids = None
+
+    # Load IMAS data using IMAS api
+    def load(self, view, occurrence=0, threadingEvent=None):
+        generatedDataTree = GeneratedClassFactory(self, view, occurrence, threadingEvent).create()
+        if self.ids == None:
+            self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
+
+            self.ids.open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+            if (self.ids.expIdx == -1):
+                raise ValueError("Can not open IMAS data base " + self.imasDbName + " from user " + self.userName)
+
+        generatedDataTree.ids = self.ids
+        generatedDataTree.start() #This will call the get() operation for fetching IMAS data
+
+    @staticmethod
+    def try_to_open(imasDbName, userName, shotNumber, runNumber):
+        ids = imas.ids(shotNumber, runNumber, 0, 0)
+        ids.open_env(userName, imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+        if (ids.expIdx == -1):
+            raise ValueError("Can not open IMAS data base " + imasDbName + " from user " + userName)
+
+    # Check if the data for the given IDS exists
+    def exists(self, IDSName):
+        return True #we have currently no way to know if a IDS is available or not from MDS+
+
+    # Define the color of a node which contains a signal
+    def colorOf(self, signalNode):
+        ids = self.ids #@UnusedVariable
+        if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+            #signalNode['availableIDSData'] = 0
+            return wx.BLACK
+        #signalNode['availableIDSData'] = 1
+        return wx.BLUE #non empty (signals) arrays appear in blue
+
+    # Name of the data under the selected node
+    def dataNameInPopUpMenu(self, dataDict):
+        dico = dataDict.GetData()
+        if 'dataName' in dico:
+            return dico['dataName']
+        return None
+
+    # The displayed name of the node
+    def treeDisplayedNodeName(self, dataElement):
+        return str(dataElement.find('name').text)
+
+    # This defines the unique key attached to each data which can be plotted
+    def dataKey(self, nodeData):
+        return self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+
+    # Add new nodes to the tree
+    def addWxNodes(self, itemDataDict, viewerTree, viewerNode, wxTreeItemData):
+
+        coordinate_display = None
+
+        if 'coordinate1' in itemDataDict and itemDataDict['coordinate1'] != None:
+            coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
+            viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+
+        doc_display = None
+
+        if 'documentation' in itemDataDict and itemDataDict['documentation'] != None:
+            doc_display = "documentation= " + itemDataDict['documentation']
+            viewerTree.AppendItem(viewerNode, doc_display, -1, -1, wxTreeItemData)
+
+class IMASPublicDataSource(IMASDataSource):
+
+    def __init__(self, name, imasDbName, shotNumber, runNumber):
+        IMASDataSource.__init__(self, name, None, imasDbName, shotNumber, runNumber)
+
+        # Load IMAS data using IMAS api
+
+    def load(self, view, occurrence=0, threadingEvent=None):
+        generatedDataTree = GeneratedClassFactory(self, view, occurrence, threadingEvent).create()
+        if self.ids == None:
+            self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
+            self.ids.open_public(self.imasDbName)
+        generatedDataTree.ids = self.ids
+        generatedDataTree.start()  # This will call the get() operation for fetching IMAS data

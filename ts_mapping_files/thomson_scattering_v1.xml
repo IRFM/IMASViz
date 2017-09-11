@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapping>
+	<thomson_scattering documentation="Thomson scattering diagnostic" type="IDS">
+		<channel documentation="Set of channels (lines-of-sight)" data_type="struct_array" dim="1" index="1">
+			<t_e documentation="Electron temperature">
+				<data data_type="FLT_1D">
+					<name documentation="Name of the signal in the local database" data_type="STR_0D">GTETHOM</name>
+					<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+					<time_dim documentation="Specifies which of the above dimension represents time (in the local DB)." type="xs:integer">1</time_dim>
+				</data>
+			</t_e>
+			<n_e documentation="Electron density">
+				<data data_type="FLT_1D">
+					<name documentation="Name of the signal in the local database" data_type="STR_0D">GNETHOM</name>
+					<dimension documentation="Dimension of the local DB signal : 1 for vector, 2 for matrix, ... s for string, 0 if non-time dependent in the local DB (may need to be repeated at each time slice in ITM format, though)" data_type="xs:integer">2</dimension>
+					<time_dim documentation="Specifies which of the above dimension represents time (in the local DB)." type="xs:integer">1</time_dim>
+				</data>
+			</n_e>
+		</channel>
+	</thomson_scattering>
+</mapping>

@@ -1,0 +1,111 @@
+Tool to visualize (static and dynamic) data for IMAS
+____________________________________________________
+
+
+Instructions for installing IMAS_VIZ on the Gateway
+--------------------------------------------------
+
+1. Cloning IMAS_VIZ production branch
+
+git clone –b production ssh://git@git.iter.org/vis/viz.git
+
+This will create the viz directory containing the sources of the project.
+
+2. Loading IMAS and Python modules
+
+module load imas
+module load itm-python/2.7.13.b7
+
+3. Configuring IMAS_VIZ
+
+You need to set the environment variable TS_MAPPINGS_DIR to point to /viz/ts_mappings_files. Assuming the viz directory is in your home directory:
+
+export TS_MAPPINGS_DIR=~/viz/ts_mappings_files
+
+4. Launching IMAS_VIZ
+
+Assuming viz has been cloned to your home directory, you launch IMAS_VIZ with the following command:
+
+python ~/viz/VIZ_GUI.py
+
+
+Known bugs
+----------
+
+IMAS bugs:
+
+IMAS-748: will crash the application if the IMAS database does not exist
+IMAS-540: the get() operation can hang on empty IDS
+
+
+Instructions for installing IMAS_VIZ on the ITER-HPC
+----------------------------------------------------
+
+Currently, no Python2.7 module is available with the wxPython Phoenix installed.
+
+Precisely, IMAS_VIZ needs the following Python libraries:
+-	wxPython Phoenix
+-	matplotlib
+-	wxmplot
+  
+Detailed procedure to install wxPython Phoenix will be transmitted to Simon soon.
+ 
+Then, the instructions are the same than described above for the Gateway in order to run IMAS_VIZ. 
+
+
+An example of using the Graphical User Interface (GUI) :
+--------------------------------------------------
+
+1. Choose a 'Tore-Supra' data source.
+2. Enter a shot number
+3. Click Open. A data tree should open with all IDSs of the IMAS dictionary. Available IDSs are in blue.
+4. Right click 'magnetics' IDS and load it
+5. Navigate for example to the magnetics/flux/flux_loop array and click to see the magnetics/flux/flux_loop(1)/flux node (available signal for plotting appear in blue)
+6. Right click a signal, a menu appears. Select 'Plot signal'
+7. You can navigate through the magnetics IDS to create a new plot or to add a plot to an existing plot
+8. Choose a NATIVE data source.
+9. Type a shot number of an existing shot in your local db
+10. Click Open. A data tree should open with all IDSs of the IMAS dictionary. All IDSs from native data source are in blue because there is currently no way to know if an IDS is filled or not with data.
+11. Right click (if available) 'magnetics' IDS and load it
+12. Navigate for example to the magnetics/flux/flux_loop array and click to see the magnetics/flux_loop(1)/flux node
+13. Right click a signal, a menu appears. Select 'Plot signal'
+14. You can compare the native signal to the TS one by sending the previous plot to the figure created at the step 6
+
+
+Using the Scripting window :
+----------------------------
+
+Every time you open a data source from the GUI, new handlers are created to the Python shell embedded in the 'Scripting' window of the GUI.
+For example, if you have followed the example described above, you will have two handlers dtv_0 and dtv_1. These handlers
+hold the data tree views which has been created.
+Using the dtv_0, we can interact for example with the view created for the shot 47979. Moreover, in the first open command, the api_0 handler
+has also been created which allows to interact with the IMAS_VIZ API.
+
+Imagine that you want to select all signals from the flux_loop array. You need to create all the paths to the signals (nodes).
+You will execute the following lines, using the api_0 handler obtained from a previous execution of the open command :
+
+
+#Create all the paths to the signals you want to select and put these paths in a list, for example :
+
+paths = []
+
+
+paths.append('magnetics/flux_loop(1)/flux')
+paths.append('magnetics/flux_loop(2)/flux')
+
+#Call the IMAS_VIZ API to select the signals in the dtv_0 tree using the paths information
+
+api_0.selectSignals(dtv_0, paths)
+
+
+#Now you can plot now the selected data
+
+
+api_0.plotSelectedSignals(dtv_0)
+
+
+A more complete guide will be availbale soon to describe all the commands available for IMAS_VIZ scripting.
+
+
+
+Have fun !
