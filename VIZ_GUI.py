@@ -129,7 +129,7 @@ class TabOne(wx.Panel):
         self.vbox.Show(2)
         self.Layout()
         self.runNumberTS.SetValue('0')
-        self.runNumberTS.Enable(False)
+        self.runNumberTS.SetEditable(False)
 
 
     def SwitcherNative(self, evt):
