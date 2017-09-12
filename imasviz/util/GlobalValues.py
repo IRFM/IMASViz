@@ -1,5 +1,6 @@
 
 import os
+import sys
 
 class GlobalValues:
     
@@ -9,12 +10,24 @@ class GlobalValues:
     TORE_SUPRA = 'TS'
     IMAS_NATIVE = 'NATIVE'
     IMAS_UDA = "UDA"
-    
     TESTING = True
-    
-    TESTING_TS_MAPPINGS_DIR="/Home/LF218007/viz/ts_mapping_files"
-    TESTING_IMAS_DATA_DICTIONARIES_DIR="/Home/LF218007/viz/imas_data_dictionaries"
-    TESTING_USER="LF218007"
+    TESTING_VIZ_HOME = None
+    if "VIZ_HOME" in os.environ:
+        TESTING_VIZ_HOME = os.environ["VIZ_HOME"]
+
+    if TESTING_VIZ_HOME is None:
+        if os.environ["HOSTNAME"] == 'r000u11l06':
+            TESTING_VIZ_HOME = os.environ["HOME"] + '/workspace_python/viz'
+        elif os.environ['HOSTNAME'] == 'Home':
+            TESTING_VIZ_HOME = os.environ["HOME"] + '/viz'
+        else:
+            print "Environment variable VIZ_HOME not defined for testing. Exiting."
+            sys.exit()
+
+    TESTING_USER = os.environ["USER"]
+    TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
+    TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
+
     TESTING_IMAS_DATA_DICTIONARY_VERSION = "3.7.0"
     TESTING_IMAS_MAJOR_VERSION = "3"
 

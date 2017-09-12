@@ -141,6 +141,10 @@ class GlobalOperations:
                 print "Environment variable USER not defined. Exiting."
                 sys.exit()
 
+            if 'VIZ_HOME' not in os.environ:
+                print "Environment variable VIZ_HOME not defined. Exiting."
+                sys.exit()
+
         else:
 
             print "IMAS_VIZ testing environment."
@@ -164,6 +168,9 @@ class GlobalOperations:
             if 'USER' not in os.environ:
                 os.environ['USER'] = GlobalValues.TESTING_USER
                 print "WARNING: environment variable USER defined from testing environment."
+
+            if 'VIZ_HOME' not in os.environ:
+                os.environ['VIZ_HOME'] = GlobalValues.TESTING_VIZ_HOME
 
                 
     @staticmethod

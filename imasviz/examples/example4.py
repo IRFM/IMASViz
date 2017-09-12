@@ -16,7 +16,8 @@ GlobalOperations.checkEnvSettings()
 api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
-dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=10, runNumber=60,userName='LF218007',imasDbName='test')
+userName = os.environ['USER']
+dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=10, runNumber=60,userName=userName,imasDbName='test')
 
 f = api.CreateDataTree(dataSource)
 paths = []
@@ -29,7 +30,7 @@ for i in range(0,6):
 #api.PlotSelectedSignalsInMultiFrame(f)
 
 #api.ShowDataTree(f)
-configFileName = os.environ['HOME'] + "/viz/myconfig.cfg"
+configFileName = os.environ['VIZ_HOME'] + "/myconfig.cfg"
 config = ET.parse(configFileName)
 
 t = ApplyPlotConfiguration(f, paths, config)
