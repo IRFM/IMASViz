@@ -22,13 +22,31 @@ class ApplyPlotConfiguration():
         for frame in self.dataTreeFrame.wxTreeView.imas_viz_api.multiPlotsFrames:
 
             for key in frame.panels:
+                print 'key: ' + str(key)
+
                 panel = frame.panels[key]
-                panel.set_title(self.plotConfig.frame.panel[key].title)
-                panel.set_ylabel(panel.ylabel)
-                panel.set_y2label(panel.y2label)
-                trace_index = 0
-                for trace in self.plotConfig.panel.traces:
-                    panel.conf.set_trace_color(trace.color, trace_index)
-                    trace_index = trace_index + 1
+                configPanels = self.plotConfig.findall(".//*[@key='" + str(key)+ "']")
+                configurationPanel = configPanels[0]
+                panel.set_title(configurationPanel.get('title'))
 
+                panel.set_ylabel(configurationPanel.get('ylabel'))
+                panel.set_y2label(configurationPanel.get('y2label'))
 
+                configTraces = self.plotConfig.findall(".//*[@key='" + str(key) + "']/trace")
+
+                for i in range(0, len(panel.conf.lines)):
+                    configTrace = configTraces[i]
+                    panel.conf.set_trace_color(configTrace.get('color'), int(configTrace.get('index')))
+
+                # print 'setting traces'
+                # trace_index = 0
+                #
+                # print "panel.conf.traces.len: " + str(len(panel.conf.traces))
+                # print "panel.conf.lines.len: " + str(len(panel.conf.lines))
+                # for trace in panel.conf.traces:
+                #     #print trace.get('color')
+                #     #print trace.get('index')
+                #     #panel.conf.set_trace_color(trace.get('color'), int(trace.get('index')))
+                #     configTrace = configTraces[trace_index]
+                #     panel.conf.set_trace_color(configTrace.get('color'), int(configTrace.get('index')))
+                #     trace_index = trace_index + 1

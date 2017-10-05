@@ -3,15 +3,19 @@ import imas
 import wx
 
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 import ETNativeDataTree_Generated_3_9_0
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 import ETNativeDataTree_Generated_3_9_1
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 import ETNativeDataTree_Generated_3_11_0
 from imasviz.util.GlobalOperations import GlobalOperations
 
 
 class GeneratedClassFactory:
-    def __init__(self, IMASDataSource, view, occurrence=0, threadingEvent=None):
+    def __init__(self, IMASDataSource, view, occurrence=0, pathsList = None, async = True):
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
-        self.threadingEvent = threadingEvent
+        self.pathsList = pathsList
+        self.async = async
 
     def create(self):
         imas__dd_version = os.environ['IMAS_DATA_DICTIONARY_VERSION']
@@ -19,12 +23,43 @@ class GeneratedClassFactory:
             generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
                                                            imasDbName=self.IMASDataSource.imasDbName,
                                                            shotNumber=self.IMASDataSource.shotNumber,
-                                                           runNumber=self.IMASDataSource.runNumber, view=self.view,
+                                                           runNumber=self.IMASDataSource.runNumber,
+                                                           view=self.view,
                                                            occurrence=self.occurrence,
-                                                           threadingEvent=self.threadingEvent)
-            return generatedDataTree
+                                                           pathsList = self.pathsList,
+                                                           async=self.async)
+        elif imas__dd_version == "3.9.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_9_0(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
+        elif imas__dd_version == "3.9.1":
+            generatedDataTree = ETNativeDataTree_Generated_3_9_1(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
+        elif imas__dd_version == "3.11.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_11_0(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
         else:
             raise ValueError("IMAS dictionary version not supported")
+
+        return generatedDataTree
+
 
 class IMASDataSource:
 
@@ -37,8 +72,12 @@ class IMASDataSource:
         self.ids = None
 
     # Load IMAS data using IMAS api
-    def load(self, view, occurrence=0, threadingEvent=None):
-        generatedDataTree = GeneratedClassFactory(self, view, occurrence, threadingEvent).create()
+    def load(self, view, occurrence=0, pathsList = None, async=True):
+        generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+
+        if generatedDataTree == None:
+            raise ValueError("Code generation issue detected !!")
+
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
 
@@ -47,8 +86,15 @@ class IMASDataSource:
                 raise ValueError("Can not open IMAS data base " + self.imasDbName + " from user " + self.userName)
 
         generatedDataTree.ids = self.ids
+
         view.dataCurrentlyLoaded = True
-        generatedDataTree.start() #This will call the get() operation for fetching IMAS data
+        view.idsAlreadyParsed[view.IDSNameSelected] = 1
+        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
+
+        if async==True:
+            generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
+        else:
+            generatedDataTree.execute()  #This will call the get() operation for fetching IMAS data
 
     @staticmethod
     def try_to_open(imasDbName, userName, shotNumber, runNumber):
@@ -105,12 +151,14 @@ class IMASPublicDataSource(IMASDataSource):
     def __init__(self, name, imasDbName, shotNumber, runNumber):
         IMASDataSource.__init__(self, name, None, imasDbName, shotNumber, runNumber)
 
-        # Load IMAS data using IMAS api
-
-    def load(self, view, occurrence=0, threadingEvent=None):
-        generatedDataTree = GeneratedClassFactory(self, view, occurrence, threadingEvent).create()
+    # Load IMAS data using IMAS api
+    def load(self, view, occurrence=0, pathsList = None, async=True):
+        generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             self.ids.open_public(self.imasDbName)
         generatedDataTree.ids = self.ids
-        generatedDataTree.start()  # This will call the get() operation for fetching IMAS data
+        if async == True:
+            generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
+        else:
+            generatedDataTree.execute()  # This will call the get() operation for fetching IMAS data

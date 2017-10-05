@@ -124,7 +124,7 @@ class PlotSignal(AbstractCommand):
 
             frame.Show()
 
-            self.plotFrame.updatePanel()
+            #self.plotFrame.updatePanel()
 
         except:
             traceback.print_exc(file=sys.stdout)

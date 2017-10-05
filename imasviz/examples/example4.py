@@ -25,15 +25,24 @@ paths = []
 for i in range(0,6):
     paths.append('core_profiles/profiles_1d(' + str(i) + ')/pressure_ion_total')
 
-#api.SelectSignals(f, paths)
+api.SelectSignals(f, paths)
 
-#api.PlotSelectedSignalsInMultiFrame(f)
+api.PlotSelectedSignalsInMultiFrame(f)
 
-#api.ShowDataTree(f)
-configFileName = os.environ['VIZ_HOME'] + "/myconfig.cfg"
+api.ShowDataTree(f)
+#configFileName = os.environ['VIZ_HOME'] + "/myconfig3.cfg"
+configFileName = os.environ['HOME'] + "/.imasviz/config4.cfg"
 config = ET.parse(configFileName)
 
-t = ApplyPlotConfiguration(f, paths, config)
-t.execute()
+#v = config.findall(".//*[@key='(1, 1)']/trace")
+
+#print v
+#print v[0]
+#a=v[0]
+
+#print 'title = ' + a.get('title')
+
+#t = ApplyPlotConfiguration(f, paths, config)
+#t.execute()
 
 app.MainLoop()

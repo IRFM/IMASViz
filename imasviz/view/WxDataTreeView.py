@@ -19,7 +19,8 @@ from imasviz.view.WxDataTreeViewBuilder import WxDataTreeViewBuilder
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
-
+from imasviz.view.ResultEvent import ResultEvent
+from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -215,9 +216,42 @@ class WxDataTreeViewFrame(wx.Frame):
 
         self.wxTreeView.log = TextCtrlLogger(self.logWindow)
 
+        # Set up event handler for any worker thread results
+        #EVT_RESULT(self, self.OnResult)
+
+        self.eventResultId =  wx.NewId()
+        self.Connect(-1, -1,  self.eventResultId , self.OnResult)
+
         
     def onClose(self, event):
         self.Hide()
+
+    def OnResult(self, event):
+        idsName = event.data[0]
+        idsData = event.data[1]
+        pathsList = event.data[2]
+        threadingEvent = event.data[3]
+        self.updateView(idsName, idsData, pathsList, threadingEvent)
+
+    def updateView(self, idsName, idsData, pathsList, threadingEvent=None):
+        print 'updateView called...'
+        self.wxTreeView.log.info("Loading of " + idsName + " IDS ended successfully, building view...")
+        self.wxTreeView.update_view(idsName, idsData)
+        self.wxTreeView.log.info("View update ended.")
+        print 'updateView ended.'
+
+        # Creating the signals tree
+        signalsFrame = IDSSignalTreeFrame(None, self.wxTreeView,
+                                          str(self.wxTreeView.shotNumber),
+                                          GlobalOperations.getIDSDefFile(os.environ['IMAS_DATA_DICTIONARY_VERSION']))
+        if pathsList != None:
+            for s in pathsList:
+                n = signalsFrame.tree.selectNodeWithPath(s)
+                if n == None:
+                    print 'Path: ' + s + " not found"
+
+        if threadingEvent != None:
+            threadingEvent.set()
 
 class Logger:
     def __init__(self):

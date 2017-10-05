@@ -234,7 +234,7 @@ class TabThree(wx.Panel):
 
         self.SetSizer(self.vbox)
 
-        self.dataSourceName = GlobalValues.IMAS_UDA  # default value
+        #self.dataSourceName = GlobalValues.IMAS_UDA  # default value
         self.shell = None
         self.handlerValue = 0
 
@@ -252,7 +252,7 @@ class TabThree(wx.Panel):
 
             from imasviz.view.HandlerName import HandlerName
 
-            self.CheckInputs()
+            #self.CheckInputs()
 
             apiHandlerName = HandlerName.getAPIHandler(0)
             if  self.handlerValue == 0:
@@ -271,9 +271,13 @@ class TabThree(wx.Panel):
 
             dataSourceHandlerName = HandlerName.getDataSourceHandler(self.handlerValue)
 
+            # self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" +
+            #                    self.shotNumber.GetValue() + ","  + self.runNumber.GetValue() + ",'" +
+            #                self.imasDbName.GetString(self.imasDbName.GetSelection()) + "','" + self.dataSourceName + "')")
+
             self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" +
-                               self.shotNumber.GetValue() + ","  + self.runNumber.GetValue() + ",'" +
-                           self.imasDbName.GetString(self.imasDbName.GetSelection()) + "','" + self.dataSourceName + "')")
+                           self.shotNumber.GetValue() + "," + self.runNumber.GetValue() + ",'" +
+                           self.imasDbName.GetString(self.imasDbName.GetSelection()) + "',"  + "True)")
 
             viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.handlerValue)
             self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")

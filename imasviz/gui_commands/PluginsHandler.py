@@ -86,7 +86,9 @@ if __name__ == "__main__":
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
 
     dataSourceFactory = DataSourceFactory()
-    dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=50355, runNumber=0, userName='imas_public', imasDbName='west_rawdata')
+    #dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=50355, runNumber=0, userName='imas_public', imasDbName='west')
+    dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=10, runNumber=60,
+                                          userName='LF218007', imasDbName='test')
     from imasviz.Browser_API import Browser_API
 
     api = Browser_API()

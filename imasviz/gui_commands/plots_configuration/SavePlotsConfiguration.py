@@ -38,8 +38,11 @@ class SavePlotsConfiguration(AbstractCommand):
 
 
         #framesElement = ET.SubElement(root, 'frames')
-
+        i = 0
         for frame in multiplotFrames:
+
+            i = i + 1
+            print "Frame:" + str(i)
 
             frameElement = ET.SubElement(root, 'frame')
 

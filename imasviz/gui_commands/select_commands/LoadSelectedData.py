@@ -3,10 +3,11 @@ from imasviz.gui_commands.AbstractCommand import AbstractCommand
 import traceback
 
 class LoadSelectedData(AbstractCommand):
-    def __init__(self, view, occurrence=0, threadingEvent=None):
+    def __init__(self, view, occurrence=0, pathsList = None, async=True):
         AbstractCommand.__init__(self, view, None)
         self.occurrence = occurrence
-        self.threadingEvent = threadingEvent
+        self.async = async
+        self.pathsList = pathsList
 
     def execute(self):
         try:
@@ -17,7 +18,7 @@ class LoadSelectedData(AbstractCommand):
                     return
 
             # Load the data for IDS
-            self.view.dataSource.load(self.view, self.occurrence, self.threadingEvent)
+            self.view.dataSource.load(self.view, self.occurrence, self.pathsList, self.async)
         except :
             traceback.print_exc()
             self.view.log.error(traceback.format_exc())

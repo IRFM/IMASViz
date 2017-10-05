@@ -2,6 +2,8 @@ import xml.etree.ElementTree as ET
 import os
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
+from threading import *
+import wx
 
 class IMAS_DataAccessCodeGenerator():
 
@@ -29,42 +31,61 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
                 self.printCode('import xml.etree.ElementTree as ET', -1)
                 self.printCode('import os', -1)
+                self.printCode('import wx', -1)
                 self.printCode('import imas', -1)
-                self.printCode('from threading import Thread, RLock', -1)
-                self.printCode('\n', -1)
-                self.printCode('lock = RLock()', -1)
+                self.printCode('import threading', -1)
+                self.printCode('from imasviz.view.ResultEvent import ResultEvent', -1)
+                self.printCode('from threading import Thread', -1)
+                #self.printCode('from threading import Thread, RLock', -1)
+                #self.printCode('\n', -1)
+                #self.printCode('lock = RLock()', -1)
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(Thread):", -1)
-                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, occurrence=0, threadingEvent=None):", 0)
+                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, occurrence=0, pathsList = None, async=True):", 0)
                 self.printCode("Thread.__init__(self)", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
                 self.printCode("self.ids = None", 1)
                 self.printCode("self.idsName = self.view.IDSNameSelected", 1)
-                self.printCode("self.threadingEvent = threadingEvent", 1)
+                self.printCode("self.pathsList = pathsList", 1)
+                self.printCode("self.async = async", 1)
                 self.printCode('', -1)
 
-                self.printCode('def run(self):', 0)
 
+                self.printCode('def run(self):', 0)
+                self.printCode('self.execute()', 1)
+                self.printCode('', -1)
+
+                self.printCode('def execute(self):', 0)
                 self.printCode("idsData = None", 1)
-                self.printCode("self.view.idsAlreadyParsed[self.idsName] = 1", 1)
-                self.printCode("self.view.log.info('Loading '" + " + self.idsName + " + "' IDS...')", 1)
+                #self.printCode("self.view.idsAlreadyParsed[self.idsName] = 1", 1)
+                #self.printCode("self.view.log.info('Loading '" + " + self.idsName + " + "' IDS...')", 1)
 
                 for ids2 in root:
                     name_att2 = ids2.get('name')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
-                    self.printCode('lock.acquire()', 2)
-                    self.printCode('try:', 2)
-                    self.printCode("self.ids." + name_att2 + ".get()", 3)  # get the data from the database for the ids"
-                    self.printCode("self.view.log.info('Building view for '" + " + self.idsName + " + "' IDS...')", 3)
-                    self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence )" + '\n', 3)
-                    self.printCode('self.view.update_view(self.idsName, idsData)', 3)
-                    self.printCode("self.view.log.info('Loading of '" + " + self.idsName + " + "' IDS ended successfully.')", 3)
-                    self.printCode("finally:", 2)
-                    self.printCode('lock.release()', 3)
-                    self.printCode('if self.threadingEvent!=None:', 3)
-                    self.printCode('self.threadingEvent.set()', 4)
+                    #self.printCode('lock.acquire()', 2)
+                    #self.printCode('try:', 2)
+                    self.printCode("self.ids." + name_att2 + ".get()", 2)  # get the data from the database for the ids"
+                    #self.printCode("self.view.log.info('Building view for '" + " + self.idsName + " + "' IDS...')", 2)
+                    self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
+
+                    self.printCode('if self.async==True:', 2)
+                    self.printCode('e = threading.Event()' + '\n', 3)
+                    self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
+                    self.printCode("print 'waiting for view update...'" + '\n', 3)
+                    self.printCode('e.wait()' + '\n', 3)
+                    self.printCode("print 'view update wait ended...'" + '\n', 3)
+                    self.printCode('else:', 2)
+                    self.printCode('self.view.parent.updateView(self.idsName, idsData, self.pathsList)', 3)
+
+                    #self.printCode('self.view.update_view(self.idsName, idsData)', 3)
+                    #self.printCode("self.view.log.info('Loading of '" + " + self.idsName + " + "' IDS ended successfully.')", 3)
+                    #self.printCode("finally:", 2)
+                    #self.printCode('lock.release()', 3)
+                    #self.printCode('if self.threadingEvent!=None:', 2)
+                    #self.printCode('self.threadingEvent.set()', 3)
                     
 
                 self.printCode('\n', -1)
@@ -338,6 +359,9 @@ if __name__ == "__main__":
 
     print "Starting code generation"
     GlobalOperations.checkEnvSettings()
-    dag = IMAS_DataAccessCodeGenerator("3.9.1")
+    imas_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0"]
+    for v in imas_versions:
+        dag = IMAS_DataAccessCodeGenerator(v)
     print "End of code generation"
+    print "Do not forget to declare new code in the GeneratedClassFactory class"
 

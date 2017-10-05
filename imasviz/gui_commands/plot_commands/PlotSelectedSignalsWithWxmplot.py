@@ -56,7 +56,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             #self.view.imas_viz_api.multiPlotsFrames[self.framesKey] = []
 
             #self.view.imas_viz_api.multiPlotsFrames[self.framesKey].append(frame)
-            self.view.imas_viz_api.multiPlotsFrames.append(frame)
+            if frame not in self.view.imas_viz_api.multiPlotsFrames:
+                self.view.imas_viz_api.multiPlotsFrames.append(frame)
 
             for tupleElement in selectedsignalsList:
 
