@@ -1,5 +1,5 @@
 from imasviz.data_source.IMASDataSource import IMASDataSource, IMASPublicDataSource
-#from imasviz.data_source.ToreSupraDataSource import ToreSupraDataSource
+from imasviz.data_source.ToreSupraDataSource import ToreSupraDataSource
 from imasviz.util.GlobalValues import GlobalValues
 
 
@@ -22,9 +22,9 @@ class DataSourceFactory:
             return dataSource
 
         elif dataSourceName == GlobalValues.TORE_SUPRA:
-            raise ValueError("Tore-Supra datasource is not currently available")
-            # dataSource = ToreSupraDataSource(name, shotNumber, runNumber)
-            # return dataSource
+            #raise ValueError("Tore-Supra datasource is not currently available")
+            dataSource = ToreSupraDataSource(GlobalValues.TORE_SUPRA, shotNumber, runNumber)
+            return dataSource
 
         else: # UDA datasource
 

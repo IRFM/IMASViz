@@ -167,12 +167,10 @@ class WxDataTreeView(wx.TreeCtrl):
 
         self.idsAlreadyParsed[idsName] = 1
         ids_root_node = self.dataTree[idsName]
-        #self.log.info("Building view for " + idsName + " IDS...")
         if idsData != None:
             self.buildTreeView(ids_root_node, idsData)
             self.EnsureVisible(self.GetLastChild(ids_root_node))
             self.EnsureVisible(ids_root_node)
-        #print strftime("%Y-%m-%d %H:%M:%S", gmtime())
         self.dataCurrentlyLoaded = False
 
     def getNodeAttributes(self, dataName):

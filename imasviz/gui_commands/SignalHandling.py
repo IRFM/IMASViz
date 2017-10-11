@@ -185,7 +185,7 @@ class SignalHandling:
         try:
             self.currentNumFig = self.view.imas_viz_api.GetNextNumFigForNewPlot()
             treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
-            if treeNode.time_dependent_aos():
+            if treeNode != None and treeNode.time_dependent_aos():
                 self.timeSlider = True
             else:
                 self.timeSlider = None

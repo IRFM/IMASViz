@@ -25,6 +25,10 @@ class WxDataTreeViewBuilder:
         #             raise ValueError('Unexpected error : shot_max attribute on mapping_info element is empty.')
         #         viewerTree.dataSource.shotMax = shot_max
 
+        #patch for TS
+        if (dataElement.get('index') != None and viewerTree.dataSource.name == GlobalValues.TORE_SUPRA):
+            index = int(dataElement.get('index')) - 1
+            dataElement.set('index', str(index))
 
         isSignal = 0
         isArray=0
@@ -218,6 +222,8 @@ class WxDataTreeViewBuilder:
                 'coordinate1') != None:  # TODO
             coordinate1 = dataElement.find('coordinate1').text
 
+        if coordinate1 != None:
+            coordinate1 = coordinate1.replace("/", ".") #PATCH
 
         if dataElement.get('aos') != None: #only for native data
 
