@@ -192,7 +192,11 @@ class WxDataTreeViewFrame(wx.Frame):
         publicStr = ''
         if dataSource.name == GlobalValues.IMAS_UDA:
             publicStr = "public "
-        self.SetTitle("'" + dataSource.imasDbName + "' " + publicStr + "data source, shot=" + str(dataSource.shotNumber) + ", run=" +  str(dataSource.runNumber))
+            self.SetTitle("'" + dataSource.machineName + "' " + publicStr + "data source, shot=" + str(
+                dataSource.shotNumber) + ", run=" +  str(dataSource.runNumber))
+        else:
+            self.SetTitle("'" + dataSource.imasDbName + "' " + "data source, shot=" + str(
+                dataSource.shotNumber) + ", run=" + str(dataSource.runNumber))
         # self.gauge = wx.Gauge(panel, 0, 50, size=(250, 10))
         views[dataSource.shotNumber] = WxDataTreeView(self, dataSource, os.environ['TS_MAPPINGS_DIR'], IDSDefFile, None)
         self.wxTreeView = views[dataSource.shotNumber]

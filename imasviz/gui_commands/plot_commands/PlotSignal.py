@@ -75,7 +75,6 @@ class PlotSignal(AbstractCommand):
             self.updateNodeData()
 
             fig = None
-            #ax = None
             frame = None
 
             api = self.view.imas_viz_api
@@ -124,8 +123,6 @@ class PlotSignal(AbstractCommand):
 
             frame.Show()
 
-            #self.plotFrame.updatePanel()
-
         except:
             traceback.print_exc(file=sys.stdout)
             raise
@@ -173,7 +170,8 @@ class PlotSignal(AbstractCommand):
         shotNumber = str(view.dataSource.shotNumber)
         runNumber = str(view.dataSource.runNumber)
 
-        label = machineName + ":" + shotNumber + ":" + runNumber + ':' + label
+        label = view.dataSource.getShortLabel() + ':' + label
+        #label = machineName + ":" + shotNumber + ":" + runNumber + ':' + label
 
         if xlabel == None:
             xlabel = "Time[s]"

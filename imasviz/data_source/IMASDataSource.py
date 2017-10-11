@@ -63,12 +63,13 @@ class GeneratedClassFactory:
 
 class IMASDataSource:
 
-    def __init__(self, name, userName, imasDbName, shotNumber, runNumber):
+    def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
         self.name = name
         self.userName =  userName
         self.imasDbName = imasDbName
         self.shotNumber = shotNumber
         self.runNumber = runNumber
+        self.machineName = machineName
         self.ids = None
 
     # Load IMAS data using IMAS api
@@ -103,6 +104,13 @@ class IMASDataSource:
         if (ids.expIdx == -1):
             raise ValueError("Can not open IMAS data base " + imasDbName + " from user " + userName)
 
+    @staticmethod
+    def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
+        ids = imas.ids(shotNumber, runNumber, 0, 0)
+        ids.open_public(machineName)
+        if (ids.expIdx == -1):
+            raise ValueError("Can not open " + machineName + " public IMAS data base from UDA ")
+
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
         return True #we have currently no way to know if a IDS is available or not from MDS+
@@ -129,7 +137,10 @@ class IMASDataSource:
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
-        return self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+
+    def getShortLabel(self):
+        return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
     # Add new nodes to the tree
     def addWxNodes(self, itemDataDict, viewerTree, viewerNode, wxTreeItemData):
@@ -148,17 +159,31 @@ class IMASDataSource:
 
 class IMASPublicDataSource(IMASDataSource):
 
-    def __init__(self, name, imasDbName, shotNumber, runNumber):
-        IMASDataSource.__init__(self, name, None, imasDbName, shotNumber, runNumber)
+    def __init__(self, name, machineName, shotNumber, runNumber):
+        IMASDataSource.__init__(self, name, None, None, shotNumber, runNumber, machineName)
 
     # Load IMAS data using IMAS api
     def load(self, view, occurrence=0, pathsList = None, async=True):
+        print "Loading from UDA datasource"
         generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-            self.ids.open_public(self.imasDbName)
+            self.ids.open_public(self.machineName)
         generatedDataTree.ids = self.ids
+
+        view.dataCurrentlyLoaded = True
+        view.idsAlreadyParsed[view.IDSNameSelected] = 1
+        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
+
         if async == True:
             generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
         else:
             generatedDataTree.execute()  # This will call the get() operation for fetching IMAS data
+
+            # This defines the unique key attached to each data which can be plotted
+
+    def dataKey(self, nodeData):
+        return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+
+    def getShortLabel(self):
+        return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)

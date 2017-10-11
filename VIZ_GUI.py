@@ -9,7 +9,7 @@ from imasviz.data_source.IMASDataSource import IMASDataSource
 
 
 class TabOne(wx.Panel):
-    def __init__(self,parent):
+    def __init__(self,parent, GUIFrameSingleton):
         wx.Panel.__init__(self,parent)
 
         self.dataSource = None
@@ -85,7 +85,8 @@ class TabOne(wx.Panel):
         self.dataSourceName = GlobalValues.IMAS_NATIVE  # default value
         self.rb1.SetValue(True)
         self.shell = None
-        self.handlerValue = 0
+        #self.handlerValue = 0
+        self.GUIFrameSingleton = GUIFrameSingleton
 
         from imasviz.view.WxDataTreeView import TextCtrlLogger
 
@@ -147,7 +148,7 @@ class TabOne(wx.Panel):
             self.CheckInputs()
 
             apiHandlerName = HandlerName.getAPIHandler(0)
-            if  self.handlerValue == 0:
+            if  self.GUIFrameSingleton.handlerValue == 0:
                 self.shell.run(apiHandlerName + " = Browser_API()")
 
             if self.dataSourceName == GlobalValues.IMAS_NATIVE:
@@ -160,10 +161,10 @@ class TabOne(wx.Panel):
                     os.environ[vname] = mds
 
 
-            dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.handlerValue)
+            dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(dataSourceFactoryHandlerName + " = DataSourceFactory()")
 
-            dataSourceHandlerName = HandlerName.getDataSourceHandler(self.handlerValue)
+            dataSourceHandlerName = HandlerName.getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
 
             if self.rb1.GetValue() :
                 self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" + 
@@ -172,14 +173,14 @@ class TabOne(wx.Panel):
             else:
                 self.shell.run(
                     dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" + self.shotNumberTS.GetValue() +
-                    "," + self.runNumberTS.GetValue() + ",'" + self.dataSourceName + "')")
+                    "," + self.runNumberTS.GetValue() + ",None, None,'" + self.dataSourceName + "')")
 
-            viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.handlerValue)
+            viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")
             self.shell.push(apiHandlerName + ".ShowDataTree(" + viewhandlerName + ")")
             self.shell.push(viewhandlerName + ".Center()")
 
-            self.handlerValue += 1
+            self.GUIFrameSingleton.handlerValue += 1
 
         except ValueError as e:
             self.log.error(str(e))
@@ -195,7 +196,7 @@ class TabTwo(wx.Panel):
         self.SetSizer(vbox)
 
 class TabThree(wx.Panel):
-    def __init__(self,parent):
+    def __init__(self,parent, GUIFrameSingleton):
         wx.Panel.__init__(self,parent)
 
         self.dataSource = None
@@ -206,21 +207,21 @@ class TabThree(wx.Panel):
 
         self.shotNumberStaticText = wx.StaticText(self, -1, 'Shot number  ')
         self.runNumberStaticText = wx.StaticText(self, -1, 'Run number')
-        self.imasDbNameStaticText = wx.StaticText(self, -1, 'IMAS public database name  ')
+        self.imasDbNameStaticText = wx.StaticText(self, -1, 'IMAS public database ')
 
         self.shotNumber= wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumber = wx.TextCtrl(self, -1, '0', size=(150, -1))
         #self.imasDbName = wx.TextCtrl(self, -1, size=(150, -1))
         publicDatabases = ['WEST']
-        self.imasDbName = wx.Choice(self, choices=publicDatabases, style=wx.CB_READONLY)
-        self.imasDbName.SetSelection(0)
+        self.machineName = wx.Choice(self, choices=publicDatabases, style=wx.CB_READONLY)
+        self.machineName.SetSelection(0)
 
         button_open = wx.Button(self, 1, 'Open')
 
-        self.logWindow = wx.TextCtrl(self, wx.ID_ANY,"Welcome to the IMAS data browser !\n", size=(500, 100), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+        self.logWindow = wx.TextCtrl(self, wx.ID_ANY,"Welcome to the IMAS data browser !\n", size=(500, 150), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
         self.gridSizer_native.Add(self.imasDbNameStaticText, 0, wx.LEFT, 10)
-        self.gridSizer_native.Add(self.imasDbName, 0, wx.LEFT, 10)
+        self.gridSizer_native.Add(self.machineName, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.shotNumberStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.shotNumber, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.runNumberStaticText, 0, wx.LEFT, 10)
@@ -234,9 +235,10 @@ class TabThree(wx.Panel):
 
         self.SetSizer(self.vbox)
 
-        #self.dataSourceName = GlobalValues.IMAS_UDA  # default value
+        self.dataSourceName = GlobalValues.IMAS_UDA  # default value
         self.shell = None
-        self.handlerValue = 0
+        #self.handlerValue = 0
+        self.GUIFrameSingleton = GUIFrameSingleton
 
         from imasviz.view.WxDataTreeView import TextCtrlLogger
 
@@ -252,39 +254,29 @@ class TabThree(wx.Panel):
 
             from imasviz.view.HandlerName import HandlerName
 
-            #self.CheckInputs()
+            self.CheckInputs()
 
             apiHandlerName = HandlerName.getAPIHandler(0)
-            if  self.handlerValue == 0:
+            if  self.GUIFrameSingleton.handlerValue == 0:
                 self.shell.run(apiHandlerName + " = Browser_API()")
 
-            #IMASDataSource.try_to_open(self.imasDbName.GetValue(), self.userName.GetValue(), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
+            IMASDataSource.try_to_open_uda_datasource(self.machineName.GetString(self.machineName.GetSelection()), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
 
-            for i in xrange(0, 10):
-                vname = "MDSPLUS_TREE_BASE_" + str(i)
-                mds = os.environ['HOME']  + "/public/imasdb/" + self.imasDbName.GetString(self.imasDbName.GetSelection()) + "/3/" + str(i)
-                os.environ[vname] = mds
-
-
-            dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.handlerValue)
+            dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(dataSourceFactoryHandlerName + " = DataSourceFactory()")
 
-            dataSourceHandlerName = HandlerName.getDataSourceHandler(self.handlerValue)
+            dataSourceHandlerName = HandlerName.getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
 
-            # self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" +
-            #                    self.shotNumber.GetValue() + ","  + self.runNumber.GetValue() + ",'" +
-            #                self.imasDbName.GetString(self.imasDbName.GetSelection()) + "','" + self.dataSourceName + "')")
-
-            self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" +
+            self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".createUDADatasource(" +
                            self.shotNumber.GetValue() + "," + self.runNumber.GetValue() + ",'" +
-                           self.imasDbName.GetString(self.imasDbName.GetSelection()) + "',"  + "True)")
+                           self.machineName.GetString(self.machineName.GetSelection()) + "')")
 
-            viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.handlerValue)
+            viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")
             self.shell.push(apiHandlerName + ".ShowDataTree(" + viewhandlerName + ")")
             self.shell.push(viewhandlerName + ".Center()")
 
-            self.handlerValue += 1
+            self.GUIFrameSingleton.handlerValue += 1
 
         except ValueError as e:
             self.log.error(str(e))
@@ -292,11 +284,11 @@ class TabThree(wx.Panel):
 
     def CheckInputs(self):
 
-        imasDbName = self.imasDbName.GetString(self.imasDbName.GetSelection())
+        machineName = self.machineName.GetString(self.machineName.GetSelection())
         shotnumbertext = self.shotNumber.GetValue()
         runnumbertext = self.runNumber.GetValue()
 
-        if imasDbName == '':
+        if machineName == '':
             raise ValueError("'IMAS public database name' field is empty.")
 
         if shotnumbertext == '':
@@ -315,12 +307,13 @@ class GUIFrame(wx.Frame):
         self.InitUI()
         self.Centre
         self.Show(True)
+        self.handlerValue = 0
 
     def InitUI(self):
         nb = wx.Notebook(self)
-        tab1 = TabOne(nb)
+        tab1 = TabOne(nb, self)
         tab2 = TabTwo(nb)
-        tab3 = TabThree(nb)
+        tab3 = TabThree(nb, self)
         tab1.shell = tab2.shell
         tab3.shell = tab2.shell
         nb.AddPage(tab1,"Data Source")
