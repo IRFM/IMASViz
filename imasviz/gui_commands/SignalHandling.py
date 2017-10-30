@@ -196,18 +196,15 @@ class SignalHandling:
             self.view.log.error(str(e))
         
     def plotSelectedSignals(self):
-        selectedsignals = self.view.selectedSignals
         numFig = self.view.imas_viz_api.GetNextNumFigForNewPlot()
-        PlotSelectedSignals(self.view, selectedsignals, numFig).execute()
+        PlotSelectedSignals(self.view, numFig).execute()
 
     def plotSelectedSignalsToFig(self, numFig):
-        selectedsignals = self.view.selectedSignals
-        PlotSelectedSignals(self.view, selectedsignals, numFig, 1).execute()
+        PlotSelectedSignals(self.view, numFig, 1).execute()
 
     def plotSelectedSignalsToMultiPlotsFrame(self):
-        selectedsignals = self.view.selectedSignals
         numFig = self.view.imas_viz_api.GetNextNumFigForNewPlot()
-        PlotSelectedSignalsWithWxmplot(self.view, selectedsignals, numFig, 1).execute()
+        PlotSelectedSignalsWithWxmplot(self.view, numFig, 1).execute()
 
     def plotSelectedSignalVsTime(self):
         self.updateNodeData();

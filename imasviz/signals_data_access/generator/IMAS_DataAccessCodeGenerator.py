@@ -59,16 +59,11 @@ class IMAS_DataAccessCodeGenerator():
 
                 self.printCode('def execute(self):', 0)
                 self.printCode("idsData = None", 1)
-                #self.printCode("self.view.idsAlreadyParsed[self.idsName] = 1", 1)
-                #self.printCode("self.view.log.info('Loading '" + " + self.idsName + " + "' IDS...')", 1)
 
                 for ids2 in root:
                     name_att2 = ids2.get('name')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
-                    #self.printCode('lock.acquire()', 2)
-                    #self.printCode('try:', 2)
                     self.printCode("self.ids." + name_att2 + ".get()", 2)  # get the data from the database for the ids"
-                    #self.printCode("self.view.log.info('Building view for '" + " + self.idsName + " + "' IDS...')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
 
                     self.printCode('if self.async==True:', 2)
@@ -79,14 +74,6 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode("print 'view update wait ended...'" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.parent.updateView(self.idsName, idsData, self.pathsList)', 3)
-
-                    #self.printCode('self.view.update_view(self.idsName, idsData)', 3)
-                    #self.printCode("self.view.log.info('Loading of '" + " + self.idsName + " + "' IDS ended successfully.')", 3)
-                    #self.printCode("finally:", 2)
-                    #self.printCode('lock.release()', 3)
-                    #self.printCode('if self.threadingEvent!=None:', 2)
-                    #self.printCode('self.threadingEvent.set()', 3)
-                    
 
                 self.printCode('\n', -1)
             

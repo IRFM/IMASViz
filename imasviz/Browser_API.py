@@ -59,15 +59,17 @@ class Browser_API():
     def GetNextNumFigForNewPlot(self):
         return len(self.figures)
 
-    # Plot the set of signals selected by the user
-    def PlotSelectedSignals(self, dataTreeFrame, numfig=0, update=0):
-        selectedsignals = self.GetSelectedSignals(dataTreeFrame)
-        PlotSelectedSignals(dataTreeFrame.wxTreeView, selectedsignals, numfig=0, update=0).execute()
+    # Return the next figure number available for plotting
+    def GetNextNumFigForNewMultiplePlots(self):
+        return len(self.multiPlotsFrames)
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignalsInMultiFrame(self, dataTreeFrame, plotConfig = None, numfig=0, update=0):
-        selectedsignals = self.GetSelectedSignals(dataTreeFrame)
-        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, selectedsignals, numfig=0, update=0, plotConfig=plotConfig).execute()
+    def PlotSelectedSignals(self, dataTreeFrame, numfig=0, update=0):
+        PlotSelectedSignals(dataTreeFrame.wxTreeView, numfig=0, update=0).execute()
+
+    # Plot the set of signals selected by the user
+    def PlotSelectedSignalsInMultiFrame(self, dataTreeFrame, configFileName = None, numfig=0, update=0):
+        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, numfig=0, update=0, configFileName=configFileName).execute()
     
     # Load IDSs data for the given data tree frame
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0, threadingEvent=None):
@@ -81,18 +83,16 @@ class Browser_API():
 
     # Select signals from a list of IMAS paths for the given data tree frame
     def SelectSignals(self, dataTreeFrame, pathsList):
-        SelectSignals(dataTreeFrame.wxTreeView, dataTreeFrame, pathsList).execute()
+        SelectSignals(dataTreeFrame.wxTreeView, pathsList).execute()
     
     #Plot select signals from multiple data tree frames (different shots) on a single plot window
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, numfig=0):
-        selectedsignals = None
         i = 0
         update = 0
         for f in dataTreeFramesList:
-            selectedsignals = self.GetSelectedSignals(f)
             if i!=0:
                 update = 1
-            PlotSelectedSignals(f.wxTreeView, selectedsignals, numfig=numfig, update=update).execute()
+            PlotSelectedSignals(f.wxTreeView, numfig=numfig, update=update).execute()
             i += 1
 
     # Unselect all previously selected signals for the given data tree frame

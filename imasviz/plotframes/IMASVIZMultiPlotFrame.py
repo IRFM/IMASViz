@@ -7,8 +7,9 @@ from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import Save
 
 class IMASVIZMultiPlotFrame(MultiPlotFrame):
     def __init__(self, view, parent=None, rows=1, cols=1, framesize=None,
-                 panelsize=(400, 320), panelopts=None, **kws):
+                 panelsize=(400, 320), panelopts=None, numfig=0, **kws):
         self.view = view
+        self.numFig = numfig
         self.help_msg = """Quick help:
 
          Left-Click:   to display X,Y coordinates
@@ -142,4 +143,13 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
 
     def save_configuration(self, event=None, **kws):
         print "Saving plots configuration..."
-        SavePlotsConfiguration(view=self.view).execute()
+        SavePlotsConfiguration(view=self.view, numfig=self.numFig, cols=self.cols).execute()
+
+    def oplot(self,x,y,panel=None,**kws):
+        """generic plotting method, overplotting any existing plot """
+        if panel is None:
+            panel = self.current_panel
+        opts = {}
+        opts.update(self.default_panelopts)
+        opts.update(kws)
+        self.panels[panel].oplot(x, y, **opts)

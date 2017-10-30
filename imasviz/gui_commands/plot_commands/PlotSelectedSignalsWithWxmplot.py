@@ -2,6 +2,8 @@
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 from imasviz.plotframes.IMASVIZMultiPlotFrame import IMASVIZMultiPlotFrame
+from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
+from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.util.GlobalOperations import GlobalOperations
 import matplotlib.pyplot as plt
 import wxmplot
@@ -11,16 +13,25 @@ import sys
 
 
 class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
-    def __init__(self, view, selectedsignals, numfig=0, update=0, plotConfig = None):
-        PlotSelectedSignals.__init__(self, view, selectedsignals, numfig=0, update=0, plotConfig=plotConfig)
+    def __init__(self, view, numfig=0, update=0, configFileName = None):
+        PlotSelectedSignals.__init__(self, view, numfig=numfig, update=update, configFileName=configFileName)
         self.labels = {}
+        self.rows = 2
+        self.cols = 3
+
+    def raiseErrorIfNoSelectedArrays(self):
+        return False
+
+    def getDimension(self):
+        plotDimension = "1D"
+        return plotDimension
 
     def getFrame(self, numfig, rows=1, cols=1):
         api = self.view.imas_viz_api
         if numfig in api.figureframes:
             frame = api.figureframes[numfig]
         else:
-            frame = IMASVIZMultiPlotFrame(view=self.view,rows=rows, cols=cols, panelsize=(400, 300))
+            frame = IMASVIZMultiPlotFrame(view=self.view,rows=rows, cols=cols, panelsize=(400, 300), numfig=numfig)
             frame .SetTitle(title='Figure ' + str(numfig + 1))
             frame.panel.toggle_legend(None, True)
             api.figureframes[numfig] = frame
@@ -30,20 +41,17 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def plot1DSelectedSignals(self, numfig=0, update=0):
 
         try:
-            selectedsignals = self.view.selectedSignals
-
-            selectedsignalsList = GlobalOperations.getListFromDict(selectedsignals)
-            selectedsignalsList.sort(key=lambda x: x[2])
-
 
             api = self.view.imas_viz_api
             fig = self.getFigure(numfig)
             fig.add_subplot(111)
 
-            rows = 2
-            cols = 3
+            frame = self.getFrame(numfig, self.rows, self.cols)
 
-            frame = self.getFrame(numfig, rows, cols)
+            if self.plotConfig != None:
+                selectedsignalsList, panelPlotsCount = self.selectSignals(frame)
+            else:
+                selectedsignalsList = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
 
             self.applyPlotConfigurationBeforePlotting(frame=frame)
 
@@ -54,12 +62,16 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             n = 0 #number of plots
 
-            maxNumberOfPlots = rows*cols;
+            maxNumberOfPlots = self.rows*self.cols;
 
             if frame not in self.view.imas_viz_api.multiPlotsFrames:
                 self.view.imas_viz_api.multiPlotsFrames.append(frame)
 
+            print "selectedsignalsList count --> " + str(len(selectedsignalsList))
+
             for tupleElement in selectedsignalsList:
+
+                #print tupleElement
 
                 if n + 1 > maxNumberOfPlots:
                     break
@@ -85,13 +97,24 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     u = v[j]
                     ti = t[0]
                     #print signalNodeData['Path']
-                    a = n//cols
-                    b = n - (n//cols)*cols
+                    a = n//self.cols
+                    b = n - (n//self.cols)*self.cols
                     p = (a,b)
-                    frame.plot(ti, u, panel=p, xlabel=xlabel, ylabel=ylabel, label=label, labelfontsize=5, show_legend=True, legend_loc='uc', legendfontsize=5, legend_on=False)
 
-                    #print "Title = " + str(title)
-                    #print p
+                    if self.plotConfig is None:
+                        numberOfPlots = 1
+                    else:
+                        numberOfPlots = panelPlotsCount[p]
+
+                    print str(numberOfPlots) + " plot(s) for panel " + str(p)
+
+                    for k in range(0, numberOfPlots):
+                        if k == 0:
+                            frame.plot(ti, u, panel=p, xlabel=xlabel, ylabel=ylabel, label=label, labelfontsize=5,
+                                       show_legend=True, legend_loc='uc', legendfontsize=5, legend_on=False)
+                        else:
+                            frame.oplot(ti, u, panel=p, xlabel=xlabel, ylabel=ylabel, label=label, labelfontsize=5,
+                                       show_legend=True, legend_loc='uc', legendfontsize=5, legend_on=False)
                     n = n + 1
 
             self.applyPlotConfigurationAfterPlotting(frame=frame)
@@ -102,6 +125,22 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             traceback.print_exc(file=sys.stdout)
             raise ValueError("Error while plotting 1D selected signal(s).")
 
+
+    def selectSignals(self, frame):
+        selectedsignalsMap = {} #key = panel key, value = selected arrays count
+        pathsList = []
+        UnselectAllSignals(self.view).execute()
+        for n in range(0, len(frame.panels)):
+            key = GlobalOperations.getNextPanelKey(n, cols=self.cols)
+            selectedArrays = self.plotConfig.findall(".//*[@key='" + str(key) + "']/selectedArray")
+            selectedsignalsMap[key] = len(selectedArrays)
+            for selectedArray in selectedArrays:
+                pathsList.append(selectedArray.get("path"))
+        print "pathsList count --> " + str(len(pathsList))
+        print pathsList
+        SelectSignals(self.view, pathsList).execute()
+        selectedsignalsList = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
+        return selectedsignalsList, selectedsignalsMap
 
 
     def applyPlotConfigurationBeforePlotting(self, frame):
@@ -140,7 +179,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             return
         print "Applying plot configuration after plotting..."
         for key in frame.panels:
-            print 'key: ' + str(key)
+            #print 'key: ' + str(key)
             panel = frame.panels[key]
             configPanels = self.plotConfig.findall(".//*[@key='" + str(key)+ "']")
             configurationPanel = configPanels[0]

@@ -7,7 +7,6 @@ from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.gui_commands.plots_configuration.ApplyPlotConfiguration import ApplyPlotConfiguration
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
-import xml.etree.ElementTree as ET
 
 app = wx.App()
 
@@ -29,8 +28,8 @@ api.SelectSignals(f, paths)
 
 #configFileName = os.environ['HOME'] + "/.imasviz/config4.cfg"
 configFileName = os.environ['VIZ_HOME'] + "/myconfig.cfg"
-config = ET.parse(configFileName)
-api.PlotSelectedSignalsInMultiFrame(f, config)
+
+#api.PlotSelectedSignalsInMultiFrame(f, configFileName)
 
 api.ShowDataTree(f)
 

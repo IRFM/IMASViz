@@ -15,11 +15,16 @@ class LoadSelectedData(AbstractCommand):
             if self.view.IDSNameSelected in self.view.idsAlreadyParsed:
                 IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
                 if IDSDataLoaded == 1:
+                    try:
+                        self.view.parent.updateView(self.view.IDSNameSelected, pathsList=self.pathsList)
+                    except:
+                        traceback.print_exc()
+                        raise ValueError("Error while updating the view.")
+
                     return
 
-            # Load the data for IDS
+            # Load the data source
             self.view.dataSource.load(self.view, self.occurrence, self.pathsList, self.async)
         except :
             traceback.print_exc()
             self.view.log.error(traceback.format_exc())
-            #self.view.log.error("An error has occured while loading " + self.view.IDSNameSelected + " IDS.")
