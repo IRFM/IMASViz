@@ -29,15 +29,11 @@ class SavePlotsConfiguration(AbstractCommand):
 
         fileName = GlobalOperations.getPlotsConfigurationFileName(configName)
 
-        #self.f = open(fileName, 'w')
-
-
         root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by the IMAS_VIZ application')
         multiplotFrames = self.view.imas_viz_api.multiPlotsFrames
 
 
-        #framesElement = ET.SubElement(root, 'frames')
         i = 0
         for frame in multiplotFrames:
 
@@ -53,17 +49,61 @@ class SavePlotsConfiguration(AbstractCommand):
 
                 panel = frame.panels[key]
 
-                panelElement.set('title', panel.conf.title)
-                panelElement.set('ylabel', panel.conf.ylabel)
-                panelElement.set('y2label', panel.conf.y2label)
+                self.saveAttribute(panelElement,'title', panel.conf.title)
+                self.saveAttribute(panelElement,'xlabel', panel.conf.xlabel)
+                self.saveAttribute(panelElement,'ylabel', panel.conf.ylabel)
+                self.saveAttribute(panelElement,'y2label', panel.conf.y2label)
+                self.saveAttribute(panelElement,'xscale', panel.conf.xscale)
+                self.saveAttribute(panelElement,'yscale', panel.conf.yscale)
+                self.saveAttribute(panelElement,'plot_type', panel.conf.plot_type)
+                self.saveAttribute(panelElement,'scatter_size', panel.conf.scatter_size)
+                self.saveAttribute(panelElement,'scatter_normalcolor', panel.conf.scatter_normalcolor)
+                self.saveAttribute(panelElement,'scatter_normaledge', panel.conf.scatter_normaledge)
+                self.saveAttribute(panelElement,'scatter_selectcolor', panel.conf.scatter_selectcolor)
+                self.saveAttribute(panelElement,'scatter_selectedge', panel.conf.scatter_selectedge)
+                self.saveAttribute(panelElement,'scatter_data', panel.conf.scatter_data)
+                self.saveAttribute(panelElement,'scatter_coll', panel.conf.scatter_coll)
+                self.saveAttribute(panelElement,'scatter_mask', panel.conf.scatter_mask)
+                self.saveAttribute(panelElement, 'show_legend', panel.conf.show_legend)
+                self.saveAttribute(panelElement, 'show_grid', panel.conf.show_grid)
 
-                #tracesElement = ET.SubElement(panelElement, 'traces')
+                self.saveAttribute(panelElement, 'legend_loc', panel.conf.legend_loc)
+                self.saveAttribute(panelElement, 'legend_onaxis', panel.conf.legend_onaxis)
+                self.saveAttribute(panelElement, 'mpl_legend', panel.conf.mpl_legend)
+                self.saveAttribute(panelElement, 'draggable_legend', panel.conf.draggable_legend)
+                self.saveAttribute(panelElement, 'hidewith_legend', panel.conf.hidewith_legend)
+                self.saveAttribute(panelElement, 'show_legend_frame', panel.conf.show_legend_frame)
+                self.saveAttribute(panelElement, 'axes_style', panel.conf.axes_style)
+
+                self.saveAttribute(panelElement, 'bgcolor', panel.conf.bgcolor)
+                self.saveAttribute(panelElement, 'textcolor', panel.conf.textcolor)
+                self.saveAttribute(panelElement, 'gridcolor', panel.conf.gridcolor)
+                self.saveAttribute(panelElement, 'framecolor', panel.conf.framecolor)
+                self.saveAttribute(panelElement, 'color_theme', panel.conf.color_theme)
+
+                # self.margins = None
+                # self.auto_margins = True
 
                 j = 0
                 for trace in panel.conf.traces:
                     traceElement = ET.SubElement(panelElement, 'trace')
-                    traceElement.set('index', str(j))
-                    traceElement.set('color', str(trace.color))
+                    self.saveAttribute(traceElement,'index', str(j))
+                    self.saveAttribute(traceElement, 'color', str(trace.color))
+                    self.saveAttribute(traceElement, 'style', str(trace.style))
+                    self.saveAttribute(traceElement, 'drawstyle', str(trace.drawstyle))
+                    self.saveAttribute(traceElement, 'linewidth', str(trace.linewidth))
+                    self.saveAttribute(traceElement, 'marker', str(trace.marker))
+                    self.saveAttribute(traceElement, 'markersize', str(trace.markersize))
+                    self.saveAttribute(traceElement, 'markercolor', str(trace.markercolor))
+                    self.saveAttribute(traceElement, 'label', str(trace.label))
+                    self.saveAttribute(traceElement, 'zorder', str(trace.zorder))
+
+                    dataRangeElement = ET.SubElement(traceElement, 'data_range')
+                    self.saveAttribute(dataRangeElement, 'dr1', str(trace.data_range[0]))
+                    self.saveAttribute(dataRangeElement, 'dr2', str(trace.data_range[1]))
+                    self.saveAttribute(dataRangeElement, 'dr3', str(trace.data_range[2]))
+                    self.saveAttribute(dataRangeElement, 'dr4', str(trace.data_range[3]))
+
                     j = j + 1
 
         self.indent(root)
@@ -71,6 +111,9 @@ class SavePlotsConfiguration(AbstractCommand):
         treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
         #self.f.close()
 
+    def saveAttribute(self, panelElement, attribute, value):
+        if value != None:
+            panelElement.set(attribute, str(value))
 
     def printCode(self, text, level):
         return GlobalOperations.printCode(self.f, text, level)

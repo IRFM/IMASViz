@@ -17,7 +17,7 @@ api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
 userName = os.environ['USER']
-dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=10, runNumber=60,userName=userName,imasDbName='test')
+dataSource = dataSourceFactory.create(shotNumber=10, runNumber=60,userName=userName,imasDbName='test')
 
 f = api.CreateDataTree(dataSource)
 paths = []
@@ -27,12 +27,14 @@ for i in range(0,6):
 
 api.SelectSignals(f, paths)
 
-api.PlotSelectedSignalsInMultiFrame(f)
+#configFileName = os.environ['HOME'] + "/.imasviz/config4.cfg"
+configFileName = os.environ['VIZ_HOME'] + "/myconfig.cfg"
+config = ET.parse(configFileName)
+api.PlotSelectedSignalsInMultiFrame(f, config)
 
 api.ShowDataTree(f)
-#configFileName = os.environ['VIZ_HOME'] + "/myconfig3.cfg"
-configFileName = os.environ['HOME'] + "/.imasviz/config4.cfg"
-config = ET.parse(configFileName)
+
+
 
 #v = config.findall(".//*[@key='(1, 1)']/trace")
 

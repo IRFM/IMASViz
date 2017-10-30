@@ -145,7 +145,10 @@ class PlotSignal(AbstractCommand):
 
     @staticmethod
     def plotOptions(view, signalNodeData, shotNumber=None, label=None, xlabel=None):
+
         t = view.getNodeAttributes(signalNodeData['dataName'])
+
+
         if label == None:
             label = signalNodeData['Path']
 

@@ -8,11 +8,12 @@ import sys
 
 
 class PlotSelectedSignals(AbstractCommand):
-    def __init__(self, view, selectedsignals, numfig=0, update=0):
+    def __init__(self, view, selectedsignals, numfig=0, update=0, plotConfig=None):
         AbstractCommand.__init__(self, view, None)
         self.selectedsignals = selectedsignals
         self.numfig = numfig
         self.update = update
+        self.plotConfig = plotConfig
 
     def execute(self):
 

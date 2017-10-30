@@ -65,9 +65,9 @@ class Browser_API():
         PlotSelectedSignals(dataTreeFrame.wxTreeView, selectedsignals, numfig=0, update=0).execute()
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignalsInMultiFrame(self, dataTreeFrame, numfig=0, update=0):
+    def PlotSelectedSignalsInMultiFrame(self, dataTreeFrame, plotConfig = None, numfig=0, update=0):
         selectedsignals = self.GetSelectedSignals(dataTreeFrame)
-        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, selectedsignals, numfig=0, update=0).execute()
+        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, selectedsignals, numfig=0, update=0, plotConfig=plotConfig).execute()
     
     # Load IDSs data for the given data tree frame
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0, threadingEvent=None):

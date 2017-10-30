@@ -12,7 +12,7 @@ class DataSourceFactory:
     def createUDADatasource(self, shotNumber, runNumber = 0, machineName=None):
         return self.create(shotNumber, runNumber, None, None, GlobalValues.IMAS_UDA, machineName)
 
-    def create(self,shotNumber, runNumber = 0, userName = None, imasDbName = None, dataSourceName = None, machineName = None):
+    def create(self,shotNumber, runNumber = 0, userName = None, imasDbName = None, dataSourceName = GlobalValues.IMAS_NATIVE, machineName = None):
 
         if dataSourceName == None or dataSourceName == '':
             raise ValueError("A datasource name is required for creating a datasource")
