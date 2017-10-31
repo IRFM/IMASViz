@@ -18,7 +18,7 @@ class GeneratedClassFactory:
         self.async = async
 
     def create(self):
-        imas__dd_version = os.environ['IMAS_DATA_DICTIONARY_VERSION']
+        imas__dd_version = os.environ['IMAS_VERSION']
         if imas__dd_version == "3.7.0":
             generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
                                                            imasDbName=self.IMASDataSource.imasDbName,

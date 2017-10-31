@@ -5,9 +5,9 @@ ____________________________________________________
 Instructions for installing IMAS_VIZ on the Gateway
 --------------------------------------------------
 
-1. Cloning IMAS_VIZ production branch
+1. Cloning IMAS_VIZ branch
 
-git clone –b production ssh://git@git.iter.org/vis/viz.git
+git clone ssh://git@git.iter.org/vis/viz.git
 
 This will create the viz directory containing the sources of the project.
 
@@ -18,7 +18,18 @@ module load itm-python/2.7.13.b7
 
 3. Configuring IMAS_VIZ
 
-You need to set the environment variable TS_MAPPINGS_DIR to point to /viz/ts_mappings_files. Assuming the viz directory is in your home directory:
+WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.
+WARNING: environment variable IMAS_DATA_DICTIONARY_VERSION defined from testing environment.
+WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.
+WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment.
+
+You need to set some environment variables.
+
+Variable TS_MAPPINGS_DIR to point to /viz/ts_mappings_files. Assuming the viz directory is in your home directory:
+
+export TS_MAPPINGS_DIR=~/viz/ts_mappings_files
+
+Variable TS_MAPPINGS_DIR to point to /viz/ts_mappings_files. Assuming the viz directory is in your home directory:
 
 export TS_MAPPINGS_DIR=~/viz/ts_mappings_files
 
