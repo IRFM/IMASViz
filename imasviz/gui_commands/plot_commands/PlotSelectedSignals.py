@@ -1,6 +1,8 @@
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+from imasviz.util.GlobalOperations import GlobalOperations
 import matplotlib.pyplot as plt
+import xml.etree.ElementTree as ET
 import wxmplot
 import wx
 import traceback
@@ -8,16 +10,19 @@ import sys
 
 
 class PlotSelectedSignals(AbstractCommand):
-    def __init__(self, view, selectedsignals, numfig=0, update=0):
+    def __init__(self, view, numfig=0, update=0, configFileName=None):
         AbstractCommand.__init__(self, view, None)
-        self.selectedsignals = selectedsignals
         self.numfig = numfig
         self.update = update
+        self.plotConfig = None
+        if configFileName != None:
+            self.plotConfig = ET.parse(configFileName)
 
     def execute(self):
 
-        if len(self.selectedsignals) == 0:
-                raise ValueError("No signal selected.")
+        if self.raiseErrorIfNoSelectedArrays():
+            if len(self.view.selectedSignals) == 0:
+                    raise ValueError("No signal selected.")
 
         plotDimension = self.getDimension()
 
@@ -27,10 +32,13 @@ class PlotSelectedSignals(AbstractCommand):
         elif plotDimension == "2D" or plotDimension == "3D":
             raise ValueError("2D/3D plots are not currently supported.")
 
+    def raiseErrorIfNoSelectedArrays(self):
+        return True
+
     def getDimension(self):
 
         # Finding the plot dimension
-        signalNodeDataValue = self.selectedsignals.itervalues().next()
+        signalNodeDataValue = self.view.selectedSignals.itervalues().next()
         signalNodeData = signalNodeDataValue[1]
         data_type = signalNodeData['data_type']
 
@@ -69,7 +77,9 @@ class PlotSelectedSignals(AbstractCommand):
     def plot1DSelectedSignals(self, numfig=0, update=0):
 
         try:
-            selectedsignals = self.view.selectedSignals
+            # selectedsignals = self.view.selectedSignals
+            selectedsignals = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
+
             api = self.view.imas_viz_api
             fig = self.getFigure(numfig)
             fig.add_subplot(111)
@@ -83,7 +93,7 @@ class PlotSelectedSignals(AbstractCommand):
 
             i = 0
 
-            for value in selectedsignals.itervalues():
+            for value in selectedsignals:
                 signalNodeData = value[1]
                 
                 key = self.view.dataSource.dataKey(signalNodeData)

@@ -15,11 +15,11 @@ class IMASVIZPlotPanel(PlotPanel):
 
         self.axisbg = axisbg
         self.signalHandling = signalHandling
+        self.staticSliderLabelValue = ''
 
         PlotPanel.__init__(self, parent=parent, size=size,
                            axisbg=axisbg, **kws)
 
-        self.staticSliderLabelValue = None
 
     def __onPickEvent(self, event=None):
         """pick events"""

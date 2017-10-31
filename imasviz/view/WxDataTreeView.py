@@ -19,7 +19,9 @@ from imasviz.view.WxDataTreeViewBuilder import WxDataTreeViewBuilder
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
-
+from imasviz.view.ResultEvent import ResultEvent
+from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
+from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -50,7 +52,7 @@ class WxDataTreeView(wx.TreeCtrl):
         self.dataTree = self.createEmptyIDSsTree(IDSDefFile)
 
         #User selected signals
-        self.selectedSignals = {}
+        self.selectedSignals = {} # tuple: view.dataSource.shotNumber, nodeData, index
 
         #List of nodes which contain a signal
         self.signalsList = []
@@ -58,11 +60,13 @@ class WxDataTreeView(wx.TreeCtrl):
         #Extra informations attached to each leaf of the tree - key = Node name (IMAS path), value = TreeNode object
         self.node_attributes = {}
 
-        #Parent of this frame
+        #Parent of this tree, this is the wxDataTreeViewFrame
         self.parent = parent
 
         #Keep a reference to shared data (frames, figures, ...) - This is a BrowserAPI instance
         self.imas_viz_api = None
+
+        self.dataCurrentlyLoaded = False
 
         self.log = Logger()
 
@@ -88,8 +92,8 @@ class WxDataTreeView(wx.TreeCtrl):
                 itemDataDict['Path']= itemDataDict['Tag']
                 itemDataDict['availableIDSData'] = 0
                 # Add the ids nodes
-                item = wx.TreeItemData(itemDataDict)
-                idsNode = self.AppendItem(self.root, idsName, -1, -1, item)
+                #item = wx.TreeItemData(itemDataDict)
+                idsNode = self.AppendItem(self.root, idsName, -1, -1, itemDataDict)
                 if self.dataSource.exists(idsName) == 1:
                     itemDataDict['availableIDSData'] = 1
                     self.SetItemTextColour(idsNode, wx.BLUE)
@@ -161,15 +165,13 @@ class WxDataTreeView(wx.TreeCtrl):
                 self.addChildren(nodeBuilder, child, element_node, idsName)
 
     def update_view(self,idsName, idsData): # Update the tree view with the data
-
         self.idsAlreadyParsed[idsName] = 1
         ids_root_node = self.dataTree[idsName]
-        #self.log.info("Building view for " + idsName + " IDS...")
         if idsData != None:
             self.buildTreeView(ids_root_node, idsData)
             self.EnsureVisible(self.GetLastChild(ids_root_node))
             self.EnsureVisible(ids_root_node)
-        #print strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        self.dataCurrentlyLoaded = False
 
     def getNodeAttributes(self, dataName):
         if self.node_attributes != None and dataName in self.node_attributes:
@@ -188,12 +190,16 @@ class WxDataTreeViewFrame(wx.Frame):
         publicStr = ''
         if dataSource.name == GlobalValues.IMAS_UDA:
             publicStr = "public "
-        self.SetTitle("'" + dataSource.imasDbName + "' " + publicStr + "data source, shot=" + str(dataSource.shotNumber) + ", run=" +  str(dataSource.runNumber))
-        # self.gauge = wx.Gauge(panel, 0, 50, size=(250, 10))
-        views[dataSource.shotNumber] = WxDataTreeView(self, dataSource, os.environ['TS_MAPPINGS_DIR'], IDSDefFile, None)
-        self.wxTreeView = views[dataSource.shotNumber]
+            self.SetTitle("'" + dataSource.machineName + "' " + publicStr + "data source, shot=" + str(
+                dataSource.shotNumber) + ", run=" +  str(dataSource.runNumber))
+        else:
+            self.SetTitle("'" + dataSource.imasDbName + "' " + "data source, shot=" + str(
+                dataSource.shotNumber) + ", run=" + str(dataSource.runNumber))
+        self.wxTreeView = WxDataTreeView(self, dataSource, os.environ['TS_MAPPINGS_DIR'], IDSDefFile, None)
+        #self.wxTreeView = views[dataSource.shotNumber]
         self.parent = parent
         self.Bind(wx.EVT_CLOSE, self.onClose)
+        self.createMenu()
 
         self.logWindow = wx.TextCtrl(self, wx.ID_ANY, "Log window\n", size=(100, 100),
                                      style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
@@ -211,10 +217,54 @@ class WxDataTreeViewFrame(wx.Frame):
         self.SetSizer(vbox)
 
         self.wxTreeView.log = TextCtrlLogger(self.logWindow)
+        self.configurationListsFrame = None
+
+        self.eventResultId =  wx.NewId()
+        self.Connect(-1, -1,  self.eventResultId , self.OnResult)
 
         
     def onClose(self, event):
         self.Hide()
+
+    def onShowConfigurations(self, event):
+        self.configurationListsFrame = ConfigurationListsFrame(self)
+        self.configurationListsFrame.showListBox()
+
+    def createMenu(self):
+        menubar = wx.MenuBar()
+        menu = wx.Menu()
+        item = menu.Append(wx.NewId(), item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+        menubar.Append(menu, 'Options')
+        self.SetMenuBar(menubar)
+        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item)
+
+    def OnResult(self, event):
+        idsName = event.data[0]
+        idsData = event.data[1]
+        pathsList = event.data[2]
+        threadingEvent = event.data[3]
+        self.updateView(idsName, idsData, pathsList, threadingEvent)
+
+    def updateView(self, idsName, idsData=None, pathsList=None, threadingEvent=None):
+        print 'updateView called...'
+        if idsData != None:
+            self.wxTreeView.log.info("Loading of " + idsName + " IDS ended successfully, building view...")
+            self.wxTreeView.update_view(idsName, idsData)
+            self.wxTreeView.log.info("View update ended.")
+        print 'updateView ended.'
+
+        # Creating the signals tree
+        signalsFrame = IDSSignalTreeFrame(None, self.wxTreeView,
+                                          str(self.wxTreeView.shotNumber),
+                                          GlobalOperations.getIDSDefFile(os.environ['IMAS_DATA_DICTIONARY_VERSION']))
+        if pathsList != None:
+            for s in pathsList:
+                n = signalsFrame.tree.selectNodeWithPath(s)
+                if n == None:
+                    print 'Path: ' + s + " not found"
+
+        if threadingEvent != None:
+            threadingEvent.set()
 
 class Logger:
     def __init__(self):
@@ -246,7 +296,7 @@ if __name__ == "__main__":
     GlobalOperations.checkEnvSettings()
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
     dataSourceFactory = DataSourceFactory()
-    dataSource = dataSourceFactory.create(name=GlobalValues.TORE_SUPRA, shotNumber=47979)
+    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979)
     from imasviz.Browser_API import Browser_API
     api = Browser_API()
     frame = api.CreateDataTree(dataSource)

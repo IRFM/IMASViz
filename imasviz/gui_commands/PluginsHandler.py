@@ -76,6 +76,7 @@ class PluginsHandler:
                 allEntries = pluginsObject.getAllEntries()
                 pluginsConfigurationsList = VIZPlugins.getPluginsConfiguration(pluginsName)
                 pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
+                pluginsConfiguration['imasviz_view'] = self.view
                 pluginsObject.execute(wx.App(), pluginsConfiguration)
 
 
@@ -86,7 +87,13 @@ if __name__ == "__main__":
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
 
     dataSourceFactory = DataSourceFactory()
-    dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=50355, runNumber=0, userName='imas_public', imasDbName='west_rawdata')
+    #dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=50355, runNumber=0, userName='imas_public', imasDbName='west')
+    #dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=10, runNumber=60,
+    #                                      userName='LF218007', imasDbName='test')
+
+    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=50642, runNumber=0,
+                                          userName='imas_private', imasDbName='west_equinox')
+
     from imasviz.Browser_API import Browser_API
 
     api = Browser_API()

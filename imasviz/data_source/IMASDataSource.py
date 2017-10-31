@@ -3,15 +3,19 @@ import imas
 import wx
 
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 import ETNativeDataTree_Generated_3_9_0
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 import ETNativeDataTree_Generated_3_9_1
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 import ETNativeDataTree_Generated_3_11_0
 from imasviz.util.GlobalOperations import GlobalOperations
 
 
 class GeneratedClassFactory:
-    def __init__(self, IMASDataSource, view, occurrence=0, threadingEvent=None):
+    def __init__(self, IMASDataSource, view, occurrence=0, pathsList = None, async = True):
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
-        self.threadingEvent = threadingEvent
+        self.pathsList = pathsList
+        self.async = async
 
     def create(self):
         imas__dd_version = os.environ['IMAS_DATA_DICTIONARY_VERSION']
@@ -19,26 +23,62 @@ class GeneratedClassFactory:
             generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
                                                            imasDbName=self.IMASDataSource.imasDbName,
                                                            shotNumber=self.IMASDataSource.shotNumber,
-                                                           runNumber=self.IMASDataSource.runNumber, view=self.view,
+                                                           runNumber=self.IMASDataSource.runNumber,
+                                                           view=self.view,
                                                            occurrence=self.occurrence,
-                                                           threadingEvent=self.threadingEvent)
-            return generatedDataTree
+                                                           pathsList = self.pathsList,
+                                                           async=self.async)
+        elif imas__dd_version == "3.9.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_9_0(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
+        elif imas__dd_version == "3.9.1":
+            generatedDataTree = ETNativeDataTree_Generated_3_9_1(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
+        elif imas__dd_version == "3.11.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_11_0(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
         else:
             raise ValueError("IMAS dictionary version not supported")
 
+        return generatedDataTree
+
+
 class IMASDataSource:
 
-    def __init__(self, name, userName, imasDbName, shotNumber, runNumber):
+    def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
         self.name = name
         self.userName =  userName
         self.imasDbName = imasDbName
         self.shotNumber = shotNumber
         self.runNumber = runNumber
+        self.machineName = machineName
         self.ids = None
 
     # Load IMAS data using IMAS api
-    def load(self, view, occurrence=0, threadingEvent=None):
-        generatedDataTree = GeneratedClassFactory(self, view, occurrence, threadingEvent).create()
+    def load(self, view, occurrence=0, pathsList = None, async=True):
+        generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+
+        if generatedDataTree == None:
+            raise ValueError("Code generation issue detected !!")
+
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
 
@@ -47,7 +87,15 @@ class IMASDataSource:
                 raise ValueError("Can not open IMAS data base " + self.imasDbName + " from user " + self.userName)
 
         generatedDataTree.ids = self.ids
-        generatedDataTree.start() #This will call the get() operation for fetching IMAS data
+
+        view.dataCurrentlyLoaded = True
+        view.idsAlreadyParsed[view.IDSNameSelected] = 1
+        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
+
+        if async==True:
+            generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
+        else:
+            generatedDataTree.execute()  #This will call the get() operation for fetching IMAS data
 
     @staticmethod
     def try_to_open(imasDbName, userName, shotNumber, runNumber):
@@ -55,6 +103,13 @@ class IMASDataSource:
         ids.open_env(userName, imasDbName, os.environ["IMAS_MAJOR_VERSION"])
         if (ids.expIdx == -1):
             raise ValueError("Can not open IMAS data base " + imasDbName + " from user " + userName)
+
+    @staticmethod
+    def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
+        ids = imas.ids(shotNumber, runNumber, 0, 0)
+        ids.open_public(machineName)
+        if (ids.expIdx == -1):
+            raise ValueError("Can not open " + machineName + " public IMAS data base from UDA ")
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
@@ -71,9 +126,9 @@ class IMASDataSource:
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):
-        dico = dataDict.GetData()
-        if 'dataName' in dico:
-            return dico['dataName']
+        #dico = dataDict.GetData()
+        if 'dataName' in dataDict:
+            return dataDict['dataName']
         return None
 
     # The displayed name of the node
@@ -82,7 +137,10 @@ class IMASDataSource:
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
-        return self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+
+    def getShortLabel(self):
+        return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
     # Add new nodes to the tree
     def addWxNodes(self, itemDataDict, viewerTree, viewerNode, wxTreeItemData):
@@ -101,15 +159,31 @@ class IMASDataSource:
 
 class IMASPublicDataSource(IMASDataSource):
 
-    def __init__(self, name, imasDbName, shotNumber, runNumber):
-        IMASDataSource.__init__(self, name, None, imasDbName, shotNumber, runNumber)
+    def __init__(self, name, machineName, shotNumber, runNumber):
+        IMASDataSource.__init__(self, name, None, None, shotNumber, runNumber, machineName)
 
-        # Load IMAS data using IMAS api
-
-    def load(self, view, occurrence=0, threadingEvent=None):
-        generatedDataTree = GeneratedClassFactory(self, view, occurrence, threadingEvent).create()
+    # Load IMAS data using IMAS api
+    def load(self, view, occurrence=0, pathsList = None, async=True):
+        print "Loading from UDA datasource"
+        generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-            self.ids.open_public(self.imasDbName)
+            self.ids.open_public(self.machineName)
         generatedDataTree.ids = self.ids
-        generatedDataTree.start()  # This will call the get() operation for fetching IMAS data
+
+        view.dataCurrentlyLoaded = True
+        view.idsAlreadyParsed[view.IDSNameSelected] = 1
+        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
+
+        if async == True:
+            generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
+        else:
+            generatedDataTree.execute()  # This will call the get() operation for fetching IMAS data
+
+            # This defines the unique key attached to each data which can be plotted
+
+    def dataKey(self, nodeData):
+        return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+
+    def getShortLabel(self):
+        return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)

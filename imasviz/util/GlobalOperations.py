@@ -63,6 +63,13 @@ class GlobalOperations:
         dlg.ShowModal()
         dlg.Destroy()
 
+    @staticmethod
+    def YesNo(parent=None, question=None, caption='Confirm supression'):
+        dlg = wx.MessageDialog(parent, question, caption, wx.YES_NO | wx.ICON_QUESTION)
+        result = dlg.ShowModal() == wx.ID_YES
+        dlg.Destroy()
+        return result
+
     @staticmethod # replace '[' by '(' and ']' by ')'
     def replaceBrackets(stringToReplace):
         if stringToReplace == None:
@@ -141,6 +148,10 @@ class GlobalOperations:
                 print "Environment variable USER not defined. Exiting."
                 sys.exit()
 
+            if 'VIZ_HOME' not in os.environ:
+                print "Environment variable VIZ_HOME not defined. Exiting."
+                sys.exit()
+
         else:
 
             print "IMAS_VIZ testing environment."
@@ -165,6 +176,9 @@ class GlobalOperations:
                 os.environ['USER'] = GlobalValues.TESTING_USER
                 print "WARNING: environment variable USER defined from testing environment."
 
+            if 'VIZ_HOME' not in os.environ:
+                os.environ['VIZ_HOME'] = GlobalValues.TESTING_VIZ_HOME
+
                 
     @staticmethod
     def getIDSDefFile(imas_dd_version):
@@ -176,6 +190,31 @@ class GlobalOperations:
         for key in dict:
             list.append(dict[key])
         return list
-    
+
+    @staticmethod
+    def getMultiplePlotsConfigurationFilesList():
+        files = []
+        l = os.listdir(os.environ["HOME"] + "/.imasviz")
+        for i in range(0,len(l)):
+            if l[i].endswith(".cfg"):
+                files.append(l[i])
+        return files
+
+    @staticmethod
+    def getMultiplePlotsConfigurationFilesDirectory():
+        return os.environ["HOME"] + "/.imasviz"
+
+    @staticmethod
+    def getSortedSelectedSignals(selectedSignals):
+        selectedsignalsList = GlobalOperations.getListFromDict(selectedSignals)
+        selectedsignalsList.sort(key=lambda x: x[2])
+        return selectedsignalsList
+
+    @staticmethod
+    def getNextPanelKey(n, cols):
+        a = n // cols
+        b = n - (n // cols) * cols
+        p = (a, b)
+        return p
 
 
