@@ -64,13 +64,19 @@ def DataGen(dictDataSource):
     #machine = 'west'
     #user = getpass.getuser()
 
+    shot = dictDataSource['imasviz_view'].dataSource.shotNumber
+    run = dictDataSource['imasviz_view'].dataSource.runNumber
+    machine = dictDataSource['imasviz_view'].dataSource.imasDbName
+    user = dictDataSource['imasviz_view'].dataSource.userName
     time_i  = dictDataSource['time_i']
     time_e  = dictDataSource['time_e']
     delta_t = dictDataSource['delta_t']
-    shot    = dictDataSource['shot']
-    run     = dictDataSource['run']
-    machine = dictDataSource['machine']
-    user    = dictDataSource['user']
+    # shot    = dictDataSource['shot']
+    # run     = dictDataSource['run']
+    # machine = dictDataSource['machine']
+    # user    = dictDataSource['user']
+
+
 
     # Figures options
     nbr_levels         = 30  # For Psi (magnetic flux function)
