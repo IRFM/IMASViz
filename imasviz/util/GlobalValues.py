@@ -11,7 +11,7 @@ class GlobalValues:
     IMAS_NATIVE = 'NATIVE'
     IMAS_UDA = "UDA"
     WEST = "WEST"
-    TESTING = True
+    TESTING = False
 
     if TESTING:
         TESTING_VIZ_HOME = None
@@ -28,15 +28,14 @@ class GlobalValues:
                 sys.exit(-1)
 
         print "TESTING_VIZ_HOME:" + TESTING_VIZ_HOME
-
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-
         TESTING_IMAS_VERSION = "3.11.0"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
     else:
+        print "VIZ_HOME:" + os.environ["VIZ_HOME"]
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["UAL_VERSION"][:1]

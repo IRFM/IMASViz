@@ -18,20 +18,12 @@ module load itm-python/2.7.13.b7
 
 3. Configuring IMAS_VIZ
 
-WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.
-WARNING: environment variable IMAS_DATA_DICTIONARY_VERSION defined from testing environment.
-WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.
-WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment.
+You just need to set the VIZ_HOME environment variable.
 
-You need to set some environment variables.
+Assuming the viz directory is in your home directory:
 
-Variable TS_MAPPINGS_DIR to point to /viz/ts_mappings_files. Assuming the viz directory is in your home directory:
+export VIZ_HOME=~/viz/
 
-export TS_MAPPINGS_DIR=~/viz/ts_mappings_files
-
-Variable TS_MAPPINGS_DIR to point to /viz/ts_mappings_files. Assuming the viz directory is in your home directory:
-
-export TS_MAPPINGS_DIR=~/viz/ts_mappings_files
 
 4. Launching IMAS_VIZ
 
@@ -45,23 +37,18 @@ Known bugs
 
 IMAS bugs:
 
-IMAS-748: will crash the application if the IMAS database does not exist
 IMAS-540: the get() operation can hang on empty IDS
 
 
 Instructions for installing IMAS_VIZ on the ITER-HPC
 ----------------------------------------------------
 
-Currently, no Python2.7 module is available with the wxPython Phoenix installed.
+Currently, no Python2.7 module is available on ITER-HPC with the wxPython Phoenix installed.
 
 Precisely, IMAS_VIZ needs the following Python libraries:
 -	wxPython Phoenix
 -	matplotlib
--	wxmplot
-  
-Detailed procedure to install wxPython Phoenix will be transmitted to Simon soon.
- 
-Then, the instructions are the same than described above for the Gateway in order to run IMAS_VIZ. 
+-	latest version of wxmplot
 
 
 An example of using the Graphical User Interface (GUI) :
@@ -88,7 +75,7 @@ Using the Scripting window :
 
 Every time you open a data source from the GUI, new handlers are created to the Python shell embedded in the 'Scripting' window of the GUI.
 For example, if you have followed the example described above, you will have two handlers dtv_0 and dtv_1. These handlers
-hold the data tree views which has been created.
+hold the data tree views which have been created.
 Using the dtv_0, we can interact for example with the view created for the shot 47979. Moreover, in the first open command, the api_0 handler
 has also been created which allows to interact with the IMAS_VIZ API.
 

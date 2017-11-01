@@ -6,6 +6,7 @@ from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 impo
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 import ETNativeDataTree_Generated_3_9_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 import ETNativeDataTree_Generated_3_9_1
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 import ETNativeDataTree_Generated_3_11_0
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_0 import ETNativeDataTree_Generated_3_12_0
 from imasviz.util.GlobalOperations import GlobalOperations
 
 
@@ -18,6 +19,7 @@ class GeneratedClassFactory:
         self.async = async
 
     def create(self):
+        generatedDataTree = None
         imas__dd_version = os.environ['IMAS_VERSION']
         if imas__dd_version == "3.7.0":
             generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
@@ -48,6 +50,15 @@ class GeneratedClassFactory:
                                                                  async=self.async)
         elif imas__dd_version == "3.11.0":
             generatedDataTree = ETNativeDataTree_Generated_3_11_0(userName=self.IMASDataSource.userName,
+                                                                 imasDbName=self.IMASDataSource.imasDbName,
+                                                                 shotNumber=self.IMASDataSource.shotNumber,
+                                                                 runNumber=self.IMASDataSource.runNumber,
+                                                                 view=self.view,
+                                                                 occurrence=self.occurrence,
+                                                                 pathsList=self.pathsList,
+                                                                 async=self.async)
+        elif imas__dd_version == "3.12.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_12_0(userName=self.IMASDataSource.userName,
                                                                  imasDbName=self.IMASDataSource.imasDbName,
                                                                  shotNumber=self.IMASDataSource.shotNumber,
                                                                  runNumber=self.IMASDataSource.runNumber,
