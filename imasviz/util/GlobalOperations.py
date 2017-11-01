@@ -132,8 +132,8 @@ class GlobalOperations:
                 print "Environment variable TS_MAPPINGS_DIR not defined. Exiting."
                 sys.exit()
 
-            if 'IMAS_DATA_DICTIONARY_VERSION' not in os.environ:
-                print "Environment variable IMAS_DATA_DICTIONARY_VERSION not defined. Exiting."
+            if 'IMAS_VERSION' not in os.environ:
+                print "Environment variable IMAS_VERSION not defined. Exiting."
                 sys.exit()
 
             if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
@@ -160,9 +160,9 @@ class GlobalOperations:
                 os.environ["TS_MAPPINGS_DIR"] = GlobalValues.TESTING_TS_MAPPINGS_DIR
                 print "WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment."
 
-            if 'IMAS_DATA_DICTIONARY_VERSION' not in os.environ:
-                os.environ["IMAS_DATA_DICTIONARY_VERSION"] = GlobalValues.TESTING_IMAS_DATA_DICTIONARY_VERSION
-                print "WARNING: environment variable IMAS_DATA_DICTIONARY_VERSION defined from testing environment."
+            if 'IMAS_VERSION' not in os.environ:
+                os.environ["IMAS_VERSION"] = GlobalValues.TESTING_IMAS_VERSION
+                print "WARNING: environment variable IMAS_VERSION defined from testing environment."
 
             if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
                 os.environ["IMAS_DATA_DICTIONARIES_DIR"] = GlobalValues.TESTING_IMAS_DATA_DICTIONARIES_DIR

@@ -256,7 +256,7 @@ class WxDataTreeViewFrame(wx.Frame):
         # Creating the signals tree
         signalsFrame = IDSSignalTreeFrame(None, self.wxTreeView,
                                           str(self.wxTreeView.shotNumber),
-                                          GlobalOperations.getIDSDefFile(os.environ['IMAS_DATA_DICTIONARY_VERSION']))
+                                          GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
         if pathsList != None:
             for s in pathsList:
                 n = signalsFrame.tree.selectNodeWithPath(s)
