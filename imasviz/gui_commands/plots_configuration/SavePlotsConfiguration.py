@@ -121,7 +121,8 @@ class SavePlotsConfiguration(AbstractCommand):
         treeConfiguration = ET.ElementTree(root)
         treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
         #self.f.close()
-        self.view.parent.configurationListsFrame.update()
+        if self.view.parent.configurationListsFrame != None:
+            self.view.parent.configurationListsFrame.update()
 
 
     def saveAttribute(self, panelElement, attribute, value):
