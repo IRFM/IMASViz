@@ -5,9 +5,9 @@ from imasviz.util.GlobalOperations import GlobalOperations
 import xml.etree.ElementTree as ET
 
 class SavePlotsConfiguration(AbstractCommand):
-    def __init__(self, view, nodeData=None, numfig=0, cols=None):
+    def __init__(self, view, frame, nodeData=None, cols=None):
         AbstractCommand.__init__(self, view, nodeData)
-        self.numFig = numfig
+        self.frame = frame
         self.cols = cols
 
     def execute(self):
@@ -38,14 +38,10 @@ class SavePlotsConfiguration(AbstractCommand):
 
 
         selectedsignalsList = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
-        # print "from SavePlotsConfiguration"
-        # print selectedsignalsList
 
         frameElement = ET.SubElement(root, 'frame')
-        multiplotFrames = self.view.imas_viz_api.multiPlotsFrames
-        frame = multiplotFrames[self.numFig]
 
-        for n in range(0, len(frame.panels)):
+        for n in range(0, len(self.frame.panels)):
 
             key = GlobalOperations.getNextPanelKey(n, cols=self.cols)
             # print 'key=' + str(key)
@@ -53,7 +49,7 @@ class SavePlotsConfiguration(AbstractCommand):
             panelElement = ET.SubElement(frameElement, 'panel')
             panelElement.set('key', str(key))
 
-            panel = frame.panels[key]
+            panel = self.frame.panels[key]
 
             selectedArrayElement = ET.SubElement(panelElement, 'selectedArray')
             selectedArray = selectedsignalsList[n]

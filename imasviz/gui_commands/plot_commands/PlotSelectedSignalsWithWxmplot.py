@@ -5,6 +5,7 @@ from imasviz.plotframes.IMASVIZMultiPlotFrame import IMASVIZMultiPlotFrame
 from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import FigureTypes
 import matplotlib.pyplot as plt
 import wxmplot
 import wx
@@ -13,8 +14,8 @@ import sys
 
 
 class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
-    def __init__(self, view, numfig=0, update=0, configFileName = None):
-        PlotSelectedSignals.__init__(self, view, numfig=numfig, update=update, configFileName=configFileName)
+    def __init__(self, view, figurekey=0, update=0, configFileName = None):
+        PlotSelectedSignals.__init__(self, view, figureKey=figurekey, update=update, configFileName=configFileName)
         self.labels = {}
         self.rows = 2
         self.cols = 3
@@ -26,27 +27,26 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         plotDimension = "1D"
         return plotDimension
 
-    def getFrame(self, numfig, rows=1, cols=1):
+    def getFrame(self, figureKey, rows=1, cols=1):
         api = self.view.imas_viz_api
-        if numfig in api.figureframes:
-            frame = api.figureframes[numfig]
-        else:
-            frame = IMASVIZMultiPlotFrame(view=self.view,rows=rows, cols=cols, panelsize=(400, 300), numfig=numfig)
-            frame .SetTitle(title='Figure ' + str(numfig + 1))
-            frame.panel.toggle_legend(None, True)
-            api.figureframes[numfig] = frame
+        #print "creating IMASVIZMultiPlotFrame instance"
+        if figureKey == None:
+            figureKey = api.GetNextKeyForMultiplePlots()
+        frame = IMASVIZMultiPlotFrame(view=self.view,rows=rows, cols=cols, panelsize=(400, 300))
+        frame .SetTitle(title=figureKey)
+        frame.panel.toggle_legend(None, True)
+        api.figureframes[figureKey] = frame
         return frame
 
     # Plot the set of 1D signals selected by the user as a function of time
-    def plot1DSelectedSignals(self, numfig=0, update=0):
+    def plot1DSelectedSignals(self, figureKey=None, update=0):
 
         try:
 
             api = self.view.imas_viz_api
-            fig = self.getFigure(numfig)
+            frame = self.getFrame(figureKey, self.rows, self.cols)
+            fig = frame.figure
             fig.add_subplot(111)
-
-            frame = self.getFrame(numfig, self.rows, self.cols)
 
             if self.plotConfig != None:
                 selectedsignalsList, panelPlotsCount = self.selectSignals(frame)
@@ -55,7 +55,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             self.applyPlotConfigurationBeforePlotting(frame=frame)
 
-            def lambda_f(evt, i=numfig, api=api):
+            def lambda_f(evt, i=figureKey, api=api):
                 self.onHide(api, i)
 
             frame.Bind(wx.EVT_CLOSE, lambda_f)
@@ -63,9 +63,6 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             n = 0 #number of plots
 
             maxNumberOfPlots = self.rows*self.cols;
-
-            if frame not in self.view.imas_viz_api.multiPlotsFrames:
-                self.view.imas_viz_api.multiPlotsFrames.append(frame)
 
             print "selectedsignalsList count --> " + str(len(selectedsignalsList))
 
@@ -80,7 +77,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
                 key = self.view.dataSource.dataKey(signalNodeData)
                 tup = (self.view.dataSource.shotNumber, signalNodeData)
-                api.addNodeToFigure(numfig, key, tup)
+                api.addNodeToFigure(figureKey, key, tup)
 
                 s = PlotSignal.getSignal(self.view, signalNodeData)
                 t = PlotSignal.getTime(s)
@@ -256,3 +253,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                 exec ("panel.conf." + attributeName + " = c")
             else:
                 exec("panel.conf." + attributeName + " = v")
+
+    def onHide(self, api, figureKey):
+        if figureKey in api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
+            api.figureframes[figureKey].Hide()

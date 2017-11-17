@@ -1,6 +1,7 @@
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
 from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZPlotFrame
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 import wxmplot
@@ -10,9 +11,9 @@ import sys
 
 
 class PlotSelectedSignals(AbstractCommand):
-    def __init__(self, view, numfig=0, update=0, configFileName=None):
+    def __init__(self, view, figureKey=None, update=0, configFileName=None):
         AbstractCommand.__init__(self, view, None)
-        self.numfig = numfig
+        self.figureKey = figureKey
         self.update = update
         self.plotConfig = None
         if configFileName != None:
@@ -27,7 +28,7 @@ class PlotSelectedSignals(AbstractCommand):
         plotDimension = self.getDimension()
 
         if plotDimension == "1D":
-            self.plot1DSelectedSignals(self.numfig, self.update)
+            self.plot1DSelectedSignals(self.figureKey, self.update)
 
         elif plotDimension == "2D" or plotDimension == "3D":
             raise ValueError("2D/3D plots are not currently supported.")
@@ -53,40 +54,33 @@ class PlotSelectedSignals(AbstractCommand):
             raise ValueError("Plots dimension larger than 3D are not supported.")
         return plotDimension
 
-    def getFigure(self, numfig):
+    def getFrame(self, figureKey, rows=1, cols=1):
+        from imasviz.gui_commands.SignalHandling import SignalHandling
         api = self.view.imas_viz_api
-        if numfig in api.figures:
-            fig = api.figures[numfig]
+        if figureKey in api.GetFiguresKeys():
+            frame = api.figureframes[figureKey]
         else:
-            fig = plt.figure()
-            api.figures[numfig] = fig
-        return fig
-
-    def getFrame(self, numfig, rows=1, cols=1):
-        api = self.view.imas_viz_api
-        if numfig in api.figureframes:
-            frame = api.figureframes[numfig]
-        else:
-            frame = wxmplot.PlotFrame(None, size=(600, 500), title='Figure ' + str(numfig + 1))
+            nextFigureKey = api.GetNextKeyForFigurePlots()
+            signalHandling = SignalHandling(self.view)
+            frame = IMASVIZPlotFrame(None, size=(600, 500), title=nextFigureKey, signalHandling=signalHandling)
             frame.panel.toggle_legend(None, True)
-            api.figureframes[numfig] = frame
+            frame.figure = plt.figure()
+            api.figureframes[figureKey] = frame
         return frame
 
-
     # Plot the set of 1D signals selected by the user as a function of time
-    def plot1DSelectedSignals(self, numfig=0, update=0):
+    def plot1DSelectedSignals(self, figureKey=0, update=0):
 
         try:
-            # selectedsignals = self.view.selectedSignals
             selectedsignals = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
 
             api = self.view.imas_viz_api
-            fig = self.getFigure(numfig)
+
+            frame = self.getFrame(figureKey)
+            fig = frame.figure
             fig.add_subplot(111)
 
-            frame = self.getFrame(numfig)
-
-            def lambda_f(evt, i=numfig, api=api):
+            def lambda_f(evt, i=figureKey, api=api):
                 self.onHide(api, i)
 
             frame.Bind(wx.EVT_CLOSE, lambda_f)
@@ -98,7 +92,7 @@ class PlotSelectedSignals(AbstractCommand):
                 
                 key = self.view.dataSource.dataKey(signalNodeData)
                 tup = (self.view.dataSource.shotNumber, signalNodeData)
-                api.addNodeToFigure(numfig, key, tup)
+                api.addNodeToFigure(figureKey, key, tup)
             
                 s = PlotSignal.getSignal(self.view, signalNodeData)
                 t = PlotSignal.getTime(s)
@@ -129,8 +123,8 @@ class PlotSelectedSignals(AbstractCommand):
             raise ValueError("Error while plotting 1D selected signal(s).")
         
         
-    def onHide(self, api, numfig):
-        if numfig in api.figures:
-            api.figureframes[numfig].Hide()
+    def onHide(self, api, figureKey):
+        if figureKey in api.GetFiguresKeys():
+            api.figureframes[figureKey].Hide()
             
     

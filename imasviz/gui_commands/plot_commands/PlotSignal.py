@@ -10,7 +10,7 @@ import sys
 
 class PlotSignal(AbstractCommand):
     
-    def __init__(self, view, nodeData = None, signal = None, numfig = None, label = None, xlabel = None, update = 0, signalHandling = None):
+    def __init__(self, view, nodeData = None, signal = None, figureKey = None, label = None, xlabel = None, update = 0, signalHandling = None):
         AbstractCommand.__init__(self, view, nodeData)
         
         self.updateNodeData();
@@ -24,10 +24,10 @@ class PlotSignal(AbstractCommand):
         else:
             self.signal = signal
             
-        if numfig == None:
-            self.numfig = self.view.imas_viz_api.GetNextNumFigForNewPlot()
+        if figureKey == None:
+            self.figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
         else:
-            self.numfig = numfig
+            self.figureKey = figureKey
     
         if label == None:
             self.label = self.nodeData['Path']
@@ -45,19 +45,20 @@ class PlotSignal(AbstractCommand):
             if len(self.signal) == 2:
                 t = PlotSignal.getTime(self.signal)
                 v = PlotSignal.get1DSignalValue(self.signal)
-                self.plot1DSignal(self.view.shotNumber, t, v, self.numfig, self.label, self.xlabel, self.update)
+                self.plot1DSignal(self.view.shotNumber, t, v, self.figureKey, self.label, self.xlabel, self.update)
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
             self.view.log.error(str(e))
 
-    def getFrame(self, numfig=0):
+    def getFrame(self, figureKey=0):
         api = self.view.imas_viz_api
-        if numfig in api.figureframes:
-            self.plotFrame = api.figureframes[numfig]
+        if figureKey in api.figureframes:
+            self.plotFrame = api.figureframes[figureKey]
         else:
-            self.plotFrame = IMASVIZPlotFrame(None, size=(600, 500), title='Figure ' + str(numfig + 1), signalHandling=self.signalHandling)
-            api.figureframes[numfig] = self.plotFrame
+            figureKey = api.GetNextKeyForFigurePlots()
+            self.plotFrame = IMASVIZPlotFrame(None, size=(600, 500), title=figureKey, signalHandling=self.signalHandling)
+            api.figureframes[figureKey] = self.plotFrame
 
     @staticmethod
     def getTime(oneDimensionSignal):
@@ -69,35 +70,28 @@ class PlotSignal(AbstractCommand):
         return oneDimensionSignal[1]
 
     # Plot a 1D signal as a function of time
-    def plot1DSignal(self, shotNumber, t, v, numfig=0, label=None, xlabel=None, update=0):
+    def plot1DSignal(self, shotNumber, t, v, figureKey=0, label=None, xlabel=None, update=0):
         
         try:
             self.updateNodeData()
 
-            fig = None
-            frame = None
-
             api = self.view.imas_viz_api
-
-            if numfig in api.figures:
-                fig = api.figures[numfig]
-            else:
-                fig = plt.figure()
-                api.figures[numfig] = fig
+            self.getFrame(self.figureKey)
+            fig =  self.plotFrame.figure
 
             key = self.view.dataSource.dataKey(self.nodeData)
             tup = (self.view.dataSource.shotNumber, self.nodeData)
-            api.addNodeToFigure(numfig, key, tup)
+            api.addNodeToFigure(figureKey, key, tup)
 
             ax = fig.add_subplot(111)
 
             # Shape of the signal
             nbRows = v.shape[0]
 
-            def lambda_f(evt, i=numfig, imas=self):
+            def lambda_f(evt, i=figureKey, imas=self):
                 self.onHide(api, i)
 
-            self.getFrame(self.numfig)
+
             frame = self.plotFrame
             frame.Bind(wx.EVT_CLOSE, lambda_f)
 
@@ -128,9 +122,8 @@ class PlotSignal(AbstractCommand):
             raise
 
 
-    def onHide(self, api, numfig):
-        if numfig in api.figures:
-            api.figureframes[numfig].Hide()
+    def onHide(self, api, figureKey):
+        self.view.imas_viz_api.figureframes[figureKey].Hide()
             
     @staticmethod
     def getSignal(view, selectedNodeData):

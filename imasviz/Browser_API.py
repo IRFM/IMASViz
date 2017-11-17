@@ -1,5 +1,6 @@
 import os
 from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import FigureTypes
 from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
@@ -7,20 +8,18 @@ from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
 
+
 class Browser_API():
 
     def __init__(self):
-        self.figures = {}
         self.figToNodes= {} #key = figure, values = list of selectedData
-        self.figureframes={}
-        self.subplots={}
+        #figureframes contains all plotting frames
+        self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
 
-        self.multiPlotsFrames=[] #key=0,1,2 value=list of frames
-
-    def addNodeToFigure(self, fig, key, tup):
-        if fig not in self.figToNodes:
-            self.figToNodes[fig] = {}
-        dic = self.figToNodes[fig]
+    def addNodeToFigure(self, figureKey, key, tup):
+        if figureKey not in self.figToNodes:
+            self.figToNodes[figureKey] = {}
+        dic = self.figToNodes[figureKey]
         dic[key] = tup
 
     #Create a IDS data tree from a data source
@@ -40,36 +39,56 @@ class Browser_API():
         return dataTreeFrame.wxTreeView.selectedSignals
 
     # Show/Hide a figure
-    def HideShowFigure(self, numFig):
-        frame = self.figureframes[numFig]
+    def HideShowFigure(self, figureKey):
+        frame = self.figureframes[figureKey]
         if frame.IsShown():
             frame.Hide()
         else:
             frame.Show()
 
-    # Show/Hide a subplots window
-    def HideShowSubplots(self, key):
-        subplot = self.subplots[key]
-        if subplot.IsShown():
-            subplot.Hide()
+    # Return the next figure number available for plotting
+    def GetFigurePlotsCount(self):
+        return len(self.GetFiguresKeys())
+
+    # Return the next figure number available for plotting
+    def GetMultiPlotsCount(self):
+        return len(self.GetFiguresKeys(FigureTypes.MULTIPLOTTYPE))
+
+    def GetSubPlotsCount(self):
+        return len(self.GetFiguresKeys(FigureTypes.SUBPLOTTYPE))
+
+    def GetNextKeyForMultiplePlots(self):
+        return FigureTypes.MULTIPLOTTYPE + str(self.GetMultiPlotsCount())
+
+    def GetNextKeyForFigurePlots(self):
+        return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
+
+    def GetNextKeyForSubPlots(self):
+        return FigureTypes.SUBPLOTTYPE + str(self.GetSubPlotsCount())
+
+    def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
+        figureKeys = []
+        for key in self.figureframes.keys():
+            if key.startswith(figureType):
+                figureKeys.append(key)
+        return sorted(figureKeys)
+
+    def GetFigureKey(self, userKey, figureType):
+        return figureType + userKey
+
+    def getFigureFrame(self, figureKey):
+        if figureKey in self.figureframes:
+            return self.figureframes[figureKey]
         else:
-            subplot.ShowFrame()
-
-    # Return the next figure number available for plotting
-    def GetNextNumFigForNewPlot(self):
-        return len(self.figures)
-
-    # Return the next figure number available for plotting
-    def GetNextNumFigForNewMultiplePlots(self):
-        return len(self.multiPlotsFrames)
+            print "No frame found with key: " + str(figureKey)
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignals(self, dataTreeFrame, numfig=0, update=0):
-        PlotSelectedSignals(dataTreeFrame.wxTreeView, numfig=0, update=0).execute()
+    def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0):
+        PlotSelectedSignals(dataTreeFrame.wxTreeView, figureKey=figureKey, update=0).execute()
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignalsInMultiFrame(self, dataTreeFrame, configFileName = None, numfig=0, update=0):
-        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, numfig=0, update=0, configFileName=configFileName).execute()
+    def PlotSelectedSignalsInMultiFrame(self, dataTreeFrame, configFileName = None, figureKey=None, update=0):
+        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, figurekey=figureKey, update=update, configFileName=configFileName).execute()
     
     # Load IDSs data for the given data tree frame
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0, threadingEvent=None):
@@ -86,13 +105,15 @@ class Browser_API():
         SelectSignals(dataTreeFrame.wxTreeView, pathsList).execute()
     
     #Plot select signals from multiple data tree frames (different shots) on a single plot window
-    def PlotSelectedSignalsFrom(self, dataTreeFramesList, numfig=0):
+    def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None):
         i = 0
         update = 0
         for f in dataTreeFramesList:
             if i!=0:
                 update = 1
-            PlotSelectedSignals(f.wxTreeView, numfig=numfig, update=update).execute()
+            if figureKey == None:
+                figureKey = self.GetNextKeyForFigurePlots()
+            PlotSelectedSignals(f.wxTreeView, figureKey=figureKey, update=update).execute()
             i += 1
 
     # Unselect all previously selected signals for the given data tree frame

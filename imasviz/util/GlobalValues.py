@@ -2,6 +2,11 @@
 import os
 import sys
 
+class FigureTypes:
+    FIGURETYPE = "Figure:"
+    MULTIPLOTTYPE = "Multiplot:"
+    SUBPLOTTYPE = "Subplot:"
+
 class GlobalValues:
     
     indices = {'1': 'i', '2': 'j', '3': 'k', '4': 'l', '5': 'q', '6': 'r', '7': 't'}
@@ -11,7 +16,7 @@ class GlobalValues:
     IMAS_NATIVE = 'NATIVE'
     IMAS_UDA = "UDA"
     WEST = "WEST"
-    TESTING = False
+    TESTING = True
 
     if TESTING:
         TESTING_VIZ_HOME = None

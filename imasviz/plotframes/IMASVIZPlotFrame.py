@@ -1,19 +1,18 @@
 from wxmplot import PlotFrame
 import wx
 from imasviz.plotframes.IMASVIZPlotPanel import IMASVIZPlotPanel
-
+import matplotlib.pyplot as plt
 
 class IMASVIZPlotFrame(PlotFrame):
     def __init__(self, parent=None, size=None, axisbg=None, title=None, signalHandling=None, **kws):
         if title is None:
             title = '2D Plot Frame'
-
         self.axisbg = axisbg
         self.signalHandling = signalHandling
+        self.figure = plt.figure()
 
         PlotFrame.__init__(self, parent=parent, title=title, size=size,
                            axisbg=axisbg, **kws)
-
 
     def BuildFrame(self):
         # Python3 note: wxPython has no THICK_FRAME

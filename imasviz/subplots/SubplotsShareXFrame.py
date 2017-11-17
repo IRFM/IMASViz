@@ -5,6 +5,7 @@ import numpy as np
 from imasviz.subplots.SubPlot import SubPlot
 from imasviz.subplots.SubplotsCustomization import SubPlotsCustomization
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+from imasviz.util.GlobalValues import FigureTypes
 
 class SubPlotsShareXFrame(wx.Frame):
     def __init__(self, parent, title, subPlotsList, subplotsCount, hspace = 0):
@@ -112,23 +113,23 @@ class SubPlotsShareXFrame(wx.Frame):
     def keepSubPlots(self, evt):
         #api = self.GetParent().dataTree.imas_viz_api
         loop = True
-        subplotName = "Subplots_" + str(len(self.imas_viz_api.subplots))
+        subplotName = self.imas_viz_api.GetNextKeyForSubPlots()
         while loop:
             subplotName = self.ask(message='Name of the subplots:', default_value=subplotName)
-
-            if (subplotName not in self.imas_viz_api.subplots) :
+            if (subplotName not in self.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE)) :
                 loop = False
                 #self.keep = True
-                self.SetTitle(subplotName)
-                self.imas_viz_api.subplots[subplotName] = self
+                figureKey = self.imas_viz_api.GetFigureKey(subplotName, FigureTypes.SUBPLOTTYPE)
+                self.SetTitle(figureKey)
+                self.imas_viz_api.figureframes[figureKey] = self
                 self.button_keep_subplots.Disable()
             else:
                 dlg = wx.MessageDialog(None, "The name " + subplotName + " already exists.", caption="Duplicate name", style=wx.OK)
                 dlg.ShowModal()
 
     def onHide(self, api, key):
-        if key in api.figures:
-            api.subplots[key].Hide()
+        if key in api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE):
+            api.figureframes[key].Hide()
 
     def ask(self, parent=None, message='', default_value=''):
         dlg = wx.TextEntryDialog(parent, message, value=default_value, style=wx.OK)

@@ -122,7 +122,6 @@ class SubPlotsManagerFrame(wx.Frame):
                 subPlotsList.append(sp)
 
         frame = SubPlotsShareXFrame(None, "SubPlots", subPlotsList, self.subplotsCount, 0.1)
-        #frame.subplots_manager = self
         frame.imas_viz_api = self.dataTree.imas_viz_api
         frame.Show()
 

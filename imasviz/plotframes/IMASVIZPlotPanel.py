@@ -101,7 +101,6 @@ class IMASVIZPlotPanel(PlotPanel):
             self.slider = Coord1Slider(parent=self, signalHandling=self.signalHandling, minValue=minValue,
                                        maxValue=maxValue)
             sizer.Add(self.slider, 0, wx.LEFT | wx.EXPAND, 10)
-
             sizerText = wx.BoxSizer(wx.HORIZONTAL)
             self.staticValueLabel = wx.StaticText(self, -1, 'Index value: ')
             self.sliderCurrentValue = wx.TextCtrl(self, -1, str(minValue), size=(150, -1))

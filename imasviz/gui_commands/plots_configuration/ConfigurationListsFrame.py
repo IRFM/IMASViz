@@ -49,9 +49,8 @@ class ConfigurationListsFrame(wx.Frame):
     def apply(self, event):
         pos = self.listBox1.GetSelection()
         selectedFile = GlobalOperations.getMultiplePlotsConfigurationFilesDirectory() + "/" + self.configurationFilesList[pos]
-        numFig = self.parent.wxTreeView.imas_viz_api.GetNextNumFigForNewMultiplePlots()
-        #print numFig
-        PlotSelectedSignalsWithWxmplot(self.parent.wxTreeView, numfig=numFig, update=0, configFileName=selectedFile).execute()
+        figurekey = self.parent.wxTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
+        PlotSelectedSignalsWithWxmplot(self.parent.wxTreeView, figurekey=figurekey, update=0, configFileName=selectedFile).execute()
 
 
     def removeConfiguration(self, event):

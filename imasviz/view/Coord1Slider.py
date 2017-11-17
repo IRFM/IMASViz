@@ -4,7 +4,7 @@ class Coord1Slider(wx.Slider):
     def __init__(self, parent=None, signalHandling=None,
                  minValue=0, maxValue=None, *args, **kwargs):
         super(Coord1Slider, self).__init__(parent, *args, **kwargs)
-        self.parent = parent
+        self.parent = parent #this is a IMASVIZPlotPanel instance
         self.SetValue(0)
         self.SetMin(minValue)
         self.SetMax(maxValue)
@@ -16,10 +16,11 @@ class Coord1Slider(wx.Slider):
     def OnSliderScrollThumbRelease(self, e):
         obj = e.GetEventObject()
         val = obj.GetValue()
+        currentFigureKey = self.parent.parent.GetTitle() #title of the IMASVIZPlotFrame is the figure key in the dict. figureframes (attribute of Browser_API class)
         if self.signalHandling.timeSlider:
-            self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(val)
+            self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(val, currentFigureKey)
         else:
-            self.signalHandling.plotSelectedSignalVsTimeAtIndex(val)
+            self.signalHandling.plotSelectedSignalVsTimeAtIndex(val, currentFigureKey)
         e.Skip()
 
     def OnSliderScroll(self, e):
