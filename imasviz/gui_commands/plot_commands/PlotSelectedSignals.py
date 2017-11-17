@@ -64,7 +64,6 @@ class PlotSelectedSignals(AbstractCommand):
             signalHandling = SignalHandling(self.view)
             frame = IMASVIZPlotFrame(None, size=(600, 500), title=nextFigureKey, signalHandling=signalHandling)
             frame.panel.toggle_legend(None, True)
-            frame.figure = plt.figure()
             api.figureframes[figureKey] = frame
         return frame
 
@@ -77,8 +76,8 @@ class PlotSelectedSignals(AbstractCommand):
             api = self.view.imas_viz_api
 
             frame = self.getFrame(figureKey)
-            fig = frame.figure
-            fig.add_subplot(111)
+            #fig = frame.figure
+            #fig.add_subplot(111)
 
             def lambda_f(evt, i=figureKey, api=api):
                 self.onHide(api, i)

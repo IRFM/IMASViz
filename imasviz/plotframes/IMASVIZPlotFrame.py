@@ -9,7 +9,6 @@ class IMASVIZPlotFrame(PlotFrame):
             title = '2D Plot Frame'
         self.axisbg = axisbg
         self.signalHandling = signalHandling
-        self.figure = plt.figure()
 
         PlotFrame.__init__(self, parent=parent, title=title, size=size,
                            axisbg=axisbg, **kws)
@@ -37,13 +36,3 @@ class IMASVIZPlotFrame(PlotFrame):
         self.SetAutoLayout(True)
         self.SetSizer(sizer)
         self.Fit()
-
-    # def updatePanel(self):
-    #     print "Calling updatePanel"
-    #     if self.signalHandling.timeSlider == True:
-    #         staticSliderLabelValue = 'Time slider (' + self.signalHandling.nodeData['dataName'] + '):'
-    #     elif self.signalHandling.timeSlider == False:
-    #         staticSliderLabelValue = 'Coordinate slider (' + self.signalHandling.nodeData['dataName'] + '):'
-    #
-    #     self.panel.staticSliderLabel.SetLabel(staticSliderLabelValue)
-    #     self.panel.GetSizer().Layout()

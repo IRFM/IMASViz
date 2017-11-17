@@ -77,13 +77,12 @@ class PlotSignal(AbstractCommand):
 
             api = self.view.imas_viz_api
             self.getFrame(self.figureKey)
-            fig =  self.plotFrame.figure
+
+            fig =  self.plotFrame.get_figure()
 
             key = self.view.dataSource.dataKey(self.nodeData)
             tup = (self.view.dataSource.shotNumber, self.nodeData)
             api.addNodeToFigure(figureKey, key, tup)
-
-            ax = fig.add_subplot(111)
 
             # Shape of the signal
             nbRows = v.shape[0]

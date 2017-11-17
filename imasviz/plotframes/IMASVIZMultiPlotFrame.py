@@ -10,7 +10,6 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
     def __init__(self, view, parent=None, rows=1, cols=1, framesize=None,
                  panelsize=(400, 320), panelopts=None, **kws):
         self.view = view
-        self.figure = plt.figure()
         self.help_msg = """Quick help:
 
          Left-Click:   to display X,Y coordinates

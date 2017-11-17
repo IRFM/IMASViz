@@ -29,7 +29,6 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
     def getFrame(self, figureKey, rows=1, cols=1):
         api = self.view.imas_viz_api
-        #print "creating IMASVIZMultiPlotFrame instance"
         if figureKey == None:
             figureKey = api.GetNextKeyForMultiplePlots()
         frame = IMASVIZMultiPlotFrame(view=self.view,rows=rows, cols=cols, panelsize=(400, 300))
@@ -45,8 +44,6 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             api = self.view.imas_viz_api
             frame = self.getFrame(figureKey, self.rows, self.cols)
-            fig = frame.figure
-            fig.add_subplot(111)
 
             if self.plotConfig != None:
                 selectedsignalsList, panelPlotsCount = self.selectSignals(frame)

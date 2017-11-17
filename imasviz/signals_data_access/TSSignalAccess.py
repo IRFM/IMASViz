@@ -1,5 +1,4 @@
 import wx
-#from MDSplus import Connection
 import numpy as np
 from imasviz.util.GlobalValues import GlobalValues
 
