@@ -72,14 +72,12 @@ class SignalHandling:
         else:
             i = 0
             for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
+                item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
+                                    text='Plot ' + signalName + ' to new figure', kind=wx.ITEM_NORMAL)
                 if self.shareSameCoordinatesFrom(figureKey):
-
                     if i == 0:
-                        item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
-                                            text='Plot ' + signalName + ' to new figure', kind=wx.ITEM_NORMAL)
                         subMenu = wx.Menu()
                         self.view.popupmenu.Append(wx.ID_ANY, 'Add plot to existing figure', subMenu)
-
                     subMenu.Append(self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE + i, item= figureKey, kind=wx.ITEM_NORMAL)
                     i = i + 1
 
@@ -108,7 +106,7 @@ class SignalHandling:
             i = i + 1
 
         if self.view.imas_viz_api.GetFigurePlotsCount() > 0 \
-                and len(self.view.selectedSignals) > 0\
+                and len(self.view.selectedSignals) > 0 \
                 and self.shareSameCoordinates(self.view.selectedSignals):
 
             i = 0
