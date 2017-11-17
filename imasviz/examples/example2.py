@@ -13,9 +13,9 @@ api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
 
-f1 = api.CreateDataTree(dataSourceFactory.create(name=GlobalValues.TORE_SUPRA, shotNumber=47977))
-f2 = api.CreateDataTree(dataSourceFactory.create(name=GlobalValues.TORE_SUPRA, shotNumber=47978))
-f3 = api.CreateDataTree(dataSourceFactory.create(name=GlobalValues.TORE_SUPRA, shotNumber=47979))
+f1 = api.CreateDataTree(dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47977))
+f2 = api.CreateDataTree(dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47978))
+f3 = api.CreateDataTree(dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979))
 
 paths = []
 
