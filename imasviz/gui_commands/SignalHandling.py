@@ -71,9 +71,9 @@ class SignalHandling:
             item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE, text='Plot ' + signalName, kind=wx.ITEM_NORMAL)
         else:
             i = 0
+            item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
+                                text='Plot ' + signalName + ' to new figure', kind=wx.ITEM_NORMAL)
             for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
-                item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
-                                    text='Plot ' + signalName + ' to new figure', kind=wx.ITEM_NORMAL)
                 if self.shareSameCoordinatesFrom(figureKey):
                     if i == 0:
                         subMenu = wx.Menu()

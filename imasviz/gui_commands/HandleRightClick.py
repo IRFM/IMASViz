@@ -25,6 +25,9 @@ class HandleRightClick:
 
         dataName = dataSource.dataNameInPopUpMenu(dico)
 
+        if not 'isSignal' in dico:
+            return showPopUp
+
         isSignal = dico['isSignal']
         isIDSRoot = dico['isIDSRoot']
 

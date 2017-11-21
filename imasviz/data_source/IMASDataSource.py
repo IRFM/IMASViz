@@ -175,24 +175,23 @@ class IMASPublicDataSource(IMASDataSource):
 
     # Load IMAS data using IMAS api
     def load(self, view, occurrence=0, pathsList = None, async=True):
-        print "Loading from UDA datasource"
+        print "Loading data using UDA"
         generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             self.ids.open_public(self.machineName)
-        generatedDataTree.ids = self.ids
 
+        generatedDataTree.ids = self.ids
         view.dataCurrentlyLoaded = True
         view.idsAlreadyParsed[view.IDSNameSelected] = 1
-        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
 
         if async == True:
             generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
         else:
             generatedDataTree.execute()  # This will call the get() operation for fetching IMAS data
 
-            # This defines the unique key attached to each data which can be plotted
-
+    # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
         return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
 
