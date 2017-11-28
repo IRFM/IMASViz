@@ -95,13 +95,13 @@ class IMASDataSource:
 
             self.ids.open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
             if (self.ids.expIdx == -1):
-                raise ValueError("Can not open IMAS data base " + self.imasDbName + " from user " + self.userName)
+                raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
         generatedDataTree.ids = self.ids
 
         view.dataCurrentlyLoaded = True
         view.idsAlreadyParsed[view.IDSNameSelected] = 1
-        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
+        #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
 
         if async==True:
             generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
@@ -113,14 +113,14 @@ class IMASDataSource:
         ids = imas.ids(shotNumber, runNumber, 0, 0)
         ids.open_env(userName, imasDbName, os.environ["IMAS_MAJOR_VERSION"])
         if (ids.expIdx == -1):
-            raise ValueError("Can not open IMAS data base " + imasDbName + " from user " + userName)
+            raise ValueError("Can not open shot " + str(shotNumber) + "  from data base " + imasDbName + " of user " + userName)
 
     @staticmethod
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
         ids.open_public(machineName)
         if (ids.expIdx == -1):
-            raise ValueError("Can not open " + machineName + " public IMAS data base from UDA ")
+            raise ValueError("Can not open shot " + str(shotNumber) + "  from " + machineName)
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
@@ -176,8 +176,8 @@ class IMASPublicDataSource(IMASDataSource):
     # Load IMAS data using IMAS api
     def load(self, view, occurrence=0, pathsList = None, async=True):
         print "Loading data using UDA"
+        #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
         generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
-        view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             self.ids.open_public(self.machineName)

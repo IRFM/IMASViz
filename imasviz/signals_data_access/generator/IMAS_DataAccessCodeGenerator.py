@@ -36,9 +36,6 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode('import threading', -1)
                 self.printCode('from imasviz.view.ResultEvent import ResultEvent', -1)
                 self.printCode('from threading import Thread', -1)
-                #self.printCode('from threading import Thread, RLock', -1)
-                #self.printCode('\n', -1)
-                #self.printCode('lock = RLock()', -1)
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(Thread):", -1)
@@ -82,7 +79,7 @@ class IMAS_DataAccessCodeGenerator():
             self.printCode("IDSName = '" + name_att + "'", 1)
             self.printCode("parents = {}", 1)
             self.printCode('parent = ET.Element(' + "'" + ids.text + "'" + ')', 1)
-            self.generateCodeForIDS(None, ids, 1, {}, [], '', 0)
+            self.generateCodeForIDS(None, ids, 1, {}, [], '', 0, name_att)
             self.generateParentsCode(1, ids.text)
             self.printCode("return parent", 1)
             self.printCode('',-1)
@@ -99,7 +96,7 @@ class IMAS_DataAccessCodeGenerator():
         code1 = "parents['" + path + "'] = parent"
         self.printCode(code1, level + 1)
 
-    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents , s, index):
+    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents , s, index, idsName):
 
         for ids_child_element in child:
             index+=1
@@ -114,7 +111,7 @@ class IMAS_DataAccessCodeGenerator():
                  parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
                  self.printCode(parentCode, level)
 
-                 self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index)
+                 self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index, idsName)
 
             elif data_type == 'struct_array':
 
@@ -126,8 +123,14 @@ class IMAS_DataAccessCodeGenerator():
                 ids_child_element.text = code.replace('(:)', '[' + s + ']')
 
                 self.generateParentsCode(level, child.text)
+                self.printCode("#level=" + str(level), level)
+                # if level == 1:
+                #     code_parameter = "len(self.ids." + child.text + "." + ids_child_element.get('name') + ')'
+                # else:
+                #     code_parameter = "len(self.ids." + idsName + "." + child.text + "." + ids_child_element.get('name') + ')'
 
                 code_parameter = "len(self.ids." + child.text + "." + ids_child_element.get('name') + ')'
+
                 parameter = m + ' = ' + code_parameter + '\n'
                 self.printCode(parameter, level)
                 self.printCode(s + '= 0', level)
@@ -156,7 +159,7 @@ class IMAS_DataAccessCodeGenerator():
 
 
                 previousLevel[level] = s
-                self.generateCodeForIDS(parent_AOS, ids_child_element, level + 1, previousLevel, parents, s, index)
+                self.generateCodeForIDS(parent_AOS, ids_child_element, level + 1, previousLevel, parents, s, index, idsName)
 
                 code = "parent = current_parent_" + str(level)  # keep the parent of the current level
                 self.printCode(code, level + 1)
@@ -212,7 +215,8 @@ class IMAS_DataAccessCodeGenerator():
                 code = "node.set(" + "'itime_index', '" + str(itimeIndex) + "')"
                 self.printCode(code, level)
 
-
+                code = None
+                coordinateName = None
 
                 for c in xrange(1,10):
                     coordinateName = "coordinate" + str(c)
@@ -222,8 +226,14 @@ class IMAS_DataAccessCodeGenerator():
                         coordinate = coordinate.replace(")", "]")
                         coordinate = coordinate.replace("/", ".")
                         coordinate = self.replaceIndices(coordinate)
-                        code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')"
-                        self.printCode(code, level)
+                        code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
+                        #self.printCode(code, level + 1)
+
+                if coordinate !=  "'1...N'":
+                    self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
+                    coordinateName = "coordinate1"
+                    coordinate = "time"
+                    self.printCode("node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')", level + 1)
 
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)

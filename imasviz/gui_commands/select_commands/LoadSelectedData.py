@@ -12,6 +12,7 @@ class LoadSelectedData(AbstractCommand):
     def execute(self):
         try:
             #Check if the data are already loaded
+            #self.view.log.info('Loading ' + self.view.IDSNameSelected + ' IDS...')
             if self.view.IDSNameSelected in self.view.idsAlreadyParsed:
                 IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
                 if IDSDataLoaded == 1:
