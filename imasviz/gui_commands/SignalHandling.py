@@ -13,18 +13,21 @@ from imasviz.util.GlobalValues import FigureTypes
 
 class MenuIDS:
     def __init__(self):
-        self.ID_ADD_PLOT_TO_FIGURE = 100
-        self.ID_ADD_PLOT_TO_EXISTING_FIGURE = 150 #wx.NewId()
-        self.ID_SELECT_OR_UNSELECT_SIGNAL = 200
-        self.ID_SHOW_HIDE_FIGURES  = 300
-        self.ID_SHOW_HIDE_MULTIPLOTS = 350
-        self.ID_SHOW_HIDE_SUBPLOTS = 400
-        self.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE = 500
-        self.ID_PLOT_AS_ITIME = 600
-        self.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE = 700
-        self.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME = 750
-        self.ID_OPEN_SUBPLOTS_MANAGER = 800
-        self.ID_CHANGE_COORD1 = 900
+        self.ID_ADD_PLOT_TO_FIGURE = 1000
+        self.ID_ADD_PLOT_TO_EXISTING_FIGURE = 1500 #wx.NewId()
+        self.ID_SELECT_OR_UNSELECT_SIGNAL = 2000
+        self.ID_SHOW_HIDE_FIGURES  = 3000
+        self.ID_SHOW_HIDE_MULTIPLOTS = 3500
+        self.ID_SHOW_HIDE_SUBPLOTS = 4000
+        self.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE = 5000
+        self.ID_PLOT_AS_ITIME = 6000
+        self.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE = 7000
+        self.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME = 7500
+        self.ID_OPEN_SUBPLOTS_MANAGER = 8000
+        self.ID_CHANGE_COORD1 = 9000
+        self.ID_DELETE_FIGURES = 10000
+        self.ID_DELETE_MULTIPLOTS = 15000
+        self.ID_DELETE_SUBPLOTS = 20000
 
 class SignalHandling:
     
@@ -107,6 +110,30 @@ class SignalHandling:
             showMenu.Append(self.menuIDS.ID_SHOW_HIDE_SUBPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
             i = i + 1
 
+        i = 0
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
+            if i == 0:
+                showMenu = wx.Menu()
+                self.view.popupmenu.Append(wx.ID_ANY, 'Delete figure', showMenu)
+            showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i, item=figureKey, kind=wx.ITEM_NORMAL)
+            i = i + 1
+
+        i = 0
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
+            if i == 0:
+                showMenu = wx.Menu()
+                self.view.popupmenu.Append(wx.ID_ANY, 'Delete multiplot', showMenu)
+            showMenu.Append(self.menuIDS.ID_DELETE_MULTIPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
+            i = i + 1
+
+        i = 0
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE):
+            if i == 0:
+                showMenu = wx.Menu()
+                self.view.popupmenu.Append(wx.ID_ANY, 'Delete subplot', showMenu)
+            showMenu.Append(self.menuIDS.ID_DELETE_SUBPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
+            i = i + 1
+
         if self.view.imas_viz_api.GetFigurePlotsCount() > 0 \
                 and len(self.view.selectedSignals) > 0 \
                 and self.shareSameCoordinates(self.view.selectedSignals):
@@ -184,6 +211,12 @@ class SignalHandling:
                     self.hideShowfigure(i, figureType=FigureTypes.FIGURETYPE)
                 elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_MULTIPLOTS:
                     self.hideShowfigure(i,figureType=FigureTypes.MULTIPLOTTYPE)
+                elif event.GetId() == i + self.menuIDS.ID_DELETE_FIGURES:
+                    self.deleteFigure(i)
+                elif event.GetId() == i + self.menuIDS.ID_DELETE_MULTIPLOTS:
+                    self.deleteMultiplots(i)
+                elif event.GetId() == i + self.menuIDS.ID_DELETE_SUBPLOTS:
+                    self.deleteSubplots(i)
                 elif event.GetId() == i + self.menuIDS.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE:
                     self.plotSelectedSignalsToFig(i)
                 elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_SUBPLOTS:
@@ -293,9 +326,29 @@ class SignalHandling:
         figureKey = figureKeys[numFig]
         self.view.imas_viz_api.HideShowFigure(figureKey)
 
-    # def closefigure(self, numFig):
-    #     api = self.view.wxTreeView.imas_viz_api
-    #     self.onClose(api, numFig)
+    def deleteFigure(self, numFig):
+        try:
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+            figureKey = figureKeys[numFig]
+            self.view.imas_viz_api.DeleteFigure(figureKey)
+        except ValueError as e:
+            self.view.log.error(str(e))
+
+    def deleteMultiplots(self, numFig):
+        try:
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE)
+            figureKey = figureKeys[numFig]
+            self.view.imas_viz_api.DeleteFigure(figureKey)
+        except ValueError as e:
+            self.view.log.error(str(e))
+
+    def deleteSubplots(self, numFig):
+        try:
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE)
+            figureKey = figureKeys[numFig]
+            self.view.imas_viz_api.DeleteFigure(figureKey)
+        except ValueError as e:
+            self.view.log.error(str(e))
 
     def showSubPlotsManager(self):
         from imasviz.tests.SubPlotsManagerView import SubPlotsManagerFrame

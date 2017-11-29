@@ -15,22 +15,13 @@ class TabOne(wx.Panel):
         self.dataSource = None
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
-        hboxRadioButtons = wx.BoxSizer(wx.HORIZONTAL)
 
         self.gridSizer_native = wx.GridSizer(rows=4, cols=2, hgap=5, vgap=5)
-        self.gridSizer_tore_supra = wx.GridSizer(rows=2, cols=2, hgap=5, vgap=5)
-
-        self.rb2 = wx.RadioButton(self, -1, 'Tore Supra')
-        self.rb1 = wx.RadioButton(self, -1, 'IMAS local database ')
-
-        self.shotNumberStaticText = wx.StaticText(self, -1, 'Shot number  ')
-        self.runNumberStaticText = wx.StaticText(self, -1, 'Run number')
-
-        self.shotNumberStaticTextTS = wx.StaticText(self, -1, 'Shot number  ')
-        self.runNumberStaticTextTS = wx.StaticText(self, -1, 'Run number')
 
         self.userNameStaticText = wx.StaticText(self, -1, 'User name  ')
         self.imasDbNameStaticText = wx.StaticText(self, -1, 'IMAS database name  ')
+        self.shotNumberStaticText = wx.StaticText(self, -1, 'Shot number  ')
+        self.runNumberStaticText = wx.StaticText(self, -1, 'Run number')
 
         self.userName = wx.TextCtrl(self, -1, os.environ["USER"], size=(150, -1))
         self.imasDbName = wx.TextCtrl(self, -1,  size=(150, -1))
@@ -38,17 +29,9 @@ class TabOne(wx.Panel):
         self.shotNumber= wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumber = wx.TextCtrl(self, -1, '0', size=(150, -1))
 
-        self.shotNumberTS = wx.TextCtrl(self, -1, size=(150, -1))
-        self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
-
-
         button_open = wx.Button(self, 1, 'Open')
 
         self.logWindow = wx.TextCtrl(self, wx.ID_ANY,"Welcome to the IMAS data browser !\n", size=(500, 100), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
-
-        #Radio buttons
-        hboxRadioButtons.Add(self.rb1, 1, wx.EXPAND | wx.ALL, 5)
-        hboxRadioButtons.Add(self.rb2, 1, wx.EXPAND | wx.ALL, 5)
 
         self.gridSizer_native.Add(self.userNameStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.userName, 0, wx.LEFT, 10)
@@ -59,33 +42,16 @@ class TabOne(wx.Panel):
         self.gridSizer_native.Add(self.runNumberStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.runNumber, 0, wx.LEFT, 10)
 
-        self.gridSizer_tore_supra.Add(self.shotNumberStaticTextTS, 0, wx.LEFT, 10)
-        self.gridSizer_tore_supra.Add(self.shotNumberTS, 0, wx.LEFT, 10)
-        self.gridSizer_tore_supra.Add(self.runNumberStaticTextTS, 0, wx.LEFT, 10)
-        self.gridSizer_tore_supra.Add(self.runNumberTS, 0, wx.LEFT, 10)
-
-        self.vbox.Add(hboxRadioButtons, 0, wx.TOP, 10)
         self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
-        self.vbox.Add(self.gridSizer_tore_supra, 0, wx.TOP, 10)
 
         self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 60)
         self.vbox.Add(self.logWindow, 1, wx.ALL|wx.EXPAND, 5)
 
-        self.Bind(wx.EVT_RADIOBUTTON, self.SwitcherNative, id=self.rb1.GetId())
-        self.Bind(wx.EVT_RADIOBUTTON, self.SwitcherTS, id=self.rb2.GetId())
         self.Bind(wx.EVT_BUTTON, self.Open, id=1)
 
         self.SetSizer(self.vbox)
-
-        # handler = WxTextCtrlHandler(log)
-        # logger.addHandler(handler)
-        # FORMAT = "%(asctime)s %(levelname)s %(message)s"
-        # handler.setFormatter((logging.Formatter(FORMAT)))
-        # logger.setLevel(logging.DEBUG)
         self.dataSourceName = GlobalValues.IMAS_NATIVE  # default value
-        self.rb1.SetValue(True)
         self.shell = None
-        #self.handlerValue = 0
         self.GUIFrameSingleton = GUIFrameSingleton
 
         from imasviz.view.WxDataTreeView import TextCtrlLogger
@@ -99,45 +65,22 @@ class TabOne(wx.Panel):
         # logging
     def CheckInputs(self):
 
-        if self.rb1.GetValue() :
+        userName = self.userName.GetValue()
+        imasDbName = self.imasDbName.GetValue()
+        shotnumbertext = self.shotNumber.GetValue()
+        runnumbertext = self.runNumber.GetValue()
 
-            userName = self.userName.GetValue()
-            imasDbName = self.imasDbName.GetValue()
-            shotnumbertext = self.shotNumber.GetValue()
-            runnumbertext = self.runNumber.GetValue()
+        if userName == '':
+            raise ValueError("'User name' field is empty.")
 
-            if userName == '':
-                raise ValueError("'User name' field is empty.")
+        if imasDbName == '':
+            raise ValueError("'IMAS database name' field is empty.")
 
-            if imasDbName == '':
-                raise ValueError("'IMAS database name' field is empty.")
-
-            if shotnumbertext == '' or runnumbertext == '':
-                raise ValueError("'Shot number' or 'run number' field is empty.")
-        else:
-            shotnumbertext = self.shotNumberTS.GetValue()
-            runnumbertext =  self.runNumberTS.GetValue()
-
-            if shotnumbertext == '' or runnumbertext == '' :
-                raise ValueError("'Shot number' or 'run number' field is empty.")
+        if shotnumbertext == '' or runnumbertext == '':
+            raise ValueError("'Shot number' or 'run number' field is empty.")
 
         GlobalOperations.check(self.dataSourceName, int(shotnumbertext))
 
-
-    def SwitcherTS(self, evt):
-        self.dataSourceName = GlobalValues.TORE_SUPRA
-        self.vbox.Hide(1)
-        self.vbox.Show(2)
-        self.Layout()
-        self.runNumberTS.SetValue('0')
-        self.runNumberTS.SetEditable(False)
-
-
-    def SwitcherNative(self, evt):
-        self.dataSourceName = GlobalValues.IMAS_NATIVE
-        self.vbox.Hide(2)
-        self.vbox.Show(1)
-        self.Layout()
 
     def Open(self, evt):
 
@@ -166,14 +109,9 @@ class TabOne(wx.Panel):
 
             dataSourceHandlerName = HandlerName.getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
 
-            if self.rb1.GetValue() :
-                self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" + 
-                               self.shotNumber.GetValue() + ","  + self.runNumber.GetValue() + ",'" + 
-                               self.userName.GetValue() + "','" + self.imasDbName.GetValue() + "','" + self.dataSourceName + "')")
-            else:
-                self.shell.run(
-                    dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" + self.shotNumberTS.GetValue() +
-                    "," + self.runNumberTS.GetValue() + ",None, None,'" + self.dataSourceName + "')")
+            self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" +
+                           self.shotNumber.GetValue() + ","  + self.runNumber.GetValue() + ",'" +
+                           self.userName.GetValue() + "','" + self.imasDbName.GetValue() + "','" + self.dataSourceName + "')")
 
             viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")
@@ -202,16 +140,28 @@ class TabThree(wx.Panel):
         self.dataSource = None
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
+        hboxRadioButtons = wx.BoxSizer(wx.HORIZONTAL)
 
         self.gridSizer_native = wx.GridSizer(rows=4, cols=2, hgap=5, vgap=5)
+        self.gridSizer_tore_supra = wx.GridSizer(rows=2, cols=2, hgap=5, vgap=5)
+
+        self.rb1 = wx.RadioButton(self, -1, 'Unified Data Access')
+        self.rb2 = wx.RadioButton(self, -1, 'Tore Supra')
 
         self.shotNumberStaticText = wx.StaticText(self, -1, 'Shot number  ')
         self.runNumberStaticText = wx.StaticText(self, -1, 'Run number')
-        self.imasDbNameStaticText = wx.StaticText(self, -1, 'IMAS public database ')
+        self.blankText = wx.StaticText(self, -1, '')
+
+        self.shotNumberStaticTextTS = wx.StaticText(self, -1, 'Shot number  ')
+        self.runNumberStaticTextTS = wx.StaticText(self, -1, 'Run number')
 
         self.shotNumber= wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumber = wx.TextCtrl(self, -1, '0', size=(150, -1))
-        #self.imasDbName = wx.TextCtrl(self, -1, size=(150, -1))
+
+
+        self.shotNumberTS = wx.TextCtrl(self, -1, size=(150, -1))
+        self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
+
         publicDatabases = ['WEST']
         self.machineName = wx.Choice(self, choices=publicDatabases, style=wx.CB_READONLY)
         self.machineName.SetSelection(0)
@@ -220,35 +170,97 @@ class TabThree(wx.Panel):
 
         self.logWindow = wx.TextCtrl(self, wx.ID_ANY,"Welcome to the IMAS data browser !\n", size=(500, 150), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
-        self.gridSizer_native.Add(self.imasDbNameStaticText, 0, wx.LEFT, 10)
+        # Radio buttons
+        hboxRadioButtons.Add(self.rb1, 1, wx.EXPAND | wx.ALL, 5)
+        hboxRadioButtons.Add(self.rb2, 1, wx.EXPAND | wx.ALL, 5)
+
         self.gridSizer_native.Add(self.machineName, 0, wx.LEFT, 10)
+        self.gridSizer_native.Add(self.blankText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.shotNumberStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.shotNumber, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.runNumberStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.runNumber, 0, wx.LEFT, 10)
 
-        self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
 
+        self.gridSizer_tore_supra.Add(self.shotNumberStaticTextTS, 0, wx.LEFT, 10)
+        self.gridSizer_tore_supra.Add(self.shotNumberTS, 0, wx.LEFT, 10)
+        self.gridSizer_tore_supra.Add(self.runNumberStaticTextTS, 0, wx.LEFT, 10)
+        self.gridSizer_tore_supra.Add(self.runNumberTS, 0, wx.LEFT, 10)
+
+        self.vbox.Add(hboxRadioButtons, 0, wx.TOP, 10)
+        self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
+        self.vbox.Add(self.gridSizer_tore_supra, 0, wx.TOP, 10)
         self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 60)
         self.vbox.Add(self.logWindow, 1, wx.ALL|wx.EXPAND, 5)
-        self.Bind(wx.EVT_BUTTON, self.OpenPublic, id=1)
+
+        self.Bind(wx.EVT_RADIOBUTTON, self.SwitcherNative, id=self.rb1.GetId())
+        self.Bind(wx.EVT_RADIOBUTTON, self.SwitcherTS, id=self.rb2.GetId())
+
+        self.Bind(wx.EVT_BUTTON, self.Open, id=1)
 
         self.SetSizer(self.vbox)
 
         self.dataSourceName = GlobalValues.IMAS_UDA  # default value
+
+        self.rb1.SetValue(True)
+
         self.shell = None
-        #self.handlerValue = 0
+
         self.GUIFrameSingleton = GUIFrameSingleton
 
         from imasviz.view.WxDataTreeView import TextCtrlLogger
 
         self.log = TextCtrlLogger(self.logWindow)
 
-        #self.vbox.Hide(2)
-        #self.vbox.Show(1)
+        self.vbox.Hide(2)
+        self.vbox.Show(1)
+
         self.runNumber.SetEditable(False)
 
-    def OpenPublic(self, evt):
+
+    def SwitcherTS(self, evt):
+        self.dataSourceName = GlobalValues.TORE_SUPRA
+        self.vbox.Hide(1)
+        self.vbox.Show(2)
+        self.Layout()
+        self.runNumberTS.SetValue('0')
+        self.runNumberTS.SetEditable(False)
+
+
+    def SwitcherNative(self, evt):
+        self.dataSourceName = GlobalValues.IMAS_NATIVE
+        self.vbox.Hide(2)
+        self.vbox.Show(1)
+        self.Layout()
+
+    def CheckInputs(self):
+
+        if self.rb1.GetValue() :
+
+            machineName = self.machineName.GetString(self.machineName.GetSelection())
+            shotnumbertext = self.shotNumber.GetValue()
+            runnumbertext = self.runNumber.GetValue()
+
+            if machineName == '':
+                raise ValueError("'UDA name' field is empty.")
+
+            if shotnumbertext == '':
+                raise ValueError("'Shot number' field is empty.")
+
+            if runnumbertext == '':
+                raise ValueError("'Run number' field is empty.")
+
+        else:
+            shotnumbertext = self.shotNumberTS.GetValue()
+            runnumbertext =  self.runNumberTS.GetValue()
+
+            if shotnumbertext == '' or runnumbertext == '' :
+                raise ValueError("'Shot number' or 'run number' field is empty.")
+
+        GlobalOperations.check(self.dataSourceName, int(shotnumbertext))
+
+
+    def Open(self, evt):
 
         try:
 
@@ -260,16 +272,22 @@ class TabThree(wx.Panel):
             if  self.GUIFrameSingleton.handlerValue == 0:
                 self.shell.run(apiHandlerName + " = Browser_API()")
 
-            IMASDataSource.try_to_open_uda_datasource(self.machineName.GetString(self.machineName.GetSelection()), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
+            if self.dataSourceName == GlobalValues.IMAS_UDA:
+                IMASDataSource.try_to_open_uda_datasource(self.machineName.GetString(self.machineName.GetSelection()), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
 
             dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(dataSourceFactoryHandlerName + " = DataSourceFactory()")
 
             dataSourceHandlerName = HandlerName.getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
 
-            self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".createUDADatasource(" +
-                           self.shotNumber.GetValue() + "," + self.runNumber.GetValue() + ",'" +
-                           self.machineName.GetString(self.machineName.GetSelection()) + "')")
+            if self.rb1.GetValue():
+                self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".createUDADatasource(" +
+                               self.shotNumber.GetValue() + "," + self.runNumber.GetValue() + ",'" +
+                               self.machineName.GetString(self.machineName.GetSelection()) + "')")
+            else:
+                self.shell.run(
+                    dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" + self.shotNumberTS.GetValue() +
+                    "," + self.runNumberTS.GetValue() + ",None, None,'" + self.dataSourceName + "')")
 
             viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
             self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")
@@ -280,25 +298,6 @@ class TabThree(wx.Panel):
 
         except ValueError as e:
             self.log.error(str(e))
-
-
-    def CheckInputs(self):
-
-        machineName = self.machineName.GetString(self.machineName.GetSelection())
-        shotnumbertext = self.shotNumber.GetValue()
-        runnumbertext = self.runNumber.GetValue()
-
-        if machineName == '':
-            raise ValueError("'IMAS public database name' field is empty.")
-
-        if shotnumbertext == '':
-            raise ValueError("'Shot number' field is empty.")
-
-        if runnumbertext == '':
-            raise ValueError("'Run number' field is empty.")
-
-        GlobalOperations.check(self.dataSourceName, int(shotnumbertext))
-
 
 
 class GUIFrame(wx.Frame):
@@ -316,8 +315,8 @@ class GUIFrame(wx.Frame):
         tab3 = TabThree(nb, self)
         tab1.shell = tab2.shell
         tab3.shell = tab2.shell
-        nb.AddPage(tab1,"Data Source")
-        nb.AddPage(tab3, "Public Data Source")
+        nb.AddPage(tab1,"Local data source")
+        nb.AddPage(tab3, "Experiment data source")
         nb.AddPage(tab2, "Scripting ")
         self.Bind(wx.EVT_CLOSE, self.onClose)
 

@@ -230,9 +230,8 @@ class IMAS_DataAccessCodeGenerator():
                         coordinate = self.replaceIndices(coordinate)
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
-                        #self.printCode(coordinateName  + " = " +  "'" + coordinate + "'", level)
 
-                if coordinate !=  "1...N":
+                if coordinate !=  "1...N" and coordinate.endswith(".time"):
                     self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
                     coordinateName = "coordinate1"
                     coordinate = "time"

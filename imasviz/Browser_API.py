@@ -78,6 +78,11 @@ class Browser_API():
                 figureKeys.append(key)
         return sorted(figureKeys)
 
+    def DeleteFigure(self, figureKey):
+        if figureKey in self.figureframes:
+            self.figureframes[figureKey].Close()
+            del self.figureframes[figureKey]
+
     def GetFigureKey(self, userKey, figureType):
         return figureType + userKey
 

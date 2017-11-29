@@ -65,9 +65,6 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node = ET.SubElement(parent, 'output_flag')
 		node.set('itime_index', '-1')
 		node.set('coordinate1', 'time')
-		coordinate1 = 'time'
-		if self.ids.magnetics.ids_properties.homogeneous_time==1:
-			node.set('coordinate1', 'time')
 		node.set('data_type', 'INT_1D')
 		node.set('type', 'dynamic')
 		nameNode = ET.SubElement(node, 'name')
@@ -84,7 +81,6 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node = ET.SubElement(parent, 'time')
 		node.set('itime_index', '-1')
 		node.set('coordinate1', '1...N')
-		coordinate1 = '1...N'
 		node.set('data_type', 'flt_1d_type')
 		node.set('type', 'dynamic')
 		nameNode = ET.SubElement(node, 'name')
