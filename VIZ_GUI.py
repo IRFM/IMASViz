@@ -322,7 +322,8 @@ class GUIFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.onClose)
 
     def onClose(self, event):
-        sys.exit(0)
+        if GlobalOperations.YesNo(self, "Exit IMAS_VIZ ?", "Please confirm"):
+            sys.exit(0)
 
 class MyApp(wx.App):
 

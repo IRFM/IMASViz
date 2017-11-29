@@ -56,7 +56,6 @@ class WxDataTreeViewBuilder:
                                                                                                          itemDataDict,
                                                                                                          idsName,
                                                                                                          viewerTree)
-
                 display=viewerTree.dataSource.treeDisplayedNodeName(dataElement)
 
                 if isSignal==1:
@@ -65,7 +64,7 @@ class WxDataTreeViewBuilder:
                 if units != None:
                     display += " [" + units + "]"
 
-                viewerNode = viewerTree.AppendItem(parentNode,display , -1, -1, wxTreeItemData)
+                viewerNode = viewerTree.AppendItem(parentNode, display , -1, -1, wxTreeItemData)
 
                 viewerTree.SetItemTextColour(viewerNode, display_color)
 
@@ -253,7 +252,7 @@ class WxDataTreeViewBuilder:
         #signalPointsCount = 0
 
         if dataElement.get('data_type') != None:
-            if dataElement.get('data_type') == "FLT_1D":
+            if dataElement.get('data_type') == "FLT_1D" or "flt_1d_type":
 
                 isSignal = 1
                 itemDataDict['data_type'] = dataElement.get('data_type')

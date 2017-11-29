@@ -1,5 +1,6 @@
 import os
 from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalValues import FigureTypes
 from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
@@ -25,7 +26,11 @@ class Browser_API():
     #Create a IDS data tree from a data source
     def CreateDataTree(self, dataSource):
         treeDict = {}
-        frame = WxDataTreeViewFrame(None, treeDict, dataSource, GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']), size=(450,550))
+        if GlobalValues.TESTING:
+            frame = WxDataTreeViewFrame(None, treeDict, dataSource, GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION), size=(450,550))
+        else:
+            frame = WxDataTreeViewFrame(None, treeDict, dataSource,
+                                        GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']), size=(450, 550))
         frame.wxTreeView.imas_viz_api = self
         frame.wxTreeView.dataSource = dataSource  # update the dataSource attached to the view
         return frame

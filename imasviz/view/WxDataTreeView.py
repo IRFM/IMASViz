@@ -296,7 +296,8 @@ if __name__ == "__main__":
     GlobalOperations.checkEnvSettings()
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
     dataSourceFactory = DataSourceFactory()
-    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979)
+    #dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979)
+    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=51460, runNumber=0, userName="imas_public",imasDbName='west')
     from imasviz.Browser_API import Browser_API
     api = Browser_API()
     frame = api.CreateDataTree(dataSource)

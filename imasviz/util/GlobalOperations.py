@@ -64,7 +64,7 @@ class GlobalOperations:
         dlg.Destroy()
 
     @staticmethod
-    def YesNo(parent=None, question=None, caption='Confirm supression'):
+    def YesNo(parent=None, question=None, caption='Confirm suppression'):
         dlg = wx.MessageDialog(parent, question, caption, wx.YES_NO | wx.ICON_QUESTION)
         result = dlg.ShowModal() == wx.ID_YES
         dlg.Destroy()

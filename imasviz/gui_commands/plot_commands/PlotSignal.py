@@ -140,7 +140,6 @@ class PlotSignal(AbstractCommand):
 
         t = view.getNodeAttributes(signalNodeData['dataName'])
 
-
         if label == None:
             label = signalNodeData['Path']
 
@@ -150,10 +149,11 @@ class PlotSignal(AbstractCommand):
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 
-        ylabel = 'S(t)'
+        #ylabel = signalNodeData['dataName']
 
+        ylabel = 'S(t)'
         if t != None and not (t.isCoordinateTimeDependent(t.coordinate1)):
-            ylabel = 'S'
+           ylabel = 'S'
 
         if 'units' in signalNodeData:
             units = signalNodeData['units']

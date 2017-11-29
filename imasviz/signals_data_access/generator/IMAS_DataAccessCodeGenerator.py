@@ -194,6 +194,8 @@ class IMAS_DataAccessCodeGenerator():
                 #     self.printCode(code, level)
 
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
+                if level == 1:
+                    self.generateParentsCode(level, child.text)
                 ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
                 name = ids_child_element.get('name')
                 name_att = name + '_att_' + str(index)
@@ -227,9 +229,10 @@ class IMAS_DataAccessCodeGenerator():
                         coordinate = coordinate.replace("/", ".")
                         coordinate = self.replaceIndices(coordinate)
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
-                        #self.printCode(code, level + 1)
+                        self.printCode(code, level)
+                        #self.printCode(coordinateName  + " = " +  "'" + coordinate + "'", level)
 
-                if coordinate !=  "'1...N'":
+                if coordinate !=  "1...N":
                     self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
                     coordinateName = "coordinate1"
                     coordinate = "time"
@@ -356,7 +359,7 @@ if __name__ == "__main__":
 
     print "Starting code generation"
     GlobalOperations.checkEnvSettings()
-    imas_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1"]
+    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
     print "End of code generation"
