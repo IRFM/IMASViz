@@ -64,7 +64,6 @@ class TreeNode:
         coord1 = tokens_list[-1]
         label = coord1 + "=" + str(coordinate1_value)
         return label
-        #selectedNodeData['IDSName']
 
     def evaluateCoordinate1VsTime(self):#the result can eventually depend on [itime]
         return self.evaluatePath(self.coordinate1)

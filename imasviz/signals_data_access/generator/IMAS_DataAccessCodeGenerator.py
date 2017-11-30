@@ -124,10 +124,6 @@ class IMAS_DataAccessCodeGenerator():
 
                 self.generateParentsCode(level, child.text)
                 self.printCode("#level=" + str(level), level)
-                # if level == 1:
-                #     code_parameter = "len(self.ids." + child.text + "." + ids_child_element.get('name') + ')'
-                # else:
-                #     code_parameter = "len(self.ids." + idsName + "." + child.text + "." + ids_child_element.get('name') + ')'
 
                 code_parameter = "len(self.ids." + child.text + "." + ids_child_element.get('name') + ')'
 

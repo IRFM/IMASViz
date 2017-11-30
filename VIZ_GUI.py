@@ -16,7 +16,7 @@ class TabOne(wx.Panel):
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
 
-        self.gridSizer_native = wx.GridSizer(rows=4, cols=2, hgap=5, vgap=5)
+        self.gridSizer_native = wx.GridSizer(rows=5, cols=2, hgap=5, vgap=5)
 
         self.userNameStaticText = wx.StaticText(self, -1, 'User name  ')
         self.imasDbNameStaticText = wx.StaticText(self, -1, 'IMAS database name  ')
@@ -43,7 +43,6 @@ class TabOne(wx.Panel):
         self.gridSizer_native.Add(self.runNumber, 0, wx.LEFT, 10)
 
         self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
-
         self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 60)
         self.vbox.Add(self.logWindow, 1, wx.ALL|wx.EXPAND, 5)
 
@@ -58,8 +57,8 @@ class TabOne(wx.Panel):
 
         self.log = TextCtrlLogger(self.logWindow)
 
-        self.vbox.Hide(2)
-        self.vbox.Show(1)
+        #self.vbox.Hide(2)
+        #self.vbox.Show(1)
 
 
         # logging
@@ -181,7 +180,6 @@ class TabThree(wx.Panel):
         self.gridSizer_native.Add(self.runNumberStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.runNumber, 0, wx.LEFT, 10)
 
-
         self.gridSizer_tore_supra.Add(self.shotNumberStaticTextTS, 0, wx.LEFT, 10)
         self.gridSizer_tore_supra.Add(self.shotNumberTS, 0, wx.LEFT, 10)
         self.gridSizer_tore_supra.Add(self.runNumberStaticTextTS, 0, wx.LEFT, 10)
@@ -302,7 +300,7 @@ class TabThree(wx.Panel):
 
 class GUIFrame(wx.Frame):
     def __init__(self,parent,wxid,title):
-        wx.Frame.__init__(self,parent,wxid,title, wx.DefaultPosition, (500, 400))
+        wx.Frame.__init__(self,parent,wxid,title, wx.DefaultPosition, (500, 500))
         self.InitUI()
         self.Centre
         self.Show(True)
