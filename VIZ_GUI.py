@@ -57,10 +57,6 @@ class TabOne(wx.Panel):
 
         self.log = TextCtrlLogger(self.logWindow)
 
-        #self.vbox.Hide(2)
-        #self.vbox.Show(1)
-
-
         # logging
     def CheckInputs(self):
 

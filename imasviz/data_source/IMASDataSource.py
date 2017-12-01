@@ -89,6 +89,8 @@ class GeneratedClassFactory:
 
 class IMASDataSource:
 
+    IDAM_MAPPED_IDS = ["bolometer", "core_profiles", "equilibrium", "summary","magnetics","pf_active","tf","interfero_polarimeter","pf_passive","soft_x_rays","ece"]
+
     def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
         self.name = name
         self.userName =  userName
@@ -139,7 +141,10 @@ class IMASDataSource:
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
-        return True #we have currently no way to know if a IDS is available or not from MDS+
+        if IDSName in IMASDataSource.IDAM_MAPPED_IDS:
+            return True
+        else:
+            return False
 
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode):
