@@ -16,7 +16,7 @@ class GlobalValues:
     IMAS_NATIVE = 'NATIVE'
     IMAS_UDA = "UDA"
     WEST = "WEST"
-    TESTING = True
+    TESTING = False
 
     if TESTING:
         TESTING_VIZ_HOME = None
