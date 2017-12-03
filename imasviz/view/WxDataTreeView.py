@@ -240,15 +240,16 @@ class WxDataTreeViewFrame(wx.Frame):
 
     def OnResult(self, event):
         idsName = event.data[0]
-        idsData = event.data[1]
-        pathsList = event.data[2]
-        threadingEvent = event.data[3]
-        self.updateView(idsName, idsData, pathsList, threadingEvent)
+        occurrence = event.data[1]
+        idsData = event.data[2]
+        pathsList = event.data[3]
+        threadingEvent = event.data[4]
+        self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
 
-    def updateView(self, idsName, idsData=None, pathsList=None, threadingEvent=None):
+    def updateView(self, idsName, occurrence, idsData=None, pathsList=None, threadingEvent=None):
         print 'updateView called...'
         if idsData != None:
-            self.wxTreeView.log.info("Loading of " + idsName + " IDS ended successfully, building view...")
+            self.wxTreeView.log.info("Loading occurrence " + str(occurrence) + " of "+ idsName + " IDS ended successfully, building view...")
             self.wxTreeView.update_view(idsName, idsData)
             self.wxTreeView.log.info("View update ended.")
         print 'updateView ended.'

@@ -30,7 +30,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 			if self.async==True:
 				e = threading.Event()
 
-				wx.PostEvent(self.view.parent, ResultEvent((self.idsName, idsData, self.pathsList, e), self.view.parent.eventResultId))
+				wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))
 				print 'waiting for view update...'
 
 				e.wait()
@@ -38,7 +38,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 				print 'view update wait ended...'
 
 			else:
-				self.view.parent.updateView(self.idsName, idsData, self.pathsList)
+				self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)
 
 
 	def load_magnetics(self, IDSName, occurrence):

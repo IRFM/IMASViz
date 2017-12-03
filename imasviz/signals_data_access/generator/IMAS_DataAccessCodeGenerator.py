@@ -65,12 +65,12 @@ class IMAS_DataAccessCodeGenerator():
 
                     self.printCode('if self.async==True:', 2)
                     self.printCode('e = threading.Event()' + '\n', 3)
-                    self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
+                    self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
                     self.printCode("print 'waiting for view update...'" + '\n', 3)
                     self.printCode('e.wait()' + '\n', 3)
                     self.printCode("print 'view update wait ended...'" + '\n', 3)
                     self.printCode('else:', 2)
-                    self.printCode('self.view.parent.updateView(self.idsName, idsData, self.pathsList)', 3)
+                    self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
 
                 self.printCode('\n', -1)
             

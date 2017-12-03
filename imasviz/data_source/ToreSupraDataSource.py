@@ -39,7 +39,7 @@ class ToreSupraDataSource:
             raise ValueError(
                 "Error while reading Tore-Supra mapping file (" + self.mappingFilesDirectory + '/' + idsName + '_v1.xml)')
         try:
-            view.parent.updateView(idsName, idsObject, pathsList)
+            view.parent.updateView(idsName, occurrence, idsObject, pathsList)
 
         except:
             traceback.print_exc()

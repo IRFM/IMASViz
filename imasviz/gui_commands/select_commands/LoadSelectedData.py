@@ -17,7 +17,7 @@ class LoadSelectedData(AbstractCommand):
                 IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
                 if IDSDataLoaded == 1:
                     try:
-                        self.view.parent.updateView(self.view.IDSNameSelected, pathsList=self.pathsList)
+                        self.view.parent.updateView(self.view.IDSNameSelected, self.occurrence, pathsList=self.pathsList)
                     except:
                         traceback.print_exc()
                         raise ValueError("Error while updating the view.")
