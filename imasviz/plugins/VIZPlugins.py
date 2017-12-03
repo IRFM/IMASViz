@@ -1,8 +1,10 @@
 import importlib
 
-RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ECEOverviewPlugin':'viz_tests.ECE_OverviewPlugin',
-                     'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
+# RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
+#                      'ECEOverviewPlugin':'viz_tests.ECE_OverviewPlugin',
+#                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
+
+RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \

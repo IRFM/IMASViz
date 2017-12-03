@@ -43,6 +43,9 @@ class SavePlotsConfiguration(AbstractCommand):
 
         for n in range(0, len(self.frame.panels)):
 
+            if (n+1) > len(selectedsignalsList):
+                break
+
             key = GlobalOperations.getNextPanelKey(n, cols=self.cols)
             # print 'key=' + str(key)
 
@@ -52,6 +55,7 @@ class SavePlotsConfiguration(AbstractCommand):
             panel = self.frame.panels[key]
 
             selectedArrayElement = ET.SubElement(panelElement, 'selectedArray')
+
             selectedArray = selectedsignalsList[n]
             nodeData = selectedArray[1]
             self.saveAttribute(selectedArrayElement, 'path', nodeData['Path'])

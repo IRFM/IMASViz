@@ -144,6 +144,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         for key in frame.panels:
             panel = frame.panels[key]
             configPanels = self.plotConfig.findall(".//*[@key='" + str(key) + "']")
+            if len(configPanels) == 0:
+                break
             configurationPanel = configPanels[0]
 
             #panel.conf.plot_type = configurationPanel.get("plot_type")
@@ -176,6 +178,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             #print 'key: ' + str(key)
             panel = frame.panels[key]
             configPanels = self.plotConfig.findall(".//*[@key='" + str(key)+ "']")
+            if len(configPanels) == 0:
+                break
             configurationPanel = configPanels[0]
             panel.set_title(configurationPanel.get('title'))
             panel.set_xlabel(configurationPanel.get('xlabel'))
