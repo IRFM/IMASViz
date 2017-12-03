@@ -322,7 +322,7 @@ class MyApp(wx.App):
 
     def OnInit(self):
         GlobalOperations.checkEnvSettings()
-        frm = GUIFrame(None, -1, "IMAS_VIZ")
+        frm = GUIFrame(None, -1, "IMAS_VIZ (version 1.0)")
         frm.Centre()
         frm.Show(True)
         return True

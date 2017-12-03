@@ -115,7 +115,8 @@ class SignalHandling:
             if i == 0:
                 showMenu = wx.Menu()
                 self.view.popupmenu.Append(wx.ID_ANY, 'Delete figure', showMenu)
-            showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i, item="All", kind=wx.ITEM_NORMAL)
+            showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i + 1, item=figureKey, kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
@@ -211,7 +212,9 @@ class SignalHandling:
                     self.hideShowfigure(i, figureType=FigureTypes.FIGURETYPE)
                 elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_MULTIPLOTS:
                     self.hideShowfigure(i,figureType=FigureTypes.MULTIPLOTTYPE)
-                elif event.GetId() == i + self.menuIDS.ID_DELETE_FIGURES:
+                elif event.GetId() == self.menuIDS.ID_DELETE_FIGURES:
+                    self.deleteAllFigures()
+                elif event.GetId() == i + 1 + self.menuIDS.ID_DELETE_FIGURES:
                     self.deleteFigure(i)
                 elif event.GetId() == i + self.menuIDS.ID_DELETE_MULTIPLOTS:
                     self.deleteMultiplots(i)
@@ -263,11 +266,10 @@ class SignalHandling:
         self.updateNodeData()
         treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
         index = 0
-        data_path_list = treeNode.getDataVsTime()
+        data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
         signal = signalDataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
         label = treeNode.coordinate1Label(self.nodeData['IDSName'], index, self.view.dataSource.ids)
-        #self.currentFigureKey = self.view.imas_viz_api.GetFigurePlotsCount()
         self.treeNode = treeNode
         self.timeSlider = False
         p = PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=self.currentFigureKey, label=label, xlabel="Time[s]", update=0, signalHandling=self)
@@ -284,7 +286,7 @@ class SignalHandling:
         PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=currentFigureKey, label=label, xlabel="Time[s]", update=0, signalHandling=self).execute()
         
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey):
-        self.updateNodeData();
+        self.updateNodeData()
         treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
         signal = signalDataAccess.GetSignalAt(self.nodeData, self.view.dataSource.shotNumber, treeNode, time_index)
@@ -325,6 +327,11 @@ class SignalHandling:
         figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=figureType)
         figureKey = figureKeys[numFig]
         self.view.imas_viz_api.HideShowFigure(figureKey)
+
+    def deleteAllFigures(self):
+        figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+        for figureKey in figureKeys:
+            self.view.imas_viz_api.DeleteFigure(figureKey)
 
     def deleteFigure(self, numFig):
         try:
