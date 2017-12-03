@@ -60,7 +60,7 @@ class IMAS_DataAccessCodeGenerator():
                 for ids2 in root:
                     name_att2 = ids2.get('name')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
-                    self.printCode("self.ids." + name_att2 + ".get()", 2)  # get the data from the database for the ids"
+                    self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
 
                     self.printCode('if self.async==True:', 2)

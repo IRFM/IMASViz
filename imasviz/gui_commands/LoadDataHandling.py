@@ -31,14 +31,14 @@ class LoadDataHandling:
         #First, build the popup menu for the selected IDS if there is not a current IDS loading in progress
         if self.view.dataCurrentlyLoaded == False:
             self.view.popupmenu = wx.Menu()
-            self.view.popupmenu.Append(self.menuIDS.GET_IDS_DATA, 'Get ' + IDSName + ' data...')
+            self.view.popupmenu.Append(self.menuIDS.GET_IDS_DATA, 'Get ' + IDSName + ' data... (default to occurrence 0)')
 
-        #For native IMAS data, we propose to load a given occurence
-        if self.view.dataSource.name == GlobalValues.IMAS_NATIVE and self.view.dataCurrentlyLoaded == False:
+        #we propose to load a given occurence
+        if self.view.dataCurrentlyLoaded == False:
             showMenu = wx.Menu()
             self.view.popupmenu.Append(wx.ID_ANY, 'Get ' + IDSName + ' data for occurrence', showMenu)
             for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
-                showMenu.Append(self.menuIDS.GET_IDS_OCC_DATA + i, item='Occurrence ' + str(i + 1), kind=wx.ITEM_NORMAL)
+                showMenu.Append(self.menuIDS.GET_IDS_OCC_DATA + i + 1, item='Occurrence ' + str(i + 1), kind=wx.ITEM_NORMAL)
 
         self.view.Bind(wx.EVT_MENU, self.popUpMenuHandler)
 
@@ -49,8 +49,9 @@ class LoadDataHandling:
             self.loadSelectedData()
         else:
             for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
-                if event.GetId() == i + self.menuIDS.GET_IDS_OCC_DATA :
+                if event.GetId() == i + 1 + self.menuIDS.GET_IDS_OCC_DATA :
                     self.loadSelectedData(i + 1)
+                    break
 
     def loadSelectedData(self, occurrence=0, threadingEvent=None):
         LoadSelectedData(self.view, occurrence, threadingEvent).execute()

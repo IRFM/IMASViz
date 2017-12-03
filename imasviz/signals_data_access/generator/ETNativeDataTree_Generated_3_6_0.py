@@ -24,7 +24,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 	def execute(self):
 		idsData = None
 		if self.idsName == 'magnetics':
-			self.ids.magnetics.get()
+			self.ids.magnetics.get(self.occurrence)
 			idsData = self.load_magnetics(self.idsName, self.occurrence)
 
 			if self.async==True:
