@@ -194,7 +194,10 @@ class GlobalOperations:
     @staticmethod
     def getMultiplePlotsConfigurationFilesList():
         files = []
-        l = os.listdir(os.environ["HOME"] + "/.imasviz")
+        configurationDirectory = os.environ["HOME"] + "/.imasviz"
+        if not os.path.exists(configurationDirectory):
+            os.makedirs(configurationDirectory)
+        l = os.listdir(configurationDirectory)
         for i in range(0,len(l)):
             if l[i].endswith(".cfg"):
                 files.append(l[i])
