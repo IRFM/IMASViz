@@ -24,7 +24,9 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 	def execute(self):
 		idsData = None
 		if self.idsName == 'magnetics':
+			self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')
 			self.ids.magnetics.get(self.occurrence)
+			print 'Get operation ended'
 			idsData = self.load_magnetics(self.idsName, self.occurrence)
 
 			if self.async==True:

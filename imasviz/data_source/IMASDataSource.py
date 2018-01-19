@@ -9,6 +9,7 @@ from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 impo
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 import ETNativeDataTree_Generated_3_11_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_0 import ETNativeDataTree_Generated_3_12_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_1 import ETNativeDataTree_Generated_3_12_1
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_0 import ETNativeDataTree_Generated_3_15_0
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 
@@ -82,6 +83,15 @@ class GeneratedClassFactory:
                                                                  occurrence=self.occurrence,
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
+        elif imas__dd_version == "3.15.0":
+            generatedDataTree = ETNativeDataTree_Generated_3_15_0(userName=self.IMASDataSource.userName,
+                                                              imasDbName=self.IMASDataSource.imasDbName,
+                                                              shotNumber=self.IMASDataSource.shotNumber,
+                                                              runNumber=self.IMASDataSource.runNumber,
+                                                              view=self.view,
+                                                              occurrence=self.occurrence,
+                                                              pathsList=self.pathsList,
+                                                              async=self.async)
         else:
             raise ValueError("IMAS dictionary version not supported")
 

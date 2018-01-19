@@ -60,7 +60,9 @@ class IMAS_DataAccessCodeGenerator():
                 for ids2 in root:
                     name_att2 = ids2.get('name')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
+                    self.printCode("self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
+                    self.printCode("print 'Get operation ended'", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
 
                     self.printCode('if self.async==True:', 2)
@@ -354,7 +356,7 @@ if __name__ == "__main__":
 
     print "Starting code generation"
     GlobalOperations.checkEnvSettings()
-    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1"]
+    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
     print "End of code generation"
