@@ -16,7 +16,7 @@ class GlobalValues:
     IMAS_NATIVE = 'NATIVE'
     IMAS_UDA = "UDA"
     WEST = "WEST"
-    TESTING = True
+    TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
 
     if TESTING:
         TESTING_VIZ_HOME = None
