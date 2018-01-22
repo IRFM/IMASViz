@@ -16,6 +16,11 @@ class GlobalValues:
     IMAS_NATIVE = 'NATIVE'
     IMAS_UDA = "UDA"
     WEST = "WEST"
+
+    if "VIZ_PRODUCTION" not in os.environ:
+        print "VIZ_PRODUCTION environment variable not defined"
+        os.environ["VIZ_PRODUCTION"] = "0"
+
     TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
 
     if TESTING:
