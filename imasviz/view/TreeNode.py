@@ -26,7 +26,7 @@ class TreeNode:
         return self.time_dependent(self.aos)
 
     def isCoordinateTimeDependent(self, coordinate):
-        if '/time' in coordinate or coordinate=='time' :
+        if '/time' in coordinate or '.time' in coordinate or coordinate=='time' :
             return True
         return False
 
@@ -52,6 +52,8 @@ class TreeNode:
         coordinate1 = self.evaluateCoordinate1VsTime()
         if self.time_dependent(self.coordinate1):
             coordinate1 = coordinate1.replace("[itime]", "[" + str(itimeValue) + "]")
+        if coordinate1 == None:
+            coordinate1 = self.coordinate1
         return coordinate1
 
     def coordinate1Label(self, idsName, index, ids):
