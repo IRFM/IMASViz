@@ -1,0 +1,57 @@
+# -*- coding: utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+'''
+    Python function that read IDS in parallel for different
+    shots in input
+
+    Inputs
+    ------
+    -list_shot: List of tuples with each tuple composed of: 
+    (idsName, shot, run, user, machine)
+
+    Output
+    ------
+    -IDS ID: id of the different IDS (for each shot requested)
+    -list_shot: List of tuples with each tuple composed of: 
+    (idsName, shot, run, user, machine)
+'''
+from concurrent import futures
+import imas
+
+def get_name_ids(input_tuple):
+    idsName, shot, run, user, machine = input_tuple
+    idd = imas.ids(shot, run)
+    idd.open_env(user, machine, '3')
+    eval('idd.' + idsName + '.get()')
+    return idd, input_tuple
+
+def ids_read_multiprocess(tuple_list):
+    print('len(tuple_list) =', len(tuple_list))
+    with futures.ProcessPoolExecutor(max_workers=len(tuple_list)) as executor:
+        future_fct = executor.map(get_name_ids, tuple_list)
+    list_idd = []
+    list_tup = []
+    for it_id, it_tup in future_fct:
+        list_idd.append(it_id)
+        list_tup.append(it_tup)
+    return list_idd, list_tup
+
+if __name__ == '__main__':
+    # Init
+    inp_tup1 = ('interfero_polarimeter', 52203, 0, 'imas_public', 'west')
+    inp_tup2 = ('interfero_polarimeter', 52202, 0, 'imas_public', 'west')
+    print('(inp_tup1, inp_tup2) =', (inp_tup1, inp_tup2))
+    
+    # Call function
+    list_idd, list_tup = ids_read_multiprocess([inp_tup1, inp_tup2])
+
+    # Print
+    count = 1
+    for it_tup in list_tup:
+        print('tuple_in', count, ' =', it_tup)
+        count += 1
+
+    count = 1
+    for it_id in list_idd:
+        print('id_out', count, ' =', it_id.interfero_polarimeter.time)
+        count += 1
