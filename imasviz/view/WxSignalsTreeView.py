@@ -20,7 +20,7 @@ class WxSignalsTreeView(wx.TreeCtrl):
         child, cookie = self.GetFirstChild(self.signalsRoot)
         lastChild = self.GetLastChild(self.signalsRoot)
         if not child.IsOk():
-            print 'No signals available'
+            print ('No signals available')
             return
 
         signalHandling = SignalHandling(self.idsTree)
@@ -44,7 +44,7 @@ class WxSignalsTreeView(wx.TreeCtrl):
 
 class IDSSignalTreeFrame(wx.Frame):
     def __init__(self, parent, idsTree, shot, IDSDefFile, *args, **kwargs):
-        from WxSignalTreeViewBuilder import WxSignalTreeViewBuilder
+        from imasviz.view.WxSignalTreeViewBuilder import WxSignalTreeViewBuilder
         super(IDSSignalTreeFrame, self).__init__(parent, *args, **kwargs)
         self.SetTitle("IMAS Signals tree for shot : " + shot)
         s = WxSignalTreeViewBuilder(self, idsTree)

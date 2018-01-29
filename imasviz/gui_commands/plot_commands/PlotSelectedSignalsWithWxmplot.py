@@ -61,7 +61,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             maxNumberOfPlots = self.rows*self.cols;
 
-            print "selectedsignalsList count --> " + str(len(selectedsignalsList))
+            print ("selectedsignalsList count --> " + str(len(selectedsignalsList)))
 
             for tupleElement in selectedsignalsList:
 
@@ -100,7 +100,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     else:
                         numberOfPlots = panelPlotsCount[p]
 
-                    print str(numberOfPlots) + " plot(s) for panel " + str(p)
+                    print (str(numberOfPlots) + " plot(s) for panel " + str(p))
 
                     for k in range(0, numberOfPlots):
                         if k == 0:
@@ -130,8 +130,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             selectedsignalsMap[key] = len(selectedArrays)
             for selectedArray in selectedArrays:
                 pathsList.append(selectedArray.get("path"))
-        print "pathsList count --> " + str(len(pathsList))
-        print pathsList
+        print ("pathsList count --> " + str(len(pathsList)))
+        print (pathsList)
         SelectSignals(self.view, pathsList).execute()
         selectedsignalsList = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
         return selectedsignalsList, selectedsignalsMap
@@ -140,7 +140,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def applyPlotConfigurationBeforePlotting(self, frame):
         if self.plotConfig == None:
             return
-        print "Applying plot configuration before plotting..."
+        print ("Applying plot configuration before plotting...")
         for key in frame.panels:
             panel = frame.panels[key]
             configPanels = self.plotConfig.findall(".//*[@key='" + str(key) + "']")
@@ -173,7 +173,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def applyPlotConfigurationAfterPlotting(self, frame):
         if self.plotConfig == None:
             return
-        print "Applying plot configuration after plotting..."
+        print ("Applying plot configuration after plotting...")
         for key in frame.panels:
             #print 'key: ' + str(key)
             panel = frame.panels[key]
@@ -204,7 +204,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                         panel.conf.show_grid = "off"
                     panel.conf.enable_grid(panel.conf.show_grid)
             except ValueError as e:
-                print e
+                print (e)
 
             configTraces = self.plotConfig.findall(".//*[@key='" + str(key) + "']/trace")
             refresh_done = []
@@ -220,7 +220,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     #print "handling trace: " + str(i)
                     panel.conf.set_trace_color(configTrace.get('color'), int(configTrace.get('index')))
 
-                    panel.conf.set_trace_zorder(configTrace.get('zorder'), int(configTrace.get('index')))
+                    #panel.conf.set_trace_zorder(configTrace.get('zorder'), int(configTrace.get('index')))
                     panel.conf.set_trace_label(configTrace.get('label'), int(configTrace.get('index')))
                     panel.conf.set_trace_style(configTrace.get('style'), int(configTrace.get('index')))
                     panel.conf.set_trace_drawstyle(configTrace.get('drawstyle'), int(configTrace.get('index')))
@@ -243,7 +243,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                         refresh_done[i] = True
 
                 except ValueError as e:
-                    print e
+                    print (e)
 
 
     def setPlotConfigAttribute(self, panel, configurationPanel, attributeName):

@@ -247,12 +247,12 @@ class WxDataTreeViewFrame(wx.Frame):
         self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
 
     def updateView(self, idsName, occurrence, idsData=None, pathsList=None, threadingEvent=None):
-        print 'updateView called...'
+        print ('updateView called...')
         if idsData != None:
             self.wxTreeView.log.info("Loading occurrence " + str(occurrence) + " of "+ idsName + " IDS ended successfully, building view...")
             self.wxTreeView.update_view(idsName, idsData)
             self.wxTreeView.log.info("View update ended.")
-        print 'updateView ended.'
+        print ('updateView ended.')
 
         # Creating the signals tree
         signalsFrame = IDSSignalTreeFrame(None, self.wxTreeView,
@@ -262,7 +262,7 @@ class WxDataTreeViewFrame(wx.Frame):
             for s in pathsList:
                 n = signalsFrame.tree.selectNodeWithPath(s)
                 if n == None:
-                    print 'Path: ' + s + " not found"
+                    print ('Path: ' + s + " not found")
 
         if threadingEvent != None:
             threadingEvent.set()
@@ -273,7 +273,7 @@ class Logger:
 
     def info(self, message):
         message += '\n'
-        print message
+        print (message)
 
     def error(self, message):
         message += '\n'

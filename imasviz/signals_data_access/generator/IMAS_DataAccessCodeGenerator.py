@@ -62,15 +62,15 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
                     self.printCode("self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
-                    self.printCode("print 'Get operation ended'", 2)
+                    self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
 
                     self.printCode('if self.async==True:', 2)
                     self.printCode('e = threading.Event()' + '\n', 3)
                     self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
-                    self.printCode("print 'waiting for view update...'" + '\n', 3)
+                    self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('e.wait()' + '\n', 3)
-                    self.printCode("print 'view update wait ended...'" + '\n', 3)
+                    self.printCode("print ('view update wait ended...')" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
 
@@ -218,7 +218,7 @@ class IMAS_DataAccessCodeGenerator():
                 code = None
                 coordinateName = None
 
-                for c in xrange(1,10):
+                for c in range(1,10):
                     coordinateName = "coordinate" + str(c)
                     coordinateValue = ids_child_element.get(coordinateName)
                     if coordinateValue != None:
@@ -304,7 +304,8 @@ class IMAS_DataAccessCodeGenerator():
             tabs += '\t'
             i += 1
 
-        self.f.write(tabs + text.encode("utf-8") + "\n")
+        #self.f.write(tabs + text.encode("utf-8") + "\n")
+        self.f.write(tabs + text + "\n")
         # print tabs + text
 
     def replaceIndices(self, value):
@@ -341,7 +342,7 @@ class IMAS_DataAccessCodeGenerator():
 
         p_index = -1
 
-        for c in xrange(1, 10):
+        for c in range(1, 10):
             p = '(i' + str(c) + ')'
             try:
                 p_index = path_doc.index(p)
@@ -354,11 +355,11 @@ class IMAS_DataAccessCodeGenerator():
 
 if __name__ == "__main__":
 
-    print "Starting code generation"
+    print ("Starting code generation")
     GlobalOperations.checkEnvSettings()
     imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
-    print "End of code generation"
-    print "Do not forget to declare new code in the GeneratedClassFactory class"
+    print ("End of code generation")
+    print ("Do not forget to declare new code in the GeneratedClassFactory class")
 

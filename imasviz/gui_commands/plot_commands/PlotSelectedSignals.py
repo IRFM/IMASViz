@@ -39,7 +39,7 @@ class PlotSelectedSignals(AbstractCommand):
     def getDimension(self):
 
         # Finding the plot dimension
-        signalNodeDataValue = self.view.selectedSignals.itervalues().next()
+        signalNodeDataValue = self.view.selectedSignals.values().next()
         signalNodeData = signalNodeDataValue[1]
         data_type = signalNodeData['data_type']
 

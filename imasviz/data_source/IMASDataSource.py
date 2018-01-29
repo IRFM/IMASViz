@@ -206,7 +206,7 @@ class IMASPublicDataSource(IMASDataSource):
 
     # Load IMAS data using IMAS api
     def load(self, view, occurrence=0, pathsList = None, async=True):
-        print "Loading data using UDA"
+        print ("Loading data using UDA")
         #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
         generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
         if self.ids == None:

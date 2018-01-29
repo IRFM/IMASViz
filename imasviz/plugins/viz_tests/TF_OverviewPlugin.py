@@ -7,7 +7,7 @@ class TFOverviewPlugin(VIZPlugins):
 
     def execute(self, app, pluginsConfig):
         try:
-            print 'TFOverviewPlugin to be executed...'
+            print ('TFOverviewPlugin to be executed...')
 
         except :
             traceback.print_exc()
@@ -26,5 +26,5 @@ class TFOverviewPlugin(VIZPlugins):
                    (0, 'TF specific...')]
 
     def execute(self, app, pluginsConfig):
-        print 'TF overview to be executed...'
+        print ('TF overview to be executed...')
         app.MainLoop()

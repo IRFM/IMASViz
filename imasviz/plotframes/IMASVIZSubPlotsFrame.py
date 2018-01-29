@@ -141,7 +141,7 @@ class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
         return mfile
 
     def save_configuration(self, event=None, **kws):
-        print "Saving plots configuration..."
+        print ("Saving plots configuration...")
         SavePlotsConfiguration(view=self.view, frame=self, cols=self.cols).execute()
 
     def oplot(self,x,y,panel=None,**kws):

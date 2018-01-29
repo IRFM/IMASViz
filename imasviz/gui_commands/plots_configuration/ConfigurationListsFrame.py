@@ -60,10 +60,10 @@ class ConfigurationListsFrame(wx.Frame):
         #print selectedFile
         answer = GlobalOperations.YesNo(question = "The configuation " + selectedFile + " will be deleted. Are you sure ?")
         if answer:
-            print 'Removing configuration: ' + selectedFile
+            print ('Removing configuration: ' + selectedFile)
             try:
                 os.remove(selectedFile)
                 self.listBox1.Delete(pos)
                 self.configurationFilesList = GlobalOperations.getMultiplePlotsConfigurationFilesList()
             except OSError:
-                print "Unable to remove file: " + selectedFile
+                print ("Unable to remove file: " + selectedFile)

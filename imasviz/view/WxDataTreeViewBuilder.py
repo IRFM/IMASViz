@@ -240,7 +240,7 @@ class WxDataTreeViewBuilder:
                 itemDataDict['coordinate1_itime_dependent'] = 0
 
 
-            for i in xrange(0, t.aos_parents_count ):
+            for i in range(0, t.aos_parents_count ):
                 aos_index_name = GlobalValues.indices[str(i + 1)]
                 aos_index_value = dataElement.get(aos_index_name)
                 t.add_aos_value(aos_index_name, aos_index_value)

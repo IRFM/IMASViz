@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
     # selectedNodeData['dimension'] = 2
     # selectedNodeData['dataName'] = "GBFT%3"
-    print mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber)
+    print (mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber))
     # print mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber)[0]
     signal = mdsp.GetSignal(selectedNodeData, ds.shotNumber)
     #from imasviz.Browser_API import Browser_API

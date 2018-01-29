@@ -93,7 +93,7 @@ class TabOne(wx.Panel):
 
                 IMASDataSource.try_to_open(self.imasDbName.GetValue(), self.userName.GetValue(), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
 
-                for i in xrange(0, 10):
+                for i in range(0, 10):
                     vname = "MDSPLUS_TREE_BASE_" + str(i)
                     mds = os.environ['HOME']  + "/public/imasdb/" + self.imasDbName.GetValue() + "/3/" + str(i)
                     os.environ[vname] = mds

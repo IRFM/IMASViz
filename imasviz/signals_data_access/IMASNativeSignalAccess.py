@@ -32,7 +32,7 @@ class IMASNativeSignalAccess:
             else:
                 if "1..N" in treeNode.coordinate1 or "1...N" in treeNode.coordinate1:
                     N = len(r[0])
-                    t = np.array([xrange(0, N)])
+                    t = np.array([range(0, N)])
                 else:
 
                     path = "ids." + selectedNodeData['IDSName'] + "." + coordinate1
@@ -51,7 +51,7 @@ class IMASNativeSignalAccess:
 
             return (t,r)
         except:
-            print sys.exc_info()[0]
+            print (sys.exc_info()[0])
             traceback.print_exc(file=sys.stdout)
             #raise ValueError("Error while getting signal " + selectedNodeData['dataName'] + " from native backend.")
             raise
@@ -63,7 +63,7 @@ class IMASNativeSignalAccess:
         #print "IMASNative : time_slices_count " + str(time_slices_count)
         v = []
         time = GlobalOperations.getTime(ids, selectedNodeData, treeNode.evaluateCoordinate1())
-        for i in xrange(0, time_slices_count):
+        for i in range(0, time_slices_count):
             value_at_index = eval(data_path_list[i] + "[" + str(index) + "]") #evaluate the array at index value
             v.append(value_at_index)
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     selectedNodeData = {}
     selectedNodeData['dataName'] = 'dataSource.ids.magnetics.flux_loop[1].flux.data'
     selectedNodeData['time'] = 'dataSource.ids.magnetics.flux_loop[1].flux.time'
-    print mdsp.GetShapeofSignal(selectedNodeData, 12)
+    print (mdsp.GetShapeofSignal(selectedNodeData, 12))
     signal = mdsp.GetSignal(selectedNodeData, dataSource.shotNumber)
     # from imasviz.Browser_API import Browser_API
     app = wx.App()

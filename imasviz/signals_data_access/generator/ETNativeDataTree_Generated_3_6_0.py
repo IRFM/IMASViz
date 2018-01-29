@@ -26,18 +26,18 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		if self.idsName == 'magnetics':
 			self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')
 			self.ids.magnetics.get(self.occurrence)
-			print 'Get operation ended'
+			print ('Get operation ended')
 			idsData = self.load_magnetics(self.idsName, self.occurrence)
 
 			if self.async==True:
 				e = threading.Event()
 
 				wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))
-				print 'waiting for view update...'
+				print ('waiting for view update...')
 
 				e.wait()
 
-				print 'view update wait ended...'
+				print ('view update wait ended...')
 
 			else:
 				self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)

@@ -1,6 +1,6 @@
 import wx
 
-from WxSignalsTreeView import WxSignalsTreeView
+from imasviz.view.WxSignalsTreeView import WxSignalsTreeView
 
 
 class WxSignalTreeViewBuilder:

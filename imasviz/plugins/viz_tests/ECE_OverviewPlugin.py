@@ -6,9 +6,9 @@ class ECEOverviewPlugin(VIZPlugins):
         VIZPlugins.__init__(self)
 
     def execute(self, app, pluginsConfig):
-        print 'ECE overview to be executed with config -->'
-        print pluginsConfig
-        print pluginsConfig['imasviz_view']
+        print ('ECE overview to be executed with config -->')
+        print (pluginsConfig)
+        print (pluginsConfig['imasviz_view'])
         app.MainLoop()
 
     def getEntriesPerSubject(self):

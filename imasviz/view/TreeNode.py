@@ -97,7 +97,7 @@ class TreeNode:
     def evaluatePath(self, path):
         aos_valued = None
         path = self.patchIndices(path)
-        for i in xrange(0, self.aos_parents_count):
+        for i in range(0, self.aos_parents_count):
             index_name = GlobalValues.indices[str(i + 1)]
             index_value =  self.aos_indices_values[index_name]
             s = "[" + index_name + "]"
@@ -126,7 +126,7 @@ class TreeNode:
         data_list = []
         aos_vs_itime = self.getDataPathVsTime(self.aos)
         #print "TreeNode : time max value = " + self.timeMaxValue()
-        for itime in xrange(0, int(self.timeMaxValue())):
+        for itime in range(0, int(self.timeMaxValue())):
             data_path = self.getDataPath(aos_vs_itime, itime)
             data_list.append(data_path)
         return data_list
