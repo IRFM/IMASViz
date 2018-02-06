@@ -51,47 +51,83 @@ class SignalHandling:
         self.nodeData = self.view.GetItemData(self.view.selectedItem)
         self.treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
         
-    # Display the menu for plotting data
     def showPopUpMenu(self, signalName):
+        """Display the popup menu for plotting data
+        """
 
         if (signalName == None): return 0
 
         self.view.popupmenu = wx.Menu()
         s = ''
-        
-        # If the node is unselected, show unselect menu
-        if self.nodeData['isSelected'] == 1:
-            s = 'Unselect '
 
-        # If the node is selected, show select menu
+        """The popup menu behaviour in relation on the selection/unselection 
+        status of the node
+        """
+        if self.nodeData['isSelected'] == 1:
+            """If the node is selected, show unselect menu"""
+            s = 'Unselect '
         else:
+            """The node is unselected, show select menu"""
             s = 'Select '
 
-        item1 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL, text= s + signalName + '...', kind=wx.ITEM_NORMAL)
+        """Set second-level popup menu for selection/deselection of the node """
+        item1 = wx.MenuItem(self.view.popupmenu,                        \
+                            self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL,  \
+                            text= s + signalName + '...',               \
+                            kind=wx.ITEM_NORMAL)
+
         #item2 = wx.MenuItem(self.view.popupmenu, wx.ID_MORE, item='Show '+signalName+' size', kind=wx.ITEM_NORMAL)
+
+        """Set second-level popup menu for creating new plot out of the 
+        selected IDS node
+        """
         item3 = None
-        if len(self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE))==0: #if there is no figure
-            item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE, text='Plot ' + signalName, kind=wx.ITEM_NORMAL)
+        """The popup menu behaviour in relation to the presence of pre-existing 
+        plots"""
+        if len(self.view.imas_viz_api.GetFiguresKeys( \
+                figureType=FigureTypes.FIGURETYPE))==0:
+            """If there is no pre-existing plot """
+            item3 = wx.MenuItem(self.view.popupmenu,                \
+                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE, \
+                                text='Plot ' + signalName,          \
+                                kind=wx.ITEM_NORMAL)
         else:
-            item3 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
-                                text='Plot ' + signalName + ' to new figure', kind=wx.ITEM_NORMAL)
+            """If some plot already exists"""
+
+            """Add menu for creation of a new figure"""
+            item3 = wx.MenuItem(self.view.popupmenu,                            \
+                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE,             \
+                                text='Plot ' + signalName + ' to new figure',   \
+                                kind=wx.ITEM_NORMAL)
             i = 0
             j= 0
-            for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
+            for figureKey in self.view.imas_viz_api.GetFiguresKeys(\
+                figureType=FigureTypes.FIGURETYPE):
+                """Check for figures that share the same coordinates"""
                 if self.shareSameCoordinatesFrom(figureKey):
                     if j == 0:
                         subMenu = wx.Menu()
-                        self.view.popupmenu.Append(wx.ID_ANY, 'Add plot to existing figure', subMenu)
-                    subMenu.Append(self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE + i, item= figureKey, kind=wx.ITEM_NORMAL)
+                        self.view.popupmenu.Append(wx.ID_ANY,                    \
+                                                   'Add plot to existing figure',\
+                                                   subMenu)
+                    subMenu.Append(                                         \
+                        self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,    \
+                        item= figureKey,                                    \
+                        kind=wx.ITEM_NORMAL)
                     j = j + 1
                 i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(\
+                figureType=FigureTypes.FIGURETYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY, 'Show/Hide figure', showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_FIGURES + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                self.view.popupmenu.Append(wx.ID_ANY,           \
+                                           'Show/Hide figure',  \
+                                           showMenu)
+            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_FIGURES + i,  \
+                            item=figureKey,                         \
+                            kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
@@ -149,7 +185,7 @@ class SignalHandling:
 
 
         item4 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE, text='Plot all selected signals to a new figure',
-                                kind=wx.ITEM_NORMAL)
+                            kind=wx.ITEM_NORMAL)
 
         item5 = wx.MenuItem(self.view.popupmenu, wx.ID_CANCEL, text='Unselect all signals',
                             kind=wx.ITEM_NORMAL)
@@ -308,16 +344,18 @@ class SignalHandling:
             self.view.log.error(str(e))
 
     def shareSameCoordinates(self, selectedDataList):
-            selectedSignalsList = []
-            for k in selectedDataList:
-                v = selectedDataList[k]
-                selectedSignalsList.append(v[1]) #v[0] = shot number, v[1] = node data
-            s = self.nodeData
-            for si in selectedSignalsList:
-                if s['coordinate1'] != si['coordinate1']:
-                    return False
-                s = si
-            return True
+        """Check if data in selectedDataList share the same coordinates
+        """
+        selectedSignalsList = []
+        for k in selectedDataList:
+            v = selectedDataList[k]
+            selectedSignalsList.append(v[1]) #v[0] = shot number, v[1] = node data
+        s = self.nodeData
+        for si in selectedSignalsList:
+            if s['coordinate1'] != si['coordinate1']:
+                return False
+            s = si
+        return True
 
     def shareSameCoordinatesFrom(self, figureKey):
         selectedDataList = self.view.imas_viz_api.figToNodes[figureKey]

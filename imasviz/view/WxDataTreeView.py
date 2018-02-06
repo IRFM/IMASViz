@@ -231,9 +231,15 @@ class WxDataTreeViewFrame(wx.Frame):
         self.configurationListsFrame.showListBox()
 
     def createMenu(self):
+        """
+        Configure the menu bar.
+        """
         menubar = wx.MenuBar()
         menu = wx.Menu()
-        item = menu.Append(wx.NewId(), item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+        """Set new menubar item to be added to 'Options' menu"""
+        item = menu.Append(wx.NewId(), \
+            item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+        """Add and set 'Options' menu """
         menubar.Append(menu, 'Options')
         self.SetMenuBar(menubar)
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item)

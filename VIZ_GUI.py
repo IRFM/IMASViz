@@ -16,12 +16,15 @@ class TabOne(wx.Panel):
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
 
+        """Set display panel default shape"""
         self.gridSizer_native = wx.GridSizer(rows=5, cols=2, hgap=5, vgap=5)
 
+        """Set static text for each GUI box (left from the box itself) """
         self.userNameStaticText = wx.StaticText(self, -1, 'User name  ')
         self.imasDbNameStaticText = wx.StaticText(self, -1, 'IMAS database name  ')
         self.shotNumberStaticText = wx.StaticText(self, -1, 'Shot number  ')
         self.runNumberStaticText = wx.StaticText(self, -1, 'Run number')
+
 
         self.userName = wx.TextCtrl(self, -1, os.environ["USER"], size=(150, -1))
         self.imasDbName = wx.TextCtrl(self, -1,  size=(150, -1))
@@ -31,7 +34,10 @@ class TabOne(wx.Panel):
 
         button_open = wx.Button(self, 1, 'Open')
 
-        self.logWindow = wx.TextCtrl(self, wx.ID_ANY,"Welcome to the IMAS data browser !\n", size=(500, 100), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+        """Set and display Welcome Text in the log window"""
+        self.logWindow = wx.TextCtrl(self,                    \
+            wx.ID_ANY,"Welcome to the IMAS data browser !\n", \
+            size=(500, 100), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
         self.gridSizer_native.Add(self.userNameStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.userName, 0, wx.LEFT, 10)
@@ -42,8 +48,12 @@ class TabOne(wx.Panel):
         self.gridSizer_native.Add(self.runNumberStaticText, 0, wx.LEFT, 10)
         self.gridSizer_native.Add(self.runNumber, 0, wx.LEFT, 10)
 
+        """ Position the GUI widgets"""
+        """ Set IDS parameters widgets """
         self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
+        """Set 'Open' button"""
         self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 60)
+        """Set log window"""
         self.vbox.Add(self.logWindow, 1, wx.ALL|wx.EXPAND, 5)
 
         self.Bind(wx.EVT_BUTTON, self.Open, id=1)
@@ -57,14 +67,16 @@ class TabOne(wx.Panel):
 
         self.log = TextCtrlLogger(self.logWindow)
 
+
         # logging
     def CheckInputs(self):
-
+        """Get IDS parameters from the GUI widgets"""
         userName = self.userName.GetValue()
         imasDbName = self.imasDbName.GetValue()
         shotnumbertext = self.shotNumber.GetValue()
         runnumbertext = self.runNumber.GetValue()
 
+        """Display warning message if the required parameter was not specified"""
         if userName == '':
             raise ValueError("'User name' field is empty.")
 
@@ -74,45 +86,72 @@ class TabOne(wx.Panel):
         if shotnumbertext == '' or runnumbertext == '':
             raise ValueError("'Shot number' or 'run number' field is empty.")
 
+        """Check if data source is available"""
         GlobalOperations.check(self.dataSourceName, int(shotnumbertext))
 
-
     def Open(self, evt):
-
         try:
 
             from imasviz.view.HandlerName import HandlerName
 
+            """ Check if all required IDS parameters were specified"""
             self.CheckInputs()
 
+            """ Get API handler name ('api_...')"""
             apiHandlerName = HandlerName.getAPIHandler(0)
             if  self.GUIFrameSingleton.handlerValue == 0:
+                """IMAS-VIZ shell: Print"""
                 self.shell.run(apiHandlerName + " = Browser_API()")
 
+            """IDS database check"""
             if self.dataSourceName == GlobalValues.IMAS_NATIVE:
 
-                IMASDataSource.try_to_open(self.imasDbName.GetValue(), self.userName.GetValue(), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
+                """Try to open the specified IDS database """
+                IMASDataSource.try_to_open(self.imasDbName.GetValue(),      \
+                                           self.userName.GetValue(),        \
+                                           int(self.shotNumber.GetValue()), \
+                                           int(self.runNumber.GetValue()))
 
                 for i in xrange(0, 10):
                     vname = "MDSPLUS_TREE_BASE_" + str(i)
-                    mds = os.environ['HOME']  + "/public/imasdb/" + self.imasDbName.GetValue() + "/3/" + str(i)
+                    mds = os.environ['HOME']  + "/public/imasdb/" \
+                          + self.imasDbName.GetValue() + "/3/" + str(i)
                     os.environ[vname] = mds
 
+            """Get data source factory handler name ('dsf_...')"""
+            dataSourceFactoryHandlerName = HandlerName \
+                .getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
 
-            dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
-            self.shell.run(dataSourceFactoryHandlerName + " = DataSourceFactory()")
+            """IMAS-VIZ shell: Print"""
+            self.shell.run(dataSourceFactoryHandlerName \
+                + " = DataSourceFactory()")
 
-            dataSourceHandlerName = HandlerName.getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
+            """Get data source handler name ('ds_...')"""
+            dataSourceHandlerName = HandlerName \
+                .getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
 
-            self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" +
-                           self.shotNumber.GetValue() + ","  + self.runNumber.GetValue() + ",'" +
-                           self.userName.GetValue() + "','" + self.imasDbName.GetValue() + "','" + self.dataSourceName + "')")
+            """IMAS-VIZ shell: Print"""
+            self.shell.run(dataSourceHandlerName + " = "    \
+                + dataSourceFactoryHandlerName + ".create(" \
+                + self.shotNumber.GetValue() + ","          \
+                + self.runNumber.GetValue() + ",'"          \
+                + self.userName.GetValue() + "','"          \
+                + self.imasDbName.GetValue() + "','"        \
+                + self.dataSourceName + "')")
 
-            viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
-            self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")
-            self.shell.push(apiHandlerName + ".ShowDataTree(" + viewhandlerName + ")")
+            """Get view handler name ('dtv_...')"""
+            viewhandlerName = HandlerName. \
+                getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
+            """IMAS-VIZ shell: Print"""
+            self.shell.run(viewhandlerName + " = " + apiHandlerName \
+                + ".CreateDataTree(" + dataSourceHandlerName + ")")
+            """IMAS-VIZ shell: Execute"""
+            self.shell.push(apiHandlerName + ".ShowDataTree(" \
+                + viewhandlerName + ")")
+            """IMAS-VIZ shell: Execute"""
             self.shell.push(viewhandlerName + ".Center()")
 
+            """Set GUI Frame handler value (0 by default)"""
             self.GUIFrameSingleton.handlerValue += 1
 
         except ValueError as e:
@@ -132,7 +171,6 @@ class TabThree(wx.Panel):
     def __init__(self,parent, GUIFrameSingleton):
         wx.Panel.__init__(self,parent)
 
-        self.dataSource = None
 
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         hboxRadioButtons = wx.BoxSizer(wx.HORIZONTAL)
@@ -152,7 +190,6 @@ class TabThree(wx.Panel):
 
         self.shotNumber= wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumber = wx.TextCtrl(self, -1, '0', size=(150, -1))
-
 
         self.shotNumberTS = wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
@@ -231,7 +268,8 @@ class TabThree(wx.Panel):
 
         if self.rb1.GetValue() :
 
-            machineName = self.machineName.GetString(self.machineName.GetSelection())
+            machineName = \
+                self.machineName.GetString(self.machineName.GetSelection())
             shotnumbertext = self.shotNumber.GetValue()
             runnumbertext = self.runNumber.GetValue()
 
