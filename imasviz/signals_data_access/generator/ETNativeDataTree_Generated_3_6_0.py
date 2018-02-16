@@ -1,5 +1,4 @@
 #This class has been generated -- DO NOT MODIFY MANUALLY !!! --
-import xml.etree.ElementTree as ET
 import os
 import wx
 import imas
@@ -43,11 +42,11 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 				self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)
 
 
-	def load_magnetics(self, IDSName, occurrence):
+	def load_magnetics(self, IDSName, occurrence, wxTreeRootNode):
 
 		IDSName = 'magnetics'
 		parents = {}
-		parent = ET.Element('magnetics')
+		parent = wxTreeRootNode
 		if 'magnetics' in parents and parents['magnetics'] != None : 
 			parent = parents['magnetics']
 		else:
