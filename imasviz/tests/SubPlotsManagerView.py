@@ -18,7 +18,7 @@ class SubPlotsManagerFrame(wx.Frame):
         self.signals_list = []
 
         for i in range(signalsCount):
-            signalNodeDataValue = signalNodeDataValueIterator.next()
+            signalNodeDataValue = next(iter(signalNodeDataValueIterator))
             signalNodeData = signalNodeDataValue[1]
             # dataName = signalNodeData["dataName"]
             self.signals_list.append(signalNodeData)
