@@ -7,7 +7,6 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.data_source.IMASDataSource import IMASDataSource
 
-
 class TabOne(wx.Panel):
     def __init__(self,parent, GUIFrameSingleton):
         wx.Panel.__init__(self,parent)
@@ -35,8 +34,8 @@ class TabOne(wx.Panel):
         button_open = wx.Button(self, 1, 'Open')
 
         """Set and display Welcome Text in the log window"""
-        self.logWindow = wx.TextCtrl(self,                    \
-            wx.ID_ANY,"Welcome to the IMAS data browser !\n", \
+        self.logWindow = wx.TextCtrl(self,
+            wx.ID_ANY,"Welcome to the IMAS data browser !\n",
             size=(500, 100), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
         self.gridSizer_native.Add(self.userNameStaticText, 0, wx.LEFT, 10)
@@ -107,9 +106,9 @@ class TabOne(wx.Panel):
             if self.dataSourceName == GlobalValues.IMAS_NATIVE:
 
                 """Try to open the specified IDS database """
-                IMASDataSource.try_to_open(self.imasDbName.GetValue(),      \
-                                           self.userName.GetValue(),        \
-                                           int(self.shotNumber.GetValue()), \
+                IMASDataSource.try_to_open(self.imasDbName.GetValue(),
+                                           self.userName.GetValue(),
+                                           int(self.shotNumber.GetValue()),
                                            int(self.runNumber.GetValue()))
 
                 for i in xrange(0, 10):
@@ -119,34 +118,34 @@ class TabOne(wx.Panel):
                     os.environ[vname] = mds
 
             """Get data source factory handler name ('dsf_...')"""
-            dataSourceFactoryHandlerName = HandlerName \
+            dataSourceFactoryHandlerName = HandlerName  \
                 .getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
 
             """IMAS-VIZ shell: Print"""
-            self.shell.run(dataSourceFactoryHandlerName \
+            self.shell.run(dataSourceFactoryHandlerName
                 + " = DataSourceFactory()")
 
             """Get data source handler name ('ds_...')"""
-            dataSourceHandlerName = HandlerName \
-                .getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
+            dataSourceHandlerName = HandlerName.getDataSourceHandler(
+                self.GUIFrameSingleton.handlerValue)
 
             """IMAS-VIZ shell: Print"""
-            self.shell.run(dataSourceHandlerName + " = "    \
-                + dataSourceFactoryHandlerName + ".create(" \
-                + self.shotNumber.GetValue() + ","          \
-                + self.runNumber.GetValue() + ",'"          \
-                + self.userName.GetValue() + "','"          \
-                + self.imasDbName.GetValue() + "','"        \
+            self.shell.run(dataSourceHandlerName + " = "
+                + dataSourceFactoryHandlerName + ".create("
+                + self.shotNumber.GetValue() + ","
+                + self.runNumber.GetValue() + ",'"
+                + self.userName.GetValue() + "','"
+                + self.imasDbName.GetValue() + "','"
                 + self.dataSourceName + "')")
 
             """Get view handler name ('dtv_...')"""
-            viewhandlerName = HandlerName. \
-                getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
+            viewhandlerName = HandlerName.getWxDataTreeViewHandler(
+                self.GUIFrameSingleton.handlerValue)
             """IMAS-VIZ shell: Print"""
-            self.shell.run(viewhandlerName + " = " + apiHandlerName \
+            self.shell.run(viewhandlerName + " = " + apiHandlerName
                 + ".CreateDataTree(" + dataSourceHandlerName + ")")
             """IMAS-VIZ shell: Execute"""
-            self.shell.push(apiHandlerName + ".ShowDataTree(" \
+            self.shell.push(apiHandlerName + ".ShowDataTree("
                 + viewhandlerName + ")")
             """IMAS-VIZ shell: Execute"""
             self.shell.push(viewhandlerName + ".Center()")
@@ -195,12 +194,17 @@ class TabThree(wx.Panel):
         self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
 
         publicDatabases = ['WEST']
-        self.machineName = wx.Choice(self, choices=publicDatabases, style=wx.CB_READONLY)
+        self.machineName = wx.Choice(self,
+                                     choices=publicDatabases,
+                                     style=wx.CB_READONLY)
         self.machineName.SetSelection(0)
 
         button_open = wx.Button(self, 1, 'Open')
 
-        self.logWindow = wx.TextCtrl(self, wx.ID_ANY,"Welcome to the IMAS data browser !\n", size=(500, 150), style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+        self.logWindow = wx.TextCtrl(self,
+                            wx.ID_ANY,"Welcome to the IMAS data browser !\n",
+                            size=(500, 150),
+                            style = wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
         # Radio buttons
         hboxRadioButtons.Add(self.rb1, 1, wx.EXPAND | wx.ALL, 5)
@@ -305,25 +309,43 @@ class TabThree(wx.Panel):
                 self.shell.run(apiHandlerName + " = Browser_API()")
 
             if self.dataSourceName == GlobalValues.IMAS_UDA:
-                IMASDataSource.try_to_open_uda_datasource(self.machineName.GetString(self.machineName.GetSelection()), int(self.shotNumber.GetValue()), int(self.runNumber.GetValue()))
+                IMASDataSource.try_to_open_uda_datasource(
+                    self.machineName.GetString(self.machineName.GetSelection()),
+                    int(self.shotNumber.GetValue()),
+                    int(self.runNumber.GetValue()))
 
-            dataSourceFactoryHandlerName = HandlerName.getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
-            self.shell.run(dataSourceFactoryHandlerName + " = DataSourceFactory()")
+            dataSourceFactoryHandlerName = HandlerName\
+                .getDataSourceFactoryHandler(self.GUIFrameSingleton.handlerValue)
+            self.shell.run(dataSourceFactoryHandlerName
+                           + " = DataSourceFactory()")
 
-            dataSourceHandlerName = HandlerName.getDataSourceHandler(self.GUIFrameSingleton.handlerValue)
+            dataSourceHandlerName = HandlerName.getDataSourceHandler(
+                self.GUIFrameSingleton.handlerValue)
 
             if self.rb1.GetValue():
-                self.shell.run(dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".createUDADatasource(" +
-                               self.shotNumber.GetValue() + "," + self.runNumber.GetValue() + ",'" +
-                               self.machineName.GetString(self.machineName.GetSelection()) + "')")
+                self.shell.run(dataSourceHandlerName + " = "
+                               + dataSourceFactoryHandlerName
+                               + ".createUDADatasource("
+                               + self.shotNumber.GetValue() + ","
+                               + self.runNumber.GetValue() + ",'"
+                               + self.machineName.GetString(self
+                                                            .machineName
+                                                            .GetSelection())
+                               + "')")
             else:
                 self.shell.run(
-                    dataSourceHandlerName + " = " + dataSourceFactoryHandlerName + ".create(" + self.shotNumberTS.GetValue() +
-                    "," + self.runNumberTS.GetValue() + ",None, None,'" + self.dataSourceName + "')")
+                    dataSourceHandlerName + " = "
+                    + dataSourceFactoryHandlerName + ".create("
+                    + self.shotNumberTS.GetValue() +
+                    "," + self.runNumberTS.GetValue() + ",None, None,'"
+                    + self.dataSourceName + "')")
 
-            viewhandlerName = HandlerName.getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
-            self.shell.run(viewhandlerName + " = " + apiHandlerName + ".CreateDataTree(" + dataSourceHandlerName + ")")
-            self.shell.push(apiHandlerName + ".ShowDataTree(" + viewhandlerName + ")")
+            viewhandlerName = HandlerName\
+                .getWxDataTreeViewHandler(self.GUIFrameSingleton.handlerValue)
+            self.shell.run(viewhandlerName + " = " + apiHandlerName
+                           + ".CreateDataTree(" + dataSourceHandlerName + ")")
+            self.shell.push(apiHandlerName + ".ShowDataTree("
+                            + viewhandlerName + ")")
             self.shell.push(viewhandlerName + ".Center()")
 
             self.GUIFrameSingleton.handlerValue += 1

@@ -109,21 +109,39 @@ class WxDataTreeView(wx.TreeCtrl):
 
     # Select the node, call the HandleClick function
     def OnMouseEvent(self, event):
+        """Mouse event handlers."""
 
         pos = event.GetPosition()
 
         if (event.LeftDown()):
+            """Left mouse button click anywhere inside the application"""
             self.popupmenu = None
 
         if event.LeftDown() and not self.HasFlag(wx.TR_MULTIPLE):
+            """Left mouse button click (down):"""
+            """1. Inside database tree structure window"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
+                """1.1 directly on IDS database node.
+                (TREE_HITTEST_ONITEM -> Anywhere on item)
+                """
                 self.SetFocus()
+                """Select/Highlight the item/node"""
                 self.SelectItem(ht_item)
+
+                """Display node documentation"""
+                """TODO: Populate the missing documentation. Display the 
+                documentation in new panel or log panel instead of the default 
+                python shell (pycharm etc).
+                """
+                self.setSelectedItem(ht_item)
+                print('Node: ' + str(self.GetItemData(ht_item).get('dataName'))
+                      + ' | Documentation: '
+                      + str(self.GetItemData(ht_item).get('documentation')))
             else:
                 event.Skip()
-
         elif event.RightDown() and not event.ShiftDown():
+            """Right mouse button click (down) on IDS node"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
                 self.setSelectedItem(ht_item)
@@ -133,6 +151,7 @@ class WxDataTreeView(wx.TreeCtrl):
                     self.OnShowPopup(pos)
 
         elif event.RightDown() and event.ShiftDown():
+            """Right mouse button click (down) + holding shift key on IDS node"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
                 self.setSelectedItem(ht_item)

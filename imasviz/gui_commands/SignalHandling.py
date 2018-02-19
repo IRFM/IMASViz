@@ -57,6 +57,7 @@ class SignalHandling:
 
         if (signalName == None): return 0
 
+        """Set new main menu"""
         self.view.popupmenu = wx.Menu()
         s = ''
 
@@ -71,9 +72,9 @@ class SignalHandling:
             s = 'Select '
 
         """Set second-level popup menu for selection/deselection of the node """
-        item1 = wx.MenuItem(self.view.popupmenu,                        \
-                            self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL,  \
-                            text= s + signalName + '...',               \
+        item1 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL,
+                            text= s + signalName + '...',
                             kind=wx.ITEM_NORMAL)
 
         #item2 = wx.MenuItem(self.view.popupmenu, wx.ID_MORE, item='Show '+signalName+' size', kind=wx.ITEM_NORMAL)
@@ -84,20 +85,20 @@ class SignalHandling:
         item3 = None
         """The popup menu behaviour in relation to the presence of pre-existing 
         plots"""
-        if len(self.view.imas_viz_api.GetFiguresKeys( \
+        if len(self.view.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
             """If there is no pre-existing plot """
-            item3 = wx.MenuItem(self.view.popupmenu,                \
-                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE, \
-                                text='Plot ' + signalName,          \
+            item3 = wx.MenuItem(self.view.popupmenu,
+                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
+                                text='Plot ' + signalName,
                                 kind=wx.ITEM_NORMAL)
         else:
             """If some plot already exists"""
 
             """Add menu for creation of a new figure"""
-            item3 = wx.MenuItem(self.view.popupmenu,                            \
-                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE,             \
-                                text='Plot ' + signalName + ' to new figure',   \
+            item3 = wx.MenuItem(self.view.popupmenu,
+                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
+                                text='Plot ' + signalName + ' to new figure',
                                 kind=wx.ITEM_NORMAL)
             i = 0
             j= 0
@@ -107,68 +108,95 @@ class SignalHandling:
                 if self.shareSameCoordinatesFrom(figureKey):
                     if j == 0:
                         subMenu = wx.Menu()
-                        self.view.popupmenu.Append(wx.ID_ANY,                    \
-                                                   'Add plot to existing figure',\
+                        self.view.popupmenu.Append(wx.ID_ANY,
+                                                   'Add plot to existing figure',
                                                    subMenu)
-                    subMenu.Append(                                         \
-                        self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,    \
-                        item= figureKey,                                    \
+                    subMenu.Append(
+                        self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,
+                        item= figureKey,
                         kind=wx.ITEM_NORMAL)
                     j = j + 1
                 i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(\
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY,           \
-                                           'Show/Hide figure',  \
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Show/Hide figure',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_FIGURES + i,  \
-                            item=figureKey,                         \
+            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_FIGURES + i,
+                            item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.MULTIPLOTTYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY, 'Show/Hide multiplots', showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_MULTIPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Show/Hide multiplots',
+                                           showMenu)
+            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_MULTIPLOTS + i,
+                            item=figureKey,
+                            kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE):
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.SUBPLOTTYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY, 'Show/Hide subplots', showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_SUBPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Show/Hide subplots',
+                                           showMenu)
+            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_SUBPLOTS + i,
+                            item=figureKey,
+                            kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY, 'Delete figure', showMenu)
-                showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i, item="All", kind=wx.ITEM_NORMAL)
-            showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i + 1, item=figureKey, kind=wx.ITEM_NORMAL)
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Delete figure',
+                                           showMenu)
+                showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i,
+                                item="All",
+                                kind=wx.ITEM_NORMAL)
+            showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i + 1,
+                            item=figureKey,
+                            kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.MULTIPLOTTYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY, 'Delete multiplot', showMenu)
-            showMenu.Append(self.menuIDS.ID_DELETE_MULTIPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Delete multiplot',
+                                           showMenu)
+            showMenu.Append(self.menuIDS.ID_DELETE_MULTIPLOTS + i,
+                            item=figureKey,
+                            kind=wx.ITEM_NORMAL)
             i = i + 1
 
         i = 0
-        for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE):
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.SUBPLOTTYPE):
             if i == 0:
                 showMenu = wx.Menu()
-                self.view.popupmenu.Append(wx.ID_ANY, 'Delete subplot', showMenu)
-            showMenu.Append(self.menuIDS.ID_DELETE_SUBPLOTS + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Delete subplot',
+                                           showMenu)
+            showMenu.Append(self.menuIDS.ID_DELETE_SUBPLOTS + i,
+                            item=figureKey,
+                            kind=wx.ITEM_NORMAL)
             i = i + 1
 
         if self.view.imas_viz_api.GetFigurePlotsCount() > 0 \
@@ -176,27 +204,42 @@ class SignalHandling:
                 and self.shareSameCoordinates(self.view.selectedSignals):
 
             i = 0
-            for figureKey in self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE):
+            for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                    figureType=FigureTypes.FIGURETYPE):
                 if i == 0:
                     showMenu = wx.Menu()
-                    self.view.popupmenu.Append(wx.ID_ANY, 'Plot all selected signals to', showMenu)
-                showMenu.Append(self.menuIDS.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE + i, item=figureKey, kind=wx.ITEM_NORMAL)
+                    self.view.popupmenu.Append(wx.ID_ANY,
+                                               'Plot all selected signals to',
+                                               showMenu)
+                showMenu.Append(
+                    self.menuIDS.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE + i,
+                    item=figureKey,
+                    kind=wx.ITEM_NORMAL)
                 i = i + 1
 
 
-        item4 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE, text='Plot all selected signals to a new figure',
+        item4 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE,
+                            text='Plot all selected signals to a new figure',
                             kind=wx.ITEM_NORMAL)
 
-        item5 = wx.MenuItem(self.view.popupmenu, wx.ID_CANCEL, text='Unselect all signals',
+        item5 = wx.MenuItem(self.view.popupmenu,
+                            wx.ID_CANCEL,
+                            text='Unselect all signals',
                             kind=wx.ITEM_NORMAL)
 
-        item6 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER, text='Open subplots manager',
+        item6 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER,
+                            text='Open subplots manager',
                             kind=wx.ITEM_NORMAL)
 
-        item7 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_PLOT_AS_ITIME, text='Plot ' + signalName + ' as a function of time',
+        item7 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_PLOT_AS_ITIME,
+                            text='Plot ' + signalName + ' as a function of time',
                             kind=wx.ITEM_NORMAL)
 
-        item8 = wx.MenuItem(self.view.popupmenu, self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME,
+        item8 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME,
                             text='Plot all selected signals to a multiplots frame',
                             kind=wx.ITEM_NORMAL)
 
@@ -279,7 +322,11 @@ class SignalHandling:
                 self.timeSlider = True
             else:
                 self.timeSlider = None
-            p = PlotSignal(self.view, self.nodeData, signal=None, figureKey=self.currentFigureKey, signalHandling=self)
+            p = PlotSignal(self.view,
+                           self.nodeData,
+                           signal=None,
+                           figureKey=self.currentFigureKey,
+                           signalHandling=self)
             p.execute()
 
         except ValueError as e:
@@ -290,7 +337,8 @@ class SignalHandling:
         PlotSelectedSignals(self.view, figureKey).execute()
 
     def plotSelectedSignalsToFig(self, numFig):
-        figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+        figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+            figureType=FigureTypes.FIGURETYPE)
         figureKey = figureKeys[numFig]
         PlotSelectedSignals(self.view, figureKey, 1).execute()
 
@@ -304,11 +352,23 @@ class SignalHandling:
         index = 0
         data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
-        signal = signalDataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
-        label = treeNode.coordinate1Label(self.nodeData['IDSName'], index, self.view.dataSource.ids)
+        signal = signalDataAccess.GetSignalVsTime(data_path_list,
+                                                  self.nodeData,
+                                                  treeNode,
+                                                  index)
+        label = treeNode.coordinate1Label(self.nodeData['IDSName'],
+                                          index,
+                                          self.view.dataSource.ids)
         self.treeNode = treeNode
         self.timeSlider = False
-        p = PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=self.currentFigureKey, label=label, xlabel="Time[s]", update=0, signalHandling=self)
+        p = PlotSignal(view=self.view,
+                       nodeData=self.nodeData,
+                       signal=signal,
+                       figureKey=self.currentFigureKey,
+                       label=label,
+                       xlabel="Time[s]",
+                       update=0,
+                       signalHandling=self)
         p.execute()
 
     def plotSelectedSignalVsTimeAtIndex(self, index, currentFigureKey):
@@ -316,30 +376,57 @@ class SignalHandling:
         treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
         data_path_list = treeNode.getDataVsTime()
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
-        signal = signalDataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
-        label = treeNode.coordinate1Label(self.nodeData['IDSName'], index, self.view.dataSource.ids)
+        signal = signalDataAccess.GetSignalVsTime(data_path_list,
+                                                  self.nodeData,
+                                                  treeNode,
+                                                  index)
+        label = treeNode.coordinate1Label(self.nodeData['IDSName'],
+                                          index,
+                                          self.view.dataSource.ids)
         label = label.replace("ids.", "")
-        PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=currentFigureKey, label=label, xlabel="Time[s]", update=0, signalHandling=self).execute()
+        PlotSignal(view=self.view,
+                   nodeData=self.nodeData,
+                   signal=signal,
+                   figureKey=currentFigureKey,
+                   label=label,
+                   xlabel="Time[s]",
+                   update=0,
+                   signalHandling=self).execute()
         
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey):
         self.updateNodeData()
         treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
-        signal = signalDataAccess.GetSignalAt(self.nodeData, self.view.dataSource.shotNumber, treeNode, time_index)
+        signal = signalDataAccess.GetSignalAt(self.nodeData,
+                                              self.view.dataSource.shotNumber,
+                                              treeNode,
+                                              time_index)
         aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
         label = treeNode.getDataPath(aos_vs_itime, time_index)
         label = label.replace("ids.", "")
         label = GlobalOperations.replaceBrackets(label)
         label = GlobalOperations.replaceDotsBySlashes(label)
-        xlabel = GlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(time_index))
-        PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=currentFigureKey, label=label, xlabel=xlabel, update=0, signalHandling=self).execute()
+        xlabel = GlobalOperations.replaceBrackets(
+            treeNode.evaluateCoordinate1At(time_index))
+        PlotSignal(view=self.view,
+                   nodeData=self.nodeData,
+                   signal=signal,
+                   figureKey=currentFigureKey,
+                   label=label,
+                   xlabel=xlabel,
+                   update=0,
+                   signalHandling=self).execute()
 
 
     def addSignalPlotToFig(self, numFig):
         try:
-            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE)
             figureKey = figureKeys[numFig]
-            PlotSignal(view=self.view, nodeData=self.nodeData, figureKey=figureKey, update=1).execute()
+            PlotSignal(view=self.view,
+                       nodeData=self.nodeData,
+                       figureKey=figureKey,
+                       update=1).execute()
         except ValueError as e:
             self.view.log.error(str(e))
 
@@ -367,13 +454,15 @@ class SignalHandling:
         self.view.imas_viz_api.HideShowFigure(figureKey)
 
     def deleteAllFigures(self):
-        figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+        figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+            figureType=FigureTypes.FIGURETYPE)
         for figureKey in figureKeys:
             self.view.imas_viz_api.DeleteFigure(figureKey)
 
     def deleteFigure(self, numFig):
         try:
-            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE)
             figureKey = figureKeys[numFig]
             self.view.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
@@ -381,7 +470,8 @@ class SignalHandling:
 
     def deleteMultiplots(self, numFig):
         try:
-            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE)
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.MULTIPLOTTYPE)
             figureKey = figureKeys[numFig]
             self.view.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
@@ -389,7 +479,8 @@ class SignalHandling:
 
     def deleteSubplots(self, numFig):
         try:
-            figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.SUBPLOTTYPE)
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.SUBPLOTTYPE)
             figureKey = figureKeys[numFig]
             self.view.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
