@@ -46,6 +46,11 @@ class WxDataTreeViewBuilder:
         if (units != None):
             itemDataDict['units'] = units
 
+        """Retrieve IDS node documentation """
+        documentation = dataElement.get('documentation')
+        if (documentation != None):
+            itemDataDict['documentation'] = documentation
+
 
         if (dataElement.get('index') == None):
 
@@ -258,7 +263,7 @@ class WxDataTreeViewBuilder:
                 itemDataDict['data_type'] = dataElement.get('data_type')
                 itemDataDict['coordinate1'] = coordinate1
                 itemDataDict['path_doc'] = dataElement.get('path_doc')
-                itemDataDict['documentation'] = dataElement.get('documentation')
+                # itemDataDict['documentation'] = dataElement.get('documentation')
 
                 display_color = viewerTree.dataSource.colorOf(itemDataDict)
 

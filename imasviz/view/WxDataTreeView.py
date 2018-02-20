@@ -72,16 +72,22 @@ class WxDataTreeView(wx.TreeCtrl):
 
 
     def createEmptyIDSsTree(self, IDSDefFile):
-        #The tree is created from CPODef.xml or IDSDef.xml file
+        """The tree is created from CPODef.xml or IDSDef.xml file"""
         tree = ET.parse(IDSDefFile)
         idssroot = tree.getroot()
         # Add the node information to each IDS node
         returnedDict = {}
         for child in idssroot:
             if (child.tag == 'IDS'):
+                """Extract IDS properties from IDSDef.xml file"""
+                """Get IDS name"""
                 idsName = child.get('name')
+                """Get IDS documentation"""
+                idsDocumentation = child.get('documentation')
                 self.idsNamesList.append(idsName)
                 self.idsAlreadyParsed[idsName] = 0
+
+                """Set array holding IDS properties"""
                 itemDataDict = {}
                 itemDataDict['IDSName'] = idsName
                 itemDataDict['isIDSRoot'] = 1
@@ -91,6 +97,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 itemDataDict['Tag'] = idsName
                 itemDataDict['Path']= itemDataDict['Tag']
                 itemDataDict['availableIDSData'] = 0
+                itemDataDict['documentation'] = idsDocumentation
                 # Add the ids nodes
                 #item = wx.TreeItemData(itemDataDict)
                 idsNode = self.AppendItem(self.root, idsName, -1, -1, itemDataDict)

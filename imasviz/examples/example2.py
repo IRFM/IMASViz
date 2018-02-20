@@ -1,4 +1,7 @@
 #!/usr/bin/python
+"""This example demonstrates the procedure of plotting multiple data to one
+plot.
+"""
 from imasviz.Browser_API import Browser_API
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.util.GlobalValues import GlobalValues
