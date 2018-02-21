@@ -22,6 +22,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
+from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -137,14 +138,20 @@ class WxDataTreeView(wx.TreeCtrl):
                 self.SelectItem(ht_item)
 
                 """Display node documentation"""
-                """TODO: Populate the missing documentation. Display the 
-                documentation in new panel or log panel instead of the default 
-                python shell (pycharm etc).
-                """
                 self.setSelectedItem(ht_item)
-                print('Node: ' + str(self.GetItemData(ht_item).get('dataName'))
-                      + ' | Documentation: '
-                      + str(self.GetItemData(ht_item).get('documentation')))
+                documentation_string = \
+                    'Node: ' + str(self.GetItemData(ht_item).get('dataName')) \
+                    + ' | Documentation: ' \
+                    + str(self.GetItemData(ht_item).get('documentation'))
+
+                """New frame for displaying node documentation with the use of 
+                ShowNodeDocumentation.py. 
+                Frame ID = 1001
+                """
+                ShowNodeDocumentation(None, 1001, title = 'Documentation',
+                             pos = (500,550), size = (500, 100),
+                             name = 'Frame - Documentation ',
+                             documentation = documentation_string)
             else:
                 event.Skip()
         elif event.RightDown() and not event.ShiftDown():
