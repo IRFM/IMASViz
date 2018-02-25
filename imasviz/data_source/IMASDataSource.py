@@ -2,7 +2,7 @@ import os
 import imas
 import wx
 
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 import ETNativeDataTree_Generated_3_6_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 import ETNativeDataTree_Generated_3_6_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 import ETNativeDataTree_Generated_3_9_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 import ETNativeDataTree_Generated_3_9_1
@@ -38,15 +38,15 @@ class GeneratedClassFactory:
                                                            occurrence=self.occurrence,
                                                            pathsList = self.pathsList,
                                                            async=self.async)
-        elif imas__dd_version == "3.6.0":
-            generatedDataTree = ETNativeDataTree_Generated_3_6_0(userName=self.IMASDataSource.userName,
-                                                                 imasDbName=self.IMASDataSource.imasDbName,
-                                                                 shotNumber=self.IMASDataSource.shotNumber,
-                                                                 runNumber=self.IMASDataSource.runNumber,
-                                                                 view=self.view,
-                                                                 occurrence=self.occurrence,
-                                                                 pathsList=self.pathsList,
-                                                                 async=self.async)
+        # elif imas__dd_version == "3.6.0":
+        #     generatedDataTree = ETNativeDataTree_Generated_3_6_0(userName=self.IMASDataSource.userName,
+        #                                                          imasDbName=self.IMASDataSource.imasDbName,
+        #                                                          shotNumber=self.IMASDataSource.shotNumber,
+        #                                                          runNumber=self.IMASDataSource.runNumber,
+        #                                                          view=self.view,
+        #                                                          occurrence=self.occurrence,
+        #                                                          pathsList=self.pathsList,
+        #                                                          async=self.async)
         elif imas__dd_version == "3.9.0":
             generatedDataTree = ETNativeDataTree_Generated_3_9_0(userName=self.IMASDataSource.userName,
                                                                  imasDbName=self.IMASDataSource.imasDbName,
@@ -161,9 +161,7 @@ class IMASDataSource:
     def colorOf(self, signalNode):
         ids = self.ids #@UnusedVariable
         if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
-            #signalNode['availableIDSData'] = 0
             return wx.BLACK
-        #signalNode['availableIDSData'] = 1
         return wx.BLUE #non empty (signals) arrays appear in blue
 
     # Name of the data under the selected node
@@ -189,13 +187,13 @@ class IMASDataSource:
 
         coordinate_display = None
 
-        if 'coordinate1' in itemDataDict and itemDataDict['coordinate1'] != None:
+        if itemDataDict.get('coordinate1') != None:
             coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
             viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
 
         doc_display = None
 
-        if 'documentation' in itemDataDict and itemDataDict['documentation'] != None:
+        if itemDataDict.get('documentation') != None:
             doc_display = "documentation= " + itemDataDict['documentation']
             viewerTree.AppendItem(viewerNode, doc_display, -1, -1, wxTreeItemData)
 

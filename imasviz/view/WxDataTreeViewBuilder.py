@@ -6,9 +6,10 @@ from imasviz.util.GlobalValues import GlobalValues
 class WxDataTreeViewBuilder:
     def __init__(self):
         self.arrayParentNodes = {}
+        self.ids = None
 
     def addNewNode(self, idsName, dataElement, parentNode, viewerTree):
-
+        self.ids = viewerTree.dataSource.ids
         if dataElement.tag == 'time_dim':
             return
 
@@ -50,12 +51,15 @@ class WxDataTreeViewBuilder:
         if (dataElement.get('index') == None):
 
             if dataElement.find('name') != None:
+                # ids = self.ids  # @UnusedVariable
+                # itemDataDict['dataName'] = dataElement.find('name').text
+                # if len(eval(itemDataDict['dataName'])) != 0:
 
                 wxTreeItemData, isSignal, display_color = self.buildNamedDataElement_FLT1D(
-                                                                                                         dataElement,
-                                                                                                         itemDataDict,
-                                                                                                         idsName,
-                                                                                                         viewerTree)
+                                                                                                             dataElement,
+                                                                                                             itemDataDict,
+                                                                                                             idsName,
+                                                                                                             viewerTree)
                 display=viewerTree.dataSource.treeDisplayedNodeName(dataElement)
 
                 if isSignal==1:
@@ -64,11 +68,11 @@ class WxDataTreeViewBuilder:
                 if units != None:
                     display += " [" + units + "]"
 
-                viewerNode = viewerTree.AppendItem(parentNode, display , -1, -1, wxTreeItemData)
+                viewerNode = viewerTree.AppendItem(parentNode, display , -1, -1, itemDataDict)
 
                 viewerTree.SetItemTextColour(viewerNode, display_color)
 
-                viewerTree.dataSource.addWxNodes(itemDataDict, viewerTree, viewerNode, wxTreeItemData)
+                viewerTree.dataSource.addWxNodes(itemDataDict, viewerTree, viewerNode, itemDataDict)
 
             else:
                 # Add node information to each new node of IDS
@@ -124,15 +128,17 @@ class WxDataTreeViewBuilder:
 
             # add the node which has element index
             if dataElement.find('name') != None:
-
+                # itemDataDict['dataName'] = dataElement.find('name').text
+                # ids = self.ids  # @UnusedVariable
+                # if len(eval(itemDataDict['dataName'])) != 0:
                 wxTreeItemData, isSignal, display_color = self.buildNamedDataElement_FLT1D(
-                                                                                                       dataElement,
-                                                                                                       itemDataDict,
-                                                                                                       idsName,
-                                                                                                    viewerTree)
-                #dimStr = str(int(dataElement.get('dim')) - 1)
+                                                                                                           dataElement,
+                                                                                                           itemDataDict,
+                                                                                                           idsName,
+                                                                                                        viewerTree)
+
                 display = viewerTree.dataSource.treeDisplayedNodeName(dataElement)
-                
+
                 index = int(dataElement.get('index')) + 1
 
                 display += ' ' + str(index) + '/' + dataElement.get('dim')
@@ -249,18 +255,19 @@ class WxDataTreeViewBuilder:
                 t.add_aos_max_value(aos_index_name, aos_index_max_value)
 
         isSignal = 0
-        #signalPointsCount = 0
 
-        if dataElement.get('data_type') != None:
-            if dataElement.get('data_type') == "FLT_1D" or "flt_1d_type":
+        data_type = dataElement.get('data_type')
 
-                isSignal = 1
-                itemDataDict['data_type'] = dataElement.get('data_type')
-                itemDataDict['coordinate1'] = coordinate1
-                itemDataDict['path_doc'] = dataElement.get('path_doc')
-                itemDataDict['documentation'] = dataElement.get('documentation')
 
-                display_color = viewerTree.dataSource.colorOf(itemDataDict)
+        if data_type == "FLT_1D" or data_type == "flt_1d_type":
+
+            isSignal = 1
+            itemDataDict['data_type'] = data_type
+            itemDataDict['coordinate1'] = coordinate1
+            itemDataDict['path_doc'] = dataElement.get('path_doc')
+            itemDataDict['documentation'] = dataElement.get('documentation')
+
+            display_color = viewerTree.dataSource.colorOf(itemDataDict)
 
         itemDataDict['isSignal'] = isSignal
         itemDataDict['isIDSRoot'] = 0
