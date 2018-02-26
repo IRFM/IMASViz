@@ -71,7 +71,6 @@ class WxDataTreeView(wx.TreeCtrl):
 
         self.log = Logger()
 
-
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file"""
         tree = ET.parse(IDSDefFile)
@@ -139,7 +138,7 @@ class WxDataTreeView(wx.TreeCtrl):
 
                 """Display node documentation"""
                 self.setSelectedItem(ht_item)
-                documentation_string = \
+                node_documentation_string = \
                     'Node: ' + str(self.GetItemData(ht_item).get('dataName')) \
                     + ' | Documentation: ' \
                     + str(self.GetItemData(ht_item).get('documentation'))
@@ -147,11 +146,23 @@ class WxDataTreeView(wx.TreeCtrl):
                 """New frame for displaying node documentation with the use of 
                 ShowNodeDocumentation.py. 
                 Frame ID = 1001
+                Static Text ID = 10001
                 """
-                ShowNodeDocumentation(None, 1001, title = 'Documentation',
-                             pos = (500,550), size = (500, 100),
-                             name = 'Frame - Documentation ',
-                             documentation = documentation_string)
+                stext_node_doc_id = 10001
+                if (wx.FindWindowById(stext_node_doc_id) != None):
+                    """If the frame window (static text ID) already exists only 
+                    update the static text (SetLabel), displaying the node
+                    documentation
+                    """
+                    stext_node_doc = wx.FindWindowById(stext_node_doc_id)
+                    stext_node_doc.SetLabel(node_documentation_string)
+                else:
+                    """ Else, if the frame window (static text ID) doesn't exist,
+                    create new one"""
+                    frame_node_doc = \
+                        ShowNodeDocumentation(documentation = node_documentation_string)
+                    frame_node_doc.SetLabel("frame_node_doc")
+                    frame_node_doc.Show()
             else:
                 event.Skip()
         elif event.RightDown() and not event.ShiftDown():
