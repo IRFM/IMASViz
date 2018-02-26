@@ -221,7 +221,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     panel.conf.set_trace_color(configTrace.get('color'), int(configTrace.get('index')))
 
                     #panel.conf.set_trace_zorder(configTrace.get('zorder'), int(configTrace.get('index')))
-                    panel.conf.set_trace_label(configTrace.get('label'), int(configTrace.get('index')))
+                    #panel.conf.set_trace_label(configTrace.get('label'), int(configTrace.get('index')))
                     panel.conf.set_trace_style(configTrace.get('style'), int(configTrace.get('index')))
                     panel.conf.set_trace_drawstyle(configTrace.get('drawstyle'), int(configTrace.get('index')))
                     panel.conf.set_trace_marker(configTrace.get('marker'), int(configTrace.get('index')))
