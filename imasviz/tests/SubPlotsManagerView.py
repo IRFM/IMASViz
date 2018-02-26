@@ -69,7 +69,7 @@ class SubPlotsManagerFrame(wx.Frame):
 
             hbox.Add(self.label[j], 1, wx.EXPAND | wx.ALL)
             hbox.Add(self.space[j], 1, wx.EXPAND | wx.ALL)
-            hbox.Add(self.combos[j], 1, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL|wx.ALL,5)
+            hbox.Add(self.combos[j], 1, wx.EXPAND| wx.ALL,5)
 
             vbox.Add(hbox, 0, wx.TOP, 5)
             j = j + 1

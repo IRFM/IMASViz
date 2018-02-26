@@ -414,7 +414,7 @@ class PlotFrame(wx.Frame):
 
         self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         flags  = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
-        flags2 = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL | wx.EXPAND
+        flags2 = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
         self.hbox.AddSpacer(10)
         self.hbox.Add(self.slider_time, 1, border=5, flag=flags2)
         self.hbox.AddSpacer(10)
