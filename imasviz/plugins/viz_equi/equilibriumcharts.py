@@ -76,9 +76,7 @@ def DataGen(dictDataSource):
     idd.equilibrium.get()
 
     # Get wall geometry
-    id2 = imas.ids(1, 6)
-    id2.open_env('imas_private', 'west_static_data', '3')
-    id2.wall.get()
+    idd.wall.get()
 
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)
@@ -140,7 +138,7 @@ def DataGen(dictDataSource):
     xPoint  = np.zeros((lenArrTimes, 2))
 
     wall = np.zeros((2, \
-           len(id2.wall.description_2d[0].limiter.unit[0].outline.r)))
+           len(idd.wall.description_2d[0].limiter.unit[0].outline.r)))
 
     b0 = np.zeros(lenArrTimes)
 
@@ -151,8 +149,8 @@ def DataGen(dictDataSource):
     rho_tor_label = np.array([None]*lenArrTimes, dtype=unicode_type)
 
     # Wall
-    wall[0, :] = id2.wall.description_2d[0].limiter.unit[0].outline.r
-    wall[1, :] = id2.wall.description_2d[0].limiter.unit[0].outline.z
+    wall[0, :] = idd.wall.description_2d[0].limiter.unit[0].outline.r
+    wall[1, :] = idd.wall.description_2d[0].limiter.unit[0].outline.z
 
     # b0 vacuum toroidal field and r0
     b0 = idd.equilibrium.vacuum_toroidal_field.b0
