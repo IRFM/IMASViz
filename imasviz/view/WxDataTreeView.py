@@ -143,12 +143,36 @@ class WxDataTreeView(wx.TreeCtrl):
                     + ' | Documentation: ' \
                     + str(self.GetItemData(ht_item).get('documentation'))
 
+
+                """Set default variables for position and size of the node 
+                documentation frame"""
+                px, py = (0,0)      # Position
+                sx,sy = (200,50)    # Size
+                """Get size and position of Browser_API window/frame"""
+                browser_API_frame_id = 10
+                if (wx.FindWindowById(browser_API_frame_id) != None):
+                    """Find Browser_API frame by ID"""
+                    browser_API_frame = wx.FindWindowById(browser_API_frame_id)
+                    """Get position"""
+                    px, py = browser_API_frame.GetPosition()
+                    """Get size"""
+                    sx, sy = browser_API_frame.GetSize()
+
+                """Modify the position and size for better looks"""
+                px_ndoc = px
+                py_ndoc = py+sy+29
+                sx_ndoc = sx+8
+                sy_ndoc = 100
+
+
                 """New frame for displaying node documentation with the use of 
                 ShowNodeDocumentation.py. 
-                Frame ID = 1001
-                Static Text ID = 10001
+                Documentation Frame ID = 1001
+                Documentation Static Text ID = 10001
                 """
+                frame_node_doc_id = 10012
                 stext_node_doc_id = 10001
+
                 if (wx.FindWindowById(stext_node_doc_id) != None):
                     """If the frame window (static text ID) already exists only 
                     update the static text (SetLabel), displaying the node
@@ -156,12 +180,24 @@ class WxDataTreeView(wx.TreeCtrl):
                     """
                     stext_node_doc = wx.FindWindowById(stext_node_doc_id)
                     stext_node_doc.SetLabel(node_documentation_string)
+                    """Update the node documentation frame position in 
+                    correlation to Browser_API position and size changes
+                    """
+                    """Find node documentation frame by ID"""
+                    frame_node_doc = wx.FindWindowById(frame_node_doc_id)
+                    """Update position"""
+                    frame_node_doc.SetPosition((px_ndoc, py_ndoc))
+                    """Update size"""
+                    frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
                 else:
                     """ Else, if the frame window (static text ID) doesn't exist,
                     create new one"""
                     frame_node_doc = \
-                        ShowNodeDocumentation(documentation = node_documentation_string)
-                    frame_node_doc.SetLabel("frame_node_doc")
+                        ShowNodeDocumentation(
+                            documentation = node_documentation_string,
+                            pos_x=px_ndoc, pos_y=py_ndoc,
+                            size_x=sx_ndoc, size_y=sy_ndoc)
+                    frame_node_doc.SetId(frame_node_doc_id)
                     frame_node_doc.Show()
             else:
                 event.Skip()
