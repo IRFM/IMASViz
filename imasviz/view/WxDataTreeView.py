@@ -136,13 +136,22 @@ class WxDataTreeView(wx.TreeCtrl):
                 """Select/Highlight the item/node"""
                 self.SelectItem(ht_item)
 
-                """Display node documentation"""
+                """NODE DOCUMENTATION PANEL"""
                 self.setSelectedItem(ht_item)
-                node_documentation_string = \
-                    'Node: ' + str(self.GetItemData(ht_item).get('dataName')) \
-                    + ' | Documentation: ' \
-                    + str(self.GetItemData(ht_item).get('documentation'))
-
+                """Set node label"""
+                node_label = \
+                    str(self.GetItemData(ht_item).get('dataName'))
+                """Set node documentation"""
+                node_doc = \
+                    str(self.GetItemData(ht_item).get('documentation'))
+                """ Set all node documentation related strings to single string 
+                array for better handling 
+                """
+                node_doc_str_array = []
+                node_doc_str_array.append("Node: ")
+                node_doc_str_array.append(node_label)
+                node_doc_str_array.append("Documentation: ")
+                node_doc_str_array.append(node_doc)
 
                 """Set default variables for position and size of the node 
                 documentation frame"""
@@ -158,28 +167,31 @@ class WxDataTreeView(wx.TreeCtrl):
                     """Get size"""
                     sx, sy = browser_API_frame.GetSize()
 
-                """Modify the position and size for better looks"""
+                """Modify the position and size for more appealing look of the 
+                node documentation panel
+                """
                 px_ndoc = px
-                py_ndoc = py+sy+29
-                sx_ndoc = sx+8
-                sy_ndoc = 100
-
+                py_ndoc = py+sy
+                sx_ndoc = sx
+                sy_ndoc = 200
 
                 """New frame for displaying node documentation with the use of 
                 ShowNodeDocumentation.py. 
-                Documentation Frame ID = 1001
-                Documentation Static Text ID = 10001
                 """
                 frame_node_doc_id = 10012
-                stext_node_doc_id = 10001
+                stext_node_label_id = 10002
+                stext_node_doc_id = 10004
 
                 if (wx.FindWindowById(stext_node_doc_id) != None):
-                    """If the frame window (static text ID) already exists only 
-                    update the static text (SetLabel), displaying the node
-                    documentation
+                    """If the frame window (documentation static text ID) 
+                    already exists, then update only the required static text 
+                    (SetLabel), displaying the node label and documentation
                     """
+                    stext_node_label = wx.FindWindowById(stext_node_label_id)
+                    stext_node_label.SetLabel(node_doc_str_array[1])
                     stext_node_doc = wx.FindWindowById(stext_node_doc_id)
-                    stext_node_doc.SetLabel(node_documentation_string)
+                    stext_node_doc.SetLabel(node_doc_str_array[3])
+                    stext_node_doc.Wrap(sx_ndoc*0.95)
                     """Update the node documentation frame position in 
                     correlation to Browser_API position and size changes
                     """
@@ -194,7 +206,7 @@ class WxDataTreeView(wx.TreeCtrl):
                     create new one"""
                     frame_node_doc = \
                         ShowNodeDocumentation(
-                            documentation = node_documentation_string,
+                            documentation = node_doc_str_array,
                             pos_x=px_ndoc, pos_y=py_ndoc,
                             size_x=sx_ndoc, size_y=sy_ndoc)
                     frame_node_doc.SetId(frame_node_doc_id)
