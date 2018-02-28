@@ -14,10 +14,10 @@ class MyContentHandler(ContentHandler):
          uri, localname = name
          # print 'test'
          if localname == 'flux':
-             print attributes
+             print (attributes)
              self.a_amount += 1
          if localname == 'field':
-             print 'field'
+             print ('field')
              self.b_amount += 1
 
      def characters(self, data):

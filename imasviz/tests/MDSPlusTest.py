@@ -17,14 +17,14 @@ class MDSPlusTest():
        conn = Connection('altair.partenaires.cea.fr:8000')
        expr = 'gettsbase(43970, "GBBT2%1")'
        r = conn.get('execute($)', expr).data()
-       print expr
-       print r
+       print (expr)
+       print (r)
        expr = 'size(gettsbase(43970, "GBBT2%1"))'
        s = conn.get('execute($)', expr).data()
        expr = 'dim_of(gettsbase(43970, "GBBT2%1"))'
        t = conn.get('execute($)', expr).data()
-       print expr
-       print t
+       print (expr)
+       print (t)
 
 
 if __name__ == "__main__":

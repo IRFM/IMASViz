@@ -111,7 +111,7 @@ class TabOne(wx.Panel):
                                            int(self.shotNumber.GetValue()),
                                            int(self.runNumber.GetValue()))
 
-                for i in xrange(0, 10):
+                for i in range(0, 10):
                     vname = "MDSPLUS_TREE_BASE_" + str(i)
                     mds = os.environ['HOME']  + "/public/imasdb/" \
                           + self.imasDbName.GetValue() + "/3/" + str(i)
@@ -238,6 +238,7 @@ class TabThree(wx.Panel):
         self.dataSourceName = GlobalValues.IMAS_UDA  # default value
 
         self.rb1.SetValue(True)
+        self.rb2.Enable(False)
 
         self.shell = None
 

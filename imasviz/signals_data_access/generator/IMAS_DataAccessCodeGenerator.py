@@ -25,7 +25,7 @@ class IMAS_DataAccessCodeGenerator():
         for ids in root:
             name_att = ids.get('name')
             # if name_att != 'equilibrium':
-            #       continue
+            #        continue
             ids.text = name_att
             if i == 0:
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
@@ -34,6 +34,7 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode('import wx', -1)
                 self.printCode('import imas', -1)
                 self.printCode('import threading', -1)
+                self.printCode('import time', -1)
                 self.printCode('from imasviz.view.ResultEvent import ResultEvent', -1)
                 self.printCode('from threading import Thread', -1)
                 self.printCode('\n', -1)
@@ -61,16 +62,20 @@ class IMAS_DataAccessCodeGenerator():
                     name_att2 = ids2.get('name')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
                     self.printCode("self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')", 2)
+                    self.printCode("t1 = time.time()", 2)
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
-                    self.printCode("print 'Get operation ended'", 2)
+                    self.printCode("t2 = time.time()", 2)
+                    self.printCode("print('imas get took ' + str(t2 - t1) + ' seconds')",2)
+                    self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
-
+                    self.printCode("t3 = time.time()", 2)
+                    self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
                     self.printCode('if self.async==True:', 2)
                     self.printCode('e = threading.Event()' + '\n', 3)
                     self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
-                    self.printCode("print 'waiting for view update...'" + '\n', 3)
+                    self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('e.wait()' + '\n', 3)
-                    self.printCode("print 'view update wait ended...'" + '\n', 3)
+                    self.printCode("print ('view update wait ended...')" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
 
@@ -90,7 +95,7 @@ class IMAS_DataAccessCodeGenerator():
 
     def generateParentsCode(self, level, path):
         path = self.replaceIndices(path)
-        code1 = "if " + "'" + path + "'" + " in parents and parents['" + path + "'] != None : "
+        code1 = "if parents.get('" + path + "') != None : "
         self.printCode(code1, level)
         code1 = "parent = parents['" + path + "']"
         self.printCode(code1, level + 1)
@@ -117,6 +122,9 @@ class IMAS_DataAccessCodeGenerator():
 
             elif data_type == 'struct_array':
 
+                if (ids_child_element.get('name') == "ggd" and child.text == "equilibrium.time_slice[i]"):
+                    print("WARNING: GGD structure array from parent equilibrium.time_slice[i] has been ignored")
+                    continue
 
                 code = child.text + "." + ids_child_element.get('name') + '(:)'
                 s = GlobalValues.indices[str(level)]
@@ -218,7 +226,7 @@ class IMAS_DataAccessCodeGenerator():
                 code = None
                 coordinateName = None
 
-                for c in xrange(1,10):
+                for c in range(1,10):
                     coordinateName = "coordinate" + str(c)
                     coordinateValue = ids_child_element.get(coordinateName)
                     if coordinateValue != None:
@@ -304,7 +312,8 @@ class IMAS_DataAccessCodeGenerator():
             tabs += '\t'
             i += 1
 
-        self.f.write(tabs + text.encode("utf-8") + "\n")
+        #self.f.write(tabs + text.encode("utf-8") + "\n")
+        self.f.write(tabs + text + "\n")
         # print tabs + text
 
     def replaceIndices(self, value):
@@ -341,7 +350,7 @@ class IMAS_DataAccessCodeGenerator():
 
         p_index = -1
 
-        for c in xrange(1, 10):
+        for c in range(1, 10):
             p = '(i' + str(c) + ')'
             try:
                 p_index = path_doc.index(p)
@@ -354,11 +363,11 @@ class IMAS_DataAccessCodeGenerator():
 
 if __name__ == "__main__":
 
-    print "Starting code generation"
+    print ("Starting code generation")
     GlobalOperations.checkEnvSettings()
     imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
-    print "End of code generation"
-    print "Do not forget to declare new code in the GeneratedClassFactory class"
+    print ("End of code generation")
+    print ("Do not forget to declare new code in the GeneratedClassFactory class")
 

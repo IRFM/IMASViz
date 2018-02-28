@@ -7,7 +7,7 @@ class UnselectAllSignals(AbstractCommand):
 
     def execute(self):
         keysToRemove = []
-        for value in self.view.selectedSignals.itervalues():
+        for value in self.view.selectedSignals.values():
             selectedNodeData = value[1]
             for s in self.view.signalsList:
                 if selectedNodeData == self.view.GetItemData(s):

@@ -56,9 +56,28 @@ class TreeNode:
             coordinate1 = self.coordinate1
         return coordinate1
 
+    def coordinate1LabelAndTitleForTimeSlices(self, nodeData, index, ids):
+        itime_index = nodeData.get('itime_index')
+        idsName = nodeData['IDSName']
+        title = ''
+        if self.coordinate1 == "1..N" or self.coordinate1 == "1...N":
+            title = "coordinate1 = " + str(index)
+        else:
+            to_eval = "ids." + idsName + \
+                      "." + self.evaluateCoordinate1() + "[" + str(index) + "]"
+            coordinate1_value = eval(to_eval)
+            tokens_list = to_eval.split(".")
+            coord1 = tokens_list[-1]
+            title = coord1 + "=" + str(coordinate1_value)
+        label = nodeData['dataName'].replace("time_slice[" + str(itime_index) + "].", "")
+        label = label.replace('ids.','')
+        label = label.replace(idsName + ".", '')
+        return label, title
+
     def coordinate1Label(self, idsName, index, ids):
         if self.coordinate1 == "1..N" or self.coordinate1 == "1...N":
             return "[" + str(index) + "]"
+            #return None
         to_eval = "ids." + idsName + \
                   "." + self.evaluateCoordinate1() + "[" + str(index) + "]"
         coordinate1_value = eval(to_eval)
@@ -97,7 +116,7 @@ class TreeNode:
     def evaluatePath(self, path):
         aos_valued = None
         path = self.patchIndices(path)
-        for i in xrange(0, self.aos_parents_count):
+        for i in range(0, self.aos_parents_count):
             index_name = GlobalValues.indices[str(i + 1)]
             index_value =  self.aos_indices_values[index_name]
             s = "[" + index_name + "]"
@@ -126,7 +145,7 @@ class TreeNode:
         data_list = []
         aos_vs_itime = self.getDataPathVsTime(self.aos)
         #print "TreeNode : time max value = " + self.timeMaxValue()
-        for itime in xrange(0, int(self.timeMaxValue())):
+        for itime in range(0, int(self.timeMaxValue())):
             data_path = self.getDataPath(aos_vs_itime, itime)
             data_list.append(data_path)
         return data_list

@@ -24,5 +24,5 @@ if __name__ == "__main__":
     try:
         imasTest.load("test")
     except:
-        print "Error1"
-    print "Error2"
+        print ("Error1")
+    print ("Error2")

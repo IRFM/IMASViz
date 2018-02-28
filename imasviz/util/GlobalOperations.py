@@ -122,59 +122,59 @@ class GlobalOperations:
     def checkEnvSettings():
         if not GlobalValues.TESTING:
 
-            print "IMAS_VIZ production environment."
+            print ("IMAS_VIZ production environment.")
             
             if 'HOME' not in os.environ:
-                print "Environment variable HOME not defined. Exiting."
+                print ("Environment variable HOME not defined. Exiting.")
                 sys.exit()
 
             if 'TS_MAPPINGS_DIR' not in os.environ:
-                print "Environment variable TS_MAPPINGS_DIR not defined. Exiting."
+                print ("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_VERSION' not in os.environ:
-                print "Environment variable IMAS_VERSION not defined. Exiting."
+                print ("Environment variable IMAS_VERSION not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
-                print "Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting."
+                print ("Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_MAJOR_VERSION' not in os.environ:
-                print "Environment variable IMAS_MAJOR_VERSION not defined. Exiting."
+                print ("Environment variable IMAS_MAJOR_VERSION not defined. Exiting.")
                 sys.exit()
 
             if 'USER' not in os.environ:
-                print "Environment variable USER not defined. Exiting."
+                print ("Environment variable USER not defined. Exiting.")
                 sys.exit()
 
             if 'VIZ_HOME' not in os.environ:
-                print "Environment variable VIZ_HOME not defined. Exiting."
+                print ("Environment variable VIZ_HOME not defined. Exiting.")
                 sys.exit()
 
         else:
 
-            print "IMAS_VIZ testing environment."
+            print ("IMAS_VIZ testing environment.")
 
             if 'TS_MAPPINGS_DIR' not in os.environ:
                 os.environ["TS_MAPPINGS_DIR"] = GlobalValues.TESTING_TS_MAPPINGS_DIR
-                print "WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment."
+                print ("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
 
             if 'IMAS_VERSION' not in os.environ:
                 os.environ["IMAS_VERSION"] = GlobalValues.TESTING_IMAS_VERSION
-                print "WARNING: environment variable IMAS_VERSION defined from testing environment."
+                print ("WARNING: environment variable IMAS_VERSION defined from testing environment.")
 
             if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
                 os.environ["IMAS_DATA_DICTIONARIES_DIR"] = GlobalValues.TESTING_IMAS_DATA_DICTIONARIES_DIR
-                print "WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment."
+                print ("WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.")
 
             if 'IMAS_MAJOR_VERSION' not in os.environ:
                 os.environ["IMAS_MAJOR_VERSION"] = GlobalValues.TESTING_IMAS_MAJOR_VERSION
-                print "WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment."
+                print ("WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment.")
 
             if 'USER' not in os.environ:
                 os.environ['USER'] = GlobalValues.TESTING_USER
-                print "WARNING: environment variable USER defined from testing environment."
+                print ("WARNING: environment variable USER defined from testing environment.")
 
             if 'VIZ_HOME' not in os.environ:
                 os.environ['VIZ_HOME'] = GlobalValues.TESTING_VIZ_HOME

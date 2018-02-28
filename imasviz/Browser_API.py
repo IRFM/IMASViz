@@ -92,7 +92,7 @@ class Browser_API():
         if figureKey in self.figureframes:
             return self.figureframes[figureKey]
         else:
-            print "No frame found with key: " + str(figureKey)
+            print ("No frame found with key: " + str(figureKey))
 
     # Plot the set of signals selected by the user
     def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0):

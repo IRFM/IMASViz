@@ -14,11 +14,11 @@ class SubPlotsManagerFrame(wx.Frame):
 
         signalsCount = len(selectedSignals)
         button_open = wx.Button(self, 1, 'Open subplots')
-        signalNodeDataValueIterator = selectedSignals.itervalues()
+        signalNodeDataValueIterator = selectedSignals.values()
         self.signals_list = []
 
         for i in range(signalsCount):
-            signalNodeDataValue = signalNodeDataValueIterator.next()
+            signalNodeDataValue = next(iter(signalNodeDataValueIterator))
             signalNodeData = signalNodeDataValue[1]
             # dataName = signalNodeData["dataName"]
             self.signals_list.append(signalNodeData)
@@ -69,11 +69,11 @@ class SubPlotsManagerFrame(wx.Frame):
 
             hbox.Add(self.label[j], 1, wx.EXPAND | wx.ALL)
             hbox.Add(self.space[j], 1, wx.EXPAND | wx.ALL)
-            hbox.Add(self.combos[j], 1, wx.EXPAND|wx.ALIGN_CENTER_HORIZONTAL|wx.ALL,5)
+            hbox.Add(self.combos[j], 1, wx.EXPAND| wx.ALL,5)
 
             vbox.Add(hbox, 0, wx.TOP, 5)
             j = j + 1
-        print self.selectedIndex
+        print (self.selectedIndex)
 
 
     def OnCombo(self, event):
@@ -82,7 +82,7 @@ class SubPlotsManagerFrame(wx.Frame):
        selection =  selected_combo.GetSelection()
 
        if (index not in self.selectedIndex[selection]):
-           print 'OK'
+           print ('OK')
            self.selectedIndex[selection].append(index)
 
        for key in self.selectedIndex:
@@ -90,7 +90,7 @@ class SubPlotsManagerFrame(wx.Frame):
                continue
            if index in self.selectedIndex[key]:
                 self.selectedIndex[key].remove(index)
-       print self.selectedIndex
+       print (self.selectedIndex)
 
     def getSignals(self):
         signals = {} #key = subplot number, value = list of signals in the subplot
@@ -103,8 +103,8 @@ class SubPlotsManagerFrame(wx.Frame):
     def showSubPlots(self, evt):
         #api = self.dataTree.imas_viz_api
         signals = self.getSignals()
-        print self.selectedIndex
-        print signals
+        print (self.selectedIndex)
+        print (signals)
         from imasviz.subplots.SubPlot import SubPlot
         from imasviz.subplots.SubplotsShareXFrame import SubPlotsShareXFrame
 

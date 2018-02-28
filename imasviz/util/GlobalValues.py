@@ -18,7 +18,7 @@ class GlobalValues:
     WEST = "WEST"
 
     if "VIZ_PRODUCTION" not in os.environ:
-        print "VIZ_PRODUCTION environment variable not defined"
+        print ("VIZ_PRODUCTION environment variable not defined")
         os.environ["VIZ_PRODUCTION"] = "0"
 
     TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
@@ -34,10 +34,10 @@ class GlobalValues:
             elif os.environ['HOSTNAME'] == 'spica.intra.cea.fr' or os.environ['HOSTNAME'] == 'sirrah':
                 TESTING_VIZ_HOME = os.environ["HOME"] + '/viz'
             else:
-                print "Environment variable TESTING_VIZ_HOME not defined. Check the GlobalValues.py file. Exiting."
+                print ("Environment variable TESTING_VIZ_HOME not defined. Check the GlobalValues.py file. Exiting.")
                 sys.exit(-1)
 
-        print "TESTING_VIZ_HOME:" + TESTING_VIZ_HOME
+        print ("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
@@ -45,7 +45,7 @@ class GlobalValues:
         TESTING_IMAS_MAJOR_VERSION = "3"
 
     else:
-        print "VIZ_HOME:" + os.environ["VIZ_HOME"]
+        print ("VIZ_HOME:" + os.environ["VIZ_HOME"])
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["UAL_VERSION"][:1]

@@ -4,6 +4,7 @@ import os
 import wx
 import imas
 import threading
+import time
 from imasviz.view.ResultEvent import ResultEvent
 from threading import Thread
 
@@ -25,19 +26,24 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		idsData = None
 		if self.idsName == 'magnetics':
 			self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')
+			t1 = time.time()
 			self.ids.magnetics.get(self.occurrence)
-			print 'Get operation ended'
+			t2 = time.time()
+			print('imas get took ' + str(t2 - t1) + ' seconds')
+			print ('Get operation ended')
 			idsData = self.load_magnetics(self.idsName, self.occurrence)
 
+			t3 = time.time()
+			print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')
 			if self.async==True:
 				e = threading.Event()
 
 				wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))
-				print 'waiting for view update...'
+				print ('waiting for view update...')
 
 				e.wait()
 
-				print 'view update wait ended...'
+				print ('view update wait ended...')
 
 			else:
 				self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)
@@ -48,7 +54,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		IDSName = 'magnetics'
 		parents = {}
 		parent = ET.Element('magnetics')
-		if 'magnetics' in parents and parents['magnetics'] != None : 
+		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:
 			parents['magnetics'] = parent
@@ -58,7 +64,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node = ET.SubElement(parent, 'name'+ '='+ str(name_att_2))
 		node.set('data_type', 'STR_0D')
 		node.set('type', 'constant')
-		if 'magnetics.code' in parents and parents['magnetics.code'] != None : 
+		if parents.get('magnetics.code') != None : 
 			parent = parents['magnetics.code']
 		else:
 			parents['magnetics.code'] = parent
@@ -74,7 +80,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node.set('aos_parents_count', str(0))
 		node.set('aos', 'self.ids.magnetics.code.output_flag')
 		nameNode.text = 'ids.magnetics.code.output_flag'
-		if 'magnetics' in parents and parents['magnetics'] != None : 
+		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:
 			parents['magnetics'] = parent
@@ -90,7 +96,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node.set('aos_parents_count', str(0))
 		node.set('aos', 'self.ids.magnetics.time')
 		nameNode.text = 'ids.magnetics.time'
-		if 'magnetics' in parents and parents['magnetics'] != None : 
+		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:
 			parents['magnetics'] = parent
@@ -105,7 +111,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node = ET.SubElement(parent, 'homogeneous_time'+ '='+ str(homogeneous_time_att_5))
 		node.set('data_type', 'INT_0D')
 		node.set('type', 'constant')
-		if 'magnetics' in parents and parents['magnetics'] != None : 
+		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:
 			parents['magnetics'] = parent

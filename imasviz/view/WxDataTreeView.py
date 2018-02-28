@@ -13,7 +13,7 @@
 #*******************************************
 import os
 import wx
-
+import time
 from imasviz.gui_commands.HandleRightClick import HandleRightClick, HandleRightClickAndShiftDown
 from imasviz.view.WxDataTreeViewBuilder import WxDataTreeViewBuilder
 import xml.etree.ElementTree as ET
@@ -345,12 +345,15 @@ class WxDataTreeViewFrame(wx.Frame):
         self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
 
     def updateView(self, idsName, occurrence, idsData=None, pathsList=None, threadingEvent=None):
-        print 'updateView called...'
+        print ('updateView called...')
+        t4 = time.time()
         if idsData != None:
             self.wxTreeView.log.info("Loading occurrence " + str(occurrence) + " of "+ idsName + " IDS ended successfully, building view...")
             self.wxTreeView.update_view(idsName, idsData)
             self.wxTreeView.log.info("View update ended.")
-        print 'updateView ended.'
+        t5 = time.time()
+        print('update took ' + str(t5 - t4) + 'seconds)')
+        print ('updateView ended.')
 
         # Creating the signals tree
         signalsFrame = IDSSignalTreeFrame(None, self.wxTreeView,
@@ -360,7 +363,7 @@ class WxDataTreeViewFrame(wx.Frame):
             for s in pathsList:
                 n = signalsFrame.tree.selectNodeWithPath(s)
                 if n == None:
-                    print 'Path: ' + s + " not found"
+                    print ('Path: ' + s + " not found")
 
         if threadingEvent != None:
             threadingEvent.set()
@@ -371,7 +374,7 @@ class Logger:
 
     def info(self, message):
         message += '\n'
-        print message
+        print (message)
 
     def error(self, message):
         message += '\n'
@@ -396,9 +399,12 @@ if __name__ == "__main__":
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
     dataSourceFactory = DataSourceFactory()
     #dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979)
-    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=51460, runNumber=0, userName="imas_public",imasDbName='west')
+    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52205, runNumber=0, userName="imas_public",imasDbName='west')
     from imasviz.Browser_API import Browser_API
     api = Browser_API()
     frame = api.CreateDataTree(dataSource)
+    #frame.Show()
+    frame.wxTreeView.setIDSNameSelected("magnetics")
+    dataSource.load(frame.wxTreeView, 0, [], True)
     frame.Show()
     app.MainLoop()
