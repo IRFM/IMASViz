@@ -318,15 +318,19 @@ class SignalHandling:
         try:
             self.currentFigureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
             treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
+            label = None
+            xlabel = None
             if treeNode != None and treeNode.time_dependent_aos():
+                aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
+                label = treeNode.getDataPath(aos_vs_itime, 0)
+                label = label.replace("ids.", "")
+                label = GlobalOperations.replaceBrackets(label)
+                label = GlobalOperations.replaceDotsBySlashes(label)
+                xlabel = GlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(0))
                 self.timeSlider = True
             else:
                 self.timeSlider = None
-            p = PlotSignal(self.view,
-                           self.nodeData,
-                           signal=None,
-                           figureKey=self.currentFigureKey,
-                           signalHandling=self)
+            p = PlotSignal(self.view, self.nodeData, signal=None, figureKey=self.currentFigureKey, label=label,xlabel=xlabel, signalHandling=self)
             p.execute()
 
         except ValueError as e:
@@ -380,6 +384,7 @@ class SignalHandling:
                                               treeNode,
                                               time_index)
         aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
+        print (aos_vs_itime)
         label = treeNode.getDataPath(aos_vs_itime, time_index)
         label = label.replace("ids.", "")
         label = GlobalOperations.replaceBrackets(label)

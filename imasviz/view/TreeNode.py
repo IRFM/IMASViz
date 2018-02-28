@@ -1,5 +1,6 @@
 import numpy as np
 from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalOperations import GlobalOperations
 
 class TreeNode:
 
@@ -72,6 +73,8 @@ class TreeNode:
         label = nodeData['dataName'].replace("time_slice[" + str(itime_index) + "].", "")
         label = label.replace('ids.','')
         label = label.replace(idsName + ".", '')
+        label = GlobalOperations.replaceBrackets(label)
+        label = GlobalOperations.replaceDotsBySlashes(label)
         return label, title
 
     def coordinate1Label(self, idsName, index, ids):
