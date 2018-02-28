@@ -292,6 +292,8 @@ class WxDataTreeViewFrame(wx.Frame):
         self.parent = parent
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.createMenu()
+        """ Set WxDataTreeViewFrame ID"""
+        self.SetId(10)
 
         self.logWindow = wx.TextCtrl(self, wx.ID_ANY, "Log window\n", size=(100, 100),
                                      style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
@@ -317,6 +319,8 @@ class WxDataTreeViewFrame(wx.Frame):
         
     def onClose(self, event):
         self.Hide()
+        """Unset WxDataTreeViewFrame ID (set it to unused ID)"""
+        self.SetId(-1)
 
     def onShowConfigurations(self, event):
         self.configurationListsFrame = ConfigurationListsFrame(self)

@@ -33,8 +33,6 @@ class Browser_API():
                                         GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']), size=(450, 550))
         frame.wxTreeView.imas_viz_api = self
         frame.wxTreeView.dataSource = dataSource  # update the dataSource attached to the view
-        """ Set Browser_API ID"""
-        frame.SetId(10)
         return frame
 
     # Show the IDS data tree frame

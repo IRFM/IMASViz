@@ -50,13 +50,13 @@ api = Browser_API()
 dataSourceFactory = DataSourceFactory()
 
 """Specifying data source"""
-# f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
-#                                                  runNumber=0,
-#                                                  userName=os.environ["USER"],
-#                                                  imasDbName="test"))
+f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
+                                                 runNumber=0,
+                                                 userName=os.environ["USER"],
+                                                 imasDbName="test"))
 
-f1 = api.CreateDataTree(dataSourceFactory.create(
-    dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47977))
+# f1 = api.CreateDataTree(dataSourceFactory.create(
+#     dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47977))
 
 """Bind middle mouse button event handler to application"""
 app.Bind(wx.EVT_MIDDLE_UP, GetMousePosition)
