@@ -56,9 +56,28 @@ class TreeNode:
             coordinate1 = self.coordinate1
         return coordinate1
 
+    def coordinate1LabelAndTitleForTimeSlices(self, nodeData, index, ids):
+        itime_index = nodeData.get('itime_index')
+        idsName = nodeData['IDSName']
+        title = ''
+        if self.coordinate1 == "1..N" or self.coordinate1 == "1...N":
+            title = "coordinate1 = " + str(index)
+        else:
+            to_eval = "ids." + idsName + \
+                      "." + self.evaluateCoordinate1() + "[" + str(index) + "]"
+            coordinate1_value = eval(to_eval)
+            tokens_list = to_eval.split(".")
+            coord1 = tokens_list[-1]
+            title = coord1 + "=" + str(coordinate1_value)
+        label = nodeData['dataName'].replace("time_slice[" + str(itime_index) + "].", "")
+        label = label.replace('ids.','')
+        label = label.replace(idsName + ".", '')
+        return label, title
+
     def coordinate1Label(self, idsName, index, ids):
         if self.coordinate1 == "1..N" or self.coordinate1 == "1...N":
             return "[" + str(index) + "]"
+            #return None
         to_eval = "ids." + idsName + \
                   "." + self.evaluateCoordinate1() + "[" + str(index) + "]"
         coordinate1_value = eval(to_eval)

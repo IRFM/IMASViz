@@ -238,7 +238,7 @@ class WxDataTreeViewBuilder:
                          int(dataElement.get('aos_parents_count')))
 
             viewerTree.node_attributes[itemDataDict['dataName']] = t
-
+            itemDataDict['itime_index'] = dataElement.get('itime_index')
 
             if coordinate1 != None and t.isCoordinateTimeDependent(coordinate1):
                 itemDataDict['coordinate1_itime_dependent'] = 1

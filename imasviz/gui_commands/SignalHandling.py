@@ -269,10 +269,11 @@ class SignalHandling:
         data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
         signal = signalDataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
-        label = treeNode.coordinate1Label(self.nodeData['IDSName'], index, self.view.dataSource.ids)
+        label, title = treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index, self.view.dataSource.ids)
         self.treeNode = treeNode
         self.timeSlider = False
-        p = PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=self.currentFigureKey, label=label, xlabel="Time[s]", update=0, signalHandling=self)
+        p = PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=self.currentFigureKey,
+                       title=title, label=label, xlabel="Time[s]", update=0, signalHandling=self)
         p.execute()
 
     def plotSelectedSignalVsTimeAtIndex(self, index, currentFigureKey):
@@ -281,9 +282,11 @@ class SignalHandling:
         data_path_list = treeNode.getDataVsTime()
         signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
         signal = signalDataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
-        label = treeNode.coordinate1Label(self.nodeData['IDSName'], index, self.view.dataSource.ids)
-        label = label.replace("ids.", "")
-        PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=currentFigureKey, label=label, xlabel="Time[s]", update=0, signalHandling=self).execute()
+        label, title = treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index, self.view.dataSource.ids)
+        if label != None:
+            label = label.replace("ids.", "")
+        PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=currentFigureKey, title=title,
+                   label=label, xlabel="Time[s]", update=0, signalHandling=self).execute()
         
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey):
         self.updateNodeData()

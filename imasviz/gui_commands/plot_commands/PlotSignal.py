@@ -10,7 +10,7 @@ import sys
 
 class PlotSignal(AbstractCommand):
     
-    def __init__(self, view, nodeData = None, signal = None, figureKey = None, label = None, xlabel = None, update = 0, signalHandling = None):
+    def __init__(self, view, nodeData = None, signal = None, figureKey = None, title = '', label = None, xlabel = None, update = 0, signalHandling = None):
         AbstractCommand.__init__(self, view, nodeData)
         
         self.updateNodeData();
@@ -28,6 +28,8 @@ class PlotSignal(AbstractCommand):
             self.figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
         else:
             self.figureKey = figureKey
+
+        self.title = title
     
         if label == None:
             self.label = self.nodeData['Path']
@@ -45,7 +47,7 @@ class PlotSignal(AbstractCommand):
             if len(self.signal) == 2:
                 t = PlotSignal.getTime(self.signal)
                 v = PlotSignal.get1DSignalValue(self.signal)
-                self.plot1DSignal(self.view.shotNumber, t, v, self.figureKey, self.label, self.xlabel, self.update)
+                self.plot1DSignal(self.view.shotNumber, t, v, self.figureKey, self.title, self.label, self.xlabel, self.update)
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
@@ -70,7 +72,7 @@ class PlotSignal(AbstractCommand):
         return oneDimensionSignal[1]
 
     # Plot a 1D signal as a function of time
-    def plot1DSignal(self, shotNumber, t, v, figureKey=0, label=None, xlabel=None, update=0):
+    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None, xlabel=None, update=0):
         
         try:
             self.updateNodeData()
@@ -94,14 +96,15 @@ class PlotSignal(AbstractCommand):
             frame = self.plotFrame
             frame.Bind(wx.EVT_CLOSE, lambda_f)
 
-            label, xlabel, ylabel, title = self.plotOptions(self.view, self.nodeData, shotNumber, label, xlabel)
+            label, xlabel, ylabel, title = self.plotOptions(self.view, self.nodeData, shotNumber=shotNumber,
+                                                            label=label, xlabel=xlabel, title=title)
 
             if update == 1:
                 for i in range(0, nbRows):
                     u = v[i]
                     # ti = t[i]
                     ti = t[0]
-                    frame.oplot(ti, u, label=label)
+                    frame.oplot(ti, u, label=label, title=title)
             else:
                 frame.panel.toggle_legend(None, True)
                 for i in range(0, nbRows):
@@ -109,7 +112,7 @@ class PlotSignal(AbstractCommand):
                     ti = t[0]
 
                     if i == 0:
-                        frame.plot(ti, u, title='', xlabel=xlabel, ylabel=ylabel, label=label)
+                        frame.plot(ti, u, title=title, xlabel=xlabel, ylabel=ylabel, label=label)
                     else:
                         frame.oplot(ti, u, label=label)
                 frame.Center()
@@ -136,7 +139,7 @@ class PlotSignal(AbstractCommand):
             raise
 
     @staticmethod
-    def plotOptions(view, signalNodeData, shotNumber=None, label=None, xlabel=None):
+    def plotOptions(view, signalNodeData, shotNumber=None, title='', label=None, xlabel=None):
 
         t = view.getNodeAttributes(signalNodeData['dataName'])
 
@@ -159,7 +162,7 @@ class PlotSignal(AbstractCommand):
             units = signalNodeData['units']
             ylabel += '[' + units + ']'
 
-        title = ""
+        #title = ""
 
         machineName = str(view.dataSource.imasDbName)
         shotNumber = str(view.dataSource.shotNumber)
@@ -170,5 +173,6 @@ class PlotSignal(AbstractCommand):
 
         if xlabel == None:
             xlabel = "Time[s]"
+
 
         return (label, xlabel, ylabel, title)
