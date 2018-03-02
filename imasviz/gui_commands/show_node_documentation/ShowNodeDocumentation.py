@@ -24,6 +24,7 @@ class ShowNodeDocumentation(wx.Frame):
         """Routine for creation of the panel from existing frame
         """
         self.panel = wx.Panel(self, -1)
+
         """Set panel background colour"""
         self.panel.SetBackgroundColour((204, 229, 255))
 
@@ -46,5 +47,13 @@ class ShowNodeDocumentation(wx.Frame):
         # self.stext_2.Wrap(stext_wrap_width)
         # self.stext_3.Wrap(stext_wrap_width)
         self.stext_4.Wrap(stext_wrap_width)
+
+        # sizer = wx.BoxSizer(wx.VERTICAL)
+        # sizer.Add(self.stext_1, 1, wx.EXPAND, 1)
+        # sizer.Add(self.stext_2, 1, wx.EXPAND, 1)
+        # sizer.Add(self.stext_3, 1, wx.EXPAND, 1)
+        # sizer.Add(self.stext_4, 1, wx.EXPAND, 1)
+        # self.panel.SetSizer(sizer)
+
 
 

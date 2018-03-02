@@ -126,26 +126,27 @@ class WxDataTreeView(wx.TreeCtrl):
 
         if event.LeftDown() and not self.HasFlag(wx.TR_MULTIPLE):
             """Left mouse button click (down):"""
-            """1. Inside database tree structure window"""
+            """Within database tree structure window"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
-                """1.1 directly on IDS database node.
+                """On left click directly on IDS database node.
                 (TREE_HITTEST_ONITEM -> Anywhere on item)
                 """
                 self.SetFocus()
-                """Select/Highlight the item/node"""
+                """ - Select/Highlight the item/node"""
                 self.SelectItem(ht_item)
 
                 """NODE DOCUMENTATION PANEL"""
                 self.setSelectedItem(ht_item)
-                """Set node label"""
+                """ - Set node label"""
                 node_label = \
                     str(self.GetItemData(ht_item).get('dataName'))
-                """Set node documentation"""
+                """ - Set node documentation"""
                 node_doc = \
                     str(self.GetItemData(ht_item).get('documentation'))
-                """ Set all node documentation related strings to single string 
-                array for better handling 
+
+                """ - Set all node documentation related strings to single 
+                string array for better handling 
                 """
                 node_doc_str_array = []
                 node_doc_str_array.append("Node: ")
@@ -153,21 +154,19 @@ class WxDataTreeView(wx.TreeCtrl):
                 node_doc_str_array.append("Documentation: ")
                 node_doc_str_array.append(node_doc)
 
-                """Set default variables for position and size of the node 
-                documentation frame"""
-                px, py = (0,0)      # Position
-                sx,sy = (200,50)    # Size
-                """Get size and position of Browser_API window/frame"""
-                browser_API_frame_id = 10
-                if (wx.FindWindowById(browser_API_frame_id) != None):
-                    """Find Browser_API frame by ID"""
-                    browser_API_frame = wx.FindWindowById(browser_API_frame_id)
-                    """Get position"""
-                    px, py = browser_API_frame.GetPosition()
-                    """Get size"""
-                    sx, sy = browser_API_frame.GetSize()
+                """Get size and position of WxTreeView window/frame to be used 
+                for positioning the node documentation frame
+                """
+                """ - Get parent of left-clicked tree view 
+                (WxDataTreeViewFrame)
+                """
+                WxDataTreeViewFrame_frame = self.parent
+                """ - Get position"""
+                px, py = WxDataTreeViewFrame_frame.GetPosition()
+                """ - Get size"""
+                sx, sy = WxDataTreeViewFrame_frame.GetSize()
 
-                """Modify the position and size for more appealing look of the 
+                """ - Modify the position and size for more appealing look of the 
                 node documentation panel
                 """
                 px_ndoc = px
@@ -178,12 +177,17 @@ class WxDataTreeView(wx.TreeCtrl):
                 """New frame for displaying node documentation with the use of 
                 ShowNodeDocumentation.py. 
                 """
+                """ - Set the frame and statictext IDs"""
                 frame_node_doc_id = 10012
+                """ - Note: The statictext IDs must must match to the ones in
+                ShowNodeDocumentation.create function!
+                """
                 stext_node_label_id = 10002
                 stext_node_doc_id = 10004
 
+                """Updating node documentation """
                 if (wx.FindWindowById(stext_node_doc_id) != None):
-                    """If the frame window (documentation static text ID) 
+                    """ - If the frame window (documentation static text ID) 
                     already exists, then update only the required static text 
                     (SetLabel), displaying the node label and documentation
                     """
@@ -192,18 +196,18 @@ class WxDataTreeView(wx.TreeCtrl):
                     stext_node_doc = wx.FindWindowById(stext_node_doc_id)
                     stext_node_doc.SetLabel(node_doc_str_array[3])
                     stext_node_doc.Wrap(sx_ndoc*0.95)
-                    """Update the node documentation frame position in 
+                    """ - Update the node documentation frame position in 
                     correlation to Browser_API position and size changes
                     """
-                    """Find node documentation frame by ID"""
+                    """ - Find node documentation frame by ID"""
                     frame_node_doc = wx.FindWindowById(frame_node_doc_id)
-                    """Update position"""
+                    """ - Update position"""
                     frame_node_doc.SetPosition((px_ndoc, py_ndoc))
-                    """Update size"""
+                    """ - Update size"""
                     frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
                 else:
-                    """ Else, if the frame window (static text ID) doesn't exist,
-                    create new one"""
+                    """ - Else, if the frame window (static text ID) doesn't,
+                    exists create new one"""
                     frame_node_doc = \
                         ShowNodeDocumentation(
                             documentation = node_doc_str_array,
@@ -293,7 +297,7 @@ class WxDataTreeViewFrame(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.createMenu()
         """ Set WxDataTreeViewFrame ID"""
-        self.SetId(10)
+        # self.SetId(10)
 
         self.logWindow = wx.TextCtrl(self, wx.ID_ANY, "Log window\n", size=(100, 100),
                                      style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
