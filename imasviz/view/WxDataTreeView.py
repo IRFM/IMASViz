@@ -22,7 +22,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
-from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
+from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation, SetScrolledPanel
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -172,7 +172,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 px_ndoc = px
                 py_ndoc = py+sy
                 sx_ndoc = sx
-                sy_ndoc = 200
+                sy_ndoc = 175
 
                 """New frame for displaying node documentation with the use of 
                 ShowNodeDocumentation.py. 
@@ -191,11 +191,16 @@ class WxDataTreeView(wx.TreeCtrl):
                     already exists, then update only the required static text 
                     (SetLabel), displaying the node label and documentation
                     """
+                    """ - Find node label static text by ID"""
                     stext_node_label = wx.FindWindowById(stext_node_label_id)
+                    """ - Update node label static text"""
                     stext_node_label.SetLabel(node_doc_str_array[1])
+                    """ - Find node documentation static text by ID"""
                     stext_node_doc = wx.FindWindowById(stext_node_doc_id)
+                    """ - Update node documentation static text"""
                     stext_node_doc.SetLabel(node_doc_str_array[3])
-                    stext_node_doc.Wrap(sx_ndoc*0.95)
+                    stext_node_doc.Wrap(sx_ndoc*0.90)
+
                     """ - Update the node documentation frame position in 
                     correlation to Browser_API position and size changes
                     """
