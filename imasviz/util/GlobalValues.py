@@ -37,12 +37,15 @@ class GlobalValues:
                 print ("Environment variable TESTING_VIZ_HOME not defined. Check the GlobalValues.py file. Exiting.")
                 sys.exit(-1)
 
-        print ("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
+
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.11.0"
+        TESTING_IMAS_VERSION = "3.15.1"
         TESTING_IMAS_MAJOR_VERSION = "3"
+
+        print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
+        print("TESTING_IMAS_VERSION:" + TESTING_IMAS_VERSION)
 
     else:
         print ("VIZ_HOME:" + os.environ["VIZ_HOME"])
