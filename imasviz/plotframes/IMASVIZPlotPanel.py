@@ -86,9 +86,9 @@ class IMASVIZPlotPanel(PlotPanel):
         #     self.staticSliderLabelValue = 'Coordinate slider (' + self.signalHandling.nodeData['dataName'] + '):'
 
         if self.signalHandling.timeSlider == True:
-            self.staticSliderLabelValue = 'Time slider (on last added plot):'
+            self.staticSliderLabelValue = 'Time slider:'
         elif self.signalHandling.timeSlider == False:
-            self.staticSliderLabelValue = 'Coordinate slider (on last added plot):'
+            self.staticSliderLabelValue = 'Coordinate slider:'
 
         self.staticSliderLabel = wx.StaticText(self, -1, self.staticSliderLabelValue)
         sizer.Add(self.staticSliderLabel, 0, wx.LEFT, 10)

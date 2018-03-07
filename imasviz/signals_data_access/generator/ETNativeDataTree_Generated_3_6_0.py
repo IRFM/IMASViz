@@ -79,7 +79,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		nameNode.set('data_type', 'STR_0D')
 		node.set('aos_parents_count', str(0))
 		node.set('aos', 'self.ids.magnetics.code.output_flag')
-		nameNode.text = 'ids.magnetics.code.output_flag'
+		nameNode.text = 'magnetics.code.output_flag'
 		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:
@@ -95,7 +95,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		nameNode.set('data_type', 'STR_0D')
 		node.set('aos_parents_count', str(0))
 		node.set('aos', 'self.ids.magnetics.time')
-		nameNode.text = 'ids.magnetics.time'
+		nameNode.text = 'magnetics.time'
 		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:

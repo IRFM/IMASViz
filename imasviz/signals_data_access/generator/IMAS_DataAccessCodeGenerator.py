@@ -298,6 +298,7 @@ class IMAS_DataAccessCodeGenerator():
 
                 value = self.replaceIndices(ids_child_element.text)
                 value = value.replace('self.', '')
+                value = value.replace('ids.', '')
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
