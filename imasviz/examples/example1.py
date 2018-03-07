@@ -13,13 +13,13 @@ GlobalOperations.checkEnvSettings()
 api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
-dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=10, runNumber=60,userName='LF218007',imasDbName='test')
+dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52682, runNumber=0,userName='imas_public',imasDbName='west')
 
 f = api.CreateDataTree(dataSource)
 paths = []
 
 for i in range(0,6):
-    paths.append('core_profiles/profiles_1d(' + str(i) + ')/pressure_ion_total')
+    paths.append('magnetics/flux_loop(' + str(i) + ')/flux')
 
 api.SelectSignals(f, paths)
 

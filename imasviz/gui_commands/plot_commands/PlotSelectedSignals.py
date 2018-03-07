@@ -82,7 +82,8 @@ class PlotSelectedSignals(AbstractCommand):
             def lambda_f(evt, i=figureKey, api=api):
                 self.onHide(api, i)
 
-            frame.Bind(wx.EVT_CLOSE, lambda_f)
+            if figureKey != None:
+                frame.Bind(wx.EVT_CLOSE, lambda_f)
 
             i = 0
 

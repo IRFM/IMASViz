@@ -11,21 +11,14 @@ class LoadSelectedData(AbstractCommand):
 
     def execute(self):
         try:
-            #Check if the data are already loaded
-            #self.view.log.info('Loading ' + self.view.IDSNameSelected + ' IDS...')
-            if self.view.IDSNameSelected in self.view.idsAlreadyParsed:
-                IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
-                if IDSDataLoaded == 1:
-                    try:
-                        self.view.parent.updateView(self.view.IDSNameSelected, self.occurrence, pathsList=self.pathsList)
-                    except:
-                        traceback.print_exc()
-                        raise ValueError("Error while updating the view.")
+            #Check if the data are already loaded and load the data source if required
+            IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
+            if IDSDataLoaded == 0:
+                self.view.dataSource.load(self.view, self.occurrence, self.pathsList, self.async)
 
-                    return
+            else:
+                self.view.parent.updateView(self.view.IDSNameSelected, self.occurrence, pathsList=self.pathsList)
 
-            # Load the data source
-            self.view.dataSource.load(self.view, self.occurrence, self.pathsList, self.async)
         except :
             traceback.print_exc()
             self.view.log.error(traceback.format_exc())

@@ -4,7 +4,7 @@ import wx
 import os
 from imasviz.Browser_API import Browser_API
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
-from imasviz.gui_commands.plots_configuration.ApplyPlotConfiguration import ApplyPlotConfiguration
+#from imasviz.gui_commands.plots_configuration.ApplyPlotConfiguration import ApplyPlotConfiguration
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 
@@ -16,34 +16,12 @@ api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
 userName = os.environ['USER']
-dataSource = dataSourceFactory.create(shotNumber=10, runNumber=60,userName=userName,imasDbName='test')
+dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52344, runNumber=0,userName='imas_public',imasDbName='west')
 
 f = api.CreateDataTree(dataSource)
-paths = []
+configFileName = os.environ['HOME'] + "/.imasviz/magnetics1.cfg"
+figurekey =api.GetNextKeyForMultiplePlots()
 
-for i in range(0,6):
-    paths.append('core_profiles/profiles_1d(' + str(i) + ')/pressure_ion_total')
-
-api.SelectSignals(f, paths)
-
-#configFileName = os.environ['HOME'] + "/.imasviz/config4.cfg"
-configFileName = os.environ['VIZ_HOME'] + "/myconfig.cfg"
-
-#api.PlotSelectedSignalsInMultiFrame(f, configFileName)
-
-api.ShowDataTree(f)
-
-
-
-#v = config.findall(".//*[@key='(1, 1)']/trace")
-
-#print v
-#print v[0]
-#a=v[0]
-
-#print 'title = ' + a.get('title')
-
-#t = ApplyPlotConfiguration(f, paths, config)
-#t.execute()
+api.ApplyMultiPlotConfiguration(f, figureKey=figurekey, update=0, configFileName=configFileName)
 
 app.MainLoop()

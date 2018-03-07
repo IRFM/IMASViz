@@ -254,7 +254,7 @@ class WxDataTreeViewFrame(wx.Frame):
             self.wxTreeView.update_view(idsName, idsData)
             self.wxTreeView.log.info("View update ended.")
         t5 = time.time()
-        print('update took ' + str(t5 - t4) + 'seconds)')
+        print('update took ' + str(t5 - t4) + 'seconds')
         print ('updateView ended.')
 
         # Creating the signals tree

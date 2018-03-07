@@ -29,7 +29,7 @@ class WxSignalsTreeView(wx.TreeCtrl):
             idsNode = itemSignalsDataDict['idsNode']
             data = self.idsTree.GetItemData(idsNode)
             path = data['Path']
-            #print 'existing path :' + path
+            #print ('existing path :' + path)
             if path == searchedPath:
                 # print 'found path : ' + path
                 # print idsNode
@@ -37,7 +37,7 @@ class WxSignalsTreeView(wx.TreeCtrl):
                 signalHandling.selectSignal()
                 return idsNode
             if child == lastChild:
-                # print 'path not found --> ' + path
+                #print 'path not found --> ' + path
                 return None
             child, cookie = self.GetNextChild(self.signalsRoot, cookie)
 
