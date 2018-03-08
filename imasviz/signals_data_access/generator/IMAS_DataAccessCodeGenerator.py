@@ -80,7 +80,7 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
 
                 self.printCode('\n', -1)
-            
+
 
             self.printCode('def load_' + name_att + "(self, IDSName, occurrence):" + '\n', 0)
             self.printCode("IDSName = '" + name_att + "'", 1)
@@ -123,6 +123,13 @@ class IMAS_DataAccessCodeGenerator():
                      documentation = documentation.replace("'", "''")
                      documentation = documentation.replace("\n", "")
                      code = "parent.set(" + "'documentation', '" + documentation + "')"
+                     self.printCode(code, level)
+
+                 parentName = ids_child_element.get('name')
+                 if parentName != None:
+                     parentName = parentName.replace("'", "''")
+                     parentName = parentName.replace("\n", "")
+                     code = "parent.set(" + "'name', '" + parentName + "')"
                      self.printCode(code, level)
 
                  self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index, idsName)
@@ -170,6 +177,13 @@ class IMAS_DataAccessCodeGenerator():
                     code = "parent.set(" + "'documentation', '" + documentation + "')"
                     self.printCode(code, level + 1)
 
+                parentName = ids_child_element.get('name')
+                if parentName != None:
+                    parentName = parentName.replace("'", "''")
+                    parentName = parentName.replace("\n", "")
+                    code = "parent.set(" + "'name', '" + parentName + "')"
+                    self.printCode(code, level + 1)
+
                 if '(i' in ids_child_element.get('path_doc'): #this is an array of
                     parent_AOS = ids_child_element
 
@@ -209,6 +223,13 @@ class IMAS_DataAccessCodeGenerator():
                     documentation = documentation.replace("'", "''")
                     documentation = documentation.replace("\n", "")
                     code = "node.set(" + "'documentation', '" + documentation + "')"
+                    self.printCode(code, level)
+
+                nodeName = ids_child_element.get('name')
+                if nodeName != None:
+                    nodeName = nodeName.replace("'", "''")
+                    nodeName = nodeName.replace("\n", "")
+                    code = "node.set(" + "'name', '" + nodeName + "')"
                     self.printCode(code, level)
 
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
@@ -268,6 +289,13 @@ class IMAS_DataAccessCodeGenerator():
                     documentation = documentation.replace("'","''")
                     documentation = documentation.replace("\n", "")
                     code = "node.set(" + "'documentation', '" + documentation + "')"
+                    self.printCode(code, level)
+
+                nodeName = ids_child_element.get('name')
+                if nodeName != None:
+                    nodeName = nodeName.replace("'", "''")
+                    nodeName = nodeName.replace("\n", "")
+                    code = "node.set(" + "'name', '" + nodeName + "')"
                     self.printCode(code, level)
 
                 type = ids_child_element.get('type')
@@ -339,7 +367,7 @@ class IMAS_DataAccessCodeGenerator():
         value = value.replace("[r]", "' + '[' + str(r) + ']")
         value = value.replace("[t]", "' + '[' + str(t) + ']")
         return value
-    
+
 #     def patchIndices(self, value):
 #         value = value.replace("(i1)", "[i]")
 #         value = value.replace("(i2)", "[j]")
