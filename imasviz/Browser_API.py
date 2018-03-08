@@ -23,6 +23,9 @@ class Browser_API():
         dic = self.figToNodes[figureKey]
         dic[key] = tup
 
+    def GetMultiplotConfigurationPath(self, configurationName):
+        return os.environ['HOME'] + "/.imasviz/" + configurationName + ".cfg"
+
     #Create a IDS data tree from a data source
     def CreateDataTree(self, dataSource):
         treeDict = {}
@@ -94,14 +97,20 @@ class Browser_API():
 
     # Plot the set of signals selected by the user
     def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0):
+        if figureKey == None:
+            figureKey = self.GetNextKeyForFigurePlots()
         PlotSelectedSignals(dataTreeFrame.wxTreeView, figureKey=figureKey, update=0).execute()
 
     # Plot the set of signals selected by the user
     def PlotSelectedSignalsInMultiPlotFrame(self, dataTreeFrame, configFileName = None, figureKey=None, update=0):
+        if figureKey == None:
+            figureKey = self.GetNextKeyForMultiplePlots()
         PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, figurekey=figureKey, update=update, configFileName=configFileName).execute()
 
     # Plot the set of signals selected by the user
     def ApplyMultiPlotConfiguration(self, dataTreeFrame, configFileName=None, figureKey=None, update=0):
+        if figureKey == None:
+            figureKey = self.GetNextKeyForMultiplePlots()
         PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, figurekey=figureKey, update=update,
                                            configFileName=configFileName).execute()
     
