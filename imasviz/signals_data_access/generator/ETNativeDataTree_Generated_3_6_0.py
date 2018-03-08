@@ -60,12 +60,14 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 			parents['magnetics'] = parent
 		parent = ET.SubElement(parent, 'code')
 		parent.set('documentation', 'Generic decription of the code-specific parameters for the code that has produced this IDS')
+		parent.set('name', 'code')
 		name_att_2=self.ids.magnetics.code.name
 
 		node = ET.SubElement(parent, 'name'+ '='+ str(name_att_2))
 		node.set('data_type', 'STR_0D')
 		node.set('type', 'constant')
 		node.set('documentation', 'Name of software generating IDS')
+		node.set('name', 'name')
 		if parents.get('magnetics.code') != None : 
 			parent = parents['magnetics.code']
 		else:
@@ -77,6 +79,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node.set('coordinate1', 'time')
 		node.set('data_type', 'INT_1D')
 		node.set('documentation', 'Output flag : 0 means the run is successful, other values mean some difficulty has been encountered, the exact meaning is then code specific. Negative values mean the result shall not be used.')
+		node.set('name', 'output_flag')
 		node.set('type', 'dynamic')
 		nameNode = ET.SubElement(node, 'name')
 		nameNode.set('data_type', 'STR_0D')
@@ -94,6 +97,7 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node.set('coordinate1', '1...N')
 		node.set('data_type', 'flt_1d_type')
 		node.set('documentation', 'Generic time [s]')
+		node.set('name', 'time')
 		node.set('type', 'dynamic')
 		nameNode = ET.SubElement(node, 'name')
 		nameNode.set('data_type', 'STR_0D')
@@ -106,18 +110,21 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 			parents['magnetics'] = parent
 		parent = ET.SubElement(parent, 'ids_properties')
 		parent.set('documentation', 'Interface Data Structure properties. This element identifies the node above as an IDS')
+		parent.set('name', 'ids_properties')
 		comment_att_4=self.ids.magnetics.ids_properties.comment
 
 		node = ET.SubElement(parent, 'comment'+ '='+ str(comment_att_4))
 		node.set('data_type', 'STR_0D')
 		node.set('type', 'constant')
 		node.set('documentation', 'Any comment describing the content of this IDS')
+		node.set('name', 'comment')
 		homogeneous_time_att_5=self.ids.magnetics.ids_properties.homogeneous_time
 
 		node = ET.SubElement(parent, 'homogeneous_time'+ '='+ str(homogeneous_time_att_5))
 		node.set('data_type', 'INT_0D')
 		node.set('type', 'constant')
 		node.set('documentation', '1 if the time of this IDS is homogeneous. In this case, the time values for this IDS are stored in ../time just below the root of this IDS. Otherwise, the time values are stored in the various time fields at lower levels in the tree.')
+		node.set('name', 'homogeneous_time')
 		if parents.get('magnetics') != None : 
 			parent = parents['magnetics']
 		else:

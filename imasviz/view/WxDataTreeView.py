@@ -139,14 +139,19 @@ class WxDataTreeView(wx.TreeCtrl):
                 """NODE DOCUMENTATION PANEL"""
                 self.setSelectedItem(ht_item)
                 """ - Set node label"""
-                node_label = \
-                    str(self.GetItemData(ht_item).get('dataName'))
+                node_label = "..."    # Assigning default label
+                if (self.GetItemData(ht_item).get('dataName') != None):
+                    node_label = \
+                        str(self.GetItemData(ht_item).get('dataName'))
+                elif (self.GetItemData(ht_item).get('name') != None):
+                    node_label = \
+                        str(self.GetItemData(ht_item).get('name'))
                 """ - Set node documentation"""
                 node_doc = \
                     str(self.GetItemData(ht_item).get('documentation'))
 
-                """ - Set all node documentation related strings to single 
-                string array for better handling 
+                """ - Set all node documentation related strings to single
+                string array for better handling
                 """
                 node_doc_str_array = []
                 node_doc_str_array.append("Node: ")
@@ -154,10 +159,10 @@ class WxDataTreeView(wx.TreeCtrl):
                 node_doc_str_array.append("Documentation: ")
                 node_doc_str_array.append(node_doc)
 
-                """Get size and position of WxTreeView window/frame to be used 
+                """Get size and position of WxTreeView window/frame to be used
                 for positioning the node documentation frame
                 """
-                """ - Get parent of left-clicked tree view 
+                """ - Get parent of left-clicked tree view
                 (WxDataTreeViewFrame)
                 """
                 WxDataTreeViewFrame_frame = self.parent
@@ -166,7 +171,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 """ - Get size"""
                 sx, sy = WxDataTreeViewFrame_frame.GetSize()
 
-                """ - Modify the position and size for more appealing look of the 
+                """ - Modify the position and size for more appealing look of the
                 node documentation panel
                 """
                 px_ndoc = px
@@ -174,8 +179,8 @@ class WxDataTreeView(wx.TreeCtrl):
                 sx_ndoc = sx
                 sy_ndoc = 175
 
-                """New frame for displaying node documentation with the use of 
-                ShowNodeDocumentation.py. 
+                """New frame for displaying node documentation with the use of
+                ShowNodeDocumentation.py.
                 """
                 """ - Set the frame and statictext IDs"""
                 frame_node_doc_id = 10012
@@ -187,8 +192,8 @@ class WxDataTreeView(wx.TreeCtrl):
 
                 """Updating node documentation """
                 if (wx.FindWindowById(stext_node_doc_id) != None):
-                    """ - If the frame window (documentation static text ID) 
-                    already exists, then update only the required static text 
+                    """ - If the frame window (documentation static text ID)
+                    already exists, then update only the required static text
                     (SetLabel), displaying the node label and documentation
                     """
                     """ - Find node label static text by ID"""
@@ -201,7 +206,7 @@ class WxDataTreeView(wx.TreeCtrl):
                     stext_node_doc.SetLabel(node_doc_str_array[3])
                     stext_node_doc.Wrap(sx_ndoc*0.90)
 
-                    """ - Update the node documentation frame position in 
+                    """ - Update the node documentation frame position in
                     correlation to Browser_API position and size changes
                     """
                     """ - Find node documentation frame by ID"""
@@ -284,7 +289,7 @@ class WxDataTreeView(wx.TreeCtrl):
 
     def OnCollapseItem(self, event):
         return
-        
+
 class WxDataTreeViewFrame(wx.Frame):
     def __init__(self, parent, views, dataSource, IDSDefFile, *args, **kwargs):
         super(WxDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
@@ -325,7 +330,7 @@ class WxDataTreeViewFrame(wx.Frame):
         self.eventResultId =  wx.NewId()
         self.Connect(-1, -1,  self.eventResultId , self.OnResult)
 
-        
+
     def onClose(self, event):
         self.Hide()
         """Unset WxDataTreeViewFrame ID (set it to unused ID)"""
