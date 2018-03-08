@@ -40,7 +40,7 @@ class IMASVIZPlotPanel(PlotPanel):
                 legtext.set_alpha(0.50)
     
     def BuildPanel(self):
-        """ builds basic GUI panel and popup menu"""
+        """ Builds basic GUI panel and popup menu"""
         self.fig   = Figure(self.figsize, dpi=self.dpi)
         # 1 axes for now
         self.gridspec = GridSpec(1,1)

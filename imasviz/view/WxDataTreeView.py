@@ -22,6 +22,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
+from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation, SetScrolledPanel
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -70,18 +71,23 @@ class WxDataTreeView(wx.TreeCtrl):
 
         self.log = Logger()
 
-
     def createEmptyIDSsTree(self, IDSDefFile):
-        #The tree is created from CPODef.xml or IDSDef.xml file
+        """The tree is created from CPODef.xml or IDSDef.xml file"""
         tree = ET.parse(IDSDefFile)
         idssroot = tree.getroot()
         # Add the node information to each IDS node
         returnedDict = {}
         for child in idssroot:
             if (child.tag == 'IDS'):
+                """Extract IDS properties from IDSDef.xml file"""
+                """Get IDS name"""
                 idsName = child.get('name')
+                """Get IDS documentation"""
+                idsDocumentation = child.get('documentation')
                 self.idsNamesList.append(idsName)
                 self.idsAlreadyParsed[idsName] = 0
+
+                """Set array holding IDS properties"""
                 itemDataDict = {}
                 itemDataDict['IDSName'] = idsName
                 itemDataDict['isIDSRoot'] = 1
@@ -91,6 +97,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 itemDataDict['Tag'] = idsName
                 itemDataDict['Path']= itemDataDict['Tag']
                 itemDataDict['availableIDSData'] = 0
+                itemDataDict['documentation'] = idsDocumentation
                 # Add the ids nodes
                 #item = wx.TreeItemData(itemDataDict)
                 idsNode = self.AppendItem(self.root, idsName, -1, -1, itemDataDict)
@@ -109,21 +116,114 @@ class WxDataTreeView(wx.TreeCtrl):
 
     # Select the node, call the HandleClick function
     def OnMouseEvent(self, event):
+        """Mouse event handlers."""
 
         pos = event.GetPosition()
 
         if (event.LeftDown()):
+            """Left mouse button click anywhere inside the application"""
             self.popupmenu = None
 
         if event.LeftDown() and not self.HasFlag(wx.TR_MULTIPLE):
+            """Left mouse button click (down):"""
+            """Within database tree structure window"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
+                """On left click directly on IDS database node.
+                (TREE_HITTEST_ONITEM -> Anywhere on item)
+                """
                 self.SetFocus()
+                """ - Select/Highlight the item/node"""
                 self.SelectItem(ht_item)
+
+                """NODE DOCUMENTATION PANEL"""
+                self.setSelectedItem(ht_item)
+                """ - Set node label"""
+                node_label = \
+                    str(self.GetItemData(ht_item).get('dataName'))
+                """ - Set node documentation"""
+                node_doc = \
+                    str(self.GetItemData(ht_item).get('documentation'))
+
+                """ - Set all node documentation related strings to single 
+                string array for better handling 
+                """
+                node_doc_str_array = []
+                node_doc_str_array.append("Node: ")
+                node_doc_str_array.append(node_label)
+                node_doc_str_array.append("Documentation: ")
+                node_doc_str_array.append(node_doc)
+
+                """Get size and position of WxTreeView window/frame to be used 
+                for positioning the node documentation frame
+                """
+                """ - Get parent of left-clicked tree view 
+                (WxDataTreeViewFrame)
+                """
+                WxDataTreeViewFrame_frame = self.parent
+                """ - Get position"""
+                px, py = WxDataTreeViewFrame_frame.GetPosition()
+                """ - Get size"""
+                sx, sy = WxDataTreeViewFrame_frame.GetSize()
+
+                """ - Modify the position and size for more appealing look of the 
+                node documentation panel
+                """
+                px_ndoc = px
+                py_ndoc = py+sy
+                sx_ndoc = sx
+                sy_ndoc = 175
+
+                """New frame for displaying node documentation with the use of 
+                ShowNodeDocumentation.py. 
+                """
+                """ - Set the frame and statictext IDs"""
+                frame_node_doc_id = 10012
+                """ - Note: The statictext IDs must must match to the ones in
+                ShowNodeDocumentation.create function!
+                """
+                stext_node_label_id = 10002
+                stext_node_doc_id = 10004
+
+                """Updating node documentation """
+                if (wx.FindWindowById(stext_node_doc_id) != None):
+                    """ - If the frame window (documentation static text ID) 
+                    already exists, then update only the required static text 
+                    (SetLabel), displaying the node label and documentation
+                    """
+                    """ - Find node label static text by ID"""
+                    stext_node_label = wx.FindWindowById(stext_node_label_id)
+                    """ - Update node label static text"""
+                    stext_node_label.SetLabel(node_doc_str_array[1])
+                    """ - Find node documentation static text by ID"""
+                    stext_node_doc = wx.FindWindowById(stext_node_doc_id)
+                    """ - Update node documentation static text"""
+                    stext_node_doc.SetLabel(node_doc_str_array[3])
+                    stext_node_doc.Wrap(sx_ndoc*0.90)
+
+                    """ - Update the node documentation frame position in 
+                    correlation to Browser_API position and size changes
+                    """
+                    """ - Find node documentation frame by ID"""
+                    frame_node_doc = wx.FindWindowById(frame_node_doc_id)
+                    """ - Update position"""
+                    frame_node_doc.SetPosition((px_ndoc, py_ndoc))
+                    """ - Update size"""
+                    frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
+                else:
+                    """ - Else, if the frame window (static text ID) doesn't,
+                    exists create new one"""
+                    frame_node_doc = \
+                        ShowNodeDocumentation(
+                            documentation = node_doc_str_array,
+                            pos_x=px_ndoc, pos_y=py_ndoc,
+                            size_x=sx_ndoc, size_y=sy_ndoc)
+                    frame_node_doc.SetId(frame_node_doc_id)
+                    frame_node_doc.Show()
             else:
                 event.Skip()
-
         elif event.RightDown() and not event.ShiftDown():
+            """Right mouse button click (down) on IDS node"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
                 self.setSelectedItem(ht_item)
@@ -133,6 +233,7 @@ class WxDataTreeView(wx.TreeCtrl):
                     self.OnShowPopup(pos)
 
         elif event.RightDown() and event.ShiftDown():
+            """Right mouse button click (down) + holding shift key on IDS node"""
             ht_item, ht_flags = self.HitTest(event.GetPosition())
             if (ht_flags & wx.TREE_HITTEST_ONITEM) != 0:
                 self.setSelectedItem(ht_item)
@@ -200,6 +301,8 @@ class WxDataTreeViewFrame(wx.Frame):
         self.parent = parent
         self.Bind(wx.EVT_CLOSE, self.onClose)
         self.createMenu()
+        """ Set WxDataTreeViewFrame ID"""
+        # self.SetId(10)
 
         self.logWindow = wx.TextCtrl(self, wx.ID_ANY, "Log window\n", size=(100, 100),
                                      style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
@@ -225,15 +328,23 @@ class WxDataTreeViewFrame(wx.Frame):
         
     def onClose(self, event):
         self.Hide()
+        """Unset WxDataTreeViewFrame ID (set it to unused ID)"""
+        self.SetId(-1)
 
     def onShowConfigurations(self, event):
         self.configurationListsFrame = ConfigurationListsFrame(self)
         self.configurationListsFrame.showListBox()
 
     def createMenu(self):
+        """
+        Configure the menu bar.
+        """
         menubar = wx.MenuBar()
         menu = wx.Menu()
-        item = menu.Append(wx.NewId(), item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+        """Set new menubar item to be added to 'Options' menu"""
+        item = menu.Append(wx.NewId(), \
+            item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+        """Add and set 'Options' menu """
         menubar.Append(menu, 'Options')
         self.SetMenuBar(menubar)
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item)

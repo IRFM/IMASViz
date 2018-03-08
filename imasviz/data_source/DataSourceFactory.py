@@ -10,20 +10,26 @@ class DataSourceFactory:
         pass
 
     def createUDADatasource(self, shotNumber, runNumber = 0, machineName=None):
-        return self.create(shotNumber, runNumber, None, None, GlobalValues.IMAS_UDA, machineName)
+        return self.create(shotNumber, runNumber, None, None,
+                           GlobalValues.IMAS_UDA, machineName)
 
-    def create(self,shotNumber, runNumber = 0, userName = None, imasDbName = None, dataSourceName = GlobalValues.IMAS_NATIVE, machineName = None):
+    def create(self, shotNumber, runNumber = 0, userName = None,
+               imasDbName = None, dataSourceName = GlobalValues.IMAS_NATIVE,
+               machineName = None):
 
         if dataSourceName == None or dataSourceName == '':
-            raise ValueError("A datasource name is required for creating a datasource")
+            raise ValueError(
+                "A datasource name is required for creating a datasource")
 
         if dataSourceName == GlobalValues.IMAS_NATIVE:
-            dataSource = IMASDataSource(dataSourceName, userName, imasDbName, shotNumber, runNumber)
+            dataSource = IMASDataSource(dataSourceName, userName, imasDbName,
+                                        shotNumber, runNumber)
             return dataSource
 
         elif dataSourceName == GlobalValues.TORE_SUPRA:
             #raise ValueError("Tore-Supra datasource is not currently available")
-            dataSource = ToreSupraDataSource(GlobalValues.TORE_SUPRA, shotNumber, runNumber)
+            dataSource = ToreSupraDataSource(GlobalValues.TORE_SUPRA,
+                                            shotNumber, runNumber)
             return dataSource
 
         else: # UDA datasource
@@ -33,7 +39,9 @@ class DataSourceFactory:
 
             elif machineName == GlobalValues.WEST:
                 #print "Creating IMASPublicDataSource..."
-                dataSource = IMASPublicDataSource(dataSourceName, machineName, shotNumber, runNumber)
+                dataSource = IMASPublicDataSource(dataSourceName, machineName,
+                                                  shotNumber, runNumber)
                 return dataSource
             else:
-                raise ValueError("UDA public datasource '" + machineName + "' is not supported by UDA")
+                raise ValueError("UDA public datasource '" + machineName
+                    + "' is not supported by UDA")
