@@ -99,7 +99,7 @@ class Browser_API():
     def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0):
         if figureKey == None:
             figureKey = self.GetNextKeyForFigurePlots()
-        PlotSelectedSignals(dataTreeFrame.wxTreeView, figureKey=figureKey, update=0).execute()
+        PlotSelectedSignals(dataTreeFrame.wxTreeView, figureKey=figureKey, update=update).execute()
 
     # Plot the set of signals selected by the user
     def PlotSelectedSignalsInMultiPlotFrame(self, dataTreeFrame, configFileName = None, figureKey=None, update=0):
