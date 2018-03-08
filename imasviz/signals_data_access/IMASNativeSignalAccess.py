@@ -23,7 +23,7 @@ class IMASNativeSignalAccess:
 
             t = None
 
-            rval = eval('ids.' + selectedNodeData['dataName'])
+            rval = eval(selectedNodeData['dataName'])
             r = np.array([rval])
 
             if selectedNodeData["coordinate1_itime_dependent"] == 1:

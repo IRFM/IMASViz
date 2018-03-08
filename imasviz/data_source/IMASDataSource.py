@@ -171,7 +171,7 @@ class IMASDataSource:
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode):
         ids = self.ids #@UnusedVariable
-        if len(eval('ids.' + signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+        if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
             return wx.BLACK
         return wx.BLUE #non empty (signals) arrays appear in blue
 

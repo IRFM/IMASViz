@@ -95,7 +95,7 @@ class TreeNode:
     def coordinate1Length(self, selectedNodeData, ids):
 
         if self.coordinate1 == "1..N" or self.coordinate1 == "1...N":
-            r = np.array([eval('ids.' + selectedNodeData['dataName'])])
+            r = np.array([eval(selectedNodeData['dataName'])])
             return len(r[0])
 
         to_evaluate = "ids." + selectedNodeData['IDSName'] + "." + self.evaluateCoordinate1()

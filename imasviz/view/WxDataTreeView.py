@@ -253,6 +253,8 @@ class WxDataTreeViewFrame(wx.Frame):
             self.wxTreeView.log.info("Loading occurrence " + str(occurrence) + " of "+ idsName + " IDS ended successfully, building view...")
             self.wxTreeView.update_view(idsName, idsData)
             self.wxTreeView.log.info("View update ended.")
+            if (idsName == 'equilibrium'):
+                self.wxTreeView.log.info("WARNING: GGD structure array from parent equilibrium.time_slice[itime] has been ignored.")
         t5 = time.time()
         print('update took ' + str(t5 - t4) + 'seconds')
         print ('updateView ended.')
