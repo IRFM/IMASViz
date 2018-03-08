@@ -118,6 +118,13 @@ class IMAS_DataAccessCodeGenerator():
                  parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
                  self.printCode(parentCode, level)
 
+                 documentation = ids_child_element.get('documentation')
+                 if documentation != None:
+                     documentation = documentation.replace("'", "''")
+                     documentation = documentation.replace("\n", "")
+                     code = "parent.set(" + "'documentation', '" + documentation + "')"
+                     self.printCode(code, level)
+
                  self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index, idsName)
 
             elif data_type == 'struct_array':
@@ -156,10 +163,13 @@ class IMAS_DataAccessCodeGenerator():
                 code = "parent.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level + 1)
 
-                # documentation = ids_child_element.get('documentation')
-                # if documentation != None:
-                #     code = "parent.set(" + "'documentation', '" + documentation + "')"
-                #     self.printCode(code, level + 1)
+                documentation = ids_child_element.get('documentation')
+                if documentation != None:
+                    documentation = documentation.replace("'", "''")
+                    documentation = documentation.replace("\n", "")
+                    code = "parent.set(" + "'documentation', '" + documentation + "')"
+                    self.printCode(code, level + 1)
+
                 if '(i' in ids_child_element.get('path_doc'): #this is an array of
                     parent_AOS = ids_child_element
 
@@ -195,9 +205,11 @@ class IMAS_DataAccessCodeGenerator():
                     code = "node.set(" + "'units', '" + units + "')"
                     self.printCode(code, level)
                 documentation = ids_child_element.get('documentation')
-                # if documentation != None:
-                #     code = "node.set(" + "'documentation', '" + documentation + "')"
-                #     self.printCode(code, level)
+                if documentation != None:
+                    documentation = documentation.replace("'", "''")
+                    documentation = documentation.replace("\n", "")
+                    code = "node.set(" + "'documentation', '" + documentation + "')"
+                    self.printCode(code, level)
 
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
                 if level == 1:
@@ -251,10 +263,12 @@ class IMAS_DataAccessCodeGenerator():
                     code = "node.set(" + "'units', '" + units + "')"
                     self.printCode(code, level)
 
-                # documentation = ids_child_element.get('documentation')
-                # if documentation != None:
-                #     code = "node.set(" + "'documentation', '" + documentation + "')"
-                #     self.printCode(code, level)
+                documentation = ids_child_element.get('documentation')
+                if documentation != None:
+                    documentation = documentation.replace("'","''")
+                    documentation = documentation.replace("\n", "")
+                    code = "node.set(" + "'documentation', '" + documentation + "')"
+                    self.printCode(code, level)
 
                 type = ids_child_element.get('type')
                 code = "node.set(" + "'type', '" + type + "')"
