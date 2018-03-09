@@ -22,7 +22,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
-from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation, SetScrolledPanel
+from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation, SetNodeDocScrolledPanel
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -117,7 +117,6 @@ class WxDataTreeView(wx.TreeCtrl):
     # Select the node, call the HandleClick function
     def OnMouseEvent(self, event):
         """Mouse event handlers."""
-
         pos = event.GetPosition()
 
         if (event.LeftDown()):
@@ -190,6 +189,9 @@ class WxDataTreeView(wx.TreeCtrl):
                 stext_node_label_id = 10002
                 stext_node_doc_id = 10004
 
+                """ - Find node documentation frame by ID"""
+                frame_node_doc = wx.FindWindowById(frame_node_doc_id)
+
                 """Updating node documentation """
                 if (wx.FindWindowById(stext_node_doc_id) != None):
                     """ - If the frame window (documentation static text ID)
@@ -207,14 +209,18 @@ class WxDataTreeView(wx.TreeCtrl):
                     stext_node_doc.Wrap(sx_ndoc*0.90)
 
                     """ - Update the node documentation frame position in
-                    correlation to Browser_API position and size changes
+                    correlation to Browser_API position and size changes. Only
+                    if the menu selection "Fix panel location" is disabled
                     """
-                    """ - Find node documentation frame by ID"""
-                    frame_node_doc = wx.FindWindowById(frame_node_doc_id)
-                    """ - Update position"""
-                    frame_node_doc.SetPosition((px_ndoc, py_ndoc))
-                    """ - Update size"""
-                    frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
+                    fix_loc_checkitem_id = 10005
+                    fix_loc_checkitem_value = frame_node_doc.GetMenuBar(). \
+                        FindItemById(fix_loc_checkitem_id).IsChecked()
+                    if (fix_loc_checkitem_value != True):
+                        """ - Update position"""
+                        frame_node_doc.SetPosition((px_ndoc, py_ndoc))
+                        """ - Update size"""
+                        frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
+
                 else:
                     """ - Else, if the frame window (static text ID) doesn't,
                     exists create new one"""
