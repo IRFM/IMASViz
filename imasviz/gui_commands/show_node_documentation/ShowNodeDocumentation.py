@@ -104,18 +104,9 @@ class SetNodeDocMenuBar(wx.MenuBar):
         self.MenuAddCheckItem(menu=menu, parent=parent, id=10005,
                               title="Fix panel location")
 
-        """Add exit option (for parent)"""
-        self.MenuAddExit(menu=menu, parent=parent)
-
         return menu
 
     def MenuAddCheckItem(self, menu, parent, id, title):
         """Add Check Item to menu
         """
         menu.AppendCheckItem(id, title)
-
-    def MenuAddExit(self, menu, parent):
-        """Add Exit Parent feature to menu
-        """
-        exit = menu.Append(-1, "Exit")
-        parent.Bind(wx.EVT_MENU, parent.OnExit, exit)
