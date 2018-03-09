@@ -12,14 +12,28 @@ class ShowNodeDocumentation(wx.Frame):
                           pos=(pos_x, pos_y),
                           size=(size_x, size_y),
                           name = "Frame-Documentation")
+        """Bind to mouse event handler"""
+        # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
+        """Set menu bar"""
+        self.SetMenuBar(SetNodeDocMenuBar(parent=self))
 
         """Set wrap width later to be used for documentation static text"""
         stext_wrap_width = size_x*0.90
         """Create panel"""
-        SetScrolledPanel(self, documentation, stext_wrap_width)
+        SetNodeDocScrolledPanel(self, documentation, stext_wrap_width)
 
-class SetScrolledPanel(wx.lib.scrolledpanel.ScrolledPanel):
-    """Routine for displaying popup frame containing node description
+    # def OnMouseEvent(self, event):
+    #     """Mouse event handlers."""
+    #     if event.LeftDown():
+    #         print(event.Id)
+
+    def OnExit(self, event):
+        """Close the panel
+        """
+        self.Close()
+
+class SetNodeDocScrolledPanel(wx.lib.scrolledpanel.ScrolledPanel):
+    """Class for setting node doc panel scroll bar
     """
     def __init__(self, parent, documentation, stext_wrap_width):
 
@@ -67,3 +81,41 @@ class SetScrolledPanel(wx.lib.scrolledpanel.ScrolledPanel):
         self.SetSizer(vbox)
         """Set scrolling"""
         self.SetupScrolling()
+
+class SetNodeDocMenuBar(wx.MenuBar):
+    """Class for setting node doc panel menu bar
+    """
+    def __init__(self, parent):
+        """Set full menu bar
+        """
+
+        """Set default menu bar"""
+        wx.MenuBar.__init__(self)
+
+        """Set first menu"""
+        first_menu = self.SetFirstMenu(parent=parent)
+        """Add the first menu to menubar tab 'Menu'"""
+        self.Append(first_menu, "Menu")
+
+    def SetFirstMenu(self, parent):
+        """Set first menu"""
+        menu = wx.Menu()
+        """ - Add check item to menu"""
+        self.MenuAddCheckItem(menu=menu, parent=parent, id=10005,
+                              title="Fix panel location")
+
+        """Add exit option (for parent)"""
+        self.MenuAddExit(menu=menu, parent=parent)
+
+        return menu
+
+    def MenuAddCheckItem(self, menu, parent, id, title):
+        """Add Check Item to menu
+        """
+        menu.AppendCheckItem(id, title)
+
+    def MenuAddExit(self, menu, parent):
+        """Add Exit Parent feature to menu
+        """
+        exit = menu.Append(-1, "Exit")
+        parent.Bind(wx.EVT_MENU, parent.OnExit, exit)
