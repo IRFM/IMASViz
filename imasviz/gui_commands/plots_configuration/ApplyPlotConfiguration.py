@@ -16,4 +16,4 @@ class ApplyPlotConfiguration():
         api = Browser_API()
         dataSource = self.dataTreeFrame.wxTreeView.dataSource
         api.SelectSignals(self.dataTreeFrame, self.paths)
-        api.PlotSelectedSignalsInMultiFrame(self.dataTreeFrame, 0, 0, plotConfig=self.plotConfig)
+        api.PlotSelectedSignalsInMultiPlotFrame(self.dataTreeFrame, 0, 0, plotConfig=self.plotConfig)

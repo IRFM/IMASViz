@@ -162,10 +162,11 @@ class IMASDataSource:
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
-        if IDSName in IMASDataSource.IDAM_MAPPED_IDS:
-            return True
-        else:
-            return False
+        return True
+        # if IDSName in IMASDataSource.IDAM_MAPPED_IDS:
+        #     return True
+        # else:
+        #     return False
 
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode):

@@ -12,7 +12,7 @@ class SubPlotsShareXFrame(wx.Frame):
         wx.Frame.__init__(self,parent,title=title,size=(800,800))
         self.imas_viz_api = None
         #self.keep = False
-        self.fig = plt.figure()
+        #self.fig = plt.figure()
         self.subPlotsList = subPlotsList
         self.subplotsCount = subplotsCount
         self.hspace = hspace

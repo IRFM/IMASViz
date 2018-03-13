@@ -13,6 +13,10 @@ class ShowNodeDocumentation(wx.Frame):
                           pos=(pos_x, pos_y),
                           size=(size_x, size_y),
                           name = "Frame-Documentation")
+        """Bind to mouse event handler"""
+        # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
+        """Set menu bar"""
+        self.SetMenuBar(SetNodeDocMenuBar(parent=self))
 
         """Bind to mouse event handler"""
         # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
@@ -105,8 +109,6 @@ class ShowNodeDocumentation(wx.Frame):
                     size_x=sx_ndoc, size_y=sy_ndoc)
             frame_node_doc.SetId(frame_node_doc_id)
             frame_node_doc.Show()
-
-
 
 class SetNodeDocScrolledPanel(wx.lib.scrolledpanel.ScrolledPanel):
     """Class for setting node doc panel scroll bar
