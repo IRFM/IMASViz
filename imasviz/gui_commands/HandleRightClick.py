@@ -19,7 +19,7 @@ class HandleRightClick:
         dico = self.view.GetItemData(node)
 
         if dico == None:
-            showPopUpMenu = PluginsHandler(self.view)
+            showPopUpMenu = PluginsHandler(self.view, dico)
             showPopUp = showPopUpMenu.showPopUpMenu(['overview'])
             return showPopUp
 
