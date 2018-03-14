@@ -10,8 +10,9 @@ class MenuIDS:
 
 class PluginsHandler:
 
-    def __init__(self, view):
+    def __init__(self, view, dico):
         self.view = view
+        self.dico = dico    # Passed item/subject
         self.menuIDS = MenuIDS()
         self.pluginsObjects = VIZPlugins.getPluginsObjects()
 
@@ -77,6 +78,10 @@ class PluginsHandler:
                 pluginsConfigurationsList = VIZPlugins.getPluginsConfiguration(pluginsName)
                 pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
                 pluginsConfiguration['imasviz_view'] = self.view
+                """Set ArraySize Plugin 'node_attributes' option
+                (defined in the plugin definition .py file"""
+                pluginsConfiguration['node_attributes'] = self.dico
+                """Execute the plugins"""
                 pluginsObject.execute(wx.App(), pluginsConfiguration)
 
 

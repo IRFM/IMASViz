@@ -158,79 +158,10 @@ class WxDataTreeView(wx.TreeCtrl):
                 node_doc_str_array.append("Documentation: ")
                 node_doc_str_array.append(node_doc)
 
-                """Get size and position of WxTreeView window/frame to be used
-                for positioning the node documentation frame
-                """
-                """ - Get parent of left-clicked tree view
-                (WxDataTreeViewFrame)
-                """
-                WxDataTreeViewFrame_frame = self.parent
-                """ - Get position"""
-                px, py = WxDataTreeViewFrame_frame.GetPosition()
-                """ - Get size"""
-                sx, sy = WxDataTreeViewFrame_frame.GetSize()
+                ShowNodeDocumentation.SetAndShow(
+                    parent_WxDataTreeView = self.parent,
+                    documentation = node_doc_str_array)
 
-                """ - Modify the position and size for more appealing look of the
-                node documentation panel
-                """
-                px_ndoc = px
-                py_ndoc = py+sy
-                sx_ndoc = sx
-                sy_ndoc = 175
-
-                """New frame for displaying node documentation with the use of
-                ShowNodeDocumentation.py.
-                """
-                """ - Set the frame and statictext IDs"""
-                frame_node_doc_id = 10012
-                """ - Note: The statictext IDs must must match to the ones in
-                ShowNodeDocumentation.create function!
-                """
-                stext_node_label_id = 10002
-                stext_node_doc_id = 10004
-
-                """ - Find node documentation frame by ID"""
-                frame_node_doc = wx.FindWindowById(frame_node_doc_id)
-
-                """Updating node documentation """
-                if (wx.FindWindowById(stext_node_doc_id) != None):
-                    """ - If the frame window (documentation static text ID)
-                    already exists, then update only the required static text
-                    (SetLabel), displaying the node label and documentation
-                    """
-                    """ - Find node label static text by ID"""
-                    stext_node_label = wx.FindWindowById(stext_node_label_id)
-                    """ - Update node label static text"""
-                    stext_node_label.SetLabel(node_doc_str_array[1])
-                    """ - Find node documentation static text by ID"""
-                    stext_node_doc = wx.FindWindowById(stext_node_doc_id)
-                    """ - Update node documentation static text"""
-                    stext_node_doc.SetLabel(node_doc_str_array[3])
-                    stext_node_doc.Wrap(sx_ndoc*0.90)
-
-                    """ - Update the node documentation frame position in
-                    correlation to Browser_API position and size changes. Only
-                    if the menu selection "Fix panel location" is disabled
-                    """
-                    fix_loc_checkitem_id = 10005
-                    fix_loc_checkitem_value = frame_node_doc.GetMenuBar(). \
-                        FindItemById(fix_loc_checkitem_id).IsChecked()
-                    if (fix_loc_checkitem_value != True):
-                        """ - Update position"""
-                        frame_node_doc.SetPosition((px_ndoc, py_ndoc))
-                        """ - Update size"""
-                        frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
-
-                else:
-                    """ - Else, if the frame window (static text ID) doesn't,
-                    exists create new one"""
-                    frame_node_doc = \
-                        ShowNodeDocumentation(
-                            documentation = node_doc_str_array,
-                            pos_x=px_ndoc, pos_y=py_ndoc,
-                            size_x=sx_ndoc, size_y=sy_ndoc)
-                    frame_node_doc.SetId(frame_node_doc_id)
-                    frame_node_doc.Show()
             else:
                 event.Skip()
         elif event.RightDown() and not event.ShiftDown():
