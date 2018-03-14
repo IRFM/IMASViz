@@ -6,19 +6,26 @@ from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
 class SubPlotsManagerFrame(wx.Frame):
     def __init__(self, title, dataTree):
         wx.Frame.__init__(self, None, 1, title=title)
+
+        """Set panel background colour"""
+        self.SetBackgroundColour((204, 229, 255))
+
         self.dataTree = dataTree
         selectedSignals = self.dataTree.selectedSignals
 
-        x = ask(message='Number of desired subplots?', default_value=str(len(selectedSignals)))
+        x = setNumberOfSubplots(message = 'Set number of required subplots:',
+            default_value = str(len(selectedSignals)))
         self.subplotsCount = int(x)
 
         signalsCount = len(selectedSignals)
-        button_open = wx.Button(self, 1, 'Open subplots')
+        button_open = wx.Button(self, 1, 'Open subplots', style = wx.BU_LEFT)
         signalNodeDataValueIterator = selectedSignals.values()
         self.signals_list = []
 
+        iterSignalNodeDataValueIterator = iter(signalNodeDataValueIterator)
+
         for i in range(signalsCount):
-            signalNodeDataValue = next(iter(signalNodeDataValueIterator))
+            signalNodeDataValue = next(iterSignalNodeDataValueIterator)
             signalNodeData = signalNodeDataValue[1]
             # dataName = signalNodeData["dataName"]
             self.signals_list.append(signalNodeData)
@@ -28,7 +35,6 @@ class SubPlotsManagerFrame(wx.Frame):
         vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 20)
         self.Bind(wx.EVT_BUTTON, self.showSubPlots)
         self.SetSizer(vbox)
-
 
     def buildList(self, vbox):
         self.label = []
@@ -41,13 +47,28 @@ class SubPlotsManagerFrame(wx.Frame):
         indexList = []
 
         for i in range(self.subplotsCount):
-            indexList.append("subplot : " + str(i))
+            """Set text to be used within ComboBox widget (list of options to
+            choose from)
+            """
+            indexList.append("subplot : " + str(i+1))
             i = i + 1
 
+        """Set BoxSizer"""
         hbox_title = wx.BoxSizer(wx.HORIZONTAL)
-        hbox_title.Add(wx.StaticText(self, -1, "Signal"))
-        hbox_title.Add(wx.StaticText(self, -1, "                        "))
-        hbox_title.Add(wx.StaticText(self, -1, "Subplot"))
+        """Set the signal and subplot statictext"""
+        stext_signal = wx.StaticText(self, -1, "Signal")
+        stext_subplot = wx.StaticText(self, -1, "Subplot")
+        """Set font of the statictexts"""
+        font_label = wx.Font(12, wx.SWISS, wx.NORMAL, wx.BOLD)
+        stext_signal.SetFont(font_label)
+        stext_subplot.SetFont(font_label)
+
+        """Add all static text to BoxSizer (add space (static line) between both
+        static texts
+        """
+        hbox_title.Add(stext_signal, 0, wx.LEFT, 4)
+        hbox_title.Add(wx.StaticLine(self, -1, size=(220, 0)), 0, wx.ALL, 5)
+        hbox_title.Add(stext_subplot, 0, wx.LEFT, 0)
 
         vbox.Add(hbox_title, 0, wx.TOP, 5)
 
@@ -55,9 +76,16 @@ class SubPlotsManagerFrame(wx.Frame):
         for signal in self.signals_list:
             hbox = wx.BoxSizer(wx.HORIZONTAL)
             dataName = signal["Path"]
-            self.label.append(wx.StaticText(self, -1, dataName))
+
+            print(dataName)
+
+            """Add signal item label"""
+            self.label.append(wx.StaticText(self, -1, str(j+1) + ". " + dataName))
+            """Add space"""
             self.space.append(wx.StaticText(self, -1, " "))
-            self.combos.append(wx.ComboBox(self, id = j, style=wx.CB_READONLY, choices=indexList))
+            """Add ComboBox"""
+            self.combos.append(wx.ComboBox(self, id = j, style = wx.CB_READONLY,
+                                           choices = indexList))
             self.combos[j].SetSelection(j)
 
             self.combos[j].Bind(wx.EVT_COMBOBOX, self.OnCombo)
@@ -65,9 +93,10 @@ class SubPlotsManagerFrame(wx.Frame):
 
             if j < self.subplotsCount:
                 list.append(j)
-                self.selectedIndex[j] = list #each subplot contains only one signal at the beginning
+                self.selectedIndex[j] = list # each subplot contains only one
+                                             # signal at the beginning
 
-            hbox.Add(self.label[j], 1, wx.EXPAND | wx.ALL)
+            hbox.Add(self.label[j], 1, wx.EXPAND | wx.ALL, 4)
             hbox.Add(self.space[j], 1, wx.EXPAND | wx.ALL)
             hbox.Add(self.combos[j], 1, wx.EXPAND| wx.ALL,5)
 
@@ -93,7 +122,8 @@ class SubPlotsManagerFrame(wx.Frame):
        print (self.selectedIndex)
 
     def getSignals(self):
-        signals = {} #key = subplot number, value = list of signals in the subplot
+        signals = {} # key = subplot number, value = list of signals in the
+                     # subplot
         for key in self.selectedIndex:
             signals[key] = []
             for item in self.selectedIndex[key]:
@@ -117,22 +147,27 @@ class SubPlotsManagerFrame(wx.Frame):
                 s = PlotSignal.getSignal(self.dataTree, signalNodeData)
                 t = PlotSignal.getTime(s)
                 v = PlotSignal.get1DSignalValue(s)
-                label, xlabel, ylabel, title = PlotSignal.plotOptions(self.dataTree, signalNodeData, self.dataTree.dataSource.shotNumber)
-                sp = SubPlot(t, v, subplot_number=key, scatter=False, legend=label)
+                label, xlabel, ylabel, title = \
+                    PlotSignal.plotOptions(self.dataTree, signalNodeData,
+                                           self.dataTree.dataSource.shotNumber)
+                sp = SubPlot(t, v, subplot_number = key, scatter = False,
+                             legend = label)
                 subPlotsList.append(sp)
 
-        frame = SubPlotsShareXFrame(None, "SubPlots", subPlotsList, self.subplotsCount, 0.1)
+        frame = SubPlotsShareXFrame(None, "SubPlots", subPlotsList,
+                                    self.subplotsCount, 0.1)
         frame.imas_viz_api = self.dataTree.imas_viz_api
         frame.Show()
 
 
-def ask(parent=None, message='', default_value=''):
-    dlg = wx.TextEntryDialog(parent, message, value=default_value,  style=wx.OK)
+def setNumberOfSubplots(parent=None, message='', default_value=''):
+    dlg = wx.TextEntryDialog(parent, message,
+                             caption = "SubPlots Manager - Input",
+                             value = default_value, style = wx.OK)
     dlg.ShowModal()
     result = dlg.GetValue()
     dlg.Destroy()
     return result
-
 
 import os
 
@@ -145,7 +180,8 @@ if __name__ == "__main__":
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
 
     dataSourceFactory = DataSourceFactory()
-    dataSource = dataSourceFactory.create(name=GlobalValues.TORE_SUPRA, shotNumber=47979)
+    dataSource = dataSourceFactory.create(name = GlobalValues.TORE_SUPRA,
+        shotNumber = 47979)
     from imasviz.Browser_API import Browser_API
     api = Browser_API()
     frame = api.CreateDataTree(dataSource)
