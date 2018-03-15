@@ -193,6 +193,7 @@ class TabThree(wx.Panel):
         self.shotNumberTS = wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
 
+        #publicDatabases = ['WEST', 'TCV', 'JET']
         publicDatabases = ['WEST']
         self.machineName = wx.Choice(self,
                                      choices=publicDatabases,
@@ -251,7 +252,7 @@ class TabThree(wx.Panel):
         self.vbox.Hide(2)
         self.vbox.Show(1)
 
-        self.runNumber.SetEditable(False)
+        self.runNumber.SetEditable(True)
 
 
     def SwitcherTS(self, evt):
