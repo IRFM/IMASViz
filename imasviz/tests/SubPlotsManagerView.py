@@ -2,6 +2,9 @@ import wx
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+from wxmplot import StackedPlotFrame
+from imasviz.plotframes.IMASVIZ_StackedPlotFrame import StackedPlotFrame
+import numpy
 
 class SubPlotsManagerFrame(wx.Frame):
     def __init__(self, title, dataTree):
@@ -141,6 +144,11 @@ class SubPlotsManagerFrame(wx.Frame):
         #signalHandling = SignalHandling(self.dataTree)
         subPlotsList = []
 
+        """Set the frame for multiple plots. Ratio= top vs bottom panel size
+        ratio
+        """
+        pframe = StackedPlotFrame(title='SubPlotManager', ratio=1.000)
+
         for key in self.selectedIndex:
             for signalNodeData in signals[key]:
                 # print 'dataName : ' + signalNodeData['dataName']
@@ -154,10 +162,25 @@ class SubPlotsManagerFrame(wx.Frame):
                              legend = label)
                 subPlotsList.append(sp)
 
-        frame = SubPlotsShareXFrame(None, "SubPlots", subPlotsList,
-                                    self.subplotsCount, 0.1)
-        frame.imas_viz_api = self.dataTree.imas_viz_api
-        frame.Show()
+            if key == 0:
+                pframe.plot(t[0], v[0], panel='top', label=label, xlabel=xlabel, ylabel=ylabel,
+                            title=title, show_legend=True)
+            if key == 1:
+                pframe.plot(t[0], v[0], panel='bottom', label=label, xlabel=xlabel, ylabel=ylabel,
+                            title=title, show_legend=True)
+
+        # The previous subplotmanager.
+        # TODO: Review the 'Keep this subplot' button event and 'Set plot style'
+        #       menu option (ocated in SubPlotsShareXFrame)
+        #       if they might be useful with the new SubPlotManager,
+        #       done with the help of imasviz StackedPlotFrame feature
+        # frame = SubPlotsShareXFrame(None, "SubPlots", subPlotsList,
+        #                             self.subplotsCount, 0.1)
+        # frame.imas_viz_api = self.dataTree.imas_viz_api
+        # frame.Show()
+
+        pframe.Show()
+        pframe.Raise()
 
 
 def setNumberOfSubplots(parent=None, message='', default_value=''):
