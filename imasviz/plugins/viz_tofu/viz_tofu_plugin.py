@@ -6,7 +6,7 @@ from imasviz.plugins.viz_tofu.WxFrame import CanvasPanel
 
 # Common
 import matplotlib.pyplot as plt
-plt.switch_backend('Qt5Agg')
+#plt.switch_backend('Qt5Agg')
 
 # IMAS
 from imasviz.plugins.VIZPlugins import VIZPlugins
@@ -24,31 +24,38 @@ class ToFuPlugin(VIZPlugins):
             print ('ToFuPlugin to be executed...')
             view = pluginsConfig.get('imasviz_view')
             node_attributes = pluginsConfig.get('node_attributes')
-
+            figure = None
             if node_attributes.get('IDSName')=='bolometer':
                 if pluginsConfig.get('geom'):
-                    tfi.Bolo.load_geom()
+                    out = tfi.Bolo.load_geom()
+                    figure = out[1][0].get_figure()
                 elif pluginsConfig.get('data'):
                     tfi.Bolo.load_data(view.dataSource.shotNumber)
+                    figure = plt.gcf()
             elif node_attributes.get('IDSName')=='interferometer':
                 if pluginsConfig.get('geom'):
-                    tfi.Interfero.load_geom()
+                    out = tfi.Interfero.load_geom()
+                    figure = out[1][0].get_figure()
                 elif pluginsConfig.get('data'):
                     tfi.Interfero.load_data(view.dataSource.shotNumber)
+                    figure = plt.gcf()
             elif node_attributes.get('IDSName')=='soft_x_rays':
                 if pluginsConfig.get('geom'):
-                    tfi.SXR.load_geom()
+                    out = tfi.SXR.load_geom()
+                    figure = out[1][0].get_figure()
                 elif pluginsConfig.get('data'):
                     tfi.SXR.load_data(view.dataSource.shotNumber)
+                    figure = plt.gcf()
+            self.OpenWxFrame(figure)
             app.MainLoop()
         except :
             traceback.print_exc()
             view.log.error(traceback.format_exc())
 
-    def OpenWxFrame(self):
-        fr = wx.Frame(None, title='test')
-        panel = CanvasPanel(fr)
-        panel.draw()
+    def OpenWxFrame(self, figure):
+        fr = wx.Frame(None, title='ToFu', size=(1200,1200))
+        panel = CanvasPanel(fr, figure)
+        #panel.draw()
         fr.Show()
 
 
@@ -69,8 +76,11 @@ if __name__ == "__main__":
     out=tfi.Bolo.load_data(52682)
     #print (out[1])
     #figure = out[1][0].get_figure()
-    #fr = wx.Frame(None, title='test', size=(1000,800))
-    #panel = CanvasPanel(fr, figure)
+    figure = plt.gcf()
+    fr = wx.Frame(None, title='test', size=(1200,1200))
+    panel = CanvasPanel(fr, figure)
     #panel.draw()
-    #fr.Show()
+    fr.Show()
+    #plt.show()
+
     app.MainLoop()
