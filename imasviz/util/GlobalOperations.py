@@ -27,7 +27,7 @@ class GlobalOperations:
     def isTimeHomogeneous(ids, selectedNodeData):
         to_eval = "ids." + selectedNodeData['IDSName'] + ".ids_properties.homogeneous_time"
         homogeneous_time = eval(to_eval)
-        if (homogeneous_time == 0 or homogeneous_time == -999999999):
+        if (homogeneous_time == 0):
             return False
         return True
 

@@ -27,7 +27,7 @@ class IMAS_DataAccessCodeGenerator():
             if name_att == None:
                 continue
             # if name_att != 'equilibrium':
-            #        continue
+            #     continue
             ids.text = name_att
             if i == 0:
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
@@ -355,8 +355,10 @@ class IMAS_DataAccessCodeGenerator():
                 or data_type == 'FLT_4D' or data_type == 'INT_4D' or data_type == 'flt_4d_type' \
                 or data_type == 'FLT_5D' or data_type == 'INT_5D' or data_type == 'flt_5d_type' \
                 or data_type == 'FLT_6D' or data_type == 'INT_6D' or data_type == 'flt_6d_type' :
-                if level == 1:
-                    self.generateParentsCode(level, child.text)
+
+                #if level == 1:
+                self.generateParentsCode(level, child.text)
+
                 ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
                 name = ids_child_element.get('name')
                 name_att = name + '_att_' + str(index)

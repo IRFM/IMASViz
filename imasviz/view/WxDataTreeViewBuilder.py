@@ -68,8 +68,8 @@ class WxDataTreeViewBuilder:
                 # if len(eval(itemDataDict['dataName'])) != 0:
 
                 # print(dataElement.find('name').text)
-                # if dataElement.find('name').text == 'ids.equilibrium.time_slice[0].coordinate_system.tensor_covariant':
-                #     print('OK')
+                if dataElement.find('name').text == 'ids.equilibrium.time_slice[0].coordinate_system.tensor_covariant':
+                     print('OK')
                 wxTreeItemData, isSignal, display_color = \
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
