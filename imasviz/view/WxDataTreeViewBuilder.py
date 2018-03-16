@@ -67,7 +67,9 @@ class WxDataTreeViewBuilder:
                 # itemDataDict['dataName'] = dataElement.find('name').text
                 # if len(eval(itemDataDict['dataName'])) != 0:
 
-
+                # print(dataElement.find('name').text)
+                # if dataElement.find('name').text == 'ids.equilibrium.time_slice[0].coordinate_system.tensor_covariant':
+                #     print('OK')
                 wxTreeItemData, isSignal, display_color = \
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
@@ -75,7 +77,7 @@ class WxDataTreeViewBuilder:
                                                      viewerTree)
                 display=viewerTree.dataSource.treeDisplayedNodeName(dataElement)
 
-                if isSignal==1:
+                if isSignal==1 or isSignal==2:
                     display+=' '+ '(' + str(dataElement.get('data_type')) +')'
 
                 if units != None:
@@ -249,6 +251,14 @@ class WxDataTreeViewBuilder:
         itemDataDict['IDSName'] = idsName
         itemDataDict['dataName'] = dataElement.find('name').text
 
+        for i in range(1,7):
+            coordinate = "coordinate" + str(i)
+            if dataElement.get(coordinate) != None:
+                itemDataDict[coordinate] = dataElement.get(coordinate)
+            coordinateSameAs = "coordinate" + str(i) + "_same_as"
+            if dataElement.get(coordinateSameAs) != None:
+                itemDataDict[coordinateSameAs] = dataElement.get(coordinateSameAs)
+
         coordinate1 = dataElement.get('coordinate1')
 
         if coordinate1 == None and viewerTree.dataSource.name == "TS" and  \
@@ -287,14 +297,14 @@ class WxDataTreeViewBuilder:
         data_type = dataElement.get('data_type')
 
 
-        if data_type == "FLT_1D" or data_type == "flt_1d_type":
-
+        if data_type.startswith("FLT_") or data_type.startswith("flt_") and data_type != "FLT_0D" and data_type != 'flt_0d_type':
             isSignal = 1
             itemDataDict['data_type'] = data_type
-            itemDataDict['coordinate1'] = coordinate1
+            if data_type == 'FLT_1D' or data_type == 'flt_1d_type':
+               itemDataDict['coordinate1'] = coordinate1
+            else:
+                isSignal = 2
             itemDataDict['path_doc'] = dataElement.get('path_doc')
-            # itemDataDict['documentation'] = dataElement.get('documentation')
-
             display_color = viewerTree.dataSource.colorOf(itemDataDict)
 
         itemDataDict['isSignal'] = isSignal

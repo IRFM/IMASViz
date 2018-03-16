@@ -171,9 +171,12 @@ class IMASDataSource:
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode):
         ids = self.ids #@UnusedVariable
-        if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
-            return wx.BLACK
-        return wx.BLUE #non empty (signals) arrays appear in blue
+        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
+            if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+                return wx.BLACK
+            else:
+                return wx.BLUE #non empty (signals) arrays appear in blue
+        return wx.BLACK
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):
@@ -198,9 +201,19 @@ class IMASDataSource:
 
         coordinate_display = None
 
-        if itemDataDict.get('coordinate1') != None:
-            coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
-            viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+        # if itemDataDict.get('coordinate1') != None:
+        #     coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
+        #     viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+
+        for i in range(1,7):
+            coordinate = "coordinate" + str(i)
+            coordinate_same_as = "coordinate" + str(i) + "_same_as"
+            if itemDataDict.get(coordinate) != None:
+                coordinate_display = coordinate + "=" + itemDataDict[coordinate]
+                viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+            if itemDataDict.get(coordinate_same_as) != None:
+                coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
+                viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
 
         doc_display = None
 

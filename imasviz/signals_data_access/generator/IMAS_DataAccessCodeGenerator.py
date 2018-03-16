@@ -24,6 +24,8 @@ class IMAS_DataAccessCodeGenerator():
         i = 0
         for ids in root:
             name_att = ids.get('name')
+            if name_att == None:
+                continue
             # if name_att != 'equilibrium':
             #        continue
             ids.text = name_att
@@ -57,9 +59,13 @@ class IMAS_DataAccessCodeGenerator():
 
                 self.printCode('def execute(self):', 0)
                 self.printCode("idsData = None", 1)
-
+                #print('-------->name_att')
+                #print (name_att)
                 for ids2 in root:
                     name_att2 = ids2.get('name')
+                    if name_att2 == None:
+                        continue
+                    #print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
                     self.printCode("self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("t1 = time.time()", 2)
@@ -344,6 +350,127 @@ class IMAS_DataAccessCodeGenerator():
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
+            elif data_type == 'FLT_2D' or data_type == 'INT_2D' or data_type == 'flt_2d_type' \
+                or data_type == 'FLT_3D' or data_type == 'INT_3D' or data_type == 'flt_3d_type' \
+                or data_type == 'FLT_4D' or data_type == 'INT_4D' or data_type == 'flt_4d_type' \
+                or data_type == 'FLT_5D' or data_type == 'INT_5D' or data_type == 'flt_5d_type' \
+                or data_type == 'FLT_6D' or data_type == 'INT_6D' or data_type == 'flt_6d_type' :
+                if level == 1:
+                    self.generateParentsCode(level, child.text)
+                ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
+                name = ids_child_element.get('name')
+                name_att = name + '_att_' + str(index)
+                affect = name_att + '='
+                self.printCode(affect + ids_child_element.text + '\n', level)
+                parentCode = "node = ET.SubElement(parent, '" + name + "')"
+                self.printCode(parentCode, level)
+
+                path_doc = ids_child_element.get('path_doc')
+
+
+                itimeIndex = self.search_itime_index(path_doc)
+
+                code = "node.set(" + "'itime_index', '" + str(itimeIndex) + "')"
+                self.printCode(code, level)
+
+                code = None
+                coordinateName = None
+
+                for c in range(1,10):
+                    coordinateName = "coordinate" + str(c)
+                    coordinateValue = ids_child_element.get(coordinateName)
+                    if coordinateValue != None:
+                        coordinate = coordinateValue.replace("(", "[")
+                        coordinate = coordinate.replace(")", "]")
+                        coordinate = coordinate.replace("/", ".")
+                        coordinate = self.replaceIndices(coordinate)
+                        code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
+                        self.printCode(code, level)
+
+                    coordinateSameAsName = "coordinate" + str(c) + "_same_as"
+                    coordinateSameAsValue = ids_child_element.get(coordinateSameAsName)
+                    if coordinateSameAsValue != None:
+                        coordinate_same_as = coordinateSameAsValue.replace("(", "[")
+                        coordinate_same_as = coordinate_same_as.replace(")", "]")
+                        coordinate_same_as = coordinate_same_as.replace("/", ".")
+                        coordinate_same_as = self.replaceIndices(coordinate_same_as)
+                        code = "node.set(" + "'" + coordinateSameAsName + "'" + ", '" + coordinate_same_as + "')"  # example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
+                        self.printCode(code, level)
+
+                # if coordinate !=  "1...N" and coordinate.endswith(".time"):
+                #     self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
+                #     coordinateName = "coordinate1"
+                #     coordinate = "time"
+                #     self.printCode("node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')", level + 1)
+
+                code = "node.set(" + "'data_type', '" + data_type + "')"
+                self.printCode(code, level)
+
+                units = ids_child_element.get('units')
+                if units != None:
+                    code = "node.set(" + "'units', '" + units + "')"
+                    self.printCode(code, level)
+
+                documentation = ids_child_element.get('documentation')
+                if documentation != None:
+                    documentation = documentation.replace("'","''")
+                    documentation = documentation.replace("\n", "")
+                    code = "node.set(" + "'documentation', '" + documentation + "')"
+                    self.printCode(code, level)
+
+                nodeName = ids_child_element.get('name')
+                if nodeName != None:
+                    nodeName = nodeName.replace("'", "''")
+                    nodeName = nodeName.replace("\n", "")
+                    code = "node.set(" + "'name', '" + nodeName + "')"
+                    self.printCode(code, level)
+
+                type = ids_child_element.get('type')
+                code = "node.set(" + "'type', '" + type + "')"
+                self.printCode(code, level)
+
+                code = "nameNode = ET.SubElement(node, 'name')"
+                self.printCode(code, level)
+                code = "nameNode.set('data_type', 'STR_0D')"
+                self.printCode(code, level)
+
+                # code = "aos = ET.SubElement(node, 'aos')"
+                # self.printCode(code, level)
+                # code = "aos.text = " + "'" + ids_child_element.text + "'"
+                # self.printCode(code, level)
+                # code = "node.set(" + "'aos', '" + ids_child_element.text + "')"
+                # self.printCode(code, level)
+
+
+                for i in range(0, level - 1):
+                    var_name = GlobalValues.indices[str(i+1)]
+                    var_name_max = GlobalValues.max_indices[str(i + 1)]
+                    code = "var_name = " + "'" + var_name + "'"
+                    self.printCode(code, level)
+                    code = "var_name_max = " + "'" + var_name_max + "'"
+                    self.printCode(code, level)
+                    code = "node.set(var_name" + ", str(" +  GlobalValues.indices[str(i+1)]  + "))"
+                    self.printCode(code, level)
+                    code = "node.set(var_name_max" + ", str(" + GlobalValues.max_indices[str(i + 1)] + "))"
+                    self.printCode(code, level)
+
+                code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
+                self.printCode(code, level)
+
+                aos = ids_child_element.text
+
+                if itimeIndex != -1:
+                    aos = aos.replace("[" + GlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+
+                code = "node.set(" + "'aos', '" + aos + "')"
+                self.printCode(code, level)
+
+                value = self.replaceIndices(ids_child_element.text)
+                value = value.replace('self.', '')
+                #value = value.replace('ids.', '')
+                code = "nameNode.text = " + "'" + value + "'"
+                self.printCode(code, level)
+
 
 
 
@@ -408,7 +535,8 @@ if __name__ == "__main__":
 
     print ("Starting code generation")
     GlobalOperations.checkEnvSettings()
-    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1"]
+    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1", "3.16.0"]
+    #imas_versions = ["3.16.0"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
     print ("End of code generation")
