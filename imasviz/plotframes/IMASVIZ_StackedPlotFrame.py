@@ -21,33 +21,74 @@ class StackedPlotFrame(BaseFrame):
     Top/Bottom MatPlotlib panels in a single frame
     """
     def __init__(self, parent=None, title ='Stacked Plot Frame',
-                 framesize=(850,450), panelsize=(550,450),
+                 numPlots = 1, framesize=(850,800), panelsize=(550,450),
                  ratio=3.0, **kws):
 
         BaseFrame.__init__(self, parent=parent, title=title,
                            size=framesize, **kws)
         self.ratio = ratio
         self.panelsize = panelsize
-        self.panel = None
+        # self.panel0 = None      # Top panel
         self.panel_bot = None
         self.xlabel = None
-        self.BuildFrame()
+
+        """Set empty list of panels for plots (to be populated later)"""
+        panelList = []
+        """Set empty list of panel names"""
+        panelLabelList = []
+
+        for plot_id in range(numPlots):
+            if plot_id == numPlots - 1:      # For bottom plot
+                """Set current plot name"""
+                panelLabel = 'panel_bot'
+            else:
+                """Set current plot name"""
+                panelLabel = 'panel' + str(plot_id)
+
+            """Add plot name to list of plot names"""
+            panelLabelList.append(panelLabel)
+            """Generate code for declaring n panel objects
+            (e.g. self.panel0 etc.)
+            """
+            panelObjectGenCode = 'self.' + panelLabel + '= None'
+            """Execute generated command (e.g. 'self.panel0 = None' to declare
+            current panel object
+            """
+            exec(panelObjectGenCode)
+
+            # """Append the created panel object to panelList"""
+            # addPanel2ListGenCode = 'panelList.append( self.' + panelLabel + ')'
+            # """Execute generated command (e.g.
+            # 'panelList.append(self.panel0') to add the panel object to the
+            # panelList
+            # """
+            # exec(addPanel2ListGenCode)
+
+
+        self.BuildFrame(numPlots = numPlots, panelLabelList = panelLabelList)
 
     def get_panel(self, panelname):
         if panelname.lower().startswith('bot'):
             return self.panel_bot
-        return self.panel
+        else:
+            return eval('self.' + panelname)
 
-    def plot(self, x, y, panel='top', xlabel=None, **kws):
+    def get_panel_by_ID(self, panelID):
+        """Get panel by ID. 'panelname' must be the same as object label
+        (e.g. labelID = 0 for self.panel0)
+        """
+        return eval('self.panel' + str(panelID))
+
+    def plot(self, x, y, panel='panel0', xlabel=None, **kws):
         """plot after clearing current plot """
-        panel = self.get_panel(panel)
-        panel.plot(x, y, **kws)
+        panel0 = self.get_panel(panel)
+        panel0.plot(x, y, **kws)
         if xlabel is not None:
             self.xlabel = xlabel
         if self.xlabel is not None:
             self.panel_bot.set_xlabel(self.xlabel)
 
-    def oplot(self, x, y, panel='top', xlabel=None, **kws):
+    def oplot(self, x, y, panel='panel0', xlabel=None, **kws):
         """plot method, overplotting any existing plot """
         panel = self.get_panel(panel)
         panel.oplot(x, y, **kws)
@@ -63,55 +104,55 @@ class StackedPlotFrame(BaseFrame):
             p.conf.unzoom(full=True)
         # self.panel.set_viewlimits()
 
-    def unzoom(self, event=None, panel='top'):
+    def unzoom(self, event=None, panel='panel0'):
         """zoom out 1 level, or to full data range """
         panel = self.get_panel(panel)
         panel.conf.unzoom(event=event)
         self.panel.set_viewlimits()
 
-    def update_line(self, t, x, y, panel='top', **kws):
+    def update_line(self, t, x, y, panel='panel0', **kws):
         """overwrite data for trace t """
         panel = self.get_panel(panel)
         panel.update_line(t, x, y, **kws)
 
-    def set_xylims(self, lims, axes=None, panel='top', **kws):
+    def set_xylims(self, lims, axes=None, panel='panel0', **kws):
         """set xy limits"""
         panel = self.get_panel(panel)
         # print("Stacked set_xylims ", panel, self.panel)
         panel.set_xylims(lims, axes=axes, **kws)
 
-    def clear(self, panel='top'):
+    def clear(self, panel='panel0'):
         """clear plot """
         panel = self.get_panel(panel)
         panel.clear()
 
-    def set_title(self,s, panel='top'):
+    def set_title(self,s, panel='panel0'):
         "set plot title"
         panel = self.get_panel(panel)
         panel.set_title(s)
 
-    def set_xlabel(self,s, panel='top'):
+    def set_xlabel(self,s, panel='panel0'):
         "set plot xlabel"
         self.panel_bot.set_xlabel(s)
 
-    def set_ylabel(self,s, panel='top'):
+    def set_ylabel(self,s, panel='panel0'):
         "set plot xlabel"
         panel = self.get_panel(panel)
         panel.set_ylabel(s)
 
-    def save_figure(self, event=None, panel='top'):
+    def save_figure(self, event=None, panel='panel0'):
         """ save figure image to file"""
         panel = self.get_panel(panel)
         panel.save_figure(event=event)
 
-    def configure(self, event=None, panel='top'):
+    def configure(self, event=None, panel='panel0'):
         panel = self.get_panel(panel)
         panel.configure(event=event)
 
     ####
     ## create GUI
     ####
-    def BuildFrame(self):
+    def BuildFrame(self, numPlots = 1, panelLabelList = []):
         sbar = self.CreateStatusBar(2, wx.CAPTION)
         sfont = sbar.GetFont()
         sfont.SetWeight(wx.BOLD)
@@ -124,20 +165,52 @@ class StackedPlotFrame(BaseFrame):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         botsize = self.panelsize[0], self.panelsize[1]/self.ratio
-        margins = {'top': dict(left=0.15, bottom=0.005, top=0.10, right=0.05),
-                   'bot': dict(left=0.15, bottom=0.300, top=0.01, right=0.05)}
+        margins = {'panel0': dict(left=0.15, bottom=0.05, top=0.10, right=0.05),
+                   'panel_bot': dict(left=0.15, bottom=0.300, top=0.01, right=0.05)}
 
-        self.panel     = PlotPanel(self, size=self.panelsize)
-        self.panel_bot = PlotPanel(self, size=botsize)
-        self.panel.xformatter = self.null_formatter
-        lsize = self.panel.conf.labelfont.get_size()
-        self.panel_bot.conf.labelfont.set_size(lsize-2)
-        self.panel_bot.yformatter = self.bot_yformatter
-        # self.panel_bot.axes.tick_params(axis='y', labelsize=8)
-        self.panel.conf.theme_color_callback = self.onThemeColor
-        self.panel.conf.margin_callback = self.onMargins
 
-        for pan, pname in ((self.panel, 'top'), (self.panel_bot, 'bot')):
+        setPlotEval = []
+        for plot_id in range(numPlots):
+
+            setPlotEval.append(str('self.' + panelLabelList[plot_id]) )
+
+            if plot_id  == 0:
+                """Set top panel"""
+                self.panel0 = PlotPanel(self, size=self.panelsize)
+                lsize = self.panel0.conf.labelfont.get_size()
+                self.panel0.conf.theme_color_callback = self.onThemeColor
+                self.panel0.conf.margin_callback = self.onMargins
+
+            elif plot_id == numPlots - 1:
+                panelLabel = panelLabelList[plot_id]  # panelLabel == 'panel_bot'
+                """Set bottom panel"""
+                self.panel_bot = PlotPanel(self, size=self.panelsize)
+                self.panel_bot.conf.labelfont.set_size(lsize)
+                self.panel_bot.yformatter = self.bot_yformatter
+
+            else:
+                panelLabel = panelLabelList[plot_id]
+
+                """Set margins (dictionary) for the additional middle plot
+                panels
+                """
+                margins.update({panelLabel: dict(left=0.15, bottom=0.05,
+                                                 top=0.10, right=0.05)})
+
+                """Set middle panel"""
+                exec('self.' + panelLabel + '= PlotPanel(self, size=self.panelsize)')
+
+                exec('self.' + panelLabel + '.xformatter = ' + \
+                    'self.null_formatter')
+                lsize = eval('self.' + panelLabel + '.conf.labelfont.get_size()')
+
+                exec('self.' + panelLabel + '.conf.labelfont.set_size(lsize)')
+
+                exec('self.' + panelLabel + '.conf.theme_color_callback = self.onThemeColor')
+                # exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
+
+        for pname in panelLabelList:
+            pan = self.get_panel(pname)
             pan.messenger = self.write_message
             pan.conf.auto_margins = False
             pan.conf.set_margins(**margins[pname])
@@ -148,22 +221,20 @@ class StackedPlotFrame(BaseFrame):
             pan.unzoom = self.unzoom
             pan.canvas.figure.set_facecolor('#F4F4EC')
 
-        # suppress mouse events on the bottom panel
-        null_events = {'leftdown': None, 'leftup': None, 'rightdown': None,
-                       'rightup': None, 'motion': None, 'keyevent': None}
-        self.panel_bot.cursor_modes = {'zoom': null_events}
-
-
-        sizer.Add(self.panel,self.ratio, wx.GROW|wx.EXPAND, 2)
-        # sizer.Add(self.panel,self.ratio, wx.GROW|wx.EXPAND|wx.ALIGN_CENTER, 2)
-        sizer.Add(self.panel_bot, 1,     wx.GROW|wx.EXPAND, 2)
-        #sizer.Add(self.panel_bot, 1,     wx.GROW|wx.EXPAND|wx.ALIGN_CENTER, 2)
+            if pname == 'panel_bot':
+                # suppress mouse events on the bottom panel
+                null_events = {'leftdown': None, 'leftup': None, 'rightdown': None,
+                               'rightup': None, 'motion': None, 'keyevent': None}
+                self.panel_bot.cursor_modes = {'zoom': null_events}
+                sizer.Add(self.panel_bot, 1, wx.GROW|wx.EXPAND, 2)
+            else:
+                exec('sizer.Add(self.' + pname + ',self.ratio, wx.GROW|wx.EXPAND, 2)')
 
         pack(self, sizer)
 
         self.SetAutoLayout(True)
         self.SetSizerAndFit(sizer)
-        self.BuildMenu()
+        # self.BuildMenu()
 
     def BuildMenu(self):
         mfile = self.Build_FileMenu()
@@ -171,17 +242,16 @@ class StackedPlotFrame(BaseFrame):
         mopts = wx.Menu()
         MenuItem(self, mopts, "Configure Plot\tCtrl+K",
                  "Configure Plot styles, colors, labels, etc",
-                 self.panel.configure)
+                 self.panel0.configure)
         MenuItem(self, mopts, "Configure Lower Plot",
                  "Configure Plot styles, colors, labels, etc",
                  self.panel_bot.configure)
         MenuItem(self, mopts, "Toggle Legend\tCtrl+L",
                  "Toggle Legend Display",
-                 self.panel.toggle_legend)
+                 self.panel0.toggle_legend)
         MenuItem(self, mopts, "Toggle Grid\tCtrl+G",
                  "Toggle Grid Display",
                  self.toggle_grid)
-
 
         mopts.AppendSeparator()
 
@@ -208,7 +278,7 @@ class StackedPlotFrame(BaseFrame):
     def toggle_grid(self, event=None, show=None):
         "toggle grid on top/bottom panels"
         if show is None:
-            show = not self.panel.conf.show_grid
+            show = not self.panel0.conf.show_grid
         for p in (self.panel, self.panel_bot):
             p.conf.enable_grid(show)
 
@@ -232,14 +302,14 @@ class StackedPlotFrame(BaseFrame):
         bconf.set_margins(left=left, top=t, right=right, bottom=b)
         bconf.canvas.draw()
 
-    def set_viewlimits(self, panel='top'):
+    def set_viewlimits(self, panel='panel0'):
         """update xy limits of a plot, as used with .update_line() """
         this_panel = self.get_panel(panel)
 
         xmin, xmax, ymin, ymax = this_panel.conf.set_viewlimits()[0]
         # print("Set ViewLimits ", xmin, xmax, ymin, ymax)
         # make top/bottom panel follow xlimits
-        if this_panel == self.panel:
+        if this_panel == self.panel0:  # If this_panel == top panel
             other = self.panel_bot
             for _ax in other.fig.get_axes():
                 _ax.set_xlim((xmin, xmax), emit=True)
@@ -280,3 +350,44 @@ class StackedPlotFrame(BaseFrame):
         while s.find('-0')>0:
             s = s.replace('-0','-')
         return s
+
+
+if  __name__ == "__main__":
+    """Modified StackedPlotFrame test (independent from IMASViz)
+    """
+
+    """Set main app"""
+    app = wx.App()
+
+    """Set example arrays"""
+    x = np.arange(0.0, 30.0, 0.1)
+    y = np.sin(2*x)/(x+2)
+
+    """Print the arrays"""
+    print("x: ", x)
+    print("y: ", y)
+
+    """Set the frame for multiple plots."""
+    pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 3,
+                              panelsize=(350,200), ratio=1.000)
+    """Set first plot example"""
+    pframe.plot(x, y, panel='panel0', label="First plot", xlabel="First xlabel",
+            ylabel="First ylabel", title="First plot title", show_legend=True)
+
+    """Add another plot to the first plot"""
+    pframe.oplot((x*1.3), (y*1.3), panel='panel0', label='Add to top plot', show_legend=True)
+
+    """Set second plot example"""
+    pframe.plot(x, y, panel='panel1', label="Second plot", xlabel="Second xlabel",
+            ylabel="Second ylabel", title="Second plot title", show_legend=True)
+
+    """Set bottom plot example"""
+    pframe.plot((x*0.9), (y*0.9), panel='bottom', label="Bottom plot", xlabel="Bottom xlabel",
+            ylabel="Bottom ylabel", title="Bottom plot title", show_legend=True)
+
+    """Show multiplot frame"""
+    pframe.Show()
+    pframe.Raise()
+
+    """Run app"""
+    app.MainLoop()

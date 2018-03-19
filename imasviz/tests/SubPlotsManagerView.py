@@ -147,7 +147,9 @@ class SubPlotsManagerFrame(wx.Frame):
         """Set the frame for multiple plots. Ratio= top vs bottom panel size
         ratio
         """
-        pframe = StackedPlotFrame(title='SubPlotManager', ratio=1.000)
+        pframe = StackedPlotFrame(title='SubPlotManager',
+                                  numPlots = len(self.selectedIndex),
+                                  panelsize=(500,150), ratio=1.000)
 
         for key in self.selectedIndex:
             for signalNodeData in signals[key]:
@@ -162,12 +164,15 @@ class SubPlotsManagerFrame(wx.Frame):
                              legend = label)
                 subPlotsList.append(sp)
 
-            if key == 0:
-                pframe.plot(t[0], v[0], panel='top', label=label, xlabel=xlabel, ylabel=ylabel,
-                            title=title, show_legend=True)
-            if key == 1:
-                pframe.plot(t[0], v[0], panel='bottom', label=label, xlabel=xlabel, ylabel=ylabel,
-                            title=title, show_legend=True)
+                """Set panel name for IMASVIZ_StacketPlotFrame pframe function
+                """
+                if key == len(self.selectedIndex) - 1:
+                    pname = 'panel_bot'
+                else:
+                    pname = 'panel' + str(key)
+                """Add plot to subplot manager"""
+                pframe.plot(t[0], v[0], panel=pname, label=label, xlabel=xlabel,
+                            ylabel=ylabel, title=title, show_legend=True)
 
         # The previous subplotmanager.
         # TODO: Review the 'Keep this subplot' button event and 'Set plot style'
