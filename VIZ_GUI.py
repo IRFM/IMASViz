@@ -193,8 +193,10 @@ class TabThree(wx.Panel):
         self.shotNumberTS = wx.TextCtrl(self, -1, size=(150, -1))
         self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
 
-        #publicDatabases = ['WEST', 'TCV', 'JET']
-        publicDatabases = ['WEST']
+        if 'UDA_LOG' in os.environ:
+            publicDatabases = ['WEST', 'TCV', 'JET']
+        else:
+            publicDatabases = ['WEST']
         self.machineName = wx.Choice(self,
                                      choices=publicDatabases,
                                      style=wx.CB_READONLY)
