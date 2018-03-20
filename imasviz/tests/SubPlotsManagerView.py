@@ -144,6 +144,37 @@ class SubPlotsManagerFrame(wx.Frame):
         #signalHandling = SignalHandling(self.dataTree)
         subPlotsList = []
 
+        """Set default x axis min and max values"""
+        x_min = 0
+        x_max = 0
+
+        """Set array for x and y axis values"""
+        xt = []
+        yv = []
+
+        for key in self.selectedIndex:
+            for signalNodeData in signals[key]:
+                # print 'dataName : ' + signalNodeData['dataName']
+                s = PlotSignal.getSignal(self.dataTree, signalNodeData)
+                t = PlotSignal.getTime(s)
+                v = PlotSignal.get1DSignalValue(s)
+                # label, xlabel, ylabel, title = \
+                #     PlotSignal.plotOptions(self.dataTree, signalNodeData,
+                #                            self.dataTree.dataSource.shotNumber)
+                # sp = SubPlot(t, v, subplot_number = key, scatter = False,
+                #              legend = label)
+                # subPlotsList.append(sp)
+
+                """Add the array of values to array list"""
+                xt.append(t[0])
+                yv.append(v[0])
+
+                """Get/Update minimum and maximum x-axis value"""
+                if min(t[0]) < x_min:
+                    x_min = min(t[0])
+                if max(t[0]) > x_max:
+                    x_max = max(t[0])
+
         """Set the frame for multiple plots. Ratio= top vs bottom panel size
         ratio
         """
@@ -152,17 +183,9 @@ class SubPlotsManagerFrame(wx.Frame):
 
         for key in self.selectedIndex:
             for signalNodeData in signals[key]:
-                # print 'dataName : ' + signalNodeData['dataName']
-                s = PlotSignal.getSignal(self.dataTree, signalNodeData)
-                t = PlotSignal.getTime(s)
-                v = PlotSignal.get1DSignalValue(s)
                 label, xlabel, ylabel, title = \
                     PlotSignal.plotOptions(self.dataTree, signalNodeData,
                                            self.dataTree.dataSource.shotNumber)
-                sp = SubPlot(t, v, subplot_number = key, scatter = False,
-                             legend = label)
-                subPlotsList.append(sp)
-
                 """Set panel name for IMASVIZ_StacketPlotFrame pframe function
                 """
                 if key == len(self.selectedIndex) - 1:
@@ -170,8 +193,9 @@ class SubPlotsManagerFrame(wx.Frame):
                 else:
                     pname = 'panel' + str(key)
                 """Add plot to subplot manager"""
-                pframe.plot(t[0], v[0], panel=pname, label=label, xlabel=xlabel,
-                            ylabel=ylabel, title=title, show_legend=True)
+                pframe.plot(xt[key], yv[key], panel=pname, label=label,
+                            xlabel=xlabel, ylabel=ylabel, title=title,
+                            show_legend=True, xmin=x_min, xmax=x_max)
 
         # The previous subplotmanager.
         # TODO: Review the 'Keep this subplot' button event and 'Set plot style'

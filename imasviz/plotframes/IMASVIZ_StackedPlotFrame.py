@@ -99,19 +99,28 @@ class StackedPlotFrame(BaseFrame):
         """
         return eval('self.panel' + str(panelID))
 
-    def plot(self, x, y, panel='panel0', xlabel=None, **kws):
+    def plot(self, x, y, xmin=0, xmax=1, panel='panel0', xlabel=None, **kws):
         """plot after clearing current plot """
-        panel0 = self.get_panel(panel)
-        panel0.plot(x, y, **kws)
+        panel = self.get_panel(panel)
+        """Add plot to panel.
+        Note: xmin and xmax are multipled my 1.01 do add some space to left and
+              right side
+        """
+        panel.plot(x, y, xmin=xmin*1.01, xmax=xmax*1.01, **kws)
+
         if xlabel is not None:
             self.xlabel = xlabel
         if self.xlabel is not None:
             self.panel_last.set_xlabel(self.xlabel)
 
-    def oplot(self, x, y, panel='panel0', xlabel=None, **kws):
+    def oplot(self, x, y, xmin=0, xmax=1, panel='panel0', xlabel=None, **kws):
         """plot method, overplotting any existing plot """
         panel = self.get_panel(panel)
-        panel.oplot(x, y, **kws)
+        """Add plot to existing plot within panel.
+        Note: xmin and xmax are multipled my 1.01 do add some space to left and
+              right side
+        """
+        panel.oplot(x, y, xmin=xmin*1.01, xmax=xmax*1.01, **kws)
         if xlabel is not None:
             self.xlabel = xlabel
         if self.xlabel is not None:
@@ -395,24 +404,32 @@ if  __name__ == "__main__":
     """Set the frame for multiple plots."""
     pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 4,
                               panelsize=(350,200), ratio=1.000)
+
+    xmin = -1
+    xmax = max(x+100)+1
     """Set first plot example"""
     pframe.plot(x, y, panel='panel0', label="First plot", xlabel="First xlabel",
-            ylabel="First ylabel", title="First plot title", show_legend=True)
+            ylabel="First ylabel", title="First plot title", show_legend=True,
+            xmin = xmin, xmax = xmax)
 
     """Add another plot to the first plot"""
-    pframe.oplot((x*1.3), (y*1.3), panel='panel0', label='Add to top plot', show_legend=True)
+    pframe.oplot((x*1.3), (y*1.3), panel='panel0', label='Add to top plot',
+                 show_legend=True, xmin = xmin, xmax = xmax)
 
     """Set second plot example"""
     pframe.plot(x, y, panel='panel1', label="Second plot", xlabel="Second xlabel",
-            ylabel="Second ylabel", title="Second plot title", show_legend=True)
+            ylabel="Second ylabel", title="Second plot title", show_legend=True,
+            xmin = xmin, xmax = xmax)
 
     """Set third plot example"""
     pframe.plot(x+100, y+100, panel='panel2', label="Third plot", xlabel="Third xlabel",
-            ylabel="Third ylabel", title="Third plot title", show_legend=True)
+            ylabel="Third ylabel", title="Third plot title", show_legend=True,
+            xmin = xmin, xmax = xmax)
 
     """Set last plot example"""
     pframe.plot((x*0.9), (y*0.9), panel='panel_last', label="Last plot", xlabel="Last xlabel",
-            ylabel="Last ylabel", title="Last plot title", show_legend=True)
+            ylabel="Last ylabel", title="Last plot title", show_legend=True,
+            xmin = xmin, xmax = xmax)
 
     """Show multiplot frame"""
     pframe.Show()
