@@ -148,8 +148,7 @@ class SubPlotsManagerFrame(wx.Frame):
         ratio
         """
         pframe = StackedPlotFrame(title='SubPlotManager',
-                                  numPlots = len(self.selectedIndex),
-                                  panelsize=(500,150), ratio=1.000)
+                                  numPlots = len(self.selectedIndex))
 
         for key in self.selectedIndex:
             for signalNodeData in signals[key]:
@@ -167,7 +166,7 @@ class SubPlotsManagerFrame(wx.Frame):
                 """Set panel name for IMASVIZ_StacketPlotFrame pframe function
                 """
                 if key == len(self.selectedIndex) - 1:
-                    pname = 'panel_bot'
+                    pname = 'panel_last'
                 else:
                     pname = 'panel' + str(key)
                 """Add plot to subplot manager"""

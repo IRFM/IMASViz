@@ -16,6 +16,8 @@ from functools import partial
 from wxmplot.utils import pack, MenuItem
 from wxmplot.plotpanel import PlotPanel
 from wxmplot.baseframe import BaseFrame
+import tkinter as tk
+
 
 class StackedPlotFrame(BaseFrame):
     """
@@ -25,12 +27,27 @@ class StackedPlotFrame(BaseFrame):
                  numPlots = 1, framesize=(850,800), panelsize=(550,450),
                  ratio=3.0, **kws):
 
+        """Get screen resolution"""
+        root = tk.Tk()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
+
+        """Set frame size"""
+        frame_width = 1000
+        frame_height = screen_height*0.6
+
         BaseFrame.__init__(self, parent=parent, title=title,
                            size=framesize, **kws)
+
+        nplotsRatio = (frame_height/numPlots)
+        """Set default panel size in relation to frame size"""
+        self.panelsize = (frame_width, nplotsRatio)
+        """Set first panel size in relation to default panel size"""
+        self.panel0size = (frame_width, nplotsRatio+nplotsRatio*0.25)
+        """Set last panel size in relation to default panel size"""
+        self.panel_lastsize = (frame_width, nplotsRatio+nplotsRatio*0.30)
+
         self.ratio = ratio
-        self.panelsize = panelsize
-        # self.panel0 = None      # Top panel
-        self.panel_last = None
         self.xlabel = None
 
         """Set number of plots"""
@@ -109,18 +126,6 @@ class StackedPlotFrame(BaseFrame):
             p.conf.unzoom(full=True)
         # self.panel.set_viewlimits()
 
-    # def unzoom_all(self, event=None, panelLabelList = []):
-    #     """ zoom out full data range """
-    #     # for i in range(len(panelLabelList)):
-
-    #         # print("*: ", i, " ", panelLabelList[i])
-    #         # p = eval('self.' + panelLabelList[i])
-    #     for p in (self.panel0, self.panel_last):
-    #         print("*: ", p)
-    #         p.conf.zoom_lims = []
-    #         p.conf.unzoom(full=True)
-    #     # self.panel.set_viewlimits()
-
     def unzoom(self, event=None, panel='panel0'):
         """zoom out 1 level, or to full data range """
         panel = self.get_panel(panel)
@@ -182,9 +187,8 @@ class StackedPlotFrame(BaseFrame):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         botsize = self.panelsize[0], self.panelsize[1]/self.ratio
-        margins = {'panel0': dict(left=0.15, bottom=0.00, top=0.10, right=0.05),
-                   'panel_last': dict(left=0.15, bottom=0.300, top=0.00, right=0.05)}
-
+        margins = {'panel0': dict(left=0.10, bottom=0.00, top=0.25, right=0.05),
+                   'panel_last': dict(left=0.10, bottom=0.30, top=0.00, right=0.05)}
 
         setPlotEval = []
         for plot_id in range(self.numPlots):
@@ -193,7 +197,7 @@ class StackedPlotFrame(BaseFrame):
 
             if plot_id  == 0:   # Top panel
                 """Set top panel"""
-                self.panel0 = PlotPanel(self, size=self.panelsize)
+                self.panel0 = PlotPanel(self, size=self.panel0size)
                 lsize = self.panel0.conf.labelfont.get_size()
                 self.panel0.conf.theme_color_callback = self.onThemeColor
                 self.panel0.conf.margin_callback = self.onMargins
@@ -201,7 +205,7 @@ class StackedPlotFrame(BaseFrame):
             elif plot_id == self.numPlots - 1:   # Bottom panel
                 panelLabel = self.panelLabelList[plot_id]  # panelLabel == 'panel_last'
                 """Set bottom panel"""
-                self.panel_last = PlotPanel(self, size=self.panelsize)
+                self.panel_last = PlotPanel(self, size=self.panel_lastsize)
                 self.panel_last.conf.labelfont.set_size(lsize)
                 self.panel_last.yformatter = self.bot_yformatter
 
@@ -211,7 +215,7 @@ class StackedPlotFrame(BaseFrame):
                 """Set margins (dictionary) for the additional plot
                 panels in the middle
                 """
-                margins.update({panelLabel: dict(left=0.15, bottom=0.00,
+                margins.update({panelLabel: dict(left=0.10, bottom=0.00,
                                                  top=0.00, right=0.05)})
 
                 """Set middle panel"""
@@ -389,7 +393,7 @@ if  __name__ == "__main__":
     # print("y: ", y)
 
     """Set the frame for multiple plots."""
-    pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 3,
+    pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 4,
                               panelsize=(350,200), ratio=1.000)
     """Set first plot example"""
     pframe.plot(x, y, panel='panel0', label="First plot", xlabel="First xlabel",
@@ -401,6 +405,10 @@ if  __name__ == "__main__":
     """Set second plot example"""
     pframe.plot(x, y, panel='panel1', label="Second plot", xlabel="Second xlabel",
             ylabel="Second ylabel", title="Second plot title", show_legend=True)
+
+    """Set third plot example"""
+    pframe.plot(x+100, y+100, panel='panel2', label="Third plot", xlabel="Third xlabel",
+            ylabel="Third ylabel", title="Third plot title", show_legend=True)
 
     """Set last plot example"""
     pframe.plot((x*0.9), (y*0.9), panel='panel_last', label="Last plot", xlabel="Last xlabel",
