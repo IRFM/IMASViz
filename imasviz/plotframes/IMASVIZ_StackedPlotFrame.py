@@ -207,7 +207,10 @@ class StackedPlotFrame(BaseFrame):
                 """Set top panel"""
                 self.panel0 = PlotPanel(self, size=self.panel0size)
                 lsize = self.panel0.conf.labelfont.get_size()
-                self.panel0.conf.theme_color_callback = self.onThemeColor
+                """Update the bottom panel theme colors if the theme colors of
+                the first panel are changed
+                """
+                # self.panel0.conf.theme_color_callback = self.onThemeColor
                 self.panel0.conf.margin_callback = self.onMargins
 
             elif plot_id == self.numPlots - 1:   # Bottom panel
@@ -235,7 +238,7 @@ class StackedPlotFrame(BaseFrame):
 
                 exec('self.' + panelLabel + '.conf.labelfont.set_size(lsize)')
 
-                exec('self.' + panelLabel + '.conf.theme_color_callback = self.onThemeColor')
+                # exec('self.' + panelLabel + '.conf.theme_color_callback = self.onThemeColor')
                 # exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
 
         for pname in self.panelLabelList:
@@ -284,10 +287,14 @@ class StackedPlotFrame(BaseFrame):
 
         # mopts.AppendSeparator()
 
+        """Menu item for 'Zoom all plots out' option"""
         MenuItem(self, mopts, "Zoom Out\tCtrl+Z",
                  "Zoom out to full data range",
                  self.unzoom_all)
-                 # self.unzoom_all(panelLabelList = panelLabelList))
+        """Menu item for applying theme of the top plot to all other plots """
+        MenuItem(self, mopts, "Top theme to all",
+                 "Apply top panel theme to all other plots",
+                 self.onThemeColorAll)
 
         mhelp = wx.Menu()
         MenuItem(self, mhelp, "Quick Reference",  "Quick Reference for WXMPlot", self.onHelp)
@@ -324,6 +331,22 @@ class StackedPlotFrame(BaseFrame):
         elif item == 'text':
             bconf.set_textcolor(color)
         bconf.canvas.draw()
+
+    def onThemeColorAll(self, event=None):
+        "Pass first panel theme to all other panels"
+        for plot_id in range(1, self.numPlots):
+            """Traverse through all other plots and set the .conf object of the
+            plot
+            """
+            bconf = eval('self.' + self.panelLabelList[plot_id] + '.conf')
+            """Set plot grid color the same as of the first plot"""
+            bconf.set_gridcolor(self.panel0.conf.gridcolor)
+            """Set plot bg color the same as of the first plot"""
+            bconf.set_bgcolor(self.panel0.conf.bgcolor)
+            """Set plot frame color the same as of the first plot"""
+            bconf.set_framecolor(self.panel0.conf.framecolor)
+            """Set plot text color the same as of the first plot"""
+            bconf.set_textcolor(self.panel0.conf.textcolor)
 
     def onMargins(self, left=0.1, top=0.1, right=0.1, bottom=0.1):
         """ pass left/right margins on to bottom panel"""
