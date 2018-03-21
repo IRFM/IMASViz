@@ -194,7 +194,7 @@ class TabThree(wx.Panel):
         self.runNumberTS = wx.TextCtrl(self, -1, '0', size=(150, -1))
 
         if 'UDA_LOG' in os.environ:
-            publicDatabases = ['WEST', 'TCV', 'JET']
+            publicDatabases = ['WEST', 'TCV', 'JET', 'AUG']
         else:
             publicDatabases = ['WEST']
         self.machineName = wx.Choice(self,
