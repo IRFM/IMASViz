@@ -20,6 +20,8 @@ class SubPlotsManagerFrame(wx.Frame):
             default_value = str(len(selectedSignals)))
         self.subplotsCount = int(x)
 
+        self.SetSize(400, (self.subplotsCount)*50 + 100)
+
         signalsCount = len(selectedSignals)
         button_open = wx.Button(self, 1, 'Open subplots', style = wx.BU_LEFT)
         signalNodeDataValueIterator = selectedSignals.values()
@@ -35,7 +37,7 @@ class SubPlotsManagerFrame(wx.Frame):
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         self.buildList(vbox)
-        vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 20)
+        vbox.Add(button_open, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 5)
         self.Bind(wx.EVT_BUTTON, self.showSubPlots)
         self.SetSizer(vbox)
 
@@ -105,7 +107,7 @@ class SubPlotsManagerFrame(wx.Frame):
 
             vbox.Add(hbox, 0, wx.TOP, 5)
             j = j + 1
-        print (self.selectedIndex)
+        # print (self.selectedIndex)
 
 
     def OnCombo(self, event):

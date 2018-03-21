@@ -24,8 +24,7 @@ class StackedPlotFrame(BaseFrame):
     Top/Bottom MatPlotlib panels in a single frame
     """
     def __init__(self, parent=None, title ='Stacked Plot Frame',
-                 numPlots = 1, framesize=(850,800), panelsize=(550,450),
-                 ratio=3.0, **kws):
+                 numPlots = 1, **kws):
 
         """Get screen resolution"""
         root = tk.Tk()
@@ -33,21 +32,22 @@ class StackedPlotFrame(BaseFrame):
         screen_height = root.winfo_screenheight()
 
         """Set frame size"""
-        frame_width = 1000
-        frame_height = screen_height*0.6
+        frame_width = 750
+        frame_height = screen_height*0.4
 
-        BaseFrame.__init__(self, parent=parent, title=title,
+        framesize=(frame_width, frame_height)
+
+        BaseFrame.__init__(self, parent=parent, title="title",
                            size=framesize, **kws)
 
-        nplotsRatio = (frame_height/numPlots)
+        nplots_size = (frame_height/numPlots)
         """Set default panel size in relation to frame size"""
-        self.panelsize = (frame_width, nplotsRatio)
+        self.panelsize = (frame_width, nplots_size)
         """Set first panel size in relation to default panel size"""
-        self.panel0size = (frame_width, nplotsRatio+nplotsRatio*0.25)
+        self.panel0size = (frame_width, nplots_size+nplots_size*0.625)
         """Set last panel size in relation to default panel size"""
-        self.panel_lastsize = (frame_width, nplotsRatio+nplotsRatio*0.30)
+        self.panel_lastsize = (frame_width, nplots_size+nplots_size*0.75)
 
-        self.ratio = ratio
         self.xlabel = None
 
         """Set number of plots"""
@@ -195,9 +195,8 @@ class StackedPlotFrame(BaseFrame):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
-        botsize = self.panelsize[0], self.panelsize[1]/self.ratio
-        margins = {'panel0': dict(left=0.10, bottom=0.00, top=0.25, right=0.05),
-                   'panel_last': dict(left=0.10, bottom=0.30, top=0.00, right=0.05)}
+        margins = {'panel0': dict(left=0.15, bottom=0.00, top=0.20, right=0.05),
+                   'panel_last': dict(left=0.15, bottom=0.35, top=0.00, right=0.05)}
 
         setPlotEval = []
         for plot_id in range(self.numPlots):
@@ -224,7 +223,7 @@ class StackedPlotFrame(BaseFrame):
                 """Set margins (dictionary) for the additional plot
                 panels in the middle
                 """
-                margins.update({panelLabel: dict(left=0.10, bottom=0.00,
+                margins.update({panelLabel: dict(left=0.15, bottom=0.00,
                                                  top=0.00, right=0.05)})
 
                 """Set middle panel"""
@@ -258,7 +257,7 @@ class StackedPlotFrame(BaseFrame):
                 # self.panel_last.cursor_modes = {'zoom': null_events}
                 sizer.Add(self.panel_last, 1, wx.GROW|wx.EXPAND, 2)
             else:
-                exec('sizer.Add(self.' + pname + ',self.ratio, wx.GROW|wx.EXPAND, 2)')
+                exec('sizer.Add(self.' + pname + ', 1, wx.GROW|wx.EXPAND, 2)')
 
         pack(self, sizer)
 
@@ -402,8 +401,7 @@ if  __name__ == "__main__":
     # print("y: ", y)
 
     """Set the frame for multiple plots."""
-    pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 4,
-                              panelsize=(350,200), ratio=1.000)
+    pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 4)
 
     xmin = -1
     xmax = max(x+100)+1
