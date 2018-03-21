@@ -37,7 +37,7 @@ class DataSourceFactory:
             if machineName == None or machineName == '':
                 raise ValueError("A machine name is required for UDA datasource")
 
-            elif machineName in (GlobalValues.WEST, GlobalValues.JET, GlobalValues.TCV):
+            elif machineName in (GlobalValues.WEST, GlobalValues.JET, GlobalValues.TCV, GlobalValues.AUG):
                 #print "Creating IMASPublicDataSource..."
                 dataSource = IMASPublicDataSource(dataSourceName, machineName,
                                                   shotNumber, runNumber)

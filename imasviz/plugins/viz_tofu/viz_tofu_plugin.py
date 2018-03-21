@@ -22,29 +22,30 @@ class ToFuPlugin(VIZPlugins):
     def execute(self, app, pluginsConfig):
         try:
             print ('ToFuPlugin to be executed...')
+            plt.ioff()
             view = pluginsConfig.get('imasviz_view')
             node_attributes = pluginsConfig.get('node_attributes')
             figure = None
             if node_attributes.get('IDSName')=='bolometer':
                 if pluginsConfig.get('geom'):
-                    out = tfi.Bolo.load_geom()
+                    out = tfi.Bolo.load_geom(draw=False)
                     figure = out[1][0].get_figure()
                 elif pluginsConfig.get('data'):
-                    tfi.Bolo.load_data(view.dataSource.shotNumber)
+                    tfi.Bolo.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
                     figure = plt.gcf()
             elif node_attributes.get('IDSName')=='interferometer':
                 if pluginsConfig.get('geom'):
-                    out = tfi.Interfero.load_geom()
+                    out = tfi.Interfero.load_geom(draw=False)
                     figure = out[1][0].get_figure()
                 elif pluginsConfig.get('data'):
-                    tfi.Interfero.load_data(view.dataSource.shotNumber)
+                    tfi.Interfero.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
                     figure = plt.gcf()
             elif node_attributes.get('IDSName')=='soft_x_rays':
                 if pluginsConfig.get('geom'):
-                    out = tfi.SXR.load_geom()
+                    out = tfi.SXR.load_geom(draw=False)
                     figure = out[1][0].get_figure()
                 elif pluginsConfig.get('data'):
-                    tfi.SXR.load_data(view.dataSource.shotNumber)
+                    tfi.SXR.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
                     figure = plt.gcf()
             self.OpenWxFrame(figure)
             app.MainLoop()
@@ -73,10 +74,12 @@ class ToFuPlugin(VIZPlugins):
 
 if __name__ == "__main__":
     app = wx.App()
-    out=tfi.Bolo.load_data(52682)
+    #out=tfi.Bolo.load_data(52682)
     #print (out[1])
     #figure = out[1][0].get_figure()
-    figure = plt.gcf()
+    out = tfi.Bolo.load_geom(draw=False)
+    #figure = plt.gcf()
+    figure = out[1][0].get_figure()
     fr = wx.Frame(None, title='test', size=(1200,1200))
     panel = CanvasPanel(fr, figure)
     #panel.draw()

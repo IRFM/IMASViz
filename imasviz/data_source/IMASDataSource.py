@@ -156,7 +156,10 @@ class IMASDataSource:
     @staticmethod
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
-        ids.open_public(machineName)
+        if machineName in ('WEST',):
+            ids.open_public(machineName)
+        else:
+            ids.create_public(machineName)
         if (ids.expIdx == -1):
             raise ValueError("Can not open shot " + str(shotNumber) + "  from " + machineName)
 

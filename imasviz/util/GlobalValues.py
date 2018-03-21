@@ -18,6 +18,7 @@ class GlobalValues:
     WEST = "WEST"
     TCV = "TCV"
     JET = "JET"
+    AUG = "AUG"
 
     if "VIZ_PRODUCTION" not in os.environ:
         print ("VIZ_PRODUCTION environment variable not defined")

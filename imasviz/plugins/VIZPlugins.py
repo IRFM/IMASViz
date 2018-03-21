@@ -4,12 +4,12 @@ import importlib
 #                      'ECEOverviewPlugin':'viz_tests.ECE_OverviewPlugin',
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
-# RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-#                      'ArraySizePlugin': 'viz_array_size.array_size_plugin',
-#                      'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
-
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin'}
+                     'ArraySizePlugin': 'viz_array_size.array_size_plugin',
+                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
+
+# RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
+#                      'ArraySizePlugin': 'viz_array_size.array_size_plugin'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \
