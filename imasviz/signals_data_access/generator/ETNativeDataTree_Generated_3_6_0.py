@@ -61,6 +61,10 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		parent = ET.SubElement(parent, 'code')
 		parent.set('documentation', 'Generic decription of the code-specific parameters for the code that has produced this IDS')
 		parent.set('name', 'code')
+		if parents.get('magnetics.code') != None : 
+			parent = parents['magnetics.code']
+		else:
+			parents['magnetics.code'] = parent
 		name_att_2=self.ids.magnetics.code.name
 
 		node = ET.SubElement(parent, 'name'+ '='+ str(name_att_2))
@@ -111,6 +115,10 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		parent = ET.SubElement(parent, 'ids_properties')
 		parent.set('documentation', 'Interface Data Structure properties. This element identifies the node above as an IDS')
 		parent.set('name', 'ids_properties')
+		if parents.get('magnetics.ids_properties') != None : 
+			parent = parents['magnetics.ids_properties']
+		else:
+			parents['magnetics.ids_properties'] = parent
 		comment_att_4=self.ids.magnetics.ids_properties.comment
 
 		node = ET.SubElement(parent, 'comment'+ '='+ str(comment_att_4))
@@ -118,6 +126,10 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		node.set('type', 'constant')
 		node.set('documentation', 'Any comment describing the content of this IDS')
 		node.set('name', 'comment')
+		if parents.get('magnetics.ids_properties') != None : 
+			parent = parents['magnetics.ids_properties']
+		else:
+			parents['magnetics.ids_properties'] = parent
 		homogeneous_time_att_5=self.ids.magnetics.ids_properties.homogeneous_time
 
 		node = ET.SubElement(parent, 'homogeneous_time'+ '='+ str(homogeneous_time_att_5))

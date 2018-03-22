@@ -177,11 +177,16 @@ class SubPlotsManagerFrame(wx.Frame):
                 if max(t[0]) > x_max:
                     x_max = max(t[0])
 
+        api = self.dataTree.imas_viz_api
+        figurekey = api.GetNextKeyForSubPlots()
+
         """Set the frame for multiple plots. Ratio= top vs bottom panel size
         ratio
         """
-        pframe = StackedPlotFrame(title='SubPlotManager',
+        pframe = StackedPlotFrame(title=figurekey,
                                   numPlots = len(self.selectedIndex))
+
+        api.figureframes[figurekey] = pframe
 
         for key in self.selectedIndex:
             for signalNodeData in signals[key]:
@@ -208,7 +213,6 @@ class SubPlotsManagerFrame(wx.Frame):
         #                             self.subplotsCount, 0.1)
         # frame.imas_viz_api = self.dataTree.imas_viz_api
         # frame.Show()
-
         pframe.Show()
         pframe.Raise()
 

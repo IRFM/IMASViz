@@ -209,6 +209,8 @@ class IMAS_DataAccessCodeGenerator():
 
 
             elif data_type == 'STR_0D' or data_type == 'INT_0D' or data_type == 'FLT_0D':
+                #if level == 1:
+                self.generateParentsCode(level, child.text)
                 ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
                 name_att = ids_child_element.get('name') + '_att_' + str(index)
                 affect = name_att + '='
@@ -239,8 +241,8 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode(code, level)
 
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
-                if level == 1:
-                    self.generateParentsCode(level, child.text)
+                #if level == 1:
+                self.generateParentsCode(level, child.text)
                 ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
                 name = ids_child_element.get('name')
                 name_att = name + '_att_' + str(index)

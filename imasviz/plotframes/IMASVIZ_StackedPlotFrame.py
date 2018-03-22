@@ -37,7 +37,7 @@ class StackedPlotFrame(BaseFrame):
 
         framesize=(self.frame_width, self.frame_height)
 
-        BaseFrame.__init__(self, parent=parent, title="title",
+        BaseFrame.__init__(self, parent=parent, title=title,
                            size=framesize, **kws)
 
         nplots_size = ((self.frame_height-120)/numPlots)
@@ -407,6 +407,12 @@ class StackedPlotFrame(BaseFrame):
         while s.find('-0')>0:
             s = s.replace('-0','-')
         return s
+
+    def onExit(self, event=None):
+        try:
+            self.Hide()
+        except:
+            pass
 
 
 if  __name__ == "__main__":
