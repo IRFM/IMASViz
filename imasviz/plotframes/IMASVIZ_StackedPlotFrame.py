@@ -16,7 +16,7 @@ from functools import partial
 from wxmplot.utils import pack, MenuItem
 from wxmplot.plotpanel import PlotPanel
 from wxmplot.baseframe import BaseFrame
-import tkinter as tk
+# import tkinter as tk
 
 
 class StackedPlotFrame(BaseFrame):
@@ -27,26 +27,26 @@ class StackedPlotFrame(BaseFrame):
                  numPlots = 1, **kws):
 
         """Get screen resolution"""
-        root = tk.Tk()
-        screen_width = root.winfo_screenwidth()
-        screen_height = root.winfo_screenheight()
+        # root = tk.Tk()
+        # screen_width = root.winfo_screenwidth()
+        # screen_height = root.winfo_screenheight()
 
         """Set frame size"""
-        frame_width = 750
-        frame_height = screen_height*0.4
+        self.frame_width = 750
+        self.frame_height = 710
 
-        framesize=(frame_width, frame_height)
+        framesize=(self.frame_width, self.frame_height)
 
         BaseFrame.__init__(self, parent=parent, title="title",
                            size=framesize, **kws)
 
-        nplots_size = (frame_height/numPlots)
+        nplots_size = ((self.frame_height-120)/numPlots)
         """Set default panel size in relation to frame size"""
-        self.panelsize = (frame_width, nplots_size)
+        self.panelsize = (self.frame_width, nplots_size)
         """Set first panel size in relation to default panel size"""
-        self.panel0size = (frame_width, nplots_size+nplots_size*0.625)
+        self.panel0size = (self.frame_width, nplots_size+50)
         """Set last panel size in relation to default panel size"""
-        self.panel_lastsize = (frame_width, nplots_size+nplots_size*0.75)
+        self.panel_lastsize = (self.frame_width, nplots_size+70)
 
         self.xlabel = None
 
@@ -126,6 +126,10 @@ class StackedPlotFrame(BaseFrame):
         if self.xlabel is not None:
             self.panel_last.set_xlabel(self.xlabel)
 
+    def add_text(self, panel, text, x, y):
+        panel =self.get_panel(panel)
+        panel.add_text(text, x, y)
+
     def unzoom_all(self, event=None):
         """ zoom out full data range """
         # for p in (self.panel0, self.panel_last):
@@ -196,7 +200,7 @@ class StackedPlotFrame(BaseFrame):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         margins = {'panel0': dict(left=0.15, bottom=0.00, top=0.20, right=0.05),
-                   'panel_last': dict(left=0.15, bottom=0.35, top=0.00, right=0.05)}
+                   'panel_last': dict(left=0.15, bottom=0.30, top=0.00, right=0.05)}
 
         setPlotEval = []
         for plot_id in range(self.numPlots):
@@ -210,7 +214,6 @@ class StackedPlotFrame(BaseFrame):
                 """Update the bottom panel theme colors if the theme colors of
                 the first panel are changed
                 """
-                # self.panel0.conf.theme_color_callback = self.onThemeColor
                 self.panel0.conf.margin_callback = self.onMargins
 
             elif plot_id == self.numPlots - 1:   # Bottom panel
@@ -235,11 +238,8 @@ class StackedPlotFrame(BaseFrame):
                 exec('self.' + panelLabel + '.xformatter = ' + \
                     'self.null_formatter')
                 lsize = eval('self.' + panelLabel + '.conf.labelfont.get_size()')
-
                 exec('self.' + panelLabel + '.conf.labelfont.set_size(lsize)')
-
-                # exec('self.' + panelLabel + '.conf.theme_color_callback = self.onThemeColor')
-                # exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
+                exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
 
         for pname in self.panelLabelList:
             pan = self.get_panel(pname)
@@ -258,14 +258,15 @@ class StackedPlotFrame(BaseFrame):
                 # null_events = {'leftdown': None, 'leftup': None, 'rightdown': None,
                 #                'rightup': None, 'motion': None, 'keyevent': None}
                 # self.panel_last.cursor_modes = {'zoom': null_events}
-                sizer.Add(self.panel_last, 1, wx.GROW|wx.EXPAND, 2)
+                sizer.Add(self.panel_last, 1, wx.EXPAND, 2)
             else:
-                exec('sizer.Add(self.' + pname + ', 1, wx.GROW|wx.EXPAND, 2)')
+                exec('sizer.Add(self.' + pname + ', 1, wx.EXPAND, 2)')
 
         pack(self, sizer)
 
         self.SetAutoLayout(True)
-        self.SetSizerAndFit(sizer)
+        # self.SetSizerAndFit(sizer)
+        self.SetSizer(sizer)
         self.BuildMenu()
 
     def BuildMenu(self):
@@ -441,6 +442,8 @@ if  __name__ == "__main__":
     pframe.plot(x, y, panel='panel1', label="Second plot", xlabel="Second xlabel",
             ylabel="Second ylabel", title="Second plot title", show_legend=True,
             xmin = xmin, xmax = xmax)
+
+    pframe.add_text( panel='panel1', text=".test_text", x=60, y=0)
 
     """Set third plot example"""
     pframe.plot(x+100, y+100, panel='panel2', label="Third plot", xlabel="Third xlabel",
