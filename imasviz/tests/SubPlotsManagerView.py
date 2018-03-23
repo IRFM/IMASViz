@@ -146,11 +146,11 @@ class SubPlotsManagerFrame(wx.Frame):
         #signalHandling = SignalHandling(self.dataTree)
         subPlotsList = []
 
-        """Set default x axis min and max values"""
+        """Set default x axis min and max values for subplots"""
         x_min = 0
         x_max = 0
 
-        """Set array for x and y axis values"""
+        """Set empty array for x and y axis values"""
         xt = []
         yv = []
 
@@ -160,14 +160,8 @@ class SubPlotsManagerFrame(wx.Frame):
                 s = PlotSignal.getSignal(self.dataTree, signalNodeData)
                 t = PlotSignal.getTime(s)
                 v = PlotSignal.get1DSignalValue(s)
-                # label, xlabel, ylabel, title = \
-                #     PlotSignal.plotOptions(self.dataTree, signalNodeData,
-                #                            self.dataTree.dataSource.shotNumber)
-                # sp = SubPlot(t, v, subplot_number = key, scatter = False,
-                #              legend = label)
-                # subPlotsList.append(sp)
 
-                """Add the array of values to array list"""
+                """Add the obtained array of values to array list"""
                 xt.append(t[0])
                 yv.append(v[0])
 
@@ -177,45 +171,41 @@ class SubPlotsManagerFrame(wx.Frame):
                 if max(t[0]) > x_max:
                     x_max = max(t[0])
 
+        """Set API to store created SubPlot window"""
         api = self.dataTree.imas_viz_api
         figurekey = api.GetNextKeyForSubPlots()
 
-        """Set the frame for multiple plots. Ratio= top vs bottom panel size
-        ratio
-        """
+        """Set the frame for holding n number of subplots."""
         pframe = StackedPlotFrame(title=figurekey,
                                   numPlots = len(self.selectedIndex))
 
+        """Set the pframe (SubPlot window) to figurekey list.
+           This enables the SubPlot to be reopened in the same session after
+           it was closed (if it was not destroyed).
+        """
         api.figureframes[figurekey] = pframe
 
+        """Set all selected subplots to SubPlot window"""
         for key in self.selectedIndex:
             for signalNodeData in signals[key]:
+                """Get subplot labels and title"""
                 label, xlabel, ylabel, title = \
                     PlotSignal.plotOptions(self.dataTree, signalNodeData,
                                            self.dataTree.dataSource.shotNumber)
-                """Set panel name for IMASVIZ_StacketPlotFrame pframe function
+                """Set panel name for IMASVIZ_StacketPlotFrame plot function
                 """
                 if key == len(self.selectedIndex) - 1:
                     pname = 'panel_last'
                 else:
                     pname = 'panel' + str(key)
-                """Add plot to subplot manager"""
+                """Add subplot to SubPlot manager"""
                 pframe.plot(xt[key], yv[key], panel=pname, label=label,
                             xlabel=xlabel, ylabel=ylabel, title=title,
                             show_legend=True, xmin=x_min, xmax=x_max)
 
-        # The previous subplotmanager.
-        # TODO: Review the 'Keep this subplot' button event and 'Set plot style'
-        #       menu option (ocated in SubPlotsShareXFrame)
-        #       if they might be useful with the new SubPlotManager,
-        #       done with the help of imasviz StackedPlotFrame feature
-        # frame = SubPlotsShareXFrame(None, "SubPlots", subPlotsList,
-        #                             self.subplotsCount, 0.1)
-        # frame.imas_viz_api = self.dataTree.imas_viz_api
-        # frame.Show()
+        """Show the SubPlot window"""
         pframe.Show()
         pframe.Raise()
-
 
 def setNumberOfSubplots(parent=None, message='', default_value=''):
     dlg = wx.TextEntryDialog(parent, message,

@@ -31,21 +31,24 @@ class StackedPlotFrame(BaseFrame):
         # screen_width = root.winfo_screenwidth()
         # screen_height = root.winfo_screenheight()
 
-        """Set frame size"""
+        """Set BaseFrame size"""
         self.frame_width = 750
         self.frame_height = 710
 
+        """Set BaseFrame size"""
         framesize=(self.frame_width, self.frame_height)
 
+        """Create BaseFrame"""
         BaseFrame.__init__(self, parent=parent, title=title,
                            size=framesize, **kws)
 
+        """Set size of the subplots"""
         nplots_size = ((self.frame_height-120)/numPlots)
-        """Set default panel size in relation to frame size"""
+        """ - Set default panel size in relation to frame size"""
         self.panelsize = (self.frame_width, nplots_size)
-        """Set first panel size in relation to default panel size"""
+        """ - Set first panel size in relation to default panel size"""
         self.panel0size = (self.frame_width, nplots_size+50)
-        """Set last panel size in relation to default panel size"""
+        """ - Set last panel size in relation to default panel size"""
         self.panel_lastsize = (self.frame_width, nplots_size+70)
 
         self.xlabel = None
@@ -69,11 +72,11 @@ class StackedPlotFrame(BaseFrame):
             """Add plot name to list of plot names"""
             self.panelLabelList.append(panelLabel)
             """Generate code for declaring n panel objects
-            (e.g. self.panel0 etc.)
+               (e.g. self.panel0 etc.)
             """
             panelObjectGenCode = 'self.' + panelLabel + '= None'
             """Execute generated command (e.g. 'self.panel0 = None' to declare
-            current panel object
+               current panel object
             """
             exec(panelObjectGenCode)
 
@@ -95,7 +98,7 @@ class StackedPlotFrame(BaseFrame):
 
     def get_panel_by_ID(self, panelID):
         """Get panel by ID. 'panelname' must be the same as object label
-        (e.g. labelID = 0 for self.panel0)
+           (e.g. labelID = 0 for self.panel0)
         """
         return eval('self.panel' + str(panelID))
 
@@ -103,8 +106,8 @@ class StackedPlotFrame(BaseFrame):
         """plot after clearing current plot """
         panel = self.get_panel(panel)
         """Add plot to panel.
-        Note: xmin and xmax are multipled my 1.01 do add some space to left and
-              right side
+           Note: xmin and xmax are multipled my 1.01 do add some space to left and
+                 right side
         """
         panel.plot(x, y, xmin=xmin*1.01, xmax=xmax*1.01, **kws)
 
@@ -117,8 +120,8 @@ class StackedPlotFrame(BaseFrame):
         """plot method, overplotting any existing plot """
         panel = self.get_panel(panel)
         """Add plot to existing plot within panel.
-        Note: xmin and xmax are multipled my 1.01 do add some space to left and
-              right side
+           Note: xmin and xmax are multipled my 1.01 do add some space to left and
+                 right side
         """
         panel.oplot(x, y, xmin=xmin*1.01, xmax=xmax*1.01, **kws)
         if xlabel is not None:
@@ -197,8 +200,10 @@ class StackedPlotFrame(BaseFrame):
         self.SetStatusWidths([-3,-1])
         self.SetStatusText('',0)
 
+        """Create sizer"""
         sizer = wx.BoxSizer(wx.VERTICAL)
 
+        """Set margins for first and last subplot panel"""
         margins = {'panel0': dict(left=0.15, bottom=0.00, top=0.20, right=0.05),
                    'panel_last': dict(left=0.15, bottom=0.30, top=0.00, right=0.05)}
 
@@ -207,16 +212,13 @@ class StackedPlotFrame(BaseFrame):
 
             setPlotEval.append(str('self.' + self.panelLabelList[plot_id]) )
 
-            if plot_id  == 0:   # Top panel
-                """Set top panel"""
+            if plot_id  == 0:   # First panel
+                """Set first panel"""
                 self.panel0 = PlotPanel(self, size=self.panel0size)
                 lsize = self.panel0.conf.labelfont.get_size()
-                """Update the bottom panel theme colors if the theme colors of
-                the first panel are changed
-                """
                 self.panel0.conf.margin_callback = self.onMargins
 
-            elif plot_id == self.numPlots - 1:   # Bottom panel
+            elif plot_id == self.numPlots - 1:   # Last panel
                 panelLabel = self.panelLabelList[plot_id]  # panelLabel == 'panel_last'
                 """Set bottom panel"""
                 self.panel_last = PlotPanel(self, size=self.panel_lastsize)
@@ -226,8 +228,8 @@ class StackedPlotFrame(BaseFrame):
             else:   # Panels in the middle - between top and bottom panel
                 panelLabel = self.panelLabelList[plot_id]
 
-                """Set margins (dictionary) for the additional plot
-                panels in the middle
+                """Set margins (dictionary) for the additional subplot
+                   panels in the middle (between the first and last subplot)
                 """
                 margins.update({panelLabel: dict(left=0.15, bottom=0.00,
                                                  top=0.00, right=0.05)})
@@ -258,11 +260,14 @@ class StackedPlotFrame(BaseFrame):
                 # null_events = {'leftdown': None, 'leftup': None, 'rightdown': None,
                 #                'rightup': None, 'motion': None, 'keyevent': None}
                 # self.panel_last.cursor_modes = {'zoom': null_events}
-                sizer.Add(self.panel_last, 1, wx.EXPAND, 2)
+                """Add subplot panel to sizer"""
+                sizer.Add(self.panel_last, 1, wx.GROW | wx.EXPAND, 2)
             else:
-                exec('sizer.Add(self.' + pname + ', 1, wx.EXPAND, 2)')
+                """Add subplot panel to sizer"""
+                exec('sizer.Add(self.' + pname + ', 1, wx.GROW | wx.EXPAND, 2)')
 
         pack(self, sizer)
+        sizer.RecalcSizes()
 
         self.SetAutoLayout(True)
         # self.SetSizerAndFit(sizer)
@@ -270,8 +275,10 @@ class StackedPlotFrame(BaseFrame):
         self.BuildMenu()
 
     def BuildMenu(self):
+        """Set SubPlot Manager display window menu bar"""
         mfile = self.Build_FileMenu()
 
+        """Set 'Options' menu"""
         mopts = wx.Menu()
         # MenuItem(self, mopts, "Configure Plot\tCtrl+K",
         #          "Configure Plot styles, colors, labels, etc",
@@ -288,17 +295,21 @@ class StackedPlotFrame(BaseFrame):
 
         # mopts.AppendSeparator()
 
-        """Menu item for 'Zoom all plots out' option"""
+        """Add 'Zoom all plots out' option menu item"""
         MenuItem(self, mopts, "Zoom Out\tCtrl+Z",
                  "Zoom out to full data range",
                  self.unzoom_all)
-        """Menu item for applying theme of the top plot to all other plots """
+        """Add 'Apply top theme to all' option menu item"""
         MenuItem(self, mopts, "Top theme to all",
                  "Apply top panel theme to all other plots",
                  self.onThemeColorAll)
 
+        """Set 'Help' menu"""
         mhelp = wx.Menu()
-        MenuItem(self, mhelp, "Quick Reference",  "Quick Reference for WXMPlot", self.onHelp)
+        """Add 'Quick reference' menu item"""
+        MenuItem(self, mhelp, "Quick Reference",  "Quick Reference for WXMPlot",
+                 self.onHelp)
+        """Add 'About' menu item"""
         MenuItem(self, mhelp, "About", "About WXMPlot", self.onAbout)
 
         mbar = wx.MenuBar()
@@ -409,7 +420,12 @@ class StackedPlotFrame(BaseFrame):
         return s
 
     def onExit(self, event=None):
+        """Override the onExit function to hide the window instead to destroy it
+           (this is required to enable for the SubPlot Manager
+           window to be reopened in the same session after it was closed)
+        """
         try:
+            """Hide window"""
             self.Hide()
         except:
             pass
