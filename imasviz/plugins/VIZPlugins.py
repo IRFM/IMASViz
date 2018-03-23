@@ -5,11 +5,8 @@ import importlib
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin',
-                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
-
-# RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-#                      'ArraySizePlugin': 'viz_array_size.array_size_plugin'}
+                     'ArraySizePlugin': 'viz_array_size.array_size_plugin'}
+                     # 'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \
@@ -20,10 +17,10 @@ RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'user': 'imas_private'}],
                           'ECEOverviewPlugin':[{'param1':1, 'param2':2}, {'param1':3, 'param2':4}],
                           'TFOverviewPlugin':[{}],
-                          'ArraySizePlugin':[{}, {'size_request':1}],
-                          'ToFuPlugin':[{'geom':True},{'data':True},
-                                        {'geom':True},{'data':True},
-                                        {'geom':True},{'data':True}]}
+                          'ArraySizePlugin':[{}, {'size_request':1}]}
+                          # 'ToFuPlugin':[{'geom':True},{'data':True},
+                          #               {'geom':True},{'data':True},
+                          #               {'geom':True},{'data':True}]}
 
 class VIZPlugins():
     def __init__(self):
