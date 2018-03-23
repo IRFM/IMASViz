@@ -2,9 +2,10 @@ import wx
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
-from wxmplot import StackedPlotFrame
-from imasviz.plotframes.IMASVIZ_StackedPlotFrame import StackedPlotFrame
+# from wxmplot import StackedPlotFrame
+from imasviz.plotframes.IMASVIZ_SubPlotManagerBaseFrame import SubPlotManagerBaseFrame
 import numpy
+from wxmplot.utils import MenuItem
 
 class SubPlotsManagerFrame(wx.Frame):
     def __init__(self, title, dataTree):
@@ -16,7 +17,7 @@ class SubPlotsManagerFrame(wx.Frame):
         self.dataTree = dataTree
         selectedSignals = self.dataTree.selectedSignals
 
-        x = setNumberOfSubplots(message = 'Set number of required subplots:',
+        x = self.setNumberOfSubplots(message = 'Set number of required subplots:',
             default_value = str(len(selectedSignals)))
         self.subplotsCount = int(x)
 
@@ -40,6 +41,7 @@ class SubPlotsManagerFrame(wx.Frame):
         vbox.Add(button_open, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 5)
         self.Bind(wx.EVT_BUTTON, self.showSubPlots)
         self.SetSizer(vbox)
+        # self.BuildMenu()
 
     def buildList(self, vbox):
         self.label = []
@@ -176,7 +178,7 @@ class SubPlotsManagerFrame(wx.Frame):
         figurekey = api.GetNextKeyForSubPlots()
 
         """Set the frame for holding n number of subplots."""
-        pframe = StackedPlotFrame(title=figurekey,
+        pframe = SubPlotManagerBaseFrame(title=figurekey,
                                   numPlots = len(self.selectedIndex))
 
         """Set the pframe (SubPlot window) to figurekey list.
@@ -207,14 +209,38 @@ class SubPlotsManagerFrame(wx.Frame):
         pframe.Show()
         pframe.Raise()
 
-def setNumberOfSubplots(parent=None, message='', default_value=''):
-    dlg = wx.TextEntryDialog(parent, message,
-                             caption = "SubPlots Manager - Input",
-                             value = default_value, style = wx.OK)
-    dlg.ShowModal()
-    result = dlg.GetValue()
-    dlg.Destroy()
-    return result
+    def BuildMenu(self):
+        """Set menu bar for SubPlot Manager plot signals list window"""
+        mbar = wx.MenuBar()
+
+        """Set first menu"""
+        menu_1 = wx.Menu()
+
+        """Set menu item for saving subplot configuration"""
+        MenuItem(self, menu_1, "Save configuration",
+                 "Save SubPlot manager configuration",
+                 self.SaveSubPlotConfiguration)
+
+        """Append the menu to menu bar"""
+        mbar.Append(menu_1, "Options")
+
+        """Activate the menu bar"""
+        self.SetMenuBar(mbar)
+
+    # def SaveSubPlotConfiguration(self, event=None):
+    #     """Save SubPlot configuration """
+
+    #     """Save plot signals"""
+    #     self.conf_signals = self.getSignals()
+
+    def setNumberOfSubplots(self, parent=None, message='', default_value=''):
+        dlg = wx.TextEntryDialog(parent, message,
+                                 caption = "SubPlots Manager - Input",
+                                 value = default_value, style = wx.OK)
+        dlg.ShowModal()
+        result = dlg.GetValue()
+        dlg.Destroy()
+        return result
 
 import os
 

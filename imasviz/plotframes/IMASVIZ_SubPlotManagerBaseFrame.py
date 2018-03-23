@@ -19,7 +19,7 @@ from wxmplot.baseframe import BaseFrame
 # import tkinter as tk
 
 
-class StackedPlotFrame(BaseFrame):
+class SubPlotManagerBaseFrame(BaseFrame):
     """
     Top/Bottom MatPlotlib panels in a single frame
     """
@@ -447,7 +447,7 @@ if  __name__ == "__main__":
     # print("y: ", y)
 
     """Set the frame for multiple plots."""
-    pframe = StackedPlotFrame(title='SubPlotManager', numPlots = 4)
+    pframe = SubPlotManagerBaseFrame(title='SubPlotManager', numPlots = 4)
 
     xmin = -1
     xmax = max(x+100)+1

@@ -30,7 +30,7 @@ class MenuIDS:
         self.ID_DELETE_SUBPLOTS = 20000
 
 class SignalHandling:
-    
+
     def __init__(self, view):
         self.view = view
         self.menuIDS = MenuIDS()
@@ -41,7 +41,7 @@ class SignalHandling:
         self.nodeData = None
         if self.view.selectedItem != None:
             self.nodeData = self.view.GetItemData(self.view.selectedItem)
-        self.treeNode = None    
+        self.treeNode = None
         if self.nodeData != None:
             self.treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
 
@@ -50,7 +50,7 @@ class SignalHandling:
     def updateNodeData(self):
         self.nodeData = self.view.GetItemData(self.view.selectedItem)
         self.treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
-        
+
     def showPopUpMenu(self, signalName):
         """Display the popup menu for plotting data
         """
@@ -61,7 +61,7 @@ class SignalHandling:
         self.view.popupmenu = wx.Menu()
         s = ''
 
-        """The popup menu behaviour in relation on the selection/unselection 
+        """The popup menu behaviour in relation on the selection/unselection
         status of the node
         """
         if self.nodeData['isSelected'] == 1:
@@ -79,11 +79,11 @@ class SignalHandling:
 
         #item2 = wx.MenuItem(self.view.popupmenu, wx.ID_MORE, item='Show '+signalName+' size', kind=wx.ITEM_NORMAL)
 
-        """Set second-level popup menu for creating new plot out of the 
+        """Set second-level popup menu for creating new plot out of the
         selected IDS node
         """
         item3 = None
-        """The popup menu behaviour in relation to the presence of pre-existing 
+        """The popup menu behaviour in relation to the presence of pre-existing
         plots"""
         if len(self.view.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
@@ -264,7 +264,7 @@ class SignalHandling:
         self.view.Bind(wx.EVT_MENU, self.popUpMenuHandler)
         return 1
 
-    
+
 
     def popUpMenuHandler(self, event):
         if event.GetId() == wx.ID_MORE:
@@ -335,7 +335,7 @@ class SignalHandling:
 
         except ValueError as e:
             self.view.log.error(str(e))
-        
+
     def plotSelectedSignals(self):
         figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
         PlotSelectedSignals(self.view, figureKey).execute()
@@ -374,7 +374,7 @@ class SignalHandling:
             label = label.replace("ids.", "")
         PlotSignal(view=self.view, nodeData=self.nodeData, signal=signal, figureKey=currentFigureKey, title=title,
                    label=label, xlabel="Time[s]", update=0, signalHandling=self).execute()
-        
+
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey):
         self.updateNodeData()
         treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
@@ -470,7 +470,7 @@ class SignalHandling:
             self.view.log.error(str(e))
 
     def showSubPlotsManager(self):
-        from imasviz.tests.SubPlotsManagerView import SubPlotsManagerFrame
+        from imasviz.gui_commands.plot_commands.SubPlotsManagerView import SubPlotsManagerFrame
         frame = SubPlotsManagerFrame("SubPlots Manager", self.view)
         frame.Show(True)
 
