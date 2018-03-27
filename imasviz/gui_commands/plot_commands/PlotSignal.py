@@ -23,9 +23,13 @@ class PlotSignal(AbstractCommand):
         self.signalHandling = signalHandling
 
         if signal == None:
-            signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
+            signalDataAccess = \
+                SignalDataAccessFactory(self.view.dataSource).create()
             treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
-            self.signal = signalDataAccess.GetSignal(self.nodeData, self.view.dataSource.shotNumber, treeNode)
+            self.signal = \
+                signalDataAccess.GetSignal(self.nodeData,
+                                           self.view.dataSource.shotNumber,
+                                           treeNode)
         else:
             self.signal = signal
 
@@ -75,15 +79,18 @@ class PlotSignal(AbstractCommand):
     def getTime(oneDimensionSignal):
         return oneDimensionSignal[0]
 
-    # Returns the signal values of a 1D signal returned by get1DSignal(signalName, shotNumber)
     @staticmethod
     def get1DSignalValue(oneDimensionSignal):
+        """Returns the signal values of a 1D signal returned by
+           get1DSignal(signalName, shotNumber)
+        """
         return oneDimensionSignal[1]
 
-    # Plot a 1D signal as a function of time
-    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None, xlabel=None, update=0):
+    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None,
+                     xlabel=None, update=0):
+        """Plot a 1D signal as a function of time
+        """
 
-        print("*123")
         try:
             self.updateNodeData()
 
@@ -106,8 +113,9 @@ class PlotSignal(AbstractCommand):
             frame = self.plotFrame
             frame.Bind(wx.EVT_CLOSE, lambda_f)
 
-            label, xlabel, ylabel, title = self.plotOptions(self.view, self.nodeData, shotNumber=shotNumber,
-                                                            label=label, xlabel=xlabel, title=title)
+            label, xlabel, ylabel, title = \
+                self.plotOptions(self.view, self.nodeData, shotNumber=shotNumber,
+                                 label=label, xlabel=xlabel, title=title)
 
             if update == 1:
                 for i in range(0, nbRows):
@@ -122,7 +130,8 @@ class PlotSignal(AbstractCommand):
                     ti = t[0]
 
                     if i == 0:
-                        frame.plot(ti, u, title=title, xlabel=xlabel, ylabel=ylabel, label=label)
+                        frame.plot(ti, u, title=title, xlabel=xlabel,
+                                   ylabel=ylabel, label=label)
                     else:
                         frame.oplot(ti, u, label=label)
                 frame.Center()
@@ -142,14 +151,17 @@ class PlotSignal(AbstractCommand):
         try:
             signalDataAccess = SignalDataAccessFactory(view.dataSource).create()
             treeNode = view.getNodeAttributes(selectedNodeData['dataName'])
-            s = signalDataAccess.GetSignal(selectedNodeData, view.dataSource.shotNumber, treeNode)
+            s = signalDataAccess.GetSignal(selectedNodeData,
+                                           view.dataSource.shotNumber,
+                                           treeNode)
             return s
         except:
             #view.log.error(str(e))
             raise
 
     @staticmethod
-    def plotOptions(view, signalNodeData, shotNumber=None, title='', label=None, xlabel=None):
+    def plotOptions(view, signalNodeData, shotNumber=None, title='', label=None,
+                    xlabel=None):
 
         t = view.getNodeAttributes(signalNodeData['dataName'])
 
@@ -158,7 +170,8 @@ class PlotSignal(AbstractCommand):
 
         if xlabel == None:
             if 'coordinate1' in signalNodeData:
-                xlabel = GlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
+                xlabel = \
+                    GlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 

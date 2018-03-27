@@ -58,7 +58,7 @@ class IMASVIZ_PreviewPlotFrame(PlotFrame):
         sbar = self.CreateStatusBar(2, wx.CAPTION)
         sfont = sbar.GetFont()
         sfont.SetWeight(wx.BOLD)
-        sfont.SetPointSize(10)
+        sfont.SetPointSize(6)
         sbar.SetFont(sfont)
 
         self.SetStatusWidths([-3,-1])

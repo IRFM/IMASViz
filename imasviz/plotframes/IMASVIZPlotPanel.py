@@ -82,9 +82,11 @@ class IMASVIZPlotPanel(PlotPanel):
 
         self.staticSliderLabel = None
         # if self.signalHandling.timeSlider == True:
-        #     self.staticSliderLabelValue = 'Time slider (' + self.signalHandling.nodeData['dataName'] + '):'
+        #     self.staticSliderLabelValue = \
+        #         'Time slider (' + self.signalHandling.nodeData['dataName'] + '):'
         # elif self.signalHandling.timeSlider == False:
-        #     self.staticSliderLabelValue = 'Coordinate slider (' + self.signalHandling.nodeData['dataName'] + '):'
+        #     self.staticSliderLabelValue = \
+        #         'Coordinate slider (' + self.signalHandling.nodeData['dataName'] + '):'
 
         if self.signalHandling.timeSlider == True:
             self.staticSliderLabelValue = 'Time slider:'
@@ -94,17 +96,22 @@ class IMASVIZPlotPanel(PlotPanel):
         self.staticSliderLabel = wx.StaticText(self, -1, self.staticSliderLabelValue)
         sizer.Add(self.staticSliderLabel, 0, wx.LEFT, 10)
 
-        treeNode = self.signalHandling.view.getNodeAttributes(self.signalHandling.nodeData['dataName'])
+        treeNode = \
+            self.signalHandling.view.getNodeAttributes(
+                self.signalHandling.nodeData['dataName'])
 
         if self.signalHandling.timeSlider == True:
             minValue = 0
             maxValue = int(treeNode.timeMaxValue()) - 1
-            self.slider = Coord1Slider(parent=self, signalHandling=self.signalHandling, minValue=minValue,
+            self.slider = Coord1Slider(parent=self,
+                                       signalHandling=self.signalHandling,
+                                       minValue=minValue,
                                        maxValue=maxValue)
             sizer.Add(self.slider, 0, wx.LEFT | wx.EXPAND, 10)
             sizerText = wx.BoxSizer(wx.HORIZONTAL)
             self.staticValueLabel = wx.StaticText(self, -1, 'Index value: ')
-            self.sliderCurrentValue = wx.TextCtrl(self, -1, str(minValue), size=(150, -1))
+            self.sliderCurrentValue = \
+                wx.TextCtrl(self, -1, str(minValue), size=(150, -1))
             sizerText.Add(self.staticValueLabel, 0, wx.LEFT | wx.EXPAND, 10)
             sizerText.Add(self.sliderCurrentValue, 0, wx.LEFT | wx.EXPAND, 10)
             sizer.Add(sizerText, 0, wx.LEFT | wx.EXPAND, 10)
@@ -112,8 +119,12 @@ class IMASVIZPlotPanel(PlotPanel):
 
         elif self.signalHandling.timeSlider == False:
             minValue = 0
-            maxValue = treeNode.coordinate1Length(self.signalHandling.nodeData, self.signalHandling.view.dataSource.ids) - 1
-            self.slider = Coord1Slider(parent=self, signalHandling=self.signalHandling, minValue=minValue,
+            maxValue = \
+                treeNode.coordinate1Length(self.signalHandling.nodeData,
+                                           self.signalHandling.view.dataSource.ids) - 1
+            self.slider = Coord1Slider(parent=self,
+                                       signalHandling=self.signalHandling,
+                                       minValue=minValue,
                                        maxValue=maxValue)
             sizer.Add(self.slider, 0, wx.LEFT | wx.EXPAND, 10)
             sizerText = wx.BoxSizer(wx.HORIZONTAL)

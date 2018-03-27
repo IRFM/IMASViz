@@ -30,12 +30,18 @@ class Browser_API():
     def CreateDataTree(self, dataSource):
         treeDict = {}
         if GlobalValues.TESTING:
-            frame = WxDataTreeViewFrame(None, treeDict, dataSource, GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION), size=(450,550))
+            frame = \
+                WxDataTreeViewFrame(None, treeDict, dataSource,
+                                    GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION),
+                                    size=(450,550))
         else:
-            frame = WxDataTreeViewFrame(None, treeDict, dataSource,
-                                        GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']), size=(450, 550))
+            frame = \
+                WxDataTreeViewFrame(None, treeDict, dataSource,
+                                    GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']),
+                                    size=(450, 550))
         frame.wxTreeView.imas_viz_api = self
-        frame.wxTreeView.dataSource = dataSource  # update the dataSource attached to the view
+        frame.wxTreeView.dataSource = dataSource  # update the dataSource
+                                                  # attached to the view
         return frame
 
     # Show the IDS data tree frame
@@ -99,35 +105,44 @@ class Browser_API():
     def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0):
         if figureKey == None:
             figureKey = self.GetNextKeyForFigurePlots()
-        PlotSelectedSignals(dataTreeFrame.wxTreeView, figureKey=figureKey, update=update).execute()
+        PlotSelectedSignals(dataTreeFrame.wxTreeView, figureKey=figureKey,
+                            update=update).execute()
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignalsInMultiPlotFrame(self, dataTreeFrame, configFileName = None, figureKey=None, update=0):
+    def PlotSelectedSignalsInMultiPlotFrame(self, dataTreeFrame,
+                                            configFileName = None,
+                                            figureKey=None, update=0):
         if figureKey == None:
             figureKey = self.GetNextKeyForMultiplePlots()
-        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, figurekey=figureKey, update=update, configFileName=configFileName).execute()
+        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
+                                       figurekey=figureKey, update=update,
+                                       configFileName=configFileName).execute()
 
     # Plot the set of signals selected by the user
-    def ApplyMultiPlotConfiguration(self, dataTreeFrame, configFileName=None, figureKey=None, update=0):
+    def ApplyMultiPlotConfiguration(self, dataTreeFrame, configFileName=None,
+                                    figureKey=None, update=0):
         if figureKey == None:
             figureKey = self.GetNextKeyForMultiplePlots()
-        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView, figurekey=figureKey, update=update,
-                                           configFileName=configFileName).execute()
-    
+        PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
+                                       figurekey=figureKey, update=update,
+                                       configFileName=configFileName).execute()
+
     # Load IDSs data for the given data tree frame
-    def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0, threadingEvent=None):
+    def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0,
+                            threadingEvent=None):
         for IDSName in IDSNamesList:
             self.LoadIDSData(dataTreeFrame, IDSName, occurrence, threadingEvent)
 
     #Load IDS data for a given data tree frame and a given occurrence
-    def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0, threadingEvent=None):
+    def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
+                    threadingEvent=None):
         dataTreeFrame.wxTreeView.setIDSNameSelected(IDSName)
         LoadSelectedData(dataTreeFrame.wxTreeView, occurrence, threadingEvent).execute()
 
     # Select signals from a list of IMAS paths for the given data tree frame
     def SelectSignals(self, dataTreeFrame, pathsList):
         SelectSignals(dataTreeFrame.wxTreeView, pathsList).execute()
-    
+
     #Plot select signals from multiple data tree frames (different shots) on a single plot window
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None):
         i = 0
@@ -137,7 +152,8 @@ class Browser_API():
                 update = 1
             if figureKey == None:
                 figureKey = self.GetNextKeyForFigurePlots()
-            PlotSelectedSignals(f.wxTreeView, figureKey=figureKey, update=update).execute()
+            PlotSelectedSignals(f.wxTreeView, figureKey=figureKey,
+                                update=update).execute()
             i += 1
 
     # Unselect all previously selected signals for the given data tree frame

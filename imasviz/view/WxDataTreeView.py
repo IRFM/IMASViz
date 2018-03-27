@@ -25,10 +25,14 @@ from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import Con
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
 
-# Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
-    def __init__(self, parent, dataSource, mappingFilesDirectory, IDSDefFile, gauge, *args, **kwargs):
-        super(WxDataTreeView, self).__init__(parent, style=wx.TR_DEFAULT_STYLE | wx.TR_LINES_AT_ROOT)
+    """Define IDS Tree structure and the function to handle the click to
+       display the IDS data
+    """
+    def __init__(self, parent, dataSource, mappingFilesDirectory, IDSDefFile,
+                 gauge, *args, **kwargs):
+        super(WxDataTreeView, self).__init__(parent,
+                                             style=wx.TR_DEFAULT_STYLE | wx.TR_LINES_AT_ROOT)
 
         self.Bind(wx.EVT_TREE_ITEM_EXPANDING, self.OnExpandItem)
         self.Bind(wx.EVT_TREE_ITEM_COLLAPSING, self.OnCollapseItem)
@@ -46,26 +50,31 @@ class WxDataTreeView(wx.TreeCtrl):
 
         self.__collapsing = False
 
-        # Create a IDS root node with each shotnumber
+        """Create a IDS root node with each shotnumber"""
         self.root = self.AddRoot('IDSs'+'('+ str(dataSource.shotNumber)+')')
         self.SetItemHasChildren(self.root)
 
-        # Create the empty tree
+        """Create the empty tree"""
         self.dataTree = self.createEmptyIDSsTree(IDSDefFile)
 
-        #User selected signals
-        self.selectedSignals = {} # tuple: view.dataSource.shotNumber, nodeData, index
+        """User selected signals"""
+        self.selectedSignals = {} # tuple: view.dataSource.shotNumber,
+                                  # nodeData, index
 
-        #List of nodes which contain a signal
+        """List of nodes which contain a signal"""
         self.signalsList = []
 
-        #Extra informations attached to each leaf of the tree - key = Node name (IMAS path), value = TreeNode object
+        """Extra informations attached to each leaf of the tree
+           - key = Node name (IMAS path), value = TreeNode object
+        """
         self.node_attributes = {}
 
-        #Parent of this tree, this is the wxDataTreeViewFrame
+        """Parent of this tree, this is the wxDataTreeViewFrame"""
         self.parent = parent
 
-        #Keep a reference to shared data (frames, figures, ...) - This is a BrowserAPI instance
+        """Keep a reference to shared data (frames, figures, ...)
+        - This is a BrowserAPI instance
+        """
         self.imas_viz_api = None
 
         self.dataCurrentlyLoaded = False

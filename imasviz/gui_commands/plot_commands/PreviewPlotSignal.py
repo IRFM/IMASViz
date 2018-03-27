@@ -20,9 +20,13 @@ class PreviewPlotSignal(AbstractCommand):
         self.signalHandling = signalHandling
 
         if signal == None:
-            signalDataAccess = SignalDataAccessFactory(self.view.dataSource).create()
+            signalDataAccess = \
+                SignalDataAccessFactory(self.view.dataSource).create()
             treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
-            self.signal = signalDataAccess.GetSignal(self.nodeData, self.view.dataSource.shotNumber, treeNode)
+            self.signal = \
+                signalDataAccess.GetSignal(self.nodeData,
+                                           self.view.dataSource.shotNumber,
+                                           treeNode)
         else:
             self.signal = signal
 
@@ -65,14 +69,17 @@ class PreviewPlotSignal(AbstractCommand):
     def getTime(oneDimensionSignal):
         return oneDimensionSignal[0]
 
-    # Returns the signal values of a 1D signal returned by get1DSignal(signalName, shotNumber)
     @staticmethod
     def get1DSignalValue(oneDimensionSignal):
+        """Returns the signal values of a 1D signal returned by
+           get1DSignal(signalName, shotNumber)
+        """
         return oneDimensionSignal[1]
 
-    # Plot a 1D signal as a function of time
     def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='',
                      label=None, xlabel=None, update=0):
+        """Plot a 1D signal as a function of time
+        """
 
         try:
             self.updateNodeData()
@@ -114,10 +121,11 @@ class PreviewPlotSignal(AbstractCommand):
                         frame.oplot(ti, u, label=label)
                 frame.Center()
 
-            # """Set frame position"""
+            """Set frame position"""
             # TODO: Get WxDataTreeview position and position preview panel on
             #       the right side of it
             frame.SetPosition((100,100))
+            """Show frame, holding the preview plot panel"""
             frame.Show()
 
         except:
@@ -129,14 +137,17 @@ class PreviewPlotSignal(AbstractCommand):
         try:
             signalDataAccess = SignalDataAccessFactory(view.dataSource).create()
             treeNode = view.getNodeAttributes(selectedNodeData['dataName'])
-            s = signalDataAccess.GetSignal(selectedNodeData, view.dataSource.shotNumber, treeNode)
+            s = signalDataAccess.GetSignal(selectedNodeData,
+                                           view.dataSource.shotNumber,
+                                           treeNode)
             return s
         except:
             #view.log.error(str(e))
             raise
 
     @staticmethod
-    def plotOptions(view, signalNodeData, shotNumber=None, title='', label=None, xlabel=None):
+    def plotOptions(view, signalNodeData, shotNumber=None, title='', label=None,
+                   xlabel=None):
 
         t = view.getNodeAttributes(signalNodeData['dataName'])
 
@@ -145,7 +156,8 @@ class PreviewPlotSignal(AbstractCommand):
 
         if xlabel == None:
             if 'coordinate1' in signalNodeData:
-                xlabel = GlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
+                xlabel = \
+                    GlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 
