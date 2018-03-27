@@ -9,7 +9,8 @@ from matplotlib.ticker import FuncFormatter
 
 
 class IMASVIZPlotPanel(PlotPanel):
-    def __init__(self, parent=None, size=None, axisbg=None, title=None, signalHandling=None, **kws):
+    def __init__(self, parent=None, size=None, axisbg=None, title=None,
+                 signalHandling=None, **kws):
         if title is None:
             title = '2D Plot Frame'
 
@@ -17,8 +18,8 @@ class IMASVIZPlotPanel(PlotPanel):
         self.signalHandling = signalHandling
         self.staticSliderLabelValue = ''
 
-        PlotPanel.__init__(self, parent=parent, size=size,
-                           axisbg=axisbg, **kws)
+        PlotPanel.__init__(self, parent=parent, size=size,  axisbg=axisbg,
+                           **kws)
 
 
     def __onPickEvent(self, event=None):
@@ -38,7 +39,7 @@ class IMASVIZPlotPanel(PlotPanel):
             else:
                 legline.set_alpha(0.50)
                 legtext.set_alpha(0.50)
-    
+
     def BuildPanel(self):
         """ Builds basic GUI panel and popup menu"""
         self.fig   = Figure(self.figsize, dpi=self.dpi)
@@ -122,6 +123,48 @@ class IMASVIZPlotPanel(PlotPanel):
             sizerText.Add(self.sliderCurrentValue, 0, wx.LEFT | wx.EXPAND, 10)
             sizer.Add(sizerText, 0, wx.LEFT | wx.EXPAND, 10)
 
+class IMASVIZ_PreviewPlotPanel(PlotPanel):
+    """Light version of IMASVIZPlotPanel class, used for simple plots
+       (for plot preview etc.)
+    """
+    def __init__(self, parent=None, size=None, axisbg=None, title=None,
+                 signalHandling=None, **kws):
+        if title is None:
+            title = '2D Plot Frame'
 
+        self.axisbg = axisbg
+        self.signalHandling = signalHandling
+        self.staticSliderLabelValue = ''
 
+        PlotPanel.__init__(self, parent=parent, size=size,  axisbg=axisbg,
+                           **kws)
+    def BuildPanel(self):
+        """ Builds basic GUI panel and popup menu"""
+        self.fig   = Figure(self.figsize, dpi=self.dpi)
+        # 1 axes for now
+        self.gridspec = GridSpec(1,1)
+        self.axes  = self.fig.add_subplot(self.gridspec[0], axisbg=self.axisbg)
 
+        self.canvas = FigureCanvas(self, -1, self.fig)
+
+        self.printer.canvas = self.canvas
+        self.set_bg()
+        self.conf.canvas = self.canvas
+
+        # This way of adding to sizer allows resizing
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.canvas, 2, wx.LEFT|wx.TOP|wx.BOTTOM|wx.EXPAND, 0)
+
+        self.conf.show_legend = False
+
+        self.SetAutoLayout(True)
+        self.autoset_margins()
+        self.SetSizer(sizer)
+        self.Fit()
+
+        canvas_draw = self.canvas.draw
+        def draw(*args, **kws):
+            self.autoset_margins()
+            canvas_draw(*args, **kws)
+        self.canvas.draw = draw
+        # self.addCanvasEvents()

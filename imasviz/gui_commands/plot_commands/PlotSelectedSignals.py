@@ -62,7 +62,8 @@ class PlotSelectedSignals(AbstractCommand):
         else:
             nextFigureKey = api.GetNextKeyForFigurePlots()
             signalHandling = SignalHandling(self.view)
-            frame = IMASVIZPlotFrame(None, size=(600, 500), title=nextFigureKey, signalHandling=signalHandling)
+            frame = IMASVIZPlotFrame(None, size=(600, 500), title=nextFigureKey,
+                                     signalHandling=signalHandling)
             frame.panel.toggle_legend(None, True)
             api.figureframes[figureKey] = frame
         return frame
@@ -71,7 +72,8 @@ class PlotSelectedSignals(AbstractCommand):
     def plot1DSelectedSignals(self, figureKey=0, update=0):
 
         try:
-            selectedsignals = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
+            selectedsignals = \
+             GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
 
             api = self.view.imas_viz_api
 
@@ -89,11 +91,11 @@ class PlotSelectedSignals(AbstractCommand):
 
             for value in selectedsignals:
                 signalNodeData = value[1]
-                
+
                 key = self.view.dataSource.dataKey(signalNodeData)
                 tup = (self.view.dataSource.shotNumber, signalNodeData)
                 api.addNodeToFigure(figureKey, key, tup)
-            
+
                 s = PlotSignal.getSignal(self.view, signalNodeData)
                 t = PlotSignal.getTime(s)
 
@@ -103,13 +105,15 @@ class PlotSelectedSignals(AbstractCommand):
 
                 nbRows = v.shape[0]
 
-                label, xlabel, ylabel, title = PlotSignal.plotOptions(self.view, signalNodeData, shotNumber)
+                label, xlabel, ylabel, title = \
+                 PlotSignal.plotOptions(self.view, signalNodeData, shotNumber)
 
                 if i == 0 and update == 0:
                     for j in range(0, nbRows):
                         u = v[j]
                         ti = t[0]
-                        frame.plot(ti, u, title='', xlabel=xlabel, ylabel=ylabel, label=label)
+                        frame.plot(ti, u, title='', xlabel=xlabel,
+                                   ylabel=ylabel, label=label)
                     frame.Center()
                     frame.Show()
                 else:
@@ -121,10 +125,9 @@ class PlotSelectedSignals(AbstractCommand):
         except:
             traceback.print_exc(file=sys.stdout)
             raise ValueError("Error while plotting 1D selected signal(s).")
-        
-        
+
+
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys():
             api.figureframes[figureKey].Hide()
-            
-    
+

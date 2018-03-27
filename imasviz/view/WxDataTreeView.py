@@ -22,7 +22,8 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
-from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation, SetNodeDocScrolledPanel
+from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
+from imasviz.gui_commands.SignalHandling import SignalHandling
 
 # Define IDS Tree structure and the function to handle the click to display the IDS data
 class WxDataTreeView(wx.TreeCtrl):
@@ -158,9 +159,19 @@ class WxDataTreeView(wx.TreeCtrl):
                 node_doc_str_array.append("Documentation: ")
                 node_doc_str_array.append(node_doc)
 
+                """Set and show node documentation panel"""
                 ShowNodeDocumentation.SetAndShow(
                     parent_WxDataTreeView = self.parent,
                     documentation = node_doc_str_array)
+
+                if(self.GetItemData(ht_item).get('isSignal') == 1):
+                    """If the node holds an 1D array of values (1D_FLT) then its
+                       isSignal attribute equals 1 (isSignale = 1)
+                    """
+
+                    """Set and show preview panel"""
+                    SignalHandlingObj = SignalHandling(view=self)
+                    SignalHandlingObj.plotPreviewSignalCommand(event=event)
 
             else:
                 event.Skip()

@@ -2,20 +2,17 @@ import wx
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZPlotFrame
+from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZ_PreviewPlotFrame
 import matplotlib.pyplot as plt
 import wxmplot
 import traceback
 import sys
 
-class PlotSignal(AbstractCommand):
+class PreviewPlotSignal(AbstractCommand):
 
     def __init__(self, view, nodeData = None, signal = None, figureKey = None,
                  title = '', label = None, xlabel = None, update = 0,
                  signalHandling = None):
-        print("*4 1 view: ", view)
-        print("*4 2 signalHandling: ", signalHandling)
-
         AbstractCommand.__init__(self, view, nodeData)
 
         self.updateNodeData();
@@ -50,8 +47,8 @@ class PlotSignal(AbstractCommand):
     def execute(self):
         try:
             if len(self.signal) == 2:
-                t = PlotSignal.getTime(self.signal)
-                v = PlotSignal.get1DSignalValue(self.signal)
+                t = PreviewPlotSignal.getTime(self.signal)
+                v = PreviewPlotSignal.get1DSignalValue(self.signal)
                 self.plot1DSignal(self.view.shotNumber, t, v, self.figureKey,
                                   self.title, self.label, self.xlabel,
                                   self.update)
@@ -60,17 +57,10 @@ class PlotSignal(AbstractCommand):
         except ValueError as e:
             self.view.log.error(str(e))
 
-    def getFrame(self, figureKey=0):
-        api = self.view.imas_viz_api
-        if figureKey in api.figureframes:
-            self.plotFrame = api.figureframes[figureKey]
-        else:
-            figureKey = api.GetNextKeyForFigurePlots()
-            self.plotFrame = \
-                IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
-                                 signalHandling=self.signalHandling)
-            api.figureframes[figureKey] = self.plotFrame
-
+    def getFrame(self):
+        self.plotFrame = \
+            IMASVIZ_PreviewPlotFrame(None, size=(360, 300), title='Plot Preview',
+                             signalHandling=self.signalHandling)
     @staticmethod
     def getTime(oneDimensionSignal):
         return oneDimensionSignal[0]
@@ -81,14 +71,14 @@ class PlotSignal(AbstractCommand):
         return oneDimensionSignal[1]
 
     # Plot a 1D signal as a function of time
-    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None, xlabel=None, update=0):
+    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='',
+                     label=None, xlabel=None, update=0):
 
-        print("*123")
         try:
             self.updateNodeData()
 
             api = self.view.imas_viz_api
-            self.getFrame(self.figureKey)
+            self.getFrame()
 
             fig =  self.plotFrame.get_figure()
 
@@ -99,15 +89,11 @@ class PlotSignal(AbstractCommand):
             # Shape of the signal
             nbRows = v.shape[0]
 
-            def lambda_f(evt, i=figureKey, imas=self):
-                self.onHide(api, i)
-
-
             frame = self.plotFrame
-            frame.Bind(wx.EVT_CLOSE, lambda_f)
 
-            label, xlabel, ylabel, title = self.plotOptions(self.view, self.nodeData, shotNumber=shotNumber,
-                                                            label=label, xlabel=xlabel, title=title)
+            label, xlabel, ylabel, title = \
+                self.plotOptions(self.view, self.nodeData, shotNumber=shotNumber,
+                                 label=label, xlabel=xlabel, title=title)
 
             if update == 1:
                 for i in range(0, nbRows):
@@ -122,20 +108,21 @@ class PlotSignal(AbstractCommand):
                     ti = t[0]
 
                     if i == 0:
-                        frame.plot(ti, u, title=title, xlabel=xlabel, ylabel=ylabel, label=label)
+                        frame.plot(ti, u, title=title, xlabel=xlabel,
+                                   ylabel=ylabel, label=label)
                     else:
                         frame.oplot(ti, u, label=label)
                 frame.Center()
 
+            # """Set frame position"""
+            # TODO: Get WxDataTreeview position and position preview panel on
+            #       the right side of it
+            frame.SetPosition((100,100))
             frame.Show()
 
         except:
             traceback.print_exc(file=sys.stdout)
             raise
-
-
-    def onHide(self, api, figureKey):
-        self.view.imas_viz_api.figureframes[figureKey].Hide()
 
     @staticmethod
     def getSignal(view, selectedNodeData):

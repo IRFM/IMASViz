@@ -4,6 +4,7 @@ from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccess
 from imasviz.gui_commands.select_commands.SelectOrUnselectSignal import SelectOrUnselectSignal
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
 from imasviz.util.GlobalOperations import GlobalOperations
@@ -316,7 +317,8 @@ class SignalHandling:
 
     def plotSignalCommand(self, event):
         try:
-            self.currentFigureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
+            self.currentFigureKey = \
+                self.view.imas_viz_api.GetNextKeyForFigurePlots()
             treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
             label = None
             xlabel = None
@@ -330,7 +332,35 @@ class SignalHandling:
                 self.timeSlider = True
             else:
                 self.timeSlider = None
-            p = PlotSignal(self.view, self.nodeData, signal=None, figureKey=self.currentFigureKey, label=label,xlabel=xlabel, signalHandling=self)
+            p = PlotSignal(self.view, self.nodeData, signal=None,
+                figureKey=self.currentFigureKey, label=label,xlabel=xlabel,
+                signalHandling=self)
+            p.execute()
+
+        except ValueError as e:
+            self.view.log.error(str(e))
+
+    def plotPreviewSignalCommand(self, event):
+        """Command for plotting signal (plot) as a preview plot"""
+        try:
+            self.currentFigureKey = \
+                self.view.imas_viz_api.GetNextKeyForFigurePlots()
+            treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
+            label = None
+            xlabel = None
+            # if treeNode != None and treeNode.time_dependent_aos():
+            #     aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
+            #     label = treeNode.getDataPath(aos_vs_itime, 0)
+            #     label = label.replace("ids.", "")
+            #     label = GlobalOperations.replaceBrackets(label)
+            #     label = GlobalOperations.replaceDotsBySlashes(label)
+            #     xlabel = GlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(0))
+            #     self.timeSlider = True
+            # else:
+            #     self.timeSlider = None
+            p = PreviewPlotSignal(self.view, self.nodeData, signal=None,
+                figureKey=self.currentFigureKey, label=label,xlabel=xlabel,
+                signalHandling=self)
             p.execute()
 
         except ValueError as e:
