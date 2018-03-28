@@ -42,11 +42,6 @@ class PreviewPlotSignal(AbstractCommand):
         else:
             self.signal = signal
 
-        if figureKey == None:
-            self.figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
-        else:
-            self.figureKey = figureKey
-
         self.title = title
 
         if label == None:
@@ -65,7 +60,7 @@ class PreviewPlotSignal(AbstractCommand):
             if len(self.signal) == 2:
                 t = PreviewPlotSignal.getTime(self.signal)
                 v = PreviewPlotSignal.get1DSignalValue(self.signal)
-                self.plot1DSignal(self.view.shotNumber, t, v, self.figureKey,
+                self.plot1DSignal(self.view.shotNumber, t, v,
                                   self.title, self.label, self.xlabel,
                                   self.update)
             else:
@@ -74,7 +69,9 @@ class PreviewPlotSignal(AbstractCommand):
             self.view.log.error(str(e))
 
     def getFrame(self):
+        """Set preview plot frame size"""
         previewplot_size = (300,250)
+        """Plot"""
         self.plotFrame = \
             IMASVIZ_PreviewPlotFrame(None, size=previewplot_size,
                                      title='Plot Preview',
@@ -90,50 +87,31 @@ class PreviewPlotSignal(AbstractCommand):
         """
         return oneDimensionSignal[1]
 
-    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='',
+    def plot1DSignal(self, shotNumber, t, v, title='',
                      label=None, xlabel=None, update=0):
         """Plot a 1D signal as a function of time
         """
 
         try:
             self.updateNodeData()
-
-            api = self.view.imas_viz_api
             self.getFrame()
-
-            fig =  self.plotFrame.get_figure()
-
-            key = self.view.dataSource.dataKey(self.nodeData)
-            tup = (self.view.dataSource.shotNumber, self.nodeData)
-            api.addNodeToFigure(figureKey, key, tup)
-
-            # Shape of the signal
-            nbRows = v.shape[0]
 
             frame = self.plotFrame
 
+            """Set label, xlabel, ylabel and title of the preview plot"""
             label, xlabel, ylabel, title = \
                 self.plotOptions(self.view, self.nodeData, shotNumber=shotNumber,
                                  label=label, xlabel=xlabel, title=title)
 
-            if update == 1:
-                for i in range(0, nbRows):
-                    u = v[i]
-                    # ti = t[i]
-                    ti = t[0]
-                    frame.oplot(ti, u, label=label, title=title)
-            else:
-                frame.panel.toggle_legend(None, True)
-                for i in range(0, nbRows):
-                    u = v[i]
-                    ti = t[0]
-
-                    if i == 0:
-                        frame.plot(ti, u, title=title, xlabel=xlabel,
-                                   ylabel=ylabel, label=label)
-                    else:
-                        frame.oplot(ti, u, label=label)
-                frame.Center()
+            """Set preview plot legend"""
+            frame.panel.toggle_legend(None, True)
+            """Set preview plot values"""
+            u = v[0]
+            ti = t[0]
+            """Plot the preview plot"""
+            frame.plot(ti, u, title=title, xlabel=xlabel,
+                       ylabel=ylabel, label=label)
+            frame.Center()
 
             """Get size and position of WxTreeView display window to be used
                for positioning the preview plot panel
@@ -175,7 +153,7 @@ class PreviewPlotSignal(AbstractCommand):
     @staticmethod
     def plotOptions(view, signalNodeData, shotNumber=None, title='', label=None,
                    xlabel=None):
-
+        """Return label, xlabel, ylabel and title for the plot"""
         t = view.getNodeAttributes(signalNodeData['dataName'])
 
         if label == None:
@@ -209,6 +187,5 @@ class PreviewPlotSignal(AbstractCommand):
 
         if xlabel == None:
             xlabel = "Time[s]"
-
 
         return (label, xlabel, ylabel, title)

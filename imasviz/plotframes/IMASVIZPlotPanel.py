@@ -144,8 +144,8 @@ class IMASVIZ_PreviewPlotPanel(PlotPanel):
             title = 'Plot Frame'
 
         self.axisbg = axisbg
+        """Plot signal (node, holding 1D array suitable for plotting)"""
         self.signalHandling = signalHandling
-        self.staticSliderLabelValue = ''
 
         PlotPanel.__init__(self, parent=parent, size=size,  axisbg=axisbg,
                            **kws)
