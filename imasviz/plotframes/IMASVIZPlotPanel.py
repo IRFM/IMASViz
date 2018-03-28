@@ -162,7 +162,10 @@ class IMASVIZ_PreviewPlotPanel(PlotPanel):
         self.set_bg()
         self.conf.canvas = self.canvas
 
-        # This way of adding to sizer allows resizing
+        """Set label font size"""
+        self.conf.labelfont.set_size(5)
+
+        """This way of adding to sizer allows resizing"""
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.canvas, 2, wx.LEFT|wx.TOP|wx.BOTTOM|wx.EXPAND, 0)
 

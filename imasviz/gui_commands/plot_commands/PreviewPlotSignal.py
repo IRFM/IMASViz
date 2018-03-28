@@ -20,6 +20,11 @@ class PreviewPlotSignal(AbstractCommand):
         if (wx.FindWindowByLabel('Preview Plot') != None):
             wx.FindWindowByLabel('Preview Plot').Close()
 
+        """view.parent holds the WxDatatreeView. The preview plot panel
+           position is to be related to it
+        """
+        self.view = view
+
         AbstractCommand.__init__(self, view, nodeData)
 
         self.updateNodeData();
@@ -69,9 +74,11 @@ class PreviewPlotSignal(AbstractCommand):
             self.view.log.error(str(e))
 
     def getFrame(self):
+        previewplot_size = (300,250)
         self.plotFrame = \
-            IMASVIZ_PreviewPlotFrame(None, size=(360, 300), title='Plot Preview',
-                             signalHandling=self.signalHandling)
+            IMASVIZ_PreviewPlotFrame(None, size=previewplot_size,
+                                     title='Plot Preview',
+                                    signalHandling=self.signalHandling)
     @staticmethod
     def getTime(oneDimensionSignal):
         return oneDimensionSignal[0]
@@ -128,10 +135,20 @@ class PreviewPlotSignal(AbstractCommand):
                         frame.oplot(ti, u, label=label)
                 frame.Center()
 
+            """Get size and position of WxTreeView display window to be used
+               for positioning the preview plot panel
+            """
+            """ - Get position"""
+            px, py = self.view.parent.GetPosition()
+            """ - get size"""
+            sx, sy = self.view.parent.GetSize()
+            """Modify the position of the preview plot panel"""
+            pos_ppp = (px+sx, py)
+
             """Set preview plot frame position"""
             # TODO: Get WxDataTreeview position and position preview panel on
             #       the right side of it
-            frame.SetPosition((100,100))
+            frame.SetPosition(pos_ppp)
             """Set preview plot frame label"""
             frame.SetLabel('Preview Plot')
 

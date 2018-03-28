@@ -41,7 +41,7 @@ class ShowNodeDocumentation(wx.Frame):
     def SetAndShow(parent_WxDataTreeView, documentation):
 
         """Get size and position of WxTreeView window/frame to be used
-        for positioning the node documentation frame
+           for positioning the node documentation frame
         """
 
         """ - Get position"""
@@ -50,7 +50,7 @@ class ShowNodeDocumentation(wx.Frame):
         sx, sy = parent_WxDataTreeView.GetSize()
 
         """ - Modify the position and size for more appealing look of the
-        node documentation panel
+              node documentation panel
         """
         px_ndoc = px
         py_ndoc = py+sy
@@ -58,12 +58,12 @@ class ShowNodeDocumentation(wx.Frame):
         sy_ndoc = 175
 
         """New frame for displaying node documentation with the use of
-        ShowNodeDocumentation.py.
+           ShowNodeDocumentation.py.
         """
         """ - Set the frame and statictext IDs"""
         frame_node_doc_id = 10012
         """ - Note: The statictext IDs must must match to the ones in
-        ShowNodeDocumentation.create function!
+              ShowNodeDocumentation.create function!
         """
         stext_node_label_id = 10002
         stext_node_doc_id = 10004
@@ -74,8 +74,8 @@ class ShowNodeDocumentation(wx.Frame):
         """Updating node documentation """
         if (wx.FindWindowById(stext_node_doc_id) != None):
             """ - If the frame window (documentation static text ID)
-            already exists, then update only the required static text
-            (SetLabel), displaying the node label and documentation
+                  already exists, then update only the required static text
+                  (SetLabel), displaying the node label and documentation
             """
             """ - Find node label static text by ID"""
             stext_node_label = wx.FindWindowById(stext_node_label_id)
@@ -88,8 +88,8 @@ class ShowNodeDocumentation(wx.Frame):
             stext_node_doc.Wrap(sx_ndoc*0.90)
 
             """ - Update the node documentation frame position in
-            correlation to Browser_API position and size changes. Only
-            if the menu selection "Fix panel location" is disabled
+                  correlation to Browser_API position and size changes. Only
+                  if the menu selection "Fix panel location" is disabled
             """
             fix_loc_checkitem_id = 10005
             fix_loc_checkitem_value = frame_node_doc.GetMenuBar(). \
@@ -101,7 +101,7 @@ class ShowNodeDocumentation(wx.Frame):
                 frame_node_doc.SetSize((sx_ndoc, sy_ndoc))
         else:
             """ - Else, if the frame window (static text ID) doesn't,
-            exists create new one"""
+                  exists create new one"""
             frame_node_doc = \
                 ShowNodeDocumentation(
                     documentation = documentation,
