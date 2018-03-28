@@ -13,6 +13,13 @@ class PreviewPlotSignal(AbstractCommand):
     def __init__(self, view, nodeData = None, signal = None, figureKey = None,
                  title = '', label = None, xlabel = None, update = 0,
                  signalHandling = None):
+
+        """Check if a frame with the preview plot frame already exists. If it
+           does, close it. Max one is to be open at a time.
+        """
+        if (wx.FindWindowByLabel('Preview Plot') != None):
+            wx.FindWindowByLabel('Preview Plot').Close()
+
         AbstractCommand.__init__(self, view, nodeData)
 
         self.updateNodeData();
@@ -121,11 +128,14 @@ class PreviewPlotSignal(AbstractCommand):
                         frame.oplot(ti, u, label=label)
                 frame.Center()
 
-            """Set frame position"""
+            """Set preview plot frame position"""
             # TODO: Get WxDataTreeview position and position preview panel on
             #       the right side of it
             frame.SetPosition((100,100))
-            """Show frame, holding the preview plot panel"""
+            """Set preview plot frame label"""
+            frame.SetLabel('Preview Plot')
+
+            """Show preview plot frame"""
             frame.Show()
 
         except:

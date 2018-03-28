@@ -173,6 +173,7 @@ class WxDataTreeView(wx.TreeCtrl):
                     parent_WxDataTreeView = self.parent,
                     documentation = node_doc_str_array)
 
+                """PLOT PREVIEW PANEL"""
                 if(self.GetItemData(ht_item).get('isSignal') == 1):
                     """If the node holds an 1D array of values (1D_FLT) then its
                        isSignal attribute equals 1 (isSignale = 1)

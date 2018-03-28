@@ -141,7 +141,7 @@ class IMASVIZ_PreviewPlotPanel(PlotPanel):
     def __init__(self, parent=None, size=None, axisbg=None, title=None,
                  signalHandling=None, **kws):
         if title is None:
-            title = '2D Plot Frame'
+            title = 'Plot Frame'
 
         self.axisbg = axisbg
         self.signalHandling = signalHandling
