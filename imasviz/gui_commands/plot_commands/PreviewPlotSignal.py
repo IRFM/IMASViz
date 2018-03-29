@@ -10,7 +10,7 @@ import sys
 
 class PreviewPlotSignal(AbstractCommand):
 
-    def __init__(self, view, nodeData = None, signal = None, figureKey = None,
+    def __init__(self, view, nodeData = None, signal = None,
                  title = '', label = None, xlabel = None, update = 0,
                  signalHandling = None):
 

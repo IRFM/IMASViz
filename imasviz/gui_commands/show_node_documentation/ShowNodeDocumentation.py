@@ -18,11 +18,6 @@ class ShowNodeDocumentation(wx.Frame):
         """Set menu bar"""
         self.SetMenuBar(SetNodeDocMenuBar(parent=self))
 
-        """Bind to mouse event handler"""
-        # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
-        """Set menu bar"""
-        self.SetMenuBar(SetNodeDocMenuBar(parent=self))
-
         """Set wrap width later to be used for documentation static text"""
         stext_wrap_width = size_x*0.90
         """Create panel"""
@@ -181,7 +176,6 @@ class SetNodeDocMenuBar(wx.MenuBar):
         """ - Add check item to menu"""
         self.MenuAddCheckItem(menu=menu, parent=parent, id=10005,
                               title="Fix panel location")
-
         return menu
 
     def MenuAddCheckItem(self, menu, parent, id, title):

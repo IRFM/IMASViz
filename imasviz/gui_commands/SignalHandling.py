@@ -344,9 +344,9 @@ class SignalHandling:
     def plotPreviewSignalCommand(self, event):
         """Command for plotting signal (plot) as a preview plot"""
         try:
-            self.currentFigureKey = \
-                self.view.imas_viz_api.GetNextKeyForFigurePlots()
-            treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
+            # self.currentFigureKey = \
+            #     self.view.imas_viz_api.GetNextKeyForFigurePlots()
+            # treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
             label = None
             xlabel = None
             # if treeNode != None and treeNode.time_dependent_aos():
@@ -360,8 +360,8 @@ class SignalHandling:
             # else:
             #     self.timeSlider = None
             p = PreviewPlotSignal(self.view, self.nodeData, signal=None,
-                figureKey=self.currentFigureKey, label=label,xlabel=xlabel,
-                signalHandling=self)
+                                  label=label,xlabel=xlabel,
+                                  signalHandling=self)
             p.execute()
 
         except ValueError as e:

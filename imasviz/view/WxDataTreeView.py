@@ -174,7 +174,17 @@ class WxDataTreeView(wx.TreeCtrl):
                     documentation = node_doc_str_array)
 
                 """PLOT PREVIEW PANEL"""
-                if(self.GetItemData(ht_item).get('isSignal') == 1):
+                checkout_menu_preview_panel_id = self.parent.GetMenuBar(). \
+                    FindMenuItem('Options', 'Enable/Disable preview plot')
+
+                checkout_menu_preview_panel_value = self.parent.GetMenuBar(). \
+                    FindItemById(checkout_menu_preview_panel_id).IsChecked()
+
+                if (checkout_menu_preview_panel_value == True and
+                    self.GetItemData(ht_item).get('isSignal') == 1 and
+                    self.GetItemData(ht_item).get('data_type') == 'FLT_1D' and
+                    (self.GetItemTextColour(ht_item) == wx.BLUE or
+                    self.GetItemTextColour(ht_item) == wx.RED)):
                     """If the node holds an 1D array of values (1D_FLT) then its
                        isSignal attribute equals 1 (isSignale = 1)
                     """
@@ -254,12 +264,16 @@ class WxDataTreeViewFrame(wx.Frame):
         publicStr = ''
         if dataSource.name == GlobalValues.IMAS_UDA:
             publicStr = "public "
-            self.SetTitle("'" + dataSource.machineName + "' " + publicStr + "data source, shot=" + str(
-                dataSource.shotNumber) + ", run=" +  str(dataSource.runNumber))
+            self.SetTitle("'" + dataSource.machineName + "' " + publicStr
+                + "data source, shot=" + str(dataSource.shotNumber) + ", run="
+                +  str(dataSource.runNumber))
         else:
-            self.SetTitle("'" + dataSource.imasDbName + "' " + "data source, shot=" + str(
-                dataSource.shotNumber) + ", run=" + str(dataSource.runNumber))
-        self.wxTreeView = WxDataTreeView(self, dataSource, os.environ['TS_MAPPINGS_DIR'], IDSDefFile, None)
+            self.SetTitle("'" + dataSource.imasDbName + "' "
+                + "data source, shot=" + str(dataSource.shotNumber) + ", run="
+                + str(dataSource.runNumber))
+        self.wxTreeView = WxDataTreeView(self, dataSource,
+                                         os.environ['TS_MAPPINGS_DIR'],
+                                         IDSDefFile, None)
         #self.wxTreeView = views[dataSource.shotNumber]
         self.parent = parent
         self.Bind(wx.EVT_CLOSE, self.onClose)
@@ -267,8 +281,9 @@ class WxDataTreeViewFrame(wx.Frame):
         """ Set WxDataTreeViewFrame ID"""
         # self.SetId(10)
 
-        self.logWindow = wx.TextCtrl(self, wx.ID_ANY, "Log window\n", size=(100, 100),
-                                     style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
+        self.logWindow = \
+            wx.TextCtrl(self, wx.ID_ANY, "Log window\n", size=(100, 100),
+                        style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox2 = wx.BoxSizer(wx.HORIZONTAL)
@@ -299,18 +314,27 @@ class WxDataTreeViewFrame(wx.Frame):
         self.configurationListsFrame.showListBox()
 
     def createMenu(self):
-        """
-        Configure the menu bar.
+        """Configure the menu bar.
         """
         menubar = wx.MenuBar()
-        menu = wx.Menu()
         """Set new menubar item to be added to 'Options' menu"""
-        item = menu.Append(wx.NewId(), \
+        menu = wx.Menu()
+        item_1 = menu.Append(wx.NewId(), \
             item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+
+        """Set enable/disable preview plot checkout item:"""
+        """ - Set id"""
+        item_2_id = wx.NewId()
+        """ - Set checkout item"""
+        item_2 = menu.AppendCheckItem(item_2_id,
+                                      item='Enable/Disable preview plot')
+        """ - Set checkout value 'True' as default"""
+        menu.Check(id=item_2_id, check=True)
+
         """Add and set 'Options' menu """
         menubar.Append(menu, 'Options')
         self.SetMenuBar(menubar)
-        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item)
+        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_1)
 
     def OnResult(self, event):
         idsName = event.data[0]
@@ -320,23 +344,27 @@ class WxDataTreeViewFrame(wx.Frame):
         threadingEvent = event.data[4]
         self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
 
-    def updateView(self, idsName, occurrence, idsData=None, pathsList=None, threadingEvent=None):
+    def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
+                   threadingEvent=None):
         print ('updateView called...')
         t4 = time.time()
         if idsData != None:
-            self.wxTreeView.log.info("Loading occurrence " + str(occurrence) + " of "+ idsName + " IDS ended successfully, building view...")
+            self.wxTreeView.log.info("Loading occurrence " + str(occurrence)
+                + " of "+ idsName + " IDS ended successfully, building view...")
             self.wxTreeView.update_view(idsName, idsData)
             self.wxTreeView.log.info("View update ended.")
             if (idsName == 'equilibrium'):
-                self.wxTreeView.log.info("WARNING: GGD structure array from parent equilibrium.time_slice[itime] has been ignored.")
+                self.wxTreeView.log.info("WARNING: GGD structure array from "
+                    + "parent equilibrium.time_slice[itime] has been ignored.")
         t5 = time.time()
         print('update took ' + str(t5 - t4) + 'seconds')
         print ('updateView ended.')
 
         # Creating the signals tree
-        signalsFrame = IDSSignalTreeFrame(None, self.wxTreeView,
-                                          str(self.wxTreeView.shotNumber),
-                                          GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
+        signalsFrame = \
+            IDSSignalTreeFrame(None, self.wxTreeView,
+                               str(self.wxTreeView.shotNumber),
+                               GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
         if pathsList != None:
             for s in pathsList:
                 n = signalsFrame.tree.selectNodeWithPath(s)
@@ -377,7 +405,10 @@ if __name__ == "__main__":
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
     dataSourceFactory = DataSourceFactory()
     #dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979)
-    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52205, runNumber=0, userName="imas_public",imasDbName='west')
+    dataSource = \
+        dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE,
+                                 shotNumber=52205, runNumber=0,
+                                 userName="imas_public",imasDbName='west')
     from imasviz.Browser_API import Browser_API
     api = Browser_API()
     frame = api.CreateDataTree(dataSource)
