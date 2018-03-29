@@ -165,6 +165,9 @@ class IMASVIZ_PreviewPlotPanel(PlotPanel):
         """Set label font size"""
         self.conf.labelfont.set_size(5)
 
+        """Set plot margins (left, top, right, bottom)"""
+        self.conf.set_margins(0.175, 0.1, 0.1, 0.2)
+
         """This way of adding to sizer allows resizing"""
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.canvas, 2, wx.LEFT|wx.TOP|wx.BOTTOM|wx.EXPAND, 0)
@@ -172,13 +175,11 @@ class IMASVIZ_PreviewPlotPanel(PlotPanel):
         self.conf.show_legend = False
 
         self.SetAutoLayout(True)
-        self.autoset_margins()
         self.SetSizer(sizer)
         self.Fit()
 
         canvas_draw = self.canvas.draw
         def draw(*args, **kws):
-            self.autoset_margins()
             canvas_draw(*args, **kws)
         self.canvas.draw = draw
         # self.addCanvasEvents()
