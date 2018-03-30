@@ -174,11 +174,10 @@ class WxDataTreeView(wx.TreeCtrl):
                     documentation = node_doc_str_array)
 
                 """PLOT PREVIEW PANEL"""
-                checkout_menu_preview_panel_id = self.parent.GetMenuBar(). \
-                    FindMenuItem('Options', 'Enable/Disable preview plot')
-
+                """Check the enable/disable preview plot checkbox value"""
                 checkout_menu_preview_panel_value = self.parent.GetMenuBar(). \
-                    FindItemById(checkout_menu_preview_panel_id).IsChecked()
+                    FindItemById(GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID). \
+                    IsChecked()
 
                 if (checkout_menu_preview_panel_value == True and
                     self.GetItemData(ht_item).get('isSignal') == 1 and
@@ -322,17 +321,36 @@ class WxDataTreeViewFrame(wx.Frame):
         item_1 = menu.Append(wx.NewId(), \
             item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
 
+        """Add menu separator line"""
+        menu.AppendSeparator()
+
+        """PREVIEW PLOT MENU"""
+        """Set main preview plot menu"""
+        menu_pp = wx.Menu()
+
         """Set enable/disable preview plot checkout item:"""
-        """ - Set id"""
-        item_2_id = wx.NewId()
         """ - Set checkout item"""
-        item_2 = menu.AppendCheckItem(item_2_id,
-                                      item='Enable/Disable preview plot')
+        item_pp_1 = menu_pp.AppendCheckItem(
+                    id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
+                    item='Enable',
+                    help="Enable/Disable preview plot display")
         """ - Set checkout value 'True' as default"""
-        menu.Check(id=item_2_id, check=True)
+        menu_pp.Check(id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
+                      check=True)
+
+        # """Add option to fix the position of the preview plot"""
+        # """ - Set checkout item"""
+        # item_pp_2 = menu_pp.AppendCheckItem(
+        #             id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID,
+        #             item='Fix position', help="Fix position of the preview plot")
+
+        """ - Append to menu"""
+        menu.AppendMenu(GlobalValues.MENU_PREVIEW_PLOT_ID,
+                        "Preview Plot Options", menu_pp)
 
         """Add and set 'Options' menu """
         menubar.Append(menu, 'Options')
+
         self.SetMenuBar(menubar)
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_1)
 

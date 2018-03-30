@@ -8,7 +8,7 @@ class FigureTypes:
     SUBPLOTTYPE = "Subplot:"
 
 class GlobalValues:
-    
+
     indices = {'1': 'i', '2': 'j', '3': 'k', '4': 'l', '5': 'q', '6': 'r', '7': 't'}
     max_indices = {'1': 'N', '2': 'M', '3': 'K', '4': 'L', '5': 'Q', '6': 'R', '7': 'T'}
 
@@ -55,4 +55,9 @@ class GlobalValues:
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["UAL_VERSION"][:1]
+
+    """Global frame, panels etc. IDs"""
+    MENU_PREVIEW_PLOT_ID = 201
+    MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID = 2011
+    MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID =2012
 

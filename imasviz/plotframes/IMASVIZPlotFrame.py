@@ -2,6 +2,7 @@ from wxmplot import PlotFrame
 import wx
 from imasviz.plotframes.IMASVIZPlotPanel import IMASVIZPlotPanel, \
                                                 IMASVIZ_PreviewPlotPanel
+from imasviz.util.GlobalValues import GlobalValues
 import matplotlib.pyplot as plt
 
 class IMASVIZPlotFrame(PlotFrame):
@@ -70,8 +71,30 @@ class IMASVIZ_PreviewPlotFrame(PlotFrame):
                                output_title=self.output_title,
                                signalHandling=self.signalHandling)
         self.panel.messenger = self.write_message
+
+        self.createMenu()
+
         sizer.Add(self.panel, 1, wx.EXPAND)
 
         self.SetAutoLayout(True)
         self.SetSizer(sizer)
         self.Fit()
+
+    def createMenu(self):
+        """Configure the menu bar.
+        """
+        menubar = wx.MenuBar()
+
+        """Set new menubar item to be added to 'Options' menu"""
+        menu = wx.Menu()
+
+        """Add option to fix the position of the preview plot"""
+        """ - Set checkout item"""
+        item_pp_2 = menu.AppendCheckItem(
+                    id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID,
+                    item='Fix position', help="Fix position of the preview plot")
+
+        """Add and set 'Options' menu """
+        menubar.Append(menu, 'Options')
+
+        self.SetMenuBar(menubar)

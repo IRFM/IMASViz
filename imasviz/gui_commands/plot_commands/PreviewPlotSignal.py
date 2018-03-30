@@ -2,6 +2,7 @@ import wx
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
 from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import GlobalValues
 from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZ_PreviewPlotFrame
 import matplotlib.pyplot as plt
 import wxmplot
@@ -14,11 +15,16 @@ class PreviewPlotSignal(AbstractCommand):
                  title = '', label = None, xlabel = None, update = 0,
                  signalHandling = None):
 
-        """Check if a frame with the preview plot frame already exists. If it
-           does, close it. Max one is to be open at a time.
+        """Check if the preview plot already exists"""
+        self.exists = wx.FindWindowByLabel('Preview Plot')
+
+        """If the preview plot frame already exists, update it. otherwise
+           create new
         """
-        if (wx.FindWindowByLabel('Preview Plot') != None):
-            wx.FindWindowByLabel('Preview Plot').Close()
+        if (self.exists == None):
+            self.plotFrame = None
+        else:
+            self.plotFrame = self.exists
 
         """view.parent holds the WxDatatreeView. The preview plot panel
            position is to be related to it
@@ -53,8 +59,6 @@ class PreviewPlotSignal(AbstractCommand):
 
         self.update = update
 
-        self.plotFrame = None
-
     def execute(self):
         try:
             if len(self.signal) == 2:
@@ -69,8 +73,9 @@ class PreviewPlotSignal(AbstractCommand):
             self.view.log.error(str(e))
 
     def getFrame(self):
-        """Set preview plot frame size"""
+        """Default preview plot size"""
         previewplot_size = (300,250)
+
         """Plot"""
         self.plotFrame = \
             IMASVIZ_PreviewPlotFrame(None, size=previewplot_size,
@@ -91,12 +96,25 @@ class PreviewPlotSignal(AbstractCommand):
                      label=None, xlabel=None, update=0):
         """Plot a 1D signal as a function of time
         """
-
         try:
+
             self.updateNodeData()
             self.getFrame()
 
-            frame = self.plotFrame
+            """If the preview plot already exists, clear it and set it ready
+               for update
+            """
+            if (self.exists != None):
+                frame = self.exists
+                frame.clear()
+                """Get the menu 'fix position' preview plot option check value"""
+                checkout_preview_panel_pos_value = self.exists.GetMenuBar(). \
+                    FindItemById(GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID). \
+                    IsChecked()
+            else:
+                """Set plot frame"""
+                frame = self.plotFrame
+                checkout_preview_panel_pos_value = 0
 
             """Set label, xlabel, ylabel and title of the preview plot"""
             label, xlabel, ylabel, title = \
@@ -111,27 +129,46 @@ class PreviewPlotSignal(AbstractCommand):
             """Plot the preview plot"""
             frame.plot(ti, u, title=title, xlabel=xlabel,
                        ylabel=ylabel, label=label)
-            frame.Center()
 
-            """Get size and position of WxTreeView display window to be used
-               for positioning the preview plot panel
+            """If the 'fix position' option is enabled, don't change the
+               preview plot position
             """
-            """ - Get position"""
-            px, py = self.view.parent.GetPosition()
-            """ - get size"""
-            sx, sy = self.view.parent.GetSize()
-            """Modify the position of the preview plot panel"""
-            pos_ppp = (px+sx, py)
+            """Else position the preview plot beside the WxDataTreeView display
+               window
+            """
+            if (checkout_preview_panel_pos_value == True and
+                  self.exists != None ):
+                """Get existing preview plot position"""
+                # pos_ppp = wx.FindWindowByLabel('Preview Plot').GetPosition()
+            else:
+                """Get size and position of WxTreeView display window to be used
+                   for positioning the preview plot panel
+                """
+                """ - Get position"""
+                px, py = self.view.parent.GetPosition()
+                """ - get size"""
+                sx, sy = self.view.parent.GetSize()
+                """Modify the position of the preview plot panel"""
+                pos_ppp = (px+sx, py)
 
-            """Set preview plot frame position"""
-            # TODO: Get WxDataTreeview position and position preview panel on
-            #       the right side of it
-            frame.SetPosition(pos_ppp)
+                """Set preview plot frame position"""
+                frame.SetPosition(pos_ppp)
+
+
+            """Set preview plot frame global ID"""
+            frame.SetId(GlobalValues.MENU_PREVIEW_PLOT_ID)
+
             """Set preview plot frame label"""
             frame.SetLabel('Preview Plot')
 
-            """Show preview plot frame"""
-            frame.Show()
+            """If the preview plot already exists, update it. otherwise show
+               new one
+            """
+            if (self.exists != None):
+                frame.Update()
+            else:
+                """Show preview plot frame"""
+                frame.Show()
 
         except:
             traceback.print_exc(file=sys.stdout)

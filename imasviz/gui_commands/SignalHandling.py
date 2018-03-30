@@ -344,21 +344,8 @@ class SignalHandling:
     def plotPreviewSignalCommand(self, event):
         """Command for plotting signal (plot) as a preview plot"""
         try:
-            # self.currentFigureKey = \
-            #     self.view.imas_viz_api.GetNextKeyForFigurePlots()
-            # treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
             label = None
             xlabel = None
-            # if treeNode != None and treeNode.time_dependent_aos():
-            #     aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
-            #     label = treeNode.getDataPath(aos_vs_itime, 0)
-            #     label = label.replace("ids.", "")
-            #     label = GlobalOperations.replaceBrackets(label)
-            #     label = GlobalOperations.replaceDotsBySlashes(label)
-            #     xlabel = GlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(0))
-            #     self.timeSlider = True
-            # else:
-            #     self.timeSlider = None
             p = PreviewPlotSignal(self.view, self.nodeData, signal=None,
                                   label=label,xlabel=xlabel,
                                   signalHandling=self)
