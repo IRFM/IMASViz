@@ -16,7 +16,7 @@ from functools import partial
 from wxmplot.utils import pack, MenuItem
 from wxmplot.plotpanel import PlotPanel
 from wxmplot.baseframe import BaseFrame
-# import tkinter as tk
+import tkinter as tk
 
 
 class SubPlotManagerBaseFrame(BaseFrame):
@@ -27,13 +27,14 @@ class SubPlotManagerBaseFrame(BaseFrame):
                  numPlots = 1, **kws):
 
         """Get screen resolution"""
-        # root = tk.Tk()
-        # screen_width = root.winfo_screenwidth()
-        # screen_height = root.winfo_screenheight()
+        root = tk.Tk()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
 
         """Set BaseFrame size"""
         self.frame_width = 750
-        self.frame_height = 710
+        # self.frame_height = 710
+        self.frame_height = screen_height*0.80
 
         """Set BaseFrame size"""
         framesize=(self.frame_width, self.frame_height)
@@ -42,14 +43,25 @@ class SubPlotManagerBaseFrame(BaseFrame):
         BaseFrame.__init__(self, parent=parent, title=title,
                            size=framesize, **kws)
 
+        """Set space for title"""
+        title_space = 50
+        """Set space for x-axis"""
+        x_axis_space = 70
+
         """Set size of the subplots"""
-        nplots_size = ((self.frame_height-120)/numPlots)
+        nplots_size = \
+            ((self.frame_height-title_space-x_axis_space)/numPlots)
         """ - Set default panel size in relation to frame size"""
         self.panelsize = (self.frame_width, nplots_size)
         """ - Set first panel size in relation to default panel size"""
-        self.panel0size = (self.frame_width, nplots_size+50)
+        self.panel0size = (self.frame_width, nplots_size+title_space)
         """ - Set last panel size in relation to default panel size"""
-        self.panel_lastsize = (self.frame_width, nplots_size+70)
+        self.panel_lastsize = (self.frame_width, nplots_size+x_axis_space)
+
+        """Calculate required relative (%) top margin for top plot"""
+        self.panel0_topmargin = title_space/self.panel0size[1]
+        """Calculate required relative (%) bottom margin for bottom plot"""
+        self.panel_lastsize_botmargin = x_axis_space/self.panel_lastsize[1]
 
         self.xlabel = None
 
@@ -80,15 +92,8 @@ class SubPlotManagerBaseFrame(BaseFrame):
             """
             exec(panelObjectGenCode)
 
-            # """Append the created panel object to self.panelList"""
-            # addPanel2ListGenCode = 'self.panelList.append( self.' + panelLabel + ')'
-            # """Execute generated command (e.g.
-            # 'self.panelList.append(self.panel0') to add the panel object to the
-            # panelList
-            # """
-            # exec(addPanel2ListGenCode)
-
         self.BuildFrame()
+
 
     def get_panel(self, panelname):
         if panelname.lower().startswith('bot'):
@@ -204,8 +209,11 @@ class SubPlotManagerBaseFrame(BaseFrame):
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         """Set margins for first and last subplot panel"""
-        margins = {'panel0': dict(left=0.15, bottom=0.00, top=0.20, right=0.05),
-                   'panel_last': dict(left=0.15, bottom=0.30, top=0.00, right=0.05)}
+        margins = {'panel0':     dict(left=0.15, bottom=0.00,
+                                      top=self.panel0_topmargin, right=0.05),
+                   'panel_last': dict(left=0.15,
+                                      bottom=self.panel_lastsize_botmargin,
+                                      top=0.00, right=0.05)}
 
         setPlotEval = []
         for plot_id in range(self.numPlots):
@@ -216,14 +224,15 @@ class SubPlotManagerBaseFrame(BaseFrame):
                 """Set first panel"""
                 self.panel0 = PlotPanel(self, size=self.panel0size)
                 lsize = self.panel0.conf.labelfont.get_size()
-                self.panel0.conf.margin_callback = self.onMargins
+                self.panel0.xformatter = self.null_formatter
+                # self.panel0.conf.margin_callback = self.onMargins
 
             elif plot_id == self.numPlots - 1:   # Last panel
                 panelLabel = self.panelLabelList[plot_id]  # panelLabel == 'panel_last'
                 """Set bottom panel"""
                 self.panel_last = PlotPanel(self, size=self.panel_lastsize)
                 self.panel_last.conf.labelfont.set_size(lsize)
-                self.panel_last.yformatter = self.bot_yformatter
+                # self.panel_last.yformatter = self.bot_yformatter
 
             else:   # Panels in the middle - between top and bottom panel
                 panelLabel = self.panelLabelList[plot_id]
@@ -241,7 +250,7 @@ class SubPlotManagerBaseFrame(BaseFrame):
                     'self.null_formatter')
                 lsize = eval('self.' + panelLabel + '.conf.labelfont.get_size()')
                 exec('self.' + panelLabel + '.conf.labelfont.set_size(lsize)')
-                exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
+                # exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
 
         for pname in self.panelLabelList:
             pan = self.get_panel(pname)
@@ -269,7 +278,7 @@ class SubPlotManagerBaseFrame(BaseFrame):
         pack(self, sizer)
         sizer.RecalcSizes()
 
-        self.SetAutoLayout(True)
+        # self.SetAutoLayout(True)
         # self.SetSizerAndFit(sizer)
         self.SetSizer(sizer)
         self.BuildMenu()
@@ -280,20 +289,6 @@ class SubPlotManagerBaseFrame(BaseFrame):
 
         """Set 'Options' menu"""
         mopts = wx.Menu()
-        # MenuItem(self, mopts, "Configure Plot\tCtrl+K",
-        #          "Configure Plot styles, colors, labels, etc",
-        #          self.panel0.configure)
-        # MenuItem(self, mopts, "Configure Lower Plot",
-        #          "Configure Plot styles, colors, labels, etc",
-        #          self.panel_last.configure)
-        # MenuItem(self, mopts, "Toggle Legend\tCtrl+L",
-        #          "Toggle Legend Display",
-        #          self.panel0.toggle_legend)
-        # MenuItem(self, mopts, "Toggle Grid\tCtrl+G",
-        #          "Toggle Grid Display",
-        #          self.toggle_grid)
-
-        # mopts.AppendSeparator()
 
         """Add 'Zoom all plots out' option menu item"""
         MenuItem(self, mopts, "Zoom Out\tCtrl+Z",
@@ -429,7 +424,6 @@ class SubPlotManagerBaseFrame(BaseFrame):
             self.Hide()
         except:
             pass
-
 
 if  __name__ == "__main__":
     """Modified StackedPlotFrame test (independent from IMASViz)
