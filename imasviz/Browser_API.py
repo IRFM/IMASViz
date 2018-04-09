@@ -17,6 +17,8 @@ class Browser_API():
         #figureframes contains all plotting frames
         self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
 
+        self.dataTreeFrameList = []
+
     def addNodeToFigure(self, figureKey, key, tup):
         if figureKey not in self.figToNodes:
             self.figToNodes[figureKey] = {}
@@ -42,15 +44,30 @@ class Browser_API():
         frame.wxTreeView.imas_viz_api = self
         frame.wxTreeView.dataSource = dataSource  # update the dataSource
                                                   # attached to the view
+
+        """Add created WxDataTreeView frame to a list of frames"""
+        self.dataTreeFrameList.append(frame)
+
         return frame
 
     # Show the IDS data tree frame
     def ShowDataTree(self, dataTreeFrame):
         dataTreeFrame.Show()
 
-    # Returns the signals (nodes) selected by the user or from script commands
+    """Returns the signals (nodes) selected by the user or from script commands
+       (from a single opened data tree view)
+    """
     def GetSelectedSignals(self, dataTreeFrame):
         return dataTreeFrame.wxTreeView.selectedSignals
+
+    """Returns the signals (nodes) selected by the user of from script commands
+       (from all opened data tree views)
+    """
+    def GetSelectedSignals_All_dtv(self):
+        allSelectedSignals = []
+        for i in range(len(self.dataTreeFrameList)):
+            allSelectedSignals.append(self.GetSelectedSignals(self.dataTreeFrameList[i]))
+        return allSelectedSignals
 
     # Show/Hide a figure
     def HideShowFigure(self, figureKey):
