@@ -341,8 +341,8 @@ class SignalHandling:
         except ValueError as e:
             self.view.log.error(str(e))
 
+    """Show preview plot"""
     def plotPreviewSignalCommand(self, event):
-        """Command for plotting signal (plot) as a preview plot"""
         try:
             label = None
             xlabel = None
@@ -354,8 +354,13 @@ class SignalHandling:
         except ValueError as e:
             self.view.log.error(str(e))
 
+    """Plot selected signals"""
     def plotSelectedSignals(self):
+        """Get label for the next figure (e.c. if 'Figure 2' already exists,
+           value 'Figure 3' will be returned)
+        """
         figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
+        """Plot selected signals"""
         PlotSelectedSignals(self.view, figureKey).execute()
 
     def plotSelectedSignalsToFig(self, numFig):

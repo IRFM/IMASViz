@@ -18,6 +18,10 @@ class PlotSelectedSignals(AbstractCommand):
         self.plotConfig = None
         if configFileName != None:
             self.plotConfig = ET.parse(configFileName)
+        """WxDataTreeView"""
+        self.view = view
+        """Total number of existing WxDataTreeViews"""
+        self.num_view = len(self.view.imas_viz_api.dataTreeFrameList)
 
     def execute(self):
 
@@ -28,9 +32,10 @@ class PlotSelectedSignals(AbstractCommand):
         plotDimension = self.getDimension()
 
         if plotDimension == "1D":
+            """In case of 1D plots"""
             self.plot1DSelectedSignals(self.figureKey, self.update)
-
         elif plotDimension == "2D" or plotDimension == "3D":
+            """In case of 2D or 3D plots"""
             raise ValueError("2D/3D plots are not currently supported.")
 
     def raiseErrorIfNoSelectedArrays(self):
@@ -68,12 +73,35 @@ class PlotSelectedSignals(AbstractCommand):
             api.figureframes[figureKey] = frame
         return frame
 
-    # Plot the set of 1D signals selected by the user as a function of time
-    def plot1DSelectedSignals(self, figureKey=0, update=0):
+    def plot1DSelectedSignals(self, figureKey=0, update=0, multiple_DTV=False):
+        """Plot the set of 1D signals selected by the user as a function of time
 
+           Args:
+                figurekey    - List of existing figures.
+                update       -
+        """
         try:
-            selectedsignals = \
-             GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
+
+            if self.num_view == 1:
+                """If there is only one WxDataTreeView opened"""
+                selectedsignals = GlobalOperations.getSortedSelectedSignals( \
+                    self.view.selectedSignals)
+            else:
+                """Else if there are more WxDataTreeViews (more instances of the
+                IDS databases opened at once
+                """
+                """TODO: (to fix)
+                   Path to the signal (node containing the 1D plot
+                   array data) is obtained correctly, but the IDS databases
+                   are then not set correctly.
+                   For example, if we select arrays 1, 2 in DTV1, arrays
+                   3, 4 in DTV2 and proceed to run 'Plot all signals' in
+                   DTV1, all 1D_FLT arrays (paths) 1, 2, 3, and 4 will be taken
+                   from DTV1 and none from DTV2 (vice versa if we run the
+                   command from the DTV2).
+                """
+                selectedsignals = GlobalOperations.getSortedSelectedSignals(
+                    self.view.imas_viz_api.GetSelectedSignals_AllDTVs() )
 
             api = self.view.imas_viz_api
 

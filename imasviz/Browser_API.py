@@ -41,6 +41,7 @@ class Browser_API():
                 WxDataTreeViewFrame(None, treeDict, dataSource,
                                     GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']),
                                     size=(450, 550))
+        """Set WxTreeViewFrame BrowserAPI"""
         frame.wxTreeView.imas_viz_api = self
         frame.wxTreeView.dataSource = dataSource  # update the dataSource
                                                   # attached to the view
@@ -54,19 +55,20 @@ class Browser_API():
     def ShowDataTree(self, dataTreeFrame):
         dataTreeFrame.Show()
 
-    """Returns the signals (nodes) selected by the user or from script commands
-       (from a single opened data tree view)
-    """
     def GetSelectedSignals(self, dataTreeFrame):
+        """Returns the signals (nodes) selected by the user or from script
+           commands (from a single opened data tree view (DTVs))
+        """
         return dataTreeFrame.wxTreeView.selectedSignals
 
-    """Returns the signals (nodes) selected by the user of from script commands
-       (from all opened data tree views)
-    """
-    def GetSelectedSignals_All_dtv(self):
-        allSelectedSignals = []
+    def GetSelectedSignals_AllDTVs(self):
+        """Returns the signals (nodes) selected by the user of from script
+            commands (from all opened data tree views (DTVs))
+        """
+        allSelectedSignals = {}
         for i in range(len(self.dataTreeFrameList)):
-            allSelectedSignals.append(self.GetSelectedSignals(self.dataTreeFrameList[i]))
+            allSelectedSignals.update(self.dataTreeFrameList[i].wxTreeView.selectedSignals)
+
         return allSelectedSignals
 
     # Show/Hide a figure
@@ -92,6 +94,9 @@ class Browser_API():
         return FigureTypes.MULTIPLOTTYPE + str(self.GetMultiPlotsCount())
 
     def GetNextKeyForFigurePlots(self):
+        """Returns label for the next figure (e.c. if 'Figure i' already exists,
+           value 'Figure i+1' will be returned.
+        """
         return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
 
     def GetNextKeyForSubPlots(self):
