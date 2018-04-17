@@ -345,7 +345,7 @@ class WxDataTreeViewFrame(wx.Frame):
         #             item='Fix position', help="Fix position of the preview plot")
 
         """ - Append to menu"""
-        menu.AppendMenu(GlobalValues.MENU_PREVIEW_PLOT_ID,
+        menu.Append(GlobalValues.MENU_PREVIEW_PLOT_ID,
                         "Preview Plot Options", menu_pp)
 
         """Add and set 'Options' menu """
