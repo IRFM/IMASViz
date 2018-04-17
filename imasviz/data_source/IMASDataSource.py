@@ -169,7 +169,7 @@ class IMASDataSource:
         generatedDataTree.ids = self.ids
 
         view.dataCurrentlyLoaded = True
-        view.idsAlreadyParsed[view.IDSNameSelected] = 1
+        view.idsAlreadyFetched[view.IDSNameSelected] = 1
         #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
 
         if async==True:
@@ -271,7 +271,7 @@ class IMASPublicDataSource(IMASDataSource):
 
         generatedDataTree.ids = self.ids
         view.dataCurrentlyLoaded = True
-        view.idsAlreadyParsed[view.IDSNameSelected] = 1
+        view.idsAlreadyFetched[view.IDSNameSelected] = 1
 
         if async == True:
             generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data

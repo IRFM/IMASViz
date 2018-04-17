@@ -58,11 +58,12 @@ def DataGen(dictDataSource):
     #run = 0
     #machine = 'west'
     #user = getpass.getuser()
-
-    shot = dictDataSource['imasviz_view'].dataSource.shotNumber
-    run = dictDataSource['imasviz_view'].dataSource.runNumber
-    machine = dictDataSource['imasviz_view'].dataSource.imasDbName
-    user = dictDataSource['imasviz_view'].dataSource.userName
+    dataSource = dictDataSource['imasviz_view'].dataSource
+    view = dictDataSource['imasviz_view']
+    shot = dataSource.shotNumber
+    run = dataSource.runNumber
+    machine = dataSource.imasDbName
+    user = dataSource.userName
 
     print('shot    =', shot)
     print('run     =', run)
@@ -71,12 +72,16 @@ def DataGen(dictDataSource):
     print('Reading data...')
 
     # Open shot and run of machine
-    idd = imas.ids(shot, run)
-    idd.open_env(user, machine, '3')
-    idd.equilibrium.get()
+    idd = dataSource.ids
+    if idd is None:
+        dataSource.load(view)
+
+    if not view.idsAlreadyFetched["equilibrium"]:
+        idd.equilibrium.get()
 
     # Get wall geometry
-    idd.wall.get()
+    if not view.idsAlreadyFetched["wall"]:
+        idd.wall.get()
 
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)

@@ -68,8 +68,6 @@ class WxDataTreeViewBuilder:
                 # if len(eval(itemDataDict['dataName'])) != 0:
 
                 # print(dataElement.find('name').text)
-                if dataElement.find('name').text == 'ids.equilibrium.time_slice[0].coordinate_system.tensor_covariant':
-                     print('OK')
                 wxTreeItemData, isSignal, display_color = \
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
@@ -106,18 +104,53 @@ class WxDataTreeViewBuilder:
                     dataElement.get('data_type') == 'xs:integer':
 
                     if dataElement.text != None:
-                        display = dataElement.tag + '=' + str(dataElement.text)
-                        if units != None:
-                            display += " [" + units + "]"
-                        viewerNode = viewerTree.AppendItem(parentNode, display,
-                                                           -1, -1, itemDataDict)
+                        s = dataElement.text
+                        lines = s.split('\n')
+                        if len(lines) > 1:
+                            display = dataElement.tag
+                            if units != None:
+                                display += " [" + units + "]"
+                            viewerNode = viewerTree.AppendItem(parentNode, display,
+                                                               -1, -1, itemDataDict)
+                            for i in range(0, len(lines)):
+                                display = lines[i]
+                                viewerTree.AppendItem(viewerNode, display,
+                                                      -1, -1, itemDataDict)
+
+                        else:
+                            display = dataElement.tag + '=' + str(dataElement.text)
+                            if units != None:
+                                display += " [" + units + "]"
+                            viewerNode = viewerTree.AppendItem(parentNode, display,
+                                                               -1, -1, itemDataDict)
                     else:
-                        display = dataElement.tag
-                        if units != None:
-                            display += " [" + units + "]"
-                        viewerNode = viewerTree.AppendItem(parentNode, display,
-                                                           -1, -1,
-                                                           itemDataDict)
+                        if '=' in dataElement.tag:
+                            text = dataElement.tag.split('=')
+                            s = text[1]
+                            lines = s.split('\n')
+                            if len(lines) > 2:
+                                display = text[0]
+                                if units != None:
+                                    display += " [" + units + "]"
+                                viewerNode = viewerTree.AppendItem(parentNode, display,
+                                                                       -1, -1, itemDataDict)
+                                for i in range(0, len(lines)):
+                                    viewerTree.AppendItem(viewerNode, lines[i],
+                                                              -1, -1, itemDataDict)
+                            else:
+                                display = dataElement.tag
+                                if units != None:
+                                    display += " [" + units + "]"
+                                viewerNode = viewerTree.AppendItem(parentNode, display,
+                                                                   -1, -1,
+                                                                   itemDataDict)
+                        else:
+                            display = dataElement.tag
+                            if units != None:
+                                display += " [" + units + "]"
+                            viewerNode = viewerTree.AppendItem(parentNode, display,
+                                                               -1, -1,
+                                                               itemDataDict)
                 else:
 
                     if dataElement.text != None and \

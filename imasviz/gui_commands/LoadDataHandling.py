@@ -27,7 +27,7 @@ class LoadDataHandling:
         self.view.IDSNameSelected = IDSName
 
         """Check if the data has been already loaded"""
-        IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
+        IDSDataLoaded = self.view.idsAlreadyFetched[self.view.IDSNameSelected]
 
         """Do not diplay popup if the data are already loaded for the current 
         selected item

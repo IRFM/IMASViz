@@ -42,7 +42,7 @@ class WxDataTreeView(wx.TreeCtrl):
 
         self.dataSource = dataSource
         self.idsNamesList = []
-        self.idsAlreadyParsed = {}
+        self.idsAlreadyFetched = {}
         self.selectedItem = None
         self.shotNumber = dataSource.shotNumber
         self.mappingFilesDirectory = mappingFilesDirectory
@@ -95,7 +95,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 """Get IDS documentation"""
                 idsDocumentation = child.get('documentation')
                 self.idsNamesList.append(idsName)
-                self.idsAlreadyParsed[idsName] = 0
+                self.idsAlreadyFetched[idsName] = 0
 
                 """Set array holding IDS properties"""
                 itemDataDict = {}
@@ -238,7 +238,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 self.addChildren(nodeBuilder, child, element_node, idsName)
 
     def update_view(self,idsName, idsData): # Update the tree view with the data
-        self.idsAlreadyParsed[idsName] = 1
+        self.idsAlreadyFetched[idsName] = 1
         ids_root_node = self.dataTree[idsName]
         if idsData != None:
             self.buildTreeView(ids_root_node, idsData)
@@ -364,7 +364,7 @@ class WxDataTreeViewFrame(wx.Frame):
 
     def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
                    threadingEvent=None):
-        print ('updateView called...')
+        #print ('updating view...')
         t4 = time.time()
         if idsData != None:
             self.wxTreeView.log.info("Loading occurrence " + str(occurrence)
@@ -375,8 +375,8 @@ class WxDataTreeViewFrame(wx.Frame):
                 self.wxTreeView.log.info("WARNING: GGD structure array from "
                     + "parent equilibrium.time_slice[itime] has been ignored.")
         t5 = time.time()
-        print('update took ' + str(t5 - t4) + 'seconds')
-        print ('updateView ended.')
+        print('view update took ' + str(t5 - t4) + ' seconds')
+        #print ('updateView ended.')
 
         # Creating the signals tree
         signalsFrame = \

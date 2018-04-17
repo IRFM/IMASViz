@@ -34,7 +34,9 @@ class GlobalValues:
         if TESTING_VIZ_HOME is None:
             if os.environ["HOSTNAME"] == 'r000u11l06':
                 TESTING_VIZ_HOME = os.environ["HOME"] + '/workspace_python/viz'
-            elif os.environ['HOSTNAME'] == 'spica.intra.cea.fr' or os.environ['HOSTNAME'] == 'sirrah':
+            elif os.environ['HOSTNAME'] == 'spica.intra.cea.fr' or \
+                            os.environ['HOSTNAME'] == 'sirrah' \
+                    or os.environ['HOSTNAME'] == 'gemma.intra.cea.fr':
                 TESTING_VIZ_HOME = os.environ["HOME"] + '/viz'
             else:
                 print ("Environment variable TESTING_VIZ_HOME not defined. Check the GlobalValues.py file. Exiting.")

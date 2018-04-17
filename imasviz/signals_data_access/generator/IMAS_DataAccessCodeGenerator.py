@@ -72,7 +72,7 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
                     self.printCode("t2 = time.time()", 2)
                     self.printCode("print('imas get took ' + str(t2 - t1) + ' seconds')",2)
-                    self.printCode("print ('Get operation ended')", 2)
+                    #self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
                     self.printCode("t3 = time.time()", 2)
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
@@ -81,7 +81,7 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
                     self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('e.wait()' + '\n', 3)
-                    self.printCode("print ('view update wait ended...')" + '\n', 3)
+                    #self.printCode("print ('view update wait ended...')" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
 
@@ -217,6 +217,13 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode( affect + ids_child_element.text + '\n', level)
                 parentCode = "node = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + "+ '='" "+ str(" + name_att + "))"
                 self.printCode(parentCode, level)
+
+                # parentCode = "node = ET.SubElement(parent, " + "'" + ids_child_element.get(
+                #     'name') + "'" + ")"
+                # self.printCode(parentCode, level)
+                # code = "node.add('" + ids_child_element.text + "')"
+                # self.printCode(code, level)
+
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
                 type = ids_child_element.get('type')

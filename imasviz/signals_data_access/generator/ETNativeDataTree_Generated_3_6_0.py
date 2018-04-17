@@ -30,7 +30,6 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 			self.ids.magnetics.get(self.occurrence)
 			t2 = time.time()
 			print('imas get took ' + str(t2 - t1) + ' seconds')
-			print ('Get operation ended')
 			idsData = self.load_magnetics(self.idsName, self.occurrence)
 
 			t3 = time.time()
@@ -42,8 +41,6 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 				print ('waiting for view update...')
 
 				e.wait()
-
-				print ('view update wait ended...')
 
 			else:
 				self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)

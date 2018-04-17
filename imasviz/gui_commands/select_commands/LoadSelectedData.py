@@ -12,7 +12,7 @@ class LoadSelectedData(AbstractCommand):
     def execute(self):
         try:
             #Check if the data are already loaded and load the data source if required
-            IDSDataLoaded = self.view.idsAlreadyParsed[self.view.IDSNameSelected]
+            IDSDataLoaded = self.view.idsAlreadyFetched[self.view.IDSNameSelected]
             if IDSDataLoaded == 0:
                 self.view.dataSource.load(self.view, self.occurrence, self.pathsList, self.async)
 
