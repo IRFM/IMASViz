@@ -450,7 +450,12 @@ class SignalHandling:
         selectedSignalsList = []
         for k in selectedDataList:
             v = selectedDataList[k]
-            selectedSignalsList.append(v[1]) #v[0] = shot number, v[1] = node data
+            selectedSignalsList.append(v[1]) # v[0] = shot number,
+                                             # v[1] = node data
+                                             # v[2] = index,
+                                             # v[3] = shot number,
+                                             # v[3] = IDS database name,
+                                             # v[4] = user name
         s = self.nodeData
         for si in selectedSignalsList:
             if s['coordinate1'] != si['coordinate1']:

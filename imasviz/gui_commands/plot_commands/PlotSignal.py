@@ -13,9 +13,6 @@ class PlotSignal(AbstractCommand):
     def __init__(self, view, nodeData = None, signal = None, figureKey = None,
                  title = '', label = None, xlabel = None, update = 0,
                  signalHandling = None):
-        print("*4 1 view: ", view)
-        print("*4 2 signalHandling: ", signalHandling)
-
         AbstractCommand.__init__(self, view, nodeData)
 
         self.updateNodeData();

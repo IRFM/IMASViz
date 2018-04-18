@@ -20,8 +20,8 @@ class PlotSelectedSignals(AbstractCommand):
             self.plotConfig = ET.parse(configFileName)
         """WxDataTreeView"""
         self.view = view
-        """Total number of existing WxDataTreeViews"""
-        self.num_view = len(self.view.imas_viz_api.dataTreeFrameList)
+        """Browser_API"""
+        self.api = self.view.imas_viz_api
 
     def execute(self):
 
@@ -73,7 +73,7 @@ class PlotSelectedSignals(AbstractCommand):
             api.figureframes[figureKey] = frame
         return frame
 
-    def plot1DSelectedSignals(self, figureKey=0, update=0, multiple_DTV=False):
+    def plot1DSelectedSignals(self, figureKey=0, update=0 ):
         """Plot the set of 1D signals selected by the user as a function of time
 
            Args:
@@ -81,75 +81,85 @@ class PlotSelectedSignals(AbstractCommand):
                 update       -
         """
         try:
-
-            if self.num_view == 1:
-                """If there is only one WxDataTreeView opened"""
-                selectedsignals = GlobalOperations.getSortedSelectedSignals( \
-                    self.view.selectedSignals)
-            else:
-                """Else if there are more WxDataTreeViews (more instances of the
-                IDS databases opened at once
-                """
-                """TODO: (to fix)
-                   Path to the signal (node containing the 1D plot
-                   array data) is obtained correctly, but the IDS databases
-                   are then not set correctly.
-                   For example, if we select arrays 1, 2 in DTV1, arrays
-                   3, 4 in DTV2 and proceed to run 'Plot all signals' in
-                   DTV1, all 1D_FLT arrays (paths) 1, 2, 3, and 4 will be taken
-                   from DTV1 and none from DTV2 (vice versa if we run the
-                   command from the DTV2).
-                """
-                selectedsignals = GlobalOperations.getSortedSelectedSignals(
-                    self.view.imas_viz_api.GetSelectedSignals_AllDTVs() )
-
-            api = self.view.imas_viz_api
+            """Total number of existing WxDataTreeViews"""
+            self.num_view = len(self.api.wxDTVlist)
 
             frame = self.getFrame(figureKey)
             #fig = frame.figure
             #fig.add_subplot(111)
 
-            def lambda_f(evt, i=figureKey, api=api):
-                self.onHide(api, i)
+            def lambda_f(evt, i=figureKey, api=self.api):
+                self.onHide(self.api, i)
 
             if figureKey != None:
                 frame.Bind(wx.EVT_CLOSE, lambda_f)
 
             i = 0
+            """Go through each opened DTV, get its selected plot signals and
+               plot every single on to the same plot panel
+            """
+            for dtv in self.api.wxDTVlist:
+                """Get list of selected signals in DTV"""
+                selectedsignals = GlobalOperations.getSortedSelectedSignals( \
+                    dtv.selectedSignals)
 
-            for value in selectedsignals:
-                signalNodeData = value[1]
+                for value in selectedsignals:
+                    """Get node data"""
+                    signalNodeData = value[1]   # v[0] = shot number,
+                                                # v[1] = node data
+                                                # v[2] = index,
+                                                # v[3] = shot number,
+                                                # v[3] = IDS database name,
+                                                # v[4] = user name
 
-                key = self.view.dataSource.dataKey(signalNodeData)
-                tup = (self.view.dataSource.shotNumber, signalNodeData)
-                api.addNodeToFigure(figureKey, key, tup)
+                    key = dtv.dataSource.dataKey(signalNodeData)
+                    tup = (dtv.dataSource.shotNumber, signalNodeData)
+                    self.api.addNodeToFigure(figureKey, key, tup)
 
-                s = PlotSignal.getSignal(self.view, signalNodeData)
-                t = PlotSignal.getTime(s)
+                    s = PlotSignal.getSignal(dtv, signalNodeData)
+                    """Get array of time values"""
+                    t = PlotSignal.getTime(s)
+                    """Get array of y-axis values"""
+                    v = PlotSignal.get1DSignalValue(s)
 
-                v = PlotSignal.get1DSignalValue(s)
+                    """Get IDS case shot number"""
+                    shotNumber = value[0]
 
-                shotNumber = value[0]
+                    """Get number of rows of the y-axis array of values"""
+                    nbRows = v.shape[0]
 
-                nbRows = v.shape[0]
+                    """Set plot labels and title"""
+                    label, xlabel, ylabel, title = \
+                        PlotSignal.plotOptions(dtv, signalNodeData, shotNumber)
 
-                label, xlabel, ylabel, title = \
-                 PlotSignal.plotOptions(self.view, signalNodeData, shotNumber)
-
-                if i == 0 and update == 0:
-                    for j in range(0, nbRows):
-                        u = v[j]
-                        ti = t[0]
-                        frame.plot(ti, u, title='', xlabel=xlabel,
-                                   ylabel=ylabel, label=label)
-                    frame.Center()
-                    frame.Show()
-                else:
-                    for j in range(0, nbRows):
-                        u = v[j]
-                        ti = t[0]
-                        frame.oplot(ti, u, label=label)
-                i += 1
+                    if i == 0 and update == 0:
+                        """If the selected node array (selected signal) is the
+                           first in line for the plot (and with update
+                           disabled), create new plot
+                        """
+                        for j in range(0, nbRows):
+                            """y-axis values"""
+                            u = v[j]
+                            """x-axis values"""
+                            ti = t[0]
+                            """Create plot"""
+                            frame.plot(ti, u, title='', xlabel=xlabel,
+                                       ylabel=ylabel, label=label)
+                        frame.Center()
+                        """Show the frame, holding the plot"""
+                        frame.Show()
+                    else:
+                        """Else add the remaining selected node arrays
+                           (selected signals) to the existing plot
+                        """
+                        for j in range(0, nbRows):
+                            """y-axis values"""
+                            u = v[j]
+                            """x-axis values"""
+                            ti = t[0]
+                            """Add to plot"""
+                            frame.oplot(ti, u, label=label)
+                    i += 1
         except:
             traceback.print_exc(file=sys.stdout)
             raise ValueError("Error while plotting 1D selected signal(s).")

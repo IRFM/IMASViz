@@ -17,7 +17,8 @@ class Browser_API():
         #figureframes contains all plotting frames
         self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
 
-        self.dataTreeFrameList = []
+        self.wxDTVframeList = []
+        self.wxDTVlist = []
 
     def addNodeToFigure(self, figureKey, key, tup):
         if figureKey not in self.figToNodes:
@@ -46,8 +47,11 @@ class Browser_API():
         frame.wxTreeView.dataSource = dataSource  # update the dataSource
                                                   # attached to the view
 
-        """Add created WxDataTreeView frame to a list of frames"""
-        self.dataTreeFrameList.append(frame)
+        """Add created WxDataTreeViewFrame (DTV frame) to a list of DTV frames"""
+        self.wxDTVframeList.append(frame)
+
+        """Add current WxDataTreeView (DTV) to a list of DTVs"""
+        self.wxDTVlist.append(frame.wxTreeView)
 
         return frame
 
@@ -63,11 +67,11 @@ class Browser_API():
 
     def GetSelectedSignals_AllDTVs(self):
         """Returns the signals (nodes) selected by the user of from script
-            commands (from all opened data tree views (DTVs))
+           commands (from all opened data tree views (DTVs))
         """
         allSelectedSignals = {}
-        for i in range(len(self.dataTreeFrameList)):
-            allSelectedSignals.update(self.dataTreeFrameList[i].wxTreeView.selectedSignals)
+        for i in range(len(self.wxDTVframeList)):
+            allSelectedSignals.update(self.wxDTVframeList[i].wxTreeView.selectedSignals)
 
         return allSelectedSignals
 

@@ -16,5 +16,14 @@ class SelectOrUnselectSignal(AbstractCommand):
         else:
             self.view.SetItemTextColour(self.view.selectedItem, wx.RED)
             index = len(self.view.selectedSignals) -1 #give the order of user selection
-            self.view.selectedSignals[key] = (self.view.dataSource.shotNumber, self.nodeData, index)  # tuple
+            """Add selected signal to 'selectedSignals list'. Order of parameters:
+               shot number, node data, index, shot number, IDS database name,
+               user name
+            """
+            self.view.selectedSignals[key] = (self.view.dataSource.shotNumber,
+                                              self.nodeData,
+                                              index,
+                                              self.view.dataSource.runNumber,
+                                              self.view.dataSource.imasDbName,
+                                              self.view.dataSource.userName)  # tuple
             self.nodeData['isSelected'] = 1
