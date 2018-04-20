@@ -84,7 +84,7 @@ class SubPlotsManagerFrame(wx.Frame):
         self.selectedIndex = {}
 
         indexList = []
-        for i in range(1, self.subplotsCount+1):
+        for i in range(self.subplotsCount):
             """Set text to be used within ComboBox widget (list of options to
             choose from)
             """
@@ -205,9 +205,6 @@ class SubPlotsManagerFrame(wx.Frame):
                     x_min = min(t[0])
                 if max(t[0]) > x_max:
                     x_max = max(t[0])
-
-        # """Set API to store created SubPlot window"""
-        # api = self.WxDataTreeView.imas_viz_api
 
         figurekey = self.api.GetNextKeyForSubPlots()
 

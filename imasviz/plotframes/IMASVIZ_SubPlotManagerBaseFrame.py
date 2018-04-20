@@ -215,6 +215,10 @@ class SubPlotManagerBaseFrame(BaseFrame):
                                       bottom=self.panel_lastsize_botmargin,
                                       top=0.00, right=0.05)}
 
+        """Set panel label font size"""
+        fontSize_label = 7
+        fontSize_legend = 6
+
         setPlotEval = []
         for plot_id in range(self.numPlots):
 
@@ -223,7 +227,8 @@ class SubPlotManagerBaseFrame(BaseFrame):
             if plot_id  == 0:   # First panel
                 """Set first panel"""
                 self.panel0 = PlotPanel(self, size=self.panel0size)
-                lsize = self.panel0.conf.labelfont.get_size()
+                self.panel0.conf.labelfont.set_size(fontSize_label)
+                self.panel0.conf.legendfont.set_size(fontSize_legend)
                 self.panel0.xformatter = self.null_formatter
                 # self.panel0.conf.margin_callback = self.onMargins
 
@@ -231,7 +236,8 @@ class SubPlotManagerBaseFrame(BaseFrame):
                 panelLabel = self.panelLabelList[plot_id]  # panelLabel == 'panel_last'
                 """Set bottom panel"""
                 self.panel_last = PlotPanel(self, size=self.panel_lastsize)
-                self.panel_last.conf.labelfont.set_size(lsize)
+                self.panel_last.conf.labelfont.set_size(fontSize_label)
+                self.panel_last.conf.legendfont.set_size(fontSize_legend)
                 # self.panel_last.yformatter = self.bot_yformatter
 
             else:   # Panels in the middle - between top and bottom panel
@@ -248,8 +254,8 @@ class SubPlotManagerBaseFrame(BaseFrame):
 
                 exec('self.' + panelLabel + '.xformatter = ' + \
                     'self.null_formatter')
-                lsize = eval('self.' + panelLabel + '.conf.labelfont.get_size()')
-                exec('self.' + panelLabel + '.conf.labelfont.set_size(lsize)')
+                exec('self.' + panelLabel + '.conf.labelfont.set_size(fontSize_label)')
+                exec('self.' + panelLabel + '.conf.legendfont.set_size(fontSize_legend)')
                 # exec('self.' + panelLabel + '.conf.margin_callback = self.onMargins')
 
         for pname in self.panelLabelList:
