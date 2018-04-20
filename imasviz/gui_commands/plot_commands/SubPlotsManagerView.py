@@ -26,6 +26,22 @@ class SubPlotsManagerFrame(wx.Frame):
         self.num_selectedSignals_all_dtv = \
             len(self.api.GetSelectedSignals_AllDTVs())
 
+        """Set list of signals and their 'source' DTV"""
+        self.setSelectedSignalsList()
+
+        """Get number of signals == number of subplots"""
+        signalCount = len(self.selectedSignalsList_allDTVs)
+        """Run dialog to set number of subplots"""
+        x = self.setNumberOfSubplots(message = 'Set number of required subplots:',
+            default_value = str(signalCount))
+        self.subplotsCount = int(x)
+
+        """Set and open SuvPlotManager signals list window"""
+        self.setSubPlotManagerSignalsListWindow()
+
+        # self.BuildMenu()
+
+    def setSelectedSignalsList(self):
         """Set a list of signals and the DTV where each signal was selected"""
         """self.selectedSignalsList_allDTVs[i][0] ... i-th signal
            self.selectedSignalsList_allDTVs[i][1] ... source DTV of the i-th
@@ -48,27 +64,18 @@ class SubPlotsManagerFrame(wx.Frame):
                 """Add the signal node data and dtv to list"""
                 self.selectedSignalsList_allDTVs.append((value[1], dtv))
 
-        """Get number of signals == number of subplots"""
-        signalCount = len(self.selectedSignalsList_allDTVs)
-        """Run dialog to set number of subplots"""
-        x = self.setNumberOfSubplots(message = 'Set number of required subplots:',
-            default_value = str(signalCount))
-
-        self.subplotsCount = int(x)
-
-        """SubPlot Manager signals list window"""
-        """ - Set window size"""
+    def setSubPlotManagerSignalsListWindow(self):
+        """Set window size"""
         self.SetSize(400, (self.subplotsCount)*40 + 120)
-        """ - Create BoxSizer"""
+        """Create BoxSizer"""
         vbox = wx.BoxSizer(wx.VERTICAL)
-        """ - Add list of signals"""
+        """Add list of signals"""
         self.buildList(vbox)
-        """ - Create and add 'Open' button"""
+        """Create and add 'Open' button"""
         button_open = wx.Button(self, 1, 'Open subplots', style = wx.BU_LEFT)
         vbox.Add(button_open, 0, wx.LEFT | wx.TOP | wx.BOTTOM, 5)
         self.Bind(wx.EVT_BUTTON, self.showSubPlots)
         self.SetSizer(vbox)
-        # self.BuildMenu()
 
     def buildList(self, vbox):
         label = []
