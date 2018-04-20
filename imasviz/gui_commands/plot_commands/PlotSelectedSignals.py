@@ -11,22 +11,22 @@ import sys
 
 
 class PlotSelectedSignals(AbstractCommand):
-    def __init__(self, view, figureKey=None, update=0, configFileName=None):
-        AbstractCommand.__init__(self, view, None)
+    def __init__(self, WxDataTreeView, figureKey=None, update=0, configFileName=None):
+        AbstractCommand.__init__(self, WxDataTreeView, None)
         self.figureKey = figureKey
         self.update = update
         self.plotConfig = None
         if configFileName != None:
             self.plotConfig = ET.parse(configFileName)
         """WxDataTreeView"""
-        self.view = view
+        self.WxDataTreeView = WxDataTreeView
         """Browser_API"""
-        self.api = self.view.imas_viz_api
+        self.api = self.WxDataTreeView.imas_viz_api
 
     def execute(self):
 
         if self.raiseErrorIfNoSelectedArrays():
-            if len(self.view.selectedSignals) == 0:
+            if len(self.WxDataTreeView.selectedSignals) == 0:
                     raise ValueError("No signal selected.")
 
         plotDimension = self.getDimension()
@@ -44,7 +44,7 @@ class PlotSelectedSignals(AbstractCommand):
     def getDimension(self):
 
         # Finding the plot dimension
-        signalNodeDataValue = next(iter(self.view.selectedSignals.values()))
+        signalNodeDataValue = next(iter(self.WxDataTreeView.selectedSignals.values()))
         signalNodeData = signalNodeDataValue[1]
         data_type = signalNodeData['data_type']
 
@@ -61,12 +61,12 @@ class PlotSelectedSignals(AbstractCommand):
 
     def getFrame(self, figureKey, rows=1, cols=1):
         from imasviz.gui_commands.SignalHandling import SignalHandling
-        api = self.view.imas_viz_api
+        api = self.WxDataTreeView.imas_viz_api
         if figureKey in api.GetFiguresKeys():
             frame = api.figureframes[figureKey]
         else:
             nextFigureKey = api.GetNextKeyForFigurePlots()
-            signalHandling = SignalHandling(self.view)
+            signalHandling = SignalHandling(self.WxDataTreeView)
             frame = IMASVIZPlotFrame(None, size=(600, 500), title=nextFigureKey,
                                      signalHandling=signalHandling)
             frame.panel.toggle_legend(None, True)
@@ -100,10 +100,10 @@ class PlotSelectedSignals(AbstractCommand):
             """
             for dtv in self.api.wxDTVlist:
                 """Get list of selected signals in DTV"""
-                selectedsignals = GlobalOperations.getSortedSelectedSignals( \
+                dtv_selectedsignals = GlobalOperations.getSortedSelectedSignals( \
                     dtv.selectedSignals)
 
-                for value in selectedsignals:
+                for value in dtv_selectedsignals:
                     """Get node data"""
                     signalNodeData = value[1]   # v[0] = shot number,
                                                 # v[1] = node data

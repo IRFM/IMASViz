@@ -45,6 +45,7 @@ class WxDataTreeView(wx.TreeCtrl):
         self.idsAlreadyFetched = {}
         self.selectedItem = None
         self.shotNumber = dataSource.shotNumber
+        self.runNumber = dataSource.runNumber
         self.mappingFilesDirectory = mappingFilesDirectory
         self.IDSNameSelected = None
 
