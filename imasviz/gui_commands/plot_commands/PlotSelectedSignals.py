@@ -44,7 +44,8 @@ class PlotSelectedSignals(AbstractCommand):
     def getDimension(self):
 
         # Finding the plot dimension
-        signalNodeDataValue = next(iter(self.WxDataTreeView.selectedSignals.values()))
+        signalNodeDataValue = \
+            next(iter(self.WxDataTreeView.selectedSignals.values()))
         signalNodeData = signalNodeDataValue[1]
         data_type = signalNodeData['data_type']
 
@@ -85,8 +86,6 @@ class PlotSelectedSignals(AbstractCommand):
             self.num_view = len(self.api.wxDTVlist)
 
             frame = self.getFrame(figureKey)
-            #fig = frame.figure
-            #fig.add_subplot(111)
 
             def lambda_f(evt, i=figureKey, api=self.api):
                 self.onHide(self.api, i)
@@ -100,22 +99,23 @@ class PlotSelectedSignals(AbstractCommand):
             """
             for dtv in self.api.wxDTVlist:
                 """Get list of selected signals in DTV"""
-                dtv_selectedsignals = GlobalOperations.getSortedSelectedSignals( \
+                dtv_selectedSignals = GlobalOperations.getSortedSelectedSignals( \
                     dtv.selectedSignals)
 
-                for value in dtv_selectedsignals:
+                for element in dtv_selectedSignals:
                     """Get node data"""
-                    signalNodeData = value[1]   # v[0] = shot number,
-                                                # v[1] = node data
-                                                # v[2] = index,
-                                                # v[3] = shot number,
-                                                # v[3] = IDS database name,
-                                                # v[4] = user name
+                    signalNodeData = element[1] # element[0] = shot number,
+                                                # element[1] = node data
+                                                # element[2] = index,
+                                                # element[3] = shot number,
+                                                # element[3] = IDS database name,
+                                                # element[4] = user name
 
                     key = dtv.dataSource.dataKey(signalNodeData)
                     tup = (dtv.dataSource.shotNumber, signalNodeData)
                     self.api.addNodeToFigure(figureKey, key, tup)
 
+                    """Get signal properties and values"""
                     s = PlotSignal.getSignal(dtv, signalNodeData)
                     """Get array of time values"""
                     t = PlotSignal.getTime(s)
@@ -123,7 +123,7 @@ class PlotSelectedSignals(AbstractCommand):
                     v = PlotSignal.get1DSignalValue(s)
 
                     """Get IDS case shot number"""
-                    shotNumber = value[0]
+                    shotNumber = element[0]
 
                     """Get number of rows of the y-axis array of values"""
                     nbRows = v.shape[0]

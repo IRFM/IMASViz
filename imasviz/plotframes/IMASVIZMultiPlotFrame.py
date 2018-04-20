@@ -7,9 +7,9 @@ from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import Save
 import matplotlib.pyplot as plt
 
 class IMASVIZMultiPlotFrame(MultiPlotFrame):
-    def __init__(self, view, parent=None, rows=1, cols=1, framesize=None,
-                 panelsize=(400, 320), panelopts=None, **kws):
-        self.view = view
+    def __init__(self, WxDataTreeView, parent=None, rows=1, cols=1,
+                 framesize=None, panelsize=(400, 320), panelopts=None, **kws):
+        self.WxDataTreeView = WxDataTreeView
         self.help_msg = """Quick help:
 
          Left-Click:   to display X,Y coordinates
@@ -143,7 +143,8 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
 
     def save_configuration(self, event=None, **kws):
         print ("Saving plots configuration...")
-        SavePlotsConfiguration(view=self.view, frame=self, cols=self.cols).execute()
+        SavePlotsConfiguration(WxDataTreeView=self.WxDataTreeView,
+                               frame=self, cols=self.cols).execute()
 
     def oplot(self,x,y,panel=None,**kws):
         """generic plotting method, overplotting any existing plot """

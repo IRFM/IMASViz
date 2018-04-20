@@ -52,17 +52,17 @@ class SubPlotsManagerFrame(wx.Frame):
             """Get list of selected signals in DTV"""
             dtv_sortedSignals = GlobalOperations.getSortedSelectedSignals( \
                 dtv.selectedSignals)
-            for value in dtv_sortedSignals:
+            for element in dtv_sortedSignals:
                 """Get node data
-                   v[0] = shot number,
-                   v[1] = node data
-                   v[2] = index,
-                   v[3] = shot number,
-                   v[3] = IDS database name,
-                   v[4] = user name
+                   element[0] = shot number,
+                   element[1] = node data
+                   element[2] = index,
+                   element[3] = shot number,
+                   element[3] = IDS database name,
+                   element[4] = user name
                 """
                 """Add the signal node data and dtv to list"""
-                self.selectedSignalsList_allDTVs.append((value[1], dtv))
+                self.selectedSignalsList_allDTVs.append((element[1], dtv))
 
     def setSubPlotManagerSignalsListWindow(self):
         """Set window size"""
@@ -169,8 +169,6 @@ class SubPlotsManagerFrame(wx.Frame):
             for item in self.selectedIndex[key]:
                 # signals[key].append(self.signals_list[item])
                 signals[key].append(self.selectedSignalsList_allDTVs[item])
-
-
         return signals
 
     def showSubPlots(self, evt):
