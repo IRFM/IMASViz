@@ -69,7 +69,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             for dtv in self.api.wxDTVlist:
                 if self.plotConfig != None:
                     dtv_selectedSignals, panelPlotsCount = \
-                        self.selectSignals(frame)
+                        self.selectSignals(frame, WxDataTreeView=dtv)
                 else:
                     """Get list of selected signals in DTV"""
                     dtv_selectedSignals = \
@@ -151,20 +151,23 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             traceback.print_exc(file=sys.stdout)
             raise ValueError("Error while plotting 1D selected signal(s).")
 
-
-    def selectSignals(self, frame):
+    def selectSignals(self, frame, WxDataTreeView):
         selectedsignalsMap = {} #key = panel key, value = selected arrays count
         pathsList = []
-        UnselectAllSignals(self.WxDataTreeView).execute()
+        UnselectAllSignals(WxDataTreeView).execute()
+
         for n in range(0, len(frame.panels)):
             key = GlobalOperations.getNextPanelKey(n, cols=self.cols)
+
             selectedArrays = self.plotConfig.findall(".//*[@key='" + str(key) + "']/selectedArray")
             selectedsignalsMap[key] = len(selectedArrays)
             for selectedArray in selectedArrays:
                 pathsList.append(selectedArray.get("path"))
-        SelectSignals(self.WxDataTreeView, pathsList).execute()
+
+        SelectSignals(WxDataTreeView, pathsList).execute()
+
         dtv_selectedSignals = GlobalOperations. \
-            getSortedSelectedSignals(self.WxDataTreeView.selectedSignals)
+            getSortedSelectedSignals(WxDataTreeView.selectedSignals)
         return dtv_selectedSignals, selectedsignalsMap
 
 

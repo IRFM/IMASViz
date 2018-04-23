@@ -319,8 +319,9 @@ class WxDataTreeViewFrame(wx.Frame):
         menubar = wx.MenuBar()
         """Set new menubar item to be added to 'Options' menu"""
         menu = wx.Menu()
+        """Add item for applying IMASViz MultiPlot Configuration"""
         item_1 = menu.Append(wx.NewId(), \
-            item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
+            item='Apply MultiPlot configuration', kind=wx.ITEM_NORMAL)
 
         """Add menu separator line"""
         menu.AppendSeparator()
