@@ -11,7 +11,7 @@ import wxmplot
 import wx
 import traceback
 import sys
-
+from imasviz.data_source.DataSourceFactory import DataSourceFactory
 
 class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def __init__(self, WxDataTreeView, figurekey=0, update=0,
@@ -63,18 +63,83 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             """Set maximum number of plots within frame"""
             maxNumberOfPlots = self.rows*self.cols;
 
-            """Go through each opened DTV, get its selected plot signals and
-               plot every single to the same MultiPlot frame
+            dtv_selectedSignals = []
+
+            MultiPlotFrame_WxDTVList = []
+
+            plotConfig_used = False
+
+            """If plotConfig is available (e.g. save configuration was
+               loaded)
             """
-            for dtv in self.api.wxDTVlist:
-                if self.plotConfig != None:
-                    dtv_selectedSignals, panelPlotsCount = \
-                        self.selectSignals(frame, WxDataTreeView=dtv)
-                else:
-                    """Get list of selected signals in DTV"""
-                    dtv_selectedSignals = \
-                        GlobalOperations.getSortedSelectedSignals(
-                            dtv.selectedSignals)
+            """TODO: implement the 'selectSignals' function (modify it if
+               required)
+            """
+            if self.plotConfig != None:
+                plotConfig_used = True
+                # dtv_selectedSignals, panelPlotsCount = \
+                #     self.selectSignals(frame, WxDataTreeView=dtv)
+
+                selectedSignalsList = []
+                selectedsignalsMap = {}
+                # pathsList = []
+                dataSourceFactory = DataSourceFactory()
+
+                for k in range(0, len(frame.panels)):
+                    key = GlobalOperations.getNextPanelKey(k, cols=self.cols)
+
+                    selectedArrays = self.plotConfig.findall(".//*[@key='" +
+                        str(key) + "']/selectedArray")
+                    if selectedArrays != []:
+                        selectedSignalsList.append(selectedArrays)
+                        selectedsignalsMap[key] = len(selectedArrays)
+
+
+                for i in range(len(selectedSignalsList)):
+                    for selectedSignal in selectedSignalsList[i]:
+                        """Set empty pathList at each iteration
+                        """
+                        pathsList = []
+
+                        signal_shotNum = int(selectedSignal.get("shotnum"))
+                        signal_runNum = int(selectedSignal.get("runnum"))
+                        signal_database = selectedSignal.get("database")
+                        signal_username = selectedSignal.get("username")
+                        pathsList.append(selectedSignal.get("path"))
+
+                        """TODO-FIX: Currently for each signal new DTV is
+                           created, also if multiple signals share the same
+                           IDS.
+                        """
+                        dtv_frame = self.api.CreateDataTree(
+                            dataSourceFactory.create(shotNumber = signal_shotNum,
+                                                     runNumber = signal_runNum,
+                                                     userName = signal_username,
+                                                     imasDbName = signal_database))
+                        """Get WxDataTreeView (DTV)"""
+                        dtv = dtv_frame.wxTreeView
+                        """Add the DTV to a list of DTVs"""
+                        MultiPlotFrame_WxDTVList.append(dtv)
+                        """Select signals, determined by the pathList, in the
+                           DTV
+                        """
+                        SelectSignals(dtv, pathsList).execute()
+
+            else:
+                """If plotConfig is not present (save configuration was not used)
+                   get the list of current opened DTVs, created by manually
+                   opening IDS databases thus creating the DTVs.
+                """
+                MultiPlotFrame_WxDTVList = self.api.wxDTVlist
+
+            """Go through every opened/created DTV from the list, get its
+               selected plot signals and plot every single to the same
+               MultiPlot frame
+            """
+            for dtv in MultiPlotFrame_WxDTVList:
+                """Get list of selected signals in DTV"""
+                dtv_selectedSignals = GlobalOperations. \
+                    getSortedSelectedSignals(dtv.selectedSignals)
 
                 for element in dtv_selectedSignals:
 
@@ -110,6 +175,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     label, xlabel, ylabel, title = \
                         PlotSignal.plotOptions(dtv, signalNodeData, shotNumber)
 
+
                     for j in range(0, nbRows):
                         """y-axis values"""
                         u = v[j]
@@ -123,7 +189,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                         if self.plotConfig is None:
                             numberOfPlots = 1
                         else:
-                            numberOfPlots = panelPlotsCount[p]
+                            # numberOfPlots = panelPlotsCount[p]
+                            numberOfPlots = 1
 
                         for k in range(0, numberOfPlots):
                             if k == 0:
@@ -141,6 +208,10 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                                             legend_loc='uc', legendfontsize=5,
                                             legend_on=False)
                         n = n + 1
+
+                    if plotConfig_used == True:
+                        UnselectAllSignals(dtv).execute()
+                        """TODO: Close the 'hidden' DTV"""
 
             self.applyPlotConfigurationAfterPlotting(frame=frame)
             frame.Center()
