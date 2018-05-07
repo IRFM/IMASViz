@@ -11,7 +11,6 @@ import wxmplot
 import wx
 import traceback
 import sys
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
 
 class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def __init__(self, WxDataTreeView, figurekey=0, update=0,
@@ -22,8 +21,9 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         self.rows = 2
         self.cols = 3
 
-        """Browser_API"""
+        # Browser_API
         self.api = self.WxDataTreeView.imas_viz_api
+        self.WxDataTreeView = WxDataTreeView
 
     def raiseErrorIfNoSelectedArrays(self):
         return False
@@ -48,7 +48,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def plot1DSelectedSignals(self, figureKey=None, update=0):
 
         try:
-            """Get frame"""
+            #Get frame
             frame = self.getFrame(figureKey, self.rows, self.cols)
 
             self.applyPlotConfigurationBeforePlotting(frame=frame)
@@ -60,7 +60,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             n = 0 #number of plots
 
-            """Set maximum number of plots within frame"""
+            # Set maximum number of plots within frame
             maxNumberOfPlots = self.rows*self.cols;
 
             dtv_selectedSignals = []
@@ -69,73 +69,27 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             plotConfig_used = False
 
-            """If plotConfig is available (e.g. save configuration was
-               loaded)
-            """
-            """TODO: implement the 'selectSignals' function (modify it if
-               required)
-            """
+            # If plotConfig is available (e.g. save configuration was loaded)
             if self.plotConfig != None:
                 plotConfig_used = True
-                # dtv_selectedSignals, panelPlotsCount = \
-                #     self.selectSignals(frame, WxDataTreeView=dtv)
 
-                selectedSignalsList = []
-                selectedsignalsMap = {}
-                # pathsList = []
-                dataSourceFactory = DataSourceFactory()
+                # Select signals, saved in the save configuration. Return the
+                # list of signals as 'dtv_selectedSignals'.
+                # Get panel plots count
+                dtv_selectedSignals, panelPlotsCount = \
+                    self.selectSignals(frame, WxDataTreeView=self.WxDataTreeView)
 
-                for k in range(0, len(frame.panels)):
-                    key = GlobalOperations.getNextPanelKey(k, cols=self.cols)
-
-                    selectedArrays = self.plotConfig.findall(".//*[@key='" +
-                        str(key) + "']/selectedArray")
-                    if selectedArrays != []:
-                        selectedSignalsList.append(selectedArrays)
-                        selectedsignalsMap[key] = len(selectedArrays)
-
-
-                for i in range(len(selectedSignalsList)):
-                    for selectedSignal in selectedSignalsList[i]:
-                        """Set empty pathList at each iteration
-                        """
-                        pathsList = []
-
-                        signal_shotNum = int(selectedSignal.get("shotnum"))
-                        signal_runNum = int(selectedSignal.get("runnum"))
-                        signal_database = selectedSignal.get("database")
-                        signal_username = selectedSignal.get("username")
-                        pathsList.append(selectedSignal.get("path"))
-
-                        """TODO-FIX: Currently for each signal new DTV is
-                           created, also if multiple signals share the same
-                           IDS.
-                        """
-                        dtv_frame = self.api.CreateDataTree(
-                            dataSourceFactory.create(shotNumber = signal_shotNum,
-                                                     runNumber = signal_runNum,
-                                                     userName = signal_username,
-                                                     imasDbName = signal_database))
-                        """Get WxDataTreeView (DTV)"""
-                        dtv = dtv_frame.wxTreeView
-                        """Add the DTV to a list of DTVs"""
-                        MultiPlotFrame_WxDTVList.append(dtv)
-                        """Select signals, determined by the pathList, in the
-                           DTV
-                        """
-                        SelectSignals(dtv, pathsList).execute()
+                MultiPlotFrame_WxDTVList.append(self.WxDataTreeView)
 
             else:
-                """If plotConfig is not present (save configuration was not used)
-                   get the list of current opened DTVs, created by manually
-                   opening IDS databases thus creating the DTVs.
-                """
+                # If plotConfig is not present (save configuration was not used)
+                # get the list of current opened DTVs, created by manually
+                # opening IDS databases thus creating the DTVs.
                 MultiPlotFrame_WxDTVList = self.api.wxDTVlist
 
-            """Go through every opened/created DTV from the list, get its
-               selected plot signals and plot every single to the same
-               MultiPlot frame
-            """
+            # Go through every opened/created DTV from the list, get its
+            # selected plot signals and plot every single to the same
+            # MultiPlot frame
             for dtv in MultiPlotFrame_WxDTVList:
                 """Get list of selected signals in DTV"""
                 dtv_selectedSignals = GlobalOperations. \
@@ -146,7 +100,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     if n + 1 > maxNumberOfPlots:
                         break
 
-                    """Get node data"""
+                    #Get node data
                     signalNodeData = element[1] # element[0] = shot number,
                                                 # element[1] = node data
                                                 # element[2] = index,
@@ -158,28 +112,28 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     tup = (dtv.dataSource.shotNumber, signalNodeData)
                     self.api.addNodeToFigure(figureKey, key, tup)
 
-                    """Get signal properties and values"""
+                    # Get signal properties and values
                     s = PlotSignal.getSignal(dtv, signalNodeData)
-                    """Get array of time values"""
+                    # Get array of time values
                     t = PlotSignal.getTime(s)
-                    """Get array of y-axis values"""
+                    # Get array of y-axis values
                     v = PlotSignal.get1DSignalValue(s)
 
-                    """Get IDS case shot number"""
+                    # Get IDS case shot number
                     shotNumber = element[0]
 
-                    """Get number of rows of the y-axis array of values"""
+                    # Get number of rows of the y-axis array of values
                     nbRows = v.shape[0]
 
-                    """Set plot labels and title"""
+                    # Set plot labels and title
                     label, xlabel, ylabel, title = \
                         PlotSignal.plotOptions(dtv, signalNodeData, shotNumber)
 
 
                     for j in range(0, nbRows):
-                        """y-axis values"""
+                        # y-axis values
                         u = v[j]
-                        """x-axis values"""
+                        # x-axis values
                         ti = t[0]
 
                         a = n//self.cols
@@ -194,14 +148,14 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
                         for k in range(0, numberOfPlots):
                             if k == 0:
-                                """Create plot"""
+                                # Create plot
                                 frame.plot(ti, u, panel=p, xlabel=xlabel,
                                            ylabel=ylabel, label=label,
                                            labelfontsize=5, show_legend=True,
                                            legend_loc='uc', legendfontsize=5,
                                            legend_on=False)
                             else:
-                                """Add to pre-existing plot"""
+                                # Add to pre-existing plot
                                 frame.oplot(ti, u, panel=p, xlabel=xlabel,
                                             ylabel=ylabel, label=label,
                                             labelfontsize=5, show_legend=True,
@@ -209,13 +163,12 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                                             legend_on=False)
                         n = n + 1
 
-                    if plotConfig_used == True:
-                        UnselectAllSignals(dtv).execute()
-                        """TODO: Close the 'hidden' DTV"""
+                    # if plotConfig_used == True:
+                    #     UnselectAllSignals(dtv).execute()
 
             self.applyPlotConfigurationAfterPlotting(frame=frame)
             frame.Center()
-            """Show the frame, holding the plots"""
+            # Show the frame, holding the plots
             frame.Show()
 
         except:
