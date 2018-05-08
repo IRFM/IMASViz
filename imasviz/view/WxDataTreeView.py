@@ -25,6 +25,7 @@ from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import Con
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
 
+
 class WxDataTreeView(wx.TreeCtrl):
     """Define IDS Tree structure and the function to handle the click to
        display the IDS data
@@ -310,33 +311,41 @@ class WxDataTreeViewFrame(wx.Frame):
         self.SetId(-1)
 
     def onShowConfigurations(self, event):
+        """Show configuration window
+        """
         self.configurationListsFrame = ConfigurationListsFrame(self)
         self.configurationListsFrame.showListBox()
+
+    def onShowMultiPlot(self, event):
+        """Apply selected signals (all DTVs) to MultiPlot
+        """
+        ss = SignalHandling(self.wxTreeView)
+        ss.plotSelectedSignalsToMultiPlotsFrame()
 
     def createMenu(self):
         """Configure the menu bar.
         """
         menubar = wx.MenuBar()
-        """Set new menubar item to be added to 'Options' menu"""
+        # Set new menubar item to be added to 'Options' menu
         menu = wx.Menu()
-        """Add item for applying IMASViz MultiPlot Configuration"""
-        item_1 = menu.Append(wx.NewId(), \
-            item='Apply MultiPlot configuration', kind=wx.ITEM_NORMAL)
+        # Add item for applying IMASViz MultiPlot Configuration
+        item_conf = menu.Append(wx.NewId(), \
+            item='Apply Configuration', kind=wx.ITEM_NORMAL)
 
-        """Add menu separator line"""
+        # Add menu separator line
         menu.AppendSeparator()
 
-        """PREVIEW PLOT MENU"""
-        """Set main preview plot menu"""
+        # PREVIEW PLOT MENU
+        # Set main preview plot submenu
         menu_pp = wx.Menu()
 
-        """Set enable/disable preview plot checkout item:"""
-        """ - Set checkout item"""
+        # Set enable/disable preview plot checkout item:
+        #  - Set checkout item
         item_pp_1 = menu_pp.AppendCheckItem(
                     id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
                     item='Enable',
                     help="Enable/Disable preview plot display")
-        """ - Set checkout value 'True' as default"""
+        #  - Set checkout value 'True' as default
         menu_pp.Check(id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
                       check=True)
 
@@ -346,15 +355,37 @@ class WxDataTreeViewFrame(wx.Frame):
         #             id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID,
         #             item='Fix position', help="Fix position of the preview plot")
 
-        """ - Append to menu"""
+        #  - Append to menu
         menu.Append(GlobalValues.MENU_PREVIEW_PLOT_ID,
                         "Preview Plot Options", menu_pp)
 
-        """Add and set 'Options' menu """
+        # Add menu separator line
+        menu.AppendSeparator()
+
+        # Set main MultiPlot submenu
+        menu_multiPlot = wx.Menu()
+
+        #  - Set item to apply signals, selected in all opened IMAS data source
+        #    windows, to MultiPlot submenu
+        item_multiPlot_1 = menu_multiPlot.Append(
+                            GlobalValues.MENU_ITEM_SIGNALS_TO_MULTIPLOT_ID,
+                            item='Apply selected signals to MultiPlot (all)',
+                            kind=wx.ITEM_NORMAL)
+
+        # - Append to MultiPlot submenu
+        menu.Append(GlobalValues.MENU_MULTIPLOT_ID,
+                        "MultiPlot Options", menu_multiPlot)
+
+        # Add and set 'Options' menu
         menubar.Append(menu, 'Options')
 
+        # Add the menu to the DTV frame
         self.SetMenuBar(menubar)
-        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_1)
+
+        # - Bind the feature to the item
+        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_conf)
+        # - Bind the feature to the item
+        self.Bind(wx.EVT_MENU, self.onShowMultiPlot, item_multiPlot_1)
 
     def OnResult(self, event):
         idsName = event.data[0]

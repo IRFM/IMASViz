@@ -20,46 +20,38 @@ class ConfigurationListsFrame(wx.Frame):
         self.createList()
 
         # Set buttons
+        # - 'Apply signal selection' button
+        #   - Next button ID
+        signalSelectButtonId = wx.NewId()
+        #   - Create button
+        signalSelect_button = wx.Button(self, signalSelectButtonId,
+            'Apply configuration to signal selection')
+        #   - Add the button to BoxSizer
+        self.vbox.Add(signalSelect_button, 0, wx.ALL | wx.EXPAND, 5)
+        #   - Bind the 'Apply_Signal_Selection' feature to the button
+        self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection,
+                  id=signalSelectButtonId)
+
         # - 'Apply configuration to MultiPlot' button
         #   - Next button ID
-        buttonId = wx.NewId()
+        MultiPlotButtonId = wx.NewId()
         #   - Create button
         apply_MultiPlot_button = \
-            wx.Button(self, buttonId, 'Apply configuration to MultiPlot')
-        #   - Add the 'Apply configuration to MultiPlot' button to BoxSizer
+            wx.Button(self, MultiPlotButtonId, 'Apply configuration to MultiPlot')
+        #   - Add the button to BoxSizer
         self.vbox.Add(apply_MultiPlot_button, 0, wx.ALL|wx.EXPAND, 5)
-        #   - Bind 'apply_MultiPlot_button' feature to the 'Apply configuration
-        #     to MultiPlot' button
-        self.Bind(wx.EVT_BUTTON, self.apply_MultiPlot, id=buttonId)
+        #   - Bind the 'apply_MultiPlot' feature to the button
+        self.Bind(wx.EVT_BUTTON, self.apply_MultiPlot, id=MultiPlotButtonId)
 
         # - 'Remove configuration' button
         #   - Next button ID
         removeButtonId = wx.NewId()
         #   - Create button
         remove_button = wx.Button(self, removeButtonId, 'Remove configuration')
-        #   - Add the 'Remove configuration' button to BoxSizer
+        #   - Add the button to BoxSizer
         self.vbox.Add(remove_button, 0, wx.ALL | wx.EXPAND, 5)
-        #   - Bind 'removeConfiguration' feature to the 'Remove configuration'
-        #     button
+        #   - Bind 'removeConfiguration' feature to the button
         self.Bind(wx.EVT_BUTTON, self.removeConfiguration, id=removeButtonId)
-
-        # - 'Apply signal selection' button
-        #   - Next button ID
-        signalSelectButtonId = wx.NewId()
-        #   - Create button
-        signalSelect_button = wx.Button(self, signalSelectButtonId,
-            'Apply signal selection')
-        #   - Add the 'Apply signal selection' button to BoxSizer
-        self.vbox.Add(signalSelect_button, 0, wx.ALL | wx.EXPAND, 5)
-        #   - Bind 'removeConfiguration' feature to the 'Apply signal selection'
-        #     button
-        self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection,
-                  id=signalSelectButtonId)
-
-        # buttonTestId = wx.NewId()
-        # test_button = wx.Button(self, buttonTestId, 'Apply configuration TEST')
-        # self.vbox.Add(test_button, 0, wx.ALL|wx.EXPAND, 5)
-        # self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection, id=buttonTestId)
 
         # Set note
         # - Set fonts
@@ -145,13 +137,11 @@ class ConfigurationListsFrame(wx.Frame):
                                        update=0,
                                        configFileName=selectedFile).execute()
 
-
     def removeConfiguration(self, event):
         pos = self.listBox1.GetSelection()
         selectedFile = \
             GlobalOperations.getConfigurationFilesDirectory() + \
             "/" + self.configurationFilesList[pos]
-        #print selectedFile
         answer = GlobalOperations.YesNo(question =
             "The configuation " + selectedFile + " will be deleted. Are you sure?")
         if answer:
