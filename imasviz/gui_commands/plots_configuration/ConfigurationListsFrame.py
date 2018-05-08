@@ -3,7 +3,7 @@ import os
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
-
+from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 
 class ConfigurationListsFrame(wx.Frame):
     """The configuration panel, listing the available save configuration files,
@@ -11,7 +11,7 @@ class ConfigurationListsFrame(wx.Frame):
     """
     def __init__(self, parent,  *args, **kwargs):
         wx.Frame.__init__(self, id=wx.NewId(), name='', parent=parent,
-                          pos=wx.Point(358, 184), size=wx.Size(350, 450),
+                          pos=wx.Point(358, 184), size=wx.Size(350, 500),
                           style=wx.DEFAULT_FRAME_STYLE|wx.LB_SINGLE,
                           title='Available configurations')
         self.parent = parent
@@ -20,23 +20,46 @@ class ConfigurationListsFrame(wx.Frame):
         self.createList()
 
         # Set buttons
-        # - Next button ID
+        # - 'Apply configuration to MultiPlot' button
+        #   - Next button ID
         buttonId = wx.NewId()
-        # - 'Apply configuration' button
-        apply_button = wx.Button(self, buttonId, 'Apply configuration')
-        # - Next button ID
-        removeButtonId = wx.NewId()
+        #   - Create button
+        apply_MultiPlot_button = \
+            wx.Button(self, buttonId, 'Apply configuration to MultiPlot')
+        #   - Add the 'Apply configuration to MultiPlot' button to BoxSizer
+        self.vbox.Add(apply_MultiPlot_button, 0, wx.ALL|wx.EXPAND, 5)
+        #   - Bind 'apply_MultiPlot_button' feature to the 'Apply configuration
+        #     to MultiPlot' button
+        self.Bind(wx.EVT_BUTTON, self.apply_MultiPlot, id=buttonId)
+
         # - 'Remove configuration' button
+        #   - Next button ID
+        removeButtonId = wx.NewId()
+        #   - Create button
         remove_button = wx.Button(self, removeButtonId, 'Remove configuration')
-        # - Add the 'Apply configuration' button to BoxSizer
-        self.vbox.Add(apply_button, 0, wx.ALL|wx.EXPAND, 5)
-        # - Add the 'Remove configuration' button to BoxSizer
+        #   - Add the 'Remove configuration' button to BoxSizer
         self.vbox.Add(remove_button, 0, wx.ALL | wx.EXPAND, 5)
-        # - Bind 'apply' feature to the 'Apply configuration' button
-        self.Bind(wx.EVT_BUTTON, self.apply, id=buttonId)
-        # - Bind 'removeConfiguration' feature to the 'Remove configuration'
-        #   button
+        #   - Bind 'removeConfiguration' feature to the 'Remove configuration'
+        #     button
         self.Bind(wx.EVT_BUTTON, self.removeConfiguration, id=removeButtonId)
+
+        # - 'Apply signal selection' button
+        #   - Next button ID
+        signalSelectButtonId = wx.NewId()
+        #   - Create button
+        signalSelect_button = wx.Button(self, signalSelectButtonId,
+            'Apply signal selection')
+        #   - Add the 'Apply signal selection' button to BoxSizer
+        self.vbox.Add(signalSelect_button, 0, wx.ALL | wx.EXPAND, 5)
+        #   - Bind 'removeConfiguration' feature to the 'Apply signal selection'
+        #     button
+        self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection,
+                  id=signalSelectButtonId)
+
+        # buttonTestId = wx.NewId()
+        # test_button = wx.Button(self, buttonTestId, 'Apply configuration TEST')
+        # self.vbox.Add(test_button, 0, wx.ALL|wx.EXPAND, 5)
+        # self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection, id=buttonTestId)
 
         # Set note
         # - Set fonts
@@ -84,7 +107,7 @@ class ConfigurationListsFrame(wx.Frame):
                                    size=wx.Size(184, 256), style=0)
 
         # self.configurationFilesList = \
-        #    GlobalOperations.getMultiplePlotsConfigurationFilesList()
+        #    GlobalOperations.getConfigurationFilesList()
         # for f in self.configurationFilesList:
         #     self.listBox1.Append(f)
         self.update()
@@ -97,14 +120,23 @@ class ConfigurationListsFrame(wx.Frame):
     def update(self):
         self.listBox1.Clear()
         self.configurationFilesList = \
-            GlobalOperations.getMultiplePlotsConfigurationFilesList()
+            GlobalOperations.getConfigurationFilesList()
         for f in self.configurationFilesList:
             self.listBox1.Append(f)
 
-    def apply(self, event):
+    def Apply_Signal_Selection(self, event):
         pos = self.listBox1.GetSelection()
         selectedFile = \
-            GlobalOperations.getMultiplePlotsConfigurationFilesDirectory() + \
+            GlobalOperations.getConfigurationFilesDirectory() + \
+            "/" + self.configurationFilesList[pos]
+        pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
+                        configFileName=selectedFile)
+        SelectSignals(self.parent.wxTreeView, pathsList).execute()
+
+    def apply_MultiPlot(self, event):
+        pos = self.listBox1.GetSelection()
+        selectedFile = \
+            GlobalOperations.getConfigurationFilesDirectory() + \
             "/" + self.configurationFilesList[pos]
         figurekey = \
             self.parent.wxTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
@@ -117,7 +149,7 @@ class ConfigurationListsFrame(wx.Frame):
     def removeConfiguration(self, event):
         pos = self.listBox1.GetSelection()
         selectedFile = \
-            GlobalOperations.getMultiplePlotsConfigurationFilesDirectory() + \
+            GlobalOperations.getConfigurationFilesDirectory() + \
             "/" + self.configurationFilesList[pos]
         #print selectedFile
         answer = GlobalOperations.YesNo(question =
@@ -128,6 +160,6 @@ class ConfigurationListsFrame(wx.Frame):
                 os.remove(selectedFile)
                 self.listBox1.Delete(pos)
                 self.configurationFilesList = \
-                    GlobalOperations.getMultiplePlotsConfigurationFilesList()
+                    GlobalOperations.getConfigurationFilesList()
             except OSError:
                 print ("Unable to remove file: " + selectedFile)

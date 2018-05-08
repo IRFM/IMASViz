@@ -3,6 +3,7 @@ import numpy as np
 import wx
 import os, sys
 from imasviz.util.GlobalValues import GlobalValues
+import xml.etree.ElementTree as ET
 
 class GlobalOperations:
 
@@ -117,13 +118,13 @@ class GlobalOperations:
 
         file.write(tabs + text.encode("utf-8") + "\n")
 
-    
-    @staticmethod 
+
+    @staticmethod
     def checkEnvSettings():
         if not GlobalValues.TESTING:
 
             print ("IMAS_VIZ production environment.")
-            
+
             if 'HOME' not in os.environ:
                 print ("Environment variable HOME not defined. Exiting.")
                 sys.exit()
@@ -179,7 +180,7 @@ class GlobalOperations:
             if 'VIZ_HOME' not in os.environ:
                 os.environ['VIZ_HOME'] = GlobalValues.TESTING_VIZ_HOME
 
-                
+
     @staticmethod
     def getIDSDefFile(imas_dd_version):
         return os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
@@ -192,7 +193,7 @@ class GlobalOperations:
         return list
 
     @staticmethod
-    def getMultiplePlotsConfigurationFilesList():
+    def getConfigurationFilesList():
         files = []
         configurationDirectory = os.environ["HOME"] + "/.imasviz"
         if not os.path.exists(configurationDirectory):
@@ -204,7 +205,7 @@ class GlobalOperations:
         return files
 
     @staticmethod
-    def getMultiplePlotsConfigurationFilesDirectory():
+    def getConfigurationFilesDirectory():
         return os.environ["HOME"] + "/.imasviz"
 
     @staticmethod
@@ -212,6 +213,27 @@ class GlobalOperations:
         selectedsignalsList = GlobalOperations.getListFromDict(selectedSignals)
         selectedsignalsList.sort(key=lambda x: x[2])
         return selectedsignalsList
+
+    @staticmethod
+    def getSignalsPathsFromConfigurationFile(configFileName):
+        selectedsignalsMap = {}
+        pathsList = []
+        plotConfig = None
+        if configFileName != None:
+            plotConfig = ET.parse(configFileName)
+
+        # Get all selectedArray attributes, containing signal paths,
+        # from the config file
+        selectedArrays = plotConfig.findall('.//*selectedArray')
+
+        # Display number of signals, saved in the config file
+        print("Config file: Number of signals: ", len(selectedArrays))
+
+        # Extract the paths of the signals and add them to the pathsList
+        for selectedSignal in selectedArrays:
+            pathsList.append(selectedSignal.get("path"))
+
+        return pathsList
 
     @staticmethod
     def getNextPanelKey(n, cols):
