@@ -14,12 +14,14 @@ import sys
 
 class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def __init__(self, WxDataTreeView, figurekey=0, update=0,
-                 configFileName = None):
+                 configFileName = None, multiple_DTV = True):
         PlotSelectedSignals.__init__(self, WxDataTreeView, figureKey=figurekey,
-                                     update=update, configFileName=configFileName)
+                                     update=update, configFileName=configFileName,
+                                     multiple_DTV=True)
         # self.labels = {}
         self.rows = 2
         self.cols = 3
+        self.multiple_DTV = multiple_DTV
 
         # Browser_API
         self.api = self.WxDataTreeView.imas_viz_api
@@ -45,7 +47,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         return frame
 
     # Plot the set of 1D signals selected by the user as a function of time
-    def plot1DSelectedSignals(self, figureKey=None, update=0):
+    def plot1DSelectedSignals(self, figureKey=None, update=0, multiple_DTV=True):
 
         try:
             #Get frame
@@ -78,14 +80,19 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                 # Get panel plots count
                 dtv_selectedSignals, panelPlotsCount = \
                     self.selectSignals(frame, WxDataTreeView=self.WxDataTreeView)
-
+                # Add a single DTV to the list
                 MultiPlotFrame_WxDTVList.append(self.WxDataTreeView)
 
             else:
-                # If plotConfig is not present (save configuration was not used)
-                # get the list of current opened DTVs, created by manually
-                # opening IDS databases thus creating the DTVs.
-                MultiPlotFrame_WxDTVList = self.api.wxDTVlist
+                # Else if plotConfig is not present (save configuration was
+                # not used)
+                if self.multiple_DTV != False:
+                    # Get the list of current opened DTVs, created by manually
+                    # opening IDS databases thus creating the DTVs.
+                    MultiPlotFrame_WxDTVList = self.api.wxDTVlist
+                else:
+                    # Add a single DTV to the list
+                    MultiPlotFrame_WxDTVList.append(self.WxDataTreeView)
 
             # Go through every opened/created DTV from the list, get its
             # selected plot signals and plot every single to the same

@@ -23,7 +23,8 @@ class MenuIDS:
         self.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE = 5000
         self.ID_PLOT_AS_ITIME = 6000
         self.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE = 7000
-        self.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME = 7500
+        self.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME = 7500
+        self.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME = 7501
         self.ID_OPEN_SUBPLOTS_MANAGER = 8000
         self.ID_CHANGE_COORD1 = 9000
         self.ID_DELETE_FIGURES = 10000
@@ -240,8 +241,13 @@ class SignalHandling:
                             kind=wx.ITEM_NORMAL)
 
         item8 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME,
-                            text='Plot all selected signals to a multiplots frame',
+                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME,
+                            text='Plot selected signals to a multiplots frame (all opened IMAS databases)',
+                            kind=wx.ITEM_NORMAL)
+
+        item9 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME,
+                            text='Plot selected signals to a multiplots frame (this opened IMAS database',
                             kind=wx.ITEM_NORMAL)
 
         self.view.popupmenu.Append(item1)
@@ -254,6 +260,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(item4)
             self.view.popupmenu.Append(item5)
             self.view.popupmenu.Append(item8)
+            self.view.popupmenu.Append(item9)
 
         if len(self.view.selectedSignals) > 1:
             self.view.popupmenu.Append(item6)
@@ -276,8 +283,10 @@ class SignalHandling:
             self.selectOrUnselectSignal(event)  # selection
         elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE:
             self.plotSelectedSignals()
-        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME:
-            self.plotSelectedSignalsToMultiPlotsFrame()
+        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME:
+            self.plotSelectedSignalsToMultiPlotsFrame_allDTV()
+        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME:
+            self.plotSelectedSignalsToMultiPlotsFrame_singleDTV()
         elif event.GetId() == wx.ID_CANCEL:
             self.unselectAllSignals()
         elif event.GetId() == self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER:
@@ -369,9 +378,23 @@ class SignalHandling:
         figureKey = figureKeys[numFig]
         PlotSelectedSignals(self.view, figureKey, 1).execute()
 
-    def plotSelectedSignalsToMultiPlotsFrame(self):
+    def plotSelectedSignalsToMultiPlotsFrame_allDTV(self):
+        """Create a MultiPlot using signals selected in all opened DTV windows
+        """
         figureKey = self.view.imas_viz_api.GetNextKeyForMultiplePlots()
-        PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1).execute()
+        # '.execute' rutine is from the PlotSelectedSignals.py
+        PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
+                                       multiple_DTV = True).execute()
+
+    def plotSelectedSignalsToMultiPlotsFrame_singleDTV(self):
+        """Create a MultiPlot using signals selected in a single opened DTV
+           window
+        """
+        figureKey = self.view.imas_viz_api.GetNextKeyForMultiplePlots()
+        # '.execute' rutine is from the PlotSelectedSignals.py
+        PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
+                                       multiple_DTV = False).execute()
+
 
     def plotSelectedSignalVsTime(self):
         self.updateNodeData()

@@ -326,11 +326,17 @@ class WxDataTreeViewFrame(wx.Frame):
         # SavePlotsConfiguration(DTV=self.WxTreeView,
         #                        frame=self, cols=3).execute()
 
-    def onShowMultiPlot(self, event):
+    def onShowMultiPlot_allDTV(self, event):
         """Apply selected signals (all DTVs) to MultiPlot
         """
         ss = SignalHandling(self.wxTreeView)
-        ss.plotSelectedSignalsToMultiPlotsFrame()
+        ss.plotSelectedSignalsToMultiPlotsFrame_allDTV()
+
+    def onShowMultiPlot_singleDTV(self, event):
+        """Apply selected signals (single DTV) to MultiPlot
+        """
+        ss = SignalHandling(self.wxTreeView)
+        ss.plotSelectedSignalsToMultiPlotsFrame_singleDTV()
 
     def createMenu(self):
         """Configure the menu bar.
@@ -381,10 +387,19 @@ class WxDataTreeViewFrame(wx.Frame):
 
         #  - Set item to apply signals, selected in all opened IMAS data source
         #    windows, to MultiPlot submenu
-        item_multiPlot_1 = menu_multiPlot.Append(
-                            GlobalValues.MENU_ITEM_SIGNALS_TO_MULTIPLOT_ID,
-                            item='Apply selected signals to MultiPlot (all)',
-                            kind=wx.ITEM_NORMAL)
+        item_multiPlot_all = menu_multiPlot.Append(
+            GlobalValues.MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT_ID,
+            item='Apply selected signals to MultiPlot '
+                 '(all opened IMAS databases)',
+            kind=wx.ITEM_NORMAL)
+
+        #  - Set item to apply signals, selected in a single opened
+        #    IMAS data source windows, to MultiPlot submenu
+        item_multiPlot_single = menu_multiPlot.Append(
+            GlobalValues.MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT_ID,
+            item='Apply selected signals to MultiPlot '
+                 '(this IMAS database)',
+            kind=wx.ITEM_NORMAL)
 
         # - Append to MultiPlot submenu
         menu.Append(GlobalValues.MENU_MULTIPLOT_ID,
@@ -396,12 +411,11 @@ class WxDataTreeViewFrame(wx.Frame):
         # Add the menu to the DTV frame
         self.SetMenuBar(menubar)
 
-        # - Bind the feature to the menu item
+        # - Bind the features to the menu items
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_conf)
-        # - Bind the feature to the menu item
         self.Bind(wx.EVT_MENU, self.onSaveConfiguration, item_save_conf)
-        # - Bind the feature to the menu item
-        self.Bind(wx.EVT_MENU, self.onShowMultiPlot, item_multiPlot_1)
+        self.Bind(wx.EVT_MENU, self.onShowMultiPlot_allDTV, item_multiPlot_all)
+        self.Bind(wx.EVT_MENU, self.onShowMultiPlot_singleDTV, item_multiPlot_single)
 
     def OnResult(self, event):
         idsName = event.data[0]

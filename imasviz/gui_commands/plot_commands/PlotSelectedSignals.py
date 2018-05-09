@@ -11,7 +11,8 @@ import sys
 
 
 class PlotSelectedSignals(AbstractCommand):
-    def __init__(self, WxDataTreeView, figureKey=None, update=0, configFileName=None):
+    def __init__(self, WxDataTreeView, figureKey=None, update=0,
+        configFileName=None, multiple_DTV = True):
         AbstractCommand.__init__(self, WxDataTreeView, None)
         self.figureKey = figureKey
         self.update = update
@@ -22,6 +23,7 @@ class PlotSelectedSignals(AbstractCommand):
         self.WxDataTreeView = WxDataTreeView
         """Browser_API"""
         self.api = self.WxDataTreeView.imas_viz_api
+        self.multiple_DTV = multiple_DTV
 
     def execute(self):
 
@@ -33,7 +35,8 @@ class PlotSelectedSignals(AbstractCommand):
 
         if plotDimension == "1D":
             """In case of 1D plots"""
-            self.plot1DSelectedSignals(self.figureKey, self.update)
+            self.plot1DSelectedSignals(self.figureKey, self.update,
+                                       multiple_DTV=True)
         elif plotDimension == "2D" or plotDimension == "3D":
             """In case of 2D or 3D plots"""
             raise ValueError("2D/3D plots are not currently supported.")
@@ -74,7 +77,7 @@ class PlotSelectedSignals(AbstractCommand):
             api.figureframes[figureKey] = frame
         return frame
 
-    def plot1DSelectedSignals(self, figureKey=0, update=0 ):
+    def plot1DSelectedSignals(self, figureKey=0, update=0, multiple_DTV=True):
         """Plot the set of 1D signals selected by the user as a function of time
 
            Args:
