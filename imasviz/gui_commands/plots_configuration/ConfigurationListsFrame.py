@@ -117,38 +117,62 @@ class ConfigurationListsFrame(wx.Frame):
             self.listBox1.Append(f)
 
     def Apply_Signal_Selection(self, event):
+        """Apply signal selection from the config file - select signals only.
+        """
+        # Get in-list position of the selection (config file name)
         pos = self.listBox1.GetSelection()
+        # Get system path to the selected configuration file
         selectedFile = \
             GlobalOperations.getConfigurationFilesDirectory() + \
             "/" + self.configurationFilesList[pos]
+        # Extract signal paths from the config file and add them to a list of
+        # paths
         pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
                         configFileName=selectedFile)
+        # Select the signals, defined by a path in a list of paths, in the
+        # given wxDataTreeView (DTV) window
         SelectSignals(self.parent.wxTreeView, pathsList).execute()
 
     def apply_MultiPlot(self, event):
+        """Apply signal selection from the config file - apply it directly
+           to MultiPlot feature.
+        """
+        # Get in-list position of the selection (config file name)
         pos = self.listBox1.GetSelection()
+        # Get system path to the selected configuration file
         selectedFile = \
             GlobalOperations.getConfigurationFilesDirectory() + \
             "/" + self.configurationFilesList[pos]
+        # Get next figurekey (label) for the MultiPlot
         figurekey = \
             self.parent.wxTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
+        # Set up and show the MultiPlot using the config file
         PlotSelectedSignalsWithWxmplot(self.parent.wxTreeView,
                                        figurekey=figurekey,
                                        update=0,
                                        configFileName=selectedFile).execute()
 
     def removeConfiguration(self, event):
+        """Remove configuration file from the list.
+        """
+        # Get in-list position of the selection (config file name)
         pos = self.listBox1.GetSelection()
+        # Get system path to the selected configuration file
         selectedFile = \
             GlobalOperations.getConfigurationFilesDirectory() + \
             "/" + self.configurationFilesList[pos]
+        # Get Yes/No answer (returns True/False)
         answer = GlobalOperations.YesNo(question =
             "The configuation " + selectedFile + " will be deleted. Are you sure?")
-        if answer:
+        if answer:  # If True
             print ('Removing configuration: ' + selectedFile)
             try:
+                # Remove the config file from the system directory, containing
+                # containing all config files
                 os.remove(selectedFile)
+                # Remove the config file from the list
                 self.listBox1.Delete(pos)
+                # Refresh the list
                 self.configurationFilesList = \
                     GlobalOperations.getConfigurationFilesList()
             except OSError:
