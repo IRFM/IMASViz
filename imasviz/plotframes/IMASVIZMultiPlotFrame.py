@@ -142,10 +142,10 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         return mfile
 
     def save_configuration(self, event=None, **kws):
+        """Save configuration for single DTV (WxDataTreeView)
+        """
         print ("Saving plots configuration...")
-        """Save configuration for all DTVs (WxDataTreeViews)"""
-        DTVlist = self.WxDataTreeView.imas_viz_api.wxDTVlist
-        SavePlotsConfiguration(DTVlist=DTVlist,
+        SavePlotsConfiguration(DTV=self.WxDataTreeView,
                                frame=self, cols=self.cols).execute()
 
     def oplot(self,x,y,panel=None,**kws):

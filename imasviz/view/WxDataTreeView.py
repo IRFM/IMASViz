@@ -24,7 +24,7 @@ from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
-
+# from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
 
 class WxDataTreeView(wx.TreeCtrl):
     """Define IDS Tree structure and the function to handle the click to
@@ -316,6 +316,16 @@ class WxDataTreeViewFrame(wx.Frame):
         self.configurationListsFrame = ConfigurationListsFrame(self)
         self.configurationListsFrame.showListBox()
 
+    def onSaveConfiguration(self, event=None, **kws):
+        """Save configuration for single DTV (WxDataTreeView)
+        """
+        print ("Saving plots configuration... (YET TO BE IMPLEMENTED!")
+        # TODO: The save plot configuration was first set to work only for
+        #       MultiPlot (hence from there the columns argument is required).
+        #       Fix/Improve that.
+        # SavePlotsConfiguration(DTV=self.WxTreeView,
+        #                        frame=self, cols=3).execute()
+
     def onShowMultiPlot(self, event):
         """Apply selected signals (all DTVs) to MultiPlot
         """
@@ -328,9 +338,13 @@ class WxDataTreeViewFrame(wx.Frame):
         menubar = wx.MenuBar()
         # Set new menubar item to be added to 'Options' menu
         menu = wx.Menu()
-        # Add item for applying IMASViz MultiPlot Configuration
+        # Add item for showing the Configuration window
         item_conf = menu.Append(wx.NewId(), \
             item='Apply Configuration', kind=wx.ITEM_NORMAL)
+
+        # Add item for saving signal selection to configuration file
+        item_save_conf = menu.Append(wx.NewId(), \
+            item='Save signal selection (TODO)', kind=wx.ITEM_NORMAL)
 
         # Add menu separator line
         menu.AppendSeparator()
@@ -382,9 +396,11 @@ class WxDataTreeViewFrame(wx.Frame):
         # Add the menu to the DTV frame
         self.SetMenuBar(menubar)
 
-        # - Bind the feature to the item
+        # - Bind the feature to the menu item
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_conf)
-        # - Bind the feature to the item
+        # - Bind the feature to the menu item
+        self.Bind(wx.EVT_MENU, self.onSaveConfiguration, item_save_conf)
+        # - Bind the feature to the menu item
         self.Bind(wx.EVT_MENU, self.onShowMultiPlot, item_multiPlot_1)
 
     def OnResult(self, event):
