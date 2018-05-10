@@ -334,7 +334,11 @@ class WxDataTreeViewFrame(wx.Frame):
         ss.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
 
     def onUnselectSignals(self, event, all_DTV=False):
-        """Unselect signals in single (this) DTV or all DTVs
+        """Unselect signals in single (current) or all DTVs
+
+           Parameters:
+                all_DTV : bool
+                Indicator to read selected signals from the current or all DTVs.
         """
         if all_DTV != True:
             UnselectAllSignals(self.wxTreeView).execute()

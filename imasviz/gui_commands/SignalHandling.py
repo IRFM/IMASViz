@@ -54,26 +54,25 @@ class SignalHandling:
         self.treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
 
     def showPopUpMenu(self, signalName):
-        """Display the popup menu for plotting data
+        """Display the popup menu for plotting data.
         """
 
         if (signalName == None): return 0
 
-        """Set new main menu"""
+        # Set new main menu
         self.view.popupmenu = wx.Menu()
         s = ''
 
-        """The popup menu behaviour in relation on the selection/unselection
-        status of the node
-        """
+        # The popup menu behaviour in relation on the selection/unselection
+        # status of the node
         if self.nodeData['isSelected'] == 1:
-            """If the node is selected, show unselect menu"""
+            # If the node is selected, show unselect menu
             s = 'Unselect '
         else:
-            """The node is unselected, show select menu"""
+            # The node is unselected, show select menu
             s = 'Select '
 
-        """Set second-level popup menu for selection/deselection of the node """
+        # Set second-level popup menu for selection/deselection of the node
         item1 = wx.MenuItem(self.view.popupmenu,
                             self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL,
                             text= s + signalName + '...',
@@ -81,23 +80,22 @@ class SignalHandling:
 
         #item2 = wx.MenuItem(self.view.popupmenu, wx.ID_MORE, item='Show '+signalName+' size', kind=wx.ITEM_NORMAL)
 
-        """Set second-level popup menu for creating new plot out of the
-        selected IDS node
-        """
+        # Set second-level popup menu for creating new plot out of the
+        # selected IDS node
         item3 = None
-        """The popup menu behaviour in relation to the presence of pre-existing
-        plots"""
+        # The popup menu behaviour in relation to the presence of pre-existing
+        # plots
         if len(self.view.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
-            """If there is no pre-existing plot """
+            # If there is no pre-existing plot
             item3 = wx.MenuItem(self.view.popupmenu,
                                 self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
                                 text='Plot ' + signalName,
                                 kind=wx.ITEM_NORMAL)
         else:
-            """If some plot already exists"""
+            # If some plot already exists
 
-            """Add menu for creation of a new figure"""
+            # Add menu for creation of a new figure
             item3 = wx.MenuItem(self.view.popupmenu,
                                 self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
                                 text='Plot ' + signalName + ' to new figure',
@@ -106,7 +104,7 @@ class SignalHandling:
             j= 0
             for figureKey in self.view.imas_viz_api.GetFiguresKeys(\
                 figureType=FigureTypes.FIGURETYPE):
-                """Check for figures that share the same coordinates"""
+                # Check for figures that share the same coordinates
                 if self.shareSameCoordinatesFrom(figureKey):
                     if j == 0:
                         subMenu = wx.Menu()
@@ -272,9 +270,9 @@ class SignalHandling:
         self.view.Bind(wx.EVT_MENU, self.popUpMenuHandler)
         return 1
 
-
-
     def popUpMenuHandler(self, event):
+        """Link the events (defined by event ID) with corresponding routines.
+        """
         if event.GetId() == wx.ID_MORE:
             self.signalSizeRequest(event)
         elif event.GetId() == self.menuIDS.ID_ADD_PLOT_TO_FIGURE:
@@ -314,7 +312,6 @@ class SignalHandling:
                 elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_SUBPLOTS:
                     self.hideShowfigure(i, figureType=FigureTypes.SUBPLOTTYPE)
 
-
     def selectSignal(self):
         SelectOrUnselectSignal(self.view, self.nodeData).execute()
 
@@ -350,8 +347,9 @@ class SignalHandling:
         except ValueError as e:
             self.view.log.error(str(e))
 
-    """Show preview plot"""
     def plotPreviewSignalCommand(self, event):
+        """Show preview plot.
+        """
         try:
             label = None
             xlabel = None
@@ -363,13 +361,13 @@ class SignalHandling:
         except ValueError as e:
             self.view.log.error(str(e))
 
-    """Plot selected signals"""
     def plotSelectedSignals(self):
-        """Get label for the next figure (e.c. if 'Figure 2' already exists,
-           value 'Figure 3' will be returned)
+        """Plot selected signals.
         """
+        # Get label for the next figure (e.c. if 'Figure 2' already exists,
+        # value 'Figure 3' will be returned)
         figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
-        """Plot selected signals"""
+        # Plot the selected signals
         PlotSelectedSignals(self.view, figureKey).execute()
 
     def plotSelectedSignalsToFig(self, numFig):
@@ -381,6 +379,10 @@ class SignalHandling:
     def plotSelectedSignalsToMultiPlotsFrame(self, all_DTV=False):
         """Create a MultiPlot using signals selected in single/all opened DTV
            windows
+
+           Parameters:
+                all_DTV : bool
+                Indicator to read selected signals from the current or all DTVs.
         """
         # Get next figure key/label
         figureKey = self.view.imas_viz_api.GetNextKeyForMultiplePlots()
