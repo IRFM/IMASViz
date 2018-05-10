@@ -284,9 +284,9 @@ class SignalHandling:
         elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE:
             self.plotSelectedSignals()
         elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME:
-            self.plotSelectedSignalsToMultiPlotsFrame_allDTV()
+            self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=True)
         elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME:
-            self.plotSelectedSignalsToMultiPlotsFrame_singleDTV()
+            self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=False)
         elif event.GetId() == wx.ID_CANCEL:
             self.unselectAllSignals()
         elif event.GetId() == self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER:
@@ -378,23 +378,19 @@ class SignalHandling:
         figureKey = figureKeys[numFig]
         PlotSelectedSignals(self.view, figureKey, 1).execute()
 
-    def plotSelectedSignalsToMultiPlotsFrame_allDTV(self):
-        """Create a MultiPlot using signals selected in all opened DTV windows
+    def plotSelectedSignalsToMultiPlotsFrame(self, all_DTV=False):
+        """Create a MultiPlot using signals selected in single/all opened DTV
+           windows
         """
+        # Get next figure key/label
         figureKey = self.view.imas_viz_api.GetNextKeyForMultiplePlots()
-        # '.execute' rutine is from the PlotSelectedSignals.py
-        PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
-                                       multiple_DTV = True).execute()
-
-    def plotSelectedSignalsToMultiPlotsFrame_singleDTV(self):
-        """Create a MultiPlot using signals selected in a single opened DTV
-           window
-        """
-        figureKey = self.view.imas_viz_api.GetNextKeyForMultiplePlots()
-        # '.execute' rutine is from the PlotSelectedSignals.py
-        PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
-                                       multiple_DTV = False).execute()
-
+        if all_DTV != True:
+            # Note: '.execute' rutine is from the PlotSelectedSignals.py
+            PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
+                                           all_DTV = False).execute()
+        else:
+            PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
+                                           all_DTV = True).execute()
 
     def plotSelectedSignalVsTime(self):
         self.updateNodeData()

@@ -25,6 +25,7 @@ from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import Con
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
 # from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
+from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 
 class WxDataTreeView(wx.TreeCtrl):
     """Define IDS Tree structure and the function to handle the click to
@@ -326,36 +327,72 @@ class WxDataTreeViewFrame(wx.Frame):
         # SavePlotsConfiguration(DTV=self.WxTreeView,
         #                        frame=self, cols=3).execute()
 
-    def onShowMultiPlot_allDTV(self, event):
-        """Apply selected signals (all DTVs) to MultiPlot
+    def onShowMultiPlot(self, event, all_DTV=False):
+        """Apply selected signals (single or all DTVs) to MultiPlot
         """
         ss = SignalHandling(self.wxTreeView)
-        ss.plotSelectedSignalsToMultiPlotsFrame_allDTV()
+        ss.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
 
-    def onShowMultiPlot_singleDTV(self, event):
-        """Apply selected signals (single DTV) to MultiPlot
+    def onUnselectSignals(self, event, all_DTV=False):
+        """Unselect signals in single (this) DTV or all DTVs
         """
-        ss = SignalHandling(self.wxTreeView)
-        ss.plotSelectedSignalsToMultiPlotsFrame_singleDTV()
+        if all_DTV != True:
+            UnselectAllSignals(self.wxTreeView).execute()
+        else:
+            for dtv in self.wxTreeView.imas_viz_api.wxDTVlist:
+                UnselectAllSignals(dtv).execute()
 
     def createMenu(self):
         """Configure the menu bar.
         """
         menubar = wx.MenuBar()
-        # Set new menubar item to be added to 'Options' menu
+        # Set new menu list item to be added to 'Options' menu
         menu = wx.Menu()
+
+        ## APPLY CONFIGURATION
         # Add item for showing the Configuration window
-        item_conf = menu.Append(wx.NewId(), \
-            item='Apply Configuration', kind=wx.ITEM_NORMAL)
+        item_conf = menu.Append(
+            id=wx.NewId(),
+            item='Apply Configuration',
+            kind=wx.ITEM_NORMAL)
+
+        ## SIGNAL HANDLING
+        # Set main submenu for handling signal selection
+        menu_signals = wx.Menu()
 
         # Add item for saving signal selection to configuration file
-        item_save_conf = menu.Append(wx.NewId(), \
-            item='Save signal selection (TODO)', kind=wx.ITEM_NORMAL)
+        item_signals_save_conf = menu_signals.Append(
+            id=GlobalValues.MENU_ITEM_SIGNALS_SAVE_ID,
+            item='Save signal selection (TODO)',
+            kind=wx.ITEM_NORMAL)
+
+        # Set submenu for handling signal unselection feature
+        menu_signals_unselect = wx.Menu()
+
+        # Add item for unselecting signals in single (this) DTV
+        item_signals_unselect_single = menu_signals_unselect.Append(
+            id=GlobalValues.MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV_ID,
+            item='This IMAS database',
+            kind=wx.ITEM_NORMAL)
+
+        # Add item for unselecting signals in single (this) DTV
+        item_signals_unselect_all = menu_signals_unselect.Append(
+            id=GlobalValues.MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV_ID,
+            item='All IMAS databases',
+            kind=wx.ITEM_NORMAL)
+
+        # Append to menu
+        menu_signals.Append(GlobalValues.MENU_SIGNALS_UNSELECT_ID,
+                        "Unselect signals", menu_signals_unselect)
+
+        # Append to menu
+        menu.Append(GlobalValues.MENU_SIGNALS_ID,
+                        "Signal Selection Options", menu_signals)
 
         # Add menu separator line
         menu.AppendSeparator()
 
-        # PREVIEW PLOT MENU
+        ## PREVIEW PLOT MENU
         # Set main preview plot submenu
         menu_pp = wx.Menu()
 
@@ -411,11 +448,21 @@ class WxDataTreeViewFrame(wx.Frame):
         # Add the menu to the DTV frame
         self.SetMenuBar(menubar)
 
-        # - Bind the features to the menu items
+        # Bind the features to the menu items
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_conf)
-        self.Bind(wx.EVT_MENU, self.onSaveConfiguration, item_save_conf)
-        self.Bind(wx.EVT_MENU, self.onShowMultiPlot_allDTV, item_multiPlot_all)
-        self.Bind(wx.EVT_MENU, self.onShowMultiPlot_singleDTV, item_multiPlot_single)
+        self.Bind(wx.EVT_MENU, self.onSaveConfiguration, item_signals_save_conf)
+        self.Bind(wx.EVT_MENU,
+            lambda event: self.onShowMultiPlot(event=event, all_DTV=True),
+            item_multiPlot_all)
+        self.Bind(wx.EVT_MENU,
+            lambda event: self.onShowMultiPlot(event=event, all_DTV=False),
+            item_multiPlot_single)
+        self.Bind(wx.EVT_MENU,
+                  lambda event: self.onUnselectSignals(event=event, all_DTV=False),
+                  item_signals_unselect_single)
+        self.Bind(wx.EVT_MENU,
+                  lambda event: self.onUnselectSignals(event=event, all_DTV=True),
+                  item_signals_unselect_all)
 
     def OnResult(self, event):
         idsName = event.data[0]

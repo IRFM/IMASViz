@@ -16,7 +16,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     """Plotting the selected signals with wxmplot to MultiPlot frame.
     """
     def __init__(self, WxDataTreeView, figurekey=0, update=0,
-                 configFileName = None, multiple_DTV = True):
+                 configFileName = None, all_DTV = True):
         """
         Parameters
         ----------
@@ -28,21 +28,21 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         update :
         configFileName : string
             System path to the configuration file.
-        multiple_DTV : bool
+        all_DTV : bool
             Indicator to read selected signals from single DTV (from the given
             one) or from all DTVs. Note: This has no effect when reading list
             of signals from the configuration file.
         """
         PlotSelectedSignals.__init__(self, WxDataTreeView, figureKey=figurekey,
                                      update=update, configFileName=configFileName,
-                                     multiple_DTV=True)
+                                     all_DTV=True)
         # self.labels = {}
         # Set number of rows and columns of panels in the MultiPlot frame
         self.rows = 2
         self.cols = 3
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
-        self.multiple_DTV = multiple_DTV
+        self.all_DTV = all_DTV
 
         # Browser_API
         self.api = self.WxDataTreeView.imas_viz_api
@@ -67,7 +67,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         self.api.figureframes[figureKey] = frame
         return frame
 
-    def plot1DSelectedSignals(self, figureKey=None, update=0, multiple_DTV=True):
+    def plot1DSelectedSignals(self, figureKey=None, update=0, all_DTV=True):
         """Plot the set of 1D signals, selected by the user, as a function of
            time to MultiPlot.
         """
@@ -109,7 +109,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             else:
                 # Else if plotConfig is not present (save configuration was
                 # not used)
-                if self.multiple_DTV != False:
+                if self.all_DTV != False:
                     # Get the list of current opened DTVs, created by manually
                     # opening IDS databases thus creating the DTVs.
                     MultiPlotFrame_WxDTVList = self.api.wxDTVlist
