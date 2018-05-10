@@ -13,14 +13,35 @@ import traceback
 import sys
 
 class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
+    """Plotting the selected signals with wxmplot to MultiPlot frame.
+    """
     def __init__(self, WxDataTreeView, figurekey=0, update=0,
                  configFileName = None, multiple_DTV = True):
+        """
+        Parameters
+        ----------
+
+        WxDataTreeView : WxDataTreeView object
+            WxDataTreeView (DTV) object.
+        figurekey : string
+            Panel label.
+        update :
+        configFileName : string
+            System path to the configuration file.
+        multiple_DTV : bool
+            Indicator to read selected signals from single DTV (from the given
+            one) or from all DTVs. Note: This has no effect when reading list
+            of signals from the configuration file.
+        """
         PlotSelectedSignals.__init__(self, WxDataTreeView, figureKey=figurekey,
                                      update=update, configFileName=configFileName,
                                      multiple_DTV=True)
         # self.labels = {}
+        # Set number of rows and columns of panels in the MultiPlot frame
         self.rows = 2
         self.cols = 3
+        # Get the indicator from which DTVs should the signals be read
+        # (single or all)
         self.multiple_DTV = multiple_DTV
 
         # Browser_API
@@ -46,8 +67,10 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         self.api.figureframes[figureKey] = frame
         return frame
 
-    # Plot the set of 1D signals selected by the user as a function of time
     def plot1DSelectedSignals(self, figureKey=None, update=0, multiple_DTV=True):
+        """Plot the set of 1D signals, selected by the user, as a function of
+           time to MultiPlot.
+        """
 
         try:
             #Get frame

@@ -78,11 +78,13 @@ class PlotSelectedSignals(AbstractCommand):
         return frame
 
     def plot1DSelectedSignals(self, figureKey=0, update=0, multiple_DTV=True):
-        """Plot the set of 1D signals selected by the user as a function of time
+        """Plot the set of 1D signals selected by the user as a function of time.
 
-           Args:
-                figurekey    - List of existing figures.
-                update       -
+        Parameters
+        ----------
+            figurekey : string
+                Figure key/label.
+            update :
         """
         try:
             """Total number of existing WxDataTreeViews"""

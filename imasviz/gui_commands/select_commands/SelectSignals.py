@@ -9,9 +9,14 @@ class SelectSignals(AbstractCommand):
     """Utilities for signal selection in DTV.
     """
     def __init__(self, view, pathsList):
-        """Args:
-                 view      - wxDataTreeView (DTV) object
-                 pathsList - A list of signal paths
+        """
+        Parameters
+        ----------
+
+        view : WxDataTreeView object
+            wxDataTreeView (DTV) object.
+        pathsList : 1D string array
+            A list of signal paths.
         """
         AbstractCommand.__init__(self, view, None)
         self.pathsList = pathsList
@@ -41,11 +46,13 @@ class SelectSignals(AbstractCommand):
     def LoadMultipleIDSData(self, IDSNamesList, occurrence=0, threadingEvent=None):
         """Load IDSs in the given DTV.
 
-           Args:
-                 IDSNamesList   - A list containing IDS names
-                                  Note: Same IDS names should not repeat!
-                 occurence      -
-                 threadingEvent -
+        Parameters
+        ----------
+            IDSNamesList : 1D string array
+                A list containing IDS names.
+                Note: Same IDS names should not repeat!
+            occurence :
+            threadingEvent :
         """
         for IDSName in IDSNamesList:
             # Set the IDS to be opened in the DTV

@@ -7,8 +7,27 @@ from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import Save
 import matplotlib.pyplot as plt
 
 class IMASVIZMultiPlotFrame(MultiPlotFrame):
+    """MultiPlot frame.
+    """
     def __init__(self, WxDataTreeView, parent=None, rows=1, cols=1,
                  framesize=None, panelsize=(400, 320), panelopts=None, **kws):
+        """
+        Parameters
+        ----------
+
+        WxDataTreeView : WxDataTreeView object
+            WxDataTreeView (DTV) object.
+        parent :
+        rows : int
+            Number of rows of panels in the MultiPlot frame.
+        cols : int
+            Number of columns of panels in the MultiPlot frame.
+        framesize : (int,int)
+            Size/dimension of the MultiPlot frame.
+        panelsize : (int,int)
+            Size/dimension of each panel within the MultiPlot panel.
+        panelopts :
+        """
         self.WxDataTreeView = WxDataTreeView
         self.help_msg = """Quick help:
 
