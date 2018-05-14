@@ -44,6 +44,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         # (single or all)
         self.all_DTV = all_DTV
 
+        self.configFileName = configFileName
+
         # Browser_API
         self.api = self.WxDataTreeView.imas_viz_api
         self.WxDataTreeView = WxDataTreeView
@@ -73,7 +75,9 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         """
 
         try:
-            #Get frame
+            # Set rows and columns
+            self.setRowsColumns()
+            # Get frame
             frame = self.getFrame(figureKey, self.rows, self.cols)
 
             self.applyPlotConfigurationBeforePlotting(frame=frame)
@@ -83,7 +87,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
             frame.Bind(wx.EVT_CLOSE, lambda_f)
 
-            n = 0 #number of plots
+            n = 0 # Plot number
 
             # Set maximum number of plots within frame
             maxNumberOfPlots = self.rows*self.cols;
@@ -213,9 +217,12 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         for n in range(0, len(frame.panels)):
             key = GlobalOperations.getNextPanelKey(n, cols=self.cols)
 
-            selectedArrays = self.plotConfig.findall(".//*[@key='" + str(key) + "']/selectedArray")
+            selectedArrays = \
+                self.plotConfig.findall(".//*[@key='" + str(key) +
+                                        "']/selectedArray")
             selectedsignalsMap[key] = len(selectedArrays)
             for selectedArray in selectedArrays:
+                # Get signal paths
                 pathsList.append(selectedArray.get("path"))
 
         SelectSignals(WxDataTreeView, pathsList).execute()
@@ -224,6 +231,55 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             getSortedSelectedSignals(WxDataTreeView.selectedSignals)
         return dtv_selectedSignals, selectedsignalsMap
 
+    def getNumSignals(self):
+        """Get number of signals intended for the MultiPlot feature
+           from either opened DTVs or from configuration file if it is loaded.
+           TODO: Find more lightweight way to get the number of signals.
+        """
+        if self.configFileName != None and self.plotConfig != False:
+            # Get number of signals through number of signal paths
+            pathsList = GlobalOperations.\
+                getSignalsPathsFromConfigurationFile(self.configFileName)
+            num_signals = len(pathsList)
+        else:
+            # If plotConfig is not present (save configuration was
+            # not used)
+            MultiPlotFrame_WxDTVList = []
+            if self.all_DTV != False:
+                # Get the list of current opened DTVs, created by manually
+                # opening IDS databases thus creating the DTVs.
+                MultiPlotFrame_WxDTVList = self.api.wxDTVlist
+            else:
+                # Add a single DTV to the list
+                MultiPlotFrame_WxDTVList.append(self.WxDataTreeView)
+
+            # Get the number of signals through the currently opened DTVs
+            num_signals = 0
+            for dtv in MultiPlotFrame_WxDTVList:
+                # Get list of selected signals in DTV
+                dtv_selectedSignals = GlobalOperations. \
+                    getSortedSelectedSignals(dtv.selectedSignals)
+                num_signals += len(dtv_selectedSignals)
+
+        return num_signals
+
+    def setRowsColumns(self):
+            # Get total number of signals
+            num_signals = \
+                self.getNumSignals()
+            # Modify the MultiPlot rows and columns depending on total number
+            # of signals
+            if num_signals > 6:
+                if num_signals <= 8:
+                    self.rows = 2
+                    self.cols = 4
+                elif num_signals > 8 and num_signals <= 12:
+                    self.rows = 3
+                    self.cols = 4
+                elif num_signals > 12:
+                    self.rows = 3
+                    self.cols = 4
+                    print('MultiPlot plot limit reached (12)!')
 
     def applyPlotConfigurationBeforePlotting(self, frame):
         if self.plotConfig == None:
