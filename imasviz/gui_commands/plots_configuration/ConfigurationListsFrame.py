@@ -20,28 +20,31 @@ class ConfigurationListsFrame(wx.Frame):
         self.createList()
 
         # Set buttons
-        # - 'Apply signal selection' button
+        # - 'Apply configuration to current shot' button
+        #   - Next button ID
+        MultiPlotButtonId = wx.NewId()
+        #   - Create button
+        apply_MultiPlot_button = wx.Button(self, MultiPlotButtonId,
+                                 'Apply configuration to current shot')
+        #   - Add the button to BoxSizer
+        self.vbox.Add(apply_MultiPlot_button, 0, wx.ALL|wx.EXPAND, 5)
+        #   - Bind the 'apply_MultiPlot' feature to the button
+        self.Bind(wx.EVT_BUTTON, self.apply_MultiPlot, id=MultiPlotButtonId)
+
+        # - 'Apply data selection only from selected configuration to current
+        #    shot' button
         #   - Next button ID
         signalSelectButtonId = wx.NewId()
         #   - Create button
         signalSelect_button = wx.Button(self, signalSelectButtonId,
-            'Apply configuration to signal selection')
+            'Apply only data selection from selected\n '
+            '       configuration to current shot',
+            size=(100,40))
         #   - Add the button to BoxSizer
         self.vbox.Add(signalSelect_button, 0, wx.ALL | wx.EXPAND, 5)
         #   - Bind the 'Apply_Signal_Selection' feature to the button
         self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection,
                   id=signalSelectButtonId)
-
-        # - 'Apply configuration to MultiPlot' button
-        #   - Next button ID
-        MultiPlotButtonId = wx.NewId()
-        #   - Create button
-        apply_MultiPlot_button = \
-            wx.Button(self, MultiPlotButtonId, 'Apply configuration to MultiPlot')
-        #   - Add the button to BoxSizer
-        self.vbox.Add(apply_MultiPlot_button, 0, wx.ALL|wx.EXPAND, 5)
-        #   - Bind the 'apply_MultiPlot' feature to the button
-        self.Bind(wx.EVT_BUTTON, self.apply_MultiPlot, id=MultiPlotButtonId)
 
         # - 'Remove configuration' button
         #   - Next button ID
