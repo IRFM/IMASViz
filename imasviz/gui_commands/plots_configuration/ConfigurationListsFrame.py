@@ -102,12 +102,12 @@ class ConfigurationListsFrame(wx.Frame):
                                    size=wx.Size(184, 256), style=0)
 
         # self.configurationFilesList = \
-        #    GlobalOperations.getConfigurationFilesList()
+        #    GlobalOperations.getPlotConfigurationFilesList()
         # for f in self.configurationFilesList:
         #     self.listBox1.Append(f)
-        self.update()
-
         self.vbox.Add(self.listBox1 , 0, wx.ALL|wx.EXPAND, 5)
+
+        self.update()
 
     def showListBox(self):
         self.Show(True)
@@ -115,7 +115,7 @@ class ConfigurationListsFrame(wx.Frame):
     def update(self):
         self.listBox1.Clear()
         self.configurationFilesList = \
-            GlobalOperations.getConfigurationFilesList()
+            GlobalOperations.getPlotConfigurationFilesList()
         for f in self.configurationFilesList:
             self.listBox1.Append(f)
 
@@ -177,6 +177,6 @@ class ConfigurationListsFrame(wx.Frame):
                 self.listBox1.Delete(pos)
                 # Refresh the list
                 self.configurationFilesList = \
-                    GlobalOperations.getConfigurationFilesList()
+                    GlobalOperations.getPlotConfigurationFilesList()
             except OSError:
                 print ("Unable to remove file: " + selectedFile)

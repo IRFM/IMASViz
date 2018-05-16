@@ -35,10 +35,10 @@ class SavePlotsConfiguration(AbstractCommand):
             return
 
         configName = GlobalOperations.replaceSpacesByUnderScores(configName)
-        if configName.endswith(".cfg"):
+        if configName.endswith(".pcfg"):
             configName = configName[:-4]
 
-        fileName = GlobalOperations.getPlotsConfigurationFileName(configName)
+        fileName = GlobalOperations.getPlotConfigurationFilePath(configName)
 
         root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by the IMAS_VIZ application')

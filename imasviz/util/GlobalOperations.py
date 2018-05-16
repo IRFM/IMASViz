@@ -97,15 +97,17 @@ class GlobalOperations:
         return stringToReplace.replace(" ", "_")
 
     @staticmethod
-    def getPlotsConfigurationFileName(configName):
+    def getPlotConfigurationFilePath(configName):
+        """Get path to plot configuration file (.pcfg extension).
+        """
         home = os.environ['HOME']
         if home == None:
             raise ValueError("HOME environment variable not defined")
         configurationDirectory = home + "/" + ".imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
-        configurationFileName = configurationDirectory + "/" + configName + ".cfg"
-        return configurationFileName
+        configurationFilePath = configurationDirectory + "/" + configName + ".pcfg"
+        return configurationFilePath
 
     @staticmethod
     def printCode(file, text, level):
@@ -193,14 +195,14 @@ class GlobalOperations:
         return list
 
     @staticmethod
-    def getConfigurationFilesList():
+    def getPlotConfigurationFilesList():
         files = []
         configurationDirectory = os.environ["HOME"] + "/.imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
         l = os.listdir(configurationDirectory)
         for i in range(0,len(l)):
-            if l[i].endswith(".cfg"):
+            if l[i].endswith(".pcfg"):
                 files.append(l[i])
         return files
 
