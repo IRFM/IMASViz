@@ -14,6 +14,7 @@ from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_1 imp
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_16_0 import ETNativeDataTree_Generated_3_16_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_0 import ETNativeDataTree_Generated_3_17_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_1 import ETNativeDataTree_Generated_3_17_1
+from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_2 import ETNativeDataTree_Generated_3_17_2
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 
@@ -126,6 +127,15 @@ class GeneratedClassFactory:
                                                               async=self.async)
         elif imas__dd_version == "3.17.1":
             generatedDataTree = ETNativeDataTree_Generated_3_17_1(userName=self.IMASDataSource.userName,
+                                                              imasDbName=self.IMASDataSource.imasDbName,
+                                                              shotNumber=self.IMASDataSource.shotNumber,
+                                                              runNumber=self.IMASDataSource.runNumber,
+                                                              view=self.view,
+                                                              occurrence=self.occurrence,
+                                                              pathsList=self.pathsList,
+                                                              async=self.async)
+        elif imas__dd_version == "3.17.2":
+            generatedDataTree = ETNativeDataTree_Generated_3_17_2(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,

@@ -546,7 +546,7 @@ if __name__ == "__main__":
 
     print ("Starting code generation")
     GlobalOperations.checkEnvSettings()
-    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1", "3.16.0", "3.17.0", "3.17.1"]
+    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2"]
     #imas_versions = ["3.16.0"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
