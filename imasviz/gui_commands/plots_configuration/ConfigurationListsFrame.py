@@ -6,15 +6,36 @@ from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import Pl
 from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 
 class ConfigurationListsFrame(wx.Frame):
-    """The configuration panel, listing the available save configuration files,
-       and its features.
+    """The configuration frame, containing tabs dealing with different
+       configuration files.
     """
     def __init__(self, parent,  *args, **kwargs):
         wx.Frame.__init__(self, id=wx.NewId(), name='', parent=parent,
-                          pos=wx.Point(358, 184), size=wx.Size(350, 500),
+                          pos=wx.Point(358, 184), size=wx.Size(350, 530),
                           style=wx.DEFAULT_FRAME_STYLE|wx.LB_SINGLE,
                           title='Available configurations')
         self.parent = parent
+
+        self.InitTabs()
+
+    def showListBox(self):
+        self.Show(True)
+
+    def InitTabs(self):
+        nb = wx.Notebook(self)
+        pconf_panel = PlotConfigurationListsTab(parent=nb, DTV=self.parent)
+        nb.AddPage(pconf_panel, 'Available plot configurations')
+
+class PlotConfigurationListsTab(wx.Panel):
+    """The configuration tab panel, listing the available plot configuration
+       files and its features.
+    """
+    def __init__(self, parent, DTV):
+        wx.Panel.__init__(self, name='', parent=parent,
+                          pos=wx.DefaultPosition, size=wx.DefaultSize,
+                          style=wx.DEFAULT_FRAME_STYLE|wx.LB_SINGLE)
+        self.parent = parent
+        self.DTV = DTV
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.configurationFilesList = None
         self.createList()
@@ -67,7 +88,7 @@ class ConfigurationListsFrame(wx.Frame):
         note_1 = "Note:"
         note_2 = "The configuration will be applied ONLY to the " \
                  "single currently opened IMAS database source:"
-        note_3 = self.parent.GetTitle()
+        note_3 = self.DTV.GetTitle()
         # - Next ID
         staticTextId = wx.NewId()
         # - Set first wx.StaticText
@@ -134,7 +155,7 @@ class ConfigurationListsFrame(wx.Frame):
                         configFileName=selectedFile)
         # Select the signals, defined by a path in a list of paths, in the
         # given wxDataTreeView (DTV) window
-        SelectSignals(self.parent.wxTreeView, pathsList).execute()
+        SelectSignals(self.DTV.wxTreeView, pathsList).execute()
 
     def apply_MultiPlot(self, event):
         """Apply signal selection from the config file - apply it directly
@@ -148,9 +169,9 @@ class ConfigurationListsFrame(wx.Frame):
             "/" + self.configurationFilesList[pos]
         # Get next figurekey (label) for the MultiPlot
         figurekey = \
-            self.parent.wxTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
+            self.DTV.wxTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
         # Set up and show the MultiPlot using the config file
-        PlotSelectedSignalsWithWxmplot(self.parent.wxTreeView,
+        PlotSelectedSignalsWithWxmplot(self.DTV.wxTreeView,
                                        figurekey=figurekey,
                                        update=0,
                                        configFileName=selectedFile).execute()
