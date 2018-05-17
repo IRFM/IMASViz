@@ -24,7 +24,7 @@ from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
 from imasviz.gui_commands.configurations.ConfigurationListsFrame import ConfigurationListsFrame
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
-# from imasviz.gui_commands.configurations.SavePlotsConfiguration import SavePlotsConfiguration
+from imasviz.gui_commands.configurations.SaveSignalSelection import SaveSignalSelection
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 
 class WxDataTreeView(wx.TreeCtrl):
@@ -317,15 +317,13 @@ class WxDataTreeViewFrame(wx.Frame):
         self.configurationListsFrame = ConfigurationListsFrame(self)
         self.configurationListsFrame.showListBox()
 
-    def onSaveConfiguration(self, event=None, **kws):
-        """Save configuration for single DTV (WxDataTreeView)
+    def onSaveSignalSelection(self, event=None, **kws):
+        """Save signal selection as a list of signal paths for single DTV
+           (WxDataTreeView)
         """
-        print ("Saving plots configuration... (YET TO BE IMPLEMENTED!")
-        # TODO: The save plot configuration was first set to work only for
-        #       MultiPlot (hence from there the columns argument is required).
-        #       Fix/Improve that.
-        # SavePlotsConfiguration(DTV=self.WxTreeView,
-        #                        frame=self, cols=3).execute()
+        print ("Saving signal selection.")
+        # Save signal selection as a list of signal paths to .ss
+        SaveSignalSelection(DTV=self.wxTreeView).execute()
 
     def onShowMultiPlot(self, event, all_DTV=False):
         """Apply selected signals (single or all DTVs) to MultiPlot
@@ -367,7 +365,7 @@ class WxDataTreeViewFrame(wx.Frame):
         # Add item for saving signal selection to configuration file
         item_signals_save_conf = menu_signals.Append(
             id=GlobalValues.MENU_ITEM_SIGNALS_SAVE_ID,
-            item='Save signal selection (TODO)',
+            item='Save signal selection',
             kind=wx.ITEM_NORMAL)
 
         # Set submenu for handling signal unselection feature
@@ -454,7 +452,7 @@ class WxDataTreeViewFrame(wx.Frame):
 
         # Bind the features to the menu items
         self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_conf)
-        self.Bind(wx.EVT_MENU, self.onSaveConfiguration, item_signals_save_conf)
+        self.Bind(wx.EVT_MENU, self.onSaveSignalSelection, item_signals_save_conf)
         self.Bind(wx.EVT_MENU,
             lambda event: self.onShowMultiPlot(event=event, all_DTV=True),
             item_multiPlot_all)

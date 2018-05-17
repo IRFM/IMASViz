@@ -5,6 +5,8 @@ from imasviz.util.GlobalOperations import GlobalOperations
 import xml.etree.ElementTree as ET
 
 class SavePlotsConfiguration(AbstractCommand):
+    """Save signal selection and plot configuration to '.pcfg' file.
+    """
     def __init__(self, DTV, frame, nodeData=None, cols=None):
         # AbstractCommand.__init__(self, view, nodeData)
         """Set self.nodeData = nodeData etc. with the use of the
@@ -38,8 +40,10 @@ class SavePlotsConfiguration(AbstractCommand):
         if configName.endswith(".pcfg"):
             configName = configName[:-4]
 
+        # Set file name
         fileName = GlobalOperations.getPlotConfigurationFilePath(configName)
 
+        # Set root element
         root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by the IMAS_VIZ application')
         frameElement = ET.SubElement(root, 'frame')
@@ -57,13 +61,18 @@ class SavePlotsConfiguration(AbstractCommand):
 
             key = GlobalOperations.getNextPanelKey(k, cols=self.cols)
 
+            # Set new subelement
             panelElement = ET.SubElement(frameElement, 'panel')
+            # Set subelement attribute 'key'
             panelElement.set('key', str(key))
 
             panel = self.frame.panels[key]
 
+            # Set new subelement
             selectedArrayElement = ET.SubElement(panelElement, 'selectedArray')
 
+            # Extract signal node data (it contains also 'path') from the
+            # signal
             selectedArray = selectedsignalsList[n]
             nodeData = selectedArray[1]
 
@@ -137,7 +146,7 @@ class SavePlotsConfiguration(AbstractCommand):
         treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
         #self.f.close()
         if self.DTV.parent.configurationListsFrame != None:
-            self.DTV.parent.configurationListsFrame.update()
+            self.DTV.parent.configurationListsFrame.update_pconf()
 
 
     def saveAttribute(self, panelElement, attribute, value):

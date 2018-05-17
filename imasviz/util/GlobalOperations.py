@@ -110,6 +110,19 @@ class GlobalOperations:
         return configurationFilePath
 
     @staticmethod
+    def getSignalSelectionFilePath(configName):
+        """Get path to file containing list of signal paths (.ss extension).
+        """
+        home = os.environ['HOME']
+        if home == None:
+            raise ValueError("HOME environment variable not defined")
+        configurationDirectory = home + "/" + ".imasviz"
+        if not os.path.exists(configurationDirectory):
+            os.makedirs(configurationDirectory)
+        configurationFilePath = configurationDirectory + "/" + configName + ".ss"
+        return configurationFilePath
+
+    @staticmethod
     def printCode(file, text, level):
         n = level + 1
         tabs = ''
@@ -207,6 +220,18 @@ class GlobalOperations:
         return files
 
     @staticmethod
+    def getSignalSelectionFilesList():
+        files = []
+        configurationDirectory = os.environ["HOME"] + "/.imasviz"
+        if not os.path.exists(configurationDirectory):
+            os.makedirs(configurationDirectory)
+        l = os.listdir(configurationDirectory)
+        for i in range(0,len(l)):
+            if l[i].endswith(".ss"):
+                files.append(l[i])
+        return files
+
+    @staticmethod
     def getConfigurationFilesDirectory():
         return os.environ["HOME"] + "/.imasviz"
 
@@ -236,6 +261,10 @@ class GlobalOperations:
             pathsList.append(selectedSignal.get("path"))
 
         return pathsList
+
+    # TODO
+    # @staticmethod
+    # def getSignalsPathsFromSignalSelectionFile(configFileName):
 
     @staticmethod
     def getNextPanelKey(n, cols):
