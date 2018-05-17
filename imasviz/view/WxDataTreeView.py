@@ -21,10 +21,10 @@ from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
-from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
+from imasviz.gui_commands.configurations.ConfigurationListsFrame import ConfigurationListsFrame
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
-# from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
+# from imasviz.gui_commands.configurations.SavePlotsConfiguration import SavePlotsConfiguration
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 
 class WxDataTreeView(wx.TreeCtrl):

@@ -3,7 +3,7 @@ from wxmplot import MultiPlotFrame
 import wx
 from wxmplot.utils import MenuItem, Closure
 from wxmplot.plotpanel import PlotPanel
-from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
+from imasviz.gui_commands.configurations.SavePlotsConfiguration import SavePlotsConfiguration
 import matplotlib.pyplot as plt
 
 class IMASVIZMultiPlotFrame(MultiPlotFrame):

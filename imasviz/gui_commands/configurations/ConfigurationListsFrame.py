@@ -23,8 +23,11 @@ class ConfigurationListsFrame(wx.Frame):
 
     def InitTabs(self):
         nb = wx.Notebook(self)
-        pconf_panel = PlotConfigurationListsTab(parent=nb, DTV=self.parent)
-        nb.AddPage(pconf_panel, 'Available plot configurations')
+        self.pconf_panel = PlotConfigurationListsTab(parent=nb, DTV=self.parent)
+        nb.AddPage(self.pconf_panel, 'Available plot configurations')
+
+    def update_pconf(self):
+        self.pconf_panel.update()
 
 class PlotConfigurationListsTab(wx.Panel):
     """The configuration tab panel, listing the available plot configuration

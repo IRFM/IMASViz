@@ -11,7 +11,7 @@ from imasviz.plotframes.IMASVIZMultiPlotFrame import IMASVIZMultiPlotFrame
 import wx
 from wxmplot.utils import MenuItem, Closure
 from wxmplot.plotpanel import PlotPanel
-from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
+from imasviz.gui_commands.configurations.SavePlotsConfiguration import SavePlotsConfiguration
 
 class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
     def __init__(self, view, parent=None, rows=1, cols=1, framesize=None,
