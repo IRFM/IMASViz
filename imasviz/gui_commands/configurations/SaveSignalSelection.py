@@ -40,7 +40,8 @@ class SaveSignalSelection(AbstractCommand):
             configName = configName[:-3]
 
         # Set file name
-        fileName = GlobalOperations.getSignalSelectionFilePath(configName)
+        fileName = GlobalOperations.getConfFilePath(configName=configName,
+                                                    configType='lsp')
 
         # Set root element
         root = ET.Element('SignalSelection')

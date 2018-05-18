@@ -41,7 +41,8 @@ class SavePlotsConfiguration(AbstractCommand):
             configName = configName[:-4]
 
         # Set file name
-        fileName = GlobalOperations.getPlotConfigurationFilePath(configName)
+        fileName = GlobalOperations.getConfFilePath(configName=configName,
+                                                    configType='pcfg')
 
         # Set root element
         root = ET.Element('PlotConfiguration')

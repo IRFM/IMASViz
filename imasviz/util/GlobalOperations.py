@@ -97,30 +97,36 @@ class GlobalOperations:
         return stringToReplace.replace(" ", "_")
 
     @staticmethod
-    def getPlotConfigurationFilePath(configName):
-        """Get path to plot configuration file (.pcfg extension).
+    def getConfFilePath(configName, configType):
+        """Get path + filename to configuration file ('.pcfg' or '.lsp').
+
+        Parameters
+        ----------
+
+            configName: string
+                Name of the configuration file (with no extension).
+            configType: string
+                Type/Extension of the configuration file, without dot
+                ('pcfg' or 'lsp').
+
         """
+
         home = os.environ['HOME']
         if home == None:
             raise ValueError("HOME environment variable not defined")
         configurationDirectory = home + "/" + ".imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
-        configurationFilePath = configurationDirectory + "/" + configName + ".pcfg"
+
+        if configType != None:
+            configurationFilePath = configurationDirectory + "/" + \
+                                    configName + "." + configType
+        else:
+            print('getConfFilePath: File type not specified!')
+            return
+
         return configurationFilePath
 
-    @staticmethod
-    def getSignalSelectionFilePath(configName):
-        """Get path to file containing list of signal paths (.lsp extension).
-        """
-        home = os.environ['HOME']
-        if home == None:
-            raise ValueError("HOME environment variable not defined")
-        configurationDirectory = home + "/" + ".imasviz"
-        if not os.path.exists(configurationDirectory):
-            os.makedirs(configurationDirectory)
-        configurationFilePath = configurationDirectory + "/" + configName + ".lsp"
-        return configurationFilePath
 
     @staticmethod
     def printCode(file, text, level):
@@ -208,26 +214,24 @@ class GlobalOperations:
         return list
 
     @staticmethod
-    def getPlotConfigurationFilesList():
-        files = []
-        configurationDirectory = os.environ["HOME"] + "/.imasviz"
-        if not os.path.exists(configurationDirectory):
-            os.makedirs(configurationDirectory)
-        l = os.listdir(configurationDirectory)
-        for i in range(0,len(l)):
-            if l[i].endswith(".pcfg"):
-                files.append(l[i])
-        return files
+    def getConfFilesList(configType):
+        """Get a list of configuration files of certain type.
 
-    @staticmethod
-    def getSignalSelectionFilesList():
+        Parameters
+        ----------
+
+        configType: string
+            Type/Extension of the configuration file, without dot
+            (e.c. 'pcfg', 'lsp'...).
+
+        """
         files = []
         configurationDirectory = os.environ["HOME"] + "/.imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
         l = os.listdir(configurationDirectory)
         for i in range(0,len(l)):
-            if l[i].endswith(".lsp"):
+            if l[i].endswith("." + configType):
                 files.append(l[i])
         return files
 
