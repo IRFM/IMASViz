@@ -16,7 +16,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     """Plotting the selected signals with wxmplot to MultiPlot frame.
     """
     def __init__(self, WxDataTreeView, figurekey=0, update=0,
-                 configFileName = None, all_DTV = True):
+                 configFile = None, all_DTV = True):
         """
         Parameters
         ----------
@@ -26,7 +26,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         figurekey : string
             Panel label.
         update :
-        configFileName : string
+        configFile : string
             System path to the configuration file.
         all_DTV : bool
             Indicator to read selected signals from single DTV (from the given
@@ -34,7 +34,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             of signals from the configuration file.
         """
         PlotSelectedSignals.__init__(self, WxDataTreeView, figureKey=figurekey,
-                                     update=update, configFileName=configFileName,
+                                     update=update, configFile=configFile,
                                      all_DTV=True)
         # self.labels = {}
         # Set number of rows and columns of panels in the MultiPlot frame
@@ -44,7 +44,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         # (single or all)
         self.all_DTV = all_DTV
 
-        self.configFileName = configFileName
+        self.configFile = configFile
 
         # Browser_API
         self.api = self.WxDataTreeView.imas_viz_api
@@ -236,10 +236,10 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
            from either opened DTVs or from configuration file if it is loaded.
            TODO: Find more lightweight way to get the number of signals.
         """
-        if self.configFileName != None and self.plotConfig != False:
+        if self.configFile != None and self.plotConfig != False:
             # Get number of signals through number of signal paths
             pathsList = GlobalOperations.\
-                getSignalsPathsFromConfigurationFile(self.configFileName)
+                getSignalsPathsFromConfigurationFile(self.configFile)
             num_signals = len(pathsList)
         else:
             # If plotConfig is not present (save configuration was

@@ -242,29 +242,49 @@ class GlobalOperations:
         return selectedsignalsList
 
     @staticmethod
-    def getSignalsPathsFromConfigurationFile(configFileName):
+    def getSignalsPathsFromConfigurationFile(configFile):
+        """Get the signal paths from the configuration file (.pcfg or .lsp).
+
+        Parameters
+        ----------
+
+        configFile: string
+            Full path to configuration file including file name
+            (.pcfg or .lsp file).
+        """
         selectedsignalsMap = {}
         pathsList = []
-        plotConfig = None
-        if configFileName != None:
-            plotConfig = ET.parse(configFileName)
+        config = None
+        if configFile != None:
+            config = ET.parse(configFile)
 
-        # Get all selectedArray attributes, containing signal paths,
-        # from the config file
-        selectedArrays = plotConfig.findall('.//*selectedArray')
+        # Distinguish between the types of the configuration files
+        # (.pcfg or .lsp)
+        if configFile.endswith('.pcfg'):
+            # Get all selectedArray attributes, containing signal paths,
+            # from the config file
+            selectedArrays = config.findall('.//*selectedArray')
 
-        # Display number of signals, saved in the config file
-        print("Config file: Number of signals: ", len(selectedArrays))
+            # Display number of signals, saved in the config file
+            print("Config file: Number of signals: ", len(selectedArrays))
 
-        # Extract the paths of the signals and add them to the pathsList
-        for selectedSignal in selectedArrays:
-            pathsList.append(selectedSignal.get("path"))
+            # Extract the paths of the signals and add them to the pathsList
+            for selectedSignal in selectedArrays:
+                pathsList.append(selectedSignal.get("path"))
+
+        elif configFile.endswith('lsp'):
+            # Get all selectedArray attributes, containing signal paths,
+            # from the config file
+            selectedArrays = config.findall('.//*IDSPath')
+
+            # Display number of signals, saved in the config file
+            print("Config file: Number of signals: ", len(selectedArrays))
+
+            # Extract the paths of the signals and add them to the pathsList
+            for selectedPath in selectedArrays:
+                pathsList.append(selectedPath.get("path"))
 
         return pathsList
-
-    # TODO
-    # @staticmethod
-    # def getSignalsPathsFromSignalSelectionFile(configFileName):
 
     @staticmethod
     def getNextPanelKey(n, cols):

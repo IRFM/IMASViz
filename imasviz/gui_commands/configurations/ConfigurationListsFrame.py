@@ -22,12 +22,80 @@ class ConfigurationListsFrame(wx.Frame):
         self.Show(True)
 
     def InitTabs(self):
+        """Initialize tabs
+        """
+        # Set notebook that will contain the tabs
         nb = wx.Notebook(self)
+
+        # Tab listing available plot configurations
+        # - Set the tab
         self.pconf_panel = PlotConfigurationListsTab(parent=nb, DTV=self.parent)
+        # - Add to notebook
         nb.AddPage(self.pconf_panel, 'Available plot configurations')
+
+        # Tab listing available lists of signal paths (IDS paths)
 
     def update_pconf(self):
         self.pconf_panel.update()
+
+class CommonConfigurationRoutines():
+    """Common configuration routines.
+    """
+    def __init__(self, parent):
+        """
+
+        Parameters
+        ----------
+
+        parent: wx.Panel object
+            wxPanel object, representing one of the tabs in the
+            configuration frame
+
+        """
+        self.parent = parent    # wx.Panel object (tab panel)
+
+    def Apply_Signal_Selection(self, event):
+        """Apply signal selection from the config file - select signals only.
+        """
+        # Get in-list position of the selection (config file name)
+        pos = self.parent.listBox1.GetSelection()
+        # Get system path to the selected configuration file
+        selectedFile = \
+            GlobalOperations.getConfigurationFilesDirectory() + \
+            "/" + self.parent.configurationFilesList[pos]
+        # Extract signal paths from the config file and add them to a list of
+        # paths
+        pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
+                        configFile=selectedFile)
+        # Select the signals, defined by a path in a list of paths, in the
+        # given wxDataTreeView (DTV) window
+        SelectSignals(self.parent.DTV.wxTreeView, pathsList).execute()
+
+    def removeConfiguration(self, event):
+        """Remove configuration file from the list.
+        """
+        # Get in-list position of the selection (config file name)
+        pos = self.parent.listBox1.GetSelection()
+        # Get system path to the selected configuration file
+        selectedFile = \
+            GlobalOperations.getConfigurationFilesDirectory() + \
+            "/" + self.parent.configurationFilesList[pos]
+        # Get Yes/No answer (returns True/False)
+        answer = GlobalOperations.YesNo(question =
+            "The configuation " + selectedFile + " will be deleted. Are you sure?")
+        if answer:  # If True
+            print ('Removing configuration: ' + selectedFile)
+            try:
+                # Remove the config file from the system directory, containing
+                # containing all config files
+                os.remove(selectedFile)
+                # Remove the config file from the list
+                self.parent.listBox1.Delete(pos)
+                # Refresh the list
+                self.parent.configurationFilesList = \
+                    GlobalOperations.getPlotConfigurationFilesList()
+            except OSError:
+                print ("Unable to remove file: " + selectedFile)
 
 class PlotConfigurationListsTab(wx.Panel):
     """The configuration tab panel, listing the available plot configuration
@@ -42,6 +110,7 @@ class PlotConfigurationListsTab(wx.Panel):
         self.vbox = wx.BoxSizer(wx.VERTICAL)
         self.configurationFilesList = None
         self.createList()
+        commonConf = CommonConfigurationRoutines(self)
 
         # Set buttons
         # - 'Apply configuration to current shot' button
@@ -67,7 +136,7 @@ class PlotConfigurationListsTab(wx.Panel):
         #   - Add the button to BoxSizer
         self.vbox.Add(signalSelect_button, 0, wx.ALL | wx.EXPAND, 5)
         #   - Bind the 'Apply_Signal_Selection' feature to the button
-        self.Bind(wx.EVT_BUTTON, self.Apply_Signal_Selection,
+        self.Bind(wx.EVT_BUTTON, commonConf.Apply_Signal_Selection,
                   id=signalSelectButtonId)
 
         # - 'Remove configuration' button
@@ -78,7 +147,7 @@ class PlotConfigurationListsTab(wx.Panel):
         #   - Add the button to BoxSizer
         self.vbox.Add(remove_button, 0, wx.ALL | wx.EXPAND, 5)
         #   - Bind 'removeConfiguration' feature to the button
-        self.Bind(wx.EVT_BUTTON, self.removeConfiguration, id=removeButtonId)
+        self.Bind(wx.EVT_BUTTON, commonConf.removeConfiguration, id=removeButtonId)
 
         # Set note
         # - Set fonts
@@ -143,23 +212,6 @@ class PlotConfigurationListsTab(wx.Panel):
         for f in self.configurationFilesList:
             self.listBox1.Append(f)
 
-    def Apply_Signal_Selection(self, event):
-        """Apply signal selection from the config file - select signals only.
-        """
-        # Get in-list position of the selection (config file name)
-        pos = self.listBox1.GetSelection()
-        # Get system path to the selected configuration file
-        selectedFile = \
-            GlobalOperations.getConfigurationFilesDirectory() + \
-            "/" + self.configurationFilesList[pos]
-        # Extract signal paths from the config file and add them to a list of
-        # paths
-        pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
-                        configFileName=selectedFile)
-        # Select the signals, defined by a path in a list of paths, in the
-        # given wxDataTreeView (DTV) window
-        SelectSignals(self.DTV.wxTreeView, pathsList).execute()
-
     def apply_MultiPlot(self, event):
         """Apply signal selection from the config file - apply it directly
            to MultiPlot feature.
@@ -177,30 +229,30 @@ class PlotConfigurationListsTab(wx.Panel):
         PlotSelectedSignalsWithWxmplot(self.DTV.wxTreeView,
                                        figurekey=figurekey,
                                        update=0,
-                                       configFileName=selectedFile).execute()
+                                       configFile=selectedFile).execute()
 
-    def removeConfiguration(self, event):
-        """Remove configuration file from the list.
-        """
-        # Get in-list position of the selection (config file name)
-        pos = self.listBox1.GetSelection()
-        # Get system path to the selected configuration file
-        selectedFile = \
-            GlobalOperations.getConfigurationFilesDirectory() + \
-            "/" + self.configurationFilesList[pos]
-        # Get Yes/No answer (returns True/False)
-        answer = GlobalOperations.YesNo(question =
-            "The configuation " + selectedFile + " will be deleted. Are you sure?")
-        if answer:  # If True
-            print ('Removing configuration: ' + selectedFile)
-            try:
-                # Remove the config file from the system directory, containing
-                # containing all config files
-                os.remove(selectedFile)
-                # Remove the config file from the list
-                self.listBox1.Delete(pos)
-                # Refresh the list
-                self.configurationFilesList = \
-                    GlobalOperations.getPlotConfigurationFilesList()
-            except OSError:
-                print ("Unable to remove file: " + selectedFile)
+    # def removeConfiguration(self, event):
+    #     """Remove configuration file from the list.
+    #     """
+    #     # Get in-list position of the selection (config file name)
+    #     pos = self.listBox1.GetSelection()
+    #     # Get system path to the selected configuration file
+    #     selectedFile = \
+    #         GlobalOperations.getConfigurationFilesDirectory() + \
+    #         "/" + self.configurationFilesList[pos]
+    #     # Get Yes/No answer (returns True/False)
+    #     answer = GlobalOperations.YesNo(question =
+    #         "The configuation " + selectedFile + " will be deleted. Are you sure?")
+    #     if answer:  # If True
+    #         print ('Removing configuration: ' + selectedFile)
+    #         try:
+    #             # Remove the config file from the system directory, containing
+    #             # containing all config files
+    #             os.remove(selectedFile)
+    #             # Remove the config file from the list
+    #             self.listBox1.Delete(pos)
+    #             # Refresh the list
+    #             self.configurationFilesList = \
+    #                 GlobalOperations.getPlotConfigurationFilesList()
+    #         except OSError:
+    #             print ("Unable to remove file: " + selectedFile)

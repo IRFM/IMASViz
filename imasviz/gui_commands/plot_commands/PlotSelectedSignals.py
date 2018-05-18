@@ -12,13 +12,13 @@ import sys
 
 class PlotSelectedSignals(AbstractCommand):
     def __init__(self, WxDataTreeView, figureKey=None, update=0,
-        configFileName=None, all_DTV = True):
+        configFile=None, all_DTV = True):
         AbstractCommand.__init__(self, WxDataTreeView, None)
         self.figureKey = figureKey
         self.update = update
         self.plotConfig = None
-        if configFileName != None:
-            self.plotConfig = ET.parse(configFileName)
+        if configFile != None:
+            self.plotConfig = ET.parse(configFile)
         """WxDataTreeView"""
         self.WxDataTreeView = WxDataTreeView
         """Browser_API"""
