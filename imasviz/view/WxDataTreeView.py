@@ -322,7 +322,7 @@ class WxDataTreeViewFrame(wx.Frame):
            (WxDataTreeView)
         """
         print ("Saving signal selection.")
-        # Save signal selection as a list of signal paths to .ss
+        # Save signal selection as a list of signal paths to .lsp file
         SaveSignalSelection(DTV=self.wxTreeView).execute()
 
     def onShowMultiPlot(self, event, all_DTV=False):

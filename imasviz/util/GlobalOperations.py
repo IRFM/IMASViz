@@ -111,7 +111,7 @@ class GlobalOperations:
 
     @staticmethod
     def getSignalSelectionFilePath(configName):
-        """Get path to file containing list of signal paths (.ss extension).
+        """Get path to file containing list of signal paths (.lsp extension).
         """
         home = os.environ['HOME']
         if home == None:
@@ -119,7 +119,7 @@ class GlobalOperations:
         configurationDirectory = home + "/" + ".imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
-        configurationFilePath = configurationDirectory + "/" + configName + ".ss"
+        configurationFilePath = configurationDirectory + "/" + configName + ".lsp"
         return configurationFilePath
 
     @staticmethod
@@ -227,7 +227,7 @@ class GlobalOperations:
             os.makedirs(configurationDirectory)
         l = os.listdir(configurationDirectory)
         for i in range(0,len(l)):
-            if l[i].endswith(".ss"):
+            if l[i].endswith(".lsp"):
                 files.append(l[i])
         return files
 

@@ -5,7 +5,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 import xml.etree.ElementTree as ET
 
 class SaveSignalSelection(AbstractCommand):
-    """Save signal selection as a list of signal paths to '.ss' file.
+    """Save signal selection as a list of signal paths to '.lsp' file.
     """
 
     def __init__(self, DTV, nodeData=None):
@@ -36,7 +36,7 @@ class SaveSignalSelection(AbstractCommand):
             return
 
         configName = GlobalOperations.replaceSpacesByUnderScores(configName)
-        if configName.endswith(".ss"):
+        if configName.endswith(".lsp"):
             configName = configName[:-3]
 
         # Set file name
