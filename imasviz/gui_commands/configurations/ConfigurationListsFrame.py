@@ -4,6 +4,7 @@ from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
 from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
+from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 
 class ConfigurationListsFrame(wx.Frame):
     """The configuration frame, containing tabs dealing with different
@@ -74,6 +75,8 @@ class CommonConfigurationRoutines():
         # paths
         pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
                         configFile=selectedFile)
+        # First unselect all signals
+        UnselectAllSignals(self.parent.DTV.wxTreeView).execute()
         # Select the signals, defined by a path in a list of paths, in the
         # given wxDataTreeView (DTV) window
         SelectSignals(self.parent.DTV.wxTreeView, pathsList).execute()

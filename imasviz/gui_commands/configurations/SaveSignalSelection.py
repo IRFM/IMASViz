@@ -84,9 +84,8 @@ class SaveSignalSelection(AbstractCommand):
         treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
         #self.f.close()
 
-        # TODO:
-        # if self.DTV.parent.configurationListsFrame != None:
-        #     self.DTV.parent.configurationListsFrame.update_lsp()
+        if self.DTV.parent.configurationListsFrame != None:
+            self.DTV.parent.configurationListsFrame.update_lsp()
 
     def saveAttribute(self, pathElement, attribute, value):
         if value != None:
