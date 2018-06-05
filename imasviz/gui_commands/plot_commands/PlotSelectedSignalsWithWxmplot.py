@@ -24,7 +24,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         WxDataTreeView : WxDataTreeView object
             WxDataTreeView (DTV) object.
         figurekey : string
-            Panel label.
+            Frame label.
         update :
         configFile : string
             System path to the configuration file.
@@ -402,3 +402,29 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
             api.figureframes[figureKey].Hide()
+
+class modifyMultiPlot():
+    """Routines handling the existing MultiPlots (adding selected signals,
+       reshaping etc).
+    """
+
+    def __init__(self):
+        pass
+
+    def addSignalSelection(self, multiPlotFrame, WxDataTreeView):
+        """Add a selection from other DTV to existing MultiPlot frame.
+
+        Parameters
+        ----------
+
+        multiPlotFrame : wx.Frame object
+            MultiPlot frame to update
+        figurekey : string
+            Label of the MultiPlot frame that is to be updated (new signal
+            selection added).
+        WxDataTreeView : WxDataTreeView object
+            WxDataTreeView (DTV) object.
+        """
+
+        #TODO
+        pass
