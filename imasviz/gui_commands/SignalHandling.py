@@ -568,9 +568,9 @@ class SignalHandling:
             # - Set MultiPlot frame
             multiPlotFrame = self.view.imas_viz_api.getFigureFrame(figureKey)
             # Add signal selection to MultiPlot frame
-            mmp = modifyMultiPlot()
-            mmp.addSignalSelection(multiPlotFrame=multiPlotFrame,
+            mmp = modifyMultiPlot(multiPlotFrame=multiPlotFrame,
                                WxDataTreeView=self.view)
+            mmp.addSignalSelection()
         except ValueError as e:
             self.view.log.error(str(e))
 

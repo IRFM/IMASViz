@@ -48,6 +48,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
         # Browser_API
         self.api = self.WxDataTreeView.imas_viz_api
+        # DTV
         self.WxDataTreeView = WxDataTreeView
 
     def raiseErrorIfNoSelectedArrays(self):
@@ -64,7 +65,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                                       rows = rows,
                                       cols = cols,
                                       panelsize = (400, 300))
-        frame .SetTitle(title=figureKey)
+        frame.SetTitle(title=figureKey)
         frame.panel.toggle_legend(None, True)
         self.api.figureframes[figureKey] = frame
         return frame
@@ -162,7 +163,6 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                     # Set plot labels and title
                     label, xlabel, ylabel, title = \
                         PlotSignal.plotOptions(dtv, signalNodeData, shotNumber)
-
 
                     for j in range(0, nbRows):
                         # y-axis values
@@ -408,10 +408,14 @@ class modifyMultiPlot():
        reshaping etc).
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, multiPlotFrame, WxDataTreeView):
+        self.multiPlotFrame = multiPlotFrame
+        # DTV
+        self.WxDataTreeView = WxDataTreeView
+        # Browser_API
+        self.api = self.WxDataTreeView.imas_viz_api
 
-    def addSignalSelection(self, multiPlotFrame, WxDataTreeView):
+    def addSignalSelection(self):
         """Add a selection from other DTV to existing MultiPlot frame.
 
         Parameters
@@ -425,6 +429,101 @@ class modifyMultiPlot():
         WxDataTreeView : WxDataTreeView object
             WxDataTreeView (DTV) object.
         """
+        self.rows = self.multiPlotFrame.rows
+        self.cols = self.multiPlotFrame.cols
 
-        #TODO
-        pass
+        self.filledPlotPanelList = []
+        self.emptyPlotPanelList = []
+
+        # Extract the data-filled PlotPanels
+        # Note: the empty PlotPanels do not contain the 'legend_map' attribute
+        #       (it holds the string describing the source of data - IDS path to
+        #       the array)
+        for p in self.multiPlotFrame.panels:
+            panel = self.multiPlotFrame.panels[p]
+            if hasattr(panel.conf, 'legend_map'):
+                self.filledPlotPanelList.append(panel)
+            else:
+                self.emptyPlotPanelList.append(panel)
+
+        # Get list of selected signals in DTV
+        dtv_selectedSignals = GlobalOperations. \
+            getSortedSelectedSignals(self.WxDataTreeView.selectedSignals)
+
+        # Set maximum number of plots within frame
+        maxNumberOfPlots = self.rows*self.cols;
+
+        # First empty plot number
+        n = len(self.filledPlotPanelList)
+
+        for element in dtv_selectedSignals:
+
+            if n + 1 > maxNumberOfPlots:
+                break
+
+            #Get node data
+            signalNodeData = element[1] # element[0] = shot number,
+                                        # element[1] = node data
+                                        # element[2] = index,
+                                        # element[3] = shot number,
+                                        # element[3] = IDS database name,
+                                        # element[4] = user name
+
+            key = self.WxDataTreeView.dataSource.dataKey(signalNodeData)
+            tup = (self.WxDataTreeView.dataSource.shotNumber, signalNodeData)
+
+            # if figureKey == None:
+            figureKey = self.api.GetNextKeyForMultiplePlots()
+
+            self.api.addNodeToFigure(figureKey, key, tup)
+
+            # Get signal properties and values
+            s = PlotSignal.getSignal(self.WxDataTreeView, signalNodeData)
+            # Get array of time values
+            t = PlotSignal.getTime(s)
+            # Get array of y-axis values
+            v = PlotSignal.get1DSignalValue(s)
+
+            # Get IDS case shot number
+            shotNumber = element[0]
+
+            # Get number of rows of the y-axis array of values
+            nbRows = v.shape[0]
+
+            # Set plot labels and title
+            label, xlabel, ylabel, title = \
+                PlotSignal.plotOptions(self.WxDataTreeView, signalNodeData, shotNumber)
+
+            for j in range(0, nbRows):
+                # y-axis values
+                u = v[j]
+                # x-axis values
+                ti = t[0]
+
+                a = n//self.cols
+                b = n - (n//self.cols)*self.cols
+                p = (a,b)
+
+                numberOfPlots = 1
+
+                for k in range(0, numberOfPlots):
+                    if k == 0:
+                        # Create plot
+                        self.multiPlotFrame.plot(ti, u, panel=p, xlabel=xlabel,
+                                   ylabel=ylabel, label=label,
+                                   labelfontsize=5, show_legend=True,
+                                   legend_loc='uc', legendfontsize=5,
+                                   legend_on=False, update=True)
+                    else:
+                        # Add to pre-existing plot
+                        self.multiPlotFrame.oplot(ti, u, panel=p, xlabel=xlabel,
+                                    ylabel=ylabel, label=label,
+                                    labelfontsize=5, show_legend=True,
+                                    legend_loc='uc', legendfontsize=5,
+                                    legend_on=False, update=True)
+                n = n + 1
+
+        self.multiPlotFrame.Refresh()
+        # Show the frame, holding the plots
+        self.multiPlotFrame.Show()
+        self.multiPlotFrame.Raise()
