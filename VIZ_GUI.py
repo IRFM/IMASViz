@@ -386,7 +386,8 @@ class MyApp(wx.App):
 
     def OnInit(self):
         GlobalOperations.checkEnvSettings()
-        frm = GUIFrame(None, -1, "IMAS_VIZ (version 1.0)")
+        label = "IMAS_VIZ (version " + str(GlobalValues.IMAS_VIZ_VERSION) + ")"
+        frm = GUIFrame(None, -1, label)
         frm.Centre()
         frm.Show(True)
         return True
