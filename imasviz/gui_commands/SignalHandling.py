@@ -6,7 +6,8 @@ from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllS
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
 from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
-from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
+from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import (PlotSelectedSignalsWithWxmplot,
+                                                                              modifyMultiPlot)
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.Coord1Slider import Coord1Slider
 from imasviz.util.GlobalValues import FigureTypes
@@ -23,7 +24,9 @@ class MenuIDS:
         self.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE = 5000
         self.ID_PLOT_AS_ITIME = 6000
         self.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE = 7000
-        self.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME = 7500
+        self.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME = 7100
+        self.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME = 7200
+        self.ID_ADD_SELECTION_TO_MULTIPLOT = 7300
         self.ID_OPEN_SUBPLOTS_MANAGER = 8000
         self.ID_CHANGE_COORD1 = 9000
         self.ID_DELETE_FIGURES = 10000
@@ -53,26 +56,25 @@ class SignalHandling:
         self.treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
 
     def showPopUpMenu(self, signalName):
-        """Display the popup menu for plotting data
+        """Display the popup menu for plotting data.
         """
 
         if (signalName == None): return 0
 
-        """Set new main menu"""
+        # Set new main menu
         self.view.popupmenu = wx.Menu()
         s = ''
 
-        """The popup menu behaviour in relation on the selection/unselection
-        status of the node
-        """
+        # The popup menu behaviour in relation on the selection/unselection
+        # status of the node
         if self.nodeData['isSelected'] == 1:
-            """If the node is selected, show unselect menu"""
+            # If the node is selected, show unselect menu
             s = 'Unselect '
         else:
-            """The node is unselected, show select menu"""
+            # The node is unselected, show select menu
             s = 'Select '
 
-        """Set second-level popup menu for selection/deselection of the node """
+        # Set second-level popup menu for selection/deselection of the node
         item1 = wx.MenuItem(self.view.popupmenu,
                             self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL,
                             text= s + signalName + '...',
@@ -80,23 +82,22 @@ class SignalHandling:
 
         #item2 = wx.MenuItem(self.view.popupmenu, wx.ID_MORE, item='Show '+signalName+' size', kind=wx.ITEM_NORMAL)
 
-        """Set second-level popup menu for creating new plot out of the
-        selected IDS node
-        """
+        # Set second-level popup menu for creating new plot out of the
+        # selected IDS node
         item3 = None
-        """The popup menu behaviour in relation to the presence of pre-existing
-        plots"""
+        # The popup menu behaviour in relation to the presence of pre-existing
+        # plots
         if len(self.view.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
-            """If there is no pre-existing plot """
+            # If there is no pre-existing plot
             item3 = wx.MenuItem(self.view.popupmenu,
                                 self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
                                 text='Plot ' + signalName,
                                 kind=wx.ITEM_NORMAL)
         else:
-            """If some plot already exists"""
+            # If some plot already exists
 
-            """Add menu for creation of a new figure"""
+            # Add menu for creation of a new figure
             item3 = wx.MenuItem(self.view.popupmenu,
                                 self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
                                 text='Plot ' + signalName + ' to new figure',
@@ -105,7 +106,7 @@ class SignalHandling:
             j= 0
             for figureKey in self.view.imas_viz_api.GetFiguresKeys(\
                 figureType=FigureTypes.FIGURETYPE):
-                """Check for figures that share the same coordinates"""
+                # Check for figures that share the same coordinates
                 if self.shareSameCoordinatesFrom(figureKey):
                     if j == 0:
                         subMenu = wx.Menu()
@@ -188,6 +189,22 @@ class SignalHandling:
             i = i + 1
 
         i = 0
+
+        # Set menu items for adding selection to existing MultiPlots
+        for figureKey in self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.MULTIPLOTTYPE):
+            if i == 0:
+                showMenu = wx.Menu()
+                self.view.popupmenu.Append(wx.ID_ANY,
+                                           'Add selection to MultiPlot',
+                                           showMenu)
+            showMenu.Append(self.menuIDS.ID_ADD_SELECTION_TO_MULTIPLOT + i,
+                            item=figureKey,
+                            kind=wx.ITEM_NORMAL)
+            i = i + 1
+
+        i = 0
+
         for figureKey in self.view.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.SUBPLOTTYPE):
             if i == 0:
@@ -240,8 +257,13 @@ class SignalHandling:
                             kind=wx.ITEM_NORMAL)
 
         item8 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME,
-                            text='Plot all selected signals to a multiplots frame',
+                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME,
+                            text='Plot selected signals to a multiplots frame (all opened IMAS databases)',
+                            kind=wx.ITEM_NORMAL)
+
+        item9 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME,
+                            text='Plot selected signals to a multiplots frame (this opened IMAS database',
                             kind=wx.ITEM_NORMAL)
 
         self.view.popupmenu.Append(item1)
@@ -254,6 +276,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(item4)
             self.view.popupmenu.Append(item5)
             self.view.popupmenu.Append(item8)
+            self.view.popupmenu.Append(item9)
 
         if len(self.view.selectedSignals) > 1:
             self.view.popupmenu.Append(item6)
@@ -265,9 +288,9 @@ class SignalHandling:
         self.view.Bind(wx.EVT_MENU, self.popUpMenuHandler)
         return 1
 
-
-
     def popUpMenuHandler(self, event):
+        """Link the events (defined by event ID) with corresponding routines.
+        """
         if event.GetId() == wx.ID_MORE:
             self.signalSizeRequest(event)
         elif event.GetId() == self.menuIDS.ID_ADD_PLOT_TO_FIGURE:
@@ -276,8 +299,10 @@ class SignalHandling:
             self.selectOrUnselectSignal(event)  # selection
         elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE:
             self.plotSelectedSignals()
-        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME:
-            self.plotSelectedSignalsToMultiPlotsFrame()
+        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME:
+            self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=True)
+        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME:
+            self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=False)
         elif event.GetId() == wx.ID_CANCEL:
             self.unselectAllSignals()
         elif event.GetId() == self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER:
@@ -304,7 +329,8 @@ class SignalHandling:
                     self.plotSelectedSignalsToFig(i)
                 elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_SUBPLOTS:
                     self.hideShowfigure(i, figureType=FigureTypes.SUBPLOTTYPE)
-
+                elif event.GetId() == i + self.menuIDS.ID_ADD_SELECTION_TO_MULTIPLOT:
+                    self.addSignalSelectionToMultiPlotFrame(i)
 
     def selectSignal(self):
         SelectOrUnselectSignal(self.view, self.nodeData).execute()
@@ -341,8 +367,9 @@ class SignalHandling:
         except ValueError as e:
             self.view.log.error(str(e))
 
-    """Show preview plot"""
     def plotPreviewSignalCommand(self, event):
+        """Show preview plot.
+        """
         try:
             label = None
             xlabel = None
@@ -354,13 +381,13 @@ class SignalHandling:
         except ValueError as e:
             self.view.log.error(str(e))
 
-    """Plot selected signals"""
     def plotSelectedSignals(self):
-        """Get label for the next figure (e.c. if 'Figure 2' already exists,
-           value 'Figure 3' will be returned)
+        """Plot selected signals.
         """
+        # Get label for the next figure (e.c. if 'Figure 2' already exists,
+        # value 'Figure 3' will be returned)
         figureKey = self.view.imas_viz_api.GetNextKeyForFigurePlots()
-        """Plot selected signals"""
+        # Plot the selected signals
         PlotSelectedSignals(self.view, figureKey).execute()
 
     def plotSelectedSignalsToFig(self, numFig):
@@ -369,9 +396,23 @@ class SignalHandling:
         figureKey = figureKeys[numFig]
         PlotSelectedSignals(self.view, figureKey, 1).execute()
 
-    def plotSelectedSignalsToMultiPlotsFrame(self):
+    def plotSelectedSignalsToMultiPlotsFrame(self, all_DTV=False):
+        """Create a MultiPlot using signals selected in single/all opened DTV
+           windows
+
+           Parameters:
+                all_DTV : bool
+                Indicator to read selected signals from the current or all DTVs.
+        """
+        # Get next figure key/label
         figureKey = self.view.imas_viz_api.GetNextKeyForMultiplePlots()
-        PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1).execute()
+        if all_DTV != True:
+            # Note: '.execute' rutine is from the PlotSelectedSignals.py
+            PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
+                                           all_DTV = False).execute()
+        else:
+            PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
+                                           all_DTV = True).execute()
 
     def plotSelectedSignalVsTime(self):
         self.updateNodeData()
@@ -468,6 +509,16 @@ class SignalHandling:
         return self.shareSameCoordinates(selectedDataList)
 
     def hideShowfigure(self, numFig, figureType):
+        """ Hide/Show figure frame or MultiPlot frame.
+
+        Parameters
+        ----------
+        numFig : integer
+            Figure number.
+        figureType : string
+            Type of figure e.c. "Figure:", "Multiplot:", "Subplot"... see
+            GlobalValues.py FigureTypes class for a full list of figure types.
+        """
         figureKeys = self.view.imas_viz_api.GetFiguresKeys(figureType=figureType)
         figureKey = figureKeys[numFig]
         self.view.imas_viz_api.HideShowFigure(figureKey)
@@ -495,6 +546,34 @@ class SignalHandling:
             self.view.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
             self.view.log.error(str(e))
+
+    def addSignalSelectionToMultiPlotFrame(self, numFig):
+        """Add signal selection to existing MultiPlot.
+
+        Parameters
+        ----------
+
+        numFig : integer
+            MultiPlot frame number.
+        """
+        try:
+            # Get MultiPlot frame, selected from the popup menu
+            # - Get all existing MultiPlot (figure) frame keys
+            figureKeys = self.view.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.MULTIPLOTTYPE)
+            # - Get the required (numFig) label of the wanted MultiPlot frame
+            figureKey = figureKeys[numFig]  # Label of the MultiPlot frame that
+                                            # is to be updated (new signal
+                                            # selection added).
+            # - Set MultiPlot frame
+            multiPlotFrame = self.view.imas_viz_api.getFigureFrame(figureKey)
+            # Add signal selection to MultiPlot frame
+            mmp = modifyMultiPlot(multiPlotFrame=multiPlotFrame,
+                               WxDataTreeView=self.view)
+            mmp.addSignalSelection()
+        except ValueError as e:
+            self.view.log.error(str(e))
+
 
     def deleteSubplots(self, numFig):
         try:

@@ -21,9 +21,11 @@ from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
 from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
-from imasviz.gui_commands.plots_configuration.ConfigurationListsFrame import ConfigurationListsFrame
+from imasviz.gui_commands.configurations.ConfigurationListsFrame import ConfigurationListsFrame
 from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
 from imasviz.gui_commands.SignalHandling import SignalHandling
+from imasviz.gui_commands.configurations.SaveSignalSelection import SaveSignalSelection
+from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 
 class WxDataTreeView(wx.TreeCtrl):
     """Define IDS Tree structure and the function to handle the click to
@@ -310,32 +312,99 @@ class WxDataTreeViewFrame(wx.Frame):
         self.SetId(-1)
 
     def onShowConfigurations(self, event):
+        """Show configuration window
+        """
         self.configurationListsFrame = ConfigurationListsFrame(self)
         self.configurationListsFrame.showListBox()
+
+    def onSaveSignalSelection(self, event=None, **kws):
+        """Save signal selection as a list of signal paths for single DTV
+           (WxDataTreeView)
+        """
+        print ("Saving signal selection.")
+        # Save signal selection as a list of signal paths to .lsp file
+        SaveSignalSelection(DTV=self.wxTreeView).execute()
+
+    def onShowMultiPlot(self, event, all_DTV=False):
+        """Apply selected signals (single or all DTVs) to MultiPlot
+        """
+        ss = SignalHandling(self.wxTreeView)
+        ss.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
+
+    def onUnselectSignals(self, event, all_DTV=False):
+        """Unselect signals in single (current) or all DTVs
+
+           Parameters:
+                all_DTV : bool
+                Indicator to read selected signals from the current or all DTVs.
+        """
+        if all_DTV != True:
+            UnselectAllSignals(self.wxTreeView).execute()
+        else:
+            for dtv in self.wxTreeView.imas_viz_api.wxDTVlist:
+                UnselectAllSignals(dtv).execute()
 
     def createMenu(self):
         """Configure the menu bar.
         """
         menubar = wx.MenuBar()
-        """Set new menubar item to be added to 'Options' menu"""
+        # Set new menu list item to be added to 'Options' menu
         menu = wx.Menu()
-        item_1 = menu.Append(wx.NewId(), \
-            item='Apply multiple plots configuration', kind=wx.ITEM_NORMAL)
 
-        """Add menu separator line"""
+        ## APPLY CONFIGURATION
+        # Add item for showing the Configuration window
+        item_conf = menu.Append(
+            id=wx.NewId(),
+            item='Apply Configuration',
+            kind=wx.ITEM_NORMAL)
+
+        ## SIGNAL HANDLING
+        # Set main submenu for handling signal selection
+        menu_signals = wx.Menu()
+
+        # Add item for saving signal selection to configuration file
+        item_signals_save_conf = menu_signals.Append(
+            id=GlobalValues.MENU_ITEM_SIGNALS_SAVE_ID,
+            item='Save signal selection',
+            kind=wx.ITEM_NORMAL)
+
+        # Set submenu for handling signal unselection feature
+        menu_signals_unselect = wx.Menu()
+
+        # Add item for unselecting signals in single (this) DTV
+        item_signals_unselect_single = menu_signals_unselect.Append(
+            id=GlobalValues.MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV_ID,
+            item='This IMAS database',
+            kind=wx.ITEM_NORMAL)
+
+        # Add item for unselecting signals in single (this) DTV
+        item_signals_unselect_all = menu_signals_unselect.Append(
+            id=GlobalValues.MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV_ID,
+            item='All IMAS databases',
+            kind=wx.ITEM_NORMAL)
+
+        # Append to menu
+        menu_signals.Append(GlobalValues.MENU_SIGNALS_UNSELECT_ID,
+                        "Unselect signals", menu_signals_unselect)
+
+        # Append to menu
+        menu.Append(GlobalValues.MENU_SIGNALS_ID,
+                        "Signal Selection Options", menu_signals)
+
+        # Add menu separator line
         menu.AppendSeparator()
 
-        """PREVIEW PLOT MENU"""
-        """Set main preview plot menu"""
+        ## PREVIEW PLOT MENU
+        # Set main preview plot submenu
         menu_pp = wx.Menu()
 
-        """Set enable/disable preview plot checkout item:"""
-        """ - Set checkout item"""
+        # Set enable/disable preview plot checkout item:
+        #  - Set checkout item
         item_pp_1 = menu_pp.AppendCheckItem(
                     id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
                     item='Enable',
                     help="Enable/Disable preview plot display")
-        """ - Set checkout value 'True' as default"""
+        #  - Set checkout value 'True' as default
         menu_pp.Check(id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
                       check=True)
 
@@ -345,15 +414,57 @@ class WxDataTreeViewFrame(wx.Frame):
         #             id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID,
         #             item='Fix position', help="Fix position of the preview plot")
 
-        """ - Append to menu"""
+        #  - Append to menu
         menu.Append(GlobalValues.MENU_PREVIEW_PLOT_ID,
                         "Preview Plot Options", menu_pp)
 
-        """Add and set 'Options' menu """
+        # Add menu separator line
+        menu.AppendSeparator()
+
+        # Set main MultiPlot submenu
+        menu_multiPlot = wx.Menu()
+
+        #  - Set item to apply signals, selected in all opened IMAS data source
+        #    windows, to MultiPlot submenu
+        item_multiPlot_all = menu_multiPlot.Append(
+            GlobalValues.MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT_ID,
+            item='Apply selected signals to MultiPlot '
+                 '(all opened IMAS databases)',
+            kind=wx.ITEM_NORMAL)
+
+        #  - Set item to apply signals, selected in a single opened
+        #    IMAS data source windows, to MultiPlot submenu
+        item_multiPlot_single = menu_multiPlot.Append(
+            GlobalValues.MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT_ID,
+            item='Apply selected signals to MultiPlot '
+                 '(this IMAS database)',
+            kind=wx.ITEM_NORMAL)
+
+        # - Append to MultiPlot submenu
+        menu.Append(GlobalValues.MENU_MULTIPLOT_ID,
+                        "MultiPlot Options", menu_multiPlot)
+
+        # Add and set 'Options' menu
         menubar.Append(menu, 'Options')
 
+        # Add the menu to the DTV frame
         self.SetMenuBar(menubar)
-        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_1)
+
+        # Bind the features to the menu items
+        self.Bind(wx.EVT_MENU, self.onShowConfigurations, item_conf)
+        self.Bind(wx.EVT_MENU, self.onSaveSignalSelection, item_signals_save_conf)
+        self.Bind(wx.EVT_MENU,
+            lambda event: self.onShowMultiPlot(event=event, all_DTV=True),
+            item_multiPlot_all)
+        self.Bind(wx.EVT_MENU,
+            lambda event: self.onShowMultiPlot(event=event, all_DTV=False),
+            item_multiPlot_single)
+        self.Bind(wx.EVT_MENU,
+                  lambda event: self.onUnselectSignals(event=event, all_DTV=False),
+                  item_signals_unselect_single)
+        self.Bind(wx.EVT_MENU,
+                  lambda event: self.onUnselectSignals(event=event, all_DTV=True),
+                  item_signals_unselect_all)
 
     def OnResult(self, event):
         idsName = event.data[0]

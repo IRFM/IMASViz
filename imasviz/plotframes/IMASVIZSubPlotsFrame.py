@@ -1,9 +1,17 @@
+"""IMASVIZSubPlotsFrame.py was the first try of SubPlots panel implementation.
+   The SubPlots development was then moved and continued in
+   IMASVIZ_SubPlotmanagerBaseFrame.py.
+
+   IMASVIZSubPlotsFrame.py is currently not being actively used/included within
+   IMASViz.
+"""
+
 from wxmplot import PlotFrame
 from imasviz.plotframes.IMASVIZMultiPlotFrame import IMASVIZMultiPlotFrame
 import wx
 from wxmplot.utils import MenuItem, Closure
 from wxmplot.plotpanel import PlotPanel
-from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
+from imasviz.gui_commands.configurations.SavePlotsConfiguration import SavePlotsConfiguration
 
 class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
     def __init__(self, view, parent=None, rows=1, cols=1, framesize=None,

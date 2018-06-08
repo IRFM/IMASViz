@@ -3,6 +3,7 @@ import numpy as np
 import wx
 import os, sys
 from imasviz.util.GlobalValues import GlobalValues
+import xml.etree.ElementTree as ET
 
 class GlobalOperations:
 
@@ -96,15 +97,36 @@ class GlobalOperations:
         return stringToReplace.replace(" ", "_")
 
     @staticmethod
-    def getPlotsConfigurationFileName(configName):
+    def getConfFilePath(configName, configType):
+        """Get path + filename to configuration file ('.pcfg' or '.lsp').
+
+        Parameters
+        ----------
+
+            configName: string
+                Name of the configuration file (with no extension).
+            configType: string
+                Type/Extension of the configuration file, without dot
+                ('pcfg' or 'lsp').
+
+        """
+
         home = os.environ['HOME']
         if home == None:
             raise ValueError("HOME environment variable not defined")
         configurationDirectory = home + "/" + ".imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
-        configurationFileName = configurationDirectory + "/" + configName + ".cfg"
-        return configurationFileName
+
+        if configType != None:
+            configurationFilePath = configurationDirectory + "/" + \
+                                    configName + "." + configType
+        else:
+            print('getConfFilePath: File type not specified!')
+            return
+
+        return configurationFilePath
+
 
     @staticmethod
     def printCode(file, text, level):
@@ -117,13 +139,13 @@ class GlobalOperations:
 
         file.write(tabs + text.encode("utf-8") + "\n")
 
-    
-    @staticmethod 
+
+    @staticmethod
     def checkEnvSettings():
         if not GlobalValues.TESTING:
 
             print ("IMAS_VIZ production environment.")
-            
+
             if 'HOME' not in os.environ:
                 print ("Environment variable HOME not defined. Exiting.")
                 sys.exit()
@@ -179,7 +201,7 @@ class GlobalOperations:
             if 'VIZ_HOME' not in os.environ:
                 os.environ['VIZ_HOME'] = GlobalValues.TESTING_VIZ_HOME
 
-                
+
     @staticmethod
     def getIDSDefFile(imas_dd_version):
         return os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
@@ -192,19 +214,29 @@ class GlobalOperations:
         return list
 
     @staticmethod
-    def getMultiplePlotsConfigurationFilesList():
+    def getConfFilesList(configType):
+        """Get a list of configuration files of certain type.
+
+        Parameters
+        ----------
+
+        configType: string
+            Type/Extension of the configuration file, without dot
+            (e.c. 'pcfg', 'lsp'...).
+
+        """
         files = []
         configurationDirectory = os.environ["HOME"] + "/.imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
         l = os.listdir(configurationDirectory)
         for i in range(0,len(l)):
-            if l[i].endswith(".cfg"):
+            if l[i].endswith("." + configType):
                 files.append(l[i])
         return files
 
     @staticmethod
-    def getMultiplePlotsConfigurationFilesDirectory():
+    def getConfigurationFilesDirectory():
         return os.environ["HOME"] + "/.imasviz"
 
     @staticmethod
@@ -212,6 +244,51 @@ class GlobalOperations:
         selectedsignalsList = GlobalOperations.getListFromDict(selectedSignals)
         selectedsignalsList.sort(key=lambda x: x[2])
         return selectedsignalsList
+
+    @staticmethod
+    def getSignalsPathsFromConfigurationFile(configFile):
+        """Get the signal paths from the configuration file (.pcfg or .lsp).
+
+        Parameters
+        ----------
+
+        configFile: string
+            Full path to configuration file including file name
+            (.pcfg or .lsp file).
+        """
+        selectedsignalsMap = {}
+        pathsList = []
+        config = None
+        if configFile != None:
+            config = ET.parse(configFile)
+
+        # Distinguish between the types of the configuration files
+        # (.pcfg or .lsp)
+        if configFile.endswith('.pcfg'):
+            # Get all selectedArray attributes, containing signal paths,
+            # from the config file
+            selectedArrays = config.findall('.//*selectedArray')
+
+            # Display number of signals, saved in the config file
+            print("Config file: Number of signals: ", len(selectedArrays))
+
+            # Extract the paths of the signals and add them to the pathsList
+            for selectedSignal in selectedArrays:
+                pathsList.append(selectedSignal.get("path"))
+
+        elif configFile.endswith('lsp'):
+            # Get all selectedArray attributes, containing signal paths,
+            # from the config file
+            selectedArrays = config.findall('.//*IDSPath')
+
+            # Display number of signals, saved in the config file
+            print("Config file: Number of signals: ", len(selectedArrays))
+
+            # Extract the paths of the signals and add them to the pathsList
+            for selectedPath in selectedArrays:
+                pathsList.append(selectedPath.get("path"))
+
+        return pathsList
 
     @staticmethod
     def getNextPanelKey(n, cols):

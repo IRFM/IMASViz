@@ -3,12 +3,31 @@ from wxmplot import MultiPlotFrame
 import wx
 from wxmplot.utils import MenuItem, Closure
 from wxmplot.plotpanel import PlotPanel
-from imasviz.gui_commands.plots_configuration.SavePlotsConfiguration import SavePlotsConfiguration
+from imasviz.gui_commands.configurations.SavePlotsConfiguration import SavePlotsConfiguration
 import matplotlib.pyplot as plt
 
 class IMASVIZMultiPlotFrame(MultiPlotFrame):
+    """MultiPlot frame.
+    """
     def __init__(self, WxDataTreeView, parent=None, rows=1, cols=1,
                  framesize=None, panelsize=(400, 320), panelopts=None, **kws):
+        """
+        Parameters
+        ----------
+
+        WxDataTreeView : WxDataTreeView object
+            WxDataTreeView (DTV) object.
+        parent :
+        rows : int
+            Number of rows of panels in the MultiPlot frame.
+        cols : int
+            Number of columns of panels in the MultiPlot frame.
+        framesize : (int,int)
+            Size/dimension of the MultiPlot frame.
+        panelsize : (int,int)
+            Size/dimension of each panel within the MultiPlot panel.
+        panelopts :
+        """
         self.WxDataTreeView = WxDataTreeView
         self.help_msg = """Quick help:
 
@@ -142,8 +161,10 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         return mfile
 
     def save_configuration(self, event=None, **kws):
+        """Save configuration for single DTV (WxDataTreeView)
+        """
         print ("Saving plots configuration...")
-        SavePlotsConfiguration(WxDataTreeView=self.WxDataTreeView,
+        SavePlotsConfiguration(DTV=self.WxDataTreeView,
                                frame=self, cols=self.cols).execute()
 
     def oplot(self,x,y,panel=None,**kws):

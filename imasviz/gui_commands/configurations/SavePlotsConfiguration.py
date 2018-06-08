@@ -5,8 +5,16 @@ from imasviz.util.GlobalOperations import GlobalOperations
 import xml.etree.ElementTree as ET
 
 class SavePlotsConfiguration(AbstractCommand):
-    def __init__(self, view, frame, nodeData=None, cols=None):
-        AbstractCommand.__init__(self, view, nodeData)
+    """Save signal selection and plot configuration to '.pcfg' file.
+    """
+    def __init__(self, DTV, frame, nodeData=None, cols=None):
+        # AbstractCommand.__init__(self, view, nodeData)
+        """Set self.nodeData = nodeData etc. with the use of the
+           AbstractCommand
+        """
+        AbstractCommand.__init__(self, nodeData)
+
+        self.DTV = DTV
         self.frame = frame
         self.cols = cols
 
@@ -16,7 +24,8 @@ class SavePlotsConfiguration(AbstractCommand):
         cancel = None
         loop = True
         while loop:
-            x = GlobalOperations.askWithCancel(message='Name of the configuration ?', default_value=default_file_name)
+            x = GlobalOperations.askWithCancel(message='Name of the configuration ?',
+                                               default_value=default_file_name)
             cancel = x[0]
             configName = x[1]
             if cancel != wx.CANCEL and (x == None or x == ""):
@@ -28,37 +37,52 @@ class SavePlotsConfiguration(AbstractCommand):
             return
 
         configName = GlobalOperations.replaceSpacesByUnderScores(configName)
-        if configName.endswith(".cfg"):
+        if configName.endswith(".pcfg"):
             configName = configName[:-4]
 
-        fileName = GlobalOperations.getPlotsConfigurationFileName(configName)
+        # Set file name
+        fileName = GlobalOperations.getConfFilePath(configName=configName,
+                                                    configType='pcfg')
 
+        # Set root element
         root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by the IMAS_VIZ application')
-
-
-        selectedsignalsList = GlobalOperations.getSortedSelectedSignals(self.view.selectedSignals)
-
         frameElement = ET.SubElement(root, 'frame')
+
+        k = 0
+
+        # Get list of signals, selected in the WxDataTreeView
+        selectedsignalsList = \
+            GlobalOperations.getSortedSelectedSignals(self.DTV.selectedSignals)
 
         for n in range(0, len(self.frame.panels)):
 
             if (n+1) > len(selectedsignalsList):
                 break
 
-            key = GlobalOperations.getNextPanelKey(n, cols=self.cols)
-            # print 'key=' + str(key)
+            key = GlobalOperations.getNextPanelKey(k, cols=self.cols)
 
+            # Set new subelement
             panelElement = ET.SubElement(frameElement, 'panel')
+            # Set subelement attribute 'key'
             panelElement.set('key', str(key))
 
             panel = self.frame.panels[key]
 
+            # Set new subelement
             selectedArrayElement = ET.SubElement(panelElement, 'selectedArray')
 
+            # Extract signal node data (it contains also 'path') from the
+            # signal
             selectedArray = selectedsignalsList[n]
             nodeData = selectedArray[1]
+
             self.saveAttribute(selectedArrayElement, 'path', nodeData['Path'])
+
+            self.saveAttribute(selectedArrayElement, 'shotnum', selectedArray[0])
+            self.saveAttribute(selectedArrayElement, 'runnum', selectedArray[3])
+            self.saveAttribute(selectedArrayElement, 'database', selectedArray[4])
+            self.saveAttribute(selectedArrayElement, 'username', selectedArray[5])
 
             self.saveAttribute(panelElement,'title', panel.conf.title)
             self.saveAttribute(panelElement,'xlabel', panel.conf.xlabel)
@@ -116,13 +140,14 @@ class SavePlotsConfiguration(AbstractCommand):
                 self.saveAttribute(dataRangeElement, 'dr4', str(trace.data_range[3]))
 
                 j = j + 1
+            k += 1
 
         self.indent(root)
         treeConfiguration = ET.ElementTree(root)
         treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
         #self.f.close()
-        if self.view.parent.configurationListsFrame != None:
-            self.view.parent.configurationListsFrame.update()
+        if self.DTV.parent.configurationListsFrame != None:
+            self.DTV.parent.configurationListsFrame.update_pconf()
 
 
     def saveAttribute(self, panelElement, attribute, value):

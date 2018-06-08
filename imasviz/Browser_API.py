@@ -26,8 +26,10 @@ class Browser_API():
         dic = self.figToNodes[figureKey]
         dic[key] = tup
 
-    def GetMultiplotConfigurationPath(self, configurationName):
-        return os.environ['HOME'] + "/.imasviz/" + configurationName + ".cfg"
+    def GetPlotConfigurationPath(self, configurationName):
+        """Get path to plot configuration file (.pcfg extension).
+        """
+        return os.environ['HOME'] + "/.imasviz/" + configurationName + ".pcfg"
 
     #Create a IDS data tree from a data source
     def CreateDataTree(self, dataSource):
