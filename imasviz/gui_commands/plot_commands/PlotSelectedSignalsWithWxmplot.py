@@ -6,6 +6,8 @@ from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import FigureTypes
+from wxmplot.utils import Closure
+from wxmplot.plotpanel import PlotPanel
 import matplotlib.pyplot as plt
 import wxmplot
 import wx
@@ -33,23 +35,18 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
             one) or from all DTVs. Note: This has no effect when reading list
             of signals from the configuration file.
         """
+
+        # Set default variables required for signal plotting
         PlotSelectedSignals.__init__(self, WxDataTreeView, figureKey=figurekey,
-                                     update=update, configFile=configFile,
-                                     all_DTV=True)
+                                     update=update, configFile=configFile)
         # self.labels = {}
         # Set number of rows and columns of panels in the MultiPlot frame
         self.rows = 2
         self.cols = 3
+
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
         self.all_DTV = all_DTV
-
-        self.configFile = configFile
-
-        # Browser_API
-        self.api = self.WxDataTreeView.imas_viz_api
-        # DTV
-        self.WxDataTreeView = WxDataTreeView
 
     def raiseErrorIfNoSelectedArrays(self):
         return False
@@ -77,7 +74,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
         try:
             # Set rows and columns
-            self.setRowsColumns()
+            self.setRowsColumns(num_signals = self.getNumSignals())
             # Get frame
             frame = self.getFrame(figureKey, self.rows, self.cols)
 
@@ -174,6 +171,8 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                         b = n - (n//self.cols)*self.cols
                         p = (a,b)
 
+                        # Note: adding plot to existing plot is not yet
+                        #       supported
                         if self.plotConfig is None:
                             numberOfPlots = 1
                         else:
@@ -263,10 +262,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
 
         return num_signals
 
-    def setRowsColumns(self):
-            # Get total number of signals
-            num_signals = \
-                self.getNumSignals()
+    def setRowsColumns(self, num_signals):
             # Modify the MultiPlot rows and columns depending on total number
             # of signals
             if num_signals > 6:
@@ -403,7 +399,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
         if figureKey in api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
             api.figureframes[figureKey].Hide()
 
-class modifyMultiPlot():
+class modifyMultiPlot(PlotSelectedSignalsWithWxmplot):
     """Routines handling the existing MultiPlots (adding selected signals,
        reshaping etc).
     """
@@ -429,11 +425,13 @@ class modifyMultiPlot():
         WxDataTreeView : WxDataTreeView object
             WxDataTreeView (DTV) object.
         """
+
+        self.multiPlotFrame.Hide()
         self.rows = self.multiPlotFrame.rows
         self.cols = self.multiPlotFrame.cols
 
         self.filledPlotPanelList = []
-        self.emptyPlotPanelList = []
+        self.panelsize = self.multiPlotFrame.panelsize
 
         # Extract the data-filled PlotPanels
         # Note: the empty PlotPanels do not contain the 'legend_map' attribute
@@ -443,18 +441,81 @@ class modifyMultiPlot():
             panel = self.multiPlotFrame.panels[p]
             if hasattr(panel.conf, 'legend_map'):
                 self.filledPlotPanelList.append(panel)
-            else:
-                self.emptyPlotPanelList.append(panel)
 
         # Get list of selected signals in DTV
         dtv_selectedSignals = GlobalOperations. \
             getSortedSelectedSignals(self.WxDataTreeView.selectedSignals)
 
+        # Get new number of plots
+        newNumberOfPlots = len(self.filledPlotPanelList) + len(dtv_selectedSignals)
+
+        # First empty plot number in line to be filled
+        n = len(self.filledPlotPanelList)
+
+        # Create new sizer if the current sizer does not have enough PanelPlots
+        # available
+        if newNumberOfPlots > self.cols * self.rows:
+            # Get current sizer
+            sizer_old = self.multiPlotFrame.GetSizer()
+
+            # Destroy the empty plots in the old sizer
+            a = 0
+            for panel in self.multiPlotFrame.panels:
+                if a > n - 1:
+                    self.multiPlotFrame.panels[panel].Destroy()
+                a += 1
+
+            # Get new number of rows and columns
+            PlotSelectedSignalsWithWxmplot.setRowsColumns(self, num_signals=newNumberOfPlots)
+
+            # Set new frame size corresponding to the new number of rows and
+            # columns
+            new_framesize = (self.panelsize[0]*self.cols,
+                    self.panelsize[1]*self.rows)
+            self.multiPlotFrame.SetSize(new_framesize)
+
+            # Detach the remaining (reusable) plot
+            sizer_old.Clear()
+
+            # Set new sizer
+            self.sizer_new = wx.GridBagSizer(3, 3)
+
+            mpf = self.multiPlotFrame
+
+            # Set PlotPanel counter
+            p = 0
+
+            # Add PlotPanels to the new sizer
+            for i in range(self.rows):
+                for j in range(self.cols):
+                    # First add the already existing PlotPanels from the old sizer
+                    if p < len(self.filledPlotPanelList):
+                        mpf.panels[(i,j)] = self.filledPlotPanelList[p]
+                        mpf.panels[(i,j)].messenger = mpf.write_message
+                        panel = mpf.panels[(i,j)]
+                        self.sizer_new.Add(panel,(i,j),(1,1),flag=wx.EXPAND|wx.ALIGN_CENTER)
+                        panel.report_leftdown = Closure(mpf.report_leftdown,
+                                                       panelkey=(i,j))
+                    else:
+                        # Set additional required empty PlotPanels
+                        mpf.panels[(i,j)] = PlotPanel(mpf, size=self.panelsize)
+                        mpf.panels[(i,j)].messenger = mpf.write_message
+                        panel = mpf.panels[(i,j)]
+                        self.sizer_new.Add(panel,(i,j),(1,1),flag=wx.EXPAND|wx.ALIGN_CENTER)
+                        panel.report_leftdown = Closure(mpf.report_leftdown,
+                                                       panelkey=(i,j))
+                    p += 1
+
+            for i in range(self.rows):
+                self.sizer_new.AddGrowableRow(i)
+            for i in range(self.cols):
+                self.sizer_new.AddGrowableCol(i)
+
+            self.multiPlotFrame.SetAutoLayout(True)
+            self.multiPlotFrame.SetSizerAndFit(self.sizer_new)
+
         # Set maximum number of plots within frame
         maxNumberOfPlots = self.rows*self.cols;
-
-        # First empty plot number
-        n = len(self.filledPlotPanelList)
 
         for element in dtv_selectedSignals:
 
@@ -492,7 +553,8 @@ class modifyMultiPlot():
 
             # Set plot labels and title
             label, xlabel, ylabel, title = \
-                PlotSignal.plotOptions(self.WxDataTreeView, signalNodeData, shotNumber)
+                PlotSignal.plotOptions(self.WxDataTreeView, signalNodeData,
+                                       shotNumber)
 
             for j in range(0, nbRows):
                 # y-axis values
@@ -504,6 +566,8 @@ class modifyMultiPlot():
                 b = n - (n//self.cols)*self.cols
                 p = (a,b)
 
+                # Note: adding plot to existing plot is not yet
+                #       supported
                 numberOfPlots = 1
 
                 for k in range(0, numberOfPlots):

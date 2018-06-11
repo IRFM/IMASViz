@@ -51,7 +51,6 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         MultiPlotFrame.__init__(self, parent, rows, cols, framesize,
                  panelsize, panelopts, **kws)
 
-
     def BuildFrame(self):
 
         sbar = self.CreateStatusBar(2, wx.CAPTION)
@@ -59,7 +58,6 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         sfont.SetWeight(wx.BOLD)
         sfont.SetPointSize(10)
         sbar.SetFont(sfont)
-
 
         sizer = wx.GridBagSizer(3, 3)
 
@@ -79,7 +77,6 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
             sizer.AddGrowableRow(i)
         for i in range(self.cols):
             sizer.AddGrowableCol(i)
-
 
         self.BuildMenu()
         self.SetStatusWidths([-3, -1])
