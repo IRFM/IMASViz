@@ -51,30 +51,29 @@ class SavePlotsConfiguration(AbstractCommand):
 
         k = 0
 
-        # Get list of signals, selected in the WxDataTreeView
-        selectedsignalsList = \
-            GlobalOperations.getSortedSelectedSignals(self.DTV.selectedSignals)
-
         for n in range(0, len(self.frame.panels)):
 
-            if (n+1) > len(selectedsignalsList):
-                break
-
+            # Get next key
             key = GlobalOperations.getNextPanelKey(k, cols=self.cols)
+
+            # Get panel with the key
+            panel = self.frame.panels[key]
+
+            # Continue only if the PlotPanel is filled (contains signal info)
+            if hasattr(panel, 'signal') != True:
+                break
 
             # Set new subelement
             panelElement = ET.SubElement(frameElement, 'panel')
             # Set subelement attribute 'key'
             panelElement.set('key', str(key))
 
-            panel = self.frame.panels[key]
-
             # Set new subelement
             selectedArrayElement = ET.SubElement(panelElement, 'selectedArray')
 
             # Extract signal node data (it contains also 'path') from the
             # signal
-            selectedArray = selectedsignalsList[n]
+            selectedArray = panel.signal
             nodeData = selectedArray[1]
 
             self.saveAttribute(selectedArrayElement, 'path', nodeData['Path'])

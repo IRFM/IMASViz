@@ -164,6 +164,16 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         SavePlotsConfiguration(DTV=self.WxDataTreeView,
                                frame=self, cols=self.cols).execute()
 
+    def plot(self,x,y,panel=None,signal=None,**kws):
+        """plot after clearing current plot """
+        if panel is None:
+            panel = self.current_panel
+        opts = {}
+        opts.update(self.default_panelopts)
+        opts.update(kws)
+        self.panels[panel].plot(x ,y, **opts)
+        self.panels[panel].signal = signal
+
     def oplot(self,x,y,panel=None,**kws):
         """generic plotting method, overplotting any existing plot """
         if panel is None:

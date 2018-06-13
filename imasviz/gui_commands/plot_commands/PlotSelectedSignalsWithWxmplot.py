@@ -186,7 +186,7 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                                            ylabel=ylabel, label=label,
                                            labelfontsize=5, show_legend=True,
                                            legend_loc='uc', legendfontsize=5,
-                                           legend_on=False)
+                                           legend_on=False, signal=element)
                             else:
                                 # Add to pre-existing plot
                                 frame.oplot(ti, u, panel=p, xlabel=xlabel,
@@ -577,7 +577,7 @@ class modifyMultiPlot(PlotSelectedSignalsWithWxmplot):
                                    ylabel=ylabel, label=label,
                                    labelfontsize=5, show_legend=True,
                                    legend_loc='uc', legendfontsize=5,
-                                   legend_on=False, update=True)
+                                   legend_on=False, update=True, signal=element)
                     else:
                         # Add to pre-existing plot
                         self.multiPlotFrame.oplot(ti, u, panel=p, xlabel=xlabel,
