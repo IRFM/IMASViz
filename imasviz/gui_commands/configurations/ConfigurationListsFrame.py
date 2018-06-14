@@ -341,8 +341,11 @@ class ListOfSignalPathsListsTab(wx.Panel):
         self.Show(True)
 
     def update(self):
-        self.listBox1.Clear()
-        self.configurationFilesList = \
-            GlobalOperations.getConfFilesList(configType='lsp')
-        for f in self.configurationFilesList:
-            self.listBox1.Append(f)
+        try:
+            self.listBox1.Clear()
+            self.configurationFilesList = \
+                GlobalOperations.getConfFilesList(configType='lsp')
+            for f in self.configurationFilesList:
+                self.listBox1.Append(f)
+        except:
+            pass
