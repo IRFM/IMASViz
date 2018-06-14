@@ -216,11 +216,14 @@ class PlotConfigurationListsTab(wx.Panel):
         self.Show(True)
 
     def update(self):
-        self.listBox1.Clear()
-        self.configurationFilesList = \
-            GlobalOperations.getConfFilesList(configType='pcfg')
-        for f in self.configurationFilesList:
-            self.listBox1.Append(f)
+        try:
+            self.listBox1.Clear()
+            self.configurationFilesList = \
+                GlobalOperations.getConfFilesList(configType='pcfg')
+            for f in self.configurationFilesList:
+                self.listBox1.Append(f)
+        except:
+            pass
 
     def apply_MultiPlot(self, event):
         """Apply signal selection from the config file - apply it directly
