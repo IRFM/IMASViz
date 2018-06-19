@@ -258,9 +258,8 @@ class WxDataTreeViewBuilder:
 
     def setPath(self,node,viewerTree,path):
         nodeData = viewerTree.GetItemData(node)
-        # tag = nodeData['Tag']
-        if path.endswith("/data"): #TODO
-            path = path.replace("/data","")
+        #if path.endswith("/data"): #TODO
+        #    path = path.replace("/data","")
         nodeData['Path'] = path
 
     def getPath(self,parent,viewerTree,tag, isArray,index):
@@ -339,6 +338,14 @@ class WxDataTreeViewBuilder:
                 isSignal = 2
             itemDataDict['path_doc'] = dataElement.get('path_doc')
             display_color = viewerTree.dataSource.colorOf(itemDataDict)
+            itemDataDict['aos'] = dataElement.get('aos')
+            itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
+            for i in range(0, len(GlobalValues.indices)):
+                key_name = GlobalValues.indices[str(i+1)]
+                itemDataDict[key_name] = dataElement.get(key_name)
+                key_max_name = GlobalValues.max_indices[str(i + 1)]
+                itemDataDict[key_max_name] = dataElement.get(key_max_name)
+
 
         itemDataDict['isSignal'] = isSignal
         itemDataDict['isIDSRoot'] = 0
