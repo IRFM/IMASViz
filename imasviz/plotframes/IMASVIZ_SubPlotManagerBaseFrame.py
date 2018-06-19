@@ -216,8 +216,8 @@ class SubPlotManagerBaseFrame(BaseFrame):
                                       top=0.00, right=0.05)}
 
         """Set panel label font size"""
-        fontSize_label = 7
-        fontSize_legend = 6
+        fontSize_label = 4
+        fontSize_legend = 5
 
         setPlotEval = []
         for plot_id in range(self.numPlots):

@@ -66,7 +66,7 @@ class SubPlotsManagerFrame(wx.Frame):
 
     def setSubPlotManagerSignalsListWindow(self):
         """Set window size"""
-        self.SetSize(400, (self.subplotsCount)*40 + 120)
+        self.SetSize(400, (self.subplotsCount)*42 + 120)
         """Create BoxSizer"""
         vbox = wx.BoxSizer(wx.VERTICAL)
         """Add list of signals"""
