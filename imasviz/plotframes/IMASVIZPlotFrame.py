@@ -6,15 +6,15 @@ from imasviz.util.GlobalValues import GlobalValues
 import matplotlib.pyplot as plt
 
 class IMASVIZPlotFrame(PlotFrame):
-    def __init__(self, parent=None, size=None, axisbg=None, title=None,
+    def __init__(self, parent=None, size=None, facecolor=None, title=None,
                  signalHandling=None, **kws):
         if title is None:
             title = '2D Plot Frame'
-        self.axisbg = axisbg
+        self.facecolor = facecolor
         self.signalHandling = signalHandling
 
         PlotFrame.__init__(self, parent=parent, title=title, size=size,
-                           axisbg=axisbg, **kws)
+                           axisbg=facecolor, **kws)
 
     def BuildFrame(self):
         # Python3 note: wxPython has no THICK_FRAME
@@ -29,7 +29,7 @@ class IMASVIZPlotFrame(PlotFrame):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel = IMASVIZPlotPanel(self, size=self.size,
-                               axisbg=self.axisbg,
+                               facecolor=self.facecolor,
                                output_title=self.output_title,
                                signalHandling=self.signalHandling)
         self.panel.messenger = self.write_message
@@ -44,15 +44,15 @@ class IMASVIZ_PreviewPlotFrame(PlotFrame):
     """Light version of IMASVIZPlotFrame class, used for simple plots
        (for plot preview etc.)
     """
-    def __init__(self, parent=None, size=None, axisbg=None, title=None,
+    def __init__(self, parent=None, size=None, facecolor=None, title=None,
                  signalHandling=None, **kws):
         if title is None:
             title = 'Plot Frame'
-        self.axisbg = axisbg
+        self.facecolor = facecolor
         self.signalHandling = signalHandling
 
         PlotFrame.__init__(self, parent=parent, title=title, size=size,
-                           axisbg=axisbg, **kws)
+                           axisbg=facecolor, **kws)
 
     def BuildFrame(self):
         # Python3 note: wxPython has no THICK_FRAME
@@ -67,7 +67,7 @@ class IMASVIZ_PreviewPlotFrame(PlotFrame):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel = IMASVIZ_PreviewPlotPanel(self, size=self.size,
-                               axisbg=self.axisbg,
+                               facecolor=self.facecolor,
                                output_title=self.output_title,
                                signalHandling=self.signalHandling)
         self.panel.messenger = self.write_message

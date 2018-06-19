@@ -9,16 +9,16 @@ from matplotlib.ticker import FuncFormatter
 
 
 class IMASVIZPlotPanel(PlotPanel):
-    def __init__(self, parent=None, size=None, axisbg=None, title=None,
+    def __init__(self, parent=None, size=None, facecolor=None, title=None,
                  signalHandling=None, **kws):
         if title is None:
             title = '2D Plot Frame'
 
-        self.axisbg = axisbg
+        self.facecolor = facecolor
         self.signalHandling = signalHandling
         self.staticSliderLabelValue = ''
 
-        PlotPanel.__init__(self, parent=parent, size=size,  axisbg=axisbg,
+        PlotPanel.__init__(self, parent=parent, size=size,  facecolor=facecolor,
                            **kws)
 
 
@@ -45,7 +45,7 @@ class IMASVIZPlotPanel(PlotPanel):
         self.fig   = Figure(self.figsize, dpi=self.dpi)
         # 1 axes for now
         self.gridspec = GridSpec(1,1)
-        self.axes  = self.fig.add_subplot(self.gridspec[0], axisbg=self.axisbg)
+        self.axes  = self.fig.add_subplot(self.gridspec[0], facecolor=self.facecolor)
 
         self.canvas = FigureCanvas(self, -1, self.fig)
 
@@ -138,23 +138,23 @@ class IMASVIZ_PreviewPlotPanel(PlotPanel):
     """Light version of IMASVIZPlotPanel class, used for simple plots
        (for plot preview etc.)
     """
-    def __init__(self, parent=None, size=None, axisbg=None, title=None,
+    def __init__(self, parent=None, size=None, facecolor=None, title=None,
                  signalHandling=None, **kws):
         if title is None:
             title = 'Plot Frame'
 
-        self.axisbg = axisbg
+        self.facecolor = facecolor
         """Plot signal (node, holding 1D array suitable for plotting)"""
         self.signalHandling = signalHandling
 
-        PlotPanel.__init__(self, parent=parent, size=size,  axisbg=axisbg,
+        PlotPanel.__init__(self, parent=parent, size=size,  facecolor=facecolor,
                            **kws)
     def BuildPanel(self):
         """ Builds basic GUI panel and popup menu"""
         self.fig   = Figure(self.figsize, dpi=self.dpi)
         # 1 axes for now
         self.gridspec = GridSpec(1,1)
-        self.axes  = self.fig.add_subplot(self.gridspec[0], axisbg=self.axisbg)
+        self.axes  = self.fig.add_subplot(self.gridspec[0], facecolor=self.facecolor)
 
         self.canvas = FigureCanvas(self, -1, self.fig)
 
