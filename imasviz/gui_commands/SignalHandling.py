@@ -3,6 +3,7 @@ import wx
 from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
 from imasviz.gui_commands.select_commands.SelectOrUnselectSignal import SelectOrUnselectSignal
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
+from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
 from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
@@ -27,6 +28,7 @@ class MenuIDS:
         self.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME = 7100
         self.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME = 7200
         self.ID_ADD_SELECTION_TO_MULTIPLOT = 7300
+        self.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS = 7400
         self.ID_OPEN_SUBPLOTS_MANAGER = 8000
         self.ID_CHANGE_COORD1 = 9000
         self.ID_DELETE_FIGURES = 10000
@@ -266,10 +268,18 @@ class SignalHandling:
                             text='Plot selected signals to a multiplots frame (this opened IMAS database',
                             kind=wx.ITEM_NORMAL)
 
+        item10 = wx.MenuItem(self.view.popupmenu,
+                            self.menuIDS.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS,
+                            text='Select all signals from the same AOS',
+                            kind=wx.ITEM_NORMAL)
+
         self.view.popupmenu.Append(item1)
         #self.view.popupmenu.Append(item2)
         if item3 != None:
             self.view.popupmenu.Append(item3)
+
+        if item10 != None:
+            self.view.popupmenu.Append(item10)
 
         if len(self.view.selectedSignals) > 0:
             if self.shareSameCoordinates(self.view.selectedSignals):
@@ -303,6 +313,8 @@ class SignalHandling:
             self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=True)
         elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME:
             self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=False)
+        elif event.GetId() == self.menuIDS.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS:
+            self.selectAllSignalsFromSameAOS()
         elif event.GetId() == wx.ID_CANCEL:
             self.unselectAllSignals()
         elif event.GetId() == self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER:
@@ -413,6 +425,9 @@ class SignalHandling:
         else:
             PlotSelectedSignalsWithWxmplot(self.view, figureKey, 1,
                                            all_DTV = True).execute()
+
+    def selectAllSignalsFromSameAOS(self):
+        SelectSignalsGroup(self.view, self.nodeData).execute()
 
     def plotSelectedSignalVsTime(self):
         self.updateNodeData()

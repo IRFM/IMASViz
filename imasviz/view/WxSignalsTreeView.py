@@ -41,6 +41,30 @@ class WxSignalsTreeView(wx.TreeCtrl):
                 return None
             child, cookie = self.GetNextChild(self.signalsRoot, cookie)
 
+    def getNodeWithPath(self, searchedPath):
+        # print 'searchedPath ', searchedPath
+        child, cookie = self.GetFirstChild(self.signalsRoot)
+        lastChild = self.GetLastChild(self.signalsRoot)
+        if not child.IsOk():
+            print ('No signals available')
+            return None
+
+        while True:
+            itemSignalsDataDict = self.GetItemData(child)
+            idsNode = itemSignalsDataDict['idsNode']
+            data = self.idsTree.GetItemData(idsNode)
+            path = data['Path']
+            #print ('existing path :' + path)
+            if path == searchedPath:
+                # print 'found path : ' + path
+                # print idsNode
+                #self.idsTree.setSelectedItem(idsNode)
+                return idsNode
+            if child == lastChild:
+                #print 'path not found --> ' + path
+                return None
+            child, cookie = self.GetNextChild(self.signalsRoot, cookie)
+
 
 class IDSSignalTreeFrame(wx.Frame):
     def __init__(self, parent, idsTree, shot, IDSDefFile, *args, **kwargs):

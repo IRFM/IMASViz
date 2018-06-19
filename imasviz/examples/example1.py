@@ -13,13 +13,13 @@ GlobalOperations.checkEnvSettings()
 api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
-dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52682, runNumber=0,userName='imas_public',imasDbName='west')
+dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,userName='imas_public',imasDbName='west')
 
 f = api.CreateDataTree(dataSource)
 paths = []
 
 for i in range(0,6):
-    paths.append('magnetics/flux_loop(' + str(i) + ')/flux')
+    paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
 api.SelectSignals(f, paths)
 

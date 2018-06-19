@@ -1,4 +1,5 @@
 import os
+from imasviz.util.VizServices import VizServices
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalValues import FigureTypes
@@ -6,6 +7,7 @@ from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
 from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
+from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
 
@@ -187,3 +189,7 @@ class Browser_API():
     # Unselect all previously selected signals for the given data tree frame
     def UnSelectAllSignals(self, dataTreeFrame):
         UnselectAllSignals(dataTreeFrame.wxTreeView).execute()
+
+    def SelectSignalsGroup(self, dataTreeFrame, occurrence, onePathInTheGroup):
+        oneNodeInTheGroup = VizServices().getNodeData(dataTreeFrame.wxTreeView, occurrence, onePathInTheGroup)
+        SelectSignalsGroup(dataTreeFrame.wxTreeView, oneNodeInTheGroup).execute()

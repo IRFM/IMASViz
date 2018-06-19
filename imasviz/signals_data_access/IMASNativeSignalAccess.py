@@ -93,15 +93,14 @@ class IMASNativeSignalAccess:
 
 if __name__ == "__main__":
     from imasviz.data_source.DataSourceFactory import DataSourceFactory
-    dataSource = DataSourceFactory().create(GlobalValues.IMAS_NATIVE, shotNumber=12)
+    dataSource = DataSourceFactory().create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,
+                                          userName='imas_public', imasDbName='west')
     mdsp = IMASNativeSignalAccess(dataSource)
-    dataSource.ids = imas.ids(12, 0, 0, 0)
-    dataSource.ids.open()  # open the database
-    dataSource.ids.magnetics.get()
     selectedNodeData = {}
     selectedNodeData['dataName'] = 'dataSource.ids.magnetics.flux_loop[1].flux.data'
     selectedNodeData['time'] = 'dataSource.ids.magnetics.flux_loop[1].flux.time'
-    print (mdsp.GetShapeofSignal(selectedNodeData, 12))
+    #print (mdsp.GetShapeofSignal(selectedNodeData, 12))
+    #treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
     signal = mdsp.GetSignal(selectedNodeData, dataSource.shotNumber)
     # from imasviz.Browser_API import Browser_API
     app = wx.App()

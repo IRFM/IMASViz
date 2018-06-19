@@ -87,10 +87,9 @@ class WxDataTreeView(wx.TreeCtrl):
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file"""
         tree = ET.parse(IDSDefFile)
-        idssroot = tree.getroot()
         # Add the node information to each IDS node
         returnedDict = {}
-        for child in idssroot:
+        for child in tree.getroot():
             if (child.tag == 'IDS'):
                 """Extract IDS properties from IDSDef.xml file"""
                 """Get IDS name"""
@@ -225,9 +224,10 @@ class WxDataTreeView(wx.TreeCtrl):
         self.PopupMenu(self.popupmenu, pos)
 
 
-    def buildTreeView(self, ids_root_node, idsData):
+    def buildTreeView(self, ids_root_node, occurrence, idsData):
         # Update the magnetics node with data
         rootNodeData = self.GetItemData(ids_root_node)
+        rootNodeData['occurrence'] = occurrence
         idsName = rootNodeData['IDSName']
         nodeBuilder = WxDataTreeViewBuilder()
         for child in idsData:
@@ -240,11 +240,11 @@ class WxDataTreeView(wx.TreeCtrl):
             for child in element:
                 self.addChildren(nodeBuilder, child, element_node, idsName)
 
-    def update_view(self,idsName, idsData): # Update the tree view with the data
+    def update_view(self,idsName, occurrence, idsData): # Update the tree view with the data
         self.idsAlreadyFetched[idsName] = 1
         ids_root_node = self.dataTree[idsName]
         if idsData != None:
-            self.buildTreeView(ids_root_node, idsData)
+            self.buildTreeView(ids_root_node, occurrence, idsData)
             self.EnsureVisible(self.GetLastChild(ids_root_node))
             self.EnsureVisible(ids_root_node)
         self.dataCurrentlyLoaded = False
@@ -428,7 +428,7 @@ class WxDataTreeViewFrame(wx.Frame):
         #    windows, to MultiPlot submenu
         item_multiPlot_all = menu_multiPlot.Append(
             GlobalValues.MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT_ID,
-            item='Apply selected signals to MultiPlot '
+            item='Create new MultiPlot from selected signals'
                  '(all opened IMAS databases)',
             kind=wx.ITEM_NORMAL)
 
@@ -436,7 +436,7 @@ class WxDataTreeViewFrame(wx.Frame):
         #    IMAS data source windows, to MultiPlot submenu
         item_multiPlot_single = menu_multiPlot.Append(
             GlobalValues.MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT_ID,
-            item='Apply selected signals to MultiPlot '
+            item='Create new MultiPlot from selected signals '
                  '(this IMAS database)',
             kind=wx.ITEM_NORMAL)
 
@@ -481,13 +481,13 @@ class WxDataTreeViewFrame(wx.Frame):
         if idsData != None:
             self.wxTreeView.log.info("Loading occurrence " + str(occurrence)
                 + " of "+ idsName + " IDS ended successfully, building view...")
-            self.wxTreeView.update_view(idsName, idsData)
+            self.wxTreeView.update_view(idsName, occurrence, idsData)
             self.wxTreeView.log.info("View update ended.")
             if (idsName == 'equilibrium'):
                 self.wxTreeView.log.info("WARNING: GGD structure array from "
                     + "parent equilibrium.time_slice[itime] has been ignored.")
         t5 = time.time()
-        print('view update took ' + str(t5 - t4) + ' seconds')
+        #print('view update took ' + str(t5 - t4) + ' seconds')
         #print ('updateView ended.')
 
         # Creating the signals tree
