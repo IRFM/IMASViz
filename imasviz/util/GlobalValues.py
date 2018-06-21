@@ -58,7 +58,7 @@ class GlobalValues:
         print ("VIZ_HOME:" + os.environ["VIZ_HOME"])
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
-        os.environ["IMAS_MAJOR_VERSION"] = os.environ["UAL_VERSION"][:1]
+        os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
 
     """Global frame, panels etc. IDs"""
     MENU_PREVIEW_PLOT_ID = 201
