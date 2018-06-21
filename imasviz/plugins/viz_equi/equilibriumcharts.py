@@ -74,7 +74,9 @@ def DataGen(dictDataSource):
     # Open shot and run of machine
     idd = dataSource.ids
     if idd is None:
-        dataSource.load(view)
+        view.setIDSNameSelected('equilibrium')
+        dataSource.load(view, occurrence=0, pathsList=None, async=False)
+        idd = dataSource.ids
 
     if not view.idsAlreadyFetched["equilibrium"]:
         idd.equilibrium.get()
