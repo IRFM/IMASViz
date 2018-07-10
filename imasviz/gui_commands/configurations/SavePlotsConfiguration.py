@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 class SavePlotsConfiguration(AbstractCommand):
     """Save signal selection and plot configuration to '.pcfg' file.
     """
-    def __init__(self, DTV, frame, nodeData=None, cols=None):
+    def __init__(self, DTV, frame, nodeData=None):
         # AbstractCommand.__init__(self, view, nodeData)
         """Set self.nodeData = nodeData etc. with the use of the
            AbstractCommand
@@ -16,7 +16,6 @@ class SavePlotsConfiguration(AbstractCommand):
 
         self.DTV = DTV
         self.frame = frame
-        self.cols = cols
 
     def execute(self):
         default_file_name = ""
@@ -43,7 +42,6 @@ class SavePlotsConfiguration(AbstractCommand):
         # Set file name
         fileName = GlobalOperations.getConfFilePath(configName=configName,
                                                     configType='pcfg')
-
         # Set root element
         root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by the IMAS_VIZ application')
@@ -54,10 +52,12 @@ class SavePlotsConfiguration(AbstractCommand):
         for n in range(0, len(self.frame.panels)):
 
             # Get next key
-            key = GlobalOperations.getNextPanelKey(k, cols=self.cols)
+            key = GlobalOperations.getNextPanelKey(k, cols=self.frame.cols)
+
 
             # Get panel with the key
             panel = self.frame.panels[key]
+
 
             # Continue only if the PlotPanel is filled (contains signal info)
             if hasattr(panel, 'signal') != True:
@@ -147,7 +147,6 @@ class SavePlotsConfiguration(AbstractCommand):
         #self.f.close()
         if self.DTV.parent.configurationListsFrame != None:
             self.DTV.parent.configurationListsFrame.update_pconf()
-
 
     def saveAttribute(self, panelElement, attribute, value):
         if value != None:

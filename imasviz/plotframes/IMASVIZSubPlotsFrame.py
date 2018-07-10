@@ -38,6 +38,7 @@ class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
         """
         IMASVIZMultiPlotFrame.__init__(self, parent, rows, cols, framesize,
                  panelsize, panelopts, **kws)
+        self.cols = cols
 
 
     def BuildFrame(self):
@@ -150,7 +151,7 @@ class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
 
     def save_configuration(self, event=None, **kws):
         print ("Saving plots configuration...")
-        SavePlotsConfiguration(view=self.view, frame=self, cols=self.cols).execute()
+        SavePlotsConfiguration(view=self.view, frame=self).execute()
 
     def oplot(self,x,y,panel=None,**kws):
         """generic plotting method, overplotting any existing plot """

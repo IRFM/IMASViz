@@ -385,7 +385,6 @@ class PlotSelectedSignalsWithWxmplot(PlotSelectedSignals):
                 except ValueError as e:
                     print (e)
 
-
     def setPlotConfigAttribute(self, panel, configurationPanel, attributeName):
         v = configurationPanel.get(attributeName)
         if v != None:
@@ -467,6 +466,7 @@ class modifyMultiPlot(PlotSelectedSignalsWithWxmplot):
 
             # Get new number of rows and columns
             PlotSelectedSignalsWithWxmplot.setRowsColumns(self, num_signals=newNumberOfPlots)
+            self.multiPlotFrame.cols = self.cols
 
             # Set new frame size corresponding to the new number of rows and
             # columns
@@ -586,6 +586,7 @@ class modifyMultiPlot(PlotSelectedSignalsWithWxmplot):
                                     legend_loc='uc', legendfontsize=5,
                                     legend_on=False, update=True)
                 n = n + 1
+
 
         self.multiPlotFrame.Refresh()
         # Show the frame, holding the plots

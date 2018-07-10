@@ -50,6 +50,7 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         """
         MultiPlotFrame.__init__(self, parent, rows, cols, framesize,
                  panelsize, panelopts, **kws)
+        self.cols = cols
 
     def BuildFrame(self):
 
@@ -162,7 +163,7 @@ class IMASVIZMultiPlotFrame(MultiPlotFrame):
         """
         print ("Saving plots configuration...")
         SavePlotsConfiguration(DTV=self.WxDataTreeView,
-                               frame=self, cols=self.cols).execute()
+                               frame=self).execute()
 
     def plot(self,x,y,panel=None,signal=None,**kws):
         """plot after clearing current plot """
