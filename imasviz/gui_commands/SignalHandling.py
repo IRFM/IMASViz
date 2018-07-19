@@ -601,7 +601,7 @@ class SignalHandling:
 
     def showSubPlotsManager(self):
         from imasviz.gui_commands.plot_commands.SubPlotsManagerView import SubPlotsManagerFrame
-        frame = SubPlotsManagerFrame("SubPlots Manager", self.view)
+        frame = SubPlotsManagerFrame("SubPlots Manager", self.view, all_DTVs = False)
         frame.Show(True)
 
 

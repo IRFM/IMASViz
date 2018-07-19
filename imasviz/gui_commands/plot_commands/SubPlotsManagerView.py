@@ -8,7 +8,7 @@ import numpy
 from wxmplot.utils import MenuItem
 
 class SubPlotsManagerFrame(wx.Frame):
-    def __init__(self, title, WxDataTreeView):
+    def __init__(self, title, WxDataTreeView, all_DTVs = False):
         wx.Frame.__init__(self, None, 1, title=title)
 
         """Set panel background colour"""
@@ -19,18 +19,12 @@ class SubPlotsManagerFrame(wx.Frame):
         """Browser_API"""
         self.api = self.WxDataTreeView.imas_viz_api
 
-        """Total number of existing WxDataTreeViews"""
-        self.num_DTVs = len(self.api.wxDTVlist)
-
-        """Total number of selected signals (all DTVs)"""
-        self.num_selectedSignals_all_dtv = \
-            len(self.api.GetSelectedSignals_AllDTVs())
-
         """Set list of signals and their 'source' DTV"""
-        self.setSelectedSignalsList()
+        self.setSelectedSignalsList(all_DTVs=all_DTVs)
 
         """Get number of signals == number of subplots"""
-        signalCount = len(self.selectedSignalsList_allDTVs)
+        signalCount = len(self.selectedSignalsList)
+
         """Run dialog to set number of subplots"""
         x = self.setNumberOfSubplots(message = 'Set number of required subplots:',
             default_value = str(signalCount))
@@ -41,14 +35,15 @@ class SubPlotsManagerFrame(wx.Frame):
 
         # self.BuildMenu()
 
-    def setSelectedSignalsList(self):
+    def setSelectedSignalsList(self, all_DTVs = False):
         """Set a list of signals and the DTV where each signal was selected"""
-        """self.selectedSignalsList_allDTVs[i][0] ... i-th signal
-           self.selectedSignalsList_allDTVs[i][1] ... source DTV of the i-th
-                                                      signal
-        """
-        self.selectedSignalsList_allDTVs = []
-        for dtv in self.api.wxDTVlist:
+
+        self.selectedSignalsList = []
+
+        if all_DTVs != True:
+            """Get selected signals from a single DTV
+            """
+            dtv = self.WxDataTreeView
             """Get list of selected signals in DTV"""
             dtv_sortedSignals = GlobalOperations.getSortedSelectedSignals( \
                 dtv.selectedSignals)
@@ -62,8 +57,36 @@ class SubPlotsManagerFrame(wx.Frame):
                    element[4] = user name
                 """
                 """Add the signal node data and dtv to list"""
-                self.selectedSignalsList_allDTVs.append((element[1], dtv))
+                self.selectedSignalsList.append((element[1], dtv))
+        else:
+            """Get selected signals from all DTVs
+            """
+            """Total number of existing WxDataTreeViews"""
+            # self.num_DTVs = len(self.api.wxDTVlist)
 
+            """Total number of selected signals (all DTVs)"""
+            # self.num_selectedSignals_all_dtv = \
+                # len(self.api.GetSelectedSignals_AllDTVs())
+
+            for dtv in self.api.wxDTVlist:
+                """Get list of selected signals in DTV"""
+                dtv_sortedSignals = GlobalOperations.getSortedSelectedSignals( \
+                    dtv.selectedSignals)
+                for element in dtv_sortedSignals:
+                    """Get node data
+                       element[0] = shot number,
+                       element[1] = node data
+                       element[2] = index,
+                       element[3] = shot number,
+                       element[3] = IDS database name,
+                       element[4] = user name
+                    """
+                    """Add the signal node data and dtv to list"""
+                    self.selectedSignalsList.append((element[1], dtv))
+                    """self.selectedSignalsList[i][0] ... i-th signal
+                       self.selectedSignalsList[i][1] ... source DTV of the i-th
+                                                          signal
+                    """
     def setSubPlotManagerSignalsListWindow(self):
         """Set window size"""
         self.SetSize(400, (self.subplotsCount)*42 + 120)
@@ -111,7 +134,7 @@ class SubPlotsManagerFrame(wx.Frame):
 
         j = 0
         # for signal in self.signals_list:
-        for signalInfo in self.selectedSignalsList_allDTVs:
+        for signalInfo in self.selectedSignalsList:
             hbox = wx.BoxSizer(wx.HORIZONTAL)
             """Get signal path"""
             dataName = signalInfo[0]["Path"]
@@ -168,7 +191,7 @@ class SubPlotsManagerFrame(wx.Frame):
             signals[key] = []
             for item in self.selectedIndex[key]:
                 # signals[key].append(self.signals_list[item])
-                signals[key].append(self.selectedSignalsList_allDTVs[item])
+                signals[key].append(self.selectedSignalsList[item])
         return signals
 
     def showSubPlots(self, evt):

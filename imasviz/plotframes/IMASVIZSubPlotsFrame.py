@@ -40,7 +40,6 @@ class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
                  panelsize, panelopts, **kws)
         self.cols = cols
 
-
     def BuildFrame(self):
 
         sbar = self.CreateStatusBar(2, wx.CAPTION)
@@ -48,7 +47,6 @@ class IMASVIZSubPlotsFrame(IMASVIZMultiPlotFrame):
         sfont.SetWeight(wx.BOLD)
         sfont.SetPointSize(10)
         sbar.SetFont(sfont)
-
 
         sizer = wx.GridBagSizer(3, 3)
 
