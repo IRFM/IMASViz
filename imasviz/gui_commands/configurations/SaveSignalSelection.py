@@ -9,7 +9,6 @@ class SaveSignalSelection(AbstractCommand):
     """
 
     def __init__(self, DTV, nodeData=None):
-        # AbstractCommand.__init__(self, view, nodeData)
         """Set self.nodeData = nodeData etc. with the use of the
            AbstractCommand
         """

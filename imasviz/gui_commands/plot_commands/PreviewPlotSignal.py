@@ -109,7 +109,7 @@ class PreviewPlotSignal(AbstractCommand):
                 frame.clear()
                 """Get the menu 'fix position' preview plot option check value"""
                 checkout_preview_panel_pos_value = self.exists.GetMenuBar(). \
-                    FindItemById(GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID). \
+                    FindItemById(GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION). \
                     IsChecked()
             else:
                 """Set plot frame"""
@@ -156,7 +156,7 @@ class PreviewPlotSignal(AbstractCommand):
 
 
             """Set preview plot frame global ID"""
-            frame.SetId(GlobalValues.MENU_PREVIEW_PLOT_ID)
+            frame.SetId(GlobalValues.ID_MENU_PREVIEW_PLOT)
 
             """Set preview plot frame label"""
             frame.SetLabel('Preview Plot')

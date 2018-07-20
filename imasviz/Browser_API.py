@@ -191,5 +191,21 @@ class Browser_API():
         UnselectAllSignals(dataTreeFrame.wxTreeView).execute()
 
     def SelectSignalsGroup(self, dataTreeFrame, occurrence, onePathInTheGroup):
-        oneNodeInTheGroup = VizServices().getNodeData(dataTreeFrame.wxTreeView, occurrence, onePathInTheGroup)
+        """Select a group of all signals - siblings of the node containing the
+        'onePathInTheGroup' path data.
+
+        Arguments:
+            dataTreeFrame     (obj) : wxDataTreeViewFrame object.
+            occurrence        (int) : IDS occurrence number.
+            onePathInTheGroup (str) : An IDS path to one of the node
+                                      (signals), containing a data array
+                                      (e.g. FLT_1D), of which all siblings
+                                      are to be selected.
+                                      Example:
+                                      'magnetics/flux_loop(0)/flux/data'
+        """
+        # Get full data of the node (given 'path' is one of them)
+        oneNodeInTheGroup = VizServices().getNodeData(dataTreeFrame.wxTreeView,
+            occurrence, onePathInTheGroup)
+        # Select all sibling signals of the node
         SelectSignalsGroup(dataTreeFrame.wxTreeView, oneNodeInTheGroup).execute()

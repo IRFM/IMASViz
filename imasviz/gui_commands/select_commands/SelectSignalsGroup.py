@@ -5,7 +5,14 @@ from imasviz.gui_commands.select_commands.SelectSignal import SelectSignal
 from imasviz.util.VizServices import VizServices
 
 class SelectSignalsGroup(AbstractCommand):
+    """Select a group of all signals - siblings of the node.
+    """
     def __init__(self, view, nodeData = None):
+        """
+        Arguments:
+            view     (obj)   : wxTreeView object of the wxDataTreeViewFrame.
+            nodeData (array) : Array of node data.
+        """
         AbstractCommand.__init__(self, view, nodeData)
 
     def execute(self):

@@ -178,7 +178,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 """PLOT PREVIEW PANEL"""
                 """Check the enable/disable preview plot checkbox value"""
                 checkout_menu_preview_panel_value = self.parent.GetMenuBar(). \
-                    FindItemById(GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID). \
+                    FindItemById(GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE). \
                     IsChecked()
 
                 if (checkout_menu_preview_panel_value == True and
@@ -344,6 +344,13 @@ class WxDataTreeViewFrame(wx.Frame):
             for dtv in self.wxTreeView.imas_viz_api.wxDTVlist:
                 UnselectAllSignals(dtv).execute()
 
+    def onCloseAndReopenDatabase(self, event):
+        dataSource = self.wxTreeView.dataSource
+        api = self.wxTreeView.imas_viz_api
+        self.Destroy()
+        f = api.CreateDataTree(dataSource)
+        api.ShowDataTree(f)
+
     def createMenu(self):
         """Configure the menu bar.
         """
@@ -354,7 +361,7 @@ class WxDataTreeViewFrame(wx.Frame):
         ## APPLY CONFIGURATION
         # Add item for showing the Configuration window
         item_conf = menu.Append(
-            id=wx.NewId(),
+            id=GlobalValues.ID_MENU_ITEM_APPLY_CONFIGURATION,
             item='Apply Configuration',
             kind=wx.ITEM_NORMAL)
 
@@ -364,7 +371,7 @@ class WxDataTreeViewFrame(wx.Frame):
 
         # Add item for saving signal selection to configuration file
         item_signals_save_conf = menu_signals.Append(
-            id=GlobalValues.MENU_ITEM_SIGNALS_SAVE_ID,
+            id=GlobalValues.ID_MENU_ITEM_SIGNALS_SAVE,
             item='Save signal selection',
             kind=wx.ITEM_NORMAL)
 
@@ -373,22 +380,22 @@ class WxDataTreeViewFrame(wx.Frame):
 
         # Add item for unselecting signals in single (this) DTV
         item_signals_unselect_single = menu_signals_unselect.Append(
-            id=GlobalValues.MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV_ID,
+            id=GlobalValues.ID_MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV,
             item='This IMAS database',
             kind=wx.ITEM_NORMAL)
 
         # Add item for unselecting signals in single (this) DTV
         item_signals_unselect_all = menu_signals_unselect.Append(
-            id=GlobalValues.MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV_ID,
+            id=GlobalValues.ID_MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV,
             item='All IMAS databases',
             kind=wx.ITEM_NORMAL)
 
         # Append to menu
-        menu_signals.Append(GlobalValues.MENU_SIGNALS_UNSELECT_ID,
+        menu_signals.Append(GlobalValues.ID_MENU_SIGNALS_UNSELECT,
                         "Unselect signals", menu_signals_unselect)
 
         # Append to menu
-        menu.Append(GlobalValues.MENU_SIGNALS_ID,
+        menu.Append(GlobalValues.ID_MENU_SIGNALS,
                         "Signal Selection Options", menu_signals)
 
         # Add menu separator line
@@ -401,21 +408,21 @@ class WxDataTreeViewFrame(wx.Frame):
         # Set enable/disable preview plot checkout item:
         #  - Set checkout item
         item_pp_1 = menu_pp.AppendCheckItem(
-                    id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
+                    id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE,
                     item='Enable',
                     help="Enable/Disable preview plot display")
         #  - Set checkout value 'True' as default
-        menu_pp.Check(id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE_ID,
+        menu_pp.Check(id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE,
                       check=True)
 
         # """Add option to fix the position of the preview plot"""
         # """ - Set checkout item"""
         # item_pp_2 = menu_pp.AppendCheckItem(
-        #             id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID,
+        #             id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION,
         #             item='Fix position', help="Fix position of the preview plot")
 
         #  - Append to menu
-        menu.Append(GlobalValues.MENU_PREVIEW_PLOT_ID,
+        menu.Append(GlobalValues.ID_MENU_PREVIEW_PLOT,
                         "Preview Plot Options", menu_pp)
 
         # Add menu separator line
@@ -427,7 +434,7 @@ class WxDataTreeViewFrame(wx.Frame):
         #  - Set item to apply signals, selected in all opened IMAS data source
         #    windows, to MultiPlot submenu
         item_multiPlot_all = menu_multiPlot.Append(
-            GlobalValues.MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT_ID,
+            GlobalValues.ID_MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT,
             item='Create new MultiPlot from selected signals'
                  '(all opened IMAS databases)',
             kind=wx.ITEM_NORMAL)
@@ -435,17 +442,26 @@ class WxDataTreeViewFrame(wx.Frame):
         #  - Set item to apply signals, selected in a single opened
         #    IMAS data source windows, to MultiPlot submenu
         item_multiPlot_single = menu_multiPlot.Append(
-            GlobalValues.MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT_ID,
+            GlobalValues.ID_MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT,
             item='Create new MultiPlot from selected signals '
                  '(this IMAS database)',
             kind=wx.ITEM_NORMAL)
 
         # - Append to MultiPlot submenu
-        menu.Append(GlobalValues.MENU_MULTIPLOT_ID,
+        menu.Append(GlobalValues.ID_MENU_MULTIPLOT,
                         "MultiPlot Options", menu_multiPlot)
 
         # Add and set 'Options' menu
         menubar.Append(menu, 'Options')
+
+        # Add menu separator line
+        menu.AppendSeparator()
+
+        # Set and add menu item for the 'Close and Reopen This Database' feature
+        item_reopen = menu.Append(
+            id=GlobalValues.ID_MENU_ITEM_CLOSE_AND_REOPEN_DATABASE,
+            item='Close and Reopen This Database',
+            kind=wx.ITEM_NORMAL)
 
         # Add the menu to the DTV frame
         self.SetMenuBar(menubar)
@@ -465,6 +481,9 @@ class WxDataTreeViewFrame(wx.Frame):
         self.Bind(wx.EVT_MENU,
                   lambda event: self.onUnselectSignals(event=event, all_DTV=True),
                   item_signals_unselect_all)
+        self.Bind(wx.EVT_MENU,
+            lambda event: self.onCloseAndReopenDatabase(event=event),
+            item_reopen)
 
     def OnResult(self, event):
         idsName = event.data[0]

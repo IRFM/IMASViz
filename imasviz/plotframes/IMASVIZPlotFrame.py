@@ -91,7 +91,7 @@ class IMASVIZ_PreviewPlotFrame(PlotFrame):
         """Add option to fix the position of the preview plot"""
         """ - Set checkout item"""
         item_pp_2 = menu.AppendCheckItem(
-                    id=GlobalValues.MENU_ITEM_PREVIEW_PLOT_FIX_POSITION_ID,
+                    id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION,
                     item='Fix position', help="Fix position of the preview plot")
 
         """Add and set 'Options' menu """
