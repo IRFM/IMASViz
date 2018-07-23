@@ -2,7 +2,7 @@ import wx
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZ_PreviewPlotFrame
 import matplotlib.pyplot as plt
 import wxmplot
@@ -109,7 +109,7 @@ class PreviewPlotSignal(AbstractCommand):
                 frame.clear()
                 """Get the menu 'fix position' preview plot option check value"""
                 checkout_preview_panel_pos_value = self.exists.GetMenuBar(). \
-                    FindItemById(GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION). \
+                    FindItemById(GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION). \
                     IsChecked()
             else:
                 """Set plot frame"""
@@ -156,7 +156,7 @@ class PreviewPlotSignal(AbstractCommand):
 
 
             """Set preview plot frame global ID"""
-            frame.SetId(GlobalValues.ID_MENU_PREVIEW_PLOT)
+            frame.SetId(GlobalIDs.ID_MENU_PREVIEW_PLOT)
 
             """Set preview plot frame label"""
             frame.SetLabel('Preview Plot')

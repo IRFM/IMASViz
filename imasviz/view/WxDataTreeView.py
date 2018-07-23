@@ -17,6 +17,7 @@ import time
 from imasviz.gui_commands.HandleRightClick import HandleRightClick, HandleRightClickAndShiftDown
 from imasviz.view.WxDataTreeViewBuilder import WxDataTreeViewBuilder
 import xml.etree.ElementTree as ET
+from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.ResultEvent import ResultEvent
@@ -178,7 +179,7 @@ class WxDataTreeView(wx.TreeCtrl):
                 """PLOT PREVIEW PANEL"""
                 """Check the enable/disable preview plot checkbox value"""
                 checkout_menu_preview_panel_value = self.parent.GetMenuBar(). \
-                    FindItemById(GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE). \
+                    FindItemById(GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE). \
                     IsChecked()
 
                 if (checkout_menu_preview_panel_value == True and
@@ -361,7 +362,7 @@ class WxDataTreeViewFrame(wx.Frame):
         ## APPLY CONFIGURATION
         # Add item for showing the Configuration window
         item_conf = menu.Append(
-            id=GlobalValues.ID_MENU_ITEM_APPLY_CONFIGURATION,
+            id=GlobalIDs.ID_MENU_ITEM_APPLY_CONFIGURATION,
             item='Apply Configuration',
             kind=wx.ITEM_NORMAL)
 
@@ -371,7 +372,7 @@ class WxDataTreeViewFrame(wx.Frame):
 
         # Add item for saving signal selection to configuration file
         item_signals_save_conf = menu_signals.Append(
-            id=GlobalValues.ID_MENU_ITEM_SIGNALS_SAVE,
+            id=GlobalIDs.ID_MENU_ITEM_SIGNALS_SAVE,
             item='Save signal selection',
             kind=wx.ITEM_NORMAL)
 
@@ -380,22 +381,22 @@ class WxDataTreeViewFrame(wx.Frame):
 
         # Add item for unselecting signals in single (this) DTV
         item_signals_unselect_single = menu_signals_unselect.Append(
-            id=GlobalValues.ID_MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV,
+            id=GlobalIDs.ID_MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV,
             item='This IMAS database',
             kind=wx.ITEM_NORMAL)
 
         # Add item for unselecting signals in single (this) DTV
         item_signals_unselect_all = menu_signals_unselect.Append(
-            id=GlobalValues.ID_MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV,
+            id=GlobalIDs.ID_MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV,
             item='All IMAS databases',
             kind=wx.ITEM_NORMAL)
 
         # Append to menu
-        menu_signals.Append(GlobalValues.ID_MENU_SIGNALS_UNSELECT,
+        menu_signals.Append(GlobalIDs.ID_MENU_SIGNALS_UNSELECT,
                         "Unselect signals", menu_signals_unselect)
 
         # Append to menu
-        menu.Append(GlobalValues.ID_MENU_SIGNALS,
+        menu.Append(GlobalIDs.ID_MENU_SIGNALS,
                         "Signal Selection Options", menu_signals)
 
         # Add menu separator line
@@ -408,21 +409,21 @@ class WxDataTreeViewFrame(wx.Frame):
         # Set enable/disable preview plot checkout item:
         #  - Set checkout item
         item_pp_1 = menu_pp.AppendCheckItem(
-                    id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE,
+                    id=GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE,
                     item='Enable',
                     help="Enable/Disable preview plot display")
         #  - Set checkout value 'True' as default
-        menu_pp.Check(id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE,
+        menu_pp.Check(id=GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE,
                       check=True)
 
         # """Add option to fix the position of the preview plot"""
         # """ - Set checkout item"""
         # item_pp_2 = menu_pp.AppendCheckItem(
-        #             id=GlobalValues.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION,
+        #             id=GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION,
         #             item='Fix position', help="Fix position of the preview plot")
 
         #  - Append to menu
-        menu.Append(GlobalValues.ID_MENU_PREVIEW_PLOT,
+        menu.Append(GlobalIDs.ID_MENU_PREVIEW_PLOT,
                         "Preview Plot Options", menu_pp)
 
         # Add menu separator line
@@ -434,7 +435,7 @@ class WxDataTreeViewFrame(wx.Frame):
         #  - Set item to apply signals, selected in all opened IMAS data source
         #    windows, to MultiPlot submenu
         item_multiPlot_all = menu_multiPlot.Append(
-            GlobalValues.ID_MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT,
+            GlobalIDs.ID_MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT,
             item='Create new MultiPlot from selected signals'
                  '(all opened IMAS databases)',
             kind=wx.ITEM_NORMAL)
@@ -442,13 +443,13 @@ class WxDataTreeViewFrame(wx.Frame):
         #  - Set item to apply signals, selected in a single opened
         #    IMAS data source windows, to MultiPlot submenu
         item_multiPlot_single = menu_multiPlot.Append(
-            GlobalValues.ID_MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT,
+            GlobalIDs.ID_MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT,
             item='Create new MultiPlot from selected signals '
                  '(this IMAS database)',
             kind=wx.ITEM_NORMAL)
 
         # - Append to MultiPlot submenu
-        menu.Append(GlobalValues.ID_MENU_MULTIPLOT,
+        menu.Append(GlobalIDs.ID_MENU_MULTIPLOT,
                         "MultiPlot Options", menu_multiPlot)
 
         # Add and set 'Options' menu
@@ -459,7 +460,7 @@ class WxDataTreeViewFrame(wx.Frame):
 
         # Set and add menu item for the 'Close and Reopen This Database' feature
         item_reopen = menu.Append(
-            id=GlobalValues.ID_MENU_ITEM_CLOSE_AND_REOPEN_DATABASE,
+            id=GlobalIDs.ID_MENU_ITEM_CLOSE_AND_REOPEN_DATABASE,
             item='Close and Reopen This Database',
             kind=wx.ITEM_NORMAL)
 

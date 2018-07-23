@@ -1,14 +1,9 @@
 import wx
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
 
 """Default maximum number of IDS occurences"""
 MAX_NUMBER_OF_IDS_OCCURENCES = 10
-
-class MenuIDS:
-    def __init__(self):
-        self.GET_IDS_DATA = 5000
-        self.GET_IDS_OCC_DATA = 10000
 
 class LoadDataHandling:
     """Setting the popup menu: Load the contents of the selected IDS
@@ -16,12 +11,11 @@ class LoadDataHandling:
 
     def __init__(self, view):
         self.view = view
-        self.menuIDS = MenuIDS()
 
     def showPopUpMenu(self, IDSName):
         """Show the pop up menu for loading IDS"""
 
-        """The name of the current selected IDS is kept and attached to the 
+        """The name of the current selected IDS is kept and attached to the
         view
         """
         self.view.IDSNameSelected = IDSName
@@ -29,18 +23,18 @@ class LoadDataHandling:
         """Check if the data has been already loaded"""
         IDSDataLoaded = self.view.idsAlreadyFetched[self.view.IDSNameSelected]
 
-        """Do not diplay popup if the data are already loaded for the current 
+        """Do not diplay popup if the data are already loaded for the current
         selected item
         """
         if IDSDataLoaded == 1:
             return
 
-        """First, build the popup menu for the selected IDS if there is not a 
+        """First, build the popup menu for the selected IDS if there is not a
         current IDS loading in progress
         """
         if self.view.dataCurrentlyLoaded == False:
             self.view.popupmenu = wx.Menu()
-            self.view.popupmenu.Append(self.menuIDS.GET_IDS_DATA,   \
+            self.view.popupmenu.Append(GlobalIDs.ID_GET_IDS_DATA,   \
                                        'Get ' + IDSName             \
                                        + ' data... (default to occurrence 0)')
 
@@ -54,7 +48,7 @@ class LoadDataHandling:
                                        + ' data for occurrence', showMenu)
             """Set second-level popup menu"""
             for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
-                showMenu.Append(self.menuIDS.GET_IDS_OCC_DATA + i + 1, \
+                showMenu.Append(GlobalIDs.ID_GET_IDS_OCC_DATA + i + 1, \
                                 item='Occurrence ' + str(i + 1),
                                 kind=wx.ITEM_NORMAL)
 
@@ -63,11 +57,11 @@ class LoadDataHandling:
         return 1
 
     def popUpMenuHandler(self, event):
-        if event.GetId() == self.menuIDS.GET_IDS_DATA:
+        if event.GetId() == GlobalIDs.ID_GET_IDS_DATA:
             self.loadSelectedData()
         else:
             for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
-                if event.GetId() == i + 1 + self.menuIDS.GET_IDS_OCC_DATA :
+                if event.GetId() == i + 1 + GlobalIDs.ID_GET_IDS_OCC_DATA :
                     self.loadSelectedData(i + 1)
                     break
 

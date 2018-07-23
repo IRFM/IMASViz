@@ -9,37 +9,15 @@ from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSign
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import (PlotSelectedSignalsWithWxmplot,
                                                                               modifyMultiPlot)
+from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.view.Coord1Slider import Coord1Slider
 from imasviz.util.GlobalValues import FigureTypes
-
-
-class MenuIDS:
-    def __init__(self):
-        self.ID_ADD_PLOT_TO_FIGURE = 1000
-        self.ID_ADD_PLOT_TO_EXISTING_FIGURE = 1500 #wx.NewId()
-        self.ID_SELECT_OR_UNSELECT_SIGNAL = 2000
-        self.ID_SHOW_HIDE_FIGURES  = 3000
-        self.ID_SHOW_HIDE_MULTIPLOTS = 3500
-        self.ID_SHOW_HIDE_SUBPLOTS = 4000
-        self.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE = 5000
-        self.ID_PLOT_AS_ITIME = 6000
-        self.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE = 7000
-        self.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME = 7100
-        self.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME = 7200
-        self.ID_ADD_SELECTION_TO_MULTIPLOT = 7300
-        self.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS = 7400
-        self.ID_OPEN_SUBPLOTS_MANAGER = 8000
-        self.ID_CHANGE_COORD1 = 9000
-        self.ID_DELETE_FIGURES = 10000
-        self.ID_DELETE_MULTIPLOTS = 15000
-        self.ID_DELETE_SUBPLOTS = 20000
 
 class SignalHandling:
 
     def __init__(self, view):
         self.view = view
-        self.menuIDS = MenuIDS()
         self.CHANGE_COORD1 = wx.NewId()
         self.CHANGE_TIME1  = wx.NewId()
         self.plotFrame = None
@@ -78,7 +56,7 @@ class SignalHandling:
 
         # Set second-level popup menu for selection/deselection of the node
         item1 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL,
+                            GlobalIDs.ID_SELECT_OR_UNSELECT_SIGNAL,
                             text= s + signalName + '...',
                             kind=wx.ITEM_NORMAL)
 
@@ -93,7 +71,7 @@ class SignalHandling:
                 figureType=FigureTypes.FIGURETYPE))==0:
             # If there is no pre-existing plot
             item3 = wx.MenuItem(self.view.popupmenu,
-                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
+                                GlobalIDs.ID_ADD_PLOT_TO_FIGURE,
                                 text='Plot ' + signalName,
                                 kind=wx.ITEM_NORMAL)
         else:
@@ -101,7 +79,7 @@ class SignalHandling:
 
             # Add menu for creation of a new figure
             item3 = wx.MenuItem(self.view.popupmenu,
-                                self.menuIDS.ID_ADD_PLOT_TO_FIGURE,
+                                GlobalIDs.ID_ADD_PLOT_TO_FIGURE,
                                 text='Plot ' + signalName + ' to new figure',
                                 kind=wx.ITEM_NORMAL)
             i = 0
@@ -116,7 +94,7 @@ class SignalHandling:
                                                    'Add plot to existing figure',
                                                    subMenu)
                     subMenu.Append(
-                        self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,
+                        GlobalIDs.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,
                         item= figureKey,
                         kind=wx.ITEM_NORMAL)
                     j = j + 1
@@ -130,7 +108,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Show/Hide figure',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_FIGURES + i,
+            showMenu.Append(GlobalIDs.ID_SHOW_HIDE_FIGURES + i,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -143,7 +121,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Show/Hide multiplots',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_MULTIPLOTS + i,
+            showMenu.Append(GlobalIDs.ID_SHOW_HIDE_MULTIPLOTS + i,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -156,7 +134,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Show/Hide subplots',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_SHOW_HIDE_SUBPLOTS + i,
+            showMenu.Append(GlobalIDs.ID_SHOW_HIDE_SUBPLOTS + i,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -169,10 +147,10 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Delete figure',
                                            showMenu)
-                showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i,
+                showMenu.Append(GlobalIDs.ID_DELETE_FIGURES + i,
                                 item="All",
                                 kind=wx.ITEM_NORMAL)
-            showMenu.Append(self.menuIDS.ID_DELETE_FIGURES + i + 1,
+            showMenu.Append(GlobalIDs.ID_DELETE_FIGURES + i + 1,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -185,7 +163,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Delete multiplot',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_DELETE_MULTIPLOTS + i,
+            showMenu.Append(GlobalIDs.ID_DELETE_MULTIPLOTS + i,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -200,7 +178,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Add selection to MultiPlot',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_ADD_SELECTION_TO_MULTIPLOT + i,
+            showMenu.Append(GlobalIDs.ID_ADD_SELECTION_TO_MULTIPLOT + i,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -214,7 +192,7 @@ class SignalHandling:
                 self.view.popupmenu.Append(wx.ID_ANY,
                                            'Delete subplot',
                                            showMenu)
-            showMenu.Append(self.menuIDS.ID_DELETE_SUBPLOTS + i,
+            showMenu.Append(GlobalIDs.ID_DELETE_SUBPLOTS + i,
                             item=figureKey,
                             kind=wx.ITEM_NORMAL)
             i = i + 1
@@ -232,14 +210,14 @@ class SignalHandling:
                                                'Plot all selected signals to',
                                                showMenu)
                 showMenu.Append(
-                    self.menuIDS.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE + i,
+                    GlobalIDs.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE + i,
                     item=figureKey,
                     kind=wx.ITEM_NORMAL)
                 i = i + 1
 
 
         item4 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE,
+                            GlobalIDs.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE,
                             text='Plot all selected signals to a new figure',
                             kind=wx.ITEM_NORMAL)
 
@@ -249,27 +227,27 @@ class SignalHandling:
                             kind=wx.ITEM_NORMAL)
 
         item6 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER,
+                            GlobalIDs.ID_OPEN_SUBPLOTS_MANAGER,
                             text='Open subplots manager',
                             kind=wx.ITEM_NORMAL)
 
         item7 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_PLOT_AS_ITIME,
+                            GlobalIDs.ID_PLOT_AS_ITIME,
                             text='Plot ' + signalName + ' as a function of time',
                             kind=wx.ITEM_NORMAL)
 
         item8 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME,
+                            GlobalIDs.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME,
                             text='Plot selected signals to a multiplots frame (all opened IMAS databases)',
                             kind=wx.ITEM_NORMAL)
 
         item9 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME,
+                            GlobalIDs.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME,
                             text='Plot selected signals to a multiplots frame (this opened IMAS database',
                             kind=wx.ITEM_NORMAL)
 
         item10 = wx.MenuItem(self.view.popupmenu,
-                            self.menuIDS.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS,
+                            GlobalIDs.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS,
                             text='Select all signals from the same AOS',
                             kind=wx.ITEM_NORMAL)
 
@@ -303,45 +281,45 @@ class SignalHandling:
         """
         if event.GetId() == wx.ID_MORE:
             self.signalSizeRequest(event)
-        elif event.GetId() == self.menuIDS.ID_ADD_PLOT_TO_FIGURE:
+        elif event.GetId() == GlobalIDs.ID_ADD_PLOT_TO_FIGURE:
             self.plotSignalCommand(event)
-        elif event.GetId() == self.menuIDS.ID_SELECT_OR_UNSELECT_SIGNAL:
+        elif event.GetId() == GlobalIDs.ID_SELECT_OR_UNSELECT_SIGNAL:
             self.selectOrUnselectSignal(event)  # selection
-        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE:
+        elif event.GetId() == GlobalIDs.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE:
             self.plotSelectedSignals()
-        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME:
+        elif event.GetId() == GlobalIDs.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME:
             self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=True)
-        elif event.GetId() == self.menuIDS.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME:
+        elif event.GetId() == GlobalIDs.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME:
             self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=False)
-        elif event.GetId() == self.menuIDS.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS:
+        elif event.GetId() == GlobalIDs.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS:
             self.selectAllSignalsFromSameAOS()
         elif event.GetId() == wx.ID_CANCEL:
             self.unselectAllSignals()
-        elif event.GetId() == self.menuIDS.ID_OPEN_SUBPLOTS_MANAGER:
+        elif event.GetId() == GlobalIDs.ID_OPEN_SUBPLOTS_MANAGER:
             self.showSubPlotsManager()
-        elif event.GetId() == self.menuIDS.ID_PLOT_AS_ITIME:
+        elif event.GetId() == GlobalIDs.ID_PLOT_AS_ITIME:
             self.plotSelectedSignalVsTime()
         else:
             for i in range(0, len(self.view.imas_viz_api.figureframes)):
-                if event.GetId() == i + self.menuIDS.ID_ADD_PLOT_TO_EXISTING_FIGURE:
+                if event.GetId() == i + GlobalIDs.ID_ADD_PLOT_TO_EXISTING_FIGURE:
                     self.addSignalPlotToFig(i)
-                elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_FIGURES:
+                elif event.GetId() == i + GlobalIDs.ID_SHOW_HIDE_FIGURES:
                     self.hideShowfigure(i, figureType=FigureTypes.FIGURETYPE)
-                elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_MULTIPLOTS:
+                elif event.GetId() == i + GlobalIDs.ID_SHOW_HIDE_MULTIPLOTS:
                     self.hideShowfigure(i,figureType=FigureTypes.MULTIPLOTTYPE)
-                elif event.GetId() == self.menuIDS.ID_DELETE_FIGURES:
+                elif event.GetId() == GlobalIDs.ID_DELETE_FIGURES:
                     self.deleteAllFigures()
-                elif event.GetId() == i + 1 + self.menuIDS.ID_DELETE_FIGURES:
+                elif event.GetId() == i + 1 + GlobalIDs.ID_DELETE_FIGURES:
                     self.deleteFigure(i)
-                elif event.GetId() == i + self.menuIDS.ID_DELETE_MULTIPLOTS:
+                elif event.GetId() == i + GlobalIDs.ID_DELETE_MULTIPLOTS:
                     self.deleteMultiplots(i)
-                elif event.GetId() == i + self.menuIDS.ID_DELETE_SUBPLOTS:
+                elif event.GetId() == i + GlobalIDs.ID_DELETE_SUBPLOTS:
                     self.deleteSubplots(i)
-                elif event.GetId() == i + self.menuIDS.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE:
+                elif event.GetId() == i + GlobalIDs.ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE:
                     self.plotSelectedSignalsToFig(i)
-                elif event.GetId() == i + self.menuIDS.ID_SHOW_HIDE_SUBPLOTS:
+                elif event.GetId() == i + GlobalIDs.ID_SHOW_HIDE_SUBPLOTS:
                     self.hideShowfigure(i, figureType=FigureTypes.SUBPLOTTYPE)
-                elif event.GetId() == i + self.menuIDS.ID_ADD_SELECTION_TO_MULTIPLOT:
+                elif event.GetId() == i + GlobalIDs.ID_ADD_SELECTION_TO_MULTIPLOT:
                     self.addSignalSelectionToMultiPlotFrame(i)
 
     def selectSignal(self):
