@@ -196,7 +196,7 @@ class Browser_API():
 
         Arguments:
             dataTreeFrame     (obj) : wxDataTreeViewFrame object.
-            occurrence        (int) : IDS occurrence number.
+            occurrence        (int) : IDS occurrence number (0-9).
             onePathInTheGroup (str) : An IDS path to one of the node
                                       (signals), containing a data array
                                       (e.g. FLT_1D), of which all siblings

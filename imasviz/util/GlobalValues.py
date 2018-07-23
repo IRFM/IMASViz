@@ -61,7 +61,8 @@ class GlobalValues:
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
 
 class GlobalIDs:
-    """Global frame, panels etc. IDs"""
+    """Global frame, panels etc. IDs.
+    """
     # IDs used in wxDataTreeView.py
     ID_MENU_PREVIEW_PLOT = 201
     ID_MENU_MULTIPLOT = 202
@@ -99,7 +100,8 @@ class GlobalIDs:
 
     # IDs used in LoadDataHandling.py
     ID_GET_IDS_DATA = 13000
-    ID_GET_IDS_OCC_DATA = 13001
+    ID_REFRESH_IDS_DATA = 13001
+    ID_GET_IDS_OCC_DATA = 13002
 
 
 

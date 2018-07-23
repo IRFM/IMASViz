@@ -207,6 +207,15 @@ class IMASDataSource:
         else:
             generatedDataTree.execute()  #This will call the get() operation for fetching IMAS data
 
+    def refreshIDS(self, IDSName, occurrence=0):
+        """Refresh the source IDS and its data.
+
+        Arguments:
+            IDSName    (str) : Name of the IDS e.g. 'magnetics'.
+            occurrence (int) : IDS occurrence number (0-9).
+        """
+        exec('self.ids.' + IDSName + '.get()')
+
     @staticmethod
     def try_to_open(imasDbName, userName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)

@@ -14,11 +14,19 @@ class LoadSelectedData(AbstractCommand):
             #Check if the data are already loaded and load the data source if required
             IDSDataLoaded = self.view.idsAlreadyFetched[self.view.IDSNameSelected]
             if IDSDataLoaded == 0:
-                self.view.dataSource.load(self.view, self.occurrence, self.pathsList, self.async)
-
+                self.view.dataSource.load(self.view, self.occurrence,
+                                          self.pathsList, self.async)
             else:
-                self.view.parent.updateView(self.view.IDSNameSelected, self.occurrence, pathsList=self.pathsList)
+                self.view.parent.updateView(self.view.IDSNameSelected,
+                                            self.occurrence,
+                                            pathsList=self.pathsList)
 
         except :
             traceback.print_exc()
             self.view.log.error(traceback.format_exc())
+
+    def refreshIDS(self):
+        """Refresh the source IDS and its data.
+        """
+        self.view.dataSource.refreshIDS(self.view.IDSNameSelected,
+                                        self.occurrence)
