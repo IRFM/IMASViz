@@ -50,15 +50,21 @@ class SignalHandling:
         if self.nodeData['isSelected'] == 1:
             # If the node is selected, show unselect menu
             s = 'Unselect '
+            # Bitmap icon
+            bitmap1 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_DEL_BOOKMARK))
         else:
             # The node is unselected, show select menu
             s = 'Select '
+            # Bitmap icon
+            bitmap1 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_ADD_BOOKMARK))
 
         # Set second-level popup menu for selection/deselection of the node
         item1 = wx.MenuItem(self.view.popupmenu,
                             GlobalIDs.ID_SELECT_OR_UNSELECT_SIGNAL,
                             text= s + signalName + '...',
                             kind=wx.ITEM_NORMAL)
+        # Set bitmap to menu item
+        item1.SetBitmap(bitmap1)
 
         #item2 = wx.MenuItem(self.view.popupmenu, wx.ID_MORE, item='Show '+signalName+' size', kind=wx.ITEM_NORMAL)
 
@@ -93,12 +99,16 @@ class SignalHandling:
                         self.view.popupmenu.Append(wx.ID_ANY,
                                                    'Add plot to existing figure',
                                                    subMenu)
-                    subMenu.Append(
-                        GlobalIDs.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,
-                        item= figureKey,
-                        kind=wx.ITEM_NORMAL)
+
+                    subMenu.Append(GlobalIDs.ID_ADD_PLOT_TO_EXISTING_FIGURE + i,
+                                   item= figureKey,
+                                   kind=wx.ITEM_NORMAL)
                     j = j + 1
                 i = i + 1
+        # Bitmap icon
+        bitmap3 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD))
+        # Set bitmap to menu item
+        item3.SetBitmap(bitmap3)
 
         i = 0
         for figureKey in self.view.imas_viz_api.GetFiguresKeys(
@@ -220,6 +230,10 @@ class SignalHandling:
                             GlobalIDs.ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE,
                             text='Plot all selected signals to a new figure',
                             kind=wx.ITEM_NORMAL)
+        # Bitmap icon
+        bitmap4 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_NEW))
+        # Set bitmap to menu item
+        item4.SetBitmap(bitmap4)
 
         item5 = wx.MenuItem(self.view.popupmenu,
                             wx.ID_CANCEL,
@@ -230,26 +244,46 @@ class SignalHandling:
                             GlobalIDs.ID_OPEN_SUBPLOTS_MANAGER,
                             text='Open subplots manager',
                             kind=wx.ITEM_NORMAL)
+        # Bitmap icon
+        bitmap6 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_LIST_VIEW))
+        # Set bitmap to menu item
+        item6.SetBitmap(bitmap6)
 
         item7 = wx.MenuItem(self.view.popupmenu,
                             GlobalIDs.ID_PLOT_AS_ITIME,
                             text='Plot ' + signalName + ' as a function of time',
                             kind=wx.ITEM_NORMAL)
+        # Bitmap icon
+        bitmap7 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD))
+        # Set bitmap to menu item
+        item7.SetBitmap(bitmap7)
 
         item8 = wx.MenuItem(self.view.popupmenu,
                             GlobalIDs.ID_PLOT_SELECTED_SIGNALS_ALL_DTV_TO_MULTIPLOTFRAME,
                             text='Plot selected signals to a multiplots frame (all opened IMAS databases)',
                             kind=wx.ITEM_NORMAL)
+        # Bitmap icon
+        bitmap8 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_REPORT_VIEW))
+        # Set bitmap to menu item
+        item8.SetBitmap(bitmap8)
 
         item9 = wx.MenuItem(self.view.popupmenu,
                             GlobalIDs.ID_PLOT_SELECTED_SIGNALS_SINGLE_DTV_TO_MULTIPLOTFRAME,
                             text='Plot selected signals to a multiplots frame (this opened IMAS database',
                             kind=wx.ITEM_NORMAL)
+        # Bitmap icon
+        bitmap9 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_REPORT_VIEW))
+        # Set bitmap to menu item
+        item9.SetBitmap(bitmap9)
 
         item10 = wx.MenuItem(self.view.popupmenu,
                             GlobalIDs.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS,
                             text='Select all signals from the same AOS',
                             kind=wx.ITEM_NORMAL)
+        # Bitmap icon
+        bitmap10 = wx.Bitmap(wx.ArtProvider.GetBitmap(wx.ART_GO_UP))
+        # Set bitmap to menu item
+        item10.SetBitmap(bitmap10)
 
         self.view.popupmenu.Append(item1)
         #self.view.popupmenu.Append(item2)
