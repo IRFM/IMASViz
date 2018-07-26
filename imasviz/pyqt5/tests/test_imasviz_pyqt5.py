@@ -6,8 +6,8 @@
 # Simple PyQt5 treeview example:
 # https://joekuan.wordpress.com/2016/02/11/pyqt-how-to-hide-top-level-nodes-in-tree-view/
 
-from PyQt5.QtGui import QStandardItem, QStandardItemModel
-# from PyQt5.QtCore import *
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalIDs
@@ -24,11 +24,13 @@ class QtDataTreeView(QMainWindow):
 
         # Basic qMainWindow settings
         self.resize(520, 800)
-        self.setWindowTitle("Treeview Example")
+        self.setWindowTitle("IMASViz PyQt5 Treeview Example")
         # Set Qt treeview
         self.treeview = QTreeView(self)
+        # Set treeview model
         model = QStandardItemModel()
-        self.rootNode = model.invisibleRootItem()
+        # Set treeview base root
+        self.treeRoot = model.invisibleRootItem()
 
         # Set global environment variables and settings
         GlobalOperations.checkEnvSettings()
@@ -48,13 +50,16 @@ class QtDataTreeView(QMainWindow):
         # self.mappingFilesDirectory = mappingFilesDirectory
         self.IDSNameSelected = None
 
-        """Create a IDS root node with each shotnumber"""
-        # self.root = self.AddRoot('IDSs'+'('+ str(dataSource.shotNumber)+')')
+        # Create a IDS root node with each shotnumber
+        self.IDSRoot = QStandardItem('IDSs'+'('+ str(dataSource.shotNumber)+')')
+        # Add IDSRoot to treeRoot
+        self.treeRoot.appendRow([self.IDSRoot])
 
         # Get IDSDefFile
         IDSDefFile = GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION'])
         # Create the empty tree
         self.dataTree = self.createEmptyIDSsTree(IDSDefFile)
+        # print("*self.dataTree: ", self.dataTree)
 
         # Show QTreeView
         self.treeview.setModel(model)
@@ -63,7 +68,10 @@ class QtDataTreeView(QMainWindow):
         self.treeview.setAlternatingRowColors(True)
 
     def createEmptyIDSsTree(self, IDSDefFile):
-        """The tree is created from CPODef.xml or IDSDef.xml file"""
+        """The tree is created from CPODef.xml or IDSDef.xml file.
+        Note: The original routine source (ues with wxPython) can be found in
+        viz/imasviz/view/WxDataTreeView.py
+        """
         tree = ET.parse(IDSDefFile)
         # Add the node information to each IDS node
         returnedDict = {}
@@ -90,13 +98,20 @@ class QtDataTreeView(QMainWindow):
                 itemDataDict['documentation'] = idsDocumentation
                 # print("*itemDataDict", itemDataDict)
                 # Add the ids nodes
-                idsNode = self.rootNode.appendRow([QStandardItem(idsName), None])
-                #TODO figure out how to include itemDataDict ...
-                #item = wx.TreeItemData(itemDataDict)
-                # idsNode = self.AppendItem(self.root, idsName, -1, -1, itemDataDict)
-                # if self.dataSource.exists(idsName) == 1:
-                #     itemDataDict['availableIDSData'] = 1
-                #     self.SetItemTextColour(idsNode, wx.BLUE)
+                # Note: appendRow([QStandardItem_first_column, QStandartItem_second_column...])
+                idsNode = QStandardItem(idsName)
+                # - Set the node as non-editable
+                idsNode.setEditable(False)
+                # - Add the node to treeview root model
+                self.IDSRoot.appendRow([idsNode])
+                if self.dataSource.exists(idsName) == 1:
+                    # - If there is any data available from the IDS, change set
+                    # its dictionary 'availableIDSData' value from 0 to 1 and
+                    # color its item text (IDS name) to blue
+                    itemDataDict['availableIDSData'] = 1
+                    idsNode.setForeground(QBrush(Qt.blue))
+
+                idsNode.setData(itemDataDict)
                 # Mapping the idsName with idsNode
                 returnedDict[idsName] = idsNode
         return returnedDict
