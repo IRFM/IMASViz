@@ -1,12 +1,38 @@
 #  Name   :IDSTree
 #
-#          Container to create IDS Tree View structure in PyQt5
+#          Container to create IDS Tree View structure in PyQt5.
+#          Note: The wxPython predecessor of this Python file is
+#          WxDataTreeView.py
 #
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
+#****************************************************
+#  TODO:
+#
+#    - Function definitions (from WxDataTreeView to QVizDataTreeView class)
+#       def onMouseEvent(...):
+#       def OnShowPopup(...):
+#       def buildTreeView(...):
+#       def addChildren(...):
+#       def update_view(...):
+#       def getNodeAttributes():
+#
+#    - Function definitions (from WxDataTreeViewFrame to QVizDataTreeViewFrame
+#      class)
+#       def onClose(...):
+#       def onShowConfigurations(...):
+#       def onSaveSignalSelection(...):
+#       def onShowMultiPlot(...):
+#       def onUnselectSignals(...):
+#       def onCloseAndReopenDatabase(...):
+#       def createMenu(...):
+#       def OnResult(...):
+#       def updateView(...):
+#
+#    - class TextCtrlLogger definition
 #
 #****************************************************
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
@@ -26,12 +52,20 @@ class QVizDataTreeView(QTreeView):
     Note: IMASViz wxPython counterpart: WxDataTreeView
           (defined in project directory 'viz/imasviz/view/WxDataTreeView.py')
 
-    Arguments:
-        parent (QWindow) : QVizDataTreeView parent.
 
     """
     def __init__(self, parent, dataSource, mappingFilesDirectory,
                  IDSDefFile, *args, **kwargs):
+        """
+        Arguments:
+            parent     (QWindow)        : QVizDataTreeView parent.
+            dataSource (IMASDataSource) : IDS data source from DataSourceFactory
+            mappingFilesDirectory (str) : Path to IMASViz mapping files directory
+                                          (example: viz/ts_mapping_files)
+            IDSDefFile (str)            : Path to IDS dictionary definition .xml
+                                          file (example:
+                                          viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
+        """
         super(QVizDataTreeView, self).__init__(parent)
 
         # TODO: From original wxPython. Not yet turned into PyQt counterpart
@@ -40,11 +74,6 @@ class QVizDataTreeView(QTreeView):
         # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
         # self.gauge = gauge
 
-        # # Basic qMainWindow settings
-        # self.resize(520, 800)
-        # self.setWindowTitle("IMASViz PyQt5 Treeview")
-        # # Set Qt treeview
-        # self.treeview = QTreeView(self)
         # Set treeview model
         self.model = QStandardItemModel()
         # Set treeview base root
@@ -88,12 +117,6 @@ class QVizDataTreeView(QTreeView):
         self.dataCurrentlyLoaded = False
 
         self.log = Logger()
-
-        # # TreeView settings
-        # self.treeview.setModel(model)
-        # self.treeview.setColumnWidth(0, 150)
-        # self.setCentralWidget(self.treeview)
-        # self.treeview.setAlternatingRowColors(True)
 
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
@@ -144,25 +167,61 @@ class QVizDataTreeView(QTreeView):
                 returnedDict[idsName] = idsNode
         return returnedDict
 
+    def setSelectedItem(self, item):
+        self.selectedItem = item
+
+    def setIDSNameSelected(self, IDSName):
+        self.IDSNameSelected = IDSName
+
+    def OnExpandItem(self, event):
+        return
+
+    def OnCollapseItem(self, event):
+        return
+
 class QVizDataTreeViewFrame(QMainWindow):
+    """ Set QMainWindow to contain the QTreeView.
+    """
+
     def __init__(self, parent, dataSource, IDSDefFile, *args, **kwargs):
+        """
+        Arguments:
+            parent     (PyQT obj)       : QVizDataTreeView parent.
+            dataSource (IMASDataSource) : IDS data source from DataSourceFactory
+            IDSDefFile (str)            : Path to IDS dictionary definition .xml
+                                          file (example:
+                                          viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
+        """
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
-        # Basic qMainWindow settings
+        # Basic settings (QMainWindow)
         self.resize(520, 800)
-        self.setWindowTitle("IMASViz PyQt5 Treeview")
+
+        # Set title (QMainWindow)
+        publicStr = ''
+        if dataSource.name == GlobalValues.IMAS_UDA:
+            publicStr = "public "
+            self.setWindowTitle("'" + dataSource.machineName + "' " + publicStr
+                + "data source, shot=" + str(dataSource.shotNumber) + ", run="
+                +  str(dataSource.runNumber))
+        else:
+            self.setWindowTitle("'" + dataSource.imasDbName + "' "
+                + "data source, shot=" + str(dataSource.shotNumber) + ", run="
+                + str(dataSource.runNumber))
 
         # Set Qt TreeView
-        self.treeview = QVizDataTreeView(parent=None,
-                       dataSource=dataSource,
-                       mappingFilesDirectory=os.environ['TS_MAPPINGS_DIR'],
-                       IDSDefFile=IDSDefFile)
+        self.dataTreeView = QVizDataTreeView(parent=None,
+                                             dataSource=dataSource,
+                                             mappingFilesDirectory= \
+                                                os.environ['TS_MAPPINGS_DIR'],
+                                             IDSDefFile=IDSDefFile)
+        print("*", os.environ['TS_MAPPINGS_DIR'])
 
         # TreeView settings
-        self.treeview.setModel(self.treeview.model)
-        self.treeview.setColumnWidth(0, 150)
-        self.setCentralWidget(self.treeview)
-        self.treeview.setAlternatingRowColors(True)
+        self.dataTreeView.setModel(self.dataTreeView.model)
+        self.dataTreeView.setColumnWidth(0, 150)
+        self.setCentralWidget(self.dataTreeView)
+        self.dataTreeView.setAlternatingRowColors(True)
 
 class Logger:
     def __init__(self):
