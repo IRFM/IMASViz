@@ -11,6 +11,7 @@ from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignal
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
 
+from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
 
 class Browser_API():
 
@@ -19,8 +20,13 @@ class Browser_API():
         #figureframes contains all plotting frames
         self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
 
+        # wxPython DTV lists
         self.wxDTVframeList = []
         self.wxDTVlist = []
+
+        # PyQt5 DTV lists
+        self.DTVframeList = []
+        self.DTVlist = []
 
     def addNodeToFigure(self, figureKey, key, tup):
         if figureKey not in self.figToNodes:
@@ -33,8 +39,9 @@ class Browser_API():
         """
         return os.environ['HOME'] + "/.imasviz/" + configurationName + ".pcfg"
 
-    #Create a IDS data tree from a data source
     def CreateDataTree(self, dataSource):
+        """Create a IDS data tree from a data source.
+        """
         treeDict = {}
         if GlobalValues.TESTING:
             frame = \
@@ -46,15 +53,15 @@ class Browser_API():
                 WxDataTreeViewFrame(None, treeDict, dataSource,
                                     GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']),
                                     size=(450, 550))
-        """Set WxTreeViewFrame BrowserAPI"""
+        # Set WxTreeViewFrame BrowserAPI
         frame.wxTreeView.imas_viz_api = self
         frame.wxTreeView.dataSource = dataSource  # update the dataSource
                                                   # attached to the view
 
-        """Add created WxDataTreeViewFrame (DTV frame) to a list of DTV frames"""
+        # Add created WxDataTreeViewFrame (DTV frame) to a list of DTV frames
         self.wxDTVframeList.append(frame)
 
-        """Add current WxDataTreeView (DTV) to a list of DTVs"""
+        # Add current WxDataTreeView (DTV) to a list of DTVs
         self.wxDTVlist.append(frame.wxTreeView)
 
         return frame
@@ -209,3 +216,42 @@ class Browser_API():
             occurrence, onePathInTheGroup)
         # Select all sibling signals of the node
         SelectSignalsGroup(dataTreeFrame.wxTreeView, oneNodeInTheGroup).execute()
+
+    #---------------------------------------------------------------------------
+    # PyQt5 routine variations
+
+    def QCreateDataTree(self, dataSource):
+        """Create a IDS data tree from a data source. PyQt variant of the
+        'CreateDataTree' function (wxPython).
+
+        Arguments:
+            dataSource (IMASDataSource) : IDS data source from DataSourceFactory
+        """
+        treeDict = {}
+
+        # Create data tree view (DTV) frame
+        if GlobalValues.TESTING:
+            frame = \
+                QVizDataTreeViewFrame(parent=None,
+                                      views=treeDict,
+                                      dataSource=dataSource,
+                                      IDSDefFile=GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION))
+        else:
+            frame = \
+                QVizDataTreeViewFrame(parent=None,
+                                      views=treeDict,
+                                      dataSource=dataSource,
+                                      IDSDefFile=GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
+
+        # Set data tree view (DTV) frame BrowserAPI
+        frame.dataTreeView.imas_viz_api = self
+        frame.dataTreeView.dataSource = dataSource  # update the dataSource
+                                                  # attached to the view
+
+        # Add created data tree view (DTV) frame to a list of DTV frames
+        self.DTVframeList.append(frame)
+
+        # Add current data tree view (DTV) frame to a list of DTVs
+        self.DTVlist.append(frame.dataTreeView)
+
+        return frame

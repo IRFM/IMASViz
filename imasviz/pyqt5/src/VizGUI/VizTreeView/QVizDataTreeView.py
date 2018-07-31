@@ -37,9 +37,9 @@
 #****************************************************
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
-from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QTreeView
+from PyQt5.QtWidgets import QMainWindow, QTreeView, QMenu
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.util.GlobalValues import GlobalValues
@@ -51,8 +51,6 @@ class QVizDataTreeView(QTreeView):
     """Set and populate QTreeView.
     Note: IMASViz wxPython counterpart: WxDataTreeView
           (defined in project directory 'viz/imasviz/view/WxDataTreeView.py')
-
-
     """
     def __init__(self, parent, dataSource, mappingFilesDirectory,
                  IDSDefFile, *args, **kwargs):
@@ -73,6 +71,10 @@ class QVizDataTreeView(QTreeView):
         # self.Bind(wx.EVT_TREE_ITEM_COLLAPSING, self.OnCollapseItem)
         # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
         # self.gauge = gauge
+
+        # Set custom popup menu
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.onMouseEventTEST)
 
         # Set treeview model
         self.model = QStandardItemModel()
@@ -173,6 +175,42 @@ class QVizDataTreeView(QTreeView):
     def setIDSNameSelected(self, IDSName):
         self.IDSNameSelected = IDSName
 
+    def onMouseEventTEST(self, position):
+        """ Mouse event handlers. TODO
+        """
+        print("* position: ", position)
+        try:
+            indexes = self.selectedIndexes()
+            if len(indexes) > 0:
+
+                level = 0
+                index = indexes[0]
+                while index.parent().isValid():
+                    index = index.parent()
+                    level += 1
+
+            menu = QMenu()
+            if level == 0:
+                menu.addAction(self.tr("Edit person"))
+            elif level == 1:
+                menu.addAction(self.tr("Edit object/container"))
+            elif level == 2:
+                menu.addAction(self.tr("Edit object"))
+
+            menu.exec_(self.viewport().mapToGlobal(position))
+        except:
+            pass
+
+    # def mousePressEvent(self, QMouseEvent):
+    #     """ Override PyQt5 mousePressEvent for mouse events:
+    #     """
+    #     if QMouseEvent.button() == Qt.LeftButton:
+    #         print("Left Button Clicked")
+    #     elif QMouseEvent.button() == Qt.RightButton:
+    #         #do what you want here
+    #         print("Right Button Clicked")
+    #         position=QMouseEvent.pos()
+
     def OnExpandItem(self, event):
         return
 
@@ -183,10 +221,11 @@ class QVizDataTreeViewFrame(QMainWindow):
     """ Set QMainWindow to contain the QTreeView.
     """
 
-    def __init__(self, parent, dataSource, IDSDefFile, *args, **kwargs):
+    def __init__(self, parent, views, dataSource, IDSDefFile, *args, **kwargs):
         """
         Arguments:
             parent     (PyQT obj)       : QVizDataTreeView parent.
+            views      (array)          :
             dataSource (IMASDataSource) : IDS data source from DataSourceFactory
             IDSDefFile (str)            : Path to IDS dictionary definition .xml
                                           file (example:

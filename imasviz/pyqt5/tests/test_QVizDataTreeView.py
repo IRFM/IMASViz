@@ -14,10 +14,15 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 import os, sys
 
+from imasviz.Browser_API import Browser_API
+
 if __name__ == '__main__':
 
-   # Set global environment variables and settings
+    # Set global environment variables and settings
     GlobalOperations.checkEnvSettings()
+
+    # Set API (Application Programing Interface) object
+    api = Browser_API()
 
     # Get IDS data source
     dataSource = DataSourceFactory().create(dataSourceName=GlobalValues.IMAS_NATIVE,
@@ -26,12 +31,23 @@ if __name__ == '__main__':
                                             userName='g2penkod',
                                             imasDbName='test')
 
-    # Get IDSDefFile
-    IDSDefFile = GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION'])
 
+    # Create application
     app = QApplication(sys.argv)
-    w = QVizDataTreeViewFrame(parent=None,
-                       dataSource=dataSource,
-                       IDSDefFile=IDSDefFile)
+
+    # Get IDSDefFile
+    # IDSDefFile = GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION'])
+
+    # OPTION 1:
+    # Create Data Tree View directly using QVizDataTreeViewFrame class
+    # w = QVizDataTreeViewFrame(parent=None,
+    #                           views={},
+    #                           dataSource=dataSource,
+    #                           IDSDefFile=IDSDefFile)
+
+    # OPTION 2:
+    # Create Data Tree View using API function
+    w = api.QCreateDataTree(dataSource=dataSource)
+
     w.show()
     sys.exit(app.exec_())
