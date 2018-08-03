@@ -74,6 +74,7 @@ class QVizDataTreeView(QTreeView):
 
         # Set custom popup menu
         self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setHeaderHidden(True)
         self.customContextMenuRequested.connect(self.onMouseEventTEST)
 
         # Set treeview model
@@ -92,6 +93,8 @@ class QVizDataTreeView(QTreeView):
 
         # Create a IDS root node with each shotnumber
         self.IDSRoot = QStandardItem('IDSs'+'('+ str(dataSource.shotNumber)+')')
+        # Set the IDS root node as non-editable
+        self.IDSRoot.setEditable(False)
         # Add IDSRoot to treeRoot
         self.treeRoot.appendRow([self.IDSRoot])
 
@@ -179,8 +182,10 @@ class QVizDataTreeView(QTreeView):
         """ Mouse event handlers. TODO
         """
         print("* position: ", position)
+        # Right mouse button click on the treeview item
         try:
             indexes = self.selectedIndexes()
+
             if len(indexes) > 0:
 
                 level = 0
@@ -201,15 +206,38 @@ class QVizDataTreeView(QTreeView):
         except:
             pass
 
-    # def mousePressEvent(self, QMouseEvent):
-    #     """ Override PyQt5 mousePressEvent for mouse events:
-    #     """
-    #     if QMouseEvent.button() == Qt.LeftButton:
-    #         print("Left Button Clicked")
-    #     elif QMouseEvent.button() == Qt.RightButton:
-    #         #do what you want here
-    #         print("Right Button Clicked")
-    #         position=QMouseEvent.pos()
+    def mousePressEvent(self, QMouseEvent):
+        """ Override PyQt5 mousePressEvent for mouse events:
+        """
+        if QMouseEvent.button() == Qt.LeftButton:
+            # Left mouse button click anywhere inside the application
+            # print("Left Button Clicked")
+            pass
+        elif QMouseEvent.button() == Qt.RightButton:
+            # Right mouse button click anywhere inside the application
+            # print("Right Button Clicked")
+            position=QMouseEvent.pos()
+            index = self.indexAt(position)
+
+            if not index.isValid():
+                return
+
+            level = 0
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+
+            menu = QMenu()
+            if level == 0:
+                menu.addAction(self.tr("Edit person"))
+            elif level == 1:
+                menu.addAction(self.tr("Edit object/container"))
+            elif level == 2:
+                menu.addAction(self.tr("Edit object"))
+
+            menu.exec_(self.viewport().mapToGlobal(position))
+
+        return super(QVizDataTreeView, self).mousePressEvent(QMouseEvent)
 
     def OnExpandItem(self, event):
         return
@@ -259,8 +287,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         # TreeView settings
         self.dataTreeView.setModel(self.dataTreeView.model)
         self.dataTreeView.setColumnWidth(0, 150)
-        self.setCentralWidget(self.dataTreeView)
         self.dataTreeView.setAlternatingRowColors(True)
+        self.dataTreeView.setUniformRowHeights(True)
+        self.dataTreeView.expandsOnDoubleClick()
+        self.setCentralWidget(self.dataTreeView)
 
 class Logger:
     def __init__(self):
