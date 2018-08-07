@@ -37,9 +37,10 @@
 #****************************************************
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
+
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMainWindow, QTreeView, QMenu
+from PyQt5.QtWidgets import QMainWindow, QTreeView, QMenu, QTreeWidget, QTreeWidgetItem
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.util.GlobalValues import GlobalValues
@@ -47,8 +48,8 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 import os, sys
 
-class QVizDataTreeView(QTreeView):
-    """Set and populate QTreeView.
+class QVizDataTreeView(QTreeWidget):
+    """Set and populate QTreeWidget.
     Note: IMASViz wxPython counterpart: WxDataTreeView
           (defined in project directory 'viz/imasviz/view/WxDataTreeView.py')
     """
@@ -75,12 +76,7 @@ class QVizDataTreeView(QTreeView):
         # Set custom popup menu
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.setHeaderHidden(True)
-        self.customContextMenuRequested.connect(self.onMouseEventTEST)
-
-        # Set treeview model
-        self.model = QStandardItemModel()
-        # Set treeview base root
-        self.treeRoot = self.model.invisibleRootItem()
+        # self.customContextMenuRequested.connect(self.onMouseEvent)
 
         self.dataSource = dataSource
         self.idsNamesList = []
@@ -92,11 +88,7 @@ class QVizDataTreeView(QTreeView):
         self.IDSNameSelected = None
 
         # Create a IDS root node with each shotnumber
-        self.IDSRoot = QStandardItem('IDSs'+'('+ str(dataSource.shotNumber)+')')
-        # Set the IDS root node as non-editable
-        self.IDSRoot.setEditable(False)
-        # Add IDSRoot to treeRoot
-        self.treeRoot.appendRow([self.IDSRoot])
+        self.IDSRoot = QTreeWidgetItem(self, ['IDSs'+'('+ str(dataSource.shotNumber)+')'])
 
         # User selected signals
         self.selectedSignals = {} # tuple: view.dataSource.shotNumber,
@@ -152,22 +144,15 @@ class QVizDataTreeView(QTreeView):
                 itemDataDict['Path']= itemDataDict['Tag']
                 itemDataDict['availableIDSData'] = 0
                 itemDataDict['documentation'] = idsDocumentation
-                # print("*itemDataDict", itemDataDict)
                 # Add the ids nodes
-                # Note: appendRow([QStandardItem_first_column, QStandartItem_second_column...])
-                idsNode = QStandardItem(idsName)
-                # - Set the node as non-editable
-                idsNode.setEditable(False)
-                # - Add the node to treeview root model
-                self.IDSRoot.appendRow([idsNode])
+                idsNode = QTreeWidgetItem(self.IDSRoot, [idsName])
                 if self.dataSource.exists(idsName) == 1:
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
-                    idsNode.setForeground(QBrush(Qt.blue))
 
-                idsNode.setData(itemDataDict)
+                idsNode.setData(1, Qt.UserRole+1, itemDataDict)
                 # Mapping the idsName with idsNode
                 returnedDict[idsName] = idsNode
         return returnedDict
@@ -178,44 +163,21 @@ class QVizDataTreeView(QTreeView):
     def setIDSNameSelected(self, IDSName):
         self.IDSNameSelected = IDSName
 
-    def onMouseEventTEST(self, position):
-        """ Mouse event handlers. TODO
-        """
-        print("* position: ", position)
-        # Right mouse button click on the treeview item
-        try:
-            indexes = self.selectedIndexes()
-
-            if len(indexes) > 0:
-
-                level = 0
-                index = indexes[0]
-                while index.parent().isValid():
-                    index = index.parent()
-                    level += 1
-
-            menu = QMenu()
-            if level == 0:
-                menu.addAction(self.tr("Edit person"))
-            elif level == 1:
-                menu.addAction(self.tr("Edit object/container"))
-            elif level == 2:
-                menu.addAction(self.tr("Edit object"))
-
-            menu.exec_(self.viewport().mapToGlobal(position))
-        except:
-            pass
+    # def onMouseEvent(self, position):
+    #     """ Mouse event handlers. Alternative to 'mousePressEvent'.
+    #     If used, the 'self.customContextMenuRequested.connect(self.onMouseEvent)'
+    #     line is required in __init__.
+    #     """
+    #     print("* position: ", position)
 
     def mousePressEvent(self, QMouseEvent):
-        """ Override PyQt5 mousePressEvent for mouse events:
+        """ Override PyQt5 mousePressEvent for mouse events. TODO
         """
         if QMouseEvent.button() == Qt.LeftButton:
             # Left mouse button click anywhere inside the application
-            # print("Left Button Clicked")
             pass
         elif QMouseEvent.button() == Qt.RightButton:
             # Right mouse button click anywhere inside the application
-            # print("Right Button Clicked")
             position=QMouseEvent.pos()
             index = self.indexAt(position)
 
@@ -229,11 +191,11 @@ class QVizDataTreeView(QTreeView):
 
             menu = QMenu()
             if level == 0:
-                menu.addAction(self.tr("Edit person"))
+                menu.addAction(self.tr("Menu item 1"))
             elif level == 1:
-                menu.addAction(self.tr("Edit object/container"))
+                menu.addAction(self.tr("Menu item 2"))
             elif level == 2:
-                menu.addAction(self.tr("Edit object"))
+                menu.addAction(self.tr("Menu item 3"))
 
             menu.exec_(self.viewport().mapToGlobal(position))
 
@@ -285,7 +247,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         print("*", os.environ['TS_MAPPINGS_DIR'])
 
         # TreeView settings
-        self.dataTreeView.setModel(self.dataTreeView.model)
         self.dataTreeView.setColumnWidth(0, 150)
         self.dataTreeView.setAlternatingRowColors(True)
         self.dataTreeView.setUniformRowHeights(True)

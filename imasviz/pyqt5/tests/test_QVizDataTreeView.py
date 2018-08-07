@@ -1,11 +1,8 @@
-# This example demonstrates the use of IMASViz QtDataTreeView.py to construct
+# This example demonstrates the use of PyQt5 to construct
 # the imasviz treeview
 # GateWay: The next modules are required (written 25. July 2018):
 # module load itm-python/3.6
 # module load itm-qt/5.8.0
-
-# Simple PyQt5 treeview example:
-# https://joekuan.wordpress.com/2016/02/11/pyqt-how-to-hide-top-level-nodes-in-tree-view/
 
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
 from PyQt5.QtWidgets import QApplication
@@ -31,9 +28,9 @@ if __name__ == '__main__':
                                             userName='g2penkod',
                                             imasDbName='test')
 
-
     # Create application
     app = QApplication(sys.argv)
+    app.processEvents()
 
     # Get IDSDefFile
     # IDSDefFile = GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION'])
