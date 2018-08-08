@@ -38,8 +38,8 @@
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
 
-from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent, QFont
+from PyQt5.QtCore import Qt, QSize, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QTreeView, QMenu, QTreeWidget, QTreeWidgetItem
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalIDs
@@ -47,6 +47,7 @@ from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 import os, sys
+from functools import partial
 
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
@@ -73,10 +74,18 @@ class QVizDataTreeView(QTreeWidget):
         # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
         # self.gauge = gauge
 
-        # Set custom popup menu
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        # Set QTreeWidget name
+        self.setObjectName('DTV')
+
+        # Set custom popup menu. Will run the contextMenuEvent() function
+        self.setContextMenuPolicy(Qt.DefaultContextMenu)
+        # Hide header
         self.setHeaderHidden(True)
-        # self.customContextMenuRequested.connect(self.onMouseEvent)
+
+        # Connect 'itemClicked' with the 'onLeftClickItem' function.
+        # On clicking on the QTreeWidgetItem (left click) the function will
+        # be run
+        self.itemClicked.connect(self.onLeftClickItem)
 
         self.dataSource = dataSource
         self.idsNamesList = []
@@ -151,36 +160,63 @@ class QVizDataTreeView(QTreeWidget):
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
+                    idsNode.setForeground(0, QBrush(Qt.blue))
 
-                idsNode.setData(1, Qt.UserRole+1, itemDataDict)
+                # Set QTreeWidgetItem custom data
+                # idsNode.setData(1, Qt.UserRole+1, itemDataDict)
+                idsNode.itemVIZData = itemDataDict
                 # Mapping the idsName with idsNode
                 returnedDict[idsName] = idsNode
         return returnedDict
 
-    def setSelectedItem(self, item):
-        self.selectedItem = item
+    # def setSelectedItem(self, item):
+    #     self.selectedItem = item
 
     def setIDSNameSelected(self, IDSName):
         self.IDSNameSelected = IDSName
 
-    # def onMouseEvent(self, position):
-    #     """ Mouse event handlers. Alternative to 'mousePressEvent'.
-    #     If used, the 'self.customContextMenuRequested.connect(self.onMouseEvent)'
-    #     line is required in __init__.
-    #     """
-    #     print("* position: ", position)
+    @pyqtSlot(QTreeWidgetItem, int)
+    def onLeftClickItem (self, item, column):
+        """ Action to execute upon left clicking on DTV item.
 
-    def mousePressEvent(self, QMouseEvent):
-        """ Override PyQt5 mousePressEvent for mouse events. TODO
+        Arguments:
+            item   (obj) : QTreeWidgetItem object.
+            column (int) : Item column.
         """
-        if QMouseEvent.button() == Qt.LeftButton:
-            # Left mouse button click anywhere inside the application
-            pass
-        elif QMouseEvent.button() == Qt.RightButton:
-            # Right mouse button click anywhere inside the application
-            position=QMouseEvent.pos()
-            index = self.indexAt(position)
+        ### NODE DOCUMENTATION PANEL
+        # - Set node label
+        node_label = "..."    # Assigning default label
+        if (item.itemVIZData.get('dataName') != None):
+            node_label = str(item.itemVIZData.get('dataName'))
+        elif (item.itemVIZData.get('name') != None):
+            node_label = str(item.itemVIZData.get('name'))
+        # - Set node documentation#
+        node_doc = str(item.itemVIZData.get('documentation'))
 
+        # - Set all node documentation related strings to single
+        # string array for better handling
+        node_doc_str_array = []
+        node_doc_str_array.append("Node: ")
+        node_doc_str_array.append(node_label)
+        node_doc_str_array.append("Documentation: ")
+        node_doc_str_array.append(node_doc)
+
+        # Set and show node documentation panel (TODO)
+        # ShowNodeDocumentation.SetAndShow(
+        #     parent_WxDataTreeView = self.parent,
+        #     documentation = node_doc_str_array)
+
+        print("Node Label: ", node_label)
+        print("Node Documentation: ", node_doc)
+
+    def contextMenuEvent(self, event=QMouseEvent):
+        if len(self.selectedItems()) == 1:
+            # # The selected item
+            # item = self.selectedItems()[0] # QTreeWidgetItem object
+
+            # Below is just a menu example
+            position=event.pos()
+            index = self.indexAt(position)
             if not index.isValid():
                 return
 
@@ -196,10 +232,21 @@ class QVizDataTreeView(QTreeWidget):
                 menu.addAction(self.tr("Menu item 2"))
             elif level == 2:
                 menu.addAction(self.tr("Menu item 3"))
-
             menu.exec_(self.viewport().mapToGlobal(position))
 
-        return super(QVizDataTreeView, self).mousePressEvent(QMouseEvent)
+    # def mousePressEvent(self, QMouseEvent):
+    #     """ Override PyQt5 mousePressEvent for mouse events.
+    #     """
+    #     if QMouseEvent.button() == Qt.LeftButton:
+    #         # Left mouse button click anywhere inside the application
+    #         # For actions upon left-clicking on DTV item, the signal connect
+    #         # and 'onLefClickItem' routine are to be used.
+    #         pass
+    #     elif QMouseEvent.button() == Qt.RightButton and \
+    #         len(self.selectedItems()) == 1:
+    #         # Right mouse button click on a single tree item
+
+    #    return super(QVizDataTreeView, self).mousePressEvent(QMouseEvent)
 
     def OnExpandItem(self, event):
         return
@@ -225,6 +272,9 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # Basic settings (QMainWindow)
         self.resize(520, 800)
+
+        # Set Data Tree View Window name
+        self.setObjectName('DTV Window')
 
         # Set title (QMainWindow)
         publicStr = ''
