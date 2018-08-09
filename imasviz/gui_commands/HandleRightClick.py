@@ -95,3 +95,65 @@ class HandleRightClickAndShiftDown:
         else:
             showPopUp = pluginsHandler.showPopUpMenu(['overview'])
         return showPopUp
+
+#---------------------------------------------------------------------------
+# PyQt5 routine variations
+
+class QHandleRightClick:
+    """ Handle the mouse right click event on a PyQt5 QTreeWidget.
+    """
+    def __init__(self, dataTreeView):
+        """
+        Arguments:
+            dataTreeView (QTreeWidget) : QVizDataTreeView object.
+        """
+        self.dataTreeView = dataTreeView
+
+    def execute(self, node):
+        """
+        Arguments:
+            node (QTreeWidgetItem) : Item (node) from in the QTreeWidget.
+        """
+
+        #Get the data source attached to the dataTreeView
+        dataSource = self.dataTreeView.dataSource
+        showPopUp = 0
+
+        #Get the Python dictionary attached to the node
+        dico = node.itemVIZData
+
+        if dico == None:
+            # TODO
+            # showPopUpMenu = PluginsHandler(self.dataTreeView, dico)
+            # showPopUp = showPopUpMenu.showPopUpMenu(['overview'])
+            return showPopUp
+
+        dataName = dataSource.dataNameInPopUpMenu(dico)
+
+        if not 'isSignal' in dico:
+            return showPopUp
+
+        isSignal = dico['isSignal']
+        isIDSRoot = dico['isIDSRoot']
+
+        # If the node is a signal, call showPopUpMenu function for plotting data
+        if isSignal == 1 and \
+            (node.foreground(0).color().name() == '#0000ff' or \
+            node.foreground(0).color().name() == '#ff0000'):
+            # '#0000ff' - blue
+            # '#ff0000' - red
+            pass
+            # TODO
+            # showPopUpMenu = SignalHandling(self.dataTreeView)
+            # showPopUp = showPopUpMenu.showPopUpMenu(dataName)
+        else:
+            # If the node is a IDS node, call showPopMenu for loading IDS data
+            if isIDSRoot != None and isIDSRoot == 1:
+                if dico['availableIDSData'] == 1:
+                    showPopUpMenu = LoadDataHandling(self.dataTreeView)
+                    showPopUp = showPopUpMenu.QshowPopUpMenu(dataName)
+
+        return showPopUp
+
+# TODO
+# class QHandleRightClickAndShiftDown:

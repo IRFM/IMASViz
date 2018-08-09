@@ -3,8 +3,8 @@ from imasviz.gui_commands.AbstractCommand import AbstractCommand
 import traceback
 
 class LoadSelectedData(AbstractCommand):
-    def __init__(self, view, occurrence=0, pathsList = None, async=True):
-        AbstractCommand.__init__(self, view, None)
+    def __init__(self, dataTreeView, occurrence=0, pathsList = None, async=True):
+        AbstractCommand.__init__(self, dataTreeView, None)
         self.occurrence = occurrence
         self.async = async
         self.pathsList = pathsList
@@ -12,21 +12,21 @@ class LoadSelectedData(AbstractCommand):
     def execute(self):
         try:
             #Check if the data are already loaded and load the data source if required
-            IDSDataLoaded = self.view.idsAlreadyFetched[self.view.IDSNameSelected]
+            IDSDataLoaded = self.dataTreeView.idsAlreadyFetched[self.dataTreeView.IDSNameSelected]
             if IDSDataLoaded == 0:
-                self.view.dataSource.load(self.view, self.occurrence,
+                self.dataTreeView.dataSource.load(self.dataTreeView, self.occurrence,
                                           self.pathsList, self.async)
             else:
-                self.view.parent.updateView(self.view.IDSNameSelected,
+                self.dataTreeView.parent.updateView(self.dataTreeView.IDSNameSelected,
                                             self.occurrence,
                                             pathsList=self.pathsList)
 
         except :
             traceback.print_exc()
-            self.view.log.error(traceback.format_exc())
+            self.dataTreeView.log.error(traceback.format_exc())
 
     def refreshIDS(self):
         """Refresh the source IDS and its data.
         """
-        self.view.dataSource.refreshIDS(self.view.IDSNameSelected,
+        self.dataTreeView.dataSource.refreshIDS(self.dataTreeView.IDSNameSelected,
                                         self.occurrence)
