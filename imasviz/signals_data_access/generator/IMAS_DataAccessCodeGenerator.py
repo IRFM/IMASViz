@@ -2,8 +2,8 @@ import xml.etree.ElementTree as ET
 import os
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
-from threading import *
-import wx
+# from threading import *
+# import wx
 
 class IMAS_DataAccessCodeGenerator():
 
@@ -33,17 +33,19 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
                 self.printCode('import xml.etree.ElementTree as ET', -1)
                 self.printCode('import os', -1)
-                self.printCode('import wx', -1)
+                # self.printCode('import wx', -1)
+                self.printCode('from PyQt5.QtCore import QThread', -1)
+                self.printCode('from PyQt5.QtWidgets import QApplication', -1)
                 self.printCode('import imas', -1)
-                self.printCode('import threading', -1)
+                # self.printCode('import threading', -1)
                 self.printCode('import time', -1)
                 self.printCode('from imasviz.view.ResultEvent import ResultEvent', -1)
-                self.printCode('from threading import Thread', -1)
+                # self.printCode('from threading import Thread', -1)
                 self.printCode('\n', -1)
 
-                self.printCode("class " + className + "(Thread):", -1)
+                self.printCode("class " + className + "(QThread):", -1)
                 self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, occurrence=0, pathsList = None, async=True):", 0)
-                self.printCode("Thread.__init__(self)", 1)
+                self.printCode("super(" + className + ", self).__init__()", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
                 self.printCode("self.ids = None", 1)
@@ -54,10 +56,6 @@ class IMAS_DataAccessCodeGenerator():
 
 
                 self.printCode('def run(self):', 0)
-                self.printCode('self.execute()', 1)
-                self.printCode('', -1)
-
-                self.printCode('def execute(self):', 0)
                 self.printCode("idsData = None", 1)
                 #print('-------->name_att')
                 #print (name_att)
@@ -77,11 +75,16 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode("t3 = time.time()", 2)
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
                     self.printCode('if self.async==True:', 2)
-                    self.printCode('e = threading.Event()' + '\n', 3)
-                    self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
+
+                    # wx (old) part of the code
+                    # self.printCode('e = threading.Event()' + '\n', 3)
+                    # self.printCode('wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))',3)
+                    # self.printCode("print ('waiting for view update...')" + '\n', 3)
+                    # self.printCode('e.wait()' + '\n', 3)
+
+                    # PyQt relevant code
+                    self.printCode('QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList), self.view.parent.eventResultId))',3)
                     self.printCode("print ('waiting for view update...')" + '\n', 3)
-                    self.printCode('e.wait()' + '\n', 3)
-                    #self.printCode("print ('view update wait ended...')" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
 

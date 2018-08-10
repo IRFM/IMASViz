@@ -318,7 +318,8 @@ class QVizDataTreeViewFrame(QMainWindow):
                                              mappingFilesDirectory= \
                                                 os.environ['TS_MAPPINGS_DIR'],
                                              IDSDefFile=IDSDefFile)
-        self.eventResultId =  -1
+
+        self.eventResultId =  GlobalIDs.RESULT_EVENT
 
         # TreeView settings
         self.dataTreeView.setColumnWidth(0, 150)
@@ -329,6 +330,29 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # Old wx variable label. Remove when obsolete
         self.view = self.dataTreeView
+
+    def event(self, event):
+        """ Listen to events.
+        """
+        # print(event)
+        try:
+            # print(event.type())
+            if event.type() == GlobalIDs.RESULT_EVENT:
+                self.OnResult()
+        except Exception as e:
+            pass
+        return super(QVizDataTreeViewFrame, self).event(event)
+
+    def OnResult(self):
+        """ Set data obtained on event (event.type() == GlobalIDs.RESULT_EVENT).
+        """
+        print("*Running OnResult")
+        idsName = event.data[0]
+        occurrence = event.data[1]
+        idsData = event.data[2]
+        pathsList = event.data[3]
+        threadingEvent = event.data[4]
+        # self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
 
 class Logger:
     def __init__(self):

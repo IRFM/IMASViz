@@ -103,6 +103,9 @@ class GlobalIDs:
     ID_REFRESH_IDS_DATA = 13001
     ID_GET_IDS_OCC_DATA = 13002
 
+    # PyQt5
+    RESULT_EVENT = 1111
+
 
 
 

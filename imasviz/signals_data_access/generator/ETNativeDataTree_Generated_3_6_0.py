@@ -1,17 +1,16 @@
 #This class has been generated -- DO NOT MODIFY MANUALLY !!! --
 import xml.etree.ElementTree as ET
 import os
-import wx
+from PyQt5.QtCore import QThread
+from PyQt5.QtWidgets import QApplication
 import imas
-import threading
 import time
 from imasviz.view.ResultEvent import ResultEvent
-from threading import Thread
 
 
-class ETNativeDataTree_Generated_3_6_0(Thread):
+class ETNativeDataTree_Generated_3_6_0(QThread):
 	def __init__(self, userName, imasDbName, shotNumber, runNumber, view, occurrence=0, pathsList = None, async=True):
-		Thread.__init__(self)
+		super(ETNativeDataTree_Generated_3_6_0, self).__init__()
 		self.occurrence = occurrence
 		self.view = view
 		self.ids = None
@@ -20,9 +19,6 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 		self.async = async
 
 	def run(self):
-		self.execute()
-
-	def execute(self):
 		idsData = None
 		if self.idsName == 'magnetics':
 			self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')
@@ -35,12 +31,8 @@ class ETNativeDataTree_Generated_3_6_0(Thread):
 			t3 = time.time()
 			print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')
 			if self.async==True:
-				e = threading.Event()
-
-				wx.PostEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, e), self.view.parent.eventResultId))
+				QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList), self.view.parent.eventResultId))
 				print ('waiting for view update...')
-
-				e.wait()
 
 			else:
 				self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)

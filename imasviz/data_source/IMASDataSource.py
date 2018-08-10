@@ -184,9 +184,8 @@ class IMASDataSource:
 
     # Load IMAS data using IMAS api
     def load(self, view, occurrence=0, pathsList = None, async=True):
-        generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
-
-        if generatedDataTree == None:
+        self.generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+        if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
         if self.ids == None:
@@ -196,16 +195,16 @@ class IMASDataSource:
             if (self.ids.expIdx == -1):
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
-        generatedDataTree.ids = self.ids
+        self.generatedDataTree.ids = self.ids
 
         view.dataCurrentlyLoaded = True
         view.idsAlreadyFetched[view.IDSNameSelected] = 1
         #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
 
         if async==True:
-            generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
+            self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
         else:
-            generatedDataTree.execute()  #This will call the get() operation for fetching IMAS data
+            self.generatedDataTree.run()  #This will call the get() operation for fetching IMAS data
 
     def refreshIDS(self, IDSName, occurrence=0):
         """Refresh the source IDS and its data.
