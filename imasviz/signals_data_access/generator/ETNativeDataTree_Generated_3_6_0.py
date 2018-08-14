@@ -31,7 +31,7 @@ class ETNativeDataTree_Generated_3_6_0(QThread):
 			t3 = time.time()
 			print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')
 			if self.async==True:
-				QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList), self.view.parent.eventResultId))
+				QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, self), self.view.parent.eventResultId))
 				print ('waiting for view update...')
 
 			else:

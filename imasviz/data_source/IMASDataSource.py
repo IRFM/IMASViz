@@ -1,6 +1,6 @@
 import os
 import imas
-import wx
+from PyQt5.QtGui import QBrush, QColor
 
 #from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 import ETNativeDataTree_Generated_3_6_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
@@ -18,7 +18,7 @@ from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_2 imp
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_18_0 import ETNativeDataTree_Generated_3_18_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_19_1 import ETNativeDataTree_Generated_3_19_1
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalValues import GlobalValues, GlobalColors
 
 
 class GeneratedClassFactory:
@@ -245,10 +245,10 @@ class IMASDataSource:
         ids = self.ids #@UnusedVariable
         if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
             if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
-                return wx.BLACK
+                return GlobalColors.BLACK
             else:
-                return wx.BLUE #non empty (signals) arrays appear in blue
-        return wx.BLACK
+                return GlobalColors.BLUE #non empty (signals) arrays appear in blue
+        return GlobalColors.BLACK
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):
@@ -302,19 +302,19 @@ class IMASPublicDataSource(IMASDataSource):
     def load(self, view, occurrence=0, pathsList = None, async=True):
         print ("Loading data using UDA")
         #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
-        generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+        self.generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             self.ids.open_public(self.machineName)
 
-        generatedDataTree.ids = self.ids
+        self.generatedDataTree.ids = self.ids
         view.dataCurrentlyLoaded = True
         view.idsAlreadyFetched[view.IDSNameSelected] = 1
 
         if async == True:
-            generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
+            self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
         else:
-            generatedDataTree.execute()  # This will call the get() operation for fetching IMAS data
+            self.generatedDataTree.run()  # This will call the get() operation for fetching IMAS data
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):

@@ -42,12 +42,10 @@ class ETNativeDataTree_Generated_3_15_1_pyqt_testing(QThread):
 			if self.async==True:
 				print('* thread check 1')
                 # QCoreApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList), self.view.parent.eventResultId))
-				QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList), self.view.parent.eventResultId))
+				QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, self), self.view.parent.eventResultId))
 				print('* thread check 2')
-				# self.event(e)
 				print ('waiting for view update...')
 
-				# self.wait()
 				print('self.view.parent : ', self.view.parent)
 				print('self.idsName : ', self.idsName)
 				print('self.occurrence: ', self.occurrence)

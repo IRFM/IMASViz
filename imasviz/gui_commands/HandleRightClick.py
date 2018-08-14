@@ -2,6 +2,7 @@ import wx
 from imasviz.gui_commands.SignalHandling import SignalHandling
 from imasviz.gui_commands.LoadDataHandling import LoadDataHandling
 from imasviz.gui_commands.PluginsHandler import PluginsHandler
+from imasviz.util.GlobalValues import GlobalColors
 
 # Handle the mouse right click event on a wx tree
 class HandleRightClick:
@@ -138,10 +139,8 @@ class QHandleRightClick:
 
         # If the node is a signal, call showPopUpMenu function for plotting data
         if isSignal == 1 and \
-            (node.foreground(0).color().name() == '#0000ff' or \
-            node.foreground(0).color().name() == '#ff0000'):
-            # '#0000ff' - blue
-            # '#ff0000' - red
+            (node.foreground(0).color().name() == GlobalColors.BLUE_HEX or \
+            node.foreground(0).color().name() == GlobalColors.RED_HEX ):
             pass
             # TODO
             # showPopUpMenu = SignalHandling(self.dataTreeView)

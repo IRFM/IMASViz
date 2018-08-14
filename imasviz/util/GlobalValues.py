@@ -106,6 +106,19 @@ class GlobalIDs:
     # PyQt5
     RESULT_EVENT = 1111
 
+class GlobalColors:
+    """Global colors
+    """
+    from PyQt5.QtGui import QBrush, QColor
+
+    BLUE = QBrush(QColor('#0000ff'))
+    RED = QBrush(QColor('#ff0000'))
+    BLACK = QBrush(QColor('#000000'))
+
+    BLUE_HEX = '#0000ff'
+    RED_HEX = '#ff0000'
+    BLACK_HEX = '#000000'
+
 
 
 

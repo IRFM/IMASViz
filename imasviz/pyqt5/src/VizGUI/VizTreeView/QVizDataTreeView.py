@@ -29,7 +29,6 @@
 #       def onUnselectSignals(...):
 #       def onCloseAndReopenDatabase(...):
 #       def createMenu(...):
-#       def OnResult(...):
 #       def updateView(...):
 #
 #    - class TextCtrlLogger definition
@@ -42,12 +41,12 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent, 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot
 from PyQt5.QtWidgets import QMainWindow, QTreeView, QMenu, QTreeWidget, QTreeWidgetItem
 import xml.etree.ElementTree as ET
-from imasviz.util.GlobalValues import GlobalIDs
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.gui_commands.HandleRightClick import QHandleRightClick
-import os, sys
+from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
+import os, sys, time
 from functools import partial
 
 class QVizDataTreeView(QTreeWidget):
@@ -161,7 +160,7 @@ class QVizDataTreeView(QTreeWidget):
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
-                    idsNode.setForeground(0, QBrush(QColor('#0000ff'))) # blue
+                    idsNode.setForeground(0, GlobalColors.BLUE) # blue
 
                 # Set QTreeWidgetItem custom data
                 # idsNode.setData(1, Qt.UserRole+1, itemDataDict)
@@ -272,6 +271,51 @@ class QVizDataTreeView(QTreeWidget):
 
     #    return super(QVizDataTreeView, self).mousePressEvent(QMouseEvent)
 
+    def update_view(self,idsName, occurrence, idsData):
+        """ Update the tree view with the data.
+        """
+        self.idsAlreadyFetched[idsName] = 1
+        ids_root_node = self.dataTree[idsName]
+        if idsData != None:
+            self.buildTreeView(ids_root_node, occurrence, idsData)
+            # TODO
+            # self.EnsureVisible(self.GetLastChild(ids_root_node))
+            # self.EnsureVisible(ids_root_node)
+        self.dataCurrentlyLoaded = False
+
+    def buildTreeView(self, ids_root_node, occurrence, idsData):
+        """ Build the data tree view by adding a set of available IDS nodes as
+            an items to it.
+
+        Arguments:
+            ids_root_node (QTreeWidgetItem) : IDS root tree widget item
+                                              (Example: magnetics IDS root node)
+            occurrence    (int)             : IDS occurrence number (0-9).
+            idsData       (obj)             : Object (element) holding IDS data.
+        """
+        rootNodeData = ids_root_node.itemVIZData
+        rootNodeData['occurrence'] = occurrence
+        idsName = rootNodeData['IDSName']
+        nodeBuilder = QVizDataTreeViewBuilder()
+        for child in idsData:
+            self.addChildren(nodeBuilder, child, ids_root_node, idsName)
+
+    def addChildren(self, nodeBuilder, element, parent, idsName):
+        """ To parent item, add all children IDS nodes as a tree view items.
+
+        Arguments:
+            nodeBuilder (QVizDataTreeViewBuilder) : Class QVizDataTreeViewBuilder
+                                                    object.
+            element     (obj)             : idsData child element.
+            parent      (QTreeWidgetItem) : Parent tree view item to which the
+                                            child is to be added.
+            idsName     (str)             : Name of the IDS e.g. 'magnetics'.
+        """
+        element_node = nodeBuilder.addNewNode(idsName, element, parent, self)
+        if element_node != None:
+            for child in element:
+                self.addChildren(nodeBuilder, child, element_node, idsName)
+
     def OnExpandItem(self, event):
         return
 
@@ -319,6 +363,7 @@ class QVizDataTreeViewFrame(QMainWindow):
                                                 os.environ['TS_MAPPINGS_DIR'],
                                              IDSDefFile=IDSDefFile)
 
+        # Set custom event type (ID)
         self.eventResultId =  GlobalIDs.RESULT_EVENT
 
         # TreeView settings
@@ -338,21 +383,62 @@ class QVizDataTreeViewFrame(QMainWindow):
         try:
             # print(event.type())
             if event.type() == GlobalIDs.RESULT_EVENT:
-                self.OnResult()
+                self.onResult(event)
         except Exception as e:
+            print("Warning: Exception at QVizDataTreeViewFrame.event!")
             pass
         return super(QVizDataTreeViewFrame, self).event(event)
 
-    def OnResult(self):
+    def onResult(self, event):
         """ Set data obtained on event (event.type() == GlobalIDs.RESULT_EVENT).
         """
-        print("*Running OnResult")
         idsName = event.data[0]
         occurrence = event.data[1]
         idsData = event.data[2]
         pathsList = event.data[3]
         threadingEvent = event.data[4]
-        # self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
+        # threadingEvent = event
+        self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
+
+    def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
+                   threadingEvent=None):
+        """ Update QVizDataTreeViewFrame.
+
+        Arguments:
+            idsName        (str) : Name of the IDS e.g. 'magnetics'.
+            occurrence     (int) : IDS occurrence number (0-9).
+            idsData        (obj) : Object (element) holding IDS data.
+            pathsList      () :
+            threadingEvent () :
+        """
+        #print ('updating view...')
+        t4 = time.time()
+        if idsData != None:
+            self.dataTreeView.log.info("Loading occurrence " + str(occurrence)
+                + " of "+ idsName + " IDS ended successfully, building view...")
+            self.dataTreeView.update_view(idsName, occurrence, idsData)
+            self.dataTreeView.log.info("View update ended.")
+            if (idsName == 'equilibrium'):
+                self.dataTreeView.log.info("WARNING: GGD structure array from "
+                    + "parent equilibrium.time_slice[itime] has been ignored.")
+        t5 = time.time()
+        #print('view update took ' + str(t5 - t4) + ' seconds')
+        #print ('updateView ended.')
+
+        # TODO
+        # # Creating the signals tree
+        # signalsFrame = \
+        #     IDSSignalTreeFrame(None, self.dataTreeView,
+        #                        str(self.dataTreeView.shotNumber),
+        #                        GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
+        # if pathsList != None:
+        #     for s in pathsList:
+        #         n = signalsFrame.tree.selectNodeWithPath(s)
+        #         if n == None:
+        #             print ('Path: ' + s + " not found")
+
+        # if threadingEvent != None:
+        #     threadingEvent.set()
 
 class Logger:
     def __init__(self):
