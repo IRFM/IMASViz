@@ -153,14 +153,15 @@ class QVizDataTreeView(QTreeWidget):
                 itemDataDict['Path']= itemDataDict['Tag']
                 itemDataDict['availableIDSData'] = 0
                 itemDataDict['documentation'] = idsDocumentation
-                # Add the ids nodes
+                # Add the IDS node as a tree item to the tree view
                 idsNode = QTreeWidgetItem(self.IDSRoot, [idsName])
                 if self.dataSource.exists(idsName) == 1:
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
-                    idsNode.setForeground(0, GlobalColors.BLUE) # blue
+                    # Set tree item text color
+                    idsNode.setForeground(0, GlobalColors.BLUE)
 
                 # Set QTreeWidgetItem custom data
                 # idsNode.setData(1, Qt.UserRole+1, itemDataDict)
@@ -380,13 +381,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         """ Listen to events.
         """
         # print(event)
-        try:
-            # print(event.type())
-            if event.type() == GlobalIDs.RESULT_EVENT:
-                self.onResult(event)
-        except Exception as e:
-            print("Warning: Exception at QVizDataTreeViewFrame.event!")
-            pass
+        # print(event.type())
+        if event.type() == GlobalIDs.RESULT_EVENT:
+            self.onResult(event)
         return super(QVizDataTreeViewFrame, self).event(event)
 
     def onResult(self, event):

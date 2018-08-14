@@ -24,6 +24,7 @@ from PyQt5.QtGui import QBrush, QColor
 
 from imasviz.view.TreeNode import TreeNode
 from imasviz.util.GlobalValues import GlobalValues, GlobalColors
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 class QVizDataTreeViewBuilder:
     def __init__(self):
@@ -86,26 +87,31 @@ class QVizDataTreeViewBuilder:
                 # # if len(eval(itemDataDict['dataName'])) != 0:
 
                 # print("*dataElement.find('name').text: ", dataElement.find('name').text)
-                QVizTreeItemData, isSignal, display_color = \
+                QVizTreeItemData, isSignal, item_color = \
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
                                                      idsName,
                                                      dataTreeView)
-                # display=dataTreeView.dataSource.treeDisplayedNodeName(dataElement)
+                # Get item text to be displayed in the tree view
+                itemNodeName = \
+                    dataTreeView.dataSource.treeDisplayedNodeName(dataElement)
 
-                # if isSignal==1 or isSignal==2:
-                #     display+=' '+ '(' + str(dataElement.get('data_type')) +')'
+                if isSignal==1 or isSignal==2:
+                    itemNodeName+=' '+ '(' + str(dataElement.get('data_type')) +')'
 
-                # if units != None:
-                #     display += " [" + units + "]"
+                if units != None:
+                    itemNodeName += " [" + units + "]"
 
-                # viewerNode = dataTreeView.AppendItem(parentNode, display , -1, -1,
-                #                                    itemDataDict)
+                # Add tree item
+                viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                # - Set tree item data dictionary
+                viewerNode.itemVIZData = itemDataDict
 
-                # dataTreeView.SetItemTextColour(viewerNode, display_color)
+                # - Set tree item text color
+                viewerNode.setForeground(0, item_color)
 
-                # dataTreeView.dataSource.addWxNodes(itemDataDict, dataTreeView,
-                #                                  viewerNode, itemDataDict)
+                dataTreeView.dataSource.addQtNodes(itemDataDict, dataTreeView,
+                                                 viewerNode, itemDataDict)
 
             else:
                 # Add node information to each new node of IDS
@@ -125,109 +131,128 @@ class QVizDataTreeViewBuilder:
                         s = dataElement.text
                         lines = s.split('\n')
                         if len(lines) > 1:
-                            display = dataElement.tag
+                            itemNodeName = dataElement.tag
                             if units != None:
-                                display += " [" + units + "]"
-                            # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                            #                                    -1, -1, itemDataDict)
+                                itemNodeName += " [" + units + "]"
+                            # Add tree item
+                            viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                            # - Set tree item data dictionary
+                            viewerNode.itemVIZData = itemDataDict
                             for i in range(0, len(lines)):
-                                display = lines[i]
-                                # dataTreeView.AppendItem(viewerNode, display,
-                                #                       -1, -1, itemDataDict)
+                                itemNodeName = lines[i]
+                                # Add tree item
+                                newItem = QTreeWidgetItem(viewerNode, [itemNodeName])
+                                # - Set tree item data dictionary
+                                newItem.itemVIZData = itemDataDict
 
                         else:
-                            display = dataElement.tag + '=' + str(dataElement.text)
+                            itemNodeName = dataElement.tag + '=' + str(dataElement.text)
                             if units != None:
-                                display += " [" + units + "]"
-                            # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                            #                                    -1, -1, itemDataDict)
+                                itemNodeName += " [" + units + "]"
+                            # Add tree item
+                            viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                            # - Set tree item data dictionary
+                            viewerNode.itemVIZData = itemDataDict
                     else:
                         if '=' in dataElement.tag:
                             text = dataElement.tag.split('=')
                             s = text[1]
                             lines = s.split('\n')
                             if len(lines) > 2:
-                                display = text[0]
+                                itemNodeName = text[0]
                                 if units != None:
-                                    display += " [" + units + "]"
-                                # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                                #                                        -1, -1, itemDataDict)
-                                # for i in range(0, len(lines)):
-                                #     dataTreeView.AppendItem(viewerNode, lines[i],
-                                #                               -1, -1, itemDataDict)
+                                    itemNodeName += " [" + units + "]"
+                                # Add tree item
+                                viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                                # - Set tree item data dictionary
+                                viewerNode.itemVIZData = itemDataDict
+                                for i in range(0, len(lines)):
+                                    # Add tree item
+                                    newItem = QTreeWidgetItem(viewerNode, [lines[i]])
+                                    # - Set tree item data dictionary
+                                    newItem.itemVIZData = itemDataDict
                             else:
-                                display = dataElement.tag
+                                itemNodeName = dataElement.tag
                                 if units != None:
-                                    display += " [" + units + "]"
-                                # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                                #                                    -1, -1,
-                                #                                    itemDataDict)
+                                    itemNodeName += " [" + units + "]"
+                                # Add tree item
+                                viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                                # - Set tree item data dictionary
+                                viewerNode.itemVIZData = itemDataDict
                         else:
-                            display = dataElement.tag
+                            itemNodeName = dataElement.tag
                             if units != None:
-                                display += " [" + units + "]"
-                            # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                            #                                    -1, -1,
-                            #                                    itemDataDict)
+                                itemNodeName += " [" + units + "]"
+                            # Add tree item
+                            viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                            # - Set tree item data dictionary
+                            viewerNode.itemVIZData = itemDataDict
                 else:
 
                     if dataElement.text != None and \
                        dataElement.text.strip() != '':
-                        display = dataElement.tag + '=' + str(dataElement.text)
+                        itemNodeName = dataElement.tag + '=' + str(dataElement.text)
                         if units != None:
-                            display += " [" + units + "]"
-                        # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                        #                                    -1, -1,
-                        #                                    itemDataDict)
+                            itemNodeName += " [" + units + "]"
+                        # Add tree item
+                        viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                        # - Set tree item data dictionary
+                        viewerNode.itemVIZData = itemDataDict
                     else:
-                        display = dataElement.tag
+                        itemNodeName = dataElement.tag
                         if units != None:
-                            display += " [" + units + "]"
-                        # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                        #                                    -1, -1,
-                        #                                    itemDataDict)
+                            itemNodeName += " [" + units + "]"
+                        # Add tree item
+                        viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                        # - Set tree item data dictionary
+                        viewerNode.itemVIZData = itemDataDict
         else:
-            display = "Array of " + dataElement.tag + ' with ' + \
+            itemNodeName = "Array of " + dataElement.tag + ' with ' + \
                       dataElement.get('dim') + ' element(s)'
             arrayParentPath = \
-                self.getParentPath(parentNode) + "/" + display
+                self.getParentPath(parentNode) + "/" + itemNodeName
             if arrayParentPath not in self.arrayParentNodes:
                 parentItemDataDict = {}
                 parentItemDataDict['Path'] = arrayParentPath
-                # parentNode = dataTreeView.AppendItem(parentNode, display, -1, -1,
-                #                                    parentItemDataDict)
+                # Add tree item
+                parentNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                # - Set tree item data dictionary
+                parentNode.itemVIZData = itemDataDict
                 self.arrayParentNodes[arrayParentPath] = parentNode
             else:
                 parentNode = self.arrayParentNodes[arrayParentPath]
 
             # add the node which has element index
             if dataElement.find('name') != None:
-                # # itemDataDict['dataName'] = dataElement.find('name').text
-                # # ids = self.ids  # @UnusedVariable
-                # # if len(eval(itemDataDict['dataName'])) != 0:
-                # QVizTreeItemData, isSignal, display_color = \
-                #     self.buildNamedDataElement_FLT1D(dataElement,
-                #                                      itemDataDict,
-                #                                      idsName,
-                #                                      dataTreeView)
+                # itemDataDict['dataName'] = dataElement.find('name').text
+                # ids = self.ids  # @UnusedVariable
+                # if len(eval(itemDataDict['dataName'])) != 0:
+                QVizTreeItemData, isSignal, item_color = \
+                    self.buildNamedDataElement_FLT1D(dataElement,
+                                                     itemDataDict,
+                                                     idsName,
+                                                     dataTreeView)
 
-                # display = \
-                #     dataTreeView.dataSource.treeDisplayedNodeName(dataElement)
+                itemNodeName = \
+                    dataTreeView.dataSource.treeDisplayedNodeName(dataElement)
 
                 index = int(dataElement.get('index')) + 1
 
-                # display += ' ' + str(index) + '/' + dataElement.get('dim')
+                itemNodeName += ' ' + str(index) + '/' + dataElement.get('dim')
 
-                # if units != None:
-                #     display += " [" + units + "]"
+                if units != None:
+                    itemNodeName += " [" + units + "]"
 
-                # viewerNode = dataTreeView.AppendItem(parentNode, display, -1, -1,
-                #                                    QVizTreeItemData)
+                # Add tree item
+                viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                # - Set tree item data dictionary
+                viewerNode.itemVIZData = QVizTreeItemData
 
-                # dataTreeView.SetItemTextColour(viewerNode, display_color)
+                # Set tree item text color
+                viewerNode.setForeground(0, item_color)
 
-                # dataTreeView.dataSource.addWxNodes(itemDataDict, dataTreeView,
-                #                                  viewerNode, QVizTreeItemData)
+                dataTreeView.dataSource.addQtNodes(itemDataDict, dataTreeView,
+                                                 viewerNode, QVizTreeItemData)
 
             else:
                 itemDataDict['IDSName'] = idsName
@@ -242,26 +267,30 @@ class QVizDataTreeViewBuilder:
                     dataElement.get('data_type') == 'xs:integer'):
 
                     if dataElement.text != None:
-                        display=dataElement.tag + '=' + str(dataElement.text)
+                        itemNodeName=dataElement.tag + '=' + str(dataElement.text)
                         if units != None:
-                            display += " [" + units + "]"
+                            itemNodeName += " [" + units + "]"
                     else:
-                        display = dataElement.tag
+                        itemNodeName = dataElement.tag
                         if units != None:
-                            display += " [" + units + "]"
+                            itemNodeName += " [" + units + "]"
 
-                    # viewerNode = dataTreeView.AppendItem(parentNode, display,
-                    #                                    -1, -1, itemDataDict)
+                    # Add tree item
+                    viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                    # - Set tree item data dictionary
+                    viewerNode.itemVIZData = itemDataDict
 
                 else:
                     #dimStr = str(int(dataElement.get('dim')) - 1)
                     index = int(dataElement.get('index')) + 1
-                    display= dataElement.tag + ' ' + str(index) + '/' + \
+                    itemNodeName= dataElement.tag + ' ' + str(index) + '/' + \
                              dataElement.get('dim')
                     if units != None:
-                        display += " [" + units + "]"
-                    # viewerNode = dataTreeView.AppendItem(parentNode,display,
-                    #                                    -1, -1, itemDataDict)
+                        itemNodeName += " [" + units + "]"
+                    # Add tree item
+                    viewerNode = QTreeWidgetItem(parentNode, [itemNodeName])
+                    # - Set tree item data dictionary
+                    viewerNode.itemVIZData = itemDataDict
 
         if viewerNode != None:
             self.setPath(viewerNode, path)
@@ -323,7 +352,7 @@ class QVizDataTreeViewBuilder:
             idsName      (str)         : Name of the IDS e.g. 'magnetics'.
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
         """
-        display_color = GlobalColors.BLUE
+        item_color = GlobalColors.BLUE
         itemDataDict['availableIDSData'] = 0
         itemDataDict['IDSName'] = idsName
         itemDataDict['dataName'] = dataElement.find('name').text
@@ -373,7 +402,8 @@ class QVizDataTreeViewBuilder:
 
         data_type = dataElement.get('data_type')
 
-        if data_type.startswith("FLT_") or data_type.startswith("flt_") and data_type != "FLT_0D" and data_type != 'flt_0d_type':
+        if data_type.startswith("FLT_") or data_type.startswith("flt_") \
+            and data_type != "FLT_0D" and data_type != 'flt_0d_type':
             isSignal = 1
             itemDataDict['data_type'] = data_type
             if data_type == 'FLT_1D' or data_type == 'flt_1d_type':
@@ -381,7 +411,7 @@ class QVizDataTreeViewBuilder:
             else:
                 isSignal = 2
             itemDataDict['path_doc'] = dataElement.get('path_doc')
-            display_color = dataTreeView.dataSource.colorOf(itemDataDict)
+            item_color = dataTreeView.dataSource.colorOf(itemDataDict)
             itemDataDict['aos'] = dataElement.get('aos')
             itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
             for i in range(0, len(GlobalValues.indices)):
@@ -394,4 +424,4 @@ class QVizDataTreeViewBuilder:
         itemDataDict['isIDSRoot'] = 0
         itemDataDict['isSelected'] = 0
         itemDataDict['Tag'] = dataElement.tag
-        return (itemDataDict, isSignal, display_color)
+        return (itemDataDict, isSignal, item_color)

@@ -1,6 +1,7 @@
 import os
 import imas
 from PyQt5.QtGui import QBrush, QColor
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 #from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 import ETNativeDataTree_Generated_3_6_0
 from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
@@ -268,30 +269,40 @@ class IMASDataSource:
     def getShortLabel(self):
         return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
-    # Add new nodes to the tree
-    def addWxNodes(self, itemDataDict, viewerTree, viewerNode, wxTreeItemData):
+    def addQtNodes(self, itemDataDict, dataTreeView, viewerNode, treeItemData):
+        """ Add new nodes to the tree view.
+
+        Arguments:
+            itemDataDict (obj)             : Data dictionary of the tree item.
+            dataTreeView (QTreeWidget)     : QVizDataTreeView object.
+            viewerNode   (QTreeWidgetItem) : Tree item to be added to the
+                                             dataTreeView
+        """
 
         coordinate_display = None
 
         # if itemDataDict.get('coordinate1') != None:
         #     coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
-        #     viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+        #     dataTreeView.AppendItem(viewerNode, coordinate_display, -1, -1, treeItemData)
 
         for i in range(1,7):
             coordinate = "coordinate" + str(i)
             coordinate_same_as = "coordinate" + str(i) + "_same_as"
             if itemDataDict.get(coordinate) != None:
                 coordinate_display = coordinate + "=" + itemDataDict[coordinate]
-                viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+                newTreeItem = QTreeWidgetItem(viewerNode, [coordinate_display])
+                newTreeItem.itemVIZData = treeItemData
             if itemDataDict.get(coordinate_same_as) != None:
                 coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
-                viewerTree.AppendItem(viewerNode, coordinate_display, -1, -1, wxTreeItemData)
+                newTreeItem = QTreeWidgetItem(viewerNode, [coordinate_display])
+                newTreeItem.itemVIZData = treeItemData
 
         doc_display = None
 
         if itemDataDict.get('documentation') != None:
             doc_display = "documentation= " + itemDataDict['documentation']
-            viewerTree.AppendItem(viewerNode, doc_display, -1, -1, wxTreeItemData)
+            newTreeItem = QTreeWidgetItem(viewerNode, [doc_display])
+            newTreeItem.itemVIZData = treeItemData
 
 class IMASPublicDataSource(IMASDataSource):
 
