@@ -1,14 +1,11 @@
 import wx
 from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
-from PyQt5.QtCore import pyqtSlot, QObject
-from PyQt5.QtWidgets import QAction, QMenu
-from PyQt5.QtGui import QMouseEvent
 
 # Default maximum number of IDS occurences
 MAX_NUMBER_OF_IDS_OCCURENCES = 10
 
-class LoadDataHandling(QObject):
+class LoadDataHandling:
     """Setting the popup menu: Load the contents of the selected IDS.
     """
 
@@ -83,7 +80,6 @@ class LoadDataHandling(QObject):
                 if event.GetId() == i + 1 + GlobalIDs.ID_GET_IDS_OCC_DATA :
                     self.loadSelectedData(i + 1)
                     break
-    @pyqtSlot()
     def loadSelectedData(self, occurrence=0, threadingEvent=None):
         """Load selected IDS data.
 
@@ -101,47 +97,3 @@ class LoadDataHandling(QObject):
             threadingEvent ()    : Event.
         """
         LoadSelectedData(self.treeView, occurrence, threadingEvent).refreshIDS()
-
-    #---------------------------------------------------------------------------
-    # PyQt5 routine variations
-
-    def QshowPopUpMenu(self, IDSName):
-        """Show the pop up menu for loading IDS.
-
-        Arguments:
-            IDSName    (str) : Name of the IDS e.g. 'magnetics'.
-        """
-
-        # The name of the current selected IDS is kept and attached to the
-        # view
-        self.treeView.IDSNameSelected = IDSName
-
-        # Check if the data has been already loaded
-        IDSDataLoaded = \
-            self.treeView.idsAlreadyFetched[self.treeView.IDSNameSelected]
-
-        # Do not display popup menu if the data are already loaded for the
-        # current selected item
-
-        # if IDSDataLoaded == 1:
-        #     if self.treeView.dataCurrentlyLoaded == False:
-        #         TODO
-
-        # First, build the popup menu for the selected IDS if there is not a
-        # current IDS loading in progress
-        if self.treeView.dataCurrentlyLoaded == False:
-            action_GET_IDS_DATA = QAction('Get ' + IDSName + \
-                ' data... (default to occurrence 0)')
-            # action_GET_IDS_DATA.triggered.connect(self.runExample)
-            action_GET_IDS_DATA.triggered.connect(self.loadSelectedData)
-            self.treeView.popupmenu = QMenu()
-            self.treeView.popupmenu.addAction(action_GET_IDS_DATA)
-            self.treeView.popupmenu.exec_( \
-                self.treeView.viewport().mapToGlobal(self.treeView.pos))
-
-        # # We propose to load a given occurence 0
-        # # Set popup menu for IDS occurences
-        # if self.treeView.dataCurrentlyLoaded == False:
-        #   TODO
-
-        return 1

@@ -1,4 +1,4 @@
-#  Name   :IDSTree
+#  Name   :QVizDataTreeViewBuilder
 #
 #          Container to build IDS Tree View structure in PyQt5.
 #          Note: The wxPython predecessor of this Python file is
@@ -10,21 +10,13 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #****************************************************
-#  TODO:
-#
-#    - Function definitions
-#      def addNewNode
-#      def buildNamedDataElement_FLT1D
-#
-#****************************************************
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
 
 from PyQt5.QtGui import QBrush, QColor
-
+from PyQt5.QtWidgets import QTreeWidgetItem
 from imasviz.view.TreeNode import TreeNode
 from imasviz.util.GlobalValues import GlobalValues, GlobalColors
-from PyQt5.QtWidgets import QTreeWidgetItem
 
 class QVizDataTreeViewBuilder:
     def __init__(self):

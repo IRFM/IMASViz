@@ -15,10 +15,6 @@
 #    - Function definitions (from WxDataTreeView to QVizDataTreeView class)
 #       def onMouseEvent(...):
 #       def OnShowPopup(...):
-#       def buildTreeView(...):
-#       def addChildren(...):
-#       def update_view(...):
-#       def getNodeAttributes():
 #
 #    - Function definitions (from WxDataTreeViewFrame to QVizDataTreeViewFrame
 #      class)
@@ -44,7 +40,7 @@ import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
-from imasviz.gui_commands.HandleRightClick import QHandleRightClick
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizHandleRightClick import QVizHandleRightClick
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 import os, sys, time
 from functools import partial
@@ -233,7 +229,7 @@ class QVizDataTreeView(QTreeWidget):
             self.pos = event.pos()
 
             # TODO
-            handleRightClick = QHandleRightClick(self)
+            handleRightClick = QVizHandleRightClick(self)
             showPopUp = handleRightClick.execute(item)
             # if showPopUp == 1:
             #     self.OnShowPopup(pos)
@@ -279,9 +275,8 @@ class QVizDataTreeView(QTreeWidget):
         ids_root_node = self.dataTree[idsName]
         if idsData != None:
             self.buildTreeView(ids_root_node, occurrence, idsData)
-            # TODO
-            # self.EnsureVisible(self.GetLastChild(ids_root_node))
-            # self.EnsureVisible(ids_root_node)
+            # Expand the tree item
+            ids_root_node.setExpanded(True)
         self.dataCurrentlyLoaded = False
 
     def buildTreeView(self, ids_root_node, occurrence, idsData):
@@ -316,6 +311,11 @@ class QVizDataTreeView(QTreeWidget):
         if element_node != None:
             for child in element:
                 self.addChildren(nodeBuilder, child, element_node, idsName)
+
+    def getNodeAttributes(self, dataName):
+        if self.node_attributes != None and dataName in self.node_attributes:
+            return self.node_attributes[dataName]
+        return None
 
     def OnExpandItem(self, event):
         return
@@ -394,7 +394,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         idsData = event.data[2]
         pathsList = event.data[3]
         threadingEvent = event.data[4]
-        # threadingEvent = event
         self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
 
     def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
@@ -423,7 +422,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         #print ('updateView ended.')
 
         # TODO
-        # # Creating the signals tree
+        # IS IT NEEDED?
+        # # Creating a separate signals tree
         # signalsFrame = \
         #     IDSSignalTreeFrame(None, self.dataTreeView,
         #                        str(self.dataTreeView.shotNumber),
