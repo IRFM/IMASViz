@@ -184,8 +184,8 @@ class IMASDataSource:
         self.ids = None
 
     # Load IMAS data using IMAS api
-    def load(self, view, occurrence=0, pathsList = None, async=True):
-        self.generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+    def load(self, dataTreeView, occurrence=0, pathsList = None, async=True):
+        self.generatedDataTree = GeneratedClassFactory(self, dataTreeView, occurrence, pathsList, async).create()
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
@@ -198,9 +198,9 @@ class IMASDataSource:
 
         self.generatedDataTree.ids = self.ids
 
-        view.dataCurrentlyLoaded = True
-        view.idsAlreadyFetched[view.IDSNameSelected] = 1
-        #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
+        dataTreeView.dataCurrentlyLoaded = True
+        dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
+        #dataTreeView.log.info('Loading ' + dataTreeView.IDSNameSelected + ' IDS...')
 
         if async==True:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
