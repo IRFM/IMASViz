@@ -16,7 +16,7 @@ class SelectSignalsGroup(AbstractCommand):
         AbstractCommand.__init__(self, view, nodeData)
 
     def execute(self):
-        #self.updateNodeData()
+        self.updateNodeData()
         key = self.view.dataSource.dataKey(self.nodeData)
         aos = self.nodeData['aos']
         aos_parents_count = self.nodeData['aos_parents_count']
