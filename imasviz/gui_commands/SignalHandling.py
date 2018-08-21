@@ -235,10 +235,22 @@ class SignalHandling:
         # Set bitmap to menu item
         item4.SetBitmap(bitmap4)
 
-        item5 = wx.MenuItem(self.view.popupmenu,
-                            wx.ID_CANCEL,
-                            text='Unselect all signals',
+        # Set submenu for handling signal unselection feature
+        menu_signals_unselect = wx.Menu()
+
+        item5 = wx.MenuItem(menu_signals_unselect,
+                            GlobalIDs.ID_POPUP_MENU_SIGNALS_UNSELECT_SINGLE_DTV,
+                            text='This IMAS Database',
                             kind=wx.ITEM_NORMAL)
+
+        menu_signals_unselect.Append(item5)
+
+        item5_2 = wx.MenuItem(menu_signals_unselect,
+                            GlobalIDs.ID_POPUP_MENU_SIGNALS_UNSELECT_ALL_DTV,
+                            text='All IMAS Databases',
+                            kind=wx.ITEM_NORMAL)
+
+        menu_signals_unselect.Append(item5_2)
 
         item6 = wx.MenuItem(self.view.popupmenu,
                             GlobalIDs.ID_OPEN_SUBPLOTS_MANAGER,
@@ -296,7 +308,10 @@ class SignalHandling:
         if len(self.view.selectedSignals) > 0:
             if self.shareSameCoordinates(self.view.selectedSignals):
                 self.view.popupmenu.Append(item4)
-            self.view.popupmenu.Append(item5)
+
+            self.view.popupmenu.Append(wx.ID_CANCEL,
+                "Unselect signals", menu_signals_unselect)
+
             self.view.popupmenu.Append(item8)
             self.view.popupmenu.Append(item9)
 
@@ -327,8 +342,10 @@ class SignalHandling:
             self.plotSelectedSignalsToMultiPlotsFrame(all_DTV=False)
         elif event.GetId() == GlobalIDs.ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS:
             self.selectAllSignalsFromSameAOS()
-        elif event.GetId() == wx.ID_CANCEL:
-            self.unselectAllSignals()
+        elif event.GetId() == GlobalIDs.ID_POPUP_MENU_SIGNALS_UNSELECT_ALL_DTV:
+            self.unselectAllSignals(all_DTV=True)
+        elif event.GetId() == GlobalIDs.ID_POPUP_MENU_SIGNALS_UNSELECT_SINGLE_DTV:
+            self.unselectAllSignals(all_DTV=False)
         elif event.GetId() == GlobalIDs.ID_OPEN_SUBPLOTS_MANAGER:
             self.showSubPlotsManager()
         elif event.GetId() == GlobalIDs.ID_PLOT_AS_ITIME:
@@ -362,8 +379,18 @@ class SignalHandling:
     def selectOrUnselectSignal(self, event):
         SelectOrUnselectSignal(self.view, self.nodeData).execute()
 
-    def unselectAllSignals(self):
-        UnselectAllSignals(self.view, self.nodeData).execute()
+    def unselectAllSignals(self, all_DTV=False):
+        """Unselect signals in single (current) or all DTVs
+
+        Arguments:
+                all_DTV (bool) : Indicator to read selected signals from the
+                                 current or all DTVs.
+        """
+        if all_DTV != True:
+            UnselectAllSignals(self.view, self.nodeData).execute()
+        else:
+            for dtv in self.view.imas_viz_api.wxDTVlist:
+                UnselectAllSignals(dtv, self.nodeData).execute()
 
     def plotSignalCommand(self, event):
         try:
