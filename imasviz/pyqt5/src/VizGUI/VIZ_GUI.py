@@ -14,7 +14,7 @@ from imasviz.view.WxDataTreeView import TextCtrlLogger
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
         super(GUIFrame, self).__init__(parent)
-
+        self.setGeometry(300,300,600,400)
         self.tab1 = QWidget()
         self.tab2 = QWidget()
         self.tab3 = QWidget()
