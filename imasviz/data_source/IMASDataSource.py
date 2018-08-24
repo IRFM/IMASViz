@@ -242,14 +242,24 @@ class IMASDataSource:
         #     return False
 
     # Define the color of a node which contains a signal
-    def colorOf(self, signalNode):
+    def colorOf(self, signalNode, obsolescent=None):
         ids = self.ids #@UnusedVariable
         if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
             if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
-                return wx.BLACK
+                if obsolescent is None or obsolescent is False:
+                    return wx.BLACK
+                elif obsolescent is True:
+                    return wx.LIGHT_GREY
             else:
-                return wx.BLUE #non empty (signals) arrays appear in blue
-        return wx.BLACK
+                if obsolescent is None or obsolescent is False:
+                    return wx.BLUE  # non empty (signals) arrays appear in blue
+                elif obsolescent is True:
+                    return wx.CYAN
+
+        if obsolescent is None or obsolescent is False:
+            return wx.BLACK
+        elif obsolescent is True:
+            return wx.LIGHT_GREY
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):

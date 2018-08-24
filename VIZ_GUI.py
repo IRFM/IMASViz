@@ -6,6 +6,7 @@ from imasviz.Browser_API import Browser_API
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.data_source.IMASDataSource import IMASDataSource
+from imasviz.gui_frames.VizOptions import VizOptions
 
 class TabOne(wx.Panel):
     def __init__(self,parent, GUIFrameSingleton):
@@ -32,6 +33,7 @@ class TabOne(wx.Panel):
         self.runNumber = wx.TextCtrl(self, -1, '0', size=(150, -1))
 
         button_open = wx.Button(self, 1, 'Open')
+        button_open_options = wx.Button(self, 2, 'Open options')
 
         """Set and display Welcome Text in the log window"""
         self.logWindow = wx.TextCtrl(self,
@@ -51,11 +53,13 @@ class TabOne(wx.Panel):
         """ Set IDS parameters widgets """
         self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
         """Set 'Open' button"""
-        self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 60)
+        self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 30)
+        self.vbox.Add(button_open_options, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 30)
         """Set log window"""
         self.vbox.Add(self.logWindow, 1, wx.ALL|wx.EXPAND, 5)
 
         self.Bind(wx.EVT_BUTTON, self.Open, id=1)
+        self.Bind(wx.EVT_BUTTON, self.Open_options, id=2)
 
         self.SetSizer(self.vbox)
         self.dataSourceName = GlobalValues.IMAS_NATIVE  # default value
@@ -156,6 +160,10 @@ class TabOne(wx.Panel):
         except ValueError as e:
             self.log.error(str(e))
 
+    def Open_options(self, evt):
+        frame = VizOptions(parent=self, id=-1)
+        frame.Center()
+        frame.Show()
 
 class TabTwo(wx.Panel):
     def __init__(self,parent):
@@ -203,6 +211,7 @@ class TabThree(wx.Panel):
         self.machineName.SetSelection(0)
 
         button_open = wx.Button(self, 1, 'Open')
+        button_open_options = wx.Button(self, 2, 'Open options')
 
         self.logWindow = wx.TextCtrl(self,
                             wx.ID_ANY,"Welcome to the IMAS data browser !\n",
@@ -228,13 +237,15 @@ class TabThree(wx.Panel):
         self.vbox.Add(hboxRadioButtons, 0, wx.TOP, 10)
         self.vbox.Add(self.gridSizer_native, 0, wx.TOP, 10)
         self.vbox.Add(self.gridSizer_tore_supra, 0, wx.TOP, 10)
-        self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 60)
+        self.vbox.Add(button_open, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 30)
+        self.vbox.Add(button_open_options, 0, wx.ALIGN_LEFT | wx.TOP | wx.BOTTOM, 30)
         self.vbox.Add(self.logWindow, 1, wx.ALL|wx.EXPAND, 5)
 
         self.Bind(wx.EVT_RADIOBUTTON, self.SwitcherNative, id=self.rb1.GetId())
         self.Bind(wx.EVT_RADIOBUTTON, self.SwitcherTS, id=self.rb2.GetId())
 
         self.Bind(wx.EVT_BUTTON, self.Open, id=1)
+        self.Bind(wx.EVT_BUTTON, self.Open_options, id=2)
 
         self.SetSizer(self.vbox)
 
@@ -357,6 +368,10 @@ class TabThree(wx.Panel):
         except ValueError as e:
             self.log.error(str(e))
 
+    def Open_options(self, evt):
+        frame = VizOptions(parent=self, id=-1)
+        frame.Center()
+        frame.Show()
 
 class GUIFrame(wx.Frame):
     def __init__(self,parent,wxid,title):

@@ -2,7 +2,7 @@ import imas
 import numpy as np
 import wx
 import os, sys
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalValues import GlobalValues, Imas_Viz_Options
 import xml.etree.ElementTree as ET
 
 class GlobalOperations:
@@ -31,6 +31,15 @@ class GlobalOperations:
         if (homogeneous_time == 0):
             return False
         return True
+
+    @staticmethod
+    def renderNode(display_color):
+        if (display_color == wx.BLACK or display_color == wx.LIGHT_GREY) and Imas_Viz_Options.HIDE_EMPTY_SIGNALS:
+            return False
+        elif (display_color == wx.CYAN or display_color == wx.LIGHT_GREY) and Imas_Viz_Options.HIDE_OBSOLESCENT_NODES:
+            return False
+        return True
+
 
     @staticmethod
     def getTime(ids, selectedNodeData, coordinate1):
