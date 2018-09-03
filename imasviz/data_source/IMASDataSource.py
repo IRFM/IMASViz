@@ -178,8 +178,8 @@ class IMASDataSource:
         self.name = name
         self.userName =  userName
         self.imasDbName = imasDbName
-        self.shotNumber = shotNumber
-        self.runNumber = runNumber
+        self.shotNumber = int(shotNumber)
+        self.runNumber = int(runNumber)
         self.machineName = machineName
         self.ids = None
 
@@ -191,7 +191,7 @@ class IMASDataSource:
 
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-
+            v = os.environ["IMAS_MAJOR_VERSION"]
             self.ids.open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
             if (self.ids.expIdx == -1):
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
@@ -217,9 +217,9 @@ class IMASDataSource:
         exec('self.ids.' + IDSName + '.get()')
 
     @staticmethod
-    def try_to_open(imasDbName, userName, shotNumber, runNumber):
+    def try_to_open(imasDbName, userName, shotNumber, runNumber, imas_major_version='3'):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
-        ids.open_env(userName, imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+        ids.open_env(userName, imasDbName, imas_major_version)
         if (ids.expIdx == -1):
             raise ValueError("Can not open shot " + str(shotNumber) + "  from data base " + imasDbName + " of user " + userName)
 

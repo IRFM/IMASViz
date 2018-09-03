@@ -541,11 +541,11 @@ class TextCtrlLogger:
 
     def error(self, message):
         message +='\n'
-        self.logWindow.AppendText(str(message))
+        self.logWindow.append(message)
 
     def info(self, message):
         message +='\n'
-        self.logWindow.AppendText(str(message))
+        self.logWindow.append(message)
 
 
 if __name__ == "__main__":

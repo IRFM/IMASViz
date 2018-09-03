@@ -45,30 +45,30 @@ class Browser_API():
         treeDict = {}
         if GlobalValues.TESTING:
             frame = \
-                WxDataTreeViewFrame(None, treeDict, dataSource,
-                                    GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION),
-                                    size=(450,550))
+                QVizDataTreeViewFrame(None, treeDict, dataSource,
+                                    GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION)
+                                    )
         else:
             frame = \
-                WxDataTreeViewFrame(None, treeDict, dataSource,
-                                    GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']),
-                                    size=(450, 550))
+                QVizDataTreeViewFrame(None, treeDict, dataSource,
+                                    GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION'])
+                                    )
         # Set WxTreeViewFrame BrowserAPI
-        frame.wxTreeView.imas_viz_api = self
-        frame.wxTreeView.dataSource = dataSource  # update the dataSource
+        frame.view.imas_viz_api = self
+        frame.view.dataSource = dataSource  # update the dataSource
                                                   # attached to the view
 
         # Add created WxDataTreeViewFrame (DTV frame) to a list of DTV frames
         self.wxDTVframeList.append(frame)
 
         # Add current WxDataTreeView (DTV) to a list of DTVs
-        self.wxDTVlist.append(frame.wxTreeView)
+        self.wxDTVlist.append(frame.view)
 
         return frame
 
     # Show the IDS data tree frame
     def ShowDataTree(self, dataTreeFrame):
-        dataTreeFrame.Show()
+        dataTreeFrame.show()
 
     def GetSelectedSignals(self, dataTreeFrame):
         """Returns the signals (nodes) selected by the user or from script
