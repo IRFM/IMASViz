@@ -48,7 +48,7 @@ class GlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.15.1"
+        TESTING_IMAS_VERSION = "3.19.1"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)

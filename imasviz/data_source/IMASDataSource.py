@@ -217,9 +217,9 @@ class IMASDataSource:
         exec('self.ids.' + IDSName + '.get()')
 
     @staticmethod
-    def try_to_open(imasDbName, userName, shotNumber, runNumber):
+    def try_to_open(imasDbName, userName, shotNumber, runNumber, imas_major_version='3'):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
-        ids.open_env(userName, imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+        ids.open_env(userName, imasDbName, imas_major_version)
         if (ids.expIdx == -1):
             raise ValueError("Can not open shot " + str(shotNumber) + "  from data base " + imasDbName + " of user " + userName)
 

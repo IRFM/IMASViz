@@ -4,6 +4,7 @@ import wx
 import os, sys
 from imasviz.util.GlobalValues import GlobalValues
 import xml.etree.ElementTree as ET
+from PyQt5.QtWidgets import QMessageBox
 
 class GlobalOperations:
 
@@ -66,10 +67,13 @@ class GlobalOperations:
 
     @staticmethod
     def YesNo(parent=None, question=None, caption='Confirm suppression'):
-        dlg = wx.MessageDialog(parent, question, caption, wx.YES_NO | wx.ICON_QUESTION)
-        result = dlg.ShowModal() == wx.ID_YES
-        dlg.Destroy()
-        return result
+        w = QMessageBox()
+        result = QMessageBox.question(w, caption, question, QMessageBox.Yes | QMessageBox.No,
+                                      QMessageBox.No)
+        if result == QMessageBox.Yes:
+            return True
+        else:
+            return False
 
     @staticmethod # replace '[' by '(' and ']' by ')'
     def replaceBrackets(stringToReplace):
