@@ -16,10 +16,11 @@
 #    - class HandleRightClickAndShiftDown definition
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
+#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizLoadDataHandling import QVizLoadDataHandling
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizSignalHandling import QVizSignalHandling
 
 from imasviz.util.GlobalValues import GlobalColors
 
@@ -64,15 +65,13 @@ class QVizHandleRightClick:
         if isSignal == 1 and \
             (node.foreground(0).color().name() == GlobalColors.BLUE_HEX or \
             node.foreground(0).color().name() == GlobalColors.RED_HEX ):
-            pass
-            # TODO
-            # showPopUpMenu = SignalHandling(self.dataTreeView)
-            # showPopUp = showPopUpMenu.showPopUpMenu(dataName)
+            showPopUpMenu = QVizSignalHandling(dataTreeView=self.dataTreeView)
+            showPopUp = showPopUpMenu.showPopUpMenu(signalName=dataName)
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if isIDSRoot != None and isIDSRoot == 1:
                 if dico['availableIDSData'] == 1:
                     showPopUpMenu = QVizLoadDataHandling(self.dataTreeView)
-                    showPopUp = showPopUpMenu.QshowPopUpMenu(dataName)
+                    showPopUp = showPopUpMenu.showPopUpMenu(dataName)
 
         return showPopUp

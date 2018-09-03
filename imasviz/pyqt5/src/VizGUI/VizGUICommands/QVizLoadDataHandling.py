@@ -12,7 +12,7 @@
 #****************************************************
 #  TODO:
 #
-#    - Function definitions (from LoadDataHandling to LoadDataHandling class)
+#    - Function definitions (from LoadDataHandling class)
 #       def popUpMenuHandler
 #
 #****************************************************
@@ -41,7 +41,7 @@ class QVizLoadDataHandling(QObject):
         super(QVizLoadDataHandling, self).__init__()
         self.dataTreeView = dataTreeView
 
-    def QshowPopUpMenu(self, IDSName):
+    def showPopUpMenu(self, IDSName):
         """Show the pop up menu for loading IDS.
 
         Arguments:
@@ -96,7 +96,6 @@ class QVizLoadDataHandling(QObject):
                 self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
         return 1
 
-    @pyqtSlot()
     def loadSelectedData(self, occurrence=0, threadingEvent=None):
         """Load data of selected IDS and its occurrence.
 

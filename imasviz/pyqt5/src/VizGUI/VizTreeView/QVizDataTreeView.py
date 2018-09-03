@@ -166,8 +166,8 @@ class QVizDataTreeView(QTreeWidget):
                 returnedDict[idsName] = idsNode
         return returnedDict
 
-    # def setSelectedItem(self, item):
-    #     self.selectedItem = item
+    def setSelectedItem(self, item):
+        self.selectedItem = item
 
     def setIDSNameSelected(self, IDSName):
         self.IDSNameSelected = IDSName
@@ -190,6 +190,7 @@ class QVizDataTreeView(QTreeWidget):
             return
 
         ### NODE DOCUMENTATION PANEL
+        self.setSelectedItem(item)
         # - Set node label
         node_label = "..."    # Assigning default label
         if (item.itemVIZData.get('dataName') != None):
@@ -394,7 +395,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         idsData = event.data[2]
         pathsList = event.data[3]
         threadingEvent = event.data[4]
-        self.updateView(idsName, occurrence,idsData, pathsList, threadingEvent)
+        self.updateView(idsName, occurrence, idsData, pathsList, threadingEvent)
 
     def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
                    threadingEvent=None):
