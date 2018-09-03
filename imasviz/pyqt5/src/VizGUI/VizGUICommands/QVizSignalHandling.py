@@ -61,7 +61,6 @@ from PyQt5.QtWidgets import QAction, QMenu
 from PyQt5.QtCore import QObject, pyqtSlot
 
 class QVizSignalHandling(QObject):
-
     def __init__(self, dataTreeView):
         self.dataTreeView = dataTreeView
         # self.CHANGE_COORD1 = GlobalIDs.ID_CHANGE_COORD1
@@ -121,7 +120,7 @@ class QVizSignalHandling(QObject):
         item3 = None
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
-        if len(self.view.imas_viz_api.GetFiguresKeys(
+        if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
             # If there is no pre-existing plot
             action_plot = QAction('Plot ' + signalName)
@@ -151,7 +150,6 @@ class QVizSignalHandling(QObject):
             - 'Select all signals from the same AOS'
             """
 
-    @pyqtSlot()
     def plotSignalCommand(self):
         try:
             self.currentFigureKey = \
