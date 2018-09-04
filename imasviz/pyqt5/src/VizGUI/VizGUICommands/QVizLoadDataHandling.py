@@ -69,7 +69,6 @@ class QVizLoadDataHandling(QObject):
         if self.dataTreeView.dataCurrentlyLoaded == False:
             action_GET_IDS_DATA = QAction('Get ' + IDSName + \
                 ' data... (default to occurrence 0)', self)
-            # action_GET_IDS_DATA.triggered.connect(self.runExample)
             action_GET_IDS_DATA.triggered.connect(self.loadSelectedData)
             self.dataTreeView.popupmenu = QMenu()
             self.dataTreeView.popupmenu.addAction(action_GET_IDS_DATA)

@@ -48,7 +48,7 @@
 # from imasviz.gui_commands.select_commands.SelectOrUnselectSignal import SelectOrUnselectSignal
 # from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 # from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
-# from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSignal import QVizPlotSignal
 # from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
 # from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 # from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import (PlotSelectedSignalsWithWxmplot,
@@ -62,6 +62,11 @@ from PyQt5.QtCore import QObject, pyqtSlot
 
 class QVizSignalHandling(QObject):
     def __init__(self, dataTreeView):
+        """
+        Arguments:
+            dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
+        """
+        super(QVizSignalHandling, self).__init__()
         self.dataTreeView = dataTreeView
         # self.CHANGE_COORD1 = GlobalIDs.ID_CHANGE_COORD1
         # self.CHANGE_TIME1  = GlobalIDs.ID_CHANGE_TIME1
@@ -80,6 +85,8 @@ class QVizSignalHandling(QObject):
 
     def updateNodeData(self):
         """ Update tree node/item data.
+            TODO: use the global routine 'updateNodeData' defined in
+                  AbstractCommand instead.
         """
         self.nodeData = self.dataTreeView.selectedItem.itemVIZData
         self.treeNode = \
@@ -150,6 +157,11 @@ class QVizSignalHandling(QObject):
             - 'Select all signals from the same AOS'
             """
 
+        # Map the menu (in order to show it)
+        self.dataTreeView.popupmenu.exec_( \
+            self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
+        return 1
+
     def plotSignalCommand(self):
         try:
             self.currentFigureKey = \
@@ -168,11 +180,11 @@ class QVizSignalHandling(QObject):
                 self.timeSlider = True
             else:
                 self.timeSlider = None
-            # TODO
-            # p = PlotSignal(self.dataTreeView, self.nodeData, signal=None,
-            #     figureKey=self.currentFigureKey, label=label, xlabel=xlabel,
-            #     signalHandling=self)
-            # p.execute()
+            # Plot signal data
+            p = QVizPlotSignal(self.dataTreeView, self.nodeData, signal=None,
+                               figureKey=self.currentFigureKey, label=label,
+                               xlabel=xlabel, signalHandling=self)
+            p.execute()
 
         except ValueError as e:
             self.dataTreeView.log.error(str(e))

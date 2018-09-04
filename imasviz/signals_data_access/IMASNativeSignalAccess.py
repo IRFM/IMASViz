@@ -11,7 +11,7 @@ class IMASNativeSignalAccess:
 
     def GetSignal(self,selectedNodeData,shotNumber, treeNode):
         return self.GetSignalAt(selectedNodeData, shotNumber, treeNode, treeNode.timeValue())
-        
+
     def GetSignalAt(self,selectedNodeData,shotNumber, treeNode, itimeValue):
 
         try:
@@ -43,11 +43,6 @@ class IMASNativeSignalAccess:
                     if len(e) != len(rval):
                         raise ValueError("Coordinate1 array has not the same length than the signal you want to plot.")
                     t = np.array([e])
-
-            #print t
-            #print r
-            #print 'len(t) = ' + str(len(t))
-            #print 'len(r) = ' + str(len(r))
 
             return (t,r)
         except:
