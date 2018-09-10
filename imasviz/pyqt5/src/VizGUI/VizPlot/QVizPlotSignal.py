@@ -30,6 +30,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 # import matplotlib.pyplot as plt
 import traceback
 import sys
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 
 class QVizPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
@@ -154,27 +155,34 @@ class QVizPlotSignal(AbstractCommand):
                                  xlabel=xlabel, title=title)
 
             if update == 1:
+                # Add plot to existing plot
                 for i in range(0, nbRows):
                     u = v[i]
                     # ti = t[i]
                     ti = t[0]
+                    # TODO: use QVizPlotWidget
+                    import pyqtgraph as pg
+                    plotWidget = pg.plot(title=title)
+                    # new plot widget
+                    plotWidget.plot(ti, u, pen='r')
                     # frame.oplot(ti, u, label=label, title=title)
             else:
+                # Create new plot
                 # frame.panel.toggle_legend(None, True)
+                self.tempContainer = []
                 for i in range(0, nbRows):
                     u = v[i]
                     ti = t[0]
 
                     if i == 0:
+                        # New plot
                         # frame.plot(ti, u, title=title, xlabel=xlabel,
                         #            ylabel=ylabel, label=label)
-                        pass
+                        x = QVizPlotWidget(parent=self.dataTreeView.parent, x=ti, y=u)
+                        self.tempContainer.append(x)
                     else:
                         # frame.oplot(ti, u, label=label)
                         pass
-                # frame.Center()
-
-            # frame.Show()
         except:
             traceback.print_exc(file=sys.stdout)
             raise
