@@ -130,7 +130,7 @@ class QVizSignalHandling(QObject):
         if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
             # If there is no pre-existing plot
-            action_plot = QAction('Plot ' + signalName)
+            action_plot = QAction('Plot ' + signalName, self)
             action_plot.triggered.connect(self.plotSignalCommand)
             self.dataTreeView.popupmenu.addAction(action_plot)
         else:
