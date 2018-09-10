@@ -300,6 +300,7 @@ class IMAS_DataAccessCodeGenerator():
                 if nodeName != None:
                     nodeName = nodeName.replace("'", "''")
                     nodeName = nodeName.replace("\n", "")
+
                     code = "node.set(" + "'name', '" + nodeName + "')"
                     self.printCode(code, level)
 
@@ -345,7 +346,7 @@ class IMAS_DataAccessCodeGenerator():
 
                 value = self.replaceIndices(ids_child_element.text)
                 value = value.replace('self.', '')
-                #value = value.replace('ids.', '')
+                value = value.replace('ids.', '')
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
@@ -468,7 +469,7 @@ class IMAS_DataAccessCodeGenerator():
 
                 value = self.replaceIndices(ids_child_element.text)
                 value = value.replace('self.', '')
-                #value = value.replace('ids.', '')
+                value = value.replace('ids.', '')
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 

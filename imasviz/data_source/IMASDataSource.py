@@ -245,7 +245,7 @@ class IMASDataSource:
     def colorOf(self, signalNode):
         ids = self.ids #@UnusedVariable
         if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
-            if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+            if len(eval('ids.' + signalNode['dataName'])) == 0:  # empty (signals) arrays appear in black
                 return GlobalColors.BLACK
             else:
                 return GlobalColors.BLUE #non empty (signals) arrays appear in blue
