@@ -30,7 +30,8 @@ from imasviz.util.GlobalOperations import GlobalOperations
 # import matplotlib.pyplot as plt
 import traceback
 import sys
-from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
+from PyQt5 import QtGui, QtCore
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotServices
 
 class QVizPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
@@ -82,17 +83,17 @@ class QVizPlotSignal(AbstractCommand):
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
-    def getFrame(self, figureKey=0):
-        api = self.dataTreeView.imas_viz_api
-        if figureKey in api.figureframes:
-            self.plotFrame = api.figureframes[figureKey]
-        else:
-            figureKey = api.GetNextKeyForFigurePlots()
-            # TODO
-            # self.plotFrame = \
-            #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
-            #                      signalHandling=self.signalHandling)
-            api.figureframes[figureKey] = self.plotFrame
+    # def getFrame(self, figureKey=0):
+    #     api = self.dataTreeView.imas_viz_api
+    #     if figureKey in api.figureframes:
+    #         self.plotFrame = api.figureframes[figureKey]
+    #     else:
+    #         figureKey = api.GetNextKeyForFigurePlots()
+    #         # TODO
+    #         # self.plotFrame = \
+    #         #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
+    #         #                      signalHandling=self.signalHandling)
+    #         api.figureframes[figureKey] = self.plotFrame
 
     @staticmethod
     def getTime(oneDimensionSignal):
@@ -129,8 +130,7 @@ class QVizPlotSignal(AbstractCommand):
 
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
-            self.getFrame(self.figureKey)
-
+            #self.getFrame(self.figureKey)
 
             # fig =  self.plotFrame.get_figure()
 
@@ -141,18 +141,11 @@ class QVizPlotSignal(AbstractCommand):
             # Shape of the signal
             nbRows = v.shape[0]
 
-            # def lambda_f(evt, i=figureKey, imas=self):
-            #     self.onHide(api, i)
-
-
-            # frame = self.plotFrame
-            # frame.Bind(wx.EVT_CLOSE, lambda_f)
-
             # Set plot options
             label, xlabel, ylabel, title = \
                 self.plotOptions(self.dataTreeView, self.nodeData,
                                  shotNumber=shotNumber, label=label,
-                                 xlabel=xlabel, title=title)
+                                 xlabel=xlabel, title=self.figureKey)
 
             if update == 1:
                 # Add plot to existing plot
@@ -160,29 +153,22 @@ class QVizPlotSignal(AbstractCommand):
                     u = v[i]
                     # ti = t[i]
                     ti = t[0]
-                    # TODO: use QVizPlotWidget
                     import pyqtgraph as pg
-                    plotWidget = pg.plot(title=title)
-                    # new plot widget
-                    plotWidget.plot(ti, u, pen='r')
-                    # frame.oplot(ti, u, label=label, title=title)
+                    plotWidget = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
             else:
                 # Create new plot
-                # frame.panel.toggle_legend(None, True)
-                self.tempContainer = []
                 for i in range(0, nbRows):
                     u = v[i]
                     ti = t[0]
 
                     if i == 0:
                         # New plot
-                        # frame.plot(ti, u, title=title, xlabel=xlabel,
-                        #            ylabel=ylabel, label=label)
-                        x = QVizPlotWidget(parent=self.dataTreeView.parent, x=ti, y=u)
-                        self.tempContainer.append(x)
+                        plotWidget = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
                     else:
-                        # frame.oplot(ti, u, label=label)
                         pass
+
+            api.figureframes[figureKey] = plotWidget
+
         except:
             traceback.print_exc(file=sys.stdout)
             raise

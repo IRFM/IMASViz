@@ -134,6 +134,11 @@ class QVizSignalHandling(QObject):
             action_plot.triggered.connect(self.plotSignalCommand)
             self.dataTreeView.popupmenu.addAction(action_plot)
         else:
+            # Add menu for creation of a new figure
+            action_plot1 = QAction('Plot ' + signalName + ' to new figure', self)
+            action_plot1.triggered.connect(self.plotSignalCommand)
+            self.dataTreeView.popupmenu.addAction(action_plot1)
+
             pass
             # TODO:
             """
