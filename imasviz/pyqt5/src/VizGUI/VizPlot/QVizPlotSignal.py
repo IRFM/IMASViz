@@ -31,7 +31,8 @@ from imasviz.util.GlobalOperations import GlobalOperations
 import traceback
 import sys
 from PyQt5 import QtGui, QtCore
-from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotServices
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotServices import QVizPlotServices
 
 class QVizPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
@@ -83,17 +84,17 @@ class QVizPlotSignal(AbstractCommand):
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
-    # def getFrame(self, figureKey=0):
-    #     api = self.dataTreeView.imas_viz_api
-    #     if figureKey in api.figureframes:
-    #         self.plotFrame = api.figureframes[figureKey]
-    #     else:
-    #         figureKey = api.GetNextKeyForFigurePlots()
-    #         # TODO
-    #         # self.plotFrame = \
-    #         #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
-    #         #                      signalHandling=self.signalHandling)
-    #         api.figureframes[figureKey] = self.plotFrame
+    def getPlotWidget(self, figureKey=0):
+        api = self.dataTreeView.imas_viz_api
+        if figureKey in api.figureframes:
+            self.plotWidget = api.figureframes[figureKey]
+        else:
+            figureKey = api.GetNextKeyForFigurePlots()
+            self.plotWidget = QVizPlotWidget(size=(600,500), title=figureKey)
+            # self.plotWidget = \
+            #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
+            #                      signalHandling=self.signalHandling)
+            api.figureframes[figureKey] = self.plotWidget
 
     @staticmethod
     def getTime(oneDimensionSignal):
@@ -130,7 +131,7 @@ class QVizPlotSignal(AbstractCommand):
 
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
-            #self.getFrame(self.figureKey)
+            self.getPlotWidget(self.figureKey)
 
             # fig =  self.plotFrame.get_figure()
 
@@ -140,6 +141,8 @@ class QVizPlotSignal(AbstractCommand):
 
             # Shape of the signal
             nbRows = v.shape[0]
+
+            plotWidget = self.plotWidget
 
             # Set plot options
             label, xlabel, ylabel, title = \
@@ -153,8 +156,8 @@ class QVizPlotSignal(AbstractCommand):
                     u = v[i]
                     # ti = t[i]
                     ti = t[0]
-                    import pyqtgraph as pg
-                    plotWidget = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
+                    # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
+                    plotWidget.plot(x=ti, y=u)
             else:
                 # Create new plot
                 for i in range(0, nbRows):
@@ -163,11 +166,14 @@ class QVizPlotSignal(AbstractCommand):
 
                     if i == 0:
                         # New plot
-                        plotWidget = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
+                        # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
+                        plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel)
                     else:
-                        pass
+                        # Add plot
+                        plotWidget.plot(x=ti, y=u)
 
-            api.figureframes[figureKey] = plotWidget
+            # api.figureframes[figureKey] = plotWidget_2
+            plotWidget.show()
 
         except:
             traceback.print_exc(file=sys.stdout)
