@@ -36,21 +36,26 @@ class QVizPlotWidget(QWidget):
 
         # set up the form class as a `ui` attribute
         self.ui = QVizPlotWidgetUI()
-        self.ui.setupUi(self, title)
+        self.ui.setupUi(self)
 
-    def plot(self, x=None, y=None, xlabel='', ylabel='', pen=mkPen('b', width=3, style=Qt.SolidLine)):
+    def plot(self, x=None, y=None, title='', label='', xlabel='', ylabel='',
+             pen=mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
         """
         # access your UI elements through the `ui` attribute
         # plot = self.ui.plotWidget.plot(x, y, title='', pen=pen)
-        self.ui.plotWidget.plot(x, y, title='', pen=pen)
+        # Add plot
+        self.ui.plotWidget.plot(x, y, title='', pen=pen, name=label)
+        # Set x-axis label
         self.ui.plotWidget.setLabel('left', xlabel, units='')
+        # Set y-axis label
         self.ui.plotWidget.setLabel('bottom', ylabel, units='')
+        # Enable grid
         self.ui.plotWidget.showGrid(x=True, y=True)
         return self
 
 class QVizPlotWidgetUI(object):
-    def setupUi(self, QVizPlotWidget, title):
+    def setupUi(self, QVizPlotWidget):
         """ Setup QVizPlotWidget User Interface.
 
         Arguments:
@@ -64,6 +69,8 @@ class QVizPlotWidgetUI(object):
         # Set plot widget
         self.plotWidget = PlotWidget(self.QVizPlotWidget)
         self.plotWidget.setObjectName("plotWidget")
+        # Add legend (must be called before adding plot!!!)
+        self.plotWidget.addLegend()
 
         # Set menu bar
         self.menuBar()

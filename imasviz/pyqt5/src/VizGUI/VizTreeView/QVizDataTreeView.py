@@ -41,6 +41,7 @@ from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizHandleRightClick import QVizHandleRightClick
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizNodeDocumentationWidget import QVizNodeDocumentationWidget
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 import os, sys, time
 from functools import partial
@@ -213,6 +214,9 @@ class QVizDataTreeView(QTreeWidget):
         # ShowNodeDocumentation.SetAndShow(
         #     parent_WxDataTreeView = self.parent,
         #     documentation = node_doc_str_array)
+        self.ndw = \
+            QVizNodeDocumentationWidget(documentation = node_doc_str_array)
+        self.ndw.show()
 
         print("Node Label: ", node_label)
         print("Node Documentation: ", node_doc)
@@ -422,8 +426,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         #print('view update took ' + str(t5 - t4) + ' seconds')
         #print ('updateView ended.')
 
-        # TODO
-        # IS IT NEEDED?
         # # Creating a separate signals tree
         # signalsFrame = \
         #     IDSSignalTreeFrame(None, self.dataTreeView,

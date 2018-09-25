@@ -149,7 +149,6 @@ class QVizPlotSignal(AbstractCommand):
                 self.plotOptions(self.dataTreeView, self.nodeData,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=self.figureKey)
-
             if update == 1:
                 # Add plot to existing plot
                 for i in range(0, nbRows):
@@ -157,7 +156,7 @@ class QVizPlotSignal(AbstractCommand):
                     # ti = t[i]
                     ti = t[0]
                     # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                    plotWidget.plot(x=ti, y=u)
+                    plotWidget.plot(x=ti, y=u, label=label)
             else:
                 # Create new plot
                 for i in range(0, nbRows):
@@ -167,10 +166,13 @@ class QVizPlotSignal(AbstractCommand):
                     if i == 0:
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                        plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel)
+                        # Automaticaly creates three different-colored pens (Not yet implemented)
+                        # plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel, pen=(i, nbRows))
+                        plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+                                        ylabel=ylabel)
                     else:
                         # Add plot
-                        plotWidget.plot(x=ti, y=u)
+                        plotWidget.plot(x=ti, y=u, label=label, pen=(i, nbRows))
 
             # api.figureframes[figureKey] = plotWidget_2
             plotWidget.show()
