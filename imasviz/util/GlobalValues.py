@@ -128,13 +128,26 @@ class GlobalColors:
     RED = QBrush(QColor('#ff0000'))
     BLACK = QBrush(QColor('#000000'))
     CYAN = QBrush(QColor('#00ffff'))
+    LIGHT_CYAN = QBrush(QColor('#cce5ff'))
     LIGHT_GREY = QBrush(QColor('#d3d3d3'))
 
     BLUE_HEX = '#0000ff'
     RED_HEX = '#ff0000'
     BLACK_HEX = '#000000'
     CYAN_HEX = '#00ffff'
+    LIGHT_CYAN_HEX = '#cce5ff'
     LIGHT_GREY_HEX = '#d3d3d3'
+
+class GlobalFonts:
+    """Global fonts.
+    """
+    from PyQt5.QtGui import QFont
+
+    TITLE = QFont('Open Sans', 15)
+    # TITLE.setStyleHint(QFont.TypeWriter)
+    TITLE.setBold(True)
+    TEXT = QFont('Open Sans', 11)
+    # TEXT.setStyleHint(QFont.TypeWriter)
 
 
 

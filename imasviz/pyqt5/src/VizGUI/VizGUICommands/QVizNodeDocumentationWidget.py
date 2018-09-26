@@ -11,42 +11,124 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout
+from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout, QFont
 from PyQt5.QtCore import Qt
+from imasviz.util.GlobalValues import GlobalColors, GlobalFonts
 
 class QVizNodeDocumentationWidget(QWidget):
-
-    def __init__(self, parent=None, documentation='', size=(500,400),
-                 title='QVizNodeDocumantationWidget'):
+    """
+    Arguments:
+        dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
+        ...
+    """
+    def __init__(self, parent=None):
         super(QVizNodeDocumentationWidget, self).__init__(parent=parent)
 
-        l1 = QLabel()
-        l2 = QLabel()
-        l3 = QLabel()
-        l4 = QLabel()
+        pass
 
-        l1.setText(documentation[0])
-        l2.setText(documentation[1])
-        l3.setText(documentation[2])
-        l4.setText(documentation[3])
+        # self.create(dataTreeView, documentation, title)
 
-        l1.setAlignment(Qt.AlignLeft)
-        l2.setAlignment(Qt.AlignLeft)
-        l3.setAlignment(Qt.AlignLeft)
-        l4.setAlignment(Qt.AlignLeft)
+    def create(self, dataTreeView, documentation='', title='QVizNodeDocumantationWidget'):
+        # Get reference width, height and position (of the dataTreeWindowFrame)
+        ref_width, ref_height, ref_pos_x, ref_pos_y = \
+            self.getWindowGeometry(dataTreeView.parent)
+
+        # Set widget size
+        size = (ref_width, 300)
+
+        # Set widget position
+        pos = (ref_pos_x, ref_pos_y+ref_height)
+
+        self.l1 = QLabel()
+        self.l2 = QLabel()
+        self.l3 = QLabel()
+        self.l4 = QLabel()
+
+        self.l1.setText(documentation[0])
+        self.l2.setText(documentation[1])
+        self.l3.setText(documentation[2])
+        self.l4.setText(documentation[3])
+
+        self.l1.setAlignment(Qt.AlignLeft)
+        self.l2.setAlignment(Qt.AlignLeft)
+        self.l3.setAlignment(Qt.AlignLeft)
+        self.l4.setAlignment(Qt.AlignLeft)
+
+        self.l1.setWordWrap(True)
+        self.l2.setWordWrap(True)
+        self.l3.setWordWrap(True)
+        self.l4.setWordWrap(True)
+
+        self.l1.setFont(GlobalFonts.TITLE)
+        self.l2.setFont(GlobalFonts.TEXT)
+        self.l3.setFont(GlobalFonts.TITLE)
+        self.l4.setFont(GlobalFonts.TEXT)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(l1)
+        vbox.addWidget(self.l1)
         vbox.addStretch()
-        vbox.addWidget(l2)
+        vbox.addWidget(self.l2)
         vbox.addStretch()
-        vbox.addWidget(l3)
+        vbox.addWidget(self.l3)
         vbox.addStretch()
-        vbox.addWidget(l4)
+        vbox.addWidget(self.l4)
 
         # QVizNodeDocumentationWidget settings
         self.setObjectName("QVizNodeDocumentationWidget")
         self.setWindowTitle("Node documentation")
-        # self.resize(250, 150)
-        self.move(300, 300)
+        # - Set position in relation to DTV
+        self.move(pos[0], pos[1]+28)
+        # - Set layout
         self.setLayout(vbox)
+        # - Set size in relation to DTV
+        self.resize(size[0], size[1])
+        self.setFixedWidth(size[0])
+        # - Set panel background colour
+        p = self.palette()
+        p.setBrush(self.backgroundRole(), GlobalColors.LIGHT_CYAN)
+        self.setPalette(p)
+        self.setAutoFillBackground(True)
+        # - Adjust size
+        self.adjustSize()
+
+    def update(self, dataTreeView, documentation='', title='QVizNodeDocumantationWidget'):
+        # Get reference width, height and position (of the dataTreeWindowFrame)
+        ref_width, ref_height, ref_pos_x, ref_pos_y = \
+            self.getWindowGeometry(dataTreeView.parent)
+
+        # Set widget size
+        size = (ref_width, 300)
+
+        # Set widget position
+        pos = (ref_pos_x, ref_pos_y+ref_height)
+
+        self.l1.setText(documentation[0])
+        self.l2.setText(documentation[1])
+        self.l3.setText(documentation[2])
+        self.l4.setText(documentation[3])
+
+        # QVizNodeDocumentationWidget settings
+        # - Set position in relation to DTV
+        self.move(pos[0], pos[1]+28)
+        # - Set size in relation to DTV
+        self.resize(size[0], size[1])
+        # - Adjust size
+        self.adjustSize()
+
+
+    @staticmethod
+    def getWindowGeometry(window):
+        """ Get geometry (size, position ) of the QT window. Returns width,
+        height, pos_x, pos_y.
+
+        Arguments:
+            window (QWindow) : PyQt window object.
+        """
+
+        width = window.width()
+        height = window.height()
+        pos_x = window.pos().x()
+        pos_y = window.pos().y()
+
+        return width, height, pos_x, pos_y
+

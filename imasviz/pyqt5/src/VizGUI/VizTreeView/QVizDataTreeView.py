@@ -121,6 +121,9 @@ class QVizDataTreeView(QTreeWidget):
 
         self.log = Logger()
 
+        # Set dummy for node documentation widget
+        self.ndw = None
+
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
         Note: The original routine source (ues with wxPython) can be found in
@@ -214,12 +217,17 @@ class QVizDataTreeView(QTreeWidget):
         # ShowNodeDocumentation.SetAndShow(
         #     parent_WxDataTreeView = self.parent,
         #     documentation = node_doc_str_array)
-        self.ndw = \
-            QVizNodeDocumentationWidget(documentation = node_doc_str_array)
-        self.ndw.show()
 
-        print("Node Label: ", node_label)
-        print("Node Documentation: ", node_doc)
+        if self.ndw == None:
+            self.ndw = QVizNodeDocumentationWidget()
+            self.ndw.create(dataTreeView = self,
+                            documentation = node_doc_str_array)
+            self.ndw.show()
+        else:
+            self.ndw.update(dataTreeView = self,
+                            documentation = node_doc_str_array)
+            if self.ndw.isVisible() == False:
+                self.ndw.show()
 
         ### PLOT PREVIEW PANEL
         # TODO
@@ -345,7 +353,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
         # Basic settings (QMainWindow)
-        self.resize(520, 800)
+        self.resize(520, 600)
 
         # Set Data Tree View Window name
         self.setObjectName('DTV Window')
