@@ -3,21 +3,20 @@ import imas
 import wx
 
 #from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 import ETNativeDataTree_Generated_3_6_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 import ETNativeDataTree_Generated_3_7_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 import ETNativeDataTree_Generated_3_9_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 import ETNativeDataTree_Generated_3_9_1
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 import ETNativeDataTree_Generated_3_11_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_0 import ETNativeDataTree_Generated_3_12_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_1 import ETNativeDataTree_Generated_3_12_1
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_0 import ETNativeDataTree_Generated_3_15_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_1 import ETNativeDataTree_Generated_3_15_1
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_16_0 import ETNativeDataTree_Generated_3_16_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_0 import ETNativeDataTree_Generated_3_17_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_1 import ETNativeDataTree_Generated_3_17_1
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_2 import ETNativeDataTree_Generated_3_17_2
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_18_0 import ETNativeDataTree_Generated_3_18_0
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_19_1 import ETNativeDataTree_Generated_3_19_1
-from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_20_0 import ETNativeDataTree_Generated_3_20_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 import ETNativeDataTree_Generated_3_9_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 import ETNativeDataTree_Generated_3_9_1
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 import ETNativeDataTree_Generated_3_11_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_0 import ETNativeDataTree_Generated_3_12_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_1 import ETNativeDataTree_Generated_3_12_1
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_0 import ETNativeDataTree_Generated_3_15_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_1 import ETNativeDataTree_Generated_3_15_1
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_16_0 import ETNativeDataTree_Generated_3_16_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_0 import ETNativeDataTree_Generated_3_17_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_1 import ETNativeDataTree_Generated_3_17_1
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_2 import ETNativeDataTree_Generated_3_17_2
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_18_0 import ETNativeDataTree_Generated_3_18_0
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_19_1 import ETNativeDataTree_Generated_3_19_1
+#from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_20_0 import ETNativeDataTree_Generated_3_20_0
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 
@@ -38,6 +37,8 @@ class GeneratedClassFactory:
             imas__dd_version = GlobalValues.TESTING_IMAS_VERSION
 
         if imas__dd_version == "3.7.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 \
+                import ETNativeDataTree_Generated_3_7_0
             generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
                                                            imasDbName=self.IMASDataSource.imasDbName,
                                                            shotNumber=self.IMASDataSource.shotNumber,
@@ -47,6 +48,8 @@ class GeneratedClassFactory:
                                                            pathsList = self.pathsList,
                                                            async=self.async)
         # elif imas__dd_version == "3.6.0":
+        #     from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 \
+        #         import ETNativeDataTree_Generated_3_6_0
         #     generatedDataTree = ETNativeDataTree_Generated_3_6_0(userName=self.IMASDataSource.userName,
         #                                                          imasDbName=self.IMASDataSource.imasDbName,
         #                                                          shotNumber=self.IMASDataSource.shotNumber,
@@ -56,6 +59,8 @@ class GeneratedClassFactory:
         #                                                          pathsList=self.pathsList,
         #                                                          async=self.async)
         elif imas__dd_version == "3.9.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 \
+                import ETNativeDataTree_Generated_3_9_0
             generatedDataTree = ETNativeDataTree_Generated_3_9_0(userName=self.IMASDataSource.userName,
                                                                  imasDbName=self.IMASDataSource.imasDbName,
                                                                  shotNumber=self.IMASDataSource.shotNumber,
@@ -65,6 +70,8 @@ class GeneratedClassFactory:
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
         elif imas__dd_version == "3.9.1":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 \
+                import ETNativeDataTree_Generated_3_9_1
             generatedDataTree = ETNativeDataTree_Generated_3_9_1(userName=self.IMASDataSource.userName,
                                                                  imasDbName=self.IMASDataSource.imasDbName,
                                                                  shotNumber=self.IMASDataSource.shotNumber,
@@ -74,6 +81,8 @@ class GeneratedClassFactory:
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
         elif imas__dd_version == "3.11.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 \
+                import ETNativeDataTree_Generated_3_11_0
             generatedDataTree = ETNativeDataTree_Generated_3_11_0(userName=self.IMASDataSource.userName,
                                                                  imasDbName=self.IMASDataSource.imasDbName,
                                                                  shotNumber=self.IMASDataSource.shotNumber,
@@ -83,6 +92,8 @@ class GeneratedClassFactory:
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
         elif imas__dd_version == "3.12.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_0 \
+                import ETNativeDataTree_Generated_3_12_0
             generatedDataTree = ETNativeDataTree_Generated_3_12_0(userName=self.IMASDataSource.userName,
                                                                  imasDbName=self.IMASDataSource.imasDbName,
                                                                  shotNumber=self.IMASDataSource.shotNumber,
@@ -92,6 +103,8 @@ class GeneratedClassFactory:
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
         elif imas__dd_version == "3.15.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_0 \
+                import ETNativeDataTree_Generated_3_15_0
             generatedDataTree = ETNativeDataTree_Generated_3_15_0(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -101,6 +114,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.15.1":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_1 \
+                import ETNativeDataTree_Generated_3_15_1
             generatedDataTree = ETNativeDataTree_Generated_3_15_1(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -110,6 +125,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.16.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_16_0 \
+                import ETNativeDataTree_Generated_3_16_0
             generatedDataTree = ETNativeDataTree_Generated_3_16_0(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -120,6 +137,8 @@ class GeneratedClassFactory:
                                                               async=self.async)
 
         elif imas__dd_version == "3.17.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_0 \
+                import ETNativeDataTree_Generated_3_17_0
             generatedDataTree = ETNativeDataTree_Generated_3_17_0(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -129,6 +148,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.17.1":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_1 \
+                import ETNativeDataTree_Generated_3_17_1
             generatedDataTree = ETNativeDataTree_Generated_3_17_1(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -138,6 +159,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.17.2":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_2 \
+                import ETNativeDataTree_Generated_3_17_2
             generatedDataTree = ETNativeDataTree_Generated_3_17_2(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -147,6 +170,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.18.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_18_0 \
+                import ETNativeDataTree_Generated_3_18_0
             generatedDataTree = ETNativeDataTree_Generated_3_18_0(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -156,6 +181,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.19.1":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_19_1 \
+                import ETNativeDataTree_Generated_3_19_1
             generatedDataTree = ETNativeDataTree_Generated_3_19_1(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
@@ -165,6 +192,8 @@ class GeneratedClassFactory:
                                                               pathsList=self.pathsList,
                                                               async=self.async)
         elif imas__dd_version == "3.20.0":
+            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_20_0 \
+                import ETNativeDataTree_Generated_3_20_0
             generatedDataTree = ETNativeDataTree_Generated_3_20_0(userName=self.IMASDataSource.userName,
                                                               imasDbName=self.IMASDataSource.imasDbName,
                                                               shotNumber=self.IMASDataSource.shotNumber,
