@@ -14,7 +14,7 @@ class Imas_Viz_Options:
 
 class GlobalValues:
 
-    IMAS_VIZ_VERSION = '1.2.0'
+    IMAS_VIZ_VERSION = '1.2.1'
 
     indices = {'1': 'i', '2': 'j', '3': 'k', '4': 'l', '5': 'q', '6': 'r', '7': 't'}
     max_indices = {'1': 'N', '2': 'M', '3': 'K', '4': 'L', '5': 'Q', '6': 'R', '7': 'T'}

@@ -233,11 +233,6 @@ class IMAS_DataAccessCodeGenerator():
                 # self.printCode(parentCode, level)
                 # code = "node.add('" + ids_child_element.text + "')"
                 # self.printCode(code, level)
-                if (ids_child_element.get('name') == 'multiplicity'):
-                    print('test')
-
-                if (ids_child_element.get('path_doc') == 'element(i1)/multiplicity'):
-                    print('test')
 
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)

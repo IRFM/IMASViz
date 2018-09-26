@@ -121,7 +121,7 @@ class WxDataTreeView(wx.TreeCtrl):
                     if obsolescent is None or obsolescent == 'active':
                         display_color = wx.BLUE
                     else:
-                        display_color = wx.CYAN
+                        display_color = wx.BLUE
                     self.SetItemTextColour(idsNode, display_color)
                 # Mapping the idsName with idsNode
                 returnedDict[idsName] = idsNode
