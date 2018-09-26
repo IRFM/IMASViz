@@ -1,7 +1,8 @@
 import wx
 
 from imasviz.view.TreeNode import TreeNode
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.util.GlobalValues import GlobalValues, Imas_Viz_Options
+from imasviz.util.GlobalOperations import GlobalOperations
 
 class WxDataTreeViewBuilder:
     def __init__(self):
@@ -81,13 +82,15 @@ class WxDataTreeViewBuilder:
                 if units != None:
                     display += " [" + units + "]"
 
-                viewerNode = viewerTree.AppendItem(parentNode, display , -1, -1,
-                                                   itemDataDict)
+                if GlobalOperations.renderNode(display_color):
 
-                viewerTree.SetItemTextColour(viewerNode, display_color)
+                    viewerNode = viewerTree.AppendItem(parentNode, display , -1, -1,
+                                                       itemDataDict)
 
-                viewerTree.dataSource.addWxNodes(itemDataDict, viewerTree,
-                                                 viewerNode, itemDataDict)
+                    viewerTree.SetItemTextColour(viewerNode, display_color)
+
+                    viewerTree.dataSource.addWxNodes(itemDataDict, viewerTree,
+                                                     viewerNode, itemDataDict)
 
             else:
                 # Add node information to each new node of IDS
@@ -203,13 +206,15 @@ class WxDataTreeViewBuilder:
                 if units != None:
                     display += " [" + units + "]"
 
-                viewerNode = viewerTree.AppendItem(parentNode, display, -1, -1,
-                                                   wxTreeItemData)
+                if GlobalOperations.renderNode(display_color):
 
-                viewerTree.SetItemTextColour(viewerNode, display_color)
+                    viewerNode = viewerTree.AppendItem(parentNode, display, -1, -1,
+                                                       wxTreeItemData)
 
-                viewerTree.dataSource.addWxNodes(itemDataDict, viewerTree,
-                                                 viewerNode, wxTreeItemData)
+                    viewerTree.SetItemTextColour(viewerNode, display_color)
+
+                    viewerTree.dataSource.addWxNodes(itemDataDict, viewerTree,
+                                                     viewerNode, wxTreeItemData)
 
             else:
                 itemDataDict['IDSName'] = idsName
@@ -279,6 +284,12 @@ class WxDataTreeViewBuilder:
 
         # Add node information to each new node of IDS
         display_color = wx.BLUE
+        obsolescent = dataElement.get('lifecycle_status') == 'obsolescent'
+        if obsolescent is False:
+            display_color = wx.BLUE
+        else:
+            display_color = wx.CYAN
+
         itemDataDict['availableIDSData'] = 0
         itemDataDict['IDSName'] = idsName
         itemDataDict['dataName'] = dataElement.find('name').text
@@ -327,28 +338,28 @@ class WxDataTreeViewBuilder:
         isSignal = 0
 
         data_type = dataElement.get('data_type')
+        if data_type is not None:
+            if data_type.startswith("FLT_") or data_type.startswith("flt_") and data_type != "FLT_0D" and data_type != 'flt_0d_type':
+                isSignal = 1
+                itemDataDict['data_type'] = data_type
+                if data_type == 'FLT_1D' or data_type == 'flt_1d_type':
+                   itemDataDict['coordinate1'] = coordinate1
+                else:
+                    isSignal = 2
+                itemDataDict['path_doc'] = dataElement.get('path_doc')
 
-
-        if data_type.startswith("FLT_") or data_type.startswith("flt_") and data_type != "FLT_0D" and data_type != 'flt_0d_type':
-            isSignal = 1
-            itemDataDict['data_type'] = data_type
-            if data_type == 'FLT_1D' or data_type == 'flt_1d_type':
-               itemDataDict['coordinate1'] = coordinate1
-            else:
-                isSignal = 2
-            itemDataDict['path_doc'] = dataElement.get('path_doc')
-            display_color = viewerTree.dataSource.colorOf(itemDataDict)
-            itemDataDict['aos'] = dataElement.get('aos')
-            itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
-            for i in range(0, len(GlobalValues.indices)):
-                key_name = GlobalValues.indices[str(i+1)]
-                itemDataDict[key_name] = dataElement.get(key_name)
-                key_max_name = GlobalValues.max_indices[str(i + 1)]
-                itemDataDict[key_max_name] = dataElement.get(key_max_name)
-
+                obsolescent = dataElement.get('lifecycle_status') == 'obsolescent'
+                display_color = viewerTree.dataSource.colorOf(itemDataDict, obsolescent)
+                itemDataDict['aos'] = dataElement.get('aos')
+                itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
+                for i in range(0, len(GlobalValues.indices)):
+                    key_name = GlobalValues.indices[str(i+1)]
+                    itemDataDict[key_name] = dataElement.get(key_name)
+                    key_max_name = GlobalValues.max_indices[str(i + 1)]
+                    itemDataDict[key_max_name] = dataElement.get(key_max_name)
 
         itemDataDict['isSignal'] = isSignal
         itemDataDict['isIDSRoot'] = 0
         itemDataDict['isSelected'] = 0
         itemDataDict['Tag'] = dataElement.tag
-        return (itemDataDict, isSignal, display_color)
+        return itemDataDict, isSignal, display_color

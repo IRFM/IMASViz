@@ -128,6 +128,11 @@ class IMAS_DataAccessCodeGenerator():
                      code = "parent.set(" + "'name', '" + parentName + "')"
                      self.printCode(code, level)
 
+                 lifecycle_status = ids_child_element.get('lifecycle_status')
+                 if lifecycle_status is not None:
+                     code = "parent.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
+                     self.printCode(code, level)
+
                  self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index, idsName)
 
             elif data_type == 'struct_array':
@@ -165,6 +170,11 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode(code, level + 1)
                 code = "parent.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level + 1)
+
+                lifecycle_status = ids_child_element.get('lifecycle_status')
+                if lifecycle_status is not None:
+                    code = "parent.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
+                    self.printCode(code, level + 1)
 
                 documentation = ids_child_element.get('documentation')
                 if documentation != None:
@@ -213,9 +223,20 @@ class IMAS_DataAccessCodeGenerator():
                 # self.printCode(parentCode, level)
                 # code = "node.add('" + ids_child_element.text + "')"
                 # self.printCode(code, level)
+                if (ids_child_element.get('name') == 'multiplicity'):
+                    print('test')
+
+                if (ids_child_element.get('path_doc') == 'element(i1)/multiplicity'):
+                    print('test')
 
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
+
+                lifecycle_status = ids_child_element.get('lifecycle_status')
+                if lifecycle_status is not None:
+                    code = "node.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
+                    self.printCode(code, level)
+
                 type = ids_child_element.get('type')
                 code = "node.set(" + "'type', '" + type + "')"
                 self.printCode(code, level)
@@ -257,6 +278,13 @@ class IMAS_DataAccessCodeGenerator():
                 #     time_dependent = 1
                 # else:
                 #     time_dependent = 0
+
+                lifecycle_status = ids_child_element.get('lifecycle_status')
+                #if (ids_child_element.get('path_doc') == 'time_slice(itime)/profiles_1d/b_average_error_upper(:)'):
+                #    print('test')
+                if lifecycle_status is not None:
+                    code = "node.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
+                    self.printCode(code, level)
 
                 code = "node.set(" + "'itime_index', '" + str(itimeIndex) + "')"
                 self.printCode(code, level)
@@ -408,6 +436,11 @@ class IMAS_DataAccessCodeGenerator():
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
 
+                lifecycle_status = ids_child_element.get('lifecycle_status')
+                if lifecycle_status is not None:
+                    code = "node.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
+                    self.printCode(code, level)
+
                 units = ids_child_element.get('units')
                 if units != None:
                     code = "node.set(" + "'units', '" + units + "')"
@@ -537,8 +570,8 @@ if __name__ == "__main__":
 
     print ("Starting code generation")
     GlobalOperations.checkEnvSettings()
-    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0", "3.19.1"]
-    #imas_versions = ["3.16.0"]
+    imas_versions = ["3.6.0", "3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0", "3.19.1", "3.20.0"]
+    # imas_versions = ["3.19.1"]
     for v in imas_versions:
         dag = IMAS_DataAccessCodeGenerator(v)
     print ("End of code generation")

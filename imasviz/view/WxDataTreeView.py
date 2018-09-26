@@ -116,7 +116,13 @@ class WxDataTreeView(wx.TreeCtrl):
                 idsNode = self.AppendItem(self.root, idsName, -1, -1, itemDataDict)
                 if self.dataSource.exists(idsName) == 1:
                     itemDataDict['availableIDSData'] = 1
-                    self.SetItemTextColour(idsNode, wx.BLUE)
+                    display_color = wx.BLUE
+                    obsolescent = child.get('lifecycle_status')
+                    if obsolescent is None or obsolescent == 'active':
+                        display_color = wx.BLUE
+                    else:
+                        display_color = wx.CYAN
+                    self.SetItemTextColour(idsNode, display_color)
                 # Mapping the idsName with idsNode
                 returnedDict[idsName] = idsNode
         return returnedDict

@@ -74,7 +74,7 @@ class ToreSupraDataSource:
             viewerTree.AppendItem(viewerNode, doc_display, -1, -1, wxTreeItemData)
 
     #Define the color of a node which contains a signal
-    def colorOf(self, signalNode):
+    def colorOf(self, signalNode, obsolescent=None):
         return wx.BLUE
 
     #This defines the unique key attached to each data which can be plotted

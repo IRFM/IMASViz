@@ -12,12 +12,13 @@ import sys
 
 class PlotSelectedSignals(AbstractCommand):
     def __init__(self, WxDataTreeView, figureKey=None, update=0,
-            configFile=None):
+            configFile=None, all_DTV=True):
         AbstractCommand.__init__(self, WxDataTreeView, None)
         self.figureKey = figureKey
         self.update = update
         self.plotConfig = None
         self.configFile = configFile
+        self.all_DTV = all_DTV
         if self.configFile != None:
             self.plotConfig = ET.parse(self.configFile)
         """WxDataTreeView"""
@@ -35,7 +36,7 @@ class PlotSelectedSignals(AbstractCommand):
 
         if plotDimension == "1D":
             """In case of 1D plots"""
-            self.plot1DSelectedSignals(self.figureKey, self.update)
+            self.plot1DSelectedSignals(self.figureKey, self.update, self.all_DTV)
         elif plotDimension == "2D" or plotDimension == "3D":
             """In case of 2D or 3D plots"""
             raise ValueError("2D/3D plots are not currently supported.")
@@ -76,7 +77,7 @@ class PlotSelectedSignals(AbstractCommand):
             api.figureframes[figureKey] = frame
         return frame
 
-    def plot1DSelectedSignals(self, figureKey=0, update=0):
+    def plot1DSelectedSignals(self, figureKey=0, update=0, all_DTV=True):
         """Plot the set of 1D signals selected by the user as a function of time.
 
         Parameters
@@ -98,10 +99,18 @@ class PlotSelectedSignals(AbstractCommand):
                 frame.Bind(wx.EVT_CLOSE, lambda_f)
 
             i = 0
-            """Go through each opened DTV, get its selected plot signals and
-               plot every single on to the same plot panel
+
+            # Create a list of DTVs to specify either single DTV or a list of
+            # DTVs fro, which the signals should be plotted to a single plot
+            plot_DTVlist = []
+            if all_DTV == False:
+                plot_DTVlist = [self.WxDataTreeView]
+            else:
+                plot_DTVlist = self.api.wxDTVlist
+            """Go through the list of opened DTVs, get its selected plot signals
+            and plot every single on to the same plot panel
             """
-            for dtv in self.api.wxDTVlist:
+            for dtv in plot_DTVlist:
                 """Get list of selected signals in DTV"""
                 dtv_selectedSignals = GlobalOperations.getSortedSelectedSignals( \
                     dtv.selectedSignals)
