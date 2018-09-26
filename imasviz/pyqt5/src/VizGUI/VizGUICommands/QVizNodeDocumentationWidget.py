@@ -16,10 +16,8 @@ from PyQt5.QtCore import Qt
 from imasviz.util.GlobalValues import GlobalColors, GlobalFonts
 
 class QVizNodeDocumentationWidget(QWidget):
-    """
-    Arguments:
-        dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
-        ...
+    """Set node documentation widget, containing information about node label
+    and description.
     """
     def __init__(self, parent=None):
         super(QVizNodeDocumentationWidget, self).__init__(parent=parent)
@@ -29,6 +27,16 @@ class QVizNodeDocumentationWidget(QWidget):
         # self.create(dataTreeView, documentation, title)
 
     def create(self, dataTreeView, documentation='', title='QVizNodeDocumantationWidget'):
+        """Create new node documentation widget.
+
+        Arguments:
+            dataTreeView (QTreeWidget)  : DataTreeView object of the QTreeWidget.
+            documantation (4*str array) : An array containing 4 documentation
+                                          strings: First title, first entry,
+                                          second title, second entry.
+            title (str)                 : Widget title.
+        """
+
         # Get reference width, height and position (of the dataTreeWindowFrame)
         ref_width, ref_height, ref_pos_x, ref_pos_y = \
             self.getWindowGeometry(dataTreeView.parent)
@@ -91,7 +99,17 @@ class QVizNodeDocumentationWidget(QWidget):
         # - Adjust size
         self.adjustSize()
 
-    def update(self, dataTreeView, documentation='', title='QVizNodeDocumantationWidget'):
+    def update(self, dataTreeView, documentation=''):
+        """Update the text of the existing node documentation widget.
+
+        Arguments:
+            dataTreeView (QTreeWidget)  : DataTreeView object of the QTreeWidget.
+            documantation (4*str array) : An array containing 4 documentation
+                                          strings: First title, first entry,
+                                          second title, second entry.
+        """
+
+
         # Get reference width, height and position (of the dataTreeWindowFrame)
         ref_width, ref_height, ref_pos_x, ref_pos_y = \
             self.getWindowGeometry(dataTreeView.parent)

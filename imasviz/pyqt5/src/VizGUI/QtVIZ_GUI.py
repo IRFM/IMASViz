@@ -16,6 +16,9 @@ from imasviz.pyqt5.src.VizGUI.VizGUICommands.QtDefault import QtDefault
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
         super(GUIFrame, self).__init__(parent)
+
+        self.openShotView = QtOpenShotView()
+
         self.setGeometry(300,300,600,400)
         self.tab1 = QWidget()
         self.tab2 = QWidget()
@@ -75,12 +78,12 @@ class GUIFrame(QTabWidget):
     def OpenDataSourceFromTab1(self, evt):
         try:
             self.CheckInputsFromTab1()
-            openShotView = QtOpenShotView(dataSourceName=GlobalValues.IMAS_NATIVE,
+            # openShotView = QtOpenShotView()
+            self.openShotView.Open(evt, dataSourceName=GlobalValues.IMAS_NATIVE,
                                         imasDbName=self.imasDbName.text(),
                                         userName=self.userName.text(),
                                         runNumber=self.runNumber.text(),
                                         shotNumber=self.shotNumber.text())
-            openShotView.Open(evt)
         except ValueError as e:
             self.logFromTab1.error(str(e))
 

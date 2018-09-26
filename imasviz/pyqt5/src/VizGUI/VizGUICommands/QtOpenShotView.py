@@ -6,14 +6,15 @@ from imasviz.util.GlobalValues import GlobalValues
 from imasviz.data_source.IMASDataSource import IMASDataSource
 
 class QtOpenShotView():
-    def __init__(self, dataSourceName, imasDbName, userName, shotNumber, runNumber):
+    def __init__(self):
+        self.api = Browser_API()
+
+    def Open(self, evt, dataSourceName, imasDbName, userName, shotNumber, runNumber):
         self.dataSourceName = dataSourceName
         self.imasDbName = imasDbName
         self.userName = userName
         self.shotNumber = shotNumber
         self.runNumber = runNumber
-
-    def Open(self, evt):
         if self.dataSourceName == GlobalValues.IMAS_NATIVE:
             """Try to open the specified IDS database """
             IMASDataSource.try_to_open(self.imasDbName,
@@ -34,7 +35,7 @@ class QtOpenShotView():
                                               imasDbName=self.imasDbName,
                                               dataSourceName=self.dataSourceName)
 
-        api = Browser_API()
-        dtv = api.CreateDataTree(dataSource)
-        api.ShowDataTree(dtv)
+        # api = Browser_API()
+        dtv = self.api.CreateDataTree(dataSource)
+        self.api.ShowDataTree(dtv)
 
