@@ -20,10 +20,11 @@ class QVizPlotServices():
     def __init__(self):
         pass
 
-    def plot(self, x=None, y=None, title='', xlabel='', ylabel='', pen=mkPen('b', width=3, style=Qt.SolidLine)):
+    def plot(self, x=None, y=None, title='', xlabel='', ylabel='',
+             pen=mkPen('b', width=3, style=Qt.SolidLine)):
         plotWidget = pg.plot(title=title)
         plotWidget.resize(400, 400)
         plotWidget.plot(x, y, pen=pen)
-        plotWidget.setLabel('left', 'Value', units='V')
-        plotWidget.setLabel('bottom', 'Time', units='s')
+        plotWidget.setLabel('left', xlabel, units='')
+        plotWidget.setLabel('bottom', ylabel, units='')
         return plotWidget

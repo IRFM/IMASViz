@@ -49,6 +49,7 @@
 # from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 # from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSignal import QVizPlotSignal
+from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPreviewPlotSignal import QVizPreviewPlotSignal
 # from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
 # from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 # from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import (PlotSelectedSignalsWithWxmplot,
@@ -190,6 +191,22 @@ class QVizSignalHandling(QObject):
                                figureKey=self.currentFigureKey, label=label,
                                xlabel=xlabel, signalHandling=self)
             p.execute()
+
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
+
+    def plotPreviewSignalCommand(self):
+        """Show preview plot.
+        """
+        try:
+            label = None
+            xlabel = None
+
+            p = QVizPreviewPlotSignal(self.dataTreeView, self.nodeData, signal=None,
+                                  label=label,xlabel=xlabel,
+                                  signalHandling=self)
+            p.execute()
+
 
         except ValueError as e:
             self.dataTreeView.log.error(str(e))

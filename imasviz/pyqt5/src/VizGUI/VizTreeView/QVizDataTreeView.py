@@ -42,6 +42,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizHandleRightClick import QVizHandleRightClick
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizNodeDocumentationWidget import QVizNodeDocumentationWidget
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizSignalHandling import QVizSignalHandling
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 import os, sys, time
 from functools import partial
@@ -212,25 +213,40 @@ class QVizDataTreeView(QTreeWidget):
         node_doc_str_array.append("Documentation: ")
         node_doc_str_array.append(node_doc)
 
-        # Set and show node documentation panel
-        # (TODO)
-        # ShowNodeDocumentation.SetAndShow(
-        #     parent_WxDataTreeView = self.parent,
-        #     documentation = node_doc_str_array)
-
+        # Set and show node documentation widget
+        # - If node doc widget is not present create new one
         if self.ndw == None:
             self.ndw = QVizNodeDocumentationWidget()
             self.ndw.create(dataTreeView = self,
                             documentation = node_doc_str_array)
             self.ndw.show()
         else:
+            # - Else update the old one
             self.ndw.update(dataTreeView = self,
                             documentation = node_doc_str_array)
+            # If the node doc widget is not visible, show it
             if self.ndw.isVisible() == False:
                 self.ndw.show()
 
         ### PLOT PREVIEW PANEL
         # TODO
+        checkout_menu_preview_panel_value = True # Temporary!
+        # Check the enable/disable preview plot checkbox value
+        #checkout_menu_preview_panel_value = self.parent.GetMenuBar(). \
+        #    FindItemById(GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE). \
+        #    IsChecked()
+        if (checkout_menu_preview_panel_value == True and
+            item.itemVIZData.get('isSignal') == 1 and
+            item.itemVIZData.get('data_type') == 'FLT_1D' and
+            (item.foreground(0).color().name() == GlobalColors.BLUE_HEX or
+            item.foreground(0).color().name() == GlobalColors.RED_HEX)):
+            # If the node holds an 1D array of values (1D_FLT) then its
+            # isSignal attribute equals 1 (isSignale = 1)
+
+            # Set and show preview panel
+            QVizSignalHandlingObj = QVizSignalHandling(dataTreeView = self)
+            QVizSignalHandlingObj.plotPreviewSignalCommand()
+
 
     def contextMenuEvent(self, event):
         """ Custom menu event on the right click on the tree item.

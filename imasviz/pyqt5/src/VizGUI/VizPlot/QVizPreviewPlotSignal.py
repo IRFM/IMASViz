@@ -1,8 +1,9 @@
-#  Name   : QVizPlotSignal
+#  Name   : QVizPreviewPlotSignal
 #
-#          Container to handle plotting of signals/nodes.
+#          Container to handle the preview plot of signals/nodes on left-click
+#          on the appropriate FLT_1D node.
 #          Note: The wxPython predecessor of this Python file is
-#          PlotSignal.py
+#          PreviewPlotSignal.py
 #
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
@@ -32,10 +33,10 @@ from PyQt5 import QtGui, QtCore
 from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotServices import QVizPlotServices
 
-class QVizPlotSignal(AbstractCommand):
+class QVizPreviewPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
                  figureKey = None, title = '', label = None, xlabel = None,
-                 update = 0, signalHandling = None):
+                 signalHandling = None):
         AbstractCommand.__init__(self, dataTreeView, nodeData)
 
         self.updateNodeData();
@@ -52,12 +53,8 @@ class QVizPlotSignal(AbstractCommand):
         else:
             self.signal = signal
 
-        # Set widget window title by getting the next figure number
-        if figureKey == None:
-            self.figureKey = \
-                self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
-        else:
-            self.figureKey = figureKey
+        # Set widget window title
+        self.figureKey = 'Preview Plot'
 
         self.title = title
 
@@ -67,33 +64,25 @@ class QVizPlotSignal(AbstractCommand):
             self.label = label
 
         self.xlabel = xlabel
-        self.update = update
-        self.plotFrame = None
 
     def execute(self):
         try:
             if len(self.signal) == 2:
-                t = QVizPlotSignal.getTime(self.signal)
-                v = QVizPlotSignal.get1DSignalValue(self.signal)
+                t = QVizPreviewPlotSignal.getTime(self.signal)
+                v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
                 self.plot1DSignal(self.dataTreeView.shotNumber, t, v,
                                   self.figureKey, self.title, self.label,
-                                  self.xlabel, self.update)
+                                  self.xlabel)
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
     def getPlotWidget(self, figureKey=0):
-        api = self.dataTreeView.imas_viz_api
-        if figureKey in api.figureframes:
-            self.plotWidget = api.figureframes[figureKey]
-        else:
-            figureKey = api.GetNextKeyForFigurePlots()
-            self.plotWidget = QVizPlotWidget(size=(600,500), title=figureKey)
-            # self.plotWidget = \
-            #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
-            #                      signalHandling=self.signalHandling)
-            api.figureframes[figureKey] = self.plotWidget
+        self.plotWidget = QVizPlotWidget(size=(350,350), title='Preview Plot')
+        # self.plotWidget = \
+        #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
+        #                      signalHandling=self.signalHandling)
 
     @staticmethod
     def getTime(oneDimensionSignal):
@@ -107,7 +96,7 @@ class QVizPlotSignal(AbstractCommand):
         return oneDimensionSignal[1]
 
     def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None,
-                     xlabel=None, update=0):
+                     xlabel=None):
         """Plot a 1D signal as a function of time.
 
         Arguments:
@@ -119,24 +108,10 @@ class QVizPlotSignal(AbstractCommand):
             label      (str) : Label describing IMAS database (device, shot) and
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
-            update     (int) : Plot update parameter (0 or 1). Set to 1 when
-                               adding additional plot lines to an already
-                               existing plot.
         """
 
         try:
-            # Update node data
-            self.updateNodeData()
-
-            # Set IMASViz api
-            api = self.dataTreeView.imas_viz_api
             self.getPlotWidget(self.figureKey)
-
-            # fig =  self.plotFrame.get_figure()
-
-            key = self.dataTreeView.dataSource.dataKey(self.nodeData)
-            tup = (self.dataTreeView.dataSource.shotNumber, self.nodeData)
-            api.addNodeToFigure(figureKey, key, tup)
 
             # Shape of the signal
             nbRows = v.shape[0]
@@ -148,32 +123,11 @@ class QVizPlotSignal(AbstractCommand):
                 self.plotOptions(self.dataTreeView, self.nodeData,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=self.figureKey)
-            if update == 1:
-                # Add plot to existing plot
-                for i in range(0, nbRows):
-                    u = v[i]
-                    # ti = t[i]
-                    ti = t[0]
-                    # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                    plotWidget.plot(x=ti, y=u, label=label)
-            else:
-                # Create new plot
-                for i in range(0, nbRows):
-                    u = v[i]
-                    ti = t[0]
+            u = v[0]
+            ti = t[0]
+            plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+                            ylabel=ylabel)
 
-                    if i == 0:
-                        # New plot
-                        # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                        # Automaticaly creates three different-colored pens (Not yet implemented)
-                        # plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel, pen=(i, nbRows))
-                        plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
-                                        ylabel=ylabel)
-                    else:
-                        # Add plot
-                        plotWidget.plot(x=ti, y=u, label=label, pen=(i, nbRows))
-
-            # api.figureframes[figureKey] = plotWidget_2
             plotWidget.show()
 
         except:
@@ -208,8 +162,6 @@ class QVizPlotSignal(AbstractCommand):
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 
-        #ylabel = signalNodeData['dataName']
-
         ylabel = 'S(t)'
         if t != None and not (t.isCoordinateTimeDependent(t.coordinate1)):
            ylabel = 'S'
@@ -218,15 +170,7 @@ class QVizPlotSignal(AbstractCommand):
             units = signalNodeData['units']
             ylabel += '[' + units + ']'
 
-        #title = ""
-
-        # Get IDS dataSource parameters
-        machineName = str(dataTreeView.dataSource.imasDbName)
-        shotNumber = str(dataTreeView.dataSource.shotNumber)
-        runNumber = str(dataTreeView.dataSource.runNumber)
-
         label = dataTreeView.dataSource.getShortLabel() + ':' + label
-        #label = machineName + ":" + shotNumber + ":" + runNumber + ':' + label
 
         if xlabel == None:
             xlabel = "Time[s]"
