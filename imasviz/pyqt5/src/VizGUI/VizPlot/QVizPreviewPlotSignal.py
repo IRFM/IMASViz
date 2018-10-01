@@ -14,7 +14,6 @@
 #  TODO:
 #
 #    - Function definitions (from PlotSignal class)
-#    def getFrame
 #    def onHide
 #    def getSignal
 #
@@ -30,13 +29,29 @@ from imasviz.util.GlobalOperations import GlobalOperations
 import traceback
 import sys
 from PyQt5 import QtGui, QtCore
-from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget import QVizPreviewPlotWidget
 from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotServices import QVizPlotServices
+from PyQt5.QtGui import QDockWidget
+from PyQt5.QtCore import Qt
 
 class QVizPreviewPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
                  figureKey = None, title = '', label = None, xlabel = None,
                  signalHandling = None):
+
+        """
+        # Check if the preview plot already exists
+        self.exists = wx.FindWindowByLabel('Preview Plot')
+
+        # If the preview plot widget already exists, update it. otherwise
+        # create a new one
+        if (self.exists == None):
+            self.plotFrame = None
+        else:
+            self.plotFrame = self.exists
+        """
+        self.exists = None
+
         AbstractCommand.__init__(self, dataTreeView, nodeData)
 
         self.updateNodeData();
@@ -78,11 +93,14 @@ class QVizPreviewPlotSignal(AbstractCommand):
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
-    def getPlotWidget(self, figureKey=0):
-        self.plotWidget = QVizPlotWidget(size=(350,350), title='Preview Plot')
+    # @staticmethod
+    def getPlotWidget(self, figureKey=0, size=(350,350)):
+        # plotWidget = QVizPreviewPlotWidget( size=size, title='Preview Plot')
+        plotWidget = self.dataTreeView.parent.previewPlotWidget
         # self.plotWidget = \
-        #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
+        #     IMASVIZ_PreviewPlotFrame(None, size=(600, 500), title='Plot Preview',
         #                      signalHandling=self.signalHandling)
+        return plotWidget
 
     @staticmethod
     def getTime(oneDimensionSignal):
@@ -101,8 +119,8 @@ class QVizPreviewPlotSignal(AbstractCommand):
 
         Arguments:
             shotnumber (int) : IDS database parameter - shot number of the case.
-            t     (2D array) : 2D array of physical quantity values.
-            v     (2D array) : 2D array of time values.
+            t     (2D array) : 2D array of time values.
+            v     (2D array) : 2D array of physical quantity values.
             figureKey  (str) : Label for the figure frame window.
             title      (str) : Plot title.
             label      (str) : Label describing IMAS database (device, shot) and
@@ -111,24 +129,45 @@ class QVizPreviewPlotSignal(AbstractCommand):
         """
 
         try:
-            self.getPlotWidget(self.figureKey)
+
+
+            """
+            # If the preview plot already exists, clear it and set it ready
+            # for update
+            if (self.exists != None):
+                self.plotWidget = self.exists
+                # self.plotWidget.clear()
+                # Get the menu 'fix position' preview plot option check value
+                # checkout_preview_panel_pos_value = self.exists.GetMenuBar(). \
+                #     FindItemById(GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION). \
+                #     IsChecked()
+            else:
+                # Set plot frame
+                self.plotWidget = self.getPlotWidget(self.figureKey)
+                # frame = self.plotFrame
+                # checkout_preview_panel_pos_value = 0
+            """
+            self.plotWidget = self.getPlotWidget(self.figureKey)
 
             # Shape of the signal
             nbRows = v.shape[0]
-
-            plotWidget = self.plotWidget
 
             # Set plot options
             label, xlabel, ylabel, title = \
                 self.plotOptions(self.dataTreeView, self.nodeData,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=self.figureKey)
-            u = v[0]
-            ti = t[0]
-            plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+            u = v[0] # first (should be the only) array of physical quantity values
+            ti = t[0] # first (should be the only) array of time values
+            self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
 
-            plotWidget.show()
+            if (self.exists != None):
+                # Update preview plot
+                self.plotWidget.update()
+            else:
+                # Display preview plot
+                self.plotWidget.show()
 
         except:
             traceback.print_exc(file=sys.stdout)
@@ -137,7 +176,7 @@ class QVizPreviewPlotSignal(AbstractCommand):
     @staticmethod
     def plotOptions(dataTreeView, signalNodeData, shotNumber=None, title='',
                     label=None, xlabel=None):
-        """ Set plot options.
+        """Set plot options.
 
         Arguments:
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
@@ -147,7 +186,6 @@ class QVizPreviewPlotSignal(AbstractCommand):
             label      (str) : Label describing IMAS database (device, shot) and
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
-
         """
 
         t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])

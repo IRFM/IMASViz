@@ -35,7 +35,7 @@
 
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent, QFont, QColor
 from PyQt5.QtCore import Qt, QSize, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QTreeView, QMenu, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QMainWindow, QMenu, QTreeWidget, QTreeWidgetItem, QWidget, QTableWidget, QTableWidgetItem, QGridLayout
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
@@ -46,6 +46,7 @@ from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizSignalHandling import QVizSigna
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 import os, sys, time
 from functools import partial
+from PyQt5.QtGui import QDockWidget # if moved upwards it gives import errors (???)
 
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
@@ -353,7 +354,7 @@ class QVizDataTreeView(QTreeWidget):
         return
 
 class QVizDataTreeViewFrame(QMainWindow):
-    """ Set QMainWindow to contain the QTreeView.
+    """ Set QMainWindow to contain the QTreeWidget.
     """
 
     def __init__(self, parent, views, dataSource, IDSDefFile, *args, **kwargs):
@@ -401,7 +402,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dataTreeView.setAlternatingRowColors(True)
         self.dataTreeView.setUniformRowHeights(True)
         self.dataTreeView.expandsOnDoubleClick()
+        self.dataTreeView.resize(400,500)
         self.setCentralWidget(self.dataTreeView)
+
+        self.addDockWidgets()
 
         # Old wx variable label. Remove when obsolete
         self.view = self.dataTreeView
@@ -463,6 +467,27 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # if threadingEvent != None:
         #     threadingEvent.set()
+
+    def addDockWidgets(self):
+        """Add dockable widgets to DTV window.
+        """
+        from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget import QVizPreviewPlotWidget
+
+        # Preview Plot Widget
+        self.previewPlotWidget=QVizPreviewPlotWidget(parent=self, title='Preview Plot')
+        # - Plot empty
+        self.previewPlotWidget.plot()
+        # Dock the widget
+        self.dockWidget = QDockWidget("Preview Plot Widget", self)
+        self.dockWidget.setFeatures(QDockWidget.DockWidgetFloatable)
+        self.dockWidget.setObjectName("dockWidget")
+        self.dockWidgetContents = QWidget()
+        self.dockWidgetContents.setObjectName("dockWidgetContents")
+        self.gridLayout = QGridLayout(self.dockWidgetContents)
+        self.gridLayout.setObjectName("gridLayout_2")
+        self.gridLayout.addWidget(self.previewPlotWidget, 0, 0, 1, 1)
+        self.dockWidget.setWidget(self.dockWidgetContents)
+        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget)
 
 class Logger:
     def __init__(self):

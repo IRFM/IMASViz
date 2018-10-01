@@ -13,7 +13,6 @@
 #  TODO:
 #
 #    - Function definitions (from PlotSignal class)
-#    def getFrame
 #    def onHide
 #    def getSignal
 #
@@ -112,8 +111,8 @@ class QVizPlotSignal(AbstractCommand):
 
         Arguments:
             shotnumber (int) : IDS database parameter - shot number of the case.
-            t     (2D array) : 2D array of physical quantity values.
-            v     (2D array) : 2D array of time values.
+            t     (2D array) : 2D array of time values.
+            v     (2D array) : 2D array of physical quantity values.
             figureKey  (str) : Label for the figure frame window.
             title      (str) : Plot title.
             label      (str) : Label describing IMAS database (device, shot) and
@@ -141,8 +140,6 @@ class QVizPlotSignal(AbstractCommand):
             # Shape of the signal
             nbRows = v.shape[0]
 
-            plotWidget = self.plotWidget
-
             # Set plot options
             label, xlabel, ylabel, title = \
                 self.plotOptions(self.dataTreeView, self.nodeData,
@@ -155,7 +152,7 @@ class QVizPlotSignal(AbstractCommand):
                     # ti = t[i]
                     ti = t[0]
                     # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                    plotWidget.plot(x=ti, y=u, label=label)
+                    self.plotWidget.plot(x=ti, y=u, label=label)
             else:
                 # Create new plot
                 for i in range(0, nbRows):
@@ -166,15 +163,15 @@ class QVizPlotSignal(AbstractCommand):
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
                         # Automaticaly creates three different-colored pens (Not yet implemented)
-                        # plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel, pen=(i, nbRows))
-                        plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+                        # self.plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel, pen=(i, nbRows))
+                        self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                                         ylabel=ylabel)
                     else:
                         # Add plot
-                        plotWidget.plot(x=ti, y=u, label=label, pen=(i, nbRows))
+                        self.plotWidget.plot(x=ti, y=u, label=label, pen=(i, nbRows))
 
             # api.figureframes[figureKey] = plotWidget_2
-            plotWidget.show()
+            self.plotWidget.show()
 
         except:
             traceback.print_exc(file=sys.stdout)
@@ -183,7 +180,7 @@ class QVizPlotSignal(AbstractCommand):
     @staticmethod
     def plotOptions(dataTreeView, signalNodeData, shotNumber=None, title='',
                     label=None, xlabel=None):
-        """ Set plot options.
+        """Set plot options.
 
         Arguments:
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
@@ -193,7 +190,6 @@ class QVizPlotSignal(AbstractCommand):
             label      (str) : Label describing IMAS database (device, shot) and
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
-
         """
 
         t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])

@@ -11,7 +11,7 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout, QFont
+from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout, QFont, QDockWidget
 from PyQt5.QtCore import Qt
 from imasviz.util.GlobalValues import GlobalColors, GlobalFonts
 
@@ -36,6 +36,8 @@ class QVizNodeDocumentationWidget(QWidget):
                                           second title, second entry.
             title (str)                 : Widget title.
         """
+
+        self.dataTreeView = dataTreeView
 
         # Get reference width, height and position (of the dataTreeWindowFrame)
         ref_width, ref_height, ref_pos_x, ref_pos_y = \
@@ -99,6 +101,17 @@ class QVizNodeDocumentationWidget(QWidget):
         # - Adjust size
         self.adjustSize()
 
+        """
+        # ----- dock test
+        self.dockWidget = QDockWidget("Dockable2", self.dataTreeView)
+
+        self.dockWidget.setWidget(self)
+        self.dockWidget.setFloating(True)
+        self.dockWidget.setFeatures(QDockWidget.DockWidgetClosable|QDockWidget.DockWidgetFloatable)
+        self.dataTreeView.parent.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget)
+        # -----
+        """
+
     def update(self, dataTreeView, documentation=''):
         """Update the text of the existing node documentation widget.
 
@@ -130,6 +143,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.move(pos[0], pos[1]+28)
         # - Set size in relation to DTV
         self.resize(size[0], size[1])
+        self.setFixedWidth(size[0])
         # - Adjust size
         self.adjustSize()
 
