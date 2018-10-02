@@ -14,6 +14,7 @@
 from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout, QFont, \
                         QDockWidget, QScrollArea
 from PyQt5.QtCore import Qt, QSize, QRect
+from PyQt5.QtWidgets import QFormLayout
 from imasviz.util.GlobalValues import GlobalColors, GlobalFonts
 
 class QVizNodeDocumentationWidget(QWidget):
@@ -27,30 +28,16 @@ class QVizNodeDocumentationWidget(QWidget):
 
         # self.create(dataTreeView, documentation, title)
 
-    def create(self, dataTreeView,
-               documentation=['Node: ','-','Documentation: ','-'],
+    def create(self, documentation=['Node: ','...','Documentation: ','...'],
                title='QVizNodeDocumantationWidget'):
         """Create new node documentation widget.
 
         Arguments:
-            dataTreeView (QTreeWidget)  : DataTreeView object of the QTreeWidget.
             documantation (4*str array) : An array containing 4 documentation
                                           strings: First title, first entry,
                                           second title, second entry.
             title (str)                 : Widget title.
         """
-
-        self.dataTreeView = dataTreeView
-
-        # Get reference width, height and position (of the dataTreeWindowFrame)
-        ref_width, ref_height, ref_pos_x, ref_pos_y = \
-            self.getWindowGeometry(dataTreeView.parent)
-
-        # Set widget size
-        size = (ref_width, 300)
-
-        # Set widget position
-        pos = (ref_pos_x, ref_pos_y+ref_height)
 
         # Set documentation
         # - Set text
@@ -70,6 +57,15 @@ class QVizNodeDocumentationWidget(QWidget):
         self.l2.setWordWrap(True)
         self.l3.setWordWrap(True)
         self.l4.setWordWrap(True)
+        self.l1.setMinimumHeight(25)
+        self.l2.setMinimumHeight(25)
+        self.l3.setMinimumHeight(25)
+        self.l4.setMinimumHeight(25)
+        self.l1.setMinimumWidth(340)
+        self.l2.setMinimumWidth(340)
+        self.l3.setMinimumWidth(340)
+        self.l4.setMinimumWidth(340)
+
         # - Set fonts
         self.l1.setFont(GlobalFonts.TITLE)
         self.l2.setFont(GlobalFonts.TEXT)
@@ -85,17 +81,19 @@ class QVizNodeDocumentationWidget(QWidget):
         scrollContent = QWidget(scrollArea)
 
         # Set layout for scrollable area
-        scrollLayout = QVBoxLayout(scrollContent)
-        scrollLayout.addWidget(self.l1)
-        scrollLayout.addWidget(self.l2)
-        scrollLayout.addWidget(self.l3)
-        scrollLayout.addWidget(self.l4)
+        scrollLayout = QFormLayout(scrollContent)
+        scrollLayout.setWidget(0, QFormLayout.LabelRole, self.l1)
+        scrollLayout.setWidget(1, QFormLayout.LabelRole, self.l2)
+        scrollLayout.setWidget(2, QFormLayout.LabelRole, self.l3)
+        scrollLayout.setWidget(3, QFormLayout.LabelRole, self.l4)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
 
         # Set the layout (scrollable area)
         vBox = QVBoxLayout(self)
         vBox.addWidget(scrollArea)
+        # - Remove scrollable area margin
+        vBox.setContentsMargins(0, 0, 0, 0)
 
         # QVizNodeDocumentationWidget settings
         self.setObjectName("QVizNodeDocumentationWidget")
@@ -111,7 +109,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.adjustSize()
 
     def update(self, documentation):
-        """Update the text of the existing node documentation widget.
+        """Update the text of the docked node documentation widget.
 
         Arguments:
             documantation (4*str array) : An array containing 4 documentation
@@ -122,20 +120,3 @@ class QVizNodeDocumentationWidget(QWidget):
         self.l2.setText(documentation[1])
         self.l3.setText(documentation[2])
         self.l4.setText(documentation[3])
-
-    @staticmethod
-    def getWindowGeometry(window):
-        """ Get geometry (size, position ) of the QT window. Returns width,
-        height, pos_x, pos_y.
-
-        Arguments:
-            window (QWindow) : PyQt window object.
-        """
-
-        width = window.width()
-        height = window.height()
-        pos_x = window.pos().x()
-        pos_y = window.pos().y()
-
-        return width, height, pos_x, pos_y
-

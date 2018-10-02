@@ -48,6 +48,7 @@ from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizNodeDocumentationWidget import 
 from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget import QVizPreviewPlotWidget
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizSignalHandling import QVizSignalHandling
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
+from imasviz.pyqt5.src.VizUtils.QWindowUtils import getWindowSize
 import os, sys, time
 from functools import partial
 from PyQt5.QtGui import QDockWidget # if moved upwards it gives import errors (???)
@@ -360,7 +361,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
         # Basic settings (QMainWindow)
-        self.resize(800, 750)
+        self.resize(800, 800)
 
         # Set Data Tree View Window name
         self.setObjectName('DTV Window')
@@ -462,6 +463,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         """Add dockable widgets to DTV window.
         """
 
+        # Get reference parameters
+        # - DTV frame width and height
+        ref_width, ref_height = getWindowSize(self)
+
         # PREVIEW PLOT WIDGET (PPW)
         self.previewPlotWidget=QVizPreviewPlotWidget(parent=self,
                                                      title='Preview Plot')
@@ -478,32 +483,28 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_ppw.addWidget(self.previewPlotWidget, 0, 0, 1, 1)
         self.dockWidget_ppw.setWidget(self.dockWidgetContents_ppw)
         # - Set dockwidget size
-        self.dockWidget_ppw.setMinimumSize(QSize(400, 400))
+        self.dockWidget_ppw.setMinimumSize(QSize(ref_width/2, ref_height/2))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ppw)
 
         # NODE DOCUMENTATION WIDGET (NDW)
-
-
-
         self.nodeDocumentationWidget=QVizNodeDocumentationWidget(parent=self)
         # - Plot empty
-        self.nodeDocumentationWidget.create(self.dataTreeView)
+        self.nodeDocumentationWidget.create()
         # - Dock the widget
         self.dockWidget_ndw = QDockWidget("Node documentation", self)
         self.dockWidget_ndw.setFeatures(QDockWidget.DockWidgetFloatable)
         self.dockWidget_ndw.setObjectName("NDW")
-
-
         self.dockWidgetContents_ndw = QWidget()
         self.dockWidgetContents_ndw.setObjectName("DockWidgetContents_NDW")
         self.gridLayout_ndw = QGridLayout(self.dockWidgetContents_ndw)
         self.gridLayout_ndw.setObjectName("GridLayout_NDW")
         self.gridLayout_ndw.addWidget(self.nodeDocumentationWidget, 0, 0, 1, 1)
         self.dockWidget_ndw.setWidget(self.dockWidgetContents_ndw)
-        # - Set dockwidget size
-        self.dockWidget_ndw.setMinimumSize(QSize(400, 200))
 
+        # - Set dockwidget size
+        self.dockWidget_ndw.setMinimumSize(QSize(ref_width/2, ref_height/4))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
+
 
 class Logger:
     def __init__(self):
