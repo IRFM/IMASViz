@@ -11,8 +11,9 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout, QFont, QDockWidget
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QGridLayout, QFont, \
+                        QDockWidget, QScrollArea
+from PyQt5.QtCore import Qt, QSize, QRect
 from imasviz.util.GlobalValues import GlobalColors, GlobalFonts
 
 class QVizNodeDocumentationWidget(QWidget):
@@ -51,48 +52,56 @@ class QVizNodeDocumentationWidget(QWidget):
         # Set widget position
         pos = (ref_pos_x, ref_pos_y+ref_height)
 
+        # Set documentation
+        # - Set text
         self.l1 = QLabel()
         self.l2 = QLabel()
         self.l3 = QLabel()
         self.l4 = QLabel()
-
         self.l1.setText(documentation[0])
         self.l2.setText(documentation[1])
         self.l3.setText(documentation[2])
         self.l4.setText(documentation[3])
-
         self.l1.setAlignment(Qt.AlignLeft)
         self.l2.setAlignment(Qt.AlignLeft)
         self.l3.setAlignment(Qt.AlignLeft)
         self.l4.setAlignment(Qt.AlignLeft)
-
         self.l1.setWordWrap(True)
         self.l2.setWordWrap(True)
         self.l3.setWordWrap(True)
         self.l4.setWordWrap(True)
-
+        # - Set fonts
         self.l1.setFont(GlobalFonts.TITLE)
         self.l2.setFont(GlobalFonts.TEXT)
         self.l3.setFont(GlobalFonts.TITLE)
         self.l4.setFont(GlobalFonts.TEXT)
 
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.l1)
-        vbox.addStretch()
-        vbox.addWidget(self.l2)
-        vbox.addStretch()
-        vbox.addWidget(self.l3)
-        vbox.addStretch()
-        vbox.addWidget(self.l4)
+        # Set scrollable area
+        scrollArea = QScrollArea(self)
+        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        #scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setEnabled(True)
+        scrollContent = QWidget(scrollArea)
+
+        # Set layout for scrollable area
+        scrollLayout = QVBoxLayout(scrollContent)
+        scrollLayout.addWidget(self.l1)
+        scrollLayout.addWidget(self.l2)
+        scrollLayout.addWidget(self.l3)
+        scrollLayout.addWidget(self.l4)
+        scrollContent.setLayout(scrollLayout)
+        scrollArea.setWidget(scrollContent)
+
+        # Set the layout (scrollable area)
+        vBox = QVBoxLayout(self)
+        vBox.addWidget(scrollArea)
 
         # QVizNodeDocumentationWidget settings
         self.setObjectName("QVizNodeDocumentationWidget")
         self.setWindowTitle("Node documentation")
         # - Set layout
-        self.setLayout(vbox)
-        # - Set size in relation to DTV
-        # self.resize(size[0], size[1])
-        # self.setFixedWidth(size[0])
+        self.setLayout(vBox)
         # - Set panel background colour
         p = self.palette()
         p.setBrush(self.backgroundRole(), GlobalColors.LIGHT_CYAN)

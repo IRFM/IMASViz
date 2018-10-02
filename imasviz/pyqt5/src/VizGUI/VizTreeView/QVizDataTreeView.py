@@ -33,9 +33,12 @@
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
 
-from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, QMouseEvent, QFont, QColor
+from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, \
+    QMouseEvent, QFont, QColor
 from PyQt5.QtCore import Qt, QSize, pyqtSlot
-from PyQt5.QtWidgets import QMainWindow, QMenu, QTreeWidget, QTreeWidgetItem, QWidget, QTableWidget, QTableWidgetItem, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QMenu, QTreeWidget, QTreeWidgetItem, \
+                            QWidget, QTableWidget, QTableWidgetItem, \
+                            QGridLayout
 import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
@@ -479,6 +482,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ppw)
 
         # NODE DOCUMENTATION WIDGET (NDW)
+
+
+
         self.nodeDocumentationWidget=QVizNodeDocumentationWidget(parent=self)
         # - Plot empty
         self.nodeDocumentationWidget.create(self.dataTreeView)
@@ -486,6 +492,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dockWidget_ndw = QDockWidget("Node documentation", self)
         self.dockWidget_ndw.setFeatures(QDockWidget.DockWidgetFloatable)
         self.dockWidget_ndw.setObjectName("NDW")
+
+
         self.dockWidgetContents_ndw = QWidget()
         self.dockWidgetContents_ndw.setObjectName("DockWidgetContents_NDW")
         self.gridLayout_ndw = QGridLayout(self.dockWidgetContents_ndw)
@@ -494,6 +502,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dockWidget_ndw.setWidget(self.dockWidgetContents_ndw)
         # - Set dockwidget size
         self.dockWidget_ndw.setMinimumSize(QSize(400, 200))
+
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
 class Logger:
