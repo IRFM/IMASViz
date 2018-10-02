@@ -54,6 +54,9 @@ class QVizPreviewPlotWidget(QWidget):
         self.ui.plotWidget.showGrid(x=True, y=True)
         return self
 
+    def clear(self):
+        self.ui.plotWidget.clear()
+
 class QVizPlotWidgetUI(object):
     def setupUi(self, QVizPreviewPlotWidget):
         """ Setup QVizPreviewPlotWidget User Interface.
@@ -68,9 +71,9 @@ class QVizPlotWidgetUI(object):
 
         # Set plot widget
         self.plotWidget = PlotWidget(self.QVizPreviewPlotWidget)
-        self.plotWidget.setObjectName("plotWidget")
+        self.plotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)
-        self.plotWidget.addLegend()
+        # self.plotWidget.addLegend()
 
         # Set menu bar
         self.menuBar()
@@ -78,12 +81,12 @@ class QVizPlotWidgetUI(object):
         # Set checkbox for toggling mouse
         #checkBox = self.customUI()
 
-        # Set lavout marigin (left, top, right, bottom)
+        # Set layout marigin (left, top, right, bottom)
         self.gridLayout.setContentsMargins(0, 30, 0, 0)
 
         # Add widgets to layout
         self.gridLayout.addWidget(self.plotWidget, 1, 0, 1, 1)
-        #self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
+        # self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self.QVizPreviewPlotWidget)

@@ -202,11 +202,10 @@ class QVizSignalHandling(QObject):
             label = None
             xlabel = None
 
-            p = QVizPreviewPlotSignal(self.dataTreeView, self.nodeData, signal=None,
-                                  label=label,xlabel=xlabel,
-                                  signalHandling=self)
+            p = QVizPreviewPlotSignal(self.dataTreeView, self.nodeData,
+                                      signal=None, label=label, xlabel=xlabel,
+                                      signalHandling=self)
             p.execute()
-
 
         except ValueError as e:
             self.dataTreeView.log.error(str(e))

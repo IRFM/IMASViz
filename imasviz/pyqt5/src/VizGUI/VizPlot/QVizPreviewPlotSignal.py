@@ -33,6 +33,7 @@ from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget import
 from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPlotServices import QVizPlotServices
 from PyQt5.QtGui import QDockWidget
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWidget
 
 class QVizPreviewPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
@@ -85,18 +86,23 @@ class QVizPreviewPlotSignal(AbstractCommand):
             if len(self.signal) == 2:
                 t = QVizPreviewPlotSignal.getTime(self.signal)
                 v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
-                self.plot1DSignal(self.dataTreeView.shotNumber, t, v,
-                                  self.figureKey, self.title, self.label,
-                                  self.xlabel)
+                self.plot1DSignal(shotNumber = self.dataTreeView.shotNumber,
+                                  t = t, v = v, title=self.title,
+                                  label=self.label, xlabel=self.xlabel)
             else:
-                raise ValueError("only 1D plots are currently supported.")
+                raise ValueError("Warning! Only 1D plots are currently supported.")
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
     # @staticmethod
-    def getPlotWidget(self, figureKey=0, size=(350,350)):
-        # plotWidget = QVizPreviewPlotWidget( size=size, title='Preview Plot')
-        plotWidget = self.dataTreeView.parent.previewPlotWidget
+    def getPlotWidget(self):
+        # Find the child widget in DTV frame
+        plotWidget = self.dataTreeView.parent.findChild(QWidget,
+                                                        'QVizPreviewPlotWidget')
+        if plotWidget == None:
+            error = 'Preview Plot Widget not found. Update not possible'
+            raise ValueError(error)
+            self.log.error(str(error))
         # self.plotWidget = \
         #     IMASVIZ_PreviewPlotFrame(None, size=(600, 500), title='Plot Preview',
         #                      signalHandling=self.signalHandling)
@@ -113,7 +119,7 @@ class QVizPreviewPlotSignal(AbstractCommand):
         """
         return oneDimensionSignal[1]
 
-    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None,
+    def plot1DSignal(self, shotNumber, t, v, title='', label=None,
                      xlabel=None):
         """Plot a 1D signal as a function of time.
 
@@ -129,7 +135,6 @@ class QVizPreviewPlotSignal(AbstractCommand):
         """
 
         try:
-
 
             """
             # If the preview plot already exists, clear it and set it ready
@@ -147,7 +152,12 @@ class QVizPreviewPlotSignal(AbstractCommand):
                 # frame = self.plotFrame
                 # checkout_preview_panel_pos_value = 0
             """
-            self.plotWidget = self.getPlotWidget(self.figureKey)
+
+            # Get the preview plot widget
+            self.plotWidget = self.getPlotWidget()
+            # Clear the preview plot widget (should contain only one plot at
+            # a time)
+            self.plotWidget.clear()
 
             # Shape of the signal
             nbRows = v.shape[0]
