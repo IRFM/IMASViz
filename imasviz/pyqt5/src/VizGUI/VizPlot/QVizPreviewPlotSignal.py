@@ -162,12 +162,13 @@ class QVizPreviewPlotSignal(AbstractCommand):
             self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
 
-            if (self.exists != None):
-                # Update preview plot
-                self.plotWidget.update()
-            else:
-                # Display preview plot
-                self.plotWidget.show()
+            self.plotWidget.update()
+            # if (self.exists != None):
+            #     # Update preview plot
+            #     self.plotWidget.update()
+            # else:
+            #     # Display preview plot
+            #     self.plotWidget.show()
 
         except:
             traceback.print_exc(file=sys.stdout)

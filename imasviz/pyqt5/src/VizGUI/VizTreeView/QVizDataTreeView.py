@@ -42,6 +42,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizHandleRightClick import QVizHandleRightClick
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizNodeDocumentationWidget import QVizNodeDocumentationWidget
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget import QVizPreviewPlotWidget
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizSignalHandling import QVizSignalHandling
 from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 import os, sys, time
@@ -215,19 +216,8 @@ class QVizDataTreeView(QTreeWidget):
         node_doc_str_array.append(node_doc)
 
         # Set and show node documentation widget
-        # - If node doc widget is not present create new one
-        if self.ndw == None:
-            self.ndw = QVizNodeDocumentationWidget()
-            self.ndw.create(dataTreeView = self,
-                            documentation = node_doc_str_array)
-            self.ndw.show()
-        else:
-            # - Else update the old one
-            self.ndw.update(dataTreeView = self,
-                            documentation = node_doc_str_array)
-            # If the node doc widget is not visible, show it
-            if self.ndw.isVisible() == False:
-                self.ndw.show()
+        if self.parent.nodeDocumentationWidget != None:
+            self.parent.nodeDocumentationWidget.update(documentation = node_doc_str_array)
 
         ### PLOT PREVIEW PANEL
         # TODO
@@ -370,7 +360,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
         # Basic settings (QMainWindow)
-        self.resize(520, 600)
+        self.resize(800, 750)
 
         # Set Data Tree View Window name
         self.setObjectName('DTV Window')
@@ -402,7 +392,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dataTreeView.setAlternatingRowColors(True)
         self.dataTreeView.setUniformRowHeights(True)
         self.dataTreeView.expandsOnDoubleClick()
-        self.dataTreeView.resize(400,500)
+        # self.dataTreeView.resize(400,500)
         self.setCentralWidget(self.dataTreeView)
 
         self.addDockWidgets()
@@ -471,23 +461,42 @@ class QVizDataTreeViewFrame(QMainWindow):
     def addDockWidgets(self):
         """Add dockable widgets to DTV window.
         """
-        from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget import QVizPreviewPlotWidget
 
-        # Preview Plot Widget
+        # PREVIEW PLOT WIDGET (PPW)
         self.previewPlotWidget=QVizPreviewPlotWidget(parent=self, title='Preview Plot')
         # - Plot empty
         self.previewPlotWidget.plot()
-        # Dock the widget
-        self.dockWidget = QDockWidget("Preview Plot Widget", self)
-        self.dockWidget.setFeatures(QDockWidget.DockWidgetFloatable)
-        self.dockWidget.setObjectName("dockWidget")
-        self.dockWidgetContents = QWidget()
-        self.dockWidgetContents.setObjectName("dockWidgetContents")
-        self.gridLayout = QGridLayout(self.dockWidgetContents)
-        self.gridLayout.setObjectName("gridLayout_2")
-        self.gridLayout.addWidget(self.previewPlotWidget, 0, 0, 1, 1)
-        self.dockWidget.setWidget(self.dockWidgetContents)
-        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget)
+        # - Dock the widget
+        self.dockWidget_ppw = QDockWidget("Preview Plot", self)
+        self.dockWidget_ppw.setFeatures(QDockWidget.DockWidgetFloatable)
+        self.dockWidget_ppw.setObjectName("PPW")
+        self.dockWidgetContents_ppw = QWidget()
+        self.dockWidgetContents_ppw.setObjectName("DockWidgetContents_PPW")
+        self.gridLayout_ppw = QGridLayout(self.dockWidgetContents_ppw)
+        self.gridLayout_ppw.setObjectName("GridLayout_PPW")
+        self.gridLayout_ppw.addWidget(self.previewPlotWidget, 0, 0, 1, 1)
+        self.dockWidget_ppw.setWidget(self.dockWidgetContents_ppw)
+        # - Set dockwidget size
+        self.dockWidget_ppw.setMinimumSize(QSize(400, 400))
+        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ppw)
+
+        # NODE DOCUMENTATION WIDGET (NDW)
+        self.nodeDocumentationWidget=QVizNodeDocumentationWidget(parent=self)
+        # - Plot empty
+        self.nodeDocumentationWidget.create(self.dataTreeView)
+        # - Dock the widget
+        self.dockWidget_ndw = QDockWidget("Node documentation", self)
+        self.dockWidget_ndw.setFeatures(QDockWidget.DockWidgetFloatable)
+        self.dockWidget_ndw.setObjectName("NDW")
+        self.dockWidgetContents_ndw = QWidget()
+        self.dockWidgetContents_ndw.setObjectName("DockWidgetContents_NDW")
+        self.gridLayout_ndw = QGridLayout(self.dockWidgetContents_ndw)
+        self.gridLayout_ndw.setObjectName("GridLayout_NDW")
+        self.gridLayout_ndw.addWidget(self.nodeDocumentationWidget, 0, 0, 1, 1)
+        self.dockWidget_ndw.setWidget(self.dockWidgetContents_ndw)
+        # - Set dockwidget size
+        self.dockWidget_ndw.setMinimumSize(QSize(400, 200))
+        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
 class Logger:
     def __init__(self):
