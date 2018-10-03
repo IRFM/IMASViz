@@ -24,16 +24,14 @@ class QVizNodeDocumentationWidget(QWidget):
     def __init__(self, parent=None):
         super(QVizNodeDocumentationWidget, self).__init__(parent=parent)
 
-        pass
-
-        # self.create(dataTreeView, documentation, title)
+        self.create()
 
     def create(self, documentation=['Node: ','...','Documentation: ','...'],
                title='QVizNodeDocumantationWidget'):
         """Create new node documentation widget.
 
         Arguments:
-            documantation (4*str array) : An array containing 4 documentation
+            documentation (4*str array) : An array containing 4 documentation
                                           strings: First title, first entry,
                                           second title, second entry.
             title (str)                 : Widget title.
@@ -97,7 +95,7 @@ class QVizNodeDocumentationWidget(QWidget):
 
         # QVizNodeDocumentationWidget settings
         self.setObjectName("QVizNodeDocumentationWidget")
-        self.setWindowTitle("Node documentation")
+        self.setWindowTitle("Node Documentation")
         # - Set layout
         self.setLayout(vBox)
         # - Set panel background colour
@@ -112,10 +110,11 @@ class QVizNodeDocumentationWidget(QWidget):
         """Update the text of the docked node documentation widget.
 
         Arguments:
-            documantation (4*str array) : An array containing 4 documentation
+            documentation (4*str array) : An array containing 4 documentation
                                           strings: First title, first entry,
                                           second title, second entry.
         """
+
         self.l1.setText(documentation[0])
         self.l2.setText(documentation[1])
         self.l3.setText(documentation[2])

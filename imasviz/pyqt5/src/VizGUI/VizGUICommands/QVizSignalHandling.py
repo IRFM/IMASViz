@@ -186,10 +186,11 @@ class QVizSignalHandling(QObject):
                 self.timeSlider = True
             else:
                 self.timeSlider = None
-            # Plot signal data
+            # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, self.nodeData, signal=None,
                                figureKey=self.currentFigureKey, label=label,
                                xlabel=xlabel, signalHandling=self)
+            # Plot signal data to plot widget
             p.execute()
 
         except ValueError as e:
@@ -202,9 +203,12 @@ class QVizSignalHandling(QObject):
             label = None
             xlabel = None
 
-            p = QVizPreviewPlotSignal(self.dataTreeView, self.nodeData,
-                                      signal=None, label=label, xlabel=xlabel,
-                                      signalHandling=self)
+            # Get the signal data for preview plot update
+            p = QVizPreviewPlotSignal(dataTreeView = self.dataTreeView,
+                                      nodeData = self.nodeData,
+                                      signal = None, label = label,
+                                      xlabel = xlabel, signalHandling = self)
+            # Plot signal data to preview plot widget
             p.execute()
 
         except ValueError as e:

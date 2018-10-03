@@ -41,9 +41,19 @@ class QVizPreviewPlotWidget(QWidget):
     def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
              pen=mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
+
+        Arguments:
+            shotnumber (int) : IDS database parameter - shot number of the case.
+            x     (1D array) : 1D array of X-axis values.
+            y     (1D array) : 1D array of Y-axis values.
+            title      (str) : Plot title.
+            label      (str) : Label describing IMAS database (device, shot) and
+                               path to signal/node in IDS database structure.
+            xlabel     (str) : Plot X-axis label.
+            ylabel     (str) : Plot Y-axis label.
+            pen        ()    : Plot line style.
         """
-        # access your UI elements through the `ui` attribute
-        # plot = self.ui.plotWidget.plot(x, y, title='', pen=pen)
+        # Access the UI elements through the `ui` attribute
         # Add plot
         self.ui.plotWidget.plot(x, y, title='', pen=pen, name=label)
         # Set x-axis label
@@ -55,6 +65,8 @@ class QVizPreviewPlotWidget(QWidget):
         return self
 
     def clear(self):
+        """Clear the widgets plot.
+        """
         self.ui.plotWidget.clear()
 
 class QVizPlotWidgetUI(object):
@@ -65,11 +77,13 @@ class QVizPlotWidgetUI(object):
             dataTreeView (QWidget) : QWidget object.
         """
 
+        # Get widget
         self.QVizPreviewPlotWidget = QVizPreviewPlotWidget
+        # Set layout
         self.gridLayout = QGridLayout(self.QVizPreviewPlotWidget)
         self.gridLayout.setObjectName("gridLayout")
 
-        # Set plot widget
+        # Set plotwidget
         self.plotWidget = PlotWidget(self.QVizPreviewPlotWidget)
         self.plotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)

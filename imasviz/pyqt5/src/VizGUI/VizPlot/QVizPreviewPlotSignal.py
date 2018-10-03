@@ -37,20 +37,8 @@ from PyQt5.QtWidgets import QWidget
 
 class QVizPreviewPlotSignal(AbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
-                 figureKey = None, title = '', label = None, xlabel = None,
-                 signalHandling = None):
+                 title = '', label = None, xlabel = None, signalHandling = None):
 
-        """
-        # Check if the preview plot already exists
-        self.exists = wx.FindWindowByLabel('Preview Plot')
-
-        # If the preview plot widget already exists, update it. otherwise
-        # create a new one
-        if (self.exists == None):
-            self.plotFrame = None
-        else:
-            self.plotFrame = self.exists
-        """
         self.exists = None
 
         AbstractCommand.__init__(self, dataTreeView, nodeData)
@@ -70,9 +58,7 @@ class QVizPreviewPlotSignal(AbstractCommand):
             self.signal = signal
 
         # Set widget window title
-        self.figureKey = 'Preview Plot'
-
-        self.title = title
+        self.title = 'Preview Plot'
 
         if label == None:
             self.label = self.nodeData['Path']
@@ -87,8 +73,8 @@ class QVizPreviewPlotSignal(AbstractCommand):
                 t = QVizPreviewPlotSignal.getTime(self.signal)
                 v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
                 self.plot1DSignal(shotNumber = self.dataTreeView.shotNumber,
-                                  t = t, v = v, title=self.title,
-                                  label=self.label, xlabel=self.xlabel)
+                                  t = t, v = v, title = self.title,
+                                  label = self.label, xlabel = self.xlabel)
             else:
                 raise ValueError("Warning! Only 1D plots are currently supported.")
         except ValueError as e:
@@ -96,9 +82,10 @@ class QVizPreviewPlotSignal(AbstractCommand):
 
     # @staticmethod
     def getPlotWidget(self):
-        # Find the child widget in DTV frame
-        plotWidget = self.dataTreeView.parent.findChild(QWidget,
-                                                        'QVizPreviewPlotWidget')
+        """Find the child widget in DTV main window.
+        """
+        plotWidget = \
+            self.dataTreeView.parent.findChild(QWidget, 'QVizPreviewPlotWidget')
         if plotWidget == None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
@@ -127,7 +114,6 @@ class QVizPreviewPlotSignal(AbstractCommand):
             shotnumber (int) : IDS database parameter - shot number of the case.
             t     (2D array) : 2D array of time values.
             v     (2D array) : 2D array of physical quantity values.
-            figureKey  (str) : Label for the figure frame window.
             title      (str) : Plot title.
             label      (str) : Label describing IMAS database (device, shot) and
                                path to signal/node in IDS database structure.
@@ -135,24 +121,6 @@ class QVizPreviewPlotSignal(AbstractCommand):
         """
 
         try:
-
-            """
-            # If the preview plot already exists, clear it and set it ready
-            # for update
-            if (self.exists != None):
-                self.plotWidget = self.exists
-                # self.plotWidget.clear()
-                # Get the menu 'fix position' preview plot option check value
-                # checkout_preview_panel_pos_value = self.exists.GetMenuBar(). \
-                #     FindItemById(GlobalIDs.ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION). \
-                #     IsChecked()
-            else:
-                # Set plot frame
-                self.plotWidget = self.getPlotWidget(self.figureKey)
-                # frame = self.plotFrame
-                # checkout_preview_panel_pos_value = 0
-            """
-
             # Get the preview plot widget
             self.plotWidget = self.getPlotWidget()
             # Clear the preview plot widget (should contain only one plot at
@@ -166,20 +134,15 @@ class QVizPreviewPlotSignal(AbstractCommand):
             label, xlabel, ylabel, title = \
                 self.plotOptions(self.dataTreeView, self.nodeData,
                                  shotNumber=shotNumber, label=label,
-                                 xlabel=xlabel, title=self.figureKey)
-            u = v[0] # first (should be the only) array of physical quantity values
-            ti = t[0] # first (should be the only) array of time values
+                                 xlabel=xlabel, title=title)
+            # Get plottable data
+            u = v[0]    # first (should be the only) array of physical
+                        # quantity values
+            ti = t[0]   # first (should be the only) array of time values
+            # Create plot
             self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
-
             self.plotWidget.update()
-            # if (self.exists != None):
-            #     # Update preview plot
-            #     self.plotWidget.update()
-            # else:
-            #     # Display preview plot
-            #     self.plotWidget.show()
-
         except:
             traceback.print_exc(file=sys.stdout)
             raise
