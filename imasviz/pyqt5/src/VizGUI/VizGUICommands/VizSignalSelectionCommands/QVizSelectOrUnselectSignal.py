@@ -41,14 +41,20 @@ class QVizSelectOrUnselectSignal(AbstractCommand):
             # Give the order of user selection
             index = len(self.dataTreeView.selectedSignals) -1
             # Add selected signal to 'selectedSignals list'. Order of parameters:
-            # shot number, node data, index, shot number, IDS database name,
-            # user name
+            # - shot number
+            # - node data
+            # - index
+            # - shot number
+            # - IDS database name
+            # - user name
+            # - selected signals QTreeWidgetItem
             self.dataTreeView.selectedSignals[key] = \
                 (self.dataTreeView.dataSource.shotNumber,
                  self.nodeData,
                  index,
                  self.dataTreeView.dataSource.runNumber,
                  self.dataTreeView.dataSource.imasDbName,
-                 self.dataTreeView.dataSource.userName)  # tuple
+                 self.dataTreeView.dataSource.userName,
+                 self.dataTreeView.selectedItem)  # tuple
             # Set the node selection status
             self.nodeData['isSelected'] = 1

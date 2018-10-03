@@ -112,7 +112,7 @@ class QVizDataTreeView(QTreeWidget):
         self.selectedSignals = {} # tuple: view.dataSource.shotNumber,
                                   # nodeData, index
 
-        # List of nodes which contain a signal
+        # List of all nodes which contain a signal (all FLT_1D nodes etc.)
         self.signalsList = []
 
         # Extra informations attached to each leaf of the tree

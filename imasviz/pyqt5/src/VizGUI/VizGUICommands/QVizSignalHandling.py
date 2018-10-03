@@ -47,7 +47,8 @@
 # from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectOrUnselectSignal \
     import QVizSelectOrUnselectSignal
-# from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizUnselectAllSignals \
+    import QVizUnselectAllSignals
 # from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSignal import QVizPlotSignal
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPreviewPlotSignal import QVizPreviewPlotSignal
@@ -108,6 +109,7 @@ class QVizSignalHandling(QObject):
         self.dataTreeView.popupmenu = QMenu()
         s = ''
 
+        # ----------------------------------------------------------------------
         # The popup menu behavior in relation on the selection/unselection
         # status of the node
         if self.nodeData['isSelected'] == 1:
@@ -125,10 +127,20 @@ class QVizSignalHandling(QObject):
         action_selectOrUnselectSignal = QAction(s + signalName + '...', self)
         action_selectOrUnselectSignal.triggered.connect(self.selectOrUnselectSignal)
         self.dataTreeView.popupmenu.addAction(action_selectOrUnselectSignal)
-
         # Set bitmap to menu item
         # TODO
 
+        # ----------------------------------------------------------------------
+        # Add menu item for unselection of all selected signals if there are
+        # and selected signals present
+        if bool(self.dataTreeView.selectedSignals) == True:
+            action_UnselectAllSignals = QAction('Unselect all signals')
+            action_UnselectAllSignals.triggered.connect(self.unselectAllSignals)
+            self.dataTreeView.popupmenu.addAction(action_UnselectAllSignals)
+            # Set bitmap to menu item
+            # TODO
+
+        # ----------------------------------------------------------------------
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
         if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
@@ -174,6 +186,10 @@ class QVizSignalHandling(QObject):
     @pyqtSlot()
     def selectOrUnselectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
+
+    @pyqtSlot()
+    def unselectAllSignals(self):
+        QVizUnselectAllSignals(self.dataTreeView).execute()
 
     @pyqtSlot()
     def plotSignalCommand(self):
