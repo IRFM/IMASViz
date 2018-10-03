@@ -45,7 +45,8 @@
 #****************************************************
 
 # from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
-# from imasviz.gui_commands.select_commands.SelectOrUnselectSignal import SelectOrUnselectSignal
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectOrUnselectSignal \
+    import QVizSelectOrUnselectSignal
 # from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 # from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSignal import QVizPlotSignal
@@ -120,30 +121,32 @@ class QVizSignalHandling(QObject):
             # Bitmap icon
             # TODO
 
-        # Set second-level popup menu for selection/deselection of the node
-        # TODO
+        # Set second-level popup menu for selection/unselection of the node
+        action_selectOrUnselectSignal = QAction(s + signalName + '...', self)
+        action_selectOrUnselectSignal.triggered.connect(self.selectOrUnselectSignal)
+        self.dataTreeView.popupmenu.addAction(action_selectOrUnselectSignal)
+
         # Set bitmap to menu item
         # TODO
 
-        item3 = None
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
         if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
             # If there is no pre-existing plot
-            action_plot = QAction('Plot ' + signalName, self)
-            action_plot.triggered.connect(self.plotSignalCommand)
-            self.dataTreeView.popupmenu.addAction(action_plot)
+            action_plotSignalCommand = QAction('Plot ' + signalName, self)
+            action_plotSignalCommand.triggered.connect(self.plotSignalCommand)
+            self.dataTreeView.popupmenu.addAction(action_plotSignalCommand)
         else:
             # Add menu for creation of a new figure
-            action_plot1 = QAction('Plot ' + signalName + ' to new figure', self)
-            action_plot1.triggered.connect(self.plotSignalCommand)
-            self.dataTreeView.popupmenu.addAction(action_plot1)
+            action_plotSignalCommand = \
+                QAction('Plot ' + signalName + ' to new figure', self)
+            action_plotSignalCommand.triggered.connect(self.plotSignalCommand)
+            self.dataTreeView.popupmenu.addAction(action_plotSignalCommand)
 
             pass
             # TODO:
             """
-            - signal selection/deselection (above)
             - 'Plot ' + signalName + ' to new figure'
             - 'Add plot to existing figure'
             - 'Show/Hide figure'
@@ -168,6 +171,11 @@ class QVizSignalHandling(QObject):
             self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
         return 1
 
+    @pyqtSlot()
+    def selectOrUnselectSignal(self):
+        QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
+
+    @pyqtSlot()
     def plotSignalCommand(self):
         try:
             self.currentFigureKey = \

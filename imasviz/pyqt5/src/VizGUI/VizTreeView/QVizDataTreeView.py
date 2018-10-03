@@ -182,8 +182,30 @@ class QVizDataTreeView(QTreeWidget):
                 returnedDict[idsName] = idsNode
         return returnedDict
 
-    def setSelectedItem(self, item):
+    def setSelectedItem(self, item, mouseButton = None):
+        """Set selected item.
+        Optional: Beside setting the base selected item, set selected item
+        explicitly obtained by either left click (marked with blue fill in DTV)
+        or right click (on showing the context menu).
+
+        Arguments:
+            item        (QTreeWidgetItem) : QTreeWidgetItem object.
+            mouseButton (str)             : Define the mouse button clicked on
+                                            the QTreeWidgetItem.
+                                            Options:
+                                            - 'LEFT' for left click
+                                            - 'RIGHT' for right click
+        """
+
+        # Set base selected item variable
         self.selectedItem = item
+        # Set selected item variable obtained by left/right click on the
+        # QTreeWidgetItem
+        if mouseButton != None:
+            if mouseButton == "LEFT":
+                self.selectedItem_leftClick = item
+            elif mouseButton == "RIGHT":
+                self.selectedItem_rightClick = item
 
     def setIDSNameSelected(self, IDSName):
         self.IDSNameSelected = IDSName
@@ -205,8 +227,11 @@ class QVizDataTreeView(QTreeWidget):
         else:
             return
 
+        # Set selected QTreeWidgetItem on left click
+        # (marked with blue fill color in DTV)
+        self.setSelectedItem(item = item, mouseButton = "LEFT")
+
         ### UPDATE NODE DOCUMENTATION WIDGET
-        self.setSelectedItem(item)
         # - Set node label
         node_label = "..."    # Assigning default label
         if (item.itemVIZData.get('dataName') != None):
@@ -250,8 +275,13 @@ class QVizDataTreeView(QTreeWidget):
         """
         # print(event)
         if len(self.selectedItems()) == 1:
-            # # The selected item
+            # The selected item
             item = self.selectedItems()[0] # QTreeWidgetItem object
+
+            # Set selected QTreeWidgetItem on right click
+            self.setSelectedItem(item = item, mouseButton = "RIGHT")
+
+            # Get position
             self.pos = event.pos()
 
             # TODO
