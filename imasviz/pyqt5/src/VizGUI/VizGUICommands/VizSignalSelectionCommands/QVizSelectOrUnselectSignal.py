@@ -2,7 +2,7 @@
 #
 #          Container to handle signal selection/unselection (PyQt5).
 #          Note: The wxPython predecessor of this Python file is
-#          SelectOrUnselectSignals.py
+#          SelectOrUnselectSignal.py
 #
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko

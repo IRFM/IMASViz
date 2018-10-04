@@ -49,7 +49,8 @@ from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSele
     import QVizSelectOrUnselectSignal
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizUnselectAllSignals \
     import QVizUnselectAllSignals
-# from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectSignalsGroup \
+    import QVizSelectSignalsGroup
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSignal import QVizPlotSignal
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPreviewPlotSignal import QVizPreviewPlotSignal
 # from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
@@ -141,6 +142,16 @@ class QVizSignalHandling(QObject):
             # TODO
 
         # ----------------------------------------------------------------------
+        # Add menu item for selection of all signals from the same array of
+        # signals
+        action_selectAllSignalsFromSameAOS = \
+            QAction('Select all signals from the same AOS', self)
+        action_selectAllSignalsFromSameAOS.triggered.connect(self.selectAllSignalsFromSameAOS)
+        self.dataTreeView.popupmenu.addAction(action_selectAllSignalsFromSameAOS)
+        # Set bitmap to menu item
+        # TODO
+
+        # ----------------------------------------------------------------------
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
         if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
@@ -170,7 +181,6 @@ class QVizSignalHandling(QObject):
             - 'Delete subplot'
             - 'Plot all selected signals to'
             - 'Plot all selected signals to a new figure'
-            - 'Unselect all signals'
             - 'Open subplots manager'
             - 'Plot ' + signalName + ' as a function of time'
             - 'Plot selected signals to a multiplots frame (all opened IMAS databases)'
@@ -183,6 +193,9 @@ class QVizSignalHandling(QObject):
             self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
         return 1
 
+    def selectSignal(self):
+        QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
+
     @pyqtSlot()
     def selectOrUnselectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
@@ -190,6 +203,11 @@ class QVizSignalHandling(QObject):
     @pyqtSlot()
     def unselectAllSignals(self):
         QVizUnselectAllSignals(self.dataTreeView).execute()
+
+    @pyqtSlot()
+    def selectAllSignalsFromSameAOS(self):
+        QVizSelectSignalsGroup(self.dataTreeView, self.nodeData).execute()
+        print("* self.dataTreeView.selectedSignals: ", self.dataTreeView.selectedSignals)
 
     @pyqtSlot()
     def plotSignalCommand(self):
