@@ -43,7 +43,7 @@ class QVizSelectSignalsGroup(AbstractCommand):
             sigName = signal.itemVIZData['name']
             if re.sub("[\(\[].*?[\)\]]", "", startSigName) == re.sub("[\(\[].*?[\)\]]", "", sigName):
                 print("* sigName: ", sigName)
-                QVizSelectSignal(self.dataTreeView, signal.itemVIZData, item = signal).execute()
+                QVizSelectSignal(self.dataTreeView, signal.itemVIZData, treeItem = signal).execute()
 
         """
         path = aos.replace('self.ids.','').replace('.', '/')

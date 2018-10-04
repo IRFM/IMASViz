@@ -143,7 +143,7 @@ class QVizSignalHandling(QObject):
 
         # ----------------------------------------------------------------------
         # Add menu item for selection of all signals from the same array of
-        # signals
+        # structures
         action_selectAllSignalsFromSameAOS = \
             QAction('Select all signals from the same AOS', self)
         action_selectAllSignalsFromSameAOS.triggered.connect(self.selectAllSignalsFromSameAOS)
@@ -185,7 +185,6 @@ class QVizSignalHandling(QObject):
             - 'Plot ' + signalName + ' as a function of time'
             - 'Plot selected signals to a multiplots frame (all opened IMAS databases)'
             - 'Plot selected signals to a multiplots frame (this opened IMAS database'
-            - 'Select all signals from the same AOS'
             """
 
         # Map the menu (in order to show it)
