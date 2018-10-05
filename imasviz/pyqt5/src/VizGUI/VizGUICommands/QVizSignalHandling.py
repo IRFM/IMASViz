@@ -63,6 +63,7 @@ from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import FigureTypes
 from PyQt5.QtWidgets import QAction, QMenu
 from PyQt5.QtCore import QObject, pyqtSlot
+from functools import partial
 
 class QVizSignalHandling(QObject):
     def __init__(self, dataTreeView):
@@ -156,21 +157,42 @@ class QVizSignalHandling(QObject):
         # plots
         if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE))==0:
-            # If there is no pre-existing plot
+            # ------------------------------------------------------------------
+            # If there is no pre-existing figure:
+            # Add menu item to plot the signal data to a new figure
             action_plotSignalCommand = QAction('Plot ' + signalName, self)
             action_plotSignalCommand.triggered.connect(self.plotSignalCommand)
             self.dataTreeView.popupmenu.addAction(action_plotSignalCommand)
         else:
+            # ------------------------------------------------------------------
+            # Else, if some plot already exists:
             # Add menu for creation of a new figure
             action_plotSignalCommand = \
                 QAction('Plot ' + signalName + ' to new figure', self)
             action_plotSignalCommand.triggered.connect(self.plotSignalCommand)
             self.dataTreeView.popupmenu.addAction(action_plotSignalCommand)
 
-            pass
+            # Create and add empty submenu to main menu
+            subMenu = QMenu('Add plot to existing figure')
+            self.dataTreeView.popupmenu.addMenu(subMenu)
+
+            i = 0
+            for figureKey in self.dataTreeView.imas_viz_api.GetFiguresKeys(\
+                figureType=FigureTypes.FIGURETYPE):
+                # Check for figures that share the same coordinates
+                if self.shareSameCoordinatesFrom(figureKey):
+                    # Add menu item to add plot to specific figure
+                    action_addSignalPlotToFig = QAction(figureKey, self)
+                    action_addSignalPlotToFig.triggered.connect(
+                        partial(self.addSignalPlotToFig, i))
+                    # Add to submenu
+                    subMenu.addAction(action_addSignalPlotToFig)
+                i = i + 1
+        # Bitmap icon
+        # TODO
+
             # TODO:
             """
-            - 'Plot ' + signalName + ' to new figure'
             - 'Add plot to existing figure'
             - 'Show/Hide figure'
             - 'Show/Hide multiplots'
@@ -206,7 +228,6 @@ class QVizSignalHandling(QObject):
     @pyqtSlot()
     def selectAllSignalsFromSameAOS(self):
         QVizSelectSignalsGroup(self.dataTreeView, self.nodeData).execute()
-        print("* self.dataTreeView.selectedSignals: ", self.dataTreeView.selectedSignals)
 
     @pyqtSlot()
     def plotSignalCommand(self):
@@ -254,3 +275,39 @@ class QVizSignalHandling(QObject):
 
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
+
+    @pyqtSlot(int)
+    def addSignalPlotToFig(self, numFig):
+        try:
+            figureKeys = self.dataTreeView.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE)
+            figureKey = figureKeys[numFig]
+            QVizPlotSignal(dataTreeView=self.dataTreeView,
+                           nodeData=self.nodeData,
+                           figureKey=figureKey,
+                           update=1).execute()
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
+
+    def shareSameCoordinates(self, selectedDataList):
+        """Check if data in selectedDataList share the same coordinates
+        """
+        selectedSignalsList = []
+        for k in selectedDataList:
+            v = selectedDataList[k]
+            selectedSignalsList.append(v[1]) # v[0] = shot number,
+                                             # v[1] = node data
+                                             # v[2] = index,
+                                             # v[3] = shot number,
+                                             # v[3] = IDS database name,
+                                             # v[4] = user name
+        s = self.nodeData
+        for si in selectedSignalsList:
+            if s['coordinate1'] != si['coordinate1']:
+                return False
+            s = si
+        return True
+
+    def shareSameCoordinatesFrom(self, figureKey):
+        selectedDataList = self.dataTreeView.imas_viz_api.figToNodes[figureKey]
+        return self.shareSameCoordinates(selectedDataList)

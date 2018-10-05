@@ -178,7 +178,7 @@ class Browser_API():
 
     # Select signals from a list of IMAS paths for the given data tree frame
     def SelectSignals(self, dataTreeFrame, pathsList):
-        SelectSignals(dataTreeFrame.wxTreeView, pathsList).execute()
+        SelectSignals(dataTreeFrame.dataTreeView, pathsList).execute()
 
     #Plot select signals from multiple data tree frames (different shots) on a single plot window
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None):

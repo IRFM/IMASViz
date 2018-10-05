@@ -37,42 +37,22 @@ class QVizSelectSignalsGroup(AbstractCommand):
         aos = self.nodeData['aos']
         aos_parents_count = self.nodeData['aos_parents_count']
 
+        # Get the name of the clicked-on signal
         startSigName = self.nodeData['name']
 
+        # Go through the list of signals and compare the formatted names with
+        # the name of the clicked-on signal.
         for signal in self.dataTreeView.signalsList:
+            # When comparing the signal names, the brackets and the integers
+            # between the brackets are ignored (e.g. from
+            # 'parent.array_of_structures[0].leaf' ->
+            # 'parent.array_of_structures.leaf' ).
+            # This way all structures of the array have the same formatted name.
             sigName = signal.itemVIZData['name']
-            if re.sub("[\(\[].*?[\)\]]", "", startSigName) == re.sub("[\(\[].*?[\)\]]", "", sigName):
-                print("* sigName: ", sigName)
-                QVizSelectSignal(self.dataTreeView, signal.itemVIZData, treeItem = signal).execute()
-
-        """
-        path = aos.replace('self.ids.','').replace('.', '/')
-        for i in range(0, int(aos_parents_count) - 1):
-            index_name = GlobalValues.indices[str(i+1)]
-            index_value = self.nodeData[index_name]
-            path = path.replace('[' + index_name + ']', '[' + str(index_value) + ']')
-
-        aos_direct_parent_index_name = GlobalValues.indices[str(aos_parents_count)]
-        aos_direct_parent_index_max_value_name = GlobalValues.max_indices[str(aos_parents_count)]
-        aos_direct_parent_index_max_value = self.nodeData[aos_direct_parent_index_max_value_name]
-
-        i = 0
-        paths_list = []
-        while i < int(aos_direct_parent_index_max_value):
-            last_aos_index_name = GlobalValues.indices[str(aos_parents_count)]
-            last_aos_index_value = self.nodeData[last_aos_index_name]
-            list_item = path.replace('[' + last_aos_index_name + ']', '[' + str(i) + ']')
-            paths_list.append(list_item.replace('[', '(').replace(']', ')'))
-            i += 1
-
-        vizServices = VizServices()
-        for path in paths_list:
-            rootNodeData = vizServices.getRootNodeData(self.dataTreeView, self.nodeData['IDSName'])
-            #nodeData = vizServices.getNodeData(self.dataTreeView, rootNodeData['occurrence'], path)
-            #QVizSelectSignal(self.dataTreeView, nodeData).execute()
-
-        #print('paths_list={0}'.format(paths_list))
-        #selection_command = SelectSignals(dataTreeView=self.dataTreeView, pathsList=paths_list)
-        #selection_command.execute()
-
-        """
+            # If the formatted names matches (-> the signals are of the same
+            # array of structures), select tree item corresponding to the signal
+            if re.sub("[\(\[].*?[\)\]]", "", startSigName) == \
+                re.sub("[\(\[].*?[\)\]]", "", sigName):
+                # Select the tree item corresponding to the signal
+                QVizSelectSignal(self.dataTreeView, signal.itemVIZData,
+                                 treeItem = signal).execute()

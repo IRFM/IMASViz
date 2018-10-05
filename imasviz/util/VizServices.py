@@ -44,7 +44,7 @@ class VizServices:
 
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object.
-            occurrence    (int) : IDS occurrence number.
+            occurrence   (int) : IDS occurrence number.
             searchedPath (str) : An IDS path to one of the node (signals),
                                  containing a data array (e.g. FLT_1D), of
                                  which all siblings are to be selected.
