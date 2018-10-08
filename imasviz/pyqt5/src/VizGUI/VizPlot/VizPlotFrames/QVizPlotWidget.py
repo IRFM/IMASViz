@@ -15,6 +15,7 @@ import pyqtgraph as pg
 from pyqtgraph import PlotWidget, mkPen
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
 from PyQt5.QtCore import Qt, QMetaObject
+from imasviz.util.GlobalValues import getRGBColorList
 
 class QVizPlotWidget(QWidget):
 
@@ -38,10 +39,36 @@ class QVizPlotWidget(QWidget):
         self.ui = QVizPlotWidgetUI()
         self.ui.setupUi(self)
 
+        # Get list of available global colors (RGB)
+        self.RGBlist = getRGBColorList()
+
     def plot(self, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
         """
+
+        # Set pen (line design). Color and style are chosen depending on the
+        # number of already present plots
+        if self.RGBlist != None:
+            # Get number of already present plots
+            num_plots = len(self.getPlotList())
+            # Number of available colors
+            num_avail_colors = len(self.RGBlist)
+
+            # Set color loop counter (for cases where there are more plots
+            # than available plot color+style variations)
+            color_loop_counter = int(num_plots/num_avail_colors)
+            # Set next RGB ID
+            next_RGB_ID = num_plots - color_loop_counter*num_avail_colors
+            # Set pen style
+            if color_loop_counter % 2 == 0:
+                style = Qt.SolidLine
+            else:
+                style = Qt.DotLine
+
+            # Set pen
+            pen = mkPen(color=self.RGBlist[next_RGB_ID], width=3, style=style)
+
         # access your UI elements through the `ui` attribute
         # plot = self.ui.plotWidget.plot(x, y, title='', pen=pen)
         # Add plot
@@ -53,6 +80,18 @@ class QVizPlotWidget(QWidget):
         # Enable grid
         self.ui.plotWidget.showGrid(x=True, y=True)
         return self
+
+    def getPlotItem(self):
+        """Return the PlotItem contained in QVizPlotWidget.
+        Note: PlotItem contains the list of plots (see getPlotList).
+        """
+        return self.ui.plotWidget.getPlotItem()
+
+    def getPlotList(self):
+        """Return a list of all plots (PlotDataItem, PlotCurveItem,
+        ScatterPlotItem, etc) contained in QVizPlotWidget.
+        """
+        return self.ui.plotWidget.getPlotItem().listDataItems()
 
 class QVizPlotWidgetUI(object):
     def setupUi(self, QVizPlotWidget):

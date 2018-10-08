@@ -27,12 +27,12 @@ class GlobalValues:
     JET = "JET"
     AUG = "AUG"
 
+
     if "VIZ_PRODUCTION" not in os.environ:
         print ("VIZ_PRODUCTION environment variable not defined")
         os.environ["VIZ_PRODUCTION"] = "0"
 
     TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
-
     if TESTING:
         TESTING_VIZ_HOME = None
         if "VIZ_HOME" in os.environ:
@@ -133,10 +133,48 @@ class GlobalColors:
 
     BLUE_HEX = '#0000ff'
     RED_HEX = '#ff0000'
+    GREEN_HEX = '#008000'
+    YELLOW_HEX = '#FFFF00'
+    ORANGE_HEX = '#FFA500'
+    PURPLE_HEX = '#800080'
     BLACK_HEX = '#000000'
     CYAN_HEX = '#00ffff'
     LIGHT_CYAN_HEX = '#cce5ff'
     LIGHT_GREY_HEX = '#d3d3d3'
+    LIME_HEX = '#00FF00'
+    MAGENTA_HEX = '#FF00FF'
+    SILVER_HEX = '#C0C0C0'
+    GRAY_HEX = '#808080'
+    MAROON_HEX = '#800000'
+    OLIVE_HEX = '#808000'
+    TEAL_HEX = '#008080'
+    NAVY_HEX = '#000080'
+
+def getRGBColorList():
+    """Get RGB color list for plot lines using hex colors defined in
+    GlobalColors.
+    """
+
+    # Set empty list ob RGB colors
+    RGBlist = []
+
+    # The predefined global colors (hex) will be used
+    gc = GlobalColors()
+    gck = GlobalColors.__dict__.keys()
+    # - Get all members, specifying hex color, available
+    #   (e.g. 'BLACK_HEX' etc)
+    members = [attr for attr in gck if not attr.startswith("__") and attr.endswith("HEX")]
+
+    # Move attribute for blue color to front (first and default plot color)
+    members.insert(0, members.pop(members.index('BLUE_HEX')))
+
+    for member in members:
+        # Get string attribute and remove '#'
+        c = getattr(gc, member).lstrip('#')
+        # Convert hex to RGB and add it to the list of RGB colors
+        RGBlist.append(tuple(int(c[i:i+2], 16) for i in (0, 2 ,4)))
+
+    return RGBlist
 
 class GlobalFonts:
     """Global fonts.

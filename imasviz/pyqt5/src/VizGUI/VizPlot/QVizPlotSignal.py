@@ -162,15 +162,13 @@ class QVizPlotSignal(AbstractCommand):
                     if i == 0:
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                        # Automaticaly creates three different-colored pens (Not yet implemented)
-                        # self.plotWidget.plot(x=ti, y=u, xlabel=xlabel, ylabel=ylabel, pen=(i, nbRows))
                         self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                                         ylabel=ylabel)
                     else:
                         # Add plot
-                        self.plotWidget.plot(x=ti, y=u, label=label, pen=(i, nbRows))
+                        self.plotWidget.plot(x=ti, y=u, label=label)
 
-            # api.figureframes[figureKey] = plotWidget_2
+            # Show the widget window
             self.plotWidget.show()
 
         except:
