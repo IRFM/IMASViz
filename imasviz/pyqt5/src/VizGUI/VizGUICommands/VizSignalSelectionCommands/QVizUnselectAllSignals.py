@@ -23,11 +23,13 @@ class QVizUnselectAllSignals(AbstractCommand):
     def execute(self):
         # Set empty list of signal keys to remove
         keysToRemove = []
-        for value in self.dataTreeView.selectedSignals.values():
+        for key in self.dataTreeView.selectedSignalsDict:
+            signalDict = self.dataTreeView.selectedSignalsDict[key]
+
             # Signal/Node itemVIZData attribute
-            signalItemVIZData = value[1]
+            signalItemVIZData = signalDict['nodeData']
             # Signal/Node associated QTreeWidget object
-            signalTreeItem = value[6]
+            signalTreeItem = signalDict['QTreeWidgetItem']
             # Search through the whole list of signals (all FLT_1D nodes etc.)
             for s in self.dataTreeView.signalsList:
                 # If the itemVIZData matches, add the signal key to the list
@@ -42,7 +44,7 @@ class QVizUnselectAllSignals(AbstractCommand):
                     break
         # Go through the list of selected signals and delete all of them from
         # the same list
-        for i in range(0, len(self.dataTreeView.selectedSignals)):
+        for i in range(0, len(self.dataTreeView.selectedSignalsDict)):
             key = keysToRemove[i]
-            # Delete the signal from selectedSignals list
-            del self.dataTreeView.selectedSignals[key]
+            # Delete the signal from selectedSignalsDict list
+            del self.dataTreeView.selectedSignalsDict[key]

@@ -45,57 +45,46 @@ class QVizPlotSelectedSignals(AbstractCommand):
         self.api = self.dataTreeView.imas_viz_api
 
     def execute(self):
-
         if self.raiseErrorIfNoSelectedArrays():
-            if len(self.dataTreeView.selectedSignals) == 0:
+            if len(self.dataTreeView.selectedSignalsDict) == 0:
                     raise ValueError("No signal selected.")
 
-        plotDimension = self.getDimension()
+        self.plot1DSelectedSignals(self.figureKey, self.update,
+                                   all_DTV = self.all_DTV)
 
-        if plotDimension == "1D":
-            # In case of 1D plots
-            self.plot1DSelectedSignals(self.figureKey, self.update,
-                                       all_DTV = self.all_DTV)
-        elif plotDimension == "2D" or plotDimension == "3D":
-            # In case of 2D or 3D plots
-            raise ValueError("2D/3D plots are not currently supported.")
+        # # Check the plot dimension
+        # for key in self.dataTreeView.selectedSignalsDict:
+        #     signalDict = self.dataTreeView.selectedSignalsDict[key]
+        #     plotDimension = self.getDimension(signalDict)
+
+        #     if plotDimension == "1D":
+        #         # In case of 1D plots
+        #         self.plot1DSelectedSignals(self.figureKey, self.update,
+        #                                    all_DTV = self.all_DTV)
+        #     elif plotDimension == "2D" or plotDimension == "3D":
+        #         # In case of 2D or 3D plots
+        #         raise ValueError("2D/3D plots are not currently supported.")
 
     def raiseErrorIfNoSelectedArrays(self):
         return True
 
-    def getDimension(self):
+    def getDimension(self, signalDict):
         # Finding the plot dimension
-        signalNodeDataValue = \
-            next(iter(self.dataTreeView.selectedSignals.values()))
-        signalNodeData = signalNodeDataValue[1]
+        signalNodeData = signalDict['nodeData']
         data_type = signalNodeData['data_type']
 
         plotDimension = None
         if data_type == 'FLT_1D' or data_type == 'INT_1D':
             plotDimension = "1D"
         elif data_type == 'FLT_2D' or data_type == 'INT_2D':
+            raise ValueError("2D plots are not currently supported.")
             plotDimension = "2D"
         elif data_type == 'FLT_3D' or data_type == 'INT_3D':
+            raise ValueError("3D plots are not currently supported.")
             plotDimension = "3D"
         else:
             raise ValueError("Plots dimension larger than 3D are not supported.")
         return plotDimension
-
-    """
-    def getFrame(self, figureKey, rows=1, cols=1):
-        from imasviz.gui_commands.SignalHandling import SignalHandling
-        api = self.dataTreeView.imas_viz_api
-        if figureKey in api.GetFiguresKeys():
-            frame = api.figureframes[figureKey]
-        else:
-            nextFigureKey = api.GetNextKeyForFigurePlots()
-            signalHandling = SignalHandling(self.dataTreeView)
-            frame = IMASVIZPlotFrame(None, size=(600, 500), title=nextFigureKey,
-                                     signalHandling=signalHandling)
-            frame.panel.toggle_legend(None, True)
-            api.figureframes[figureKey] = frame
-        return frame
-    """
 
     def getPlotWidget(self, figureKey=0):
         api = self.dataTreeView.imas_viz_api
@@ -120,9 +109,9 @@ class QVizPlotSelectedSignals(AbstractCommand):
 
         plotWidget = self.getPlotWidget(figureKey)
 
+        # TODO
         #def lambda_f(evt, i=figureKey, api=self.api):
         #    self.onHide(self.api, i)
-
         #if figureKey != None:
         #    plotWidget.Bind(wx.EVT_CLOSE, lambda_f)
 
@@ -134,25 +123,21 @@ class QVizPlotSelectedSignals(AbstractCommand):
             plot_DTVlist = [self.dataTreeView]
         else:
             plot_DTVlist = self.api.DTVlist
-        """Go through the list of opened DTVs, get its selected plot signals
-        and plot every single on to the same plot panel
-        """
+        # Go through the list of opened DTVs, get its selected plot signals dict
+        # and plot the signals to the same plot widget
         for dtv in plot_DTVlist:
-            # Get list of selected signals in DTV
-            dtv_selectedSignals = GlobalOperations.getSortedSelectedSignals( \
-                dtv.selectedSignals)
-            # Go through array of selected signals
-            for element in dtv_selectedSignals:
-                # Get node data
-                signalNodeData = element[1] # element[0] = shot number,
-                                            # element[1] = node data (itemVIZData)
-                                            # element[2] = index,
-                                            # element[3] = shot number,
-                                            # element[3] = IDS database name,
-                                            # element[4] = user name
-                                            # element[5] = QTreeWidget item
-                                            #              corresponding to the
-                                            #              signal
+            # Go through DTV selected signal dictionaries
+            # (each is specified by key)
+            for key in dtv.selectedSignalsDict:
+
+                # Signal dictionary variable
+                signalDict = dtv.selectedSignalsDict[key]
+
+                # Check dimension
+                plotDimension = self.getDimension(signalDict)
+
+                # Get signal node data
+                signalNodeData = signalDict['nodeData']
 
                 key = dtv.dataSource.dataKey(signalNodeData)
                 tup = (dtv.dataSource.shotNumber, signalNodeData)
@@ -166,7 +151,7 @@ class QVizPlotSelectedSignals(AbstractCommand):
                 v = QVizPlotSignal.get1DSignalValue(s)
 
                 # Get IDS case shot number
-                shotNumber = element[0]
+                shotNumber = signalDict['shotNumber']
 
                 # Get number of rows of the y-axis array of values
                 nbRows = v.shape[0]
@@ -187,8 +172,6 @@ class QVizPlotSelectedSignals(AbstractCommand):
                         # Create plot
                         plotWidget.plot(x=ti, y=u, title='', xlabel=xlabel,
                                    ylabel=ylabel, label=label)
-                    # Show the plotWidget, holding the plot
-                    plotWidget.show()
                 else:
                     # Else add the remaining selected node arrays
                     # (selected signals) to the existing plot
@@ -200,6 +183,8 @@ class QVizPlotSelectedSignals(AbstractCommand):
                         # Add to plot
                         plotWidget.plot(x=ti, y=u, label=label)
                 i += 1
+        # Show the plotWidget, holding the plot
+        plotWidget.show()
 
         # except:
         #     traceback.print_exc(file=sys.stdout)

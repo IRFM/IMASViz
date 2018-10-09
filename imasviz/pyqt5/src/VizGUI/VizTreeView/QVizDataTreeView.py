@@ -112,6 +112,10 @@ class QVizDataTreeView(QTreeWidget):
         self.selectedSignals = {} # tuple: view.dataSource.shotNumber,
                                   # nodeData, index
 
+        # Array of signals data dictionary (should replace self.selectedSignals
+        # list of tuples)
+        self.selectedSignalsDict = {}
+
         # List of all nodes which contain a signal (all FLT_1D nodes etc.)
         self.signalsList = []
 

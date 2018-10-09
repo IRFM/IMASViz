@@ -2,7 +2,7 @@ import imas
 import numpy as np
 import wx
 import os, sys
-from imasviz.util.GlobalValues import GlobalValues, Imas_Viz_Options
+from imasviz.util.GlobalValues import GlobalValues
 import xml.etree.ElementTree as ET
 from PyQt5.QtWidgets import QMessageBox
 
@@ -32,15 +32,6 @@ class GlobalOperations:
         if (homogeneous_time == 0):
             return False
         return True
-
-    @staticmethod
-    def renderNode(display_color):
-        if (display_color == wx.BLACK or display_color == wx.LIGHT_GREY) and Imas_Viz_Options.HIDE_EMPTY_SIGNALS:
-            return False
-        elif (display_color == wx.CYAN or display_color == wx.LIGHT_GREY) and Imas_Viz_Options.HIDE_OBSOLESCENT_NODES:
-            return False
-        return True
-
 
     @staticmethod
     def getTime(ids, selectedNodeData, coordinate1):
@@ -219,12 +210,12 @@ class GlobalOperations:
     def getIDSDefFile(imas_dd_version):
         return os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
 
-    @staticmethod
-    def getListFromDict(dict):
-        list = []
-        for key in dict:
-            list.append(dict[key])
-        return list
+    # @staticmethod
+    # def getListFromDict(dict):
+    #     list = []
+    #     for key in dict:
+    #         list.append(dict[key])
+    #     return list
 
     @staticmethod
     def getConfFilesList(configType):
@@ -252,11 +243,11 @@ class GlobalOperations:
     def getConfigurationFilesDirectory():
         return os.environ["HOME"] + "/.imasviz"
 
-    @staticmethod
-    def getSortedSelectedSignals(selectedSignals):
-        selectedsignalsList = GlobalOperations.getListFromDict(selectedSignals)
-        selectedsignalsList.sort(key=lambda x: x[2])
-        return selectedsignalsList
+    # @staticmethod
+    # def getSortedSelectedSignals(selectedSignals):
+    #     selectedsignalsList = GlobalOperations.getListFromDict(selectedSignals)
+    #     selectedsignalsList.sort(key=lambda x: x[2])
+    #     return selectedsignalsList
 
     @staticmethod
     def getSignalsPathsFromConfigurationFile(configFile):

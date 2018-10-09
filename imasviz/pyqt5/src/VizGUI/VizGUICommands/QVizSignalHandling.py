@@ -128,7 +128,7 @@ class QVizSignalHandling(QObject):
         # ----------------------------------------------------------------------
         # Add menu item for unselection of all selected signals if there are
         # and selected signals present
-        if bool(self.dataTreeView.selectedSignals) == True:
+        if bool(self.dataTreeView.selectedSignalsDict) == True:
             action_UnselectAllSignals = QAction('Unselect all signals')
             action_UnselectAllSignals.triggered.connect(self.unselectAllSignals)
             self.dataTreeView.popupmenu.addAction(action_UnselectAllSignals)
@@ -189,8 +189,8 @@ class QVizSignalHandling(QObject):
 
         # ----------------------------------------------------------------------
         # Set submenu for handling features for plotting selected signals
-        if len(self.dataTreeView.selectedSignals) > 0:
-            if self.shareSameCoordinates(self.dataTreeView.selectedSignals):
+        if len(self.dataTreeView.selectedSignalsDict) > 0:
+            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
                 subMenu = QMenu('Plot all selected signals to a new figure')
                 self.dataTreeView.popupmenu.addMenu(subMenu)
 
@@ -336,8 +336,28 @@ class QVizSignalHandling(QObject):
             self.dataTreeView.log.error(str(e))
 
     def shareSameCoordinates(self, selectedDataList):
-        """Check if data in selectedDataList share the same coordinates
+        """Check if data in selectedDataList (dict) share the same coordinates
         """
+
+        selectedSignalsList = []
+        for key in selectedDataList:
+            signalDict = selectedDataList[key]
+
+            selectedSignalsList.append(signalDict['nodeData'])
+
+        s = self.nodeData
+        for si in selectedSignalsList:
+            if s['coordinate1'] != si['coordinate1']:
+                return False
+            s = si
+        return True
+
+    def shareSameCoordinatesFrom(self, figureKey):
+        """Check if data already in figure and next to be added signal plot
+        share the same coordinates.
+        """
+        selectedDataList = self.dataTreeView.imas_viz_api.figToNodes[figureKey]
+
         selectedSignalsList = []
         for k in selectedDataList:
             v = selectedDataList[k]
@@ -353,7 +373,3 @@ class QVizSignalHandling(QObject):
                 return False
             s = si
         return True
-
-    def shareSameCoordinatesFrom(self, figureKey):
-        selectedDataList = self.dataTreeView.imas_viz_api.figToNodes[figureKey]
-        return self.shareSameCoordinates(selectedDataList)
