@@ -149,8 +149,7 @@ class QVizSignalHandling(QObject):
         # ----------------------------------------------------------------------
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
-        if len(self.dataTreeView.imas_viz_api.GetFiguresKeys(
-                figureType=FigureTypes.FIGURETYPE))==0:
+        if self.dataTreeView.imas_viz_api.GetFigurePlotsCount() == 0:
             # ------------------------------------------------------------------
             # If there is no pre-existing figure:
             # Add menu item to plot the signal data to a new figure
@@ -184,11 +183,37 @@ class QVizSignalHandling(QObject):
                     # Add to submenu
                     subMenu.addAction(action_addSignalPlotToFig)
                 i = i + 1
+            # Bitmap icon
+            # TODO
+
+            # ------------------------------------------------------------------
+            # Add submenu to add plot selected signals to specific existing
+            # figure, if selected signals are present
+            if len(self.dataTreeView.selectedSignalsDict) > 0 \
+                and self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
+                # Create and add empty submenu to main menu
+                subMenu_2 = QMenu('Plot all selected signals to')
+                self.dataTreeView.popupmenu.addMenu(subMenu_2)
+
+                i = 0
+                for figureKey in self.dataTreeView.imas_viz_api.GetFiguresKeys(
+                    figureType=FigureTypes.FIGURETYPE):
+                    # Check for figures that share the same coordinates
+                    if self.shareSameCoordinatesFrom(figureKey):
+                        # Add menu item to add plot to specific figure
+                        action_addSelectedSignalsPlotToFig = \
+                            QAction(figureKey, self)
+                        action_addSelectedSignalsPlotToFig.triggered.connect(
+                            partial(self.addSelectedSignalsPlotToFig, i))
+                        # Add to submenu
+                        subMenu_2.addAction(action_addSelectedSignalsPlotToFig)
+                    i = i + 1
         # Bitmap icon
         # TODO
 
         # ----------------------------------------------------------------------
-        # Set submenu for handling features for plotting selected signals
+        # Set submenu for handling features for plotting selected signals to new
+        # plot widget
         if len(self.dataTreeView.selectedSignalsDict) > 0:
             if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
                 subMenu = QMenu('Plot all selected signals to a new figure')
@@ -224,7 +249,6 @@ class QVizSignalHandling(QObject):
             - 'Add selection to MultiPlot'
             - 'Delete subplot'
             - 'Plot all selected signals to'
-            - 'Plot all selected signals to a new figure'
             - 'Open subplots manager'
             - 'Plot ' + signalName + ' as a function of time'
             - 'Plot selected signals to a multiplots frame (all opened IMAS databases)'
@@ -334,6 +358,14 @@ class QVizSignalHandling(QObject):
                            update=1).execute()
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
+
+    @pyqtSlot(int)
+    def addSelectedSignalsPlotToFig(self, numFig):
+        figureKeys = \
+            self.dataTreeView.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+        figureKey = figureKeys[numFig]
+        QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=1,
+                                all_DTV=False).execute()
 
     def shareSameCoordinates(self, selectedDataList):
         """Check if data in selectedDataList (dict) share the same coordinates

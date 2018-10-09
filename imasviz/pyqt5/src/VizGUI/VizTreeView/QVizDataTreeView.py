@@ -108,12 +108,8 @@ class QVizDataTreeView(QTreeWidget):
         # Create a IDS root node with each shotnumber
         self.IDSRoot = QTreeWidgetItem(self, ['IDSs'+'('+ str(dataSource.shotNumber)+')'])
 
-        # User selected signals
-        self.selectedSignals = {} # tuple: view.dataSource.shotNumber,
-                                  # nodeData, index
-
-        # Array of signals data dictionary (should replace self.selectedSignals
-        # list of tuples)
+        # Array of signal dictionaries (replaced selectedSignals array of
+        # tuples)
         self.selectedSignalsDict = {}
 
         # List of all nodes which contain a signal (all FLT_1D nodes etc.)

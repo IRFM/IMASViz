@@ -210,13 +210,6 @@ class GlobalOperations:
     def getIDSDefFile(imas_dd_version):
         return os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
 
-    # @staticmethod
-    # def getListFromDict(dict):
-    #     list = []
-    #     for key in dict:
-    #         list.append(dict[key])
-    #     return list
-
     @staticmethod
     def getConfFilesList(configType):
         """Get a list of configuration files of certain type.
@@ -242,12 +235,6 @@ class GlobalOperations:
     @staticmethod
     def getConfigurationFilesDirectory():
         return os.environ["HOME"] + "/.imasviz"
-
-    # @staticmethod
-    # def getSortedSelectedSignals(selectedSignals):
-    #     selectedsignalsList = GlobalOperations.getListFromDict(selectedSignals)
-    #     selectedsignalsList.sort(key=lambda x: x[2])
-    #     return selectedsignalsList
 
     @staticmethod
     def getSignalsPathsFromConfigurationFile(configFile):

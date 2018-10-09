@@ -71,10 +71,14 @@ class Browser_API():
         dataTreeFrame.show()
 
     def GetSelectedSignals(self, dataTreeFrame):
-        """Returns the signals (nodes) selected by the user or from script
-           commands (from a single opened data tree view (DTVs))
+        """Returns the list of signals (nodes) dictionaries
+        selected by the user or from script commands (from a single opened
+        data tree view (DTVs)).
+
+        Arguments:
+            dataTreeFrame (QMainWindow) : DTV frame/main window object.
         """
-        return dataTreeFrame.wxTreeView.selectedSignals
+        return dataTreeFrame.dataTreeView.selectedSignalsDict
 
     def GetSelectedSignals_AllDTVs(self):
         """Returns the signals (nodes) selected by the user of from script
@@ -82,7 +86,7 @@ class Browser_API():
         """
         allSelectedSignals = {}
         for i in range(len(self.wxDTVframeList)):
-            allSelectedSignals.update(self.wxDTVframeList[i].wxTreeView.selectedSignals)
+            allSelectedSignals.update(self.wxDTVframeList[i].dataTreeView.selectedSignalsDict)
 
         return allSelectedSignals
 

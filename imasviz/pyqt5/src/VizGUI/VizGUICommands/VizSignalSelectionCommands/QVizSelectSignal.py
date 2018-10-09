@@ -46,23 +46,6 @@ class QVizSelectSignal(AbstractCommand):
         selectedItem.setForeground(0, GlobalColors.RED)
         # Give the order of user selection
         index = len(self.dataTreeView.selectedSignalsDict) - 1
-        # Add selected signal data to 'selectedSignals list'.
-        # Order of parameters:
-        # - shot number
-        # - node data
-        # - index
-        # - shot number
-        # - IDS database name
-        # - user name
-        # - selected signals QTreeWidgetItem
-        # self.dataTreeView.selectedSignals[key] = \
-        #     (self.dataTreeView.dataSource.shotNumber,
-        #      self.nodeData,
-        #      index,
-        #      self.dataTreeView.dataSource.runNumber,
-        #      self.dataTreeView.dataSource.imasDbName,
-        #      self.dataTreeView.dataSource.userName,
-        #      selectedItem)# tuple
         # Add a data dictionary of signal parameters to array of
         # data dictionaries of all selected signals
         # (should replace self.dataTreeView.selectedSignals)
