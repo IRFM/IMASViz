@@ -30,10 +30,8 @@ class QVizSelectSignal(AbstractCommand):
                                          item in the DTV, will be used
                                          (self.dataTreeView.selectedItem).
     """
-    def __init__(self, dataTreeView, nodeData = None, treeItem = None):
+    def __init__(self, dataTreeView, nodeData = None):
         AbstractCommand.__init__(self, dataTreeView, nodeData)
-
-        self.treeItem = treeItem
 
     def execute(self):
         self.updateNodeData();
@@ -41,24 +39,21 @@ class QVizSelectSignal(AbstractCommand):
         # Set the node selection status
         self.nodeData['isSelected'] = 1
 
-        # Use DTV selected item if tree item is not present
-        if self.treeItem != None:
-            selectedItem = self.treeItem
-        else:
-            selectedItem = self.dataTreeView.selectedItem
+        # Set variable representing the currently tagged selected item in DTV
+        selectedItem = self.dataTreeView.selectedItem
 
-        # Set the tree item color
+        # Set the tree item text color
         selectedItem.setForeground(0, GlobalColors.RED)
         # Give the order of user selection
         index = len(self.dataTreeView.selectedSignals) - 1
-            # Add selected signal to 'selectedSignals list'. Order of parameters:
-            # - shot number
-            # - node data
-            # - index
-            # - shot number
-            # - IDS database name
-            # - user name
-            # - selected signals QTreeWidgetItem
+        # Add selected signal to 'selectedSignals list'. Order of parameters:
+        # - shot number
+        # - node data
+        # - index
+        # - shot number
+        # - IDS database name
+        # - user name
+        # - selected signals QTreeWidgetItem
         self.dataTreeView.selectedSignals[key] = \
             (self.dataTreeView.dataSource.shotNumber,
              self.nodeData,

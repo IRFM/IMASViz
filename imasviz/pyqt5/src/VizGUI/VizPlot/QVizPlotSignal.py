@@ -85,14 +85,15 @@ class QVizPlotSignal(AbstractCommand):
     def getPlotWidget(self, figureKey=0):
         api = self.dataTreeView.imas_viz_api
         if figureKey in api.figureframes:
-            self.plotWidget = api.figureframes[figureKey]
+            plotWidget = api.figureframes[figureKey]
         else:
             figureKey = api.GetNextKeyForFigurePlots()
-            self.plotWidget = QVizPlotWidget(size=(600,500), title=figureKey)
+            plotWidget = QVizPlotWidget(size=(600,500), title=figureKey)
             # self.plotWidget = \
             #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
             #                      signalHandling=self.signalHandling)
-            api.figureframes[figureKey] = self.plotWidget
+            api.figureframes[figureKey] = plotWidget
+        return plotWidget
 
     @staticmethod
     def getTime(oneDimensionSignal):
@@ -129,7 +130,7 @@ class QVizPlotSignal(AbstractCommand):
 
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
-            self.getPlotWidget(self.figureKey)
+            plotWidget = self.getPlotWidget(self.figureKey)
 
             # fig =  self.plotFrame.get_figure()
 
@@ -148,31 +149,51 @@ class QVizPlotSignal(AbstractCommand):
             if update == 1:
                 # Add plot to existing plot
                 for i in range(0, nbRows):
+                    # y-axis values
                     u = v[i]
+                    # x-axis values
                     # ti = t[i]
                     ti = t[0]
                     # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                    self.plotWidget.plot(x=ti, y=u, label=label)
+                    plotWidget.plot(x=ti, y=u, label=label)
             else:
                 # Create new plot
                 for i in range(0, nbRows):
+                    # y-axis values
                     u = v[i]
+                    # x-axis values
                     ti = t[0]
 
                     if i == 0:
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                        self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+                        plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                                         ylabel=ylabel)
                     else:
                         # Add plot
-                        self.plotWidget.plot(x=ti, y=u, label=label)
+                        plotWidget.plot(x=ti, y=u, label=label)
 
             # Show the widget window
-            self.plotWidget.show()
+            plotWidget.show()
 
         except:
             traceback.print_exc(file=sys.stdout)
+            raise
+
+    def onHide(self, api, figureKey):
+        self.dataTreeView.imas_viz_api.figureframes[figureKey].hide()
+
+    @staticmethod
+    def getSignal(dataTreeView, selectedNodeData):
+        try:
+            signalDataAccess = SignalDataAccessFactory(dataTreeView.dataSource).create()
+            treeNode = dataTreeView.getNodeAttributes(selectedNodeData['dataName'])
+            s = signalDataAccess.GetSignal(selectedNodeData,
+                                           dataTreeView.dataSource.shotNumber,
+                                           treeNode)
+            return s
+        except:
+            #dataTreeView.log.error(str(e))
             raise
 
     @staticmethod

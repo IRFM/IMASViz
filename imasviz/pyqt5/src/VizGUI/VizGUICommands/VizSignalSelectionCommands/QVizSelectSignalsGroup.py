@@ -53,6 +53,8 @@ class QVizSelectSignalsGroup(AbstractCommand):
             # array of structures), select tree item corresponding to the signal
             if re.sub("[\(\[].*?[\)\]]", "", startSigName) == \
                 re.sub("[\(\[].*?[\)\]]", "", sigName):
+                # Tag the signal as current DTV selected item
+                self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
-                QVizSelectSignal(self.dataTreeView, signal.itemVIZData,
-                                 treeItem = signal).execute()
+                QVizSelectSignal(dataTreeView=self.dataTreeView,
+                                 nodeData=signal.itemVIZData).execute()
