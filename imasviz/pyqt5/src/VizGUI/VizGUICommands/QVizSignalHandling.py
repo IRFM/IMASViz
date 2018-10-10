@@ -166,22 +166,39 @@ class QVizSignalHandling(QObject):
             self.dataTreeView.popupmenu.addAction(action_plotSignalCommand)
 
             # ------------------------------------------------------------------
-            # Add submenu to add plot to specific existing figure
-            # Create and add empty submenu to main menu
-            subMenu = QMenu('Add plot to existing figure')
-            self.dataTreeView.popupmenu.addMenu(subMenu)
+            ## Popup menu behaviour when figures are present
+            # Create and add empty submenu to handle adding plots to existing
+            # figure
+            subMenu_addPlot = QMenu('Add plot to existing figure')
+            self.dataTreeView.popupmenu.addMenu(subMenu_addPlot)
+
+            # Create and add empty submenu to handle show/hide figures
+            subMenu_showHideFigure = QMenu('Show/Hide figure')
+            self.dataTreeView.popupmenu.addMenu(subMenu_showHideFigure)
 
             i = 0
             for figureKey in self.dataTreeView.imas_viz_api.GetFiguresKeys(\
                 figureType=FigureTypes.FIGURETYPE):
+                # --------------------------------------------------------------
+                # Add menu item to add plot to specific existing figure
                 # Check for figures that share the same coordinates
                 if self.shareSameCoordinatesFrom(figureKey):
-                    # Add menu item to add plot to specific figure
+                    # Set action
                     action_addSignalPlotToFig = QAction(figureKey, self)
                     action_addSignalPlotToFig.triggered.connect(
                         partial(self.addSignalPlotToFig, i))
                     # Add to submenu
-                    subMenu.addAction(action_addSignalPlotToFig)
+                    subMenu_addPlot.addAction(action_addSignalPlotToFig)
+
+                # --------------------------------------------------------------
+                # Add menu item to show/hide existing figure
+                # Set action
+                action_showHideFigure = QAction(figureKey, self)
+                action_showHideFigure.triggered.connect(
+                    partial(self.showHideFigure, i, FigureTypes.FIGURETYPE))
+                # Add to submenu
+                subMenu_showHideFigure.addAction(action_showHideFigure)
+
                 i = i + 1
             # Bitmap icon
             # TODO
@@ -248,7 +265,6 @@ class QVizSignalHandling(QObject):
             - 'Delete multiplot'
             - 'Add selection to MultiPlot'
             - 'Delete subplot'
-            - 'Plot all selected signals to'
             - 'Open subplots manager'
             - 'Plot ' + signalName + ' as a function of time'
             - 'Plot selected signals to a multiplots frame (all opened IMAS databases)'
@@ -395,13 +411,24 @@ class QVizSignalHandling(QObject):
             v = selectedDataList[k]
             selectedSignalsList.append(v[1]) # v[0] = shot number,
                                              # v[1] = node data
-                                             # v[2] = index,
-                                             # v[3] = shot number,
-                                             # v[3] = IDS database name,
-                                             # v[4] = user name
         s = self.nodeData
         for si in selectedSignalsList:
             if s['coordinate1'] != si['coordinate1']:
                 return False
             s = si
         return True
+
+    @pyqtSlot(int, str)
+    def showHideFigure(self, numFig, figureType):
+        """Show/Hide figure plot widget window or MultiPlot frame.
+
+        Arguments:
+            numFig     (int) : Figure number identificator.
+            figureType (str) : Type of figure e.c. "Figure:", "Multiplot:",
+                               "Subplot"... see GlobalValues.py FigureTypes
+                               class for a full list of figure types.
+        """
+        figureKeys = \
+            self.dataTreeView.imas_viz_api.GetFiguresKeys(figureType=figureType)
+        figureKey = figureKeys[numFig]
+        self.dataTreeView.imas_viz_api.ShowHideFigure(figureKey)

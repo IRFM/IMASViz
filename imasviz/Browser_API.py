@@ -90,13 +90,17 @@ class Browser_API():
 
         return allSelectedSignals
 
-    # Show/Hide a figure
-    def HideShowFigure(self, figureKey):
+    def ShowHideFigure(self, figureKey):
+        """Hide/show a figure.
+
+        Arguments:
+            figureKey (str) : Figure plotwidget window label (e.g. 'Figure:0).
+        """
         frame = self.figureframes[figureKey]
-        if frame.IsShown():
-            frame.Hide()
+        if frame.isVisible():
+            frame.hide()
         else:
-            frame.Show()
+            frame.show()
 
     # Return the next figure number available for plotting
     def GetFigurePlotsCount(self):
