@@ -14,19 +14,10 @@
 #  TODO:
 #
 #    - Function definitions (from SignalHandling class)
-#    def showPopUpMenu
-#    def popUpMenuHandler
-#    def unselectAllSignals
-#    def plotSelectedSignals
-#    def plotSelectedSignalsToFig
 #    def plotSelectedSignalsToMultiPlotsFrame
-#    def selectAllSignalsFromSameAOS
 #    def plotSelectedSignalVsTime
 #    def plotSelectedSignalVsTimeAtIndex
 #    def plotSelectedSignalVsCoordAtTimeIndex
-#    def hideShowfigure
-#    def deleteAllFigures
-#    def deleteFigure
 #    def deleteMultiplots
 #    def addSignalSelectionToMultiPlotFrame
 #    def deleteSubplots
@@ -66,6 +57,7 @@ class QVizSignalHandling(QObject):
         """
         super(QVizSignalHandling, self).__init__()
         self.dataTreeView = dataTreeView
+        self.api = self.dataTreeView.imas_viz_api
         # self.CHANGE_COORD1 = GlobalIDs.ID_CHANGE_COORD1
         # self.CHANGE_TIME1  = GlobalIDs.ID_CHANGE_TIME1
         self.plotFrame = None
@@ -149,7 +141,7 @@ class QVizSignalHandling(QObject):
         # ----------------------------------------------------------------------
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
-        if self.dataTreeView.imas_viz_api.GetFigurePlotsCount() == 0:
+        if self.api.GetFigurePlotsCount() == 0:
             # ------------------------------------------------------------------
             # If there is no pre-existing figure:
             # Add menu item to plot the signal data to a new figure
@@ -171,14 +163,20 @@ class QVizSignalHandling(QObject):
             # figure
             subMenu_addPlot = QMenu('Add plot to existing figure')
             self.dataTreeView.popupmenu.addMenu(subMenu_addPlot)
-
             # Create and add empty submenu to handle show/hide figures
             subMenu_showHideFigure = QMenu('Show/Hide figure')
             self.dataTreeView.popupmenu.addMenu(subMenu_showHideFigure)
+            # Create and add empty submenu to handle figures deletion
+            subMenu_deleteFigure = QMenu('Delete figure')
+            self.dataTreeView.popupmenu.addMenu(subMenu_deleteFigure)
 
-            i = 0
-            for figureKey in self.dataTreeView.imas_viz_api.GetFiguresKeys(\
+            for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE):
+                # Get figure number out from the figureKey string
+                # (e.g. 'Figure:0' -> 0)
+                # numFig = int(figureKey.split(':')[1])
+                numFig = self.api.getFigureKeyNum(figureKey)
+
                 # --------------------------------------------------------------
                 # Add menu item to add plot to specific existing figure
                 # Check for figures that share the same coordinates
@@ -186,7 +184,7 @@ class QVizSignalHandling(QObject):
                     # Set action
                     action_addSignalPlotToFig = QAction(figureKey, self)
                     action_addSignalPlotToFig.triggered.connect(
-                        partial(self.addSignalPlotToFig, i))
+                        partial(self.addSignalPlotToFig, numFig))
                     # Add to submenu
                     subMenu_addPlot.addAction(action_addSignalPlotToFig)
 
@@ -195,11 +193,28 @@ class QVizSignalHandling(QObject):
                 # Set action
                 action_showHideFigure = QAction(figureKey, self)
                 action_showHideFigure.triggered.connect(
-                    partial(self.showHideFigure, i, FigureTypes.FIGURETYPE))
+                    partial(self.showHideFigure, numFig, FigureTypes.FIGURETYPE))
                 # Add to submenu
                 subMenu_showHideFigure.addAction(action_showHideFigure)
 
-                i = i + 1
+                # --------------------------------------------------------------
+                # Add menu item to delete existing figure
+                # Set action
+                action_deleteFigure = QAction(figureKey, self)
+                action_deleteFigure.triggered.connect(
+                    partial(self.deleteFigure, numFig))
+                # Add to submenu
+                subMenu_deleteFigure.addAction(action_deleteFigure)
+
+            # ------------------------------------------------------------------
+            # Add menu item to delete all existing figures
+            # Set action
+            action_deleteAllFigures = QAction('All', self)
+            action_deleteAllFigures.triggered.connect(self.deleteAllFigures)
+            # Add to submenu
+            subMenu_deleteFigure.addAction(action_deleteAllFigures)
+
+
             # Bitmap icon
             # TODO
 
@@ -212,19 +227,21 @@ class QVizSignalHandling(QObject):
                 subMenu_2 = QMenu('Plot all selected signals to')
                 self.dataTreeView.popupmenu.addMenu(subMenu_2)
 
-                i = 0
-                for figureKey in self.dataTreeView.imas_viz_api.GetFiguresKeys(
+                for figureKey in self.api.GetFiguresKeys(
                     figureType=FigureTypes.FIGURETYPE):
                     # Check for figures that share the same coordinates
                     if self.shareSameCoordinatesFrom(figureKey):
+                        # Get figure number out from the figureKey string
+                        # (e.g. 'Figure:0' -> 0)
+                        # numFig = int(figureKey.split(':')[1])
+                        numFig = self.api.getFigureKeyNum(figureKey)
                         # Add menu item to add plot to specific figure
                         action_addSelectedSignalsPlotToFig = \
                             QAction(figureKey, self)
                         action_addSelectedSignalsPlotToFig.triggered.connect(
-                            partial(self.addSelectedSignalsPlotToFig, i))
+                            partial(self.addSelectedSignalsPlotToFig, numFig))
                         # Add to submenu
                         subMenu_2.addAction(action_addSelectedSignalsPlotToFig)
-                    i = i + 1
         # Bitmap icon
         # TODO
 
@@ -294,8 +311,7 @@ class QVizSignalHandling(QObject):
     @pyqtSlot()
     def plotSignalCommand(self):
         try:
-            self.currentFigureKey = \
-                self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
+            self.currentFigureKey = self.api.GetNextKeyForFigurePlots()
             treeNode = self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
             label = None
             xlabel = None
@@ -348,7 +364,7 @@ class QVizSignalHandling(QObject):
         """
         # Get label for the next figure (e.c. if 'Figure 2' already exists,
         # value 'Figure 3' will be returned)
-        figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
+        figureKey = self.api.GetNextKeyForFigurePlots()
         # Plot the selected signals
         if all_DTV == False:
             QVizPlotSelectedSignals(self.dataTreeView, figureKey,
@@ -365,9 +381,9 @@ class QVizSignalHandling(QObject):
             numFig (int) : Number identification of the existing figure.
         """
         try:
-            figureKeys = self.dataTreeView.imas_viz_api.GetFiguresKeys(
-                figureType=FigureTypes.FIGURETYPE)
-            figureKey = figureKeys[numFig]
+            # Get figure key (e.g. 'Figure:0' string)
+            figureKey = self.api. \
+                GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=self.nodeData,
                            figureKey=figureKey,
@@ -377,9 +393,15 @@ class QVizSignalHandling(QObject):
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig):
-        figureKeys = \
-            self.dataTreeView.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
-        figureKey = figureKeys[numFig]
+        """Add/Plot selected signals to existing figure.
+
+        Arguments:
+            numFig (int) : Number identification of the existing figure.
+        """
+        # Get figure key (e.g. 'Figure:0' string)
+        figureKey = self.api. \
+            GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+
         QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=1,
                                 all_DTV=False).execute()
 
@@ -404,7 +426,7 @@ class QVizSignalHandling(QObject):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates.
         """
-        selectedDataList = self.dataTreeView.imas_viz_api.figToNodes[figureKey]
+        selectedDataList = self.api.figToNodes[figureKey]
 
         selectedSignalsList = []
         for k in selectedDataList:
@@ -428,7 +450,28 @@ class QVizSignalHandling(QObject):
                                "Subplot"... see GlobalValues.py FigureTypes
                                class for a full list of figure types.
         """
-        figureKeys = \
-            self.dataTreeView.imas_viz_api.GetFiguresKeys(figureType=figureType)
-        figureKey = figureKeys[numFig]
-        self.dataTreeView.imas_viz_api.ShowHideFigure(figureKey)
+        # Get figure key (e.g. 'Figure:0' string)
+        figureKey = \
+            self.api.GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+        self.api.ShowHideFigure(figureKey)
+
+    @pyqtSlot()
+    def deleteAllFigures(self):
+        figureKeys = self.api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+        for figureKey in figureKeys:
+            self.api.DeleteFigure(figureKey)
+
+    @pyqtSlot(int)
+    def deleteFigure(self, numFig):
+        """Delete figure plot widget window.
+
+        Arguments:
+            numFig     (int) : Figure number identificator.
+        """
+        try:
+            # Get figure key (e.g. 'Figure:0' string)
+            figureKey = self.api. \
+                GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+            self.api.DeleteFigure(figureKey)
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))

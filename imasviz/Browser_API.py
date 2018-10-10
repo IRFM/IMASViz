@@ -117,10 +117,23 @@ class Browser_API():
         return FigureTypes.MULTIPLOTTYPE + str(self.GetMultiPlotsCount())
 
     def GetNextKeyForFigurePlots(self):
-        """Returns label for the next figure (e.c. if 'Figure i' already exists,
-           value 'Figure i+1' will be returned.
+        """Returns string label for the next figure (e.c. if 'Figure i' is the
+        last figure on the list of existing figures, value 'Figure i+1' is
+        returned.)
         """
-        return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
+
+        if self.GetFigurePlotsCount() == 0:
+            # Figure number when no figures exist/are present
+            numFig_next = 0
+        else:
+            # Get the last figure on the list of figures and get its figure
+            # number
+            # Note: this is used to avoid problems when figures top on list
+            # got deleted.
+            numFig = self.getFigureKeyNum(self.GetFiguresKeys()[-1])
+            numFig_next = numFig + 1
+
+        return FigureTypes.FIGURETYPE + str(numFig_next)
 
     def GetNextKeyForSubPlots(self):
         return FigureTypes.SUBPLOTTYPE + str(self.GetSubPlotsCount())
@@ -134,11 +147,20 @@ class Browser_API():
 
     def DeleteFigure(self, figureKey):
         if figureKey in self.figureframes:
-            self.figureframes[figureKey].Close()
+            self.figureframes[figureKey].close()
             del self.figureframes[figureKey]
 
     def GetFigureKey(self, userKey, figureType):
         return figureType + userKey
+
+    def getFigureKeyNum(self, figureKey):
+        """Extract figure number from figureKey (e.g. 'Figure:0' -> 0).
+
+        Arguments (str) figureKey: Figure key (label) (e.g. 'Figure:0').
+        """
+
+        numFig = int(figureKey.split(':')[1])
+        return numFig
 
     def getFigureFrame(self, figureKey):
         if figureKey in self.figureframes:
