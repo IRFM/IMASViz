@@ -3,15 +3,23 @@ from imasviz.util.VizServices import VizServices
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalValues import FigureTypes
-from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
-from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
-from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
+from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
+from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSelectedSignals import QVizPlotSelectedSignals
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizUnselectAllSignals \
+    import QVizUnselectAllSignals
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectSignalsGroup \
+    import QVizSelectSignalsGroup
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectSignal \
+    import QVizSelectSignal
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectSignals \
+    import QVizSelectSignals
+
 from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
-
-from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
+from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
+from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
 
 class Browser_API():
 
@@ -206,12 +214,27 @@ class Browser_API():
         dataTreeFrame.wxTreeView.setIDSNameSelected(IDSName)
         LoadSelectedData(dataTreeFrame.wxTreeView, occurrence, threadingEvent).execute()
 
-    # Select signals from a list of IMAS paths for the given data tree frame
-    def SelectSignals(self, dataTreeFrame, pathsList):
-        SelectSignals(dataTreeFrame.dataTreeView, pathsList).execute()
+    def SelectSignals(self, dataTreeWindow, pathsList):
+        """Select signals from a list of IMAS paths for the given tree view
+        QMainWindow.
 
-    #Plot select signals from multiple data tree frames (different shots) on a single plot window
+        Arguments:
+            dataTreeWindow (QMainWindow) : DTV QMainWindow object (containing
+                                           DTV - QTreeWidget).
+            nodeData       (array)       : A list if signal paths (e.g.
+                                           ['magnetics/flux_loop(0)/flux/data'])
+        """
+        QVizSelectSignals(dataTreeWindow.dataTreeView, pathsList).execute()
+
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None):
+        """Plot select signals from multiple data tree frames (different shots)
+        on a single plot window.
+
+        Arguments:
+            dataTreeFramesList (Array) : A list of DTV frames (QMainWindow
+                                         objects)
+            figurekey          (string) : Figure key/label.
+        """
         i = 0
         update = 0
         for f in dataTreeFramesList:
@@ -219,7 +242,7 @@ class Browser_API():
                 update = 1
             if figureKey == None:
                 figureKey = self.GetNextKeyForFigurePlots()
-            PlotSelectedSignals(f.wxTreeView, figureKey=figureKey,
+            QVizPlotSelectedSignals(f.dataTreeView, figureKey=figureKey,
                                 update=update).execute()
             i += 1
 

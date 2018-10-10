@@ -33,12 +33,9 @@ class QVizSelectSignalsGroup(AbstractCommand):
 
     def execute(self):
         #self.updateNodeData()
-        key = self.dataTreeView.dataSource.dataKey(self.nodeData)
-        aos = self.nodeData['aos']
-        aos_parents_count = self.nodeData['aos_parents_count']
 
         # Get the name of the clicked-on signal
-        startSigName = self.nodeData['name']
+        startSigName = self.nodeData['Path']
 
         # Go through the list of signals and compare the formatted names with
         # the name of the clicked-on signal.
@@ -48,7 +45,7 @@ class QVizSelectSignalsGroup(AbstractCommand):
             # 'parent.array_of_structures[0].leaf' ->
             # 'parent.array_of_structures.leaf' ).
             # This way all structures of the array have the same formatted name.
-            sigName = signal.itemVIZData['name']
+            sigName = signal.itemVIZData['Path']
             # If the formatted names matches (-> the signals are of the same
             # array of structures), select tree item corresponding to the signal
             if re.sub("[\(\[].*?[\)\]]", "", startSigName) == \
