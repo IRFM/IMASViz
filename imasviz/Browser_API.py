@@ -49,28 +49,34 @@ class Browser_API():
 
     def CreateDataTree(self, dataSource):
         """Create a IDS data tree from a data source.
+        Arguments:
+            dataSource (IMASDataSource) : IDS data source from
+                                          DataSourceFactory.
         """
         treeDict = {}
         if GlobalValues.TESTING:
             frame = \
-                QVizDataTreeViewFrame(None, treeDict, dataSource,
-                                    GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION)
-                                    )
+                QVizDataTreeViewFrame(parent=None,
+                                      views=treeDict,
+                                      dataSource=dataSource,
+                                      IDSDefFile=GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION))
         else:
             frame = \
-                QVizDataTreeViewFrame(None, treeDict, dataSource,
-                                    GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION'])
-                                    )
-        # Set WxTreeViewFrame BrowserAPI
-        frame.view.imas_viz_api = self
-        frame.view.dataSource = dataSource  # update the dataSource
-                                                  # attached to the view
+                QVizDataTreeViewFrame(parent=None,
+                                      views=treeDict,
+                                      dataSource=dataSource,
+                                      IDSDefFile=GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
 
-        # Add created WxDataTreeViewFrame (DTV frame) to a list of DTV frames
-        self.wxDTVframeList.append(frame)
+        # Set data tree view (DTV) frame BrowserAPI
+        frame.dataTreeView.imas_viz_api = self
+        frame.dataTreeView.dataSource = dataSource # update the dataSource
+                                                   # attached to the view
 
-        # Add current WxDataTreeView (DTV) to a list of DTVs
-        self.wxDTVlist.append(frame.view)
+        # Add created data tree view (DTV) frame to a list of DTV frames
+        self.DTVframeList.append(frame)
+
+        # Add current data tree view (DTV) frame to a list of DTVs
+        self.DTVlist.append(frame.dataTreeView)
 
         return frame
 
@@ -269,42 +275,3 @@ class Browser_API():
             occurrence, onePathInTheGroup)
         # Select all sibling signals of the node
         SelectSignalsGroup(dataTreeFrame.wxTreeView, oneNodeInTheGroup).execute()
-
-    #---------------------------------------------------------------------------
-    # PyQt5 routine variations
-
-    def QCreateDataTree(self, dataSource):
-        """Create a IDS data tree from a data source. PyQt variant of the
-        'CreateDataTree' function (wxPython).
-
-        Arguments:
-            dataSource (IMASDataSource) : IDS data source from DataSourceFactory
-        """
-        treeDict = {}
-
-        # Create data tree view (DTV) frame
-        if GlobalValues.TESTING:
-            frame = \
-                QVizDataTreeViewFrame(parent=None,
-                                      views=treeDict,
-                                      dataSource=dataSource,
-                                      IDSDefFile=GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION))
-        else:
-            frame = \
-                QVizDataTreeViewFrame(parent=None,
-                                      views=treeDict,
-                                      dataSource=dataSource,
-                                      IDSDefFile=GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
-
-        # Set data tree view (DTV) frame BrowserAPI
-        frame.dataTreeView.imas_viz_api = self
-        frame.dataTreeView.dataSource = dataSource  # update the dataSource
-                                                  # attached to the view
-
-        # Add created data tree view (DTV) frame to a list of DTV frames
-        self.DTVframeList.append(frame)
-
-        # Add current data tree view (DTV) frame to a list of DTVs
-        self.DTVlist.append(frame.dataTreeView)
-
-        return frame

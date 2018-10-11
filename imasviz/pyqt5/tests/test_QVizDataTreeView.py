@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     # OPTION 2:
     # Create Data Tree View using API function
-    w = api.QCreateDataTree(dataSource=dataSource)
+    w = api.CreateDataTree(dataSource=dataSource)
 
     w.show()
     sys.exit(app.exec_())
