@@ -90,17 +90,19 @@ class QVizPlotWidgetUI(object):
         # self.plotWidget.addLegend()
 
         # Set menu bar
-        self.menuBar()
+        menuBar = self.menuBar()
+        self.gridLayout.setMenuBar(menuBar)
 
         # Set checkbox for toggling mouse
         #checkBox = self.customUI()
 
         # Set layout marigin (left, top, right, bottom)
-        self.gridLayout.setContentsMargins(0, 30, 0, 0)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         # Add widgets to layout
         self.gridLayout.addWidget(self.plotWidget, 1, 0, 1, 1)
         # self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
+        self.gridLayout.update()
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self.QVizPreviewPlotWidget)

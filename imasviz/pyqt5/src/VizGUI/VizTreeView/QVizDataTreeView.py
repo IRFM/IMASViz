@@ -24,7 +24,7 @@
 #       def onShowMultiPlot(...):
 #       def onUnselectSignals(...):
 #       def onCloseAndReopenDatabase(...):
-#       def createMenu(...):
+#       def createMenuBar(...):
 #       def updateView(...):
 #
 #    - class TextCtrlLogger definition
@@ -38,7 +38,7 @@ import os, sys, time
 from functools import partial
 from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, \
     QMouseEvent, QFont, QColor
-from PyQt5.QtCore import Qt, QSize, pyqtSlot
+from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QMainWindow, QMenu, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QTableWidget, QTableWidgetItem, \
                             QGridLayout
@@ -56,7 +56,8 @@ from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.pyqt5.src.VizUtils.QWindowUtils import getWindowSize
-from PyQt5.QtGui import QDockWidget # if moved upwards it gives import errors (???)
+from imasviz.gui_commands.configurations.SaveSignalSelection import SaveSignalSelection
+from PyQt5.QtGui import QDockWidget, QMenuBar, QAction # if moved upwards it gives import errors (???)
 
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
@@ -431,7 +432,14 @@ class QVizDataTreeViewFrame(QMainWindow):
         # self.dataTreeView.resize(400,500)
         self.setCentralWidget(self.dataTreeView)
 
+        # Set and add dock widgets to QMainWindow
         self.addDockWidgets()
+
+        # Set and add menu bar
+        self.createMenuBar()
+
+        # Connect custom UI elements
+        QMetaObject.connectSlotsByName(self)
 
         # Old wx variable label. Remove when obsolete
         self.view = self.dataTreeView
@@ -494,6 +502,23 @@ class QVizDataTreeViewFrame(QMainWindow):
         # if threadingEvent != None:
         #     threadingEvent.set()
 
+    def createMenuBar(self):
+        """Create and configure the menu bar.
+        """
+        # Main menu bar
+        menuBar = QMenuBar(self)
+        options = menuBar.addMenu('Options')
+        #-----------------------------------------------------------------------
+        # Set new submenu for handling signal selection to be added to 'Options'
+        # menu
+        subMenu = options.addMenu('Signal Selection Options')
+
+        action_onSaveSignalSelection = QAction('Save Signal Selection', self)
+        action_onSaveSignalSelection.triggered.connect(self.onSaveSignalSelection)
+        subMenu.addAction(action_onSaveSignalSelection)
+
+        self.setMenuBar(menuBar)
+
     def addDockWidgets(self):
         """Add dockable widgets to DTV frame main window.
         """
@@ -538,6 +563,14 @@ class QVizDataTreeViewFrame(QMainWindow):
         # - Set dockwidget size
         self.dockWidget_ndw.setMinimumSize(QSize(ref_width/2, ref_height/4))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
+
+    def onSaveSignalSelection(self, event=None, **kws):
+        """Save signal selection as a list of signal paths for single DTV
+        (QVizDataTreeView)
+        """
+        print ("Saving signal selection.")
+        # Save signal selection as a list of signal paths to .lsp file
+        SaveSignalSelection(DTV=self.dataTreeView).execute()
 
 class Logger:
     def __init__(self):

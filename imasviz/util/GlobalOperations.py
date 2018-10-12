@@ -4,7 +4,7 @@ import wx
 import os, sys
 from imasviz.util.GlobalValues import GlobalValues
 import xml.etree.ElementTree as ET
-from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QMessageBox, QInputDialog
 
 class GlobalOperations:
 
@@ -52,12 +52,14 @@ class GlobalOperations:
         return result
 
     @staticmethod
-    def askWithCancel(parent=None, message='', default_value=''):
-        dlg = wx.TextEntryDialog(parent, message, value=default_value, style=wx.OK|wx.CANCEL)
-        cancel = dlg.ShowModal()
-        result = dlg.GetValue()
-        dlg.Destroy()
-        return (cancel, result)
+    def askWithCancel(parent=None, title='', message='', default_value=''):
+        text, ok = QInputDialog.getText(parent, title, message)
+        # dlg = wx.TextEntryDialog(parent, message, value=default_value, style=wx.OK|wx.CANCEL)
+        # cancel = dlg.ShowModal()
+        # result = dlg.GetValue()
+        # dlg.Destroy()
+        # return (cancel, result)
+        return text
 
     @staticmethod
     def showMessage(parent=None, message=''):

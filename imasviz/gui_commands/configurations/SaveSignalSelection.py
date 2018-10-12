@@ -1,4 +1,16 @@
-import wx
+#  Name   : SaveSignalSelection.py
+#
+#          Container to handle saving signal selection configuration.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
+#****************************************************
+
 import os
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.util.GlobalOperations import GlobalOperations
@@ -21,18 +33,23 @@ class SaveSignalSelection(AbstractCommand):
         configName = None
         cancel = None
         loop = True
-        while loop:
-            x = GlobalOperations.askWithCancel(message='Name of the configuration ?',
-                                               default_value=default_file_name)
-            cancel = x[0]
-            configName = x[1]
-            if cancel != wx.CANCEL and (x == None or x == ""):
-                x = GlobalOperations.showMessage(message='Please give a name to the configuration')
-            else:
-                loop = False
+        configName = \
+            GlobalOperations.askWithCancel(parent=self.DTV,
+                                           title='Dialog',
+                                           message='Type the name of the configuration',
+                                           default_value=default_file_name)
+        # while loop:
+            # x = GlobalOperations.askWithCancel(message='Name of the configuration ?',
+            #                                    default_value=default_file_name)
+        #     cancel = x[0]
+            # configName = x[1]
+        #     if cancel != wx.CANCEL and (x == None or x == ""):
+        #         x = GlobalOperations.showMessage(message='Please give a name to the configuration')
+        #     else:
+        #         loop = False
 
-        if (cancel == wx.CANCEL):
-            return
+        # if (cancel == wx.CANCEL):
+        #     return
 
         configName = GlobalOperations.replaceSpacesByUnderScores(configName)
         if configName.endswith(".lsp"):
@@ -53,38 +70,40 @@ class SaveSignalSelection(AbstractCommand):
         listElement = ET.SubElement(root, 'ListOfSignalPaths')
 
         # Get list of signals, selected in the WxDataTreeView
-        selectedsignalsList = \
-            GlobalOperations.getSortedSelectedSignals(self.DTV.selectedSignals)
+        # selectedsignalsList = \
+        #     GlobalOperations.getSortedSelectedSignals(self.DTV.selectedSignals)
+        selectedsignalsList = self.DTV.selectedSignalsDict
 
-        for n in range(0, len(selectedsignalsList)):
+        # TODO
+        # for n in range(0, len(selectedsignalsList)):
 
-            key = n
+        #     key = n
 
-            # Set new subelement
-            pathElement = ET.SubElement(listElement, 'IDSPath')
-            # Set subelement attribute 'key'
-            pathElement.set('key', str(key))
+        #     # Set new subelement
+        #     pathElement = ET.SubElement(listElement, 'IDSPath')
+        #     # Set subelement attribute 'key'
+        #     pathElement.set('key', str(key))
 
-            # Extract signal node data (it contains also 'path') from the
-            # signal
-            selectedArray = selectedsignalsList[n]
-            nodeData = selectedArray[1]
+        #     # Extract signal node data (it contains also 'path') from the
+        #     # signal
+        #     selectedArray = selectedsignalsList[n]
+        #     nodeData = selectedArray[1]
 
-            # Set subelement attribute 'path'
-            self.saveAttribute(pathElement, 'path', nodeData['Path'])
+        #     # Set subelement attribute 'path'
+        #     self.saveAttribute(pathElement, 'path', nodeData['Path'])
 
-            # self.saveAttribute(pathElement, 'shotnum', selectedArray[0])
-            # self.saveAttribute(pathElement, 'runnum', selectedArray[3])
-            # self.saveAttribute(pathElement, 'database', selectedArray[4])
-            # self.saveAttribute(pathElement, 'username', selectedArray[5])
+        #     # self.saveAttribute(pathElement, 'shotnum', selectedArray[0])
+        #     # self.saveAttribute(pathElement, 'runnum', selectedArray[3])
+        #     # self.saveAttribute(pathElement, 'database', selectedArray[4])
+        #     # self.saveAttribute(pathElement, 'username', selectedArray[5])
 
-        self.indent(root)
-        treeConfiguration = ET.ElementTree(root)
-        treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
-        #self.f.close()
+        # self.indent(root)
+        # treeConfiguration = ET.ElementTree(root)
+        # treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
+        # #self.f.close()
 
-        if self.DTV.parent.configurationListsFrame != None:
-            self.DTV.parent.configurationListsFrame.update_lsp()
+        # if self.DTV.parent.configurationListsFrame != None:
+        #     self.DTV.parent.configurationListsFrame.update_lsp()
 
     def saveAttribute(self, pathElement, attribute, value):
         if value != None:
