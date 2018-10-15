@@ -53,13 +53,13 @@ class GlobalOperations:
 
     @staticmethod
     def askWithCancel(parent=None, title='', message='', default_value=''):
+        # Set and show dialog
         text, ok = QInputDialog.getText(parent, title, message)
-        # dlg = wx.TextEntryDialog(parent, message, value=default_value, style=wx.OK|wx.CANCEL)
-        # cancel = dlg.ShowModal()
-        # result = dlg.GetValue()
-        # dlg.Destroy()
-        # return (cancel, result)
-        return text
+        # If text was not defined (input dialog was left empty)
+        if text == '':
+            text = default_value
+        # Return text and OK/CANCEL value (True/False)
+        return text, ok
 
     @staticmethod
     def showMessage(parent=None, message=''):

@@ -396,6 +396,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
+        # Set empty list of configuration windows
+        self.configurationListsFrame = None
+
         # Basic settings (QMainWindow)
         self.resize(800, 800)
 
@@ -568,7 +571,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         """Save signal selection as a list of signal paths for single DTV
         (QVizDataTreeView)
         """
-        print ("Saving signal selection.")
         # Save signal selection as a list of signal paths to .lsp file
         SaveSignalSelection(DTV=self.dataTreeView).execute()
 
