@@ -16,7 +16,11 @@
 
 from PyQt5.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
                              QPushButton, QWidget, QSizePolicy, QLabel)
-from PyQt5.QtCore import Qt, pyqtSlot
+from PyQt5.QtCore import Qt, pyqtSlot, QObject
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizUnselectAllSignals \
+    import QVizUnselectAllSignals
+from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSelectSignals \
+    import QVizSelectSignals
 from imasviz.util.GlobalValues import GlobalFonts
 from imasviz.util.GlobalOperations import GlobalOperations
 from functools import partial
@@ -51,7 +55,7 @@ class QVizConfigurationListsWindow(QDialog):
         layout.addWidget(self.tabWidget)
         self.setLayout(layout)
 
-class CommonConfigurationRoutines():
+class CommonConfigurationRoutines(QObject):
     """Common configuration routines.
     """
 
@@ -61,11 +65,36 @@ class CommonConfigurationRoutines():
             parent (QWidget) : QWidget object, representing one of the tabs in the
                                Configuration Lists Window.
         """
+        super(CommonConfigurationRoutines, self).__init__()
         self.parent = parent
 
+    @pyqtSlot()
     def applySignalSelection(self):
-        pass
-        # TODO
+        """Apply signal selection from the config file - select signals (
+        list of IDS paths) only.
+        """
+        # Get in-list position of the selection (config file name)
+        selectedItems = self.parent.listWidget.selectedItems()
+        # Set the first selected item from the list
+        # Note: Only one item can be selected at a time, so a list of one item
+        # is provided
+        selectedItem = selectedItems[0]
+
+        # Get system path to the selected configuration file
+        selectedFile = \
+            GlobalOperations.getConfigurationFilesDirectory() + \
+            "/" + selectedItem.text()
+        # Extract signal paths from the config file and add them to a list of
+        # paths
+        pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
+                        configFile=selectedFile)
+        # First unselect all signals
+        QVizUnselectAllSignals(
+            dataTreeView = self.parent.DTVFrame.dataTreeView).execute()
+        # Select the signals, defined by a path in a list of paths, in the
+        # given wxDataTreeView (DTV) window
+        QVizSelectSignals(dataTreeView = self.parent.DTVFrame.dataTreeView,
+                          pathsList = pathsList).execute()
 
     @pyqtSlot(str)
     def removeConfiguration(self, configType):
@@ -148,6 +177,7 @@ class PlotConfigurationListsTab(QWidget):
     def __init__(self, parent=None):
         super(PlotConfigurationListsTab, self).__init__(parent)
         commonConf = CommonConfigurationRoutines(parent=self)
+        self.DTVFrame = parent.DTVFrame
 
         # Set layout containing the list widget
         layout_list = QVBoxLayout()
@@ -160,8 +190,10 @@ class PlotConfigurationListsTab(QWidget):
         layout_buttons.setContentsMargins(15, 0, 15, 0)
         # - Set buttons
         self.button1 = QPushButton('Apply to current IMAS database')
+        # TODO button1 action on clicked
         self.button2 = QPushButton('Apply only list of IDS paths to current IMAS '
                               'database')
+        self.button2.clicked.connect(commonConf.applySignalSelection)
         self.button3 = QPushButton('Remove configuration')
         self.button3.clicked.connect(
             partial(commonConf.removeConfiguration, configType='pcfg'))
@@ -226,6 +258,7 @@ class ListOfSignalPathsListsTab(QWidget):
     def __init__(self, parent=None):
         super(ListOfSignalPathsListsTab, self).__init__(parent)
         commonConf = CommonConfigurationRoutines(parent=self)
+        self.DTVFrame = parent.DTVFrame
 
         # Set first layout containing the list widget
         layout_list = QVBoxLayout()
@@ -241,6 +274,7 @@ class ListOfSignalPathsListsTab(QWidget):
         # - Set buttons
         self.button1 = QPushButton('Apply list of IDS paths to current IMAS '
                               'database')
+        self.button1.clicked.connect(commonConf.applySignalSelection)
         self.button2 = QPushButton('Remove configuration')
         self.button2.clicked.connect(
             partial(commonConf.removeConfiguration, configType='lsp'))
