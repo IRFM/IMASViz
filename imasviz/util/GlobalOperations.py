@@ -107,15 +107,11 @@ class GlobalOperations:
     def getConfFilePath(configName, configType):
         """Get path + filename to configuration file ('.pcfg' or '.lsp').
 
-        Parameters
-        ----------
-
-            configName: string
-                Name of the configuration file (with no extension).
-            configType: string
-                Type/Extension of the configuration file, without dot
-                ('pcfg' or 'lsp').
-
+        Arguments
+            configName (str) : Name of the configuration file (with no
+                               extension).
+            configType (str) : Type/Extension of the configuration file,
+                               without dot ('pcfg' or 'lsp').
         """
 
         home = os.environ['HOME']
@@ -133,7 +129,6 @@ class GlobalOperations:
             return
 
         return configurationFilePath
-
 
     @staticmethod
     def printCode(file, text, level):
