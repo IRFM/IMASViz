@@ -181,10 +181,16 @@ class GlobalFonts:
     """
     from PyQt5.QtGui import QFont
 
-    TITLE = QFont('Open Sans', 15)
+    TITLE_MEDIUM = QFont('Open Sans', 11)
     # TITLE.setStyleHint(QFont.TypeWriter)
-    TITLE.setBold(True)
-    TEXT = QFont('Open Sans', 11)
+    TITLE_MEDIUM.setBold(True)
+
+    TITLE_BIG = QFont('Open Sans', 15)
+    # TITLE.setStyleHint(QFont.TypeWriter)
+    TITLE_BIG.setBold(True)
+
+    TEXT_MEDIUM = QFont('Open Sans', 10)
+    TEXT_BIG = QFont('Open Sans', 11)
     # TEXT.setStyleHint(QFont.TypeWriter)
 
 

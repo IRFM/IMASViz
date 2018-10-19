@@ -54,7 +54,8 @@ class GlobalOperations:
     @staticmethod
     def askWithCancel(parent=None, title='', message='', default_value=''):
         # Set and show dialog
-        text, ok = QInputDialog.getText(parent, title, message)
+        dlg = QInputDialog()
+        text, ok = dlg.getText(parent, title, message)
         # If text was not defined (input dialog was left empty)
         if text == '':
             text = default_value

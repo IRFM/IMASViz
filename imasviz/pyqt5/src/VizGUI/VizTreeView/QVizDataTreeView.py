@@ -56,7 +56,11 @@ from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.data_source.DataSourceFactory import DataSourceFactory
 from imasviz.pyqt5.src.VizUtils.QWindowUtils import getWindowSize
-from imasviz.gui_commands.configurations.SaveSignalSelection import SaveSignalSelection
+from imasviz.gui_commands.configurations.SaveSignalSelection \
+    import SaveSignalSelection
+from imasviz.pyqt5.src.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
+    import QVizConfigurationListsWindow
+
 from PyQt5.QtGui import QDockWidget, QMenuBar, QAction # if moved upwards it gives import errors (???)
 
 class QVizDataTreeView(QTreeWidget):
@@ -512,6 +516,13 @@ class QVizDataTreeViewFrame(QMainWindow):
         menuBar = QMenuBar(self)
         options = menuBar.addMenu('Options')
         #-----------------------------------------------------------------------
+        # Set new menu item for showing the Configuration window
+        action_onShowConfigurations = QAction('Apply Configuration', self)
+        action_onShowConfigurations.triggered.connect(
+            partial(self.onShowConfigurations, self))
+        options.addAction(action_onShowConfigurations)
+
+        #-----------------------------------------------------------------------
         # Set new submenu for handling signal selection to be added to 'Options'
         # menu
         subMenu = options.addMenu('Signal Selection Options')
@@ -567,7 +578,18 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dockWidget_ndw.setMinimumSize(QSize(ref_width/2, ref_height/4))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
-    def onSaveSignalSelection(self, event=None, **kws):
+    @pyqtSlot(QMainWindow)
+    def onShowConfigurations(self, parent):
+        """Show configuration window.
+        """
+        pass
+        self.configurationListsWindow = \
+            QVizConfigurationListsWindow(parent = self)
+        self.configurationListsWindow.show()
+        # self.configurationListsFrame.showListBox()
+
+    @pyqtSlot()
+    def onSaveSignalSelection(self):
         """Save signal selection as a list of signal paths for single DTV
         (QVizDataTreeView)
         """

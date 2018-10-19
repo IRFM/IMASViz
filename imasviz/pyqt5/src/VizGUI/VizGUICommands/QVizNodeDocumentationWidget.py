@@ -38,37 +38,41 @@ class QVizNodeDocumentationWidget(QWidget):
         """
 
         # Set documentation
-        # - Set text
+        # - Set text 1
         self.l1 = QLabel()
-        self.l2 = QLabel()
-        self.l3 = QLabel()
-        self.l4 = QLabel()
         self.l1.setText(documentation[0])
-        self.l2.setText(documentation[1])
-        self.l3.setText(documentation[2])
-        self.l4.setText(documentation[3])
         self.l1.setAlignment(Qt.AlignLeft)
-        self.l2.setAlignment(Qt.AlignLeft)
-        self.l3.setAlignment(Qt.AlignLeft)
-        self.l4.setAlignment(Qt.AlignLeft)
         self.l1.setWordWrap(True)
-        self.l2.setWordWrap(True)
-        self.l3.setWordWrap(True)
-        self.l4.setWordWrap(True)
         self.l1.setMinimumHeight(25)
-        self.l2.setMinimumHeight(25)
-        self.l3.setMinimumHeight(25)
-        self.l4.setMinimumHeight(25)
         self.l1.setMinimumWidth(340)
-        self.l2.setMinimumWidth(340)
-        self.l3.setMinimumWidth(340)
-        self.l4.setMinimumWidth(340)
+        self.l1.setFont(GlobalFonts.TITLE_BIG)
 
-        # - Set fonts
-        self.l1.setFont(GlobalFonts.TITLE)
-        self.l2.setFont(GlobalFonts.TEXT)
-        self.l3.setFont(GlobalFonts.TITLE)
-        self.l4.setFont(GlobalFonts.TEXT)
+        # - Set text 2
+        self.l2 = QLabel()
+        self.l2.setText(documentation[1])
+        self.l2.setAlignment(Qt.AlignLeft)
+        self.l2.setWordWrap(True)
+        self.l2.setMinimumHeight(25)
+        self.l2.setMinimumWidth(340)
+        self.l2.setFont(GlobalFonts.TEXT_BIG)
+
+        # - Set text 3
+        self.l3 = QLabel()
+        self.l3.setText(documentation[2])
+        self.l3.setAlignment(Qt.AlignLeft)
+        self.l3.setWordWrap(True)
+        self.l3.setMinimumHeight(25)
+        self.l3.setMinimumWidth(340)
+        self.l3.setFont(GlobalFonts.TITLE_BIG)
+
+        # - Set text 4
+        self.l4 = QLabel()
+        self.l4.setText(documentation[3])
+        self.l4.setAlignment(Qt.AlignLeft)
+        self.l4.setWordWrap(True)
+        self.l4.setMinimumHeight(25)
+        self.l4.setMinimumWidth(340)
+        self.l4.setFont(GlobalFonts.TEXT_BIG)
 
         # Set scrollable area
         scrollArea = QScrollArea(self)
