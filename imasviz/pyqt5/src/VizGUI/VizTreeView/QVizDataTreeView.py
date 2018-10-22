@@ -41,7 +41,7 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QBrush, \
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QMainWindow, QMenu, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QTableWidget, QTableWidgetItem, \
-                            QGridLayout
+                            QGridLayout, QTextEdit
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizHandleRightClick \
     import QVizHandleRightClick
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QVizNodeDocumentationWidget \
@@ -136,7 +136,7 @@ class QVizDataTreeView(QTreeWidget):
 
         self.dataCurrentlyLoaded = False
 
-        self.log = Logger()
+        self.log = None
 
         # Set dummy for node documentation widget
         self.ndw = None
@@ -578,6 +578,31 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dockWidget_ndw.setMinimumSize(QSize(ref_width/2, ref_height/4))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
+        # LOG WIDGET
+        self.logWidget = QTextEdit(parent=self)
+        self.dockWidget_log = QDockWidget("Log", self)
+        self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
+        self.dockWidget_log.setObjectName("DockWidget_LOG")
+        self.dockWidgetContents_log = QWidget()
+        self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
+        self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
+        self.gridLayout_log.setObjectName("GridLayout_LOG")
+        self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
+        self.dockWidget_log.setWidget(self.dockWidgetContents_log)
+        # - Set dockwidget size
+        self.dockWidget_ndw.setMinimumSize(QSize(ref_width / 2, ref_height / 4))
+        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_log)
+        # vboxLayout3 = QVBoxLayout()
+        # qlabel = QLabel('Log window')
+        # vboxLayout3.addWidget(qlabel)
+        #
+        # self.logWindow1 = QTextEdit("Welcome to IMAS_VIZ!")
+        #
+        # vboxLayout3.addWidget(self.logWindow1)
+        # self.logFromTab1 = TextCtrlLogger(self.logWindow1)
+        # layout.addLayout(vboxLayout3)
+        self.dataTreeView.log = Logger(self.logWidget)
+
     @pyqtSlot(QMainWindow)
     def onShowConfigurations(self, parent):
         """Show configuration window.
@@ -597,12 +622,14 @@ class QVizDataTreeViewFrame(QMainWindow):
         SaveSignalSelection(DTV=self.dataTreeView).execute()
 
 class Logger:
-    def __init__(self):
-        pass
+    def __init__(self, logWidget):
+        self.logWidget = logWidget
 
     def info(self, message):
         message += '\n'
         print (message)
+        self.logWidget.append(message)
+
 
     def error(self, message):
         message += '\n'

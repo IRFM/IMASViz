@@ -21,7 +21,6 @@ class ETNativeDataTree_Generated_3_6_0(QThread):
 	def run(self):
 		idsData = None
 		if self.idsName == 'magnetics':
-			self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')
 			t1 = time.time()
 			self.ids.magnetics.get(self.occurrence)
 			t2 = time.time()

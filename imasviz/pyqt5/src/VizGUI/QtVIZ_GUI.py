@@ -8,7 +8,6 @@ from imasviz.util.GlobalValues import GlobalValues
 from imasviz.data_source.IMASDataSource import IMASDataSource
 from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
     QPushButton, QTextEdit, QVBoxLayout, QHBoxLayout, QRadioButton, QLabel, QGridLayout, QComboBox
-from imasviz.view.WxDataTreeView import TextCtrlLogger
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QtOpenShotView import QtOpenShotView
 from imasviz.pyqt5.src.VizGUI.VizGUICommands.QtDefault import QtDefault
 

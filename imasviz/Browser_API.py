@@ -55,17 +55,14 @@ class Browser_API():
         """
         treeDict = {}
         if GlobalValues.TESTING:
-            frame = \
-                QVizDataTreeViewFrame(parent=None,
-                                      views=treeDict,
-                                      dataSource=dataSource,
-                                      IDSDefFile=GlobalOperations.getIDSDefFile(GlobalValues.TESTING_IMAS_VERSION))
+            IMAS_VERSION = GlobalValues.TESTING_IMAS_VERSION
         else:
-            frame = \
-                QVizDataTreeViewFrame(parent=None,
+            IMAS_VERSION = os.environ['IMAS_VERSION']
+
+        frame = QVizDataTreeViewFrame(parent=None,
                                       views=treeDict,
                                       dataSource=dataSource,
-                                      IDSDefFile=GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
+                                      IDSDefFile=GlobalOperations.getIDSDefFile(IMAS_VERSION))
 
         # Set data tree view (DTV) frame BrowserAPI
         frame.dataTreeView.imas_viz_api = self
