@@ -354,6 +354,11 @@ class QVizDataTreeView(QTreeWidget):
         rootNodeData['occurrence'] = occurrence
         idsName = rootNodeData['IDSName']
         nodeBuilder = QVizDataTreeViewBuilder()
+        #d = ids_root_node.itemVIZData
+        ids_root_node = QTreeWidgetItem(ids_root_node, ['occurrence ' + str(int(occurrence))])
+        ids_root_node.itemVIZData = {}
+        ids_root_node.itemVIZData['Path'] = '/'
+
         for child in idsData:
             self.addChildren(nodeBuilder, child, ids_root_node, idsName)
 
@@ -481,7 +486,6 @@ class QVizDataTreeViewFrame(QMainWindow):
             pathsList      () :
             threadingEvent () :
         """
-        #print ('updating view...')
         t4 = time.time()
         if idsData != None:
             self.dataTreeView.log.info("Loading occurrence " + str(int(occurrence))
@@ -491,23 +495,7 @@ class QVizDataTreeViewFrame(QMainWindow):
             if (idsName == 'equilibrium'):
                 self.dataTreeView.log.info("WARNING: GGD structure array from "
                     + "parent equilibrium.time_slice[itime] has been ignored.")
-        t5 = time.time()
-        #print('view update took ' + str(t5 - t4) + ' seconds')
-        #print ('updateView ended.')
-
-        # # Creating a separate signals tree
-        # signalsFrame = \
-        #     IDSSignalTreeFrame(None, self.dataTreeView,
-        #                        str(self.dataTreeView.shotNumber),
-        #                        GlobalOperations.getIDSDefFile(os.environ['IMAS_VERSION']))
-        # if pathsList != None:
-        #     for s in pathsList:
-        #         n = signalsFrame.tree.selectNodeWithPath(s)
-        #         if n == None:
-        #             print ('Path: ' + s + " not found")
-
-        # if threadingEvent != None:
-        #     threadingEvent.set()
+       # t5 = time.time()
 
     def createMenuBar(self):
         """Create and configure the menu bar.
@@ -592,15 +580,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         # - Set dockwidget size
         self.dockWidget_ndw.setMinimumSize(QSize(ref_width / 2, ref_height / 4))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_log)
-        # vboxLayout3 = QVBoxLayout()
-        # qlabel = QLabel('Log window')
-        # vboxLayout3.addWidget(qlabel)
-        #
-        # self.logWindow1 = QTextEdit("Welcome to IMAS_VIZ!")
-        #
-        # vboxLayout3.addWidget(self.logWindow1)
-        # self.logFromTab1 = TextCtrlLogger(self.logWindow1)
-        # layout.addLayout(vboxLayout3)
         self.dataTreeView.log = Logger(self.logWidget)
 
     @pyqtSlot(QMainWindow)
@@ -626,10 +605,9 @@ class Logger:
         self.logWidget = logWidget
 
     def info(self, message):
-        message += '\n'
-        print (message)
+        print(message)
         self.logWidget.append(message)
 
 
     def error(self, message):
-        message += '\n'
+        self.logWidget.append(message)

@@ -216,8 +216,6 @@ class IMASDataSource:
         if self.ids == None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             v = os.environ["IMAS_MAJOR_VERSION"]
-            dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')
-
             self.ids.open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
             if (self.ids.expIdx == -1):
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
@@ -226,9 +224,9 @@ class IMASDataSource:
 
         dataTreeView.dataCurrentlyLoaded = True
         dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
-        #dataTreeView.log.info('Loading ' + dataTreeView.IDSNameSelected + ' IDS...')
+        dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')
 
-        if async==True:
+        if async:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
         else:
             self.generatedDataTree.run()  #This will call the get() operation for fetching IMAS data
