@@ -134,7 +134,9 @@ class QVizDataTreeView(QTreeWidget):
         # Create the empty tree
         self.dataTree = self.createEmptyIDSsTree(IDSDefFile)
 
-        self.dataCurrentlyLoaded = False
+        self.dataCurrentlyLoaded = {}
+        for i in range(0,10):
+            self.dataCurrentlyLoaded[i] = False
 
         self.log = None
 
@@ -338,7 +340,7 @@ class QVizDataTreeView(QTreeWidget):
             self.buildTreeView(ids_root_node, occurrence, idsData)
             # Expand the tree item
             ids_root_node.setExpanded(True)
-        self.dataCurrentlyLoaded = False
+        self.dataCurrentlyLoaded[occurrence] = False
 
     def buildTreeView(self, ids_root_node, occurrence, idsData):
         """ Build the data tree view by adding a set of available IDS nodes as
@@ -360,9 +362,9 @@ class QVizDataTreeView(QTreeWidget):
         ids_root_node.itemVIZData['Path'] = '/'
 
         for child in idsData:
-            self.addChildren(nodeBuilder, child, ids_root_node, idsName)
+            self.addChildren(nodeBuilder, child, ids_root_node, idsName, occurrence)
 
-    def addChildren(self, nodeBuilder, element, parent, idsName):
+    def addChildren(self, nodeBuilder, element, parent, idsName, occurrence):
         """ To parent item, add all children IDS nodes as a tree view items.
 
         Arguments:
@@ -373,10 +375,10 @@ class QVizDataTreeView(QTreeWidget):
                                             child is to be added.
             idsName     (str)             : Name of the IDS e.g. 'magnetics'.
         """
-        element_node = nodeBuilder.addNewNode(idsName, element, parent, self)
+        element_node = nodeBuilder.addNewNode(idsName, element, parent, occurrence, self)
         if element_node != None:
             for child in element:
-                self.addChildren(nodeBuilder, child, element_node, idsName)
+                self.addChildren(nodeBuilder, child, element_node, idsName, occurrence)
 
     def getNodeAttributes(self, dataName):
         if self.node_attributes != None and dataName in self.node_attributes:

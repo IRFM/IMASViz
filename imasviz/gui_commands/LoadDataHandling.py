@@ -29,24 +29,23 @@ class LoadDataHandling:
         self.treeView.IDSNameSelected = IDSName
 
         # Check if the data has been already loaded
-        IDSDataLoaded = self.treeView.idsAlreadyFetched[self.treeView.IDSNameSelected]
+        #IDSDataLoaded = self.treeView.idsAlreadyFetched[self.treeView.IDSNameSelected]
 
         # Do not display popup menu if the data are already loaded for the
         # current selected item
 
-        if IDSDataLoaded == 1:
-            if self.treeView.dataCurrentlyLoaded == False:
-                self.treeView.popupmenu = wx.Menu()
-                self.treeView.popupmenu.Append(GlobalIDs.ID_REFRESH_IDS_DATA,   \
-                                           'Refresh ' + IDSName             \
-                                           + ' data... (default to occurrence 0)')
 
-            self.treeView.Bind(wx.EVT_MENU, self.popUpMenuHandler)
-            return 1
+        if self.treeView.dataCurrentlyLoaded.get(0) == False:
+            self.treeView.popupmenu = wx.Menu()
+            self.treeView.popupmenu.Append(GlobalIDs.ID_REFRESH_IDS_DATA,   \
+                                       'Refresh ' + IDSName             \
+                                       + ' data... (default to occurrence 0)')
+
+        self.treeView.Bind(wx.EVT_MENU, self.popUpMenuHandler)
 
         # First, build the popup menu for the selected IDS if there is not a
         # current IDS loading in progress
-        if self.treeView.dataCurrentlyLoaded == False:
+        if self.treeView.dataCurrentlyLoaded.get(0) == False:
             self.treeView.popupmenu = wx.Menu()
             self.treeView.popupmenu.Append(GlobalIDs.ID_GET_IDS_DATA,   \
                                        'Get ' + IDSName             \
@@ -54,14 +53,14 @@ class LoadDataHandling:
 
         # We propose to load a given occurence 0
         # Set popup menu for IDS occurences
-        if self.treeView.dataCurrentlyLoaded == False:
-            showMenu = wx.Menu()
-            # Set first-level popup menu
-            self.treeView.popupmenu.Append(wx.ID_ANY, \
+        showMenu = wx.Menu()
+        # Set first-level popup menu
+        self.treeView.popupmenu.Append(wx.ID_ANY, \
                                        'Get ' + IDSName \
                                        + ' data for occurrence', showMenu)
-            # Set second-level popup menu
-            for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
+        # Set second-level popup menu
+        for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
+            if self.treeView.dataCurrentlyLoaded.get(i) == False:
                 showMenu.Append(GlobalIDs.ID_GET_IDS_OCC_DATA + i + 1, \
                                 item='Occurrence ' + str(i + 1),
                                 kind=wx.ITEM_NORMAL)

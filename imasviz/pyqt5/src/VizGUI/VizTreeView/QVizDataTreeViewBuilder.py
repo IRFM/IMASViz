@@ -23,7 +23,7 @@ class QVizDataTreeViewBuilder:
         self.arrayParentNodes = {}
         self.ids = None
 
-    def addNewNode(self, idsName, dataElement, parentNode, dataTreeView):
+    def addNewNode(self, idsName, dataElement, parentNode, occurrence, dataTreeView):
         """ Add a new node (item) to the tree view.
 
         Arguments:
@@ -83,6 +83,7 @@ class QVizDataTreeViewBuilder:
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
                                                      idsName,
+                                                     occurrence,
                                                      dataTreeView)
                 # Get item text to be displayed in the tree view
                 itemNodeName = \
@@ -223,6 +224,7 @@ class QVizDataTreeViewBuilder:
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
                                                      idsName,
+                                                     occurrence,
                                                      dataTreeView)
 
                 itemNodeName = \
@@ -333,8 +335,7 @@ class QVizDataTreeViewBuilder:
         parentPath = parentNodeData['Path']
         return parentPath
 
-    def buildNamedDataElement_FLT1D(self, dataElement, itemDataDict, idsName,
-                                    dataTreeView):
+    def buildNamedDataElement_FLT1D(self, dataElement, itemDataDict, idsName, occurrence, dataTreeView):
         """ Add node information to each new node of IDS.
 
         Arguments:
@@ -348,6 +349,7 @@ class QVizDataTreeViewBuilder:
         itemDataDict['availableIDSData'] = 0
         itemDataDict['IDSName'] = idsName
         itemDataDict['dataName'] = dataElement.find('name').text
+        itemDataDict['occurrence'] = occurrence
 
         for i in range(1,7):
             coordinate = "coordinate" + str(i)

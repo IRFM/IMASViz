@@ -15,11 +15,12 @@ class IMASNativeSignalAccess:
     def GetSignalAt(self,selectedNodeData,shotNumber, treeNode, itimeValue):
 
         try:
-            if selectedNodeData == None: return
+            if selectedNodeData is None:
+                return
 
             coordinate1 = treeNode.evaluateCoordinate1At(itimeValue)
 
-            ids = self.dataSource.ids
+            ids = self.dataSource.ids[selectedNodeData['occurrence']]
 
             t = None
 
@@ -53,7 +54,7 @@ class IMASNativeSignalAccess:
 
 
     def GetSignalVsTime(self, data_path_list, selectedNodeData, treeNode, index):
-        ids = self.dataSource.ids
+        ids = self.dataSource.ids[selectedNodeData['occurrence']]
         time_slices_count = len(data_path_list)
         #print "IMASNative : time_slices_count " + str(time_slices_count)
         v = []
@@ -71,7 +72,7 @@ class IMASNativeSignalAccess:
         try:
             if selectedNodeData == None: return
 
-            ids = self.dataSource.ids
+            ids = self.dataSource.ids[selectedNodeData['occurrence']]
 
             # eval time
             t = np.array([eval(selectedNodeData['coordinate1'])])
@@ -94,6 +95,7 @@ if __name__ == "__main__":
     selectedNodeData = {}
     selectedNodeData['dataName'] = 'dataSource.ids.magnetics.flux_loop[1].flux.data'
     selectedNodeData['time'] = 'dataSource.ids.magnetics.flux_loop[1].flux.time'
+    selectedNodeData['occurrence'] = 0
     #print (mdsp.GetShapeofSignal(selectedNodeData, 12))
     #treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
     signal = mdsp.GetSignal(selectedNodeData, dataSource.shotNumber)

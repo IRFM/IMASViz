@@ -205,7 +205,7 @@ class IMASDataSource:
         self.shotNumber = int(shotNumber)
         self.runNumber = int(runNumber)
         self.machineName = machineName
-        self.ids = None
+        self.ids = {} #key = occurrence, value = ids object
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, occurrence=0, pathsList = None, async=True):
@@ -213,16 +213,16 @@ class IMASDataSource:
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
-        if self.ids == None:
-            self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
+        if self.ids.get(occurrence) is None:
+            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             v = os.environ["IMAS_MAJOR_VERSION"]
-            self.ids.open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
-            if (self.ids.expIdx == -1):
+            self.ids[occurrence].open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+            if (self.ids[occurrence].expIdx == -1):
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
-        self.generatedDataTree.ids = self.ids
+        self.generatedDataTree.ids = self.ids[occurrence]
 
-        dataTreeView.dataCurrentlyLoaded = True
+        dataTreeView.dataCurrentlyLoaded[occurrence] = True
         dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
         dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')
 
@@ -267,7 +267,7 @@ class IMASDataSource:
 
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
-        ids = self.ids #@UnusedVariable
+        ids = self.ids[signalNode['occurrence']] #@UnusedVariable
         if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
             # if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
             if len(eval('ids.' + signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
@@ -349,12 +349,12 @@ class IMASPublicDataSource(IMASDataSource):
         print ("Loading data using UDA")
         #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
         self.generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
-        if self.ids == None:
+        if self.ids.get(occurrence) is None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             self.ids.open_public(self.machineName)
 
-        self.generatedDataTree.ids = self.ids
-        view.dataCurrentlyLoaded = True
+        self.generatedDataTree.ids = self.ids.get(occurrence)
+        view.dataCurrentlyLoaded[occurrence] = True
         view.idsAlreadyFetched[view.IDSNameSelected] = 1
 
         if async == True:
