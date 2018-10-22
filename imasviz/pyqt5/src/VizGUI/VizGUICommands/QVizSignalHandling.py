@@ -120,7 +120,7 @@ class QVizSignalHandling(QObject):
         # Add menu item for unselection of all selected signals if there are
         # and selected signals present
         if bool(self.dataTreeView.selectedSignalsDict) == True:
-            action_UnselectAllSignals = QAction('Unselect all signals')
+            action_UnselectAllSignals = QAction('Unselect all signals', self)
             action_UnselectAllSignals.triggered.connect(self.unselectAllSignals)
             self.dataTreeView.popupmenu.addAction(action_UnselectAllSignals)
             # Set bitmap to menu item

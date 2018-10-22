@@ -484,7 +484,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         #print ('updating view...')
         t4 = time.time()
         if idsData != None:
-            self.dataTreeView.log.info("Loading occurrence " + str(occurrence)
+            self.dataTreeView.log.info("Loading occurrence " + str(int(occurrence))
                 + " of "+ idsName + " IDS ended successfully, building view...")
             self.dataTreeView.update_view(idsName, occurrence, idsData)
             self.dataTreeView.log.info("View update ended.")

@@ -59,7 +59,7 @@ class IMAS_DataAccessCodeGenerator():
                         continue
                     #print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
-                    self.printCode("self.view.log.info('Loading occurrence ' + str(self.occurrence) + ' of IDS ' + self.idsName + '...')", 2)
+                    self.printCode("self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("t1 = time.time()", 2)
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
                     self.printCode("t2 = time.time()", 2)
@@ -223,11 +223,11 @@ class IMAS_DataAccessCodeGenerator():
                 # self.printCode(parentCode, level)
                 # code = "node.add('" + ids_child_element.text + "')"
                 # self.printCode(code, level)
-                if (ids_child_element.get('name') == 'multiplicity'):
-                    print('test')
+                #if (ids_child_element.get('name') == 'multiplicity'):
+                #    print('test')
 
-                if (ids_child_element.get('path_doc') == 'element(i1)/multiplicity'):
-                    print('test')
+                #if (ids_child_element.get('path_doc') == 'element(i1)/multiplicity'):
+                #    print('test')
 
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)

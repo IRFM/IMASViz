@@ -189,9 +189,9 @@ class PlotConfigurationListsTab(QWidget):
         layout_buttons.setSpacing(5)
         layout_buttons.setContentsMargins(15, 0, 15, 0)
         # - Set buttons
-        self.button1 = QPushButton('Apply to current IMAS database')
+        self.button1 = QPushButton('Apply selection and plot selected data')
         # TODO button1 action on clicked
-        self.button2 = QPushButton('Apply only list of IDS paths to current IMAS '
+        self.button2 = QPushButton('Apply selection only'
                               'database')
         self.button2.clicked.connect(commonConf.applySignalSelection)
         self.button3 = QPushButton('Remove configuration')
