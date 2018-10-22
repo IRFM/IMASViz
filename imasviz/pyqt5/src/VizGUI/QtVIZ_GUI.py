@@ -19,7 +19,7 @@ class GUIFrame(QTabWidget):
 
         self.openShotView = QtOpenShotView()
 
-        self.setGeometry(300,300,600,400)
+        self.setGeometry(300,300,600,200)
         self.tab1 = QWidget()
         self.tab2 = QWidget()
 
@@ -63,15 +63,15 @@ class GUIFrame(QTabWidget):
 
         layout.addLayout(vboxLayout2)
 
-        vboxLayout3 = QVBoxLayout()
-        qlabel = QLabel('Log window')
-        vboxLayout3.addWidget(qlabel)
-
-        self.logWindow1 = QTextEdit("Welcome to IMAS_VIZ!")
-
-        vboxLayout3.addWidget(self.logWindow1)
-        self.logFromTab1 = TextCtrlLogger(self.logWindow1)
-        layout.addLayout(vboxLayout3)
+        # vboxLayout3 = QVBoxLayout()
+        # qlabel = QLabel('Log window')
+        # vboxLayout3.addWidget(qlabel)
+        #
+        # self.logWindow1 = QTextEdit("Welcome to IMAS_VIZ!")
+        #
+        # vboxLayout3.addWidget(self.logWindow1)
+        # self.logFromTab1 = TextCtrlLogger(self.logWindow1)
+        # layout.addLayout(vboxLayout3)
         self.tab1.setLayout(layout)
 
 
@@ -130,13 +130,13 @@ class GUIFrame(QTabWidget):
         vboxLayout2.addWidget(button_open2)
         layout.addLayout(vboxLayout2)
 
-        vboxLayout3 = QVBoxLayout()
-        qlabel = QLabel('Log window')
-        vboxLayout3.addWidget(qlabel)
-        self.logWindow2 = QTextEdit("Welcome to IMAS_VIZ!")
-        self.logFromTab2 = TextCtrlLogger(self.logWindow2)
-        vboxLayout3.addWidget(self.logWindow2)
-        layout.addLayout(vboxLayout3)
+        # vboxLayout3 = QVBoxLayout()
+        # qlabel = QLabel('Log window')
+        # vboxLayout3.addWidget(qlabel)
+        # self.logWindow2 = QTextEdit("Welcome to IMAS_VIZ!")
+        # self.logFromTab2 = TextCtrlLogger(self.logWindow2)
+        # vboxLayout3.addWidget(self.logWindow2)
+        # layout.addLayout(vboxLayout3)
 
         self.tab2.setLayout(layout)
 
