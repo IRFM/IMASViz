@@ -38,8 +38,7 @@ from imasviz.pyqt5.src.VizGUI.VizGUICommands.VizSignalSelectionCommands.QVizSele
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSignal import QVizPlotSignal
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPreviewPlotSignal import QVizPreviewPlotSignal
 from imasviz.pyqt5.src.VizGUI.VizPlot.QVizPlotSelectedSignals import QVizPlotSelectedSignals
-# from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import (PlotSelectedSignalsWithWxmplot,
-#                                                                               modifyMultiPlot)
+from imasviz.pyqt5.src.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlot import QVizMultiPlot
 from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.util.GlobalOperations import GlobalOperations
 # from imasviz.view.Coord1Slider import Coord1Slider
@@ -249,8 +248,8 @@ class QVizSignalHandling(QObject):
         # plot widget
         if len(self.dataTreeView.selectedSignalsDict) > 0:
             if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                subMenu = QMenu('Plot all selected signals to a new figure')
-                self.dataTreeView.popupmenu.addMenu(subMenu)
+                subMenu_plot = QMenu('Plot all selected signals to a new figure')
+                self.dataTreeView.popupmenu.addMenu(subMenu_plot)
 
                 # --------------------------------------------------------------
                 # Add menu item to plot selected signals to single
@@ -260,7 +259,7 @@ class QVizSignalHandling(QObject):
                 action_plotSelectedSignals.triggered.connect(
                     partial(self.plotSelectedSignals, False))
                 # Add to submenu
-                subMenu.addAction(action_plotSelectedSignals)
+                subMenu_plot.addAction(action_plotSelectedSignals)
 
                 # --------------------------------------------------------------
                 # Add menu item to plot selected signals to single
@@ -270,14 +269,40 @@ class QVizSignalHandling(QObject):
                 action_plotSelectedSignals.triggered.connect(
                     partial(self.plotSelectedSignals, True))
                 # Add to submenu
-                subMenu.addAction(action_plotSelectedSignals)
+                subMenu_plot.addAction(action_plotSelectedSignals)
+
+        # ----------------------------------------------------------------------
+        # Set submenu for handling features for plotting selected signals to new
+        # MultiPlot
+        if len(self.dataTreeView.selectedSignalsDict) > 0:
+            subMenu_multiplot = \
+                QMenu('Plot all selected signals to a new MultiPlot')
+            self.dataTreeView.popupmenu.addMenu(subMenu_multiplot)
+
+            # --------------------------------------------------------------
+            # Add menu item to plot selected signals to single
+            # plot - This DTV
+            action_multiPlotSelectedSignals = QAction('This IMAS Database',
+                                                 self)
+            action_multiPlotSelectedSignals.triggered.connect(
+                partial(self.plotSelectedSignalsToMultiPlotsFrame, False))
+            # Add to submenu
+            subMenu_multiplot.addAction(action_multiPlotSelectedSignals)
+
+            # --------------------------------------------------------------
+            # Add menu item to plot selected signals to single
+            # plot - All DTVs
+            action_multiPlotSelectedSignals = QAction('All IMAS Databases',
+                                                 self)
+            action_multiPlotSelectedSignals.triggered.connect(
+                partial(self.plotSelectedSignalsToMultiPlotsFrame, True))
+            # Add to submenu
+            subMenu_multiplot.addAction(action_multiPlotSelectedSignals)
 
             # TODO:
             """
-            - 'Show/Hide figure'
             - 'Show/Hide multiplots'
             - 'Show/Hide subplots'
-            - 'Delete figure'
             - 'Delete multiplot'
             - 'Add selection to MultiPlot'
             - 'Delete subplot'
@@ -371,6 +396,24 @@ class QVizSignalHandling(QObject):
         else:
             QVizPlotSelectedSignals(self.dataTreeView, figureKey,
                                     all_DTV=True).execute()
+
+    @pyqtSlot(bool)
+    def plotSelectedSignalsToMultiPlotsFrame(self, all_DTV=False):
+        """Create a MultiPlot using signals selected in single/all opened DTV
+        windows.
+
+        Arguments:
+            all_DTV (bool) : Operator to read selected signals from the
+                             current or all DTVs.
+        """
+        # Get next figure key/label
+        figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
+        if all_DTV != True:
+            QVizMultiPlot(dataTreeView=self.dataTreeView, figureKey=figureKey,
+                          update=1, all_DTV = False,)
+        else:
+            QVizMultiPlot(dataTreeView=self.dataTreeView, figureKey=figureKey,
+                          update=1, all_DTV = True)
 
     @pyqtSlot(int)
     def addSignalPlotToFig(self, numFig):

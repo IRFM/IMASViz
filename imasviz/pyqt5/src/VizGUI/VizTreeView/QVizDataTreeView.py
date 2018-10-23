@@ -602,6 +602,20 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Save signal selection as a list of signal paths to .lsp file
         SaveSignalSelection(DTV=self.dataTreeView).execute()
 
+    def onShowMultiPlot(self, event, all_DTV=False):
+        """Apply selected signals (single or all DTVs) to MultiPlot.
+
+        Arguments:
+            all_DTV (bool) : Operator to read selected signals from the
+                             current or all DTVs.
+        """
+        ss = QVizSignalHandling(self.wxTreeView)
+        ss.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
+
+    #TODO:
+    # def onUnselectSignals()
+    # def onCloseAndReopenDatabase()
+
 class Logger:
     def __init__(self, logWidget):
         self.logWidget = logWidget
