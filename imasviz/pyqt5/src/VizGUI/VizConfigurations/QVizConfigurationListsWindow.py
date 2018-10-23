@@ -191,8 +191,7 @@ class PlotConfigurationListsTab(QWidget):
         # - Set buttons
         self.button1 = QPushButton('Apply selection and plot selected data')
         # TODO button1 action on clicked
-        self.button2 = QPushButton('Apply selection only'
-                              'database')
+        self.button2 = QPushButton('Apply selection only')
         self.button2.clicked.connect(commonConf.applySignalSelection)
         self.button3 = QPushButton('Remove configuration')
         self.button3.clicked.connect(
