@@ -53,14 +53,13 @@ class Browser_API():
             dataSource (IMASDataSource) : IDS data source from
                                           DataSourceFactory.
         """
-        treeDict = {}
         if GlobalValues.TESTING:
             IMAS_VERSION = GlobalValues.TESTING_IMAS_VERSION
         else:
             IMAS_VERSION = os.environ['IMAS_VERSION']
 
         frame = QVizDataTreeViewFrame(parent=None,
-                                      views=treeDict,
+                                      views={},
                                       dataSource=dataSource,
                                       IDSDefFile=GlobalOperations.getIDSDefFile(IMAS_VERSION))
 

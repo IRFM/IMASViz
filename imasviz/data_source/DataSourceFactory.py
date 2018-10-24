@@ -1,4 +1,5 @@
-from imasviz.data_source.IMASDataSource import IMASDataSource, IMASPublicDataSource
+from imasviz.data_source.IMASDataSource import IMASDataSource
+from imasviz.data_source.IMASPublicDataSource import IMASPublicDataSource
 from imasviz.data_source.ToreSupraDataSource import ToreSupraDataSource
 from imasviz.util.GlobalValues import GlobalValues
 

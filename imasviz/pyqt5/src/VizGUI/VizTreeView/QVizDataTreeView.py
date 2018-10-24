@@ -143,6 +143,8 @@ class QVizDataTreeView(QTreeWidget):
         # Set dummy for node documentation widget
         self.ndw = None
 
+        self.ids_roots = {} #each root is a IDS occurrence
+
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
         Note: The original routine source (ues with wxPython) can be found in
@@ -356,13 +358,20 @@ class QVizDataTreeView(QTreeWidget):
         rootNodeData['occurrence'] = occurrence
         idsName = rootNodeData['IDSName']
         nodeBuilder = QVizDataTreeViewBuilder()
-        #d = ids_root_node.itemVIZData
-        ids_root_node = QTreeWidgetItem(ids_root_node, ['occurrence ' + str(int(occurrence))])
-        ids_root_node.itemVIZData = {}
-        ids_root_node.itemVIZData['Path'] = '/'
+        ids_root_occ = self.ids_roots.get(occurrence)
+        if ids_root_occ is not None:
+            ids_root_node.removeChild(ids_root_occ)
+            del self.ids_roots[occurrence]
+
+        ids_root_occ = QTreeWidgetItem(ids_root_node, ['occurrence ' + str(int(occurrence))])
+        ids_root_occ.itemVIZData = {}
+        ids_root_occ.itemVIZData['Path']     = rootNodeData['Path']
+        ids_root_occ.itemVIZData['IDSName']  = rootNodeData['IDSName']
+        ids_root_occ.itemVIZData['dataName'] = rootNodeData['dataName']
+        self.ids_roots[occurrence] = ids_root_occ
 
         for child in idsData:
-            self.addChildren(nodeBuilder, child, ids_root_node, idsName, occurrence)
+            self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence)
 
     def addChildren(self, nodeBuilder, element, parent, idsName, occurrence):
         """ To parent item, add all children IDS nodes as a tree view items.
@@ -488,16 +497,16 @@ class QVizDataTreeViewFrame(QMainWindow):
             pathsList      () :
             threadingEvent () :
         """
-        t4 = time.time()
+        # t4 = time.time()
         if idsData != None:
             self.dataTreeView.log.info("Loading occurrence " + str(int(occurrence))
                 + " of "+ idsName + " IDS ended successfully, building view...")
             self.dataTreeView.update_view(idsName, occurrence, idsData)
             self.dataTreeView.log.info("View update ended.")
+
             if (idsName == 'equilibrium'):
                 self.dataTreeView.log.info("WARNING: GGD structure array from "
                     + "parent equilibrium.time_slice[itime] has been ignored.")
-       # t5 = time.time()
 
     def createMenuBar(self):
         """Create and configure the menu bar.
@@ -626,4 +635,5 @@ class Logger:
 
 
     def error(self, message):
+        print(message)
         self.logWidget.append(message)

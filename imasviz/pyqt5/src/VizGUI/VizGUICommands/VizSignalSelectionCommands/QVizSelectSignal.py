@@ -41,7 +41,6 @@ class QVizSelectSignal(AbstractCommand):
 
         # Set variable representing the currently tagged selected item in DTV
         selectedItem = self.dataTreeView.selectedItem
-
         # Set the tree item text color
         selectedItem.setForeground(0, GlobalColors.RED)
         # Give the order of user selection

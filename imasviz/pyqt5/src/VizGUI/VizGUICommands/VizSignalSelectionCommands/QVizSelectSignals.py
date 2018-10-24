@@ -76,9 +76,12 @@ class QVizSelectSignals(AbstractCommand):
                 IDSNamesList.append(IDSName)
 
         # Load all IDS data which are referenced in the paths
-        threadingEvent = threading.Event()  # the command SelectSignals is
+        #threadingEvent = threading.Event()  # the command SelectSignals is
                                             # synchronous so we will wait that
                                             # this event is set
+
+        threadingEvent = True
+
         for IDSName in IDSNamesList:
             # Set the IDS to be checked if it is opened. If it is not,open it
             # in the DTV

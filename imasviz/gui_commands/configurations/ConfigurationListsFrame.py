@@ -73,7 +73,7 @@ class CommonConfigurationRoutines():
             "/" + self.parent.configurationFilesList[pos]
         # Extract signal paths from the config file and add them to a list of
         # paths
-        pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
+        pathsList = GlobalOperations. getSignalsPathsFromConfigurationFile(
                         configFile=selectedFile)
         # First unselect all signals
         UnselectAllSignals(self.parent.DTV.wxTreeView).execute()

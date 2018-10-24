@@ -2,201 +2,11 @@ import os
 import imas
 from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import QTreeWidgetItem
-
-from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalOperations import GlobalOperations, GlobalValues
 from imasviz.util.GlobalValues import GlobalValues, GlobalColors
-
-
-class GeneratedClassFactory:
-    def __init__(self, IMASDataSource, view, occurrence=0, pathsList = None, async = True):
-        self.IMASDataSource = IMASDataSource
-        self.view = view
-        self.occurrence = occurrence
-        self.pathsList = pathsList
-        self.async = async
-
-    def create(self):
-        generatedDataTree = None
-
-        imas__dd_version = os.environ['IMAS_VERSION']
-        if GlobalValues.TESTING:
-            imas__dd_version = GlobalValues.TESTING_IMAS_VERSION
-
-        if imas__dd_version == "3.7.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_7_0 \
-                import ETNativeDataTree_Generated_3_7_0
-            generatedDataTree = ETNativeDataTree_Generated_3_7_0(userName=self.IMASDataSource.userName,
-                                                           imasDbName=self.IMASDataSource.imasDbName,
-                                                           shotNumber=self.IMASDataSource.shotNumber,
-                                                           runNumber=self.IMASDataSource.runNumber,
-                                                           view=self.view,
-                                                           occurrence=self.occurrence,
-                                                           pathsList = self.pathsList,
-                                                           async=self.async)
-        # elif imas__dd_version == "3.6.0":
-        #     from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_6_0 \
-        #         import ETNativeDataTree_Generated_3_6_0
-        #     generatedDataTree = ETNativeDataTree_Generated_3_6_0(userName=self.IMASDataSource.userName,
-        #                                                          imasDbName=self.IMASDataSource.imasDbName,
-        #                                                          shotNumber=self.IMASDataSource.shotNumber,
-        #                                                          runNumber=self.IMASDataSource.runNumber,
-        #                                                          view=self.view,
-        #                                                          occurrence=self.occurrence,
-        #                                                          pathsList=self.pathsList,
-        #                                                          async=self.async)
-        elif imas__dd_version == "3.9.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_0 \
-                import ETNativeDataTree_Generated_3_9_0
-            generatedDataTree = ETNativeDataTree_Generated_3_9_0(userName=self.IMASDataSource.userName,
-                                                                 imasDbName=self.IMASDataSource.imasDbName,
-                                                                 shotNumber=self.IMASDataSource.shotNumber,
-                                                                 runNumber=self.IMASDataSource.runNumber,
-                                                                 view=self.view,
-                                                                 occurrence=self.occurrence,
-                                                                 pathsList=self.pathsList,
-                                                                 async=self.async)
-        elif imas__dd_version == "3.9.1":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_9_1 \
-                import ETNativeDataTree_Generated_3_9_1
-            generatedDataTree = ETNativeDataTree_Generated_3_9_1(userName=self.IMASDataSource.userName,
-                                                                 imasDbName=self.IMASDataSource.imasDbName,
-                                                                 shotNumber=self.IMASDataSource.shotNumber,
-                                                                 runNumber=self.IMASDataSource.runNumber,
-                                                                 view=self.view,
-                                                                 occurrence=self.occurrence,
-                                                                 pathsList=self.pathsList,
-                                                                 async=self.async)
-        elif imas__dd_version == "3.11.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_11_0 \
-                import ETNativeDataTree_Generated_3_11_0
-            generatedDataTree = ETNativeDataTree_Generated_3_11_0(userName=self.IMASDataSource.userName,
-                                                                 imasDbName=self.IMASDataSource.imasDbName,
-                                                                 shotNumber=self.IMASDataSource.shotNumber,
-                                                                 runNumber=self.IMASDataSource.runNumber,
-                                                                 view=self.view,
-                                                                 occurrence=self.occurrence,
-                                                                 pathsList=self.pathsList,
-                                                                 async=self.async)
-        elif imas__dd_version == "3.12.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_12_0 \
-                import ETNativeDataTree_Generated_3_12_0
-            generatedDataTree = ETNativeDataTree_Generated_3_12_0(userName=self.IMASDataSource.userName,
-                                                                 imasDbName=self.IMASDataSource.imasDbName,
-                                                                 shotNumber=self.IMASDataSource.shotNumber,
-                                                                 runNumber=self.IMASDataSource.runNumber,
-                                                                 view=self.view,
-                                                                 occurrence=self.occurrence,
-                                                                 pathsList=self.pathsList,
-                                                                 async=self.async)
-        elif imas__dd_version == "3.15.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_0 \
-                import ETNativeDataTree_Generated_3_15_0
-            generatedDataTree = ETNativeDataTree_Generated_3_15_0(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.15.1":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_15_1 \
-                import ETNativeDataTree_Generated_3_15_1
-            generatedDataTree = ETNativeDataTree_Generated_3_15_1(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.16.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_16_0 \
-                import ETNativeDataTree_Generated_3_16_0
-            generatedDataTree = ETNativeDataTree_Generated_3_16_0(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-
-        elif imas__dd_version == "3.17.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_0 \
-                import ETNativeDataTree_Generated_3_17_0
-            generatedDataTree = ETNativeDataTree_Generated_3_17_0(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.17.1":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_1 \
-                import ETNativeDataTree_Generated_3_17_1
-            generatedDataTree = ETNativeDataTree_Generated_3_17_1(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.17.2":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_17_2 \
-                import ETNativeDataTree_Generated_3_17_2
-            generatedDataTree = ETNativeDataTree_Generated_3_17_2(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.18.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_18_0 \
-                import ETNativeDataTree_Generated_3_18_0
-            generatedDataTree = ETNativeDataTree_Generated_3_18_0(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.19.1":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_19_1 \
-                import ETNativeDataTree_Generated_3_19_1
-            generatedDataTree = ETNativeDataTree_Generated_3_19_1(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        elif imas__dd_version == "3.20.0":
-            from imasviz.signals_data_access.generator.ETNativeDataTree_Generated_3_20_0 \
-                import ETNativeDataTree_Generated_3_20_0
-            generatedDataTree = ETNativeDataTree_Generated_3_20_0(userName=self.IMASDataSource.userName,
-                                                              imasDbName=self.IMASDataSource.imasDbName,
-                                                              shotNumber=self.IMASDataSource.shotNumber,
-                                                              runNumber=self.IMASDataSource.runNumber,
-                                                              view=self.view,
-                                                              occurrence=self.occurrence,
-                                                              pathsList=self.pathsList,
-                                                              async=self.async)
-        else:
-            raise ValueError("IMAS dictionary version not supported")
-
-        return generatedDataTree
-
+from imasviz.data_source.GeneratedClassFactory import GeneratedClassFactory
 
 class IMASDataSource:
-
-    IDAM_MAPPED_IDS = ["bolometer", "core_profiles", "equilibrium", "summary","magnetics","pf_active","tf","interfero_polarimeter","pf_passive","soft_x_rays","ece"]
 
     def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
         self.name = name
@@ -224,6 +34,7 @@ class IMASDataSource:
 
         dataTreeView.dataCurrentlyLoaded[occurrence] = True
         dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
+
         dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')
 
         if async:
@@ -260,10 +71,6 @@ class IMASDataSource:
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
         return True
-        # if IDSName in IMASDataSource.IDAM_MAPPED_IDS:
-        #     return True
-        # else:
-        #     return False
 
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
@@ -338,33 +145,3 @@ class IMASDataSource:
             doc_display = "documentation= " + itemDataDict['documentation']
             newTreeItem = QTreeWidgetItem(viewerNode, [doc_display])
             newTreeItem.itemVIZData = treeItemData
-
-class IMASPublicDataSource(IMASDataSource):
-
-    def __init__(self, name, machineName, shotNumber, runNumber):
-        IMASDataSource.__init__(self, name, None, None, shotNumber, runNumber, machineName)
-
-    # Load IMAS data using IMAS api
-    def load(self, view, occurrence=0, pathsList = None, async=True):
-        print ("Loading data using UDA")
-        #view.log.info('Loading ' + view.IDSNameSelected + ' IDS...')
-        self.generatedDataTree = GeneratedClassFactory(self, view, occurrence, pathsList, async).create()
-        if self.ids.get(occurrence) is None:
-            self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-            self.ids.open_public(self.machineName)
-
-        self.generatedDataTree.ids = self.ids.get(occurrence)
-        view.dataCurrentlyLoaded[occurrence] = True
-        view.idsAlreadyFetched[view.IDSNameSelected] = 1
-
-        if async == True:
-            self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
-        else:
-            self.generatedDataTree.run()  # This will call the get() operation for fetching IMAS data
-
-    # This defines the unique key attached to each data which can be plotted
-    def dataKey(self, nodeData):
-        return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
-
-    def getShortLabel(self):
-        return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
