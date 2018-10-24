@@ -8,7 +8,7 @@ from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeVi
 from PyQt5.QtWidgets import QApplication
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 import os, sys
 
 from imasviz.Browser_API import Browser_API

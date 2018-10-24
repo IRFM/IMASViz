@@ -1,6 +1,6 @@
 import os
 import imas
-from imasviz.data_source.IMASDataSource import IMASDataSource, GeneratedClassFactory
+from imasviz.data_source.QVizIMASDataSource import IMASDataSource, GeneratedClassFactory
 
 class IMASPublicDataSource(IMASDataSource):
 

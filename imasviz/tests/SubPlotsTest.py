@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from imasviz.Browser_API import Browser_API
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 from imasviz.tests.SubPlotsManagerView import SubPlotsManagerFrame
 import os
 from imasviz.util.GlobalValues import GlobalValues

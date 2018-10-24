@@ -308,7 +308,7 @@ if __name__ == "__main__":
 
     GlobalOperations.checkEnvSettings()
 
-    from imasviz.data_source.DataSourceFactory import DataSourceFactory
+    from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 
     dataSourceFactory = DataSourceFactory()
     dataSource = dataSourceFactory.create(name = GlobalValues.TORE_SUPRA,

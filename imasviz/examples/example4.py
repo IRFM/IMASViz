@@ -3,7 +3,7 @@
 import wx
 import os
 from imasviz.Browser_API import Browser_API
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 #from imasviz.gui_commands.configurations.ApplyPlotConfiguration import ApplyPlotConfiguration
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues

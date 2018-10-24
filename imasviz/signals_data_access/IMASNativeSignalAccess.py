@@ -88,7 +88,7 @@ class IMASNativeSignalAccess:
 
 
 if __name__ == "__main__":
-    from imasviz.data_source.DataSourceFactory import DataSourceFactory
+    from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
     dataSource = DataSourceFactory().create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,
                                           userName='imas_public', imasDbName='west')
     mdsp = IMASNativeSignalAccess(dataSource)

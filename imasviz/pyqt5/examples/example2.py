@@ -3,7 +3,7 @@
 plot.
 """
 from imasviz.Browser_API import Browser_API
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 from imasviz.util.GlobalOperations import GlobalOperations
 from PyQt5.QtWidgets import QApplication
 import sys

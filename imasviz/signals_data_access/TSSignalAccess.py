@@ -59,7 +59,7 @@ class TSSignalAccess:
 
 if __name__ == "__main__":
     import os
-    from imasviz.data_source.DataSourceFactory import DataSourceFactory
+    from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
     if 'TS_MAPPINGS_DIR' not in os.environ:
         os.environ['TS_MAPPINGS_DIR'] = "D:/Dev/IDSVisualization/IMAS_VIZ/ts_mapping_files"
     ts_dsf = DataSourceFactory()

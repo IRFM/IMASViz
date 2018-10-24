@@ -4,7 +4,7 @@ from PyQt5.QtGui import QBrush, QColor
 from PyQt5.QtWidgets import QTreeWidgetItem
 from imasviz.util.GlobalOperations import GlobalOperations, GlobalValues
 from imasviz.util.GlobalValues import GlobalValues, GlobalColors
-from imasviz.data_source.GeneratedClassFactory import GeneratedClassFactory
+from imasviz.data_source.QVizGeneratedClassFactory import GeneratedClassFactory
 
 class IMASDataSource:
 
@@ -40,15 +40,6 @@ class IMASDataSource:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
         else:
             self.generatedDataTree.run()  #This will call the get() operation for fetching IMAS data
-
-    def refreshIDS(self, IDSName, occurrence=0):
-        """Refresh the source IDS and its data.
-
-        Arguments:
-            IDSName    (str) : Name of the IDS e.g. 'magnetics'.
-            occurrence (int) : IDS occurrence number (0-9).
-        """
-        exec('self.ids.' + IDSName + '.get()')
 
     @staticmethod
     def try_to_open(imasDbName, userName, shotNumber, runNumber, imas_major_version='3'):

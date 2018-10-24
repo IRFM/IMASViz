@@ -1,11 +1,11 @@
 import wx.py
 import os
 import sys
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 from imasviz.Browser_API import Browser_API
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
-from imasviz.data_source.IMASDataSource import IMASDataSource
+from imasviz.data_source.QVizIMASDataSource import IMASDataSource
 from imasviz.gui_frames.VizOptions import VizOptions
 
 class TabOne(wx.Panel):

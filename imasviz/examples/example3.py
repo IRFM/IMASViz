@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from imasviz.Browser_API import Browser_API
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 import wx
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations

@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 from imasviz.util.GlobalValues import GlobalIDs
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 import os, sys
 import imas
 

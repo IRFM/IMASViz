@@ -2,13 +2,15 @@
 """This example demonstrates the procedure of plotting multiple data to one
 plot.
 """
+
+import sys
+from PyQt5.QtWidgets import QApplication
 from imasviz.Browser_API import Browser_API
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
-import wx
 
-app = wx.App()
+app = QApplication(sys.argv)
 
 GlobalOperations.checkEnvSettings()
 
@@ -16,24 +18,26 @@ api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
 
-f1 = api.CreateDataTree(dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47977))
-f2 = api.CreateDataTree(dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47978))
-f3 = api.CreateDataTree(dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979))
+f = []
+n_shot = [52702, 52703]
 
-paths = []
+for i in range(0, 2):
+    dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=n_shot[i], runNumber=0,
+                                           userName='imas_public', imasDbName='west')
+    f.append(api.CreateDataTree(dataSource))
 
-for i in range(1,2):
-    paths.append('magnetics/flux_loop(' + str(i) + ')/flux')
+paths1 = []
+for i in range(1, 3):
+    paths1.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
-api.SelectSignals(f1, paths)
-api.SelectSignals(f2, paths)
-api.SelectSignals(f3, paths)
+paths2 = []
+for i in range(1, 3):
+    paths2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
-f = [f1,f2,f3]
+api.SelectSignals(f[0], paths1)
+api.SelectSignals(f[1], paths2)
 api.PlotSelectedSignalsFrom(f)
 
-f1.Show()
-f2.Show()
-f3.Show()
-
-app.MainLoop()
+f[0].show()
+f[1].show()
+app.exec()

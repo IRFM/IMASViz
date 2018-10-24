@@ -54,7 +54,7 @@ from imasviz.pyqt5.src.VizGUI.VizTreeView.QVizDataTreeViewBuilder \
     import QVizDataTreeViewBuilder
 from imasviz.util.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 from imasviz.pyqt5.src.VizUtils.QWindowUtils import getWindowSize
 from imasviz.gui_commands.configurations.SaveSignalSelection \
     import SaveSignalSelection

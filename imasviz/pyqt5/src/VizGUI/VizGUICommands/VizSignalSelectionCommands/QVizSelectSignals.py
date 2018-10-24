@@ -47,6 +47,7 @@ class QVizSelectSignals(AbstractCommand):
         for signal in self.dataTreeView.signalsList:
             # Get the path attribute of the signal
             sigName = signal.itemVIZData['Path']
+
             # When the signal path matches the path from the given list,
             # select the signal
             if any(sigName in s for s in self.pathsList):

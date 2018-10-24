@@ -1,12 +1,13 @@
 #!/usr/bin/python
 
+import sys
+from PyQt5.QtWidgets import QApplication
 from imasviz.Browser_API import Browser_API
-from imasviz.data_source.DataSourceFactory import DataSourceFactory
-import wx
+from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.util.GlobalOperations import GlobalOperations
 
-app = wx.App()
+app = QApplication(sys.argv)
 
 GlobalOperations.checkEnvSettings()
 
@@ -25,6 +26,4 @@ api.SelectSignals(f, paths)
 
 api.PlotSelectedSignals(f)
 
-#api.ShowDataTree(f)
-
-app.MainLoop()
+app.exec()
