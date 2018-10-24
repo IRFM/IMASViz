@@ -354,21 +354,23 @@ class QVizDataTreeView(QTreeWidget):
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
+
         rootNodeData = ids_root_node.itemVIZData
-        rootNodeData['occurrence'] = occurrence
         idsName = rootNodeData['IDSName']
+        key = idsName + "/" + str(occurrence)
+        rootNodeData['occurrence'] = occurrence
         nodeBuilder = QVizDataTreeViewBuilder()
-        ids_root_occ = self.ids_roots.get(occurrence)
-        if ids_root_occ is not None:
-            ids_root_node.removeChild(ids_root_occ)
-            del self.ids_roots[occurrence]
+        ids_root_occ = self.ids_roots.get(key)
+        #if ids_root_occ is not None:
+        #    ids_root_node.removeChild(ids_root_occ)
+        #    del self.ids_roots[key]
 
         ids_root_occ = QTreeWidgetItem(ids_root_node, ['occurrence ' + str(int(occurrence))])
         ids_root_occ.itemVIZData = {}
         ids_root_occ.itemVIZData['Path']     = rootNodeData['Path']
         ids_root_occ.itemVIZData['IDSName']  = rootNodeData['IDSName']
         ids_root_occ.itemVIZData['dataName'] = rootNodeData['dataName']
-        self.ids_roots[occurrence] = ids_root_occ
+        self.ids_roots[key] = ids_root_occ
 
         for child in idsData:
             self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence)

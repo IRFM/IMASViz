@@ -43,6 +43,7 @@ class QVizSelectSignals(AbstractCommand):
     def execute(self):
         # Go through the list of signals and compare their path attribute with
         # the paths from the given list
+        #self.updateNodeData()
         for signal in self.dataTreeView.signalsList:
             # Get the path attribute of the signal
             sigName = signal.itemVIZData['Path']
@@ -76,17 +77,19 @@ class QVizSelectSignals(AbstractCommand):
                 IDSNamesList.append(IDSName)
 
         # Load all IDS data which are referenced in the paths
-        #threadingEvent = threading.Event()  # the command SelectSignals is
-                                            # synchronous so we will wait that
-                                            # this event is set
-
-        threadingEvent = True
+        async = False # the command SelectSignals is
+                     # synchronous so we will wait that
+                     # this event is set
 
         for IDSName in IDSNamesList:
+            # IDS already loaded ?
+            key = IDSName + "/" + str(self.occurrence)
+            if self.dataTreeView.ids_roots.get(key) is not None:
+                continue
             # Set the IDS to be checked if it is opened. If it is not,open it
             # in the DTV
             self.dataTreeView.setIDSNameSelected(IDSName)
             # Check/Populate the IDS tree node
             LoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,
-                threadingEvent).execute()
+                             async).execute()
 

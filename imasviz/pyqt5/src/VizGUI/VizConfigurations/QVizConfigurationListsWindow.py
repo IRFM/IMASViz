@@ -89,12 +89,11 @@ class CommonConfigurationRoutines(QObject):
         pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
                         configFile=selectedFile)
         # First unselect all signals
-        #QVizUnselectAllSignals(
-        #    dataTreeView = self.parent.DTVFrame.dataTreeView).execute()
+        QVizUnselectAllSignals(dataTreeView = self.parent.DTVFrame.dataTreeView).execute()
         # Select the signals, defined by a path in a list of paths, in the
         # given wxDataTreeView (DTV) window
-        QVizSelectSignals(dataTreeView = self.parent.DTVFrame.dataTreeView,
-                          pathsList = pathsList).execute()
+        QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
+                          pathsList=pathsList).execute()
 
     @pyqtSlot(str)
     def removeConfiguration(self, configType):

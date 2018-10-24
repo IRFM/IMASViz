@@ -74,12 +74,12 @@ class QVizLoadDataHandling(QObject):
 
         for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
 
-            if not self.dataTreeView.dataCurrentlyLoaded.get(i):
-                if self.dataTreeView.popupmenu is None:
-                    self.dataTreeView.popupmenu = QMenu()
-                    subMenu = QMenu('Get ' + IDSName + ' data for occurrence')
-                    self.dataTreeView.popupmenu.addMenu(subMenu)
-                # - Set new submenu action and its label
+            if self.dataTreeView.popupmenu is None:
+                self.dataTreeView.popupmenu = QMenu()
+                subMenu = QMenu('Get ' + IDSName + ' data for occurrence')
+                self.dataTreeView.popupmenu.addMenu(subMenu)
+            # - Set new submenu action and its label
+            if not self.occurrenceAlreadyLoaded(IDSName, i):
                 action_GET_IDS_OCC_DATA = \
                     subMenu.addAction('Occurrence ' + str(i))
                 # - Connect action to function using partial
@@ -93,6 +93,12 @@ class QVizLoadDataHandling(QObject):
             self.dataTreeView.popupmenu.exec_( \
                 self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
         return 1
+
+    def occurrenceAlreadyLoaded(self, IDSName, occurrence):
+        key = IDSName + "/" + str(occurrence)
+        if self.dataTreeView.ids_roots.get(key) is not None:
+            return True
+        return False
 
     def loadSelectedData(self, occurrence=0, threadingEvent=None):
         """Load data of selected IDS and its occurrence.

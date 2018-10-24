@@ -21,6 +21,7 @@ class QVizUnselectAllSignals(AbstractCommand):
         AbstractCommand.__init__(self, dataTreeView)
 
     def execute(self):
+        #self.updateNodeData();
         # Set empty list of signal keys to remove
         keysToRemove = []
         for key in self.dataTreeView.selectedSignalsDict:

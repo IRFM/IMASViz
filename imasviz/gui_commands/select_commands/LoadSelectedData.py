@@ -20,6 +20,7 @@ class LoadSelectedData(AbstractCommand):
             #     self.dataTreeView.parent.updateView(self.dataTreeView.IDSNameSelected,
             #                                 self.occurrence,
             #                                 pathsList=self.pathsList)
+
             self.dataTreeView.dataSource.load(self.dataTreeView, self.occurrence,
                                            self.pathsList, self.async)
 
