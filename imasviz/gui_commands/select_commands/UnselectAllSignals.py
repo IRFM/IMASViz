@@ -1,4 +1,4 @@
-import wx
+# import wx
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 
 class UnselectAllSignals(AbstractCommand):

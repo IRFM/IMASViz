@@ -1,4 +1,4 @@
-import wx
+# import wx
 import numpy as np
 from imasviz.util.GlobalValues import GlobalValues
 

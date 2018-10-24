@@ -1,4 +1,4 @@
-import wx
+# import wx
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
 from imasviz.util.GlobalValues import GlobalValues
 from imasviz.gui_commands.select_commands.SelectSignal import SelectSignal

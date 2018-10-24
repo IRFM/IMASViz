@@ -1,4 +1,4 @@
-import wx
+# import wx
 import imas
 import numpy as np
 import sys, traceback

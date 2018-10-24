@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 import os
-import wx
+# import wx
 #from MDSplus import Connection
 from threading import Thread, RLock
 import traceback

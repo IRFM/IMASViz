@@ -18,8 +18,8 @@ from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
 from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
-from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
-from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
+# from imasviz.view.WxDataTreeView import WxDataTreeViewFrame
+# from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import PlotSelectedSignalsWithWxmplot
 
 class Browser_API():
 

@@ -1,6 +1,6 @@
 import imas
 import numpy as np
-import wx
+# import wx
 import os, sys
 from imasviz.util.GlobalValues import GlobalValues
 import xml.etree.ElementTree as ET
