@@ -32,7 +32,6 @@ class IMASDataSource:
 
         self.generatedDataTree.ids = self.ids[occurrence]
 
-        dataTreeView.dataCurrentlyLoaded[occurrence] = True
         dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
 
         dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')

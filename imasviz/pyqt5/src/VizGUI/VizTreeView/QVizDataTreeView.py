@@ -134,10 +134,6 @@ class QVizDataTreeView(QTreeWidget):
         # Create the empty tree
         self.dataTree = self.createEmptyIDSsTree(IDSDefFile)
 
-        self.dataCurrentlyLoaded = {}
-        for i in range(0,10):
-            self.dataCurrentlyLoaded[i] = False
-
         self.log = None
 
         # Set dummy for node documentation widget
@@ -342,7 +338,6 @@ class QVizDataTreeView(QTreeWidget):
             self.buildTreeView(ids_root_node, occurrence, idsData)
             # Expand the tree item
             ids_root_node.setExpanded(True)
-        self.dataCurrentlyLoaded[occurrence] = False
 
     def buildTreeView(self, ids_root_node, occurrence, idsData):
         """ Build the data tree view by adding a set of available IDS nodes as
