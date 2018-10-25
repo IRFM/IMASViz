@@ -1,8 +1,8 @@
 import numpy as np
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
-class TreeNode:
+class QVizTreeNode:
 
     def __init__(self, aos, coordinate1, itime_index = -1, aos_parents_count = 0):
         self.aos = aos
@@ -33,10 +33,10 @@ class TreeNode:
 
     def index_name_of_itime(self):
         i = 0
-        #print "TreeNode : self.itime_index = " + self.itime_index
-        for key in GlobalValues.indices:
+        #print "QVizTreeNode : self.itime_index = " + self.itime_index
+        for key in QVizGlobalValues.indices:
             if i == int(self.itime_index):
-                return GlobalValues.indices[key]
+                return QVizGlobalValues.indices[key]
             i = i + 1
 
     def replaceBrackets(self, toReplace): #replace '[' by '(' and ']' by ')'
@@ -73,8 +73,8 @@ class TreeNode:
         label = nodeData['dataName'].replace("time_slice[" + str(itime_index) + "].", "")
         label = label.replace('ids.','')
         label = label.replace(idsName + ".", '')
-        label = GlobalOperations.replaceBrackets(label)
-        label = GlobalOperations.replaceDotsBySlashes(label)
+        label = QVizGlobalOperations.replaceBrackets(label)
+        label = QVizGlobalOperations.replaceDotsBySlashes(label)
         return label, title
 
     def coordinate1Label(self, idsName, index, ids):
@@ -120,7 +120,7 @@ class TreeNode:
         aos_valued = None
         path = self.patchIndices(path)
         for i in range(0, self.aos_parents_count):
-            index_name = GlobalValues.indices[str(i + 1)]
+            index_name = QVizGlobalValues.indices[str(i + 1)]
             index_value =  self.aos_indices_values[index_name]
             s = "[" + index_name + "]"
             aos_valued = path.replace(s, "[" + index_value + "]")
@@ -147,7 +147,7 @@ class TreeNode:
     def getDataVsTime(self):
         data_list = []
         aos_vs_itime = self.getDataPathVsTime(self.aos)
-        #print "TreeNode : time max value = " + self.timeMaxValue()
+        #print "QVizTreeNode : time max value = " + self.timeMaxValue()
         for itime in range(0, int(self.timeMaxValue())):
             data_path = self.getDataPath(aos_vs_itime, itime)
             data_list.append(data_path)

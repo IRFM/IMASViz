@@ -1,10 +1,10 @@
 
 import numpy as np
 
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 
-class TSSignalAccess:
+class QVizTSDataAccess:
     def __init__(self, dataSource):
         self.conn = dataSource.conn
 
@@ -65,8 +65,8 @@ if __name__ == "__main__":
     if 'TS_MAPPINGS_DIR' not in os.environ:
         os.environ['TS_MAPPINGS_DIR'] = "D:/Dev/IDSVisualization/IMAS_VIZ/ts_mapping_files"
     ts_dsf = DataSourceFactory()
-    ds = ts_dsf.create(name=GlobalValues.TORE_SUPRA, shotNumber=43970)
-    mdsp = TSSignalAccess(ds)
+    ds = ts_dsf.create(name=QVizGlobalValues.TORE_SUPRA, shotNumber=43970)
+    mdsp = QVizTSDataAccess(ds)
     selectedNodeData = {}
     selectedNodeData['dataName'] = "GBFT%3"
     # selectedNodeData['dataName'] = "GTICXS"
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     print (mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber))
     # print mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber)[0]
     signal = mdsp.GetSignal(selectedNodeData, ds.shotNumber)
-    #from imasviz.Browser_API import Browser_API
+    #from imasviz.Viz_API import Viz_API
     app = wx.App()
-    # api = Browser_API()
+    # api = Viz_API()
     # api.plotSignal(signal)
 
 

@@ -18,8 +18,8 @@
 # from imasviz.plotframes.IMASVIZMultiPlotFrame import IMASVIZMultiPlotFrame
 # from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
 # from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
-# from imasviz.util.GlobalOperations import GlobalOperations
-# from imasviz.util.GlobalValues import FigureTypes
+# from imasviz.util.QVizGlobalOperations import QVizGlobalOperations
+# from imasviz.util.QVizGlobalValues import FigureTypes
 # from wxmplot.utils import Closure
 # from wxmplot.plotpanel import PlotPanel
 # import matplotlib.pyplot as plt

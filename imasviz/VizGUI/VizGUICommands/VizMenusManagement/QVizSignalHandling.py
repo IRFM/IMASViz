@@ -28,12 +28,12 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-# from imasviz.VizDataAccess.SignalDataAccessFactory import SignalDataAccessFactory
+# from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from functools import partial
 
 from PyQt5.QtCore import QObject, pyqtSlot
 from PyQt5.QtWidgets import QAction, QMenu
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlot import QVizMultiPlot
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
@@ -42,7 +42,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPreviewPlotSignal import QViz
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizUtils.GlobalValues import FigureTypes
+from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 
 
 class QVizSignalHandling(QObject):
@@ -72,7 +72,7 @@ class QVizSignalHandling(QObject):
     def updateNodeData(self):
         """ Update tree node/item data.
             TODO: use the global routine 'updateNodeData' defined in
-                  AbstractCommand instead.
+                  QVizAbstractCommand instead.
         """
         self.nodeData = self.dataTreeView.selectedItem.itemVIZData
         self.treeNode = \
@@ -341,10 +341,10 @@ class QVizSignalHandling(QObject):
                 aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
                 label = treeNode.getDataPath(aos_vs_itime, 0)
                 label = label.replace("ids.", "")
-                label = GlobalOperations.replaceBrackets(label)
-                label = GlobalOperations.replaceDotsBySlashes(label)
+                label = QVizGlobalOperations.replaceBrackets(label)
+                label = QVizGlobalOperations.replaceDotsBySlashes(label)
                 xlabel = \
-                    GlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(0))
+                    QVizGlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(0))
                 self.timeSlider = True
             else:
                 self.timeSlider = None
@@ -487,7 +487,7 @@ class QVizSignalHandling(QObject):
         Arguments:
             numFig     (int) : Figure number identificator.
             figureType (str) : Type of figure e.c. "Figure:", "Multiplot:",
-                               "Subplot"... see GlobalValues.py FigureTypes
+                               "Subplot"... see QVizGlobalValues.py FigureTypes
                                class for a full list of figure types.
         """
         # Get figure key (e.g. 'Figure:0' string)

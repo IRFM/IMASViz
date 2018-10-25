@@ -44,8 +44,8 @@ from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.SaveSignalSelection \
-    import SaveSignalSelection
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
+    import QVizSaveSignalSelection
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleRightClick \
     import QVizHandleRightClick
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
@@ -55,8 +55,8 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget \
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
-from imasviz.VizUtils.GlobalValues import GlobalValues, GlobalIDs, GlobalColors
-from imasviz.VizUtils.QWindowUtils import getWindowSize
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors
+from imasviz.VizUtils.QVizWindowUtils import getWindowSize
 
 
 class QVizDataTreeView(QTreeWidget):
@@ -69,7 +69,7 @@ class QVizDataTreeView(QTreeWidget):
         """
         Arguments:
             parent     (QWindow)        : QVizDataTreeView parent.
-            dataSource (IMASDataSource) : IDS data source from DataSourceFactory
+            dataSource (QVizIMASDataSource) : IDS data source from QVizDataSourceFactory
             mappingFilesDirectory (str) : Path to IMASViz mapping files directory
                                           (example: viz/ts_mapping_files)
             IDSDefFile (str)            : Path to IDS dictionary definition .xml
@@ -117,7 +117,7 @@ class QVizDataTreeView(QTreeWidget):
         self.signalsList = []
 
         # Extra informations attached to each leaf of the tree
-        #    - key = Node name (IMAS path), value = TreeNode object
+        #    - key = Node name (IMAS path), value = QVizTreeNode object
         self.node_attributes = {}
 
         # Parent of this tree, this is the wxDataTreeViewFrame
@@ -402,7 +402,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         Arguments:
             parent     (PyQT obj)       : QVizDataTreeView parent.
             views      (array)          :
-            dataSource (IMASDataSource) : IDS data source from DataSourceFactory
+            dataSource (QVizIMASDataSource) : IDS data source from QVizDataSourceFactory
             IDSDefFile (str)            : Path to IDS dictionary definition .xml
                                           file (example:
                                           viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
@@ -420,7 +420,7 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # Set title (QMainWindow)
         publicStr = ''
-        if dataSource.name == GlobalValues.IMAS_UDA:
+        if dataSource.name == QVizGlobalValues.IMAS_UDA:
             publicStr = "public "
             self.setWindowTitle("'" + dataSource.machineName + "' " + publicStr
                 + "data source, shot=" + str(dataSource.shotNumber) + ", run="
@@ -602,7 +602,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         (QVizDataTreeView)
         """
         # Save signal selection as a list of signal paths to .lsp file
-        SaveSignalSelection(DTV=self.dataTreeView).execute()
+        QVizSaveSignalSelection(DTV=self.dataTreeView).execute()
 
     def onShowMultiPlot(self, event, all_DTV=False):
         """Apply selected signals (single or all DTVs) to MultiPlot.

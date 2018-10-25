@@ -13,13 +13,13 @@
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
 #****************************************************
 
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
-from imasviz.VizUtils.GlobalValues import GlobalColors
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
-class QVizUnselectAllSignals(AbstractCommand):
+class QVizUnselectAllSignals(QVizAbstractCommand):
     def __init__(self, dataTreeView):
-        AbstractCommand.__init__(self, dataTreeView)
+        QVizAbstractCommand.__init__(self, dataTreeView)
 
     def execute(self):
         # Set empty list of signal keys to remove

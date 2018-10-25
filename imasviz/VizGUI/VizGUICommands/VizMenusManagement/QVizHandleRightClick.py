@@ -21,7 +21,7 @@
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
-from imasviz.VizUtils.GlobalValues import GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
 class QVizHandleRightClick:

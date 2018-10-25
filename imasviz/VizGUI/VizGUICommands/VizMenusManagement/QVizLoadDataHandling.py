@@ -24,7 +24,7 @@ from functools import partial
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QMenu
 
-from imasviz.VizGUI.VizGUICommands.VizDataLoading.LoadSelectedData import LoadSelectedData
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
 # Default maximum number of IDS occurences
 MAX_NUMBER_OF_IDS_OCCURENCES = 10
@@ -107,7 +107,7 @@ class QVizLoadDataHandling(QObject):
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
         """
-        LoadSelectedData(self.dataTreeView, occurrence, threadingEvent).execute()
+        QVizLoadSelectedData(self.dataTreeView, occurrence, threadingEvent).execute()
 
     def refreshSelectedIDS(self, occurrence=0, threadingEvent=None):
         """Refresh the source IDS and its data for the set occurrence.
@@ -116,4 +116,4 @@ class QVizLoadDataHandling(QObject):
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
         """
-        LoadSelectedData(self.dataTreeView, occurrence, threadingEvent).refreshIDS()
+        QVizLoadSelectedData(self.dataTreeView, occurrence, threadingEvent).refreshIDS()

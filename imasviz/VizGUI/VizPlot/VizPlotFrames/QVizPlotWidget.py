@@ -16,7 +16,7 @@ from PyQt5.QtCore import Qt, QMetaObject
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
 from pyqtgraph import PlotWidget, mkPen
 
-from imasviz.VizUtils.GlobalValues import getRGBColorList
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
 
 
 class QVizPlotWidget(QWidget):

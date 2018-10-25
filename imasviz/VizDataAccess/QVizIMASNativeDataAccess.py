@@ -3,12 +3,12 @@ import sys
 import traceback
 
 import numpy as np
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 
-class IMASNativeSignalAccess:
+class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
@@ -31,7 +31,7 @@ class IMASNativeSignalAccess:
             r = np.array([rval])
 
             if selectedNodeData["coordinate1_itime_dependent"] == 1:
-                t = GlobalOperations.getTime(ids, selectedNodeData, coordinate1)
+                t = QVizGlobalOperations.getTime(ids, selectedNodeData, coordinate1)
                 t = np.array([t])
             else:
                 if "1..N" in treeNode.coordinate1 or "1...N" in treeNode.coordinate1:
@@ -61,7 +61,7 @@ class IMASNativeSignalAccess:
         time_slices_count = len(data_path_list)
         #print "IMASNative : time_slices_count " + str(time_slices_count)
         v = []
-        time = GlobalOperations.getTime(ids, selectedNodeData, treeNode.evaluateCoordinate1())
+        time = QVizGlobalOperations.getTime(ids, selectedNodeData, treeNode.evaluateCoordinate1())
         for i in range(0, time_slices_count):
             value_at_index = eval(data_path_list[i] + "[" + str(index) + "]") #evaluate the array at index value
             v.append(value_at_index)
@@ -92,9 +92,9 @@ class IMASNativeSignalAccess:
 
 if __name__ == "__main__":
     from imasviz.VizDataSource import DataSourceFactory
-    dataSource = DataSourceFactory().create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,
-                                          userName='imas_public', imasDbName='west')
-    mdsp = IMASNativeSignalAccess(dataSource)
+    dataSource = DataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,
+                                            userName='imas_public', imasDbName='west')
+    mdsp = QVizIMASNativeDataAccess(dataSource)
     selectedNodeData = {}
     selectedNodeData['dataName'] = 'dataSource.ids.magnetics.flux_loop[1].flux.data'
     selectedNodeData['time'] = 'dataSource.ids.magnetics.flux_loop[1].flux.time'
@@ -102,9 +102,9 @@ if __name__ == "__main__":
     #print (mdsp.GetShapeofSignal(selectedNodeData, 12))
     #treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
     signal = mdsp.GetSignal(selectedNodeData, dataSource.shotNumber)
-    # from imasviz.Browser_API import Browser_API
+    # from imasviz.Viz_API import Viz_API
     app = wx.App()
-    # api = Browser_API()
+    # api = Viz_API()
     # api.plotSignal(signal)
 
 

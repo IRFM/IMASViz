@@ -16,11 +16,11 @@
 #****************************************************
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignal import QVizSelectSignal
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
-from imasviz.VizGUI.VizGUICommands.VizDataLoading.LoadSelectedData import LoadSelectedData
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
 
-class QVizSelectSignals(AbstractCommand):
+class QVizSelectSignals(QVizAbstractCommand):
     """Select a group of all signals by given list of signal paths.
     """
     def __init__(self, dataTreeView, pathsList, occurrence=0):
@@ -31,7 +31,7 @@ class QVizSelectSignals(AbstractCommand):
                                          ['magnetics/flux_loop(0)/flux/data'])
             occurrence   (int)         : IDS occurrence number (default = 0).
         """
-        AbstractCommand.__init__(self, dataTreeView)
+        QVizAbstractCommand.__init__(self, dataTreeView)
         self.pathsList = pathsList
         self.occurrence = occurrence
 
@@ -89,6 +89,6 @@ class QVizSelectSignals(AbstractCommand):
             # in the DTV
             self.dataTreeView.setIDSNameSelected(IDSName)
             # Check/Populate the IDS tree node
-            LoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,
-                             async).execute()
+            QVizLoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,
+                                 async).execute()
 

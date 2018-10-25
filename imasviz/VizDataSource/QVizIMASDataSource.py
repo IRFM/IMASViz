@@ -3,11 +3,11 @@ import os
 import imas
 from PyQt5.QtWidgets import QTreeWidgetItem
 
-from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import GeneratedClassFactory
-from imasviz.VizUtils.GlobalValues import GlobalColors
+from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
-class IMASDataSource:
+class QVizIMASDataSource:
 
     def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
         self.name = name
@@ -20,7 +20,7 @@ class IMASDataSource:
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, occurrence=0, pathsList = None, async=True):
-        self.generatedDataTree = GeneratedClassFactory(self, dataTreeView, occurrence, pathsList, async).create()
+        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, occurrence, pathsList, async).create()
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 

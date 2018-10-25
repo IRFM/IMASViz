@@ -15,7 +15,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QScrollArea
 from PyQt5.QtWidgets import QFormLayout
 
-from imasviz.VizUtils.GlobalValues import GlobalColors, GlobalFonts
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, GlobalFonts
 
 
 class QVizNodeDocumentationWidget(QWidget):

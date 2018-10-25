@@ -20,11 +20,11 @@ from functools import partial
 from PyQt5.QtCore import Qt, pyqtSlot, QObject
 from PyQt5.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
                              QPushButton, QWidget, QSizePolicy, QLabel)
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizUtils.GlobalValues import GlobalFonts
+from imasviz.VizUtils.QVizGlobalValues import GlobalFonts
 
 
 class QVizConfigurationListsWindow(QDialog):
@@ -83,11 +83,11 @@ class CommonConfigurationRoutines(QObject):
 
         # Get system path to the selected configuration file
         selectedFile = \
-            GlobalOperations.getConfigurationFilesDirectory() + \
+            QVizGlobalOperations.getConfigurationFilesDirectory() + \
             "/" + selectedItem.text()
         # Extract signal paths from the config file and add them to a list of
         # paths
-        pathsList = GlobalOperations.getSignalsPathsFromConfigurationFile(
+        pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
                         configFile=selectedFile)
         # First unselect all signals
         QVizUnselectAllSignals(dataTreeView = self.parent.DTVFrame.dataTreeView).execute()
@@ -112,10 +112,10 @@ class CommonConfigurationRoutines(QObject):
         selectedItem = selectedItems[0]
         # Get system path to the selected configuration file
         selectedFile = \
-            GlobalOperations.getConfigurationFilesDirectory() + \
+            QVizGlobalOperations.getConfigurationFilesDirectory() + \
             '/' + selectedItem.text()
         # Get Yes/No answer (returns True/False)
-        answer = GlobalOperations.YesNo(question =
+        answer = QVizGlobalOperations.YesNo(question =
             'The configuation ' + selectedFile + ' will be deleted. Are you sure?')
         if answer:  # If True
             print ('Removing configuration: ' + selectedFile)
@@ -127,7 +127,7 @@ class CommonConfigurationRoutines(QObject):
                 self.parent.listWidget.removeItemWidget(selectedItem)
                 # Refresh the list
                 self.parent.configurationFilesList = \
-                    GlobalOperations.getConfFilesList(configType=configType)
+                    QVizGlobalOperations.getConfFilesList(configType=configType)
                 # Update the list (simple update() doesn't work)
                 self.parent.updateList()
             except OSError:
@@ -223,7 +223,7 @@ class PlotConfigurationListsTab(QWidget):
         """
         # Get sorted list of configuration files
         configurationFilesList = \
-            sorted(GlobalOperations.getConfFilesList(configType='pcfg'))
+            sorted(QVizGlobalOperations.getConfFilesList(configType='pcfg'))
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,
                                        QSizePolicy.Expanding))
@@ -245,7 +245,7 @@ class PlotConfigurationListsTab(QWidget):
         self.listWidget.clear()
         # Get sorted list of configuration files
         configurationFilesList = \
-            sorted(GlobalOperations.getConfFilesList(configType='pcfg'))
+            sorted(QVizGlobalOperations.getConfFilesList(configType='pcfg'))
 
         # Add list of configuration files to list widget
         self.listWidget.addItems(configurationFilesList)
@@ -303,7 +303,7 @@ class ListOfSignalPathsListsTab(QWidget):
 
         # Get sorted list of configuration files
         configurationFilesList = \
-            sorted(GlobalOperations.getConfFilesList(configType='lsp'))
+            sorted(QVizGlobalOperations.getConfFilesList(configType='lsp'))
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,
                                       QSizePolicy.Expanding))
@@ -324,7 +324,7 @@ class ListOfSignalPathsListsTab(QWidget):
         self.listWidget.clear()
         # Get sorted list of configuration files
         configurationFilesList = \
-            sorted(GlobalOperations.getConfFilesList(configType='lsp'))
+            sorted(QVizGlobalOperations.getConfFilesList(configType='lsp'))
 
         # Add list of configuration files to list widget
         self.listWidget.addItems(configurationFilesList)

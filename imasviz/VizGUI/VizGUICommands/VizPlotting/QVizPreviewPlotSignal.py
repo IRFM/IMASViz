@@ -26,18 +26,18 @@ import traceback
 
 from PyQt5.QtWidgets import QWidget
 
-from imasviz.VizDataAccess.QVizDataAccessFactory import SignalDataAccessFactory
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 
-class QVizPreviewPlotSignal(AbstractCommand):
+class QVizPreviewPlotSignal(QVizAbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
                  title = '', label = None, xlabel = None, signalHandling = None):
 
         self.exists = None
 
-        AbstractCommand.__init__(self, dataTreeView, nodeData)
+        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
         self.updateNodeData();
 
@@ -45,7 +45,7 @@ class QVizPreviewPlotSignal(AbstractCommand):
 
         if signal == None:
             signalDataAccess = \
-                SignalDataAccessFactory(self.dataTreeView.dataSource).create()
+                QVizDataAccessFactory(self.dataTreeView.dataSource).create()
             treeNode = \
                 self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
             self.signal = signalDataAccess.GetSignal(self.nodeData,
@@ -166,7 +166,7 @@ class QVizPreviewPlotSignal(AbstractCommand):
         if xlabel == None:
             if 'coordinate1' in signalNodeData:
                 xlabel = \
-                    GlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
+                    QVizGlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 

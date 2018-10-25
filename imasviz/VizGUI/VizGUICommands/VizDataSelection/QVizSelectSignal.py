@@ -13,11 +13,11 @@
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
 #****************************************************
 
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
-from imasviz.VizUtils.GlobalValues import GlobalColors
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
-class QVizSelectSignal(AbstractCommand):
+class QVizSelectSignal(QVizAbstractCommand):
     """Select the signal (selectable node - BLUE). If no treeItem is
     given for selection, the self.dataTreeView.selectedItem (set by left/right
     click on item in DTV) will be used.
@@ -32,7 +32,7 @@ class QVizSelectSignal(AbstractCommand):
                                          (self.dataTreeView.selectedItem).
     """
     def __init__(self, dataTreeView, nodeData = None):
-        AbstractCommand.__init__(self, dataTreeView, nodeData)
+        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
     def execute(self):
         self.updateNodeData()

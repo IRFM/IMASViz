@@ -1,20 +1,20 @@
-from imasviz.VizDataAccess.QVizTSDataAccess import TSSignalAccess
+from imasviz.VizDataAccess.QVizTSDataAccess import QVizTSDataAccess
 
-from imasviz.VizDataAccess.QVizIMASNativeDataAccess import IMASNativeSignalAccess
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizDataAccess.QVizIMASNativeDataAccess import QVizIMASNativeDataAccess
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 
-class SignalDataAccessFactory:
+class QVizDataAccessFactory:
 
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
     def create(self):
-        if self.dataSource.name==GlobalValues.TORE_SUPRA:
-            return TSSignalAccess(self.dataSource)
+        if self.dataSource.name==QVizGlobalValues.TORE_SUPRA:
+            return QVizTSDataAccess(self.dataSource)
 
-        elif self.dataSource.name == GlobalValues.IMAS_NATIVE or self.dataSource.name == GlobalValues.IMAS_UDA:
-            return IMASNativeSignalAccess(self.dataSource)
+        elif self.dataSource.name == QVizGlobalValues.IMAS_NATIVE or self.dataSource.name == QVizGlobalValues.IMAS_UDA:
+            return QVizIMASNativeDataAccess(self.dataSource)
 
 
 

@@ -24,13 +24,13 @@ import xml.etree.ElementTree as ET
 
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
 
-class QVizPlotSelectedSignals(AbstractCommand):
+class QVizPlotSelectedSignals(QVizAbstractCommand):
     def __init__(self, dataTreeView, figureKey=None, update=0,
             configFile=None, all_DTV=True):
-        AbstractCommand.__init__(self, dataTreeView, None)
+        QVizAbstractCommand.__init__(self, dataTreeView, None)
         self.figureKey = figureKey
         self.update = update
         self.plotConfig = None
@@ -40,7 +40,7 @@ class QVizPlotSelectedSignals(AbstractCommand):
             self.plotConfig = ET.parse(self.configFile)
         # DTV
         self.dataTreeView = dataTreeView
-        # Browser_API
+        # Viz_API
         self.api = self.dataTreeView.imas_viz_api
 
     def execute(self):

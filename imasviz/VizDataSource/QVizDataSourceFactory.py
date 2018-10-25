@@ -1,37 +1,37 @@
 from imasviz.VizDataSource.QVizToreSupraDataSource import ToreSupraDataSource
-from imasviz.VizDataSource.QvizIMASPublicDataSource import IMASPublicDataSource
+from imasviz.VizDataSource.QvizIMASPublicDataSource import QVizIMASPublicDataSource
 
-from imasviz.VizDataSource.QVizIMASDataSource import IMASDataSource
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 
 #A factory for creating a Tore-Supra or MDS+ native data-source for IMAS
-class DataSourceFactory:
+class QVizDataSourceFactory:
 
     def __init__(self):
         pass
 
     def createUDADatasource(self, shotNumber, runNumber = 0, machineName=None):
         return self.create(shotNumber, runNumber, None, None,
-                           GlobalValues.IMAS_UDA, machineName)
+                           QVizGlobalValues.IMAS_UDA, machineName)
 
     def create(self, shotNumber, runNumber = 0, userName = None,
-               imasDbName = None, dataSourceName = GlobalValues.IMAS_NATIVE,
+               imasDbName = None, dataSourceName = QVizGlobalValues.IMAS_NATIVE,
                machineName = None):
 
         if dataSourceName == None or dataSourceName == '':
             raise ValueError(
                 "A datasource name is required for creating a datasource")
 
-        if dataSourceName == GlobalValues.IMAS_NATIVE:
-            dataSource = IMASDataSource(dataSourceName, userName, imasDbName,
-                                        shotNumber, runNumber)
+        if dataSourceName == QVizGlobalValues.IMAS_NATIVE:
+            dataSource = QVizIMASDataSource(dataSourceName, userName, imasDbName,
+                                            shotNumber, runNumber)
             return dataSource
 
-        elif dataSourceName == GlobalValues.TORE_SUPRA:
+        elif dataSourceName == QVizGlobalValues.TORE_SUPRA:
             #raise ValueError("Tore-Supra datasource is not currently available")
-            dataSource = ToreSupraDataSource(GlobalValues.TORE_SUPRA,
-                                            shotNumber, runNumber)
+            dataSource = ToreSupraDataSource(QVizGlobalValues.TORE_SUPRA,
+                                             shotNumber, runNumber)
             return dataSource
 
         else: # UDA datasource
@@ -39,10 +39,10 @@ class DataSourceFactory:
             if machineName == None or machineName == '':
                 raise ValueError("A machine name is required for UDA datasource")
 
-            elif machineName in (GlobalValues.WEST, GlobalValues.JET, GlobalValues.TCV, GlobalValues.AUG):
-                #print "Creating IMASPublicDataSource..."
-                dataSource = IMASPublicDataSource(dataSourceName, machineName,
-                                                  shotNumber, runNumber)
+            elif machineName in (QVizGlobalValues.WEST, QVizGlobalValues.JET, QVizGlobalValues.TCV, QVizGlobalValues.AUG):
+                #print "Creating QVizIMASPublicDataSource..."
+                dataSource = QVizIMASPublicDataSource(dataSourceName, machineName,
+                                                      shotNumber, runNumber)
                 return dataSource
             else:
                 raise ValueError("UDA public datasource '" + machineName

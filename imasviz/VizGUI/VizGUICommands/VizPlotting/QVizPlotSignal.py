@@ -23,18 +23,18 @@
 import sys
 import traceback
 
-from imasviz.VizDataAccess.QVizDataAccessFactory import SignalDataAccessFactory
+from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 
-class QVizPlotSignal(AbstractCommand):
+class QVizPlotSignal(QVizAbstractCommand):
     def __init__(self, dataTreeView, nodeData = None, signal = None,
                  figureKey = None, title = '', label = None, xlabel = None,
                  update = 0, signalHandling = None):
-        AbstractCommand.__init__(self, dataTreeView, nodeData)
+        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
         self.updateNodeData();
 
@@ -42,7 +42,7 @@ class QVizPlotSignal(AbstractCommand):
 
         if signal == None:
             signalDataAccess = \
-                SignalDataAccessFactory(self.dataTreeView.dataSource).create()
+                QVizDataAccessFactory(self.dataTreeView.dataSource).create()
             treeNode = \
                 self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
             self.signal = signalDataAccess.GetSignal(self.nodeData,
@@ -185,7 +185,7 @@ class QVizPlotSignal(AbstractCommand):
     @staticmethod
     def getSignal(dataTreeView, selectedNodeData):
         try:
-            signalDataAccess = SignalDataAccessFactory(dataTreeView.dataSource).create()
+            signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             treeNode = dataTreeView.getNodeAttributes(selectedNodeData['dataName'])
             s = signalDataAccess.GetSignal(selectedNodeData,
                                            dataTreeView.dataSource.shotNumber,
@@ -218,7 +218,7 @@ class QVizPlotSignal(AbstractCommand):
         if xlabel == None:
             if 'coordinate1' in signalNodeData:
                 xlabel = \
-                    GlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
+                    QVizGlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 

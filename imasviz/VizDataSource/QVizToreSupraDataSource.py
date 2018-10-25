@@ -1,10 +1,9 @@
 import xml.etree.ElementTree as ET
 import os
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 #from MDSplus import Connection
 from threading import Thread, RLock
 import traceback
-
-lock = RLock()
 
 connectionURL = 'altair.partenaires.cea.fr:8000'
 
@@ -24,9 +23,6 @@ class ToreSupraDataSource:
 
     #Load IMAS (meta) data from mapping files
     def load(self, view, occurrence=0, pathsList=None, async=False):
-        # self.threadingEvent = threadingEvent
-        # tparser = ThreadedParser(view, threadingEvent)
-        # tparser.start()
         idsObject = None
         idsName = view.IDSNameSelected
         try:
@@ -74,7 +70,7 @@ class ToreSupraDataSource:
 
     #Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
-        return wx.BLUE
+        return GlobalColors.BLUE
 
     #This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
@@ -82,36 +78,3 @@ class ToreSupraDataSource:
 
     def getShortLabel(self):
         return self.name + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
-
-
-#This class, which inherits from Thread, allows to load IDS data in a separated thread
-# class ThreadedParser(Thread):
-#     def __init__(self, view, threadingEvent):
-#         Thread.__init__(self)
-#         self.view = view
-#         self.idsName = view.IDSNameSelected
-#         self.mappingFilesDirectory = os.environ["TS_MAPPINGS_DIR"]
-#         self.threadingEvent = threadingEvent
-#
-#     #The thread loads all Tore-Supra metadata from the mapping file for the given IDS name
-#     def run(self):
-#         try:
-#             tree = ET.parse(self.mappingFilesDirectory + '/' + self.idsName + '_v1.xml')
-#             root = tree.getroot()
-#             idsObject = root.find(self.idsName)
-#         except:
-#             traceback.print_exc()
-#             raise ValueError(
-#                 "Error while reading Tore-Supra mapping file (" + self.mappingFilesDirectory + '/' + self.idsName + '_v1.xml)')
-#
-#         try:
-#             lock.acquire()
-#             self.view.update_view(self.idsName, idsObject)
-#         except:
-#             traceback.print_exc()
-#             raise ValueError(
-#                 "Error while updating the view.")
-#         finally:
-#             lock.release()
-#             if self.threadingEvent != None:
-#                 self.threadingEvent.set()

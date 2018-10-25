@@ -15,8 +15,8 @@
 
 from PyQt5.QtWidgets import QTreeWidgetItem
 
-from imasviz.VizGUI.VizTreeView.QVizTreeNode import TreeNode
-from imasviz.VizUtils.GlobalValues import GlobalValues, GlobalColors
+from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalColors
 
 
 class QVizDataTreeViewBuilder:
@@ -40,7 +40,7 @@ class QVizDataTreeViewBuilder:
 
         #patch for TS
         if (dataElement.get('index') != None and \
-            dataTreeView.dataSource.name == GlobalValues.TORE_SUPRA):
+            dataTreeView.dataSource.name == QVizGlobalValues.TORE_SUPRA):
             index = int(dataElement.get('index')) - 1
             dataElement.set('index', str(index))
 
@@ -371,10 +371,10 @@ class QVizDataTreeViewBuilder:
 
         if dataElement.get('aos') != None: #only for native data
 
-            t = TreeNode(dataElement.get('aos').replace("self." ,""),
-                         coordinate1,
-                         dataElement.get('itime_index'),
-                         int(dataElement.get('aos_parents_count')))
+            t = QVizTreeNode(dataElement.get('aos').replace("self.", ""),
+                             coordinate1,
+                             dataElement.get('itime_index'),
+                             int(dataElement.get('aos_parents_count')))
 
             dataTreeView.node_attributes[itemDataDict['dataName']] = t
             itemDataDict['itime_index'] = dataElement.get('itime_index')
@@ -386,10 +386,10 @@ class QVizDataTreeViewBuilder:
 
 
             for i in range(0, t.aos_parents_count ):
-                aos_index_name = GlobalValues.indices[str(i + 1)]
+                aos_index_name = QVizGlobalValues.indices[str(i + 1)]
                 aos_index_value = dataElement.get(aos_index_name)
                 t.add_aos_value(aos_index_name, aos_index_value)
-                aos_max_index_name = GlobalValues.max_indices[str(i + 1)]
+                aos_max_index_name = QVizGlobalValues.max_indices[str(i + 1)]
                 aos_index_max_value = dataElement.get(aos_max_index_name)
                 t.add_aos_max_value(aos_index_name, aos_index_max_value)
 
@@ -409,10 +409,10 @@ class QVizDataTreeViewBuilder:
             item_color = dataTreeView.dataSource.colorOf(itemDataDict)
             itemDataDict['aos'] = dataElement.get('aos')
             itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
-            for i in range(0, len(GlobalValues.indices)):
-                key_name = GlobalValues.indices[str(i+1)]
+            for i in range(0, len(QVizGlobalValues.indices)):
+                key_name = QVizGlobalValues.indices[str(i + 1)]
                 itemDataDict[key_name] = dataElement.get(key_name)
-                key_max_name = GlobalValues.max_indices[str(i + 1)]
+                key_max_name = QVizGlobalValues.max_indices[str(i + 1)]
                 itemDataDict[key_max_name] = dataElement.get(key_max_name)
 
         itemDataDict['isSignal'] = isSignal

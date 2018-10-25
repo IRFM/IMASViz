@@ -1,15 +1,15 @@
 import xml.etree.ElementTree as ET
 import os
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 
-class IMAS_DataAccessCodeGenerator():
+class QVizDataAccessCodeGenerator:
 
     def __init__(self, imas_dd_version):
         self.time_step = 10
-        className = "ETNativeDataTree_Generated_" + GlobalOperations.replaceDotsByUnderScores(imas_dd_version)
-        IDSDefFile = GlobalOperations.getIDSDefFile(imas_dd_version)
+        className = "IDSDef_XMLParser_Generated_" + QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+        IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
         XMLtreeIDSDef = ET.parse(IDSDefFile)
         fileName = className + ".py"
         os.chdir(os.getcwd() + "/../VizGeneratedCode")
@@ -37,7 +37,7 @@ class IMAS_DataAccessCodeGenerator():
                 self.printCode('from PyQt5.QtWidgets import QApplication', -1)
                 self.printCode('import imas', -1)
                 self.printCode('import time', -1)
-                self.printCode('from imasviz.VizGUI.VizTreeView.QtResultEvent import ResultEvent', -1)
+                self.printCode('from imasviz.VizGUI.VizTreeView.QVizResultEvent import QVizResultEvent', -1)
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(QThread):", -1)
@@ -72,7 +72,7 @@ class IMAS_DataAccessCodeGenerator():
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
                     self.printCode('if self.async==True:', 2)
 
-                    self.printCode('QApplication.postEvent(self.view.parent, ResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, self), self.view.parent.eventResultId))',3)
+                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, self), self.view.parent.eventResultId))',3)
                     self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
@@ -144,8 +144,8 @@ class IMAS_DataAccessCodeGenerator():
                     continue
 
                 code = child.text + "." + ids_child_element.get('name') + '(:)'
-                s = GlobalValues.indices[str(level)]
-                m = GlobalValues.max_indices[str(level)]
+                s = QVizGlobalValues.indices[str(level)]
+                m = QVizGlobalValues.max_indices[str(level)]
 
                 ids_child_element.text = code.replace('(:)', '[' + s + ']')
 
@@ -352,15 +352,15 @@ class IMAS_DataAccessCodeGenerator():
 
 
                 for i in range(0, level - 1):
-                    var_name = GlobalValues.indices[str(i+1)]
-                    var_name_max = GlobalValues.max_indices[str(i + 1)]
+                    var_name = QVizGlobalValues.indices[str(i + 1)]
+                    var_name_max = QVizGlobalValues.max_indices[str(i + 1)]
                     code = "var_name = " + "'" + var_name + "'"
                     self.printCode(code, level)
                     code = "var_name_max = " + "'" + var_name_max + "'"
                     self.printCode(code, level)
-                    code = "node.set(var_name" + ", str(" +  GlobalValues.indices[str(i+1)]  + "))"
+                    code = "node.set(var_name" + ", str(" + QVizGlobalValues.indices[str(i + 1)] + "))"
                     self.printCode(code, level)
-                    code = "node.set(var_name_max" + ", str(" + GlobalValues.max_indices[str(i + 1)] + "))"
+                    code = "node.set(var_name_max" + ", str(" + QVizGlobalValues.max_indices[str(i + 1)] + "))"
                     self.printCode(code, level)
 
                 code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
@@ -369,7 +369,7 @@ class IMAS_DataAccessCodeGenerator():
                 aos = ids_child_element.text
 
                 if itimeIndex != -1:
-                    aos = aos.replace("[" + GlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+                    aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
                 code = "node.set(" + "'aos', '" + aos + "')"
                 self.printCode(code, level)
@@ -480,15 +480,15 @@ class IMAS_DataAccessCodeGenerator():
 
 
                 for i in range(0, level - 1):
-                    var_name = GlobalValues.indices[str(i+1)]
-                    var_name_max = GlobalValues.max_indices[str(i + 1)]
+                    var_name = QVizGlobalValues.indices[str(i + 1)]
+                    var_name_max = QVizGlobalValues.max_indices[str(i + 1)]
                     code = "var_name = " + "'" + var_name + "'"
                     self.printCode(code, level)
                     code = "var_name_max = " + "'" + var_name_max + "'"
                     self.printCode(code, level)
-                    code = "node.set(var_name" + ", str(" +  GlobalValues.indices[str(i+1)]  + "))"
+                    code = "node.set(var_name" + ", str(" + QVizGlobalValues.indices[str(i + 1)] + "))"
                     self.printCode(code, level)
-                    code = "node.set(var_name_max" + ", str(" + GlobalValues.max_indices[str(i + 1)] + "))"
+                    code = "node.set(var_name_max" + ", str(" + QVizGlobalValues.max_indices[str(i + 1)] + "))"
                     self.printCode(code, level)
 
                 code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
@@ -497,7 +497,7 @@ class IMAS_DataAccessCodeGenerator():
                 aos = ids_child_element.text
 
                 if itimeIndex != -1:
-                    aos = aos.replace("[" + GlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+                    aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
                 code = "node.set(" + "'aos', '" + aos + "')"
                 self.printCode(code, level)
@@ -571,10 +571,10 @@ class IMAS_DataAccessCodeGenerator():
 if __name__ == "__main__":
 
     print("Starting code generation")
-    GlobalOperations.checkEnvSettings()
+    QVizGlobalOperations.checkEnvSettings()
     imas_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0", "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0", "3.19.1", "3.20.0"]
     for v in imas_versions:
-        dag = IMAS_DataAccessCodeGenerator(v)
+        dag = QVizDataAccessCodeGenerator(v)
     print("End of code generation")
-    print("Do not forget to declare new code in the GeneratedClassFactory class")
+    print("Do not forget to declare new code in the QVizGeneratedClassFactory class")
 

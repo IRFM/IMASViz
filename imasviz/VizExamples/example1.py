@@ -3,20 +3,20 @@
 import sys
 
 from PyQt5.QtWidgets import QApplication
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
-from imasviz.Browser_API import Browser_API
-from imasviz.VizDataSource.QVizDataSourceFactory import DataSourceFactory
-from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.Viz_API import Viz_API
+from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 app = QApplication(sys.argv)
 
-GlobalOperations.checkEnvSettings()
+QVizGlobalOperations.checkEnvSettings()
 
-api = Browser_API()
+api = Viz_API()
 
-dataSourceFactory = DataSourceFactory()
-dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,userName='imas_public',imasDbName='west')
+dataSourceFactory = QVizDataSourceFactory()
+dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0, userName='imas_public', imasDbName='west')
 
 f = api.CreateDataTree(dataSource)
 paths = []

@@ -16,10 +16,10 @@
 import re
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignal import QVizSelectSignal
-from imasviz.VizGUI.VizGUICommands.AbstractCommand import AbstractCommand
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
 
-class QVizSelectSignalsGroup(AbstractCommand):
+class QVizSelectSignalsGroup(QVizAbstractCommand):
     """Select a group of all signals - siblings of the node.
     """
     def __init__(self, dataTreeView, nodeData = None):
@@ -28,7 +28,7 @@ class QVizSelectSignalsGroup(AbstractCommand):
             dataTreeView (QTreeWidget) : QTreeWidget object (DTV tree widget).
             nodeData     (array)       : Array of node data.
         """
-        AbstractCommand.__init__(self, dataTreeView, nodeData)
+        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
     def execute(self):
         #self.updateNodeData()

@@ -6,15 +6,15 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
-from imasviz.Browser_API import Browser_API
+from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource import DataSourceFactory
-from imasviz.VizUtils.GlobalOperations import GlobalOperations
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 app = QApplication(sys.argv)
 
-GlobalOperations.checkEnvSettings()
+QVizGlobalOperations.checkEnvSettings()
 
-api = Browser_API()
+api = Viz_API()
 
 dataSourceFactory = DataSourceFactory()
 

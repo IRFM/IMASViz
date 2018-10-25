@@ -1,0 +1,125 @@
+#  Name   : SaveSignalSelection.py
+#
+#          Container to handle saving signal selection configuration.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
+#****************************************************
+
+import time
+import xml.etree.ElementTree as ET
+
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+
+from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+
+
+class QVizSaveSignalSelection(QVizAbstractCommand):
+    """Save signal selection as a list of signal paths to '.lsp' file.
+    """
+
+    def __init__(self, DTV, nodeData=None):
+        """Set self.nodeData = nodeData etc. with the use of the
+           QVizAbstractCommand
+        """
+        QVizAbstractCommand.__init__(self, nodeData)
+
+        self.DTV = DTV
+
+    def execute(self):
+        defaultName = 'signalSelection-' + time.strftime('%d-%m-%Y')
+        configName = None
+        message = 'Type the name of the configuration. \nNote. If left empty' \
+            'the default name \n' + defaultName + '\nwill be used.'
+        configName, ok = \
+            QVizGlobalOperations.askWithCancel(parent=self.DTV,
+                                               title='Dialog',
+                                               message=message,
+                                               default_value=defaultName)
+
+        # Don't proceed with saving the signal selection if the dialog was
+        # cancelled
+        if ok == False:
+            return
+
+        # Format the configuration file name
+        configName = QVizGlobalOperations.replaceSpacesByUnderScores(configName)
+        if configName.endswith(".lsp"):
+            configName = configName[:-3]
+            print("* configName: ", configName)
+
+        # Set file name path
+        filePath = QVizGlobalOperations.getConfFilePath(configName=configName,
+                                                        configType='lsp')
+        # Print message
+        print('Saving signal selection to ' + filePath)
+
+        # Set root element
+        root = ET.Element('SignalSelection')
+        root.set('comment', 'This file has been generated automatically by '
+                 'the IMAS_VIZ application. It contains saved signal selection: '
+                 'a list of signal paths - IDS database paths to arrays '
+                 'containing data suitable for plotting.')
+
+        # Set new subelement
+        listElement = ET.SubElement(root, 'ListOfSignalPaths')
+
+        # Get list of signals, selected in the DataTreeView (DTV)
+        selectedSignalsDict = self.DTV.selectedSignalsDict
+
+        n = 0
+        for key in selectedSignalsDict:
+            signalArray = selectedSignalsDict[key]
+
+            # Set new subelement
+            pathElement = ET.SubElement(listElement, 'IDSPath')
+            # Set subelement attribute 'key'
+            pathElement.set('key', str(n))
+
+            # Extract signal node data (it contains also 'path') from the
+            # signal
+            nodeData = signalArray['nodeData']
+
+            # Set subelement attribute 'path'
+            self.saveAttribute(pathElement, 'path', nodeData['Path'])
+
+            # self.saveAttribute(pathElement, 'shotNumber', nodeData['shotNumber'])
+            # self.saveAttribute(pathElement, 'runNumber', nodeData['runNumber'])
+            # self.saveAttribute(pathElement, 'imasDbName', nodeData['imasDbName'])
+            # self.saveAttribute(pathElement, 'userName', nodeData['userName'])
+            n += 1
+
+        self.indent(root)
+        treeConfiguration = ET.ElementTree(root)
+        treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
+        #self.f.close()
+
+        if self.DTV.parent.configurationListsFrame != None:
+            self.DTV.parent.configurationListsFrame.update_lsp()
+
+    def saveAttribute(self, pathElement, attribute, value):
+        if value != None:
+            pathElement.set(attribute, str(value))
+
+    def printCode(self, text, level):
+        return QVizGlobalOperations.printCode(self.f, text, level)
+
+    def indent(self, elem, level=0):
+        i = "\n" + level * "  "
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + "  "
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for elem in elem:
+                self.indent(elem, level + 1)
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i
