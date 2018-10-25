@@ -1,9 +1,8 @@
 # Built-in
 import traceback
 import threading
-import wx
-from imasviz.plugins.viz_tofu.WxFrame import CanvasPanel
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+import sys
+from PyQt5.QtWidgets import QApplication
 
 # Common
 import matplotlib.pyplot as plt
@@ -55,9 +54,9 @@ class ToFuPlugin(VIZPlugins):
             view.log.error(traceback.format_exc())
 
     def OpenWxFrame(self, figure):
-        fr = wx.Frame(None, title='ToFu', size=(800,800))
-        panel = CanvasPanel(fr, figure)
-        #panel.draw()
+        #fr = wx.Frame(None, title='ToFu', size=(800,800))
+        fr = None
+        #panel = CanvasPanel(fr, figure)
         fr.Show()
 
 
@@ -73,9 +72,9 @@ class ToFuPlugin(VIZPlugins):
                 (2, 'tofu - geom...'), (3, 'tofu - data'),
                 (4, 'tofu - geom...'), (5, 'tofu - data')]
 
-class Frame(wx.Frame):
+class Frame():
     def __init__(self, out):
-        wx.Frame.__init__(self, None, title='tofu', pos=(150, 150), size=(800, 600))
+        #wx.Frame.__init__(self, None, title='tofu', pos=(150, 150), size=(800, 600))
 
         #self.panel = wx.Panel(self)
 
@@ -85,7 +84,7 @@ class Frame(wx.Frame):
         self.KH = out.plot(fs=(10, 5))[1]
         self.figure = self.KH.dax['t'][0].figure
         self.axes = [[self.KH.dax[kk][ii] for ii in range(len(self.KH.dax[kk]))] for kk in self.KH.dax.keys()]
-        self.panel = CanvasPanel(self, self.figure)
+        #self.panel = CanvasPanel(self, self.figure)
         # rects = self.axes.bar(range(10), 20 * np.random.rand(10))
         # self.drs = []
         # for rect in rects:
@@ -94,7 +93,7 @@ class Frame(wx.Frame):
         #     self.drs.append(dr)
 
 if __name__ == "__main__":
-    app = wx.App(redirect=False)
+    app = QApplication(sys.argv)
     #out = tfi.Bolo.load_geom(draw=False)
     #figure = out[1][0].get_figure()
     out = tfi.Bolo.load_data(52699, draw=False, plot=False)

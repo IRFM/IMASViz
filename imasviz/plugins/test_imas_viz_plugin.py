@@ -3,10 +3,11 @@
 # If you need to restart vim tabs then :retab
 
 import getpass
-import wx
+import sys
+from PyQt5.QtWidgets import QApplication
 
 if (__name__ == '__main__'):
-    app = wx.App()
+    app = QApplication(sys.argv)
     dictDataSource = {'time_i': 31.880,
                       'time_e': 32.020,
                       'delta_t': 0.02,

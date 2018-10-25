@@ -5,11 +5,11 @@
 import getpass
 import os
 import sys
-import wx
+from PyQt5.QtWidgets import QApplication
 
 #if (__name__ == '__main__'):
 sys.path.append(os.getcwd())
-app = wx.App()
+app = QApplication(sys.argv)
 dictDataSource = {'time_i': 31.880, \
                   'time_e': 32.020, \
                   'delta_t': 0.02, \

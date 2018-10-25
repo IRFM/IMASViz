@@ -1,17 +1,15 @@
 import os
 
-from imasviz.gui_commands.select_commands.LoadSelectedData import LoadSelectedData
-from imasviz.pyqt5.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
-from imasviz.pyqt5.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals \
-    import QVizSelectSignals
-from imasviz.pyqt5.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup \
-    import QVizSelectSignalsGroup
-from imasviz.pyqt5.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
-    import QVizUnselectAllSignals
-from imasviz.pyqt5.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.util.GlobalValues import FigureTypes
-from imasviz.util.GlobalValues import GlobalValues
+from imasviz.VizUtils.GlobalOperations import GlobalOperations
+
+from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
+from imasviz.VizUtils.GlobalValues import FigureTypes
+from imasviz.VizUtils.GlobalValues import GlobalValues
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.LoadSelectedData import LoadSelectedData
 
 
 class Browser_API():

@@ -1,0 +1,138 @@
+import os
+
+import imas
+from PyQt5.QtWidgets import QTreeWidgetItem
+
+from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import GeneratedClassFactory
+from imasviz.VizUtils.GlobalValues import GlobalColors
+
+
+class IMASDataSource:
+
+    def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
+        self.name = name
+        self.userName =  userName
+        self.imasDbName = imasDbName
+        self.shotNumber = int(shotNumber)
+        self.runNumber = int(runNumber)
+        self.machineName = machineName
+        self.ids = {} #key = occurrence, value = ids object
+
+    # Load IMAS data using IMAS api
+    def load(self, dataTreeView, occurrence=0, pathsList = None, async=True):
+        self.generatedDataTree = GeneratedClassFactory(self, dataTreeView, occurrence, pathsList, async).create()
+        if self.generatedDataTree == None:
+            raise ValueError("Code generation issue detected !!")
+
+        if self.ids.get(occurrence) is None:
+            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber, 0, 0)
+            v = os.environ["IMAS_MAJOR_VERSION"]
+            self.ids[occurrence].open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+            if (self.ids[occurrence].expIdx == -1):
+                raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
+
+        self.generatedDataTree.ids = self.ids[occurrence]
+
+        dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
+
+        dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')
+
+        if async:
+            self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
+        else:
+            self.generatedDataTree.run()  #This will call the get() operation for fetching IMAS data
+
+    @staticmethod
+    def try_to_open(imasDbName, userName, shotNumber, runNumber, imas_major_version='3'):
+        ids = imas.ids(shotNumber, runNumber, 0, 0)
+        ids.open_env(userName, imasDbName, imas_major_version)
+        if (ids.expIdx == -1):
+            raise ValueError("Can not open shot " + str(shotNumber) + "  from data base " + imasDbName + " of user " + userName)
+
+    @staticmethod
+    def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
+        ids = imas.ids(shotNumber, runNumber, 0, 0)
+        if machineName in ('WEST',):
+            ids.open_public(machineName)
+        else:
+            ids.create_public(machineName)
+        if (ids.expIdx == -1):
+            raise ValueError("Can not open shot " + str(shotNumber) + "  from " + machineName)
+
+    # Check if the data for the given IDS exists
+    def exists(self, IDSName):
+        return True
+
+    # Define the color of a node which contains a signal
+    def colorOf(self, signalNode, obsolescent=None):
+        ids = self.ids[signalNode['occurrence']] #@UnusedVariable
+        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
+            # if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+            if len(eval('ids.' + signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+                if obsolescent is None or obsolescent is False:
+                    return GlobalColors.BLACK
+                elif obsolescent is True:
+                    return GlobalColors.LIGHT_GREY
+            else:
+                if obsolescent is None or obsolescent is False:
+                    return GlobalColors.BLUE  # non empty (signals) arrays appear in blue
+                elif obsolescent is True:
+                    return GlobalColors.CYAN
+
+        if obsolescent is None or obsolescent is False:
+            return GlobalColors.BLACK
+        elif obsolescent is True:
+            return GlobalColors.LIGHT_GREY
+
+    # Name of the data under the selected node
+    def dataNameInPopUpMenu(self, dataDict):
+        #dico = dataDict.GetData()
+        if 'dataName' in dataDict:
+            return dataDict['dataName']
+        return None
+
+    # The displayed name of the node
+    def treeDisplayedNodeName(self, dataElement):
+        return str(dataElement.find('name').text)
+
+    # This defines the unique key attached to each data which can be plotted
+    def dataKey(self, nodeData):
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+
+    def getShortLabel(self):
+        return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+
+    def addQtNodes(self, itemDataDict, dataTreeView, viewerNode, treeItemData):
+        """ Add new nodes to the tree view.
+
+        Arguments:
+            itemDataDict (obj)             : Data dictionary of the tree item.
+            dataTreeView (QTreeWidget)     : QVizDataTreeView object.
+            viewerNode   (QTreeWidgetItem) : Tree item to be added to the
+                                             dataTreeView
+        """
+
+        coordinate_display = None
+
+        # if itemDataDict.get('coordinate1') != None:
+        #     coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
+        #     dataTreeView.AppendItem(viewerNode, coordinate_display, -1, -1, treeItemData)
+
+        for i in range(1,7):
+            coordinate = "coordinate" + str(i)
+            coordinate_same_as = "coordinate" + str(i) + "_same_as"
+            if itemDataDict.get(coordinate) != None:
+                coordinate_display = coordinate + "=" + itemDataDict[coordinate]
+                newTreeItem = QTreeWidgetItem(viewerNode, [coordinate_display])
+                newTreeItem.itemVIZData = treeItemData
+            if itemDataDict.get(coordinate_same_as) != None:
+                coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
+                newTreeItem = QTreeWidgetItem(viewerNode, [coordinate_display])
+                newTreeItem.itemVIZData = treeItemData
+
+        doc_display = None
+
+        if itemDataDict.get('documentation') != None:
+            doc_display = "documentation= " + itemDataDict['documentation']
+            newTreeItem = QTreeWidgetItem(viewerNode, [doc_display])
+            newTreeItem.itemVIZData = treeItemData

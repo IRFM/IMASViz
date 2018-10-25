@@ -25,17 +25,14 @@ import getpass
 # The recommended way to use wx with mpl is with the WXAgg
 # backend.
 import matplotlib
-matplotlib.use('WXAgg')
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_wxagg import \
-    FigureCanvasWxAgg as FigCanvas
-from matplotlib.backends.backend_wxagg import \
-    NavigationToolbar2WxAgg as NavigationToolbar
 import matplotlib.ticker as tick
 import numpy as np
 import os
 import sys
-import wx
+from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
+                            QWidget, QGridLayout, QTextEdit
 
 # Local python modules
 import imas
@@ -241,14 +238,14 @@ def DataGen(dictDataSource):
            rho_tor_label, prof_1d, \
            boundPlasma, magAxis, wall, b0, r0, xPoint
 
-class PlotFrame(wx.Frame):
+class PlotFrame(QMainWindow):
     """ The main frame of the application
     """
     title = 'Equilibrium charts'
 
     def __init__(self, dictDataSource):
-        wx.Frame.__init__(self, None, wx.ID_ANY, self.title)
-        self.Bind(wx.EVT_CLOSE, self.on_exit)
+        #TODO wx.Frame.__init__(self, None, wx.ID_ANY, self.title)
+        #TODO self.Bind(wx.EVT_CLOSE, self.on_exit)
 
         self.shot,          self.run,               self.machine, \
         self.user,          self.timeEquiIDS,       self.lenArrTimes,\
@@ -275,29 +272,30 @@ class PlotFrame(wx.Frame):
         self.create_status_bar()
         self.create_main_panel()
 
-        self.redraw_timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
+        #TODO self.redraw_timer = wx.Timer(self)
+        #TODO self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
 
         self.textbox.SetValue(' '.join(map(str, self.dataTimes)))
         self.draw_figure()
 
     def create_menu(self):
-        self.menubar = wx.MenuBar()
+        pass
+        #TODO self.menubar = wx.MenuBar()
 
-        menu_file = wx.Menu()
+        #TODO menu_file = wx.Menu()
         #m_expt = menu_file.Append(wx.ID_SAVE, "Save plot\tCtrl-S", "Save plot to file")
         #self.Bind(wx.EVT_MENU, self.on_save_plot, m_expt)
         #menu_file.AppendSeparator()
-        m_exit = menu_file.Append(wx.ID_EXIT, "Exit\tCtrl-X", "Exit")
-        self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
+        #TODO m_exit = menu_file.Append(wx.ID_EXIT, "Exit\tCtrl-X", "Exit")
+        #TODO self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
 
-        menu_help = wx.Menu()
-        m_about = menu_help.Append(wx.ID_ABOUT, "About\tF1", "About the demo")
-        self.Bind(wx.EVT_MENU, self.on_about, m_about)
+        #TODO menu_help = wx.Menu()
+        #TODO m_about = menu_help.Append(wx.ID_ABOUT, "About\tF1", "About the demo")
+        #TODO self.Bind(wx.EVT_MENU, self.on_about, m_about)
 
-        self.menubar.Append(menu_file, "File")
-        self.menubar.Append(menu_help, "Help")
-        self.SetMenuBar(self.menubar)
+        #TODO self.menubar.Append(menu_file, "File")
+        #TODO self.menubar.Append(menu_help, "Help")
+    #TODO self.SetMenuBar(self.menubar)
 
     def create_main_panel(self):
         """ Creates the main panel with all the controls on it:
@@ -305,13 +303,13 @@ class PlotFrame(wx.Frame):
              * mpl navigation toolbar
              * Control panel for interaction
         """
-        self.panel = wx.Panel(self)
+        #TODO self.panel = wx.Panel(self)
 
         # Create the mpl Figure and FigCanvas objects.
         # 100 dots-per-inch
         self.dpi = 110
         self.fig = Figure(dpi=self.dpi)
-        self.canvas = FigCanvas(self.panel, wx.ID_ANY, self.fig)
+        #TODO self.canvas = FigCanvas(self.panel, wx.ID_ANY, self.fig)
 
 
         self.fig.subplots_adjust(left=0.08, right=0.99, bottom=0.1, top=0.9, \
@@ -374,68 +372,68 @@ class PlotFrame(wx.Frame):
         self.axes[13] = self.fig.add_subplot(grid_subp[5, 2])
 
 
-        self.cb_grid = wx.CheckBox(self.panel, wx.ID_ANY, \
-                                   'Grid', \
-                                   style=wx.ALIGN_RIGHT)
+        #TODO self.cb_grid = wx.CheckBox(self.panel, wx.ID_ANY, \
+        #TODO                           'Grid', \
+        #TODO                           style=wx.ALIGN_RIGHT)
         #self.Bind(wx.EVT_CHECKBOX, self.on_cb_grid, self.cb_grid)
-        self.cb_grid.Bind(wx.EVT_CHECKBOX, self.on_cb_grid)
+        #TODO self.cb_grid.Bind(wx.EVT_CHECKBOX, self.on_cb_grid)
 
-        self.textbox = wx.TextCtrl(self.panel, size=(100,-1), \
-                                   style=wx.TE_PROCESS_ENTER)
+        #TODO self.textbox = wx.TextCtrl(self.panel, size=(100,-1), \
+        #TODO                           style=wx.TE_PROCESS_ENTER)
         #self.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter, self.textbox)
-        self.textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+        #TODO self.textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
 
-        self.drawbuttonRun = wx.Button(self.panel, wx.ID_ANY, 'Run')
-        self.drawbuttonRun.Bind(wx.EVT_BUTTON, self.on_draw_buttonRun)
+        #TODO self.drawbuttonRun = wx.Button(self.panel, wx.ID_ANY, 'Run')
+        #TODO self.drawbuttonRun.Bind(wx.EVT_BUTTON, self.on_draw_buttonRun)
 
-        self.drawbuttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
-        self.drawbuttonStop.Bind(wx.EVT_BUTTON, self.on_draw_buttonStop)
+        #TODO self.drawbuttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
+        #TODO self.drawbuttonStop.Bind(wx.EVT_BUTTON, self.on_draw_buttonStop)
 
-        self.slider_time = wx.Slider(self.panel, wx.ID_ANY, \
-                                     value=0, \
-                                     minValue=0, \
-                                     maxValue=(self.lenArrTimes-1), \
-                                     size=wx.Size(600,-1))
+        #TODO self.slider_time = wx.Slider(self.panel, wx.ID_ANY, \
+        #TODO                             value=0, \
+        #TODO                            minValue=0, \
+        #TODO                            maxValue=(self.lenArrTimes-1), \
+        #TODO                             size=wx.Size(600,-1))
         # For more Slider options:
         #size=wx.DefaultSize
         #style=wx.SL_AUTOTICKS | wx.SL_LABELS
         #self.slider_time.SetTickFreq(10) #(10, 1)
         #self.Bind(wx.EVT_COMMAND_SCROLL_CHANGED, \
         #          self.on_slider_time, self.slider_time)
-        self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_CHANGED, \
-                              self.on_slider_time)
-        self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_THUMBTRACK, \
-                              self.on_slider_track)
+        #TODO self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_CHANGED, \
+        #TODO                      self.on_slider_time)
+        #TODO self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_THUMBTRACK, \
+        #TODO                      self.on_slider_track)
 
-        self.textbox_label = wx.StaticText(self.panel, wx.ID_ANY, \
-                                          'Time values')
+        #TODO self.textbox_label = wx.StaticText(self.panel, wx.ID_ANY, \
+        #TODO                                  'Time values')
 
         # Create the navigation toolbar, tied to the canvas
-        self.toolbar = NavigationToolbar(self.canvas)
+        #TODO self.toolbar = NavigationToolbar(self.canvas)
 
         # Layout with box sizers
-        self.vbox = wx.BoxSizer(wx.VERTICAL)
-        self.vbox.Add(self.toolbar, 0, wx.EXPAND)
-        self.vbox.Add(self.canvas, 1, wx.CENTER | wx.GROW)
-        self.vbox.AddSpacer(20)
+        #TODO self.vbox = wx.BoxSizer(wx.VERTICAL)
+        #TODO self.vbox.Add(self.toolbar, 0, wx.EXPAND)
+        #TODO self.vbox.Add(self.canvas, 1, wx.CENTER | wx.GROW)
+        #TODO self.vbox.AddSpacer(20)
 
-        self.hbox = wx.BoxSizer(wx.HORIZONTAL)
-        flags  = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
-        flags2 = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
+        #TODO self.hbox = wx.BoxSizer(wx.HORIZONTAL)
+        #TODO flags  = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
+        #TODO flags2 = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
         self.hbox.AddSpacer(10)
-        self.hbox.Add(self.slider_time, 1, border=5, flag=flags2)
+        #TODO self.hbox.Add(self.slider_time, 1, border=5, flag=flags2)
         self.hbox.AddSpacer(10)
-        self.hbox.Add(self.drawbuttonRun, 0, border=5, flag=flags)
+        #TODO self.hbox.Add(self.drawbuttonRun, 0, border=5, flag=flags)
         self.hbox.AddSpacer(3)
-        self.hbox.Add(self.drawbuttonStop, 0, border=5, flag=flags)
+        #TODO self.hbox.Add(self.drawbuttonStop, 0, border=5, flag=flags)
         self.hbox.AddSpacer(10)
-        self.hbox.Add(self.cb_grid, 0, border=5, flag=flags)
+        #TODO self.hbox.Add(self.cb_grid, 0, border=5, flag=flags)
         self.hbox.AddSpacer(10)
-        self.hbox.Add(self.textbox_label, 0, border=5, flag=flags)
-        self.hbox.Add(self.textbox, 0, border=5, flag=flags)
+        #TODO self.hbox.Add(self.textbox_label, 0, border=5, flag=flags)
+        #TODO self.hbox.Add(self.textbox, 0, border=5, flag=flags)
         self.hbox.AddSpacer(10)
 
-        self.vbox.Add(self.hbox, 0, flag=wx.CENTER | wx.TOP)
+        #TODO self.vbox.Add(self.hbox, 0, flag=wx.CENTER | wx.TOP)
         self.vbox.AddSpacer(20)
 
         self.panel.SetSizer(self.vbox)
@@ -810,8 +808,8 @@ class PlotFrame(wx.Frame):
         if (not dataTimes_in):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            if (self.cb_grid.IsChecked()):
-                self.on_cb_grid(wx.EVT_CHECKBOX)
+            #TODO if (self.cb_grid.IsChecked()):
+            #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.boolOnTextEnter = False
             self.slider_time.SetValue(0)
             self.draw_figure()
@@ -819,8 +817,8 @@ class PlotFrame(wx.Frame):
         if (not self.boolOnTextEnter):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            if (self.cb_grid.IsChecked()):
-                self.on_cb_grid(wx.EVT_CHECKBOX)
+            #TODO if (self.cb_grid.IsChecked()):
+            #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.dataTimes_old = dataTimes_in
             self.dataTimes     = dataTimes_in
             self.boolOnTextEnter = True
@@ -837,8 +835,8 @@ class PlotFrame(wx.Frame):
                 if (len(self.dataTimes_old) == 1):
                     for it_ax in range(self.numAxes):
                         self.axes[it_ax].cla()
-                    if (self.cb_grid.IsChecked()):
-                        self.on_cb_grid(wx.EVT_CHECKBOX)
+                    #TODO if (self.cb_grid.IsChecked()):
+                    #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                     self.boolOnTextEnter = False
                     idxTime = \
                      (np.abs(self.timeEquiIDS-self.dataTimes_old[0])).argmin()
@@ -852,8 +850,8 @@ class PlotFrame(wx.Frame):
                     print('old > new')
                     for it_ax in range(self.numAxes):
                         self.axes[it_ax].cla()
-                    if (self.cb_grid.IsChecked()):
-                        self.on_cb_grid(wx.EVT_CHECKBOX)
+                    #TODOif (self.cb_grid.IsChecked()):
+                    #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                     self.dataTimes_old = dataTimes_in
                     self.dataTimes     = dataTimes_in
                     self.nt_line_color = 0
@@ -874,8 +872,8 @@ class PlotFrame(wx.Frame):
                 self.boolOnTextEnter = False
                 for it_ax in range(self.numAxes):
                     self.axes[it_ax].cla()
-                if (self.cb_grid.IsChecked()):
-                    self.on_cb_grid(wx.EVT_CHECKBOX)
+                #TODO if (self.cb_grid.IsChecked()):
+                #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                 self.draw_figure()
             self.it_data = int(round(self.slider_time.GetValue()))
             self.redraw_timer.Start(400)
@@ -897,8 +895,8 @@ class PlotFrame(wx.Frame):
             self.boolOnTextEnter = False
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            if (self.cb_grid.IsChecked()):
-                self.on_cb_grid(wx.EVT_CHECKBOX)
+            #TODO if (self.cb_grid.IsChecked()):
+            #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.draw_figure()
         else:
             self.update_figure()
@@ -920,28 +918,29 @@ class PlotFrame(wx.Frame):
         box_points = event.artist.get_bbox().get_points()
         msg = "You've clicked on a bar with coords:\n %s" % box_points
 
-        dlg = wx.MessageDialog(self, \
-                               msg, \
-                               "Click!", \
-                               wx.OK | wx.ICON_INFORMATION)
+        #TODO dlg = wx.MessageDialog(self, \
+        #TODO                       msg, \
+        #TODO                       "Click!", \
+        #TODO                       wx.OK | wx.ICON_INFORMATION)
 
-        dlg.ShowModal()
-        dlg.Destroy()
+        #TODO dlg.ShowModal()
+        #TODO dlg.Destroy()
 
     def on_save_plot(self, event=None):
         file_choices = "PNG (*.png)|*.png"
 
-        dlg = wx.FileDialog(self, \
-                            message="Save plot as...", \
-                            defaultDir=os.getcwd(), \
-                            defaultFile="plot.png", \
-                            wildcard=file_choices, \
-                            style=wx.FD_SAVE)
-
-        if (dlg.ShowModal() == wx.ID_OK):
-            path = dlg.GetPath()
-            self.canvas.print_figure(path, dpi=self.dpi)
-            self.flash_status_message("Saved to %s" % path)
+        #TODO
+        # dlg = wx.FileDialog(self, \
+        #                     message="Save plot as...", \
+        #                     defaultDir=os.getcwd(), \
+        #                     defaultFile="plot.png", \
+        #                     wildcard=file_choices, \
+        #                     style=wx.FD_SAVE)
+        #
+        # if (dlg.ShowModal() == wx.ID_OK):
+        #     path = dlg.GetPath()
+        #     self.canvas.print_figure(path, dpi=self.dpi)
+        #     self.flash_status_message("Saved to %s" % path)
 
     def on_exit(self, event=None):
         self.redraw_timer.Stop()
@@ -958,16 +957,16 @@ class PlotFrame(wx.Frame):
      * Save plot to a file (png, jpeg, pdf...) using
         the Matplotlib Navigation Bar located on top     '''
 
-        dlg = wx.MessageDialog(self, msg, "About", wx.OK)
-        dlg.ShowModal()
-        dlg.Destroy()
+        #TODO dlg = wx.MessageDialog(self, msg, "About", wx.OK)
+        #TODO dlg.ShowModal()
+        #TODO dlg.Destroy()
 
     def flash_status_message(self, msg, flash_len_ms=1500):
         self.statusbar.SetStatusText(msg)
-        self.timeroff = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, \
-                  self.on_flash_status_off, \
-                  self.timeroff)
+        #TODO self.timeroff = wx.Timer(self)
+        #TODO self.Bind(wx.EVT_TIMER, \
+        #TODO          self.on_flash_status_off, \
+        #TODO          self.timeroff)
         self.timeroff.Start(flash_len_ms, oneShot=True)
 
     def on_flash_status_off(self, event=None):
@@ -1023,7 +1022,7 @@ if (__name__ == '__main__'):
     #pluginEquiPlot.execute(dictDataSource)
 
     # Launch GUI
-    app = wx.App()
+    app = QApplication(sys.argv)
     app.frame = PlotFrame(dictDataSource)
     app.frame.Show()
     app.MainLoop()
