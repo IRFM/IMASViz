@@ -1,8 +1,5 @@
-import lxml.sax
 from xml.sax.handler import ContentHandler
-from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
-import os
-import xml.etree.ElementTree as ET
+
 
 class MyContentHandler(ContentHandler):
      def __init__(self):

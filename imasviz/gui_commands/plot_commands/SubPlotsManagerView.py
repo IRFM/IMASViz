@@ -1,11 +1,11 @@
 import wx
-from imasviz.util.GlobalValues import GlobalValues
-from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
-# from wxmplot import StackedPlotFrame
-from imasviz.plotframes.IMASVIZ_SubPlotManagerBaseFrame import SubPlotManagerBaseFrame
-import numpy
 from wxmplot.utils import MenuItem
+
+from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+from imasviz.plotframes.IMASVIZ_SubPlotManagerBaseFrame import SubPlotManagerBaseFrame
+from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import GlobalValues
+
 
 class SubPlotsManagerFrame(wx.Frame):
     def __init__(self, title, WxDataTreeView, all_DTVs = False):
@@ -195,8 +195,6 @@ class SubPlotsManagerFrame(wx.Frame):
         return signals
 
     def showSubPlots(self, evt):
-        from imasviz.subplots.SubPlot import SubPlot
-        from imasviz.subplots.SubplotsShareXFrame import SubPlotsShareXFrame
         signals = self.getSignals()
 
         """Set default x axis min and max values for subplots"""
@@ -300,7 +298,6 @@ class SubPlotsManagerFrame(wx.Frame):
         dlg.Destroy()
         return result
 
-import os
 
 if __name__ == "__main__":
 
@@ -308,7 +305,7 @@ if __name__ == "__main__":
 
     GlobalOperations.checkEnvSettings()
 
-    from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
+    from imasviz.pyqt5.VizDataSource.QVizDataSourceFactory import DataSourceFactory
 
     dataSourceFactory = DataSourceFactory()
     dataSource = dataSourceFactory.create(name = GlobalValues.TORE_SUPRA,

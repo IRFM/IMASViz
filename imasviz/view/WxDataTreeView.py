@@ -12,21 +12,23 @@
 #     Copyright(c) 2016- F.Ludovic,L.xinyi
 #*******************************************
 import os
-import wx
 import time
-from imasviz.gui_commands.HandleRightClick import HandleRightClick, HandleRightClickAndShiftDown
-from imasviz.view.WxDataTreeViewBuilder import WxDataTreeViewBuilder
 import xml.etree.ElementTree as ET
-from imasviz.util.GlobalValues import GlobalIDs
-from imasviz.util.GlobalValues import GlobalValues
-from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.view.ResultEvent import ResultEvent
-from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
-from imasviz.gui_commands.configurations.ConfigurationListsFrame import ConfigurationListsFrame
-from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
+
+import wx
+
+from imasviz.gui_commands.HandleRightClick import HandleRightClick, HandleRightClickAndShiftDown
 from imasviz.gui_commands.SignalHandling import SignalHandling
+from imasviz.gui_commands.configurations.ConfigurationListsFrame import ConfigurationListsFrame
 from imasviz.gui_commands.configurations.SaveSignalSelection import SaveSignalSelection
 from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
+from imasviz.gui_commands.show_node_documentation.ShowNodeDocumentation import ShowNodeDocumentation
+from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import GlobalIDs
+from imasviz.util.GlobalValues import GlobalValues
+from imasviz.view.WxDataTreeViewBuilder import WxDataTreeViewBuilder
+from imasviz.view.WxSignalsTreeView import IDSSignalTreeFrame
+
 
 class WxDataTreeView(wx.TreeCtrl):
     """Define IDS Tree structure and the function to handle the click to
@@ -558,7 +560,7 @@ if __name__ == "__main__":
     app = wx.App(False)
 
     GlobalOperations.checkEnvSettings()
-    from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
+    from imasviz.pyqt5.VizDataSource.QVizDataSourceFactory import DataSourceFactory
     dataSourceFactory = DataSourceFactory()
     #dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.TORE_SUPRA, shotNumber=47979)
     dataSource = \

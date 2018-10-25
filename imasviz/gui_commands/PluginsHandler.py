@@ -1,8 +1,9 @@
 import wx
-import importlib
-from imasviz.util.GlobalValues import GlobalValues
+
 from imasviz.plugins.VIZPlugins import VIZPlugins
 from imasviz.util.GlobalOperations import GlobalOperations
+from imasviz.util.GlobalValues import GlobalValues
+
 
 class MenuIDS:
     def __init__(self):
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     app = wx.App(False)
 
     GlobalOperations.checkEnvSettings()
-    from imasviz.data_source.QVizDataSourceFactory import DataSourceFactory
+    from imasviz.pyqt5.VizDataSource.QVizDataSourceFactory import DataSourceFactory
 
     dataSourceFactory = DataSourceFactory()
     #dataSource = dataSourceFactory.create(name=GlobalValues.IMAS_NATIVE, shotNumber=50355, runNumber=0, userName='imas_public', imasDbName='west')

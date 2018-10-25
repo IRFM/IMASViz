@@ -1,18 +1,17 @@
 import wx
 
-from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
-from imasviz.gui_commands.select_commands.SelectOrUnselectSignal import SelectOrUnselectSignal
-from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
-from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
-from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
-from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
 from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
 from imasviz.gui_commands.plot_commands.PlotSelectedSignalsWithWxmplot import (PlotSelectedSignalsWithWxmplot,
                                                                               modifyMultiPlot)
-from imasviz.util.GlobalValues import GlobalIDs
+from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
+from imasviz.gui_commands.plot_commands.PreviewPlotSignal import PreviewPlotSignal
+from imasviz.gui_commands.select_commands.SelectOrUnselectSignal import SelectOrUnselectSignal
+from imasviz.gui_commands.select_commands.SelectSignalsGroup import SelectSignalsGroup
+from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
+from imasviz.pyqt5.VizDataAccess.QVizDataAccessFactory import SignalDataAccessFactory
 from imasviz.util.GlobalOperations import GlobalOperations
-from imasviz.view.Coord1Slider import Coord1Slider
 from imasviz.util.GlobalValues import FigureTypes
+from imasviz.util.GlobalValues import GlobalIDs
 
 class SignalHandling:
 

@@ -1,27 +1,31 @@
 #!/usr/bin/python
 
-from imasviz.tests.SubPlotsManagerView import SubPlotsManagerFrame
+import sys
+
+from PyQt5.QtWidgets import QApplication
 
 from imasviz.Browser_API import Browser_API
 from imasviz.pyqt5.VizDataSource.QVizDataSourceFactory import DataSourceFactory
+from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalValues
+
+app = QApplication(sys.argv)
+
+GlobalOperations.checkEnvSettings()
 
 api = Browser_API()
 
 dataSourceFactory = DataSourceFactory()
-dataSource = dataSourceFactory.create(GlobalValues.TORE_SUPRA, shotNumber=47979)
+dataSource = dataSourceFactory.create(dataSourceName=GlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,userName='imas_public',imasDbName='west')
 
 f = api.CreateDataTree(dataSource)
 paths = []
 
-for i in range(1,3):
+for i in range(0,6):
     paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
-paths.append('magnetics/bpol_probe(1)/field/data')
-paths.append('magnetics/method/ip/data')
 
 api.SelectSignals(f, paths)
-# api.PlotSelectedSignals(f)
-spm = SubPlotsManagerFrame("Sbm", f)
-spm.Show()
-# spm.showSubPlots()
-# f.Show()
+
+api.PlotSelectedSignals(f)
+
+app.exec()

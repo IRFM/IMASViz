@@ -1,13 +1,14 @@
+import sys
+import traceback
+
 import wx
+
 from imasviz.gui_commands.AbstractCommand import AbstractCommand
-from imasviz.signals_data_access.SignalDataAccessFactory import SignalDataAccessFactory
+from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZ_PreviewPlotFrame
+from imasviz.pyqt5.VizDataAccess.QVizDataAccessFactory import SignalDataAccessFactory
 from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.util.GlobalValues import GlobalIDs
-from imasviz.plotframes.IMASVIZPlotFrame import IMASVIZ_PreviewPlotFrame
-import matplotlib.pyplot as plt
-import wxmplot
-import traceback
-import sys
+
 
 class PreviewPlotSignal(AbstractCommand):
 
