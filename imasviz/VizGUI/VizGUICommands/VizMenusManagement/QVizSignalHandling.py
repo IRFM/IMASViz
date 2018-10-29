@@ -408,7 +408,7 @@ class QVizSignalHandling(QObject):
         figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
         if all_DTV != True:
             QVizMultiPlot(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                          update=1, all_DTV=False,)
+                          update=1, all_DTV=False)
         else:
             QVizMultiPlot(dataTreeView=self.dataTreeView, figureKey=figureKey,
                           update=1, all_DTV=True)

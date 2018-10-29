@@ -138,6 +138,8 @@ class QVizPlotSignal(QVizAbstractCommand):
             api.addNodeToFigure(figureKey, key, tup)
 
             # Shape of the signal
+            # TODO/Note: as it seems the QVizPlotSignal is used for single
+            #            signals only, hence nbRows == 1 (always)
             nbRows = v.shape[0]
 
             # Set plot options
@@ -210,6 +212,12 @@ class QVizPlotSignal(QVizAbstractCommand):
             xlabel     (str) : Plot X-axis label.
         """
 
+        # Set title
+        # Note: currently just the same title argument is passed as title
+        # (no changes at all). Could possibly set some formatting of the title
+        # in the future
+        # title = title
+
         t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])
 
         if label == None:
@@ -231,8 +239,6 @@ class QVizPlotSignal(QVizAbstractCommand):
         if 'units' in signalNodeData:
             units = signalNodeData['units']
             ylabel += '[' + units + ']'
-
-        #title = ""
 
         # Get IDS dataSource parameters
         machineName = str(dataTreeView.dataSource.imasDbName)
