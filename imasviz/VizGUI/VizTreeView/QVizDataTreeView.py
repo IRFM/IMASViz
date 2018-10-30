@@ -19,9 +19,6 @@
 #    - Function definitions (from WxDataTreeViewFrame to QVizDataTreeViewFrame
 #      class)
 #       def onClose(...):
-#       def onShowConfigurations(...):
-#       def onSaveSignalSelection(...):
-#       def onShowMultiPlot(...):
 #       def onUnselectSignals(...):
 #       def onCloseAndReopenDatabase(...):
 #       def createMenuBar(...):
@@ -517,11 +514,43 @@ class QVizDataTreeViewFrame(QMainWindow):
         #-----------------------------------------------------------------------
         # Set new submenu for handling signal selection to be added to 'Options'
         # menu
-        subMenu = options.addMenu('Signal Selection Options')
+        subMenu_select = options.addMenu('Signal Selection Options')
 
         action_onSaveSignalSelection = QAction('Save Signal Selection', self)
         action_onSaveSignalSelection.triggered.connect(self.onSaveSignalSelection)
-        subMenu.addAction(action_onSaveSignalSelection)
+        subMenu_select.addAction(action_onSaveSignalSelection)
+
+        #-----------------------------------------------------------------------
+        # Set new submenu for handling MultiPlots to be added to 'Options' menu
+        subMenu_multiplot = options.addMenu('MultiPlot Options')
+        subMenu_multiplot_set = subMenu_multiplot.addMenu(
+            'Plot all selected signals to a new MultiPlot')
+
+        # -----
+        # Add menu item to plot selected signals to single
+        # plot - This DTV
+        action_multiPlotSelectedSignals = QAction('This IMAS Database',
+                                             self)
+        action_multiPlotSelectedSignals.triggered.connect(
+            partial(self.onSetMultiPlot, False))
+        # Add to submenu
+        subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
+
+        # -----
+        # Add menu item to plot selected signals to single
+        # plot - All DTVs
+        action_multiPlotSelectedSignals = QAction('All IMAS Databases',
+                                             self)
+        action_multiPlotSelectedSignals.triggered.connect(
+            partial(self.onSetMultiPlot, True))
+        # Add to submenu
+        subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
+        # ----
+
+        # action_onSetMultiplot = \
+        #     QAction('Plot all selected signals to a new MultiPlot', self)
+        # action_onSetMultiplot.triggered.connect(self.onSetMultiplot)
+        # subMenu_multiplot_set.addAction(action_onSetMultiplot)
 
         self.setMenuBar(menuBar)
 
@@ -590,11 +619,9 @@ class QVizDataTreeViewFrame(QMainWindow):
     def onShowConfigurations(self, parent):
         """Show configuration window.
         """
-        pass
         self.configurationListsWindow = \
             QVizConfigurationListsWindow(parent = self)
         self.configurationListsWindow.show()
-        # self.configurationListsFrame.showListBox()
 
     @pyqtSlot()
     def onSaveSignalSelection(self):
@@ -604,15 +631,17 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(DTV=self.dataTreeView).execute()
 
-    def onShowMultiPlot(self, event, all_DTV=False):
+    def onSetMultiPlot(self, all_DTV=False):
         """Apply selected signals (single or all DTVs) to MultiPlot.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
                              current or all DTVs.
         """
-        ss = QVizSignalHandling(self.wxTreeView)
-        ss.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
+        # Set the object to QVizSignalHandling, used to handle signals
+        sh = QVizSignalHandling(self.dataTreeView)
+        # Run the MultiPlot routine
+        sh.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
 
     #TODO:
     # def onUnselectSignals()

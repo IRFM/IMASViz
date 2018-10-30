@@ -71,23 +71,23 @@ class Viz_API():
     def ShowDataTree(self, dataTreeFrame):
         dataTreeFrame.show()
 
-    def GetSelectedSignals(self, dataTreeFrame):
+    def getSelectedSignalsDict(self, dataTreeView):
         """Returns the list of signals (nodes) dictionaries
         selected by the user or from script commands (from a single opened
         data tree view (DTVs)).
 
         Arguments:
-            dataTreeFrame (QMainWindow) : DTV frame/main window object.
+            dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
         """
-        return dataTreeFrame.dataTreeView.selectedSignalsDict
+        return dataTreeView.selectedSignalsDict
 
-    def GetSelectedSignals_AllDTVs(self):
-        """Returns the signals (nodes) selected by the user of from script
-           commands (from all opened data tree views (DTVs))
+    def getSelectedSignalsDict_allDTVs(self):
+        """Returns the list of signals (nodes) dictionaries selected by the
+        user of from script commands (from all opened data tree views (DTVs))
         """
         allSelectedSignals = {}
-        for i in range(len(self.wxDTVframeList)):
-            allSelectedSignals.update(self.wxDTVframeList[i].dataTreeView.selectedSignalsDict)
+        for i in range(len(self.DTVframeList)):
+            allSelectedSignals.update(self.DTVframeList[i].dataTreeView.selectedSignalsDict)
 
         return allSelectedSignals
 

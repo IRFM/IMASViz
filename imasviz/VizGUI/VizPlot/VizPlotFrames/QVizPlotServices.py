@@ -1,4 +1,4 @@
-#  Name   : QVizPlotWidget
+#  Name   : QVizPlotServices
 #
 #          Provides basic pyqtgraph plot window template.
 #

@@ -287,5 +287,3 @@ class QVizGlobalOperations:
         b = n - (n // cols) * cols
         p = (a, b)
         return p
-
-
