@@ -25,9 +25,9 @@
 # import matplotlib.pyplot as plt
 from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QMainWindow
+from PyQt5.QtWidgets import QMainWindow, QApplication
 from PyQt5.QtCore import Qt
-import traceback
+import traceback, math
 import sys
 import numpy as np
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
@@ -36,9 +36,9 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals \
     import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
-from PyQt5.QtGui import QFont, QTextOption
-
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, FigureTypes
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from PyQt5.QtGui import QFont, QTextOption, QWidget, QVBoxLayout, QScrollArea
 
 class QVizMultiPlot(QMainWindow):
     """Main MultiPlot window for plotting the selected signals.
@@ -66,26 +66,31 @@ class QVizMultiPlot(QMainWindow):
         if figureKey == None:
             figureKey = \
                 self.imas_viz_api.GetNextKeyForMultiplePlots()
-        self.resize(1000,300)
         self.setObjectName(figureKey)
         self.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = self
 
         # Set number of rows and columns of panels in the MultiPlot frame
-        self.rows = 2
-        self.ncols = 3
+        # self.rows = 2
+        self.ncols = 5
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
         self.all_DTV = all_DTV
 
+        # Set GraphicsWindow (holding plots)
         self.gw = self.plot1DSelectedSignals(figureKey=figureKey,
                                              all_DTV=self.all_DTV)
-        # Set size (depending on the number of plots and number of columns)
-        # self.resize(300*self.ncols, (len(self.gw.centralWidget.items)/self.ncols)*300)
+        # Embed GraphicsWindow inside scroll area
+        scrollArea = self.setGWAsScrollArea(self.gw)
 
-        self.setCentralWidget(self.gw)
+        # Set GraphicsWindow as central widget
+        self.setCentralWidget(scrollArea)
 
+        # Adjust the window and its children size
+        self.windowSizeAdjustement()
+
+        # Show MultiPlot window
         self.show()
 
     def raiseErrorIfNoSelectedArrays(self):
@@ -96,14 +101,65 @@ class QVizMultiPlot(QMainWindow):
         return plotDimension
 
     def getGraphicsWindow(self, figureKey):
+        """get graphics window.
+        """
         if figureKey == None:
             figureKey = \
                 self.imas_viz_api.GetNextKeyForMultiplePlots()
         gwin = QVizMultiPlotGraphicsWindow(parent=self, ncols=self.ncols)
         gwin.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = gwin
-        # self.setCentralWidget(gwin)
+        # Set maximum size
         return gwin
+
+    def setGWAsScrollArea(self, graphicsWindow):
+        """Set scrollable graphics window - scroll area contains the graphics
+        window.
+        """
+
+        # Set scrollable area
+        scrollArea = QScrollArea(self)
+        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setEnabled(True)
+        scrollContent = QWidget(scrollArea)
+
+        # Set layout for scrollable area
+        scrollLayout = QVBoxLayout(scrollContent)
+        scrollLayout.addWidget(graphicsWindow)
+        scrollLayout.setContentsMargins(0,0,0,0)
+        scrollContent.setLayout(scrollLayout)
+        scrollArea.setWidget(scrollContent)
+
+        return scrollArea
+
+    def windowSizeAdjustement(self):
+        """Adjust the size of the main window and its children.
+        """
+
+        # TODO: Add rules for different resolutions
+        # - Get screen resolution (width and height)
+        # self.screenGeometry=QApplication.instance().desktop().screenGeometry()
+        # self.screenWidth = self.screenGeometry.width()
+        # self.screenHeight = self.screenGeometry.height()
+        # self.resize(self.screenWidth*0.8, self.screenHeight*0.8)
+
+        # Set size of the graphics window
+        # (depending on the number of plots and number of columns)
+        if len(self.gw.centralWidget.items) < 25:
+            width_gw = math.ceil(len(self.gw.centralWidget.items)/len(self.gw.centralWidget.rows))*310
+            height_gw = len(self.gw.centralWidget.rows)*300
+        else:
+            width_gw = 1550
+            height_gw = 1200
+        self.gw.setMinimumSize(width_main, height_main)
+
+        # Set size of the main window
+        width_main = math.ceil(len(self.gw.centralWidget.items)/len(self.gw.centralWidget.rows))*300
+        height_main = len(self.gw.centralWidget.rows)*300
+        self.resize(width_gw, height_gw)
+        self.setMaximumSize(self.screenWidth, self.screenHeight)
 
     def plot1DSelectedSignals(self, figureKey=None, update=0, all_DTV=True):
         """Plot the set of 1D signals, selected by the user, as a function of
@@ -247,7 +303,7 @@ class QVizMultiPlot(QMainWindow):
         getNextPath = True
         n = 0
         while getNextPath == True:
-            key = GlobalOperations.getNextPanelKey(n, ncols=self.ncols)
+            key = QVizGlobalOperations.getNextPanelKey(n, ncols=self.ncols)
 
             selectedArrays = \
                 self.plotConfig.findall(".//*[@key='" + str(key) +
@@ -267,7 +323,7 @@ class QVizMultiPlot(QMainWindow):
         # Get a dictionary of selected signals
         dtv_selectedSignals = dataTreeView.selectedSignalsDict
 
-        # GlobalOperations. \
+        # QVizGlobalOperations. \
         #     getSortedSelectedSignals(WxDataTreeView.selectedSignals)
         return dtv_selectedSignals, selectedsignalsMap
 
@@ -277,7 +333,7 @@ class QVizMultiPlot(QMainWindow):
         """
         if self.configFile != None and self.plotConfig != False:
             # Get number of signals through number of signal paths
-            pathsList = GlobalOperations.\
+            pathsList = QVizGlobalOperations.\
                 getSignalsPathsFromConfigurationFile(self.configFile)
             nSignals = len(pathsList)
         else:
@@ -288,24 +344,30 @@ class QVizMultiPlot(QMainWindow):
 
         return nSignals
 
-    def setRowsColumns(self, num_signals):
-            # Modify the MultiPlot rows and columns depending on total number
-            # of signals
-            if num_signals > 6:
-                if num_signals <= 8:
-                    self.rows = 2
-                    self.cols = 4
-                elif num_signals > 8 and num_signals <= 12:
-                    self.rows = 3
-                    self.cols = 4
-                elif num_signals > 12:
-                    self.rows = 3
-                    self.cols = 4
-                    print('MultiPlot plot limit reached (12)!')
+    # def setRowsColumns(self, num_signals):
+    #     """Modify the MultiPlot rows and columns depending on total number
+    #     of signals."""
+    #         if num_signals > 6:
+    #             if num_signals <= 8:
+    #                 self.rows = 2
+    #                 self.cols = 4
+    #             elif num_signals > 8 and num_signals <= 12:
+    #                 self.rows = 3
+    #                 self.cols = 4
+    #             elif num_signals > 12:
+    #                 self.rows = 3
+    #                 self.cols = 4
+    #                 print('MultiPlot plot limit reached (12)!')
 
     def onHideFigure(self, api, figureKey):
         if figureKey in api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
             api.figureframes[figureKey].Hide()
+
+    def getScreenGeometry(self):
+        """Get screen geometry.
+        Note: QApplication instance required / application must be running.
+        """
+        QApplication.instance().desktop().screenGeometry()
 
     # TODO
     # def applyPlotConfigurationBeforePlotting
