@@ -38,6 +38,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, FigureTypes
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
 from PyQt5.QtGui import QFont, QTextOption, QWidget, QVBoxLayout, QScrollArea
 
 class QVizMultiPlot(QMainWindow):
@@ -62,6 +63,11 @@ class QVizMultiPlot(QMainWindow):
         self.configFile = configFile
         self.imas_viz_api = self.dataTreeView.imas_viz_api
 
+        # Get screen resolution (width and height)
+        self.screenWidth, self.screenHeight = getScreenGeometry()
+        # Set base dimension parameter for setting plot size
+        self.plotBaseDim = 300
+
         # Set MultiPlot object name and title if not already set
         if figureKey == None:
             figureKey = \
@@ -72,7 +78,8 @@ class QVizMultiPlot(QMainWindow):
 
         # Set number of rows and columns of panels in the MultiPlot frame
         # self.rows = 2
-        self.ncols = 5
+        self.ncols = int(self.screenWidth*0.9/self.plotBaseDim) # round down
+        # self.ncols = 5
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
@@ -138,27 +145,18 @@ class QVizMultiPlot(QMainWindow):
         """Adjust the size of the main window and its children.
         """
 
-        # TODO: Add rules for different resolutions
-        # - Get screen resolution (width and height)
-        # self.screenGeometry=QApplication.instance().desktop().screenGeometry()
-        # self.screenWidth = self.screenGeometry.width()
-        # self.screenHeight = self.screenGeometry.height()
-        # self.resize(self.screenWidth*0.8, self.screenHeight*0.8)
-
         # Set size of the graphics window
         # (depending on the number of plots and number of columns)
-        if len(self.gw.centralWidget.items) < 25:
-            width_gw = math.ceil(len(self.gw.centralWidget.items)/len(self.gw.centralWidget.rows))*310
-            height_gw = len(self.gw.centralWidget.rows)*300
-        else:
-            width_gw = 1550
-            height_gw = 1200
-        self.gw.setMinimumSize(width_main, height_main)
+        width_gw = self.gw.centralWidget.cols*(self.plotBaseDim+10)
+        height_gw = len(self.gw.centralWidget.rows)*self.plotBaseDim
+        self.gw.setMinimumSize(width_gw, height_gw)
 
         # Set size of the main window
-        width_main = math.ceil(len(self.gw.centralWidget.items)/len(self.gw.centralWidget.rows))*300
-        height_main = len(self.gw.centralWidget.rows)*300
-        self.resize(width_gw, height_gw)
+        width_main = self.gw.centralWidget.cols*(self.plotBaseDim+20)
+        height_main = len(self.gw.centralWidget.rows)*self.plotBaseDim
+        self.resize(width_main, height_main)
+
+        # Set main window maximum size
         self.setMaximumSize(self.screenWidth, self.screenHeight)
 
     def plot1DSelectedSignals(self, figureKey=None, update=0, all_DTV=True):
@@ -173,10 +171,6 @@ class QVizMultiPlot(QMainWindow):
 
         # Plot number
         n = 0
-
-        # TODO
-        # # Set maximum number of plots within frame
-        # maxNumberOfPlots = self.rows*self.ncols;
 
         dtv_selectedSignals = []
 
@@ -211,9 +205,6 @@ class QVizMultiPlot(QMainWindow):
             dtv_selectedSignals = dtv.selectedSignalsDict
             # Go through the list of selected signals for every DTV
             for signalKey in dtv_selectedSignals:
-
-                # if n + 1 > maxNumberOfPlots:
-                #     break
 
                 # Get node data
                 signalNodeData = dtv_selectedSignals[signalKey]['nodeData']
@@ -388,7 +379,10 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         super(QVizMultiPlotGraphicsWindow, self).__init__(parent=parent)
         # super(QVizMultiPlotGraphicsWindow, self).__init__()
 
-        self.ncols = ncols
+        # Add attribute describing the number of columns
+        # (same as self.centralWidget.rows is for number of rows. Initially
+        # the centralWidget does not contain the 'cols' attribute)
+        self.centralWidget.cols = ncols
 
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
@@ -415,7 +409,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         p.showGrid(x=True, y=True)
         p.plot(x, y, pen=pen)
 
-        if (n+1)%self.ncols == 0:
+        if (n+1)%self.centralWidget.cols == 0:
             self.nextRow()
 
     @staticmethod
@@ -437,6 +431,3 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
     def getCurrentPlotItem(self):
         # Get the current (last) plot item, created by gw.plot()
         return list(self.centralWidget.items.keys())[-1]
-
-
-

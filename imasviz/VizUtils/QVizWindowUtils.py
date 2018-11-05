@@ -12,6 +12,8 @@
 #     Copyright(c) 2016- F.Ludovic, D. Penko
 #****************************************************
 
+from PyQt5.QtWidgets import QApplication
+
 def getWindowSize(window):
     """ Get Size of the QT window. Returns width, height.
 
@@ -36,3 +38,11 @@ def getWindowPosition(window):
     pos_y = window.pos().y()
 
     return pos_x, pos_y
+
+def getScreenGeometry():
+    """Return screen resolution (width and height).
+    """
+    screenGeometry=QApplication.instance().desktop().screenGeometry()
+    screenWidth = screenGeometry.width()
+    screenHeight = screenGeometry.height()
+    return screenWidth, screenHeight
