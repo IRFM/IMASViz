@@ -77,9 +77,7 @@ class QVizMultiPlot(QMainWindow):
         self.imas_viz_api.figureframes[figureKey] = self
 
         # Set number of rows and columns of panels in the MultiPlot frame
-        # self.rows = 2
         self.ncols = int(self.screenWidth*0.9/self.plotBaseDim) # round down
-        # self.ncols = 5
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
@@ -109,6 +107,9 @@ class QVizMultiPlot(QMainWindow):
 
     def getGraphicsWindow(self, figureKey):
         """get graphics window.
+
+        Arguments:
+            figurekey (str)  : Frame label.
         """
         if figureKey == None:
             figureKey = \
@@ -122,6 +123,10 @@ class QVizMultiPlot(QMainWindow):
     def setGWAsScrollArea(self, graphicsWindow):
         """Set scrollable graphics window - scroll area contains the graphics
         window.
+
+        Arguments:
+            graphicsWindow (GraphicsWindow) : GraphicsWindow containing the
+                                              plots (PlotItems).
         """
 
         # Set scrollable area
@@ -162,6 +167,14 @@ class QVizMultiPlot(QMainWindow):
     def plot1DSelectedSignals(self, figureKey=None, update=0, all_DTV=True):
         """Plot the set of 1D signals, selected by the user, as a function of
            time to MultiPlot.
+
+        Arguments:
+            figurekey (str)  : Frame label.
+            update (int)     :
+            all_DTV (bool)   : Indicator to read selected signals from single
+                               DTV (from the given one) or from all DTVs.
+                               Note: This has no effect when reading list
+                               of signals from the configuration file.
         """
 
         # Get window
@@ -351,8 +364,14 @@ class QVizMultiPlot(QMainWindow):
     #                 print('MultiPlot plot limit reached (12)!')
 
     def onHideFigure(self, api, figureKey):
+        """
+
+        Arguments:
+            api       (obj)  : IMASViz Application Programming Interface.
+            figurekey (str)  : Frame label.
+        """
         if figureKey in api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
-            api.figureframes[figureKey].Hide()
+            api.figureframes[figureKey].hide()
 
     def getScreenGeometry(self):
         """Get screen geometry.

@@ -1,3 +1,16 @@
+#  Name   : Viz_API
+#
+#          IMASViz Application Programming Interface.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#****************************************************
+
 import os
 
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations

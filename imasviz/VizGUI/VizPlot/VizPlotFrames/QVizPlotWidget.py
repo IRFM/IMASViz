@@ -17,6 +17,8 @@ from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
 from pyqtgraph import PlotWidget, mkPen
 
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
+from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
+    import QVizCustomPlotContextMenu
 
 
 class QVizPlotWidget(QWidget):
@@ -30,7 +32,9 @@ class QVizPlotWidget(QWidget):
         pg.setConfigOption('foreground', 'k')
 
         # Enable antialiasing for prettier plots
+        # Note: Considerably decreases performance
         pg.setConfigOptions(antialias=True)
+        # pg.setConfigOptions(useOpenGL=True)
 
         # QVizPlotWidget settings
         self.setObjectName("QVizPlotWidget")
@@ -69,6 +73,7 @@ class QVizPlotWidget(QWidget):
                 style = Qt.DotLine
 
             # Set pen
+            # Note: width higher than '1' considerably decreases performance
             pen = mkPen(color=self.RGBlist[next_RGB_ID], width=3, style=style)
 
         # access your UI elements through the `ui` attribute
@@ -81,6 +86,7 @@ class QVizPlotWidget(QWidget):
         self.ui.plotWidget.setLabel('bottom', ylabel, units='')
         # Enable grid
         self.ui.plotWidget.showGrid(x=True, y=True)
+
         return self
 
     def getPlotItem(self):
@@ -108,7 +114,7 @@ class QVizPlotWidgetUI(object):
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plot widget
-        self.plotWidget = PlotWidget(self.QVizPlotWidget)
+        self.plotWidget = QVizPgPlotWidget(self.QVizPlotWidget)
         self.plotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
         self.plotWidget.addLegend()
@@ -162,5 +168,8 @@ class QVizPlotWidgetUI(object):
 
         self.QVizPlotWidget.ui.plotWidget.setMouseEnabled(x=enabled, y=enabled)
 
-
-
+class QVizPgPlotWidget(PlotWidget):
+    def __init__(self, parent):
+        super(QVizPgPlotWidget, self).__init__(parent,
+                                               viewBox=QVizCustomPlotContextMenu())
+                                               # useOpenGL=True)
