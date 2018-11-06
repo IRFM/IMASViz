@@ -15,6 +15,8 @@ import pyqtgraph as pg
 from pyqtgraph import PlotWidget, mkPen
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
 from PyQt5.QtCore import Qt, QMetaObject, QSize
+from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
+    import QVizCustomPlotContextMenu
 
 class QVizPreviewPlotWidget(QWidget):
 
@@ -83,8 +85,9 @@ class QVizPlotWidgetUI(object):
         self.gridLayout = QGridLayout(self.QVizPreviewPlotWidget)
         self.gridLayout.setObjectName("gridLayout")
 
-        # Set plotwidget
-        self.plotWidget = PlotWidget(self.QVizPreviewPlotWidget)
+        # Set plotwidget (use IMASViz custom plot context menu)
+        self.plotWidget = PlotWidget(self.QVizPreviewPlotWidget,
+                                     viewBox=QVizCustomPlotContextMenu())
         self.plotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)
         # self.plotWidget.addLegend()

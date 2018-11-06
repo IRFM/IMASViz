@@ -113,8 +113,9 @@ class QVizPlotWidgetUI(object):
         self.gridLayout = QGridLayout(self.QVizPlotWidget)
         self.gridLayout.setObjectName("gridLayout")
 
-        # Set plot widget
-        self.plotWidget = QVizPgPlotWidget(self.QVizPlotWidget)
+        # Set plot widget (use IMASViz custom plot context menu)
+        self.plotWidget = PlotWidget(self.QVizPlotWidget,
+                                     viewBox=QVizCustomPlotContextMenu())
         self.plotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
         self.plotWidget.addLegend()
@@ -167,9 +168,3 @@ class QVizPlotWidgetUI(object):
             enabled = False
 
         self.QVizPlotWidget.ui.plotWidget.setMouseEnabled(x=enabled, y=enabled)
-
-class QVizPgPlotWidget(PlotWidget):
-    def __init__(self, parent):
-        super(QVizPgPlotWidget, self).__init__(parent,
-                                               viewBox=QVizCustomPlotContextMenu())
-                                               # useOpenGL=True)

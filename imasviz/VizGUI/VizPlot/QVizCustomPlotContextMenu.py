@@ -2,6 +2,7 @@ import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QAction, QMenu
 
+
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
     """
@@ -16,37 +17,37 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # Set rect mode as default
         # self.setRectMode() # Set mouse mode to rect for convenient zooming
 
-        # Put aside the original pyqtgraph ViewBoxMenu (the contents are needed
-        # in getMenu() function)
-        self.menuOriginal = self.menu
-        # Override original pyqtgraph ViewBoxMenu
-        self.menu = None
+        # Set original plot context menu
+        # Note: self.menu must not be None (this way works fine for plotWidgets,
+        # but not for GraphicsWindow (MultiPlot))
+        self.menu = pg.ViewBoxMenu.ViewBoxMenu(self)
+
+        # Menu update property
+        self.menuUpdate = True
 
     def getMenu(self, event=None):
-        """Recreate the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
+        """Modify the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
         routine.
         Note: Overwriting the ViewBox.py getMenu() function.
         """
 
-        if self.menu is None:
-            # Set new menu
-            self.menu = QMenu()
-            # Add custom contents to menu
-            self.addCustomToMenu()
-
-            # Modify contents of the original ViewBoxMenu and append them to the
-            # new menu menu
-            for action in self.menuOriginal.actions():
+        if self.menuUpdate is True:
+            # Modify contents of the original ViewBoxMenu
+            for action in self.menu.actions():
                 # Modify the original Mouse Mode
                 if "Mouse Mode" in action.text():
                     # Change action labels
-                    for mouseAction in self.menuOriginal.leftMenu.actions():
+                    for mouseAction in self.menu.leftMenu.actions():
                         if "3 button" in mouseAction.text():
                             mouseAction.setText("Pan Mode")
                         elif "1 button" in mouseAction.text():
                             mouseAction.setText("Area Zoom Mode")
                 # Add action to menu
-                self.menu.addAction(action)
+                # self.menu.addAction(action)
+
+            # Add custom contents to menu
+            self.addCustomToMenu()
+
 
             # self.showT0 = QAction('ActionTemplate1', self.menu)
             # self.showT0.triggered.connect(self.emitShowT0)
@@ -59,17 +60,20 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # self.showS0.setEnabled(True)
             # self.menu.addAction(self.showS0)
 
+            # Set menu update to false
+            self.menuUpdate = False
+
         return self.menu
 
     def addCustomToMenu(self):
         """Add custom actions to the menu.
         """
+        self.menu.addSeparator()
         # Autorange feature
         self.actionAutoRange = QAction("Auto Range", self.menu)
         self.actionAutoRange.triggered.connect(self.autoRange)
         # - Add to main menu
         self.menu.addAction(self.actionAutoRange)
-        self.menu.addSeparator()
 
 
 

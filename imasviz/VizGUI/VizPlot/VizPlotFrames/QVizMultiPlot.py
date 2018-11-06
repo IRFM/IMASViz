@@ -13,16 +13,6 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-# from imasviz.gui_commands.plot_commands.PlotSignal import PlotSignal
-# from imasviz.gui_commands.plot_commands.PlotSelectedSignals import PlotSelectedSignals
-# from imasviz.plotframes.IMASVIZMultiPlotFrame import IMASVIZMultiPlotFrame
-# from imasviz.gui_commands.select_commands.SelectSignals import SelectSignals
-# from imasviz.gui_commands.select_commands.UnselectAllSignals import UnselectAllSignals
-# from imasviz.util.QVizGlobalOperations import QVizGlobalOperations
-# from imasviz.util.QVizGlobalValues import FigureTypes
-# from wxmplot.utils import Closure
-# from wxmplot.plotpanel import PlotPanel
-# import matplotlib.pyplot as plt
 from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
 from PyQt5.QtWidgets import QMainWindow, QApplication
@@ -40,6 +30,8 @@ from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, FigureTypes
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
 from PyQt5.QtGui import QFont, QTextOption, QWidget, QVBoxLayout, QScrollArea
+from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
+    import QVizCustomPlotContextMenu
 
 class QVizMultiPlot(QMainWindow):
     """Main MultiPlot window for plotting the selected signals.
@@ -416,10 +408,11 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
 
         # Set pen
         pen = self.setPen()
-        # Set new plot
+        # Set new plot (use IMASViz custom plot context menu)
         p = self.addPlot(name = 'Plot'+str(n),
                          title=label,
-                         pen=pen)
+                         pen=pen,
+                         viewBox=QVizCustomPlotContextMenu())
         # p = self.addPlot(name='plotName',
         #                   title="Basic array plotting " + str(n),
         #                   row=rowNum,
