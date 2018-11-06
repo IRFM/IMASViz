@@ -22,9 +22,10 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
 
 
 class QVizPlotWidget(QWidget):
-
+    """PlotWidget containing pyqtgraph PlotWidget. Used for fundamental plotting.
+    """
     def __init__(self, parent=None, size=(500,400), title='QVizPlotWidget'):
-        super(QVizPlotWidget, self).__init__(parent=parent)
+        super(QVizPlotWidget, self).__init__(parent)
 
         # Set default background color: white
         pg.setConfigOption('background', 'w')
@@ -106,7 +107,7 @@ class QVizPlotWidgetUI(object):
         """ Setup QVizPlotWidget User Interface.
 
         Arguments:
-            dataTreeView (QWidget) : QWidget object.
+            QVizPlotWidget (QWidget) : QWidget object.
         """
 
         self.QVizPlotWidget = QVizPlotWidget

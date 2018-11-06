@@ -1,7 +1,21 @@
+#  Name   : QVizCustomPlotContextMenu
+#
+#          Modified plot context menu.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#****************************************************
+
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QAction, QMenu
-
+from imasviz.VizGUI.VizPlot.QVizConfigurePlotWidget \
+    import QVizConfigurePlotWidget
 
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
@@ -42,12 +56,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                             mouseAction.setText("Pan Mode")
                         elif "1 button" in mouseAction.text():
                             mouseAction.setText("Area Zoom Mode")
-                # Add action to menu
-                # self.menu.addAction(action)
 
             # Add custom contents to menu
             self.addCustomToMenu()
-
 
             # self.showT0 = QAction('ActionTemplate1', self.menu)
             # self.showT0.triggered.connect(self.emitShowT0)
@@ -75,7 +86,11 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionAutoRange)
 
-
+        # Configure plot
+        self.actionConfigurePlot = QAction("Configure Plot", self.menu)
+        self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
+        # - Add to main menu
+        self.menu.addAction(self.actionConfigurePlot)
 
     # def emitShowT0(self):
     #     """Emit signalShowT0
@@ -96,3 +111,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         """Set mouse mode to pan.
         """
         self.setMouseMode(self.PanMode)
+
+    def showConfigurePlot(self):
+        """Show custom plot configuration GUI.
+        """
+        a = QVizConfigurePlotWidget(viewBox=self)
+        a.show()
