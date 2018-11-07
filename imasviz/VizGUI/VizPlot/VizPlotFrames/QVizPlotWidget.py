@@ -119,7 +119,7 @@ class QVizPlotWidget(QWidget):
 
         # Set plot widget (use IMASViz custom plot context menu)
         self.pgPlotWidget = pg.PlotWidget(self,
-                                     viewBox=QVizCustomPlotContextMenu())
+                                          viewBox=QVizCustomPlotContextMenu())
         self.pgPlotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
         self.pgPlotWidget.addLegend()
@@ -131,7 +131,7 @@ class QVizPlotWidget(QWidget):
         # Set checkbox for toggling mouse
         checkBox = self.customUI()
 
-        # Set lavout marigin (left, top, right, bottom)
+        # Set layout marigin (left, top, right, bottom)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         # Add widgets to layout

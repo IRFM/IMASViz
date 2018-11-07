@@ -74,7 +74,7 @@ class QVizPreviewPlotWidget(QWidget):
         self.pgPlotWidget.clear()
 
     def setContents(self):
-        """ Setup QVizPreviewPlotWidget contents.
+        """ Set QVizPreviewPlotWidget contents.
         """
 
         # Set layout
