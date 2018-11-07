@@ -83,7 +83,7 @@ class QVizPreviewPlotWidget(QWidget):
 
         # Set plotwidget (use IMASViz custom plot context menu)
         self.pgPlotWidget = pg.PlotWidget(self,
-                                          viewBox=QVizCustomPlotContextMenu())
+            viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)
         # self.pgPlotWidget.addLegend()

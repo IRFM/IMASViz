@@ -412,7 +412,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         p = self.addPlot(name = 'Plot'+str(n),
                          title=label,
                          pen=pen,
-                         viewBox=QVizCustomPlotContextMenu())
+                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         # p = self.addPlot(name='plotName',
         #                   title="Basic array plotting " + str(n),
         #                   row=rowNum,

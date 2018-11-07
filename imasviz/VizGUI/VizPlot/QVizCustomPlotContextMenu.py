@@ -23,13 +23,22 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
     # signalShowT0 = pyqtSignal()
     # signalShowS0 = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, qWidgetParent, parent=None):
         """Constructor of the QVizCustomPlotContextMenu
+
+        Arguments:
+            qWidgetParent (QWidget) : Parent of ViewBox which is PyQt5 QWidget
+                                      object (setting QWidget (PyQt5) as a
+                                      regular ViewBox (pyqtgraph) parent doesn't
+                                      seem to be allowed).
+            parent        (obj)     : Parent.
         """
         super(QVizCustomPlotContextMenu, self).__init__(parent)
 
         # Set rect mode as default
         # self.setRectMode() # Set mouse mode to rect for convenient zooming
+
+        self.qWidgetParent = qWidgetParent
 
         # Set original plot context menu
         # Note: self.menu must not be None (this way works fine for plotWidgets,

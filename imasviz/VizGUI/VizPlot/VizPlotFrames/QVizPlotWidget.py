@@ -119,7 +119,7 @@ class QVizPlotWidget(QWidget):
 
         # Set plot widget (use IMASViz custom plot context menu)
         self.pgPlotWidget = pg.PlotWidget(self,
-                                          viewBox=QVizCustomPlotContextMenu())
+            viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
         self.pgPlotWidget.addLegend()
