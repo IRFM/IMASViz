@@ -12,14 +12,15 @@
 #****************************************************
 
 import pyqtgraph as pg
-from pyqtgraph import PlotWidget, mkPen
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
 from PyQt5.QtCore import Qt, QMetaObject, QSize
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 
 class QVizPreviewPlotWidget(QWidget):
-
+    """PlotWidget containing pyqtgraph PlotWidget. Used for creating preview
+    plots.
+    """
     def __init__(self, parent=None, size=(500,400), title='QVizPreviewPlotWidget'):
         super(QVizPreviewPlotWidget, self).__init__(parent=parent)
 
@@ -36,61 +37,56 @@ class QVizPreviewPlotWidget(QWidget):
         self.setWindowTitle(title)
         # self.resize(size[0], size[1])
 
-        # set up the form class as a `ui` attribute
-        self.ui = QVizPlotWidgetUI()
-        self.ui.setupUi(self)
+        # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
+        self.setContents()
 
     def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
-             pen=mkPen('b', width=3, style=Qt.SolidLine)):
+             pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
 
         Arguments:
-            shotnumber (int) : IDS database parameter - shot number of the case.
-            x     (1D array) : 1D array of X-axis values.
-            y     (1D array) : 1D array of Y-axis values.
-            title      (str) : Plot title.
-            label      (str) : Label describing IMAS database (device, shot) and
-                               path to signal/node in IDS database structure.
-            xlabel     (str) : Plot X-axis label.
-            ylabel     (str) : Plot Y-axis label.
-            pen        ()    : Plot line style.
+            shotnumber  (int) : IDS database parameter - shot number of the
+                                case.
+            x      (1D array) : 1D array of X-axis values.
+            y      (1D array) : 1D array of Y-axis values.
+            title       (str) : Plot title.
+            label       (str) : Label describing IMAS database (device, shot)
+                                and path to signal/node in IDS database
+                                structure.
+            xlabel      (str) : Plot X-axis label.
+            ylabel      (str) : Plot Y-axis label.
+            pen        (QPen) : Plot line style.
         """
         # Access the UI elements through the `ui` attribute
         # Add plot
-        self.ui.plotWidget.plot(x, y, title='', pen=pen, name=label)
+        self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)
         # Set x-axis label
-        self.ui.plotWidget.setLabel('left', xlabel, units='')
+        self.pgPlotWidget.setLabel('left', xlabel, units='')
         # Set y-axis label
-        self.ui.plotWidget.setLabel('bottom', ylabel, units='')
+        self.pgPlotWidget.setLabel('bottom', ylabel, units='')
         # Enable grid
-        self.ui.plotWidget.showGrid(x=True, y=True)
+        self.pgPlotWidget.showGrid(x=True, y=True)
         return self
 
     def clear(self):
         """Clear the widgets plot.
         """
-        self.ui.plotWidget.clear()
+        self.pgPlotWidget.clear()
 
-class QVizPlotWidgetUI(object):
-    def setupUi(self, QVizPreviewPlotWidget):
-        """ Setup QVizPreviewPlotWidget User Interface.
-
-        Arguments:
-            dataTreeView (QWidget) : QWidget object.
+    def setContents(self):
+        """ Setup QVizPreviewPlotWidget contents.
         """
 
-        # Get widget
-        self.QVizPreviewPlotWidget = QVizPreviewPlotWidget
         # Set layout
-        self.gridLayout = QGridLayout(self.QVizPreviewPlotWidget)
+        self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plotwidget (use IMASViz custom plot context menu)
-        self.plotWidget = PlotWidget(self.QVizPreviewPlotWidget,
-                                     viewBox=QVizCustomPlotContextMenu())
-        self.plotWidget.setObjectName("pg_PreviewPlot")
+        self.pgPlotWidget = pg.PlotWidget(self,
+                                          viewBox=QVizCustomPlotContextMenu())
+        self.pgPlotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)
-        # self.plotWidget.addLegend()
+        # self.pgPlotWidget.addLegend()
 
         # Set menu bar
         menuBar = self.menuBar()
@@ -103,31 +99,30 @@ class QVizPlotWidgetUI(object):
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         # Add widgets to layout
-        self.gridLayout.addWidget(self.plotWidget, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.pgPlotWidget, 1, 0, 1, 1)
         # self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
         self.gridLayout.update()
 
         # Connect custom UI elements
-        QMetaObject.connectSlotsByName(self.QVizPreviewPlotWidget)
+        QMetaObject.connectSlotsByName(self)
 
     def menuBar(self):
-        menuBar = QMenuBar(self.QVizPreviewPlotWidget)
+        """Set menu bar.
+        """
+        menuBar = QMenuBar(self)
         exitMenu = menuBar.addMenu('File')
-        exitAction = QAction('Exit', self.plotWidget)
-        exitAction.triggered.connect(self.QVizPreviewPlotWidget.close)
+        exitAction = QAction('Exit', self.pgPlotWidget)
+        exitAction.triggered.connect(self.close)
         exitMenu.addAction(exitAction)
         return menuBar
 
     def customUI(self):
         """ Add custom UI elements - pure PyQt widgets, to interact with
         pyqtgraph.
-
-        Arguments:
-            dataTreeView (QWidget) : QWidget object.
         """
 
         # Set and add checkbox for toggling mouse plot interaction on/off
-        checkBox = QCheckBox(self.QVizPreviewPlotWidget)
+        checkBox = QCheckBox(self)
         checkBox.setChecked(True)
         checkBox.setObjectName("checkBox")
         checkBox.setText("Mouse Enabled")
@@ -135,13 +130,15 @@ class QVizPlotWidgetUI(object):
         return checkBox
 
     def toggleMouse(self, state):
+        """Enable/Disable mouse interaction with the plot.
+        Note: currently enables/disables only zoom in/out.
+        """
         if state == Qt.Checked:
             enabled = True
         else:
             enabled = False
 
-        self.QVizPreviewPlotWidget.ui.plotWidget.setMouseEnabled(x=enabled,
-                                                                 y=enabled)
+        self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
 
 
 

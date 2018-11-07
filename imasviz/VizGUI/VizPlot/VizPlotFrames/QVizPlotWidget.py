@@ -14,15 +14,14 @@
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, QMetaObject
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
-from pyqtgraph import PlotWidget, mkPen
-
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 
 
 class QVizPlotWidget(QWidget):
-    """PlotWidget containing pyqtgraph PlotWidget. Used for fundamental plotting.
+    """PlotWidget containing pyqtgraph PlotWidget. Used for main plotting
+    feature.
     """
     def __init__(self, parent=None, size=(500,400), title='QVizPlotWidget'):
         super(QVizPlotWidget, self).__init__(parent)
@@ -42,16 +41,26 @@ class QVizPlotWidget(QWidget):
         self.setWindowTitle(title)
         self.resize(size[0], size[1])
 
-        # set up the form class as a `ui` attribute
-        self.ui = QVizPlotWidgetUI()
-        self.ui.setupUi(self)
+        # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
+        self.setContents()
 
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
 
     def plot(self, x=None, y=None, title='', label='', xlabel='', ylabel='',
-             pen=mkPen('b', width=3, style=Qt.SolidLine)):
+             pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
+
+        Arguments:
+            x      (1D array) : 1D array of X-axis values.
+            y      (1D array) : 1D array of Y-axis values.
+            title       (str) : Plot title.
+            label       (str) : Label describing IMAS database (device, shot)
+                                and path to signal/node in IDS database
+                                structure.
+            xlabel      (str) : Plot X-axis label.
+            ylabel      (str) : Plot Y-axis label.
+            pen        (QPen) : Plot line style.
         """
 
         # Set pen (line design). Color and style are chosen depending on the
@@ -75,18 +84,17 @@ class QVizPlotWidget(QWidget):
 
             # Set pen
             # Note: width higher than '1' considerably decreases performance
-            pen = mkPen(color=self.RGBlist[next_RGB_ID], width=3, style=style)
+            pen = pg.mkPen(color=self.RGBlist[next_RGB_ID], width=3, style=style)
 
-        # access your UI elements through the `ui` attribute
-        # plot = self.ui.plotWidget.plot(x, y, title='', pen=pen)
-        # Add plot
-        self.ui.plotWidget.plot(x, y, title='', pen=pen, name=label)
-        # Set x-axis label
-        self.ui.plotWidget.setLabel('left', xlabel, units='')
-        # Set y-axis label
-        self.ui.plotWidget.setLabel('bottom', ylabel, units='')
-        # Enable grid
-        self.ui.plotWidget.showGrid(x=True, y=True)
+        # Plot and plot settings
+        # - Add plot
+        self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)
+        # - Set x-axis label
+        self.pgPlotWidget.setLabel('left', xlabel, units='')
+        # - Set y-axis label
+        self.pgPlotWidget.setLabel('bottom', ylabel, units='')
+        # - Enable grid
+        self.pgPlotWidget.showGrid(x=True, y=True)
 
         return self
 
@@ -94,32 +102,27 @@ class QVizPlotWidget(QWidget):
         """Return the PlotItem contained in QVizPlotWidget.
         Note: PlotItem contains the list of plots (see getPlotList).
         """
-        return self.ui.plotWidget.getPlotItem()
+        return self.pgPlotWidget.getPlotItem()
 
     def getPlotList(self):
         """Return a list of all plots (PlotDataItem, PlotCurveItem,
         ScatterPlotItem, etc) contained in QVizPlotWidget.
         """
-        return self.ui.plotWidget.getPlotItem().listDataItems()
+        return self.pgPlotWidget.getPlotItem().listDataItems()
 
-class QVizPlotWidgetUI(object):
-    def setupUi(self, QVizPlotWidget):
-        """ Setup QVizPlotWidget User Interface.
-
-        Arguments:
-            QVizPlotWidget (QWidget) : QWidget object.
+    def setContents(self):
+        """Setup QVizPlotWidget contents.
         """
 
-        self.QVizPlotWidget = QVizPlotWidget
-        self.gridLayout = QGridLayout(self.QVizPlotWidget)
+        self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plot widget (use IMASViz custom plot context menu)
-        self.plotWidget = PlotWidget(self.QVizPlotWidget,
+        self.pgPlotWidget = pg.PlotWidget(self,
                                      viewBox=QVizCustomPlotContextMenu())
-        self.plotWidget.setObjectName("plotWidget")
+        self.pgPlotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
-        self.plotWidget.addLegend()
+        self.pgPlotWidget.addLegend()
 
         # Set menu bar
         menuBar = self.menuBar()
@@ -132,30 +135,29 @@ class QVizPlotWidgetUI(object):
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         # Add widgets to layout
-        self.gridLayout.addWidget(self.plotWidget, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.pgPlotWidget, 1, 0, 1, 1)
         self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
 
         # Connect custom UI elements
-        QMetaObject.connectSlotsByName(self.QVizPlotWidget)
+        QMetaObject.connectSlotsByName(self)
 
     def menuBar(self):
-        menuBar = QMenuBar(self.QVizPlotWidget)
+        """Set menu bar.
+        """
+        menuBar = QMenuBar(self)
         exitMenu = menuBar.addMenu('File')
-        exitAction = QAction('Exit', self.plotWidget)
-        exitAction.triggered.connect(self.QVizPlotWidget.close)
+        exitAction = QAction('Exit', self.pgPlotWidget)
+        exitAction.triggered.connect(self.close)
         exitMenu.addAction(exitAction)
         return menuBar
 
     def customUI(self):
-        """ Add custom UI elements - pure PyQt widgets, to interact with
+        """Add custom UI elements - pure PyQt widgets, to interact with
         pyqtgraph.
-
-        Arguments:
-            dataTreeView (QWidget) : QWidget object.
         """
 
         # Set and add checkbox for toggling mouse plot interaction on/off
-        checkBox = QCheckBox(self.QVizPlotWidget)
+        checkBox = QCheckBox(self)
         checkBox.setChecked(True)
         checkBox.setObjectName("checkBox")
         checkBox.setText("Mouse Enabled")
@@ -163,9 +165,12 @@ class QVizPlotWidgetUI(object):
         return checkBox
 
     def toggleMouse(self, state):
+        """Enable/Disable mouse interaction with the plot.
+        Note: currently enables/disables only zoom in/out.
+        """
         if state == Qt.Checked:
             enabled = True
         else:
             enabled = False
 
-        self.QVizPlotWidget.ui.plotWidget.setMouseEnabled(x=enabled, y=enabled)
+        self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
