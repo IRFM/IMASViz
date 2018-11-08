@@ -193,6 +193,21 @@ class GlobalFonts:
     TEXT_BIG = QFont('Open Sans', 11)
     # TEXT.setStyleHint(QFont.TypeWriter)
 
+class GlobalStyles:
+    """Global styles dictionary.
+    """
+    from PyQt5.QtCore import Qt
+
+    # Set dictionary of line styles (keys) with their Qt style
+    # counterpart (values)
+    stylesDict = {'Solid Line' : Qt.SolidLine,
+                  'Dash Line' : Qt.DashLine,
+                  'Dot Line' : Qt.DotLine,
+                  'Dash Dot Line' : Qt.DashDotLine,
+                  'Dash Dot Dot Line' : Qt.DashDotDotLine,
+                  'Hide Line': Qt.NoPen}
+
+
 
 
 

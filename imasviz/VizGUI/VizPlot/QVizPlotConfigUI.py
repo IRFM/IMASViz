@@ -15,9 +15,10 @@
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
-    QDoubleSpinBox
+    QDoubleSpinBox, QComboBox
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
+from imasviz.VizUtils.QVizGlobalValues import GlobalStyles
 
 class QVizPlotConfigUI(QDialog):
     """Tabbed widget allowing plot customization.
@@ -145,6 +146,8 @@ class TabColorAndLineProperties(QWidget):
         scrollLayout.addWidget(QLabel('Thickness'), 0, 4, 1, 1)
         scrollLayout.addWidget(QLabel('Symbol'),    0, 5, 1, 1)
 
+        #
+
         # Add options for each plotDataItem
         i = 0
         for pdItem in self.listPlotDataItems:
@@ -165,13 +168,13 @@ class TabColorAndLineProperties(QWidget):
                 pdItem=pdItem,
                 lineEdit=labelEdit))
             # ------------------------------------------------------------------
-            # Configuring plot line color
+            # Configuring plot pen color
             colorButton = pg.ColorButton()
-            # - Set current plot line color (takes QColor)
+            # - Set current plot pen color (takes QColor)
             colorButton.setColor(pdItem.opts['pen'].color())
             # - Add colorButton to layout
             scrollLayout.addWidget(colorButton, i+1, 2, 1, 1)
-            # - Update plot color
+            # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
             # -- While selecting color
@@ -185,10 +188,38 @@ class TabColorAndLineProperties(QWidget):
             #     pdItem=pdItem,
             #     colorButton=colorButton))
             # ------------------------------------------------------------------
-            # Configuring plot line style
-            # TODO
+            # Configuring plot pen style
+            styleComboBox = QComboBox()
+
+            # # - Set dictionary of line styles (keys) with their Qt style
+            # #   counterpart (values)
+            # self.stylesDict = {'Solid Line' : Qt.SolidLine,
+            #               'Dash Line' : Qt.DashLine,
+            #               'Dot Line' : Qt.DotLine,
+            #               'Dash Dot Line' : Qt.DashDotLine,
+            #               'Dash Dot Dot Line' : Qt.DashDotDotLine}
+
+            # - Set list of line styles
+            stylesList = list(GlobalStyles.stylesDict.keys())
+
+            # stylesList = ['Solid Line',
+            #               'Dash Line',
+            #               'Dot Line',
+            #               'Dash Dot Line',
+            #               'Dash Dot Dot Line']
+            # - Add list of styles to comboBox
+            styleComboBox.addItems(stylesList)
+
+            # - Update plot pen style on value change
+            styleComboBox.currentIndexChanged.connect(partial(
+                self.updatePDItemStyle,
+                pdItem=pdItem,
+                comboBox=styleComboBox))
+
+            # - Add comboBox to layout
+            scrollLayout.addWidget(styleComboBox, i+1, 3, 1, 1)
             # ------------------------------------------------------------------
-            # Configuring plot line width
+            # Configuring plot pen width
             widthSpinBox = QDoubleSpinBox(value=pdItem.opts['pen'].width(),
                                           maximum=50.0,
                                           minimum=0.0,
@@ -196,6 +227,7 @@ class TabColorAndLineProperties(QWidget):
             # - Add spinBox to layout
             scrollLayout.addWidget(widthSpinBox, i+1, 4, 1, 1)
 
+            # - Update plot pen width/thickness on value change
             widthSpinBox.valueChanged.connect(partial(
                 self.updatePDItemWidth,
                 pdItem=pdItem,
@@ -252,8 +284,19 @@ class TabColorAndLineProperties(QWidget):
         pdItem.opts['pen'].setColor(colorButton.color())
         pdItem.updateItems()
 
-    # TODO
-    # def updatePlotStyle()
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
+    def updatePDItemStyle(self, pdItem, comboBox):
+        """Update plotDataItem pen style.
+        Note: instant update (no apply required).
+
+        Arguments:
+            pdItem   (pg.plotDataItem) : PlotDataItem to update.
+            comboBox (QComboBox)       : ComboBox with which the new style is
+                                         set.
+        """
+        # Change item pen style
+        pdItem.opts['pen'].setStyle(GlobalStyles.stylesDict[comboBox.currentText()])
+        pdItem.updateItems()
 
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
     def updatePDItemWidth(self, pdItem, spinBox):
