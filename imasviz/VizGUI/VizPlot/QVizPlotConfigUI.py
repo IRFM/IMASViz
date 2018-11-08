@@ -18,12 +18,12 @@ from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDoubleSpinBox, QComboBox
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
-from imasviz.VizUtils.QVizGlobalValues import GlobalStyles
+from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols
 
 class QVizPlotConfigUI(QDialog):
     """Tabbed widget allowing plot customization.
     """
-    def __init__(self, viewBox, parent=None, size=(500,400)):
+    def __init__(self, viewBox, parent=None, size=(1000,400)):
         super(QVizPlotConfigUI, self).__init__(parent)
 
         # Dialog settings
@@ -139,14 +139,20 @@ class TabColorAndLineProperties(QWidget):
         scrollLayout = QGridLayout(scrollContent)
 
         # Set header
-        scrollLayout.addWidget(QLabel('#'),         0, 0, 1, 1)
-        scrollLayout.addWidget(QLabel('Label'),     0, 1, 1, 1)
-        scrollLayout.addWidget(QLabel('Color'),     0, 2, 1, 1)
-        scrollLayout.addWidget(QLabel('Style'),     0, 3, 1, 1)
-        scrollLayout.addWidget(QLabel('Thickness'), 0, 4, 1, 1)
-        scrollLayout.addWidget(QLabel('Symbol'),    0, 5, 1, 1)
+        # - Set list of header items
+        listHeaderLabels = ['#',
+                        'Label',
+                        'Color',
+                        'Style',
+                        'Thickness',
+                        'Symbol',
+                        'Symbol Size',
+                        'Symbol Color',
+                        'Symbol Outline Color']
+        # - Set header item for each column (i)
+        for i in range(len(listHeaderLabels)):
+            scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
-        #
 
         # Add options for each plotDataItem
         i = 0
@@ -169,44 +175,32 @@ class TabColorAndLineProperties(QWidget):
                 lineEdit=labelEdit))
             # ------------------------------------------------------------------
             # Configuring plot pen color
-            colorButton = pg.ColorButton()
+            penColorButton = pg.ColorButton()
             # - Set current plot pen color (takes QColor)
-            colorButton.setColor(pdItem.opts['pen'].color())
-            # - Add colorButton to layout
-            scrollLayout.addWidget(colorButton, i+1, 2, 1, 1)
+            penColorButton.setColor(pdItem.opts['pen'].color())
+            # - Add penColorButton to layout
+            scrollLayout.addWidget(penColorButton, i+1, 2, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
             # -- While selecting color
-            colorButton.sigColorChanging.connect(partial(
+            penColorButton.sigColorChanging.connect(partial(
                 self.updatePDItemColor,
                 pdItem=pdItem,
-                colorButton=colorButton))
+                colorButton=penColorButton))
             # -- When done selecting color
-            # colorButton.sigColorChanged.connect(partial(
+            # penColorButton.sigColorChanged.connect(partial(
             #     self.updatePDItemColor,
             #     pdItem=pdItem,
-            #     colorButton=colorButton))
+            #     colorButton=penColorButton))
             # ------------------------------------------------------------------
             # Configuring plot pen style
             styleComboBox = QComboBox()
 
-            # # - Set dictionary of line styles (keys) with their Qt style
-            # #   counterpart (values)
-            # self.stylesDict = {'Solid Line' : Qt.SolidLine,
-            #               'Dash Line' : Qt.DashLine,
-            #               'Dot Line' : Qt.DotLine,
-            #               'Dash Dot Line' : Qt.DashDotLine,
-            #               'Dash Dot Dot Line' : Qt.DashDotDotLine}
+            # - Set list of line styles using keys from globalQtStyles
+            #   dictionary
+            stylesList = list(GlobalQtStyles.stylesDict.keys())
 
-            # - Set list of line styles
-            stylesList = list(GlobalStyles.stylesDict.keys())
-
-            # stylesList = ['Solid Line',
-            #               'Dash Line',
-            #               'Dot Line',
-            #               'Dash Dot Line',
-            #               'Dash Dot Dot Line']
             # - Add list of styles to comboBox
             styleComboBox.addItems(stylesList)
 
@@ -232,6 +226,80 @@ class TabColorAndLineProperties(QWidget):
                 self.updatePDItemWidth,
                 pdItem=pdItem,
                 spinBox=widthSpinBox))
+            # ------------------------------------------------------------------
+            # Configuring symbol type
+            symbolComboBox = QComboBox()
+
+            # - Set list of symbol types using keys from globalQtStyles
+            #   dictionary
+            symbolsList = list(GlobalPgSymbols.symbolsDict.keys())
+
+            # - Add list of styles to comboBox
+            symbolComboBox.addItems(symbolsList)
+
+            # - Update plot pen style on value change
+            symbolComboBox.currentIndexChanged.connect(partial(
+                self.updatePDItemSymbol,
+                pdItem=pdItem,
+                comboBox=symbolComboBox))
+
+            # - Add comboBox to layout
+            scrollLayout.addWidget(symbolComboBox, i+1, 5, 1, 1)
+            # ------------------------------------------------------------------
+            # Configuring symbol size
+            symbolSizeSpinBox = QDoubleSpinBox(value=pdItem.opts['symbolSize'],
+                                               maximum=100.0,
+                                               minimum=0.0,
+                                               singleStep=0.5)
+            # - Add spinBox to layout
+            scrollLayout.addWidget(symbolSizeSpinBox, i+1, 6, 1, 1)
+
+            # - Update plot pen width/thickness on value change
+            symbolSizeSpinBox.valueChanged.connect(partial(
+                self.updatePDItemSymbolSize,
+                pdItem=pdItem,
+                spinBox=symbolSizeSpinBox))
+            # ------------------------------------------------------------------
+            # Configuring symbol fill color
+            symbolColorButton = pg.ColorButton()
+            # - Set current symbol fill color (takes QColor)
+            symbolColorButton.setColor(pdItem.opts['symbolBrush'])
+            # - Add symbolColorButton to layout
+            scrollLayout.addWidget(symbolColorButton, i+1, 7, 1, 1)
+            # - Update plot pen color on value change
+            #   Note: Better to work with only one signal, either
+            #   sigColorChanging or sigColorChanged
+            # -- While selecting color
+            symbolColorButton.sigColorChanging.connect(partial(
+                self.updatePDItemSymbolColor,
+                pdItem=pdItem,
+                colorButton=symbolColorButton))
+            # -- When done selecting color
+            # symbolColorButton.sigColorChanged.connect(partial(
+            #     self.updatePDItemSymbolColor,
+            #     pdItem=pdItem,
+            #     colorButton=symbolColorButton))
+
+            # ------------------------------------------------------------------
+            # Configuring symbol outline color
+            symbolOColorButton = pg.ColorButton()
+            # - Set current symbol outline color (takes QColor)
+            symbolOColorButton.setColor(pdItem.opts['symbolPen'])
+            # - Add symbolOColorButton to layout
+            scrollLayout.addWidget(symbolOColorButton, i+1, 8, 1, 1)
+            # - Update plot pen color on value change
+            #   Note: Better to work with only one signal, either
+            #   sigColorChanging or sigColorChanged
+            # -- While selecting color
+            symbolOColorButton.sigColorChanging.connect(partial(
+                self.updatePDItemSymbolOutlineColor,
+                pdItem=pdItem,
+                colorButton=symbolOColorButton))
+            # -- When done selecting color
+            # symbolOColorButton.sigColorChanged.connect(partial(
+            #     self.updatePDItemSymbolOutlineColor,
+            #     pdItem=pdItem,
+            #     colorButton=symbolOColorButton))
 
             i += 1
 
@@ -239,6 +307,9 @@ class TabColorAndLineProperties(QWidget):
         scrollLayout.setContentsMargins(0,0,0,0)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
+
+        # titleLabel = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.titleLabel
+        # viewBox = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.vb
 
         return scrollArea
 
@@ -267,9 +338,6 @@ class TabColorAndLineProperties(QWidget):
         # - Update label text
         legendLabelItem.setText(newLabel)
 
-        # titleLabel = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.titleLabel
-        # viewBox = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.vb
-
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
     def updatePDItemColor(self, pdItem, colorButton):
         """Update plotDataItem pen color.
@@ -295,7 +363,7 @@ class TabColorAndLineProperties(QWidget):
                                          set.
         """
         # Change item pen style
-        pdItem.opts['pen'].setStyle(GlobalStyles.stylesDict[comboBox.currentText()])
+        pdItem.opts['pen'].setStyle(GlobalQtStyles.stylesDict[comboBox.currentText()])
         pdItem.updateItems()
 
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
@@ -312,9 +380,60 @@ class TabColorAndLineProperties(QWidget):
         pdItem.opts['pen'].setWidth(spinBox.value())
         pdItem.updateItems()
 
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
+    def updatePDItemSymbol(self, pdItem, comboBox):
+        """Update plotDataItem pen width.
+        Note: instant update (no apply required).
 
+        Arguments:
+            pdItem  (pg.plotDataItem) : PlotDataItem to update.
+            comboBox (QComboBox)      : QComboBox with which the symbol type
+                                        is set.
+        """
 
+        # Change item symbol type
+        pdItem.opts['symbol'] = GlobalPgSymbols.symbolsDict[comboBox.currentText()]
+        pdItem.updateItems()
 
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
+    def updatePDItemSymbolSize(self, pdItem, spinBox):
+        """Update plotDataItem symbol size.
+        Note: instant update (no apply required).
 
+        Arguments:
+            pdItem  (pg.plotDataItem) : PlotDataItem to update.
+            spinBox (QDoubleSpinBox)  : SpinBox with which the new size is set.
+        """
 
+        # Change item symbol size
+        pdItem.opts['symbolSize'] = spinBox.value()
+        pdItem.updateItems()
 
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
+    def updatePDItemSymbolColor(self, pdItem, colorButton):
+        """Update plotDataItem symbol color.
+        Note: instant update (no apply required).
+
+        Arguments:
+            pdItem       (pg.plotDataItem) : PlotDataItem to update.
+            colorButton  (pg.ColorButton)  : ColorButton with which the new
+                                             color is set.
+        """
+        # Change symbol color
+        pdItem.opts['symbolBrush'] = colorButton.color().toRgb()
+        pdItem.updateItems()
+        pass
+
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
+    def updatePDItemSymbolOutlineColor(self, pdItem, colorButton):
+        """Update plotDataItem symbol outline color.
+        Note: instant update (no apply required).
+
+        Arguments:
+            pdItem       (pg.plotDataItem) : PlotDataItem to update.
+            colorButton  (pg.ColorButton)  : ColorButton with which the new
+                                             color is set.
+        """
+        # Change symbol outline color
+        pdItem.opts['symbolPen'] = colorButton.color().toRgb()
+        pdItem.updateItems()

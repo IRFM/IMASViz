@@ -193,8 +193,8 @@ class GlobalFonts:
     TEXT_BIG = QFont('Open Sans', 11)
     # TEXT.setStyleHint(QFont.TypeWriter)
 
-class GlobalStyles:
-    """Global styles dictionary.
+class GlobalQtStyles:
+    """Global Qt styles dictionary.
     """
     from PyQt5.QtCore import Qt
 
@@ -207,7 +207,21 @@ class GlobalStyles:
                   'Dash Dot Dot Line' : Qt.DashDotDotLine,
                   'Hide Line': Qt.NoPen}
 
+class GlobalPgSymbols:
+    """Global pyqtgraph list of symbols.
+    """
 
-
-
-
+    # Set dictionary of plot symbols types description (keys) with their
+    # pyqtgraph recognized label (variable).
+    symbolsDict = { 'None'           : None,
+                    'O'              : 'o',
+                    '+'              : '+',
+                    'Triangle Down'  : 't',
+                    'Triangle Up'    : 't1',
+                    'Triangle Right' : 't2',
+                    'Triangle Left'  : 't3',
+                    'Square'         : 's',
+                    'Rhomb'          : 'd',
+                    'Pentagon'       : 'p',
+                    'Hexagon'        : 'h',
+                    'Star'           : 'star'}
