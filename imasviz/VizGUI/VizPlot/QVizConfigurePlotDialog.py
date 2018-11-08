@@ -136,9 +136,6 @@ class TabColorAndLineProperties(QWidget):
         # Set layout for scrollable area
         scrollLayout = QGridLayout(scrollContent)
 
-        # Empty lists of QLineEdit
-        self.lineEditList = []
-
         # Set header
         scrollLayout.addWidget(QLabel('#'),         0, 0, 1, 1)
         scrollLayout.addWidget(QLabel('Label'),     0, 1, 1, 1)
@@ -148,18 +145,22 @@ class TabColorAndLineProperties(QWidget):
         scrollLayout.addWidget(QLabel('Symbol'),    0, 5, 1, 1)
 
         # Add options for each plotDataItem
-        for i in range(len(self.listPlotDataItems)):
-            # Add ID
+        i = 0
+        for plotDataItem in self.listPlotDataItems:
+            # Add ID label
             scrollLayout.addWidget(QLabel(str(i)),  i+1, 0, 1, 1)
             # Add editable text box containing item label (string)
-            lineEdit = QLineEdit(self.listPlotDataItems[i].opts['name'])
-            self.lineEditList.append(lineEdit)
-            scrollLayout.addWidget(self.lineEditList[-1], i+1, 1, 1, 1)
+            lineEdit = QLineEdit(plotDataItem.opts['name'])
+            # Add item ID to lineEdit
+            lineEdit.itemID = i
+            # Add lineEdit to layout
+            scrollLayout.addWidget(lineEdit, i+1, 1, 1, 1)
             # Add action triggered by modification of the text box
-            self.lineEditList[-1].textChanged.connect(
+            lineEdit.textChanged.connect(
                 partial(self.updatePlotLabel,
-                        plot=self.listPlotDataItems[-1],
-                        lineEdit=self.lineEditList[-1]))
+                        plotDataItem=plotDataItem,
+                        lineEdit=lineEdit))
+            i += 1
 
         # Add all contents to scrollArea widget
         scrollLayout.setContentsMargins(0,0,0,0)
@@ -169,27 +170,27 @@ class TabColorAndLineProperties(QWidget):
         return scrollArea
 
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QLineEdit)
-    def updatePlotLabel(self, plot, lineEdit):
-        """Update plot label and plotWidget legend.
+    def updatePlotLabel(self, plotDataItem, lineEdit):
+        """Update plotDataItem label and plotWidget legend.
         Note: instant update (no apply required).
 
         Arguments:
-            plot (pg.plotDataItem) : PlotDataItem.
-            lineEdit (QLineEdit)   : QLineEdit where the changes to the text
-                                     occur.
+            plotDataItem (pg.plotDataItem) : PlotDataItem.
+            lineEdit (QLineEdit)           : QLineEdit where the changes to the
+                                             text occur.
         """
 
         # Set new label
         newLabel = lineEdit.text()
         # Update the plotDataItem name variable
-        plot.opts['name'] = newLabel
+        plotDataItem.opts['name'] = newLabel
 
         # Update plotWidget legend
         # Note: the changes are instant (no apply required)
         # - Get legendItem
         legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[0][1]
+        legendLabelItem = legendItem.items[lineEdit.itemID][1]
         # - Update label text
         legendLabelItem.setText(newLabel)
 
