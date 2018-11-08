@@ -1,4 +1,4 @@
-#  Name   : QVizConfigurePlotDialog
+#  Name   : QVizPlotConfigUI
 #
 #          Dialog containing tabs with options for direct plot customization
 #          (line colors etc.).
@@ -14,18 +14,19 @@
 
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
-    QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit
+    QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
+    QDoubleSpinBox
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 
-class QVizConfigurePlotDialog(QDialog):
+class QVizPlotConfigUI(QDialog):
     """Tabbed widget allowing plot customization.
     """
     def __init__(self, viewBox, parent=None, size=(500,400)):
-        super(QVizConfigurePlotDialog, self).__init__(parent)
+        super(QVizPlotConfigUI, self).__init__(parent)
 
         # Dialog settings
-        self.setObjectName("QVizConfigurePlotDialog")
+        self.setObjectName("QVizPlotConfigUI")
         self.setWindowTitle("Configure Plot")
         self.resize(size[0], size[1])
 
@@ -146,20 +147,60 @@ class TabColorAndLineProperties(QWidget):
 
         # Add options for each plotDataItem
         i = 0
-        for plotDataItem in self.listPlotDataItems:
+        for pdItem in self.listPlotDataItems:
             # Add ID label
             scrollLayout.addWidget(QLabel(str(i)),  i+1, 0, 1, 1)
-            # Add editable text box containing item label (string)
-            lineEdit = QLineEdit(plotDataItem.opts['name'])
-            # Add item ID to lineEdit
-            lineEdit.itemID = i
-            # Add lineEdit to layout
-            scrollLayout.addWidget(lineEdit, i+1, 1, 1, 1)
-            # Add action triggered by modification of the text box
-            lineEdit.textChanged.connect(
-                partial(self.updatePlotLabel,
-                        plotDataItem=plotDataItem,
-                        lineEdit=lineEdit))
+
+            # ------------------------------------------------------------------
+            # Configuring legend label
+            # - Add editable text box containing item label (string)
+            labelEdit = QLineEdit(pdItem.opts['name'])
+            # - Add item ID to labelEdit
+            labelEdit.itemID = i
+            # - Add labelEdit to layout
+            scrollLayout.addWidget(labelEdit, i+1, 1, 1, 1)
+            # - Add action triggered by modification of the text box
+            labelEdit.textChanged.connect(partial(
+                self.updatePDItemLabel,
+                pdItem=pdItem,
+                lineEdit=labelEdit))
+            # ------------------------------------------------------------------
+            # Configuring plot line color
+            colorButton = pg.ColorButton()
+            # - Set current plot line color (takes QColor)
+            colorButton.setColor(pdItem.opts['pen'].color())
+            # - Add colorButton to layout
+            scrollLayout.addWidget(colorButton, i+1, 2, 1, 1)
+            # - Update plot color
+            #   Note: Better to work with only one signal, either
+            #   sigColorChanging or sigColorChanged
+            # -- While selecting color
+            colorButton.sigColorChanging.connect(partial(
+                self.updatePDItemColor,
+                pdItem=pdItem,
+                colorButton=colorButton))
+            # -- When done selecting color
+            # colorButton.sigColorChanged.connect(partial(
+            #     self.updatePDItemColor,
+            #     pdItem=pdItem,
+            #     colorButton=colorButton))
+            # ------------------------------------------------------------------
+            # Configuring plot line style
+            # TODO
+            # ------------------------------------------------------------------
+            # Configuring plot line width
+            widthSpinBox = QDoubleSpinBox(value=pdItem.opts['pen'].width(),
+                                          maximum=50.0,
+                                          minimum=0.0,
+                                          singleStep=0.5)
+            # - Add spinBox to layout
+            scrollLayout.addWidget(widthSpinBox, i+1, 4, 1, 1)
+
+            widthSpinBox.valueChanged.connect(partial(
+                self.updatePDItemWidth,
+                pdItem=pdItem,
+                spinBox=widthSpinBox))
+
             i += 1
 
         # Add all contents to scrollArea widget
@@ -170,20 +211,20 @@ class TabColorAndLineProperties(QWidget):
         return scrollArea
 
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QLineEdit)
-    def updatePlotLabel(self, plotDataItem, lineEdit):
+    def updatePDItemLabel(self, pdItem, lineEdit):
         """Update plotDataItem label and plotWidget legend.
         Note: instant update (no apply required).
 
         Arguments:
-            plotDataItem (pg.plotDataItem) : PlotDataItem.
-            lineEdit (QLineEdit)           : QLineEdit where the changes to the
-                                             text occur.
+            pdItem   (pg.plotDataItem) : PlotDataItem to update.
+            lineEdit (QLineEdit)       : QLineEdit where the changes to the
+                                         text occur.
         """
 
         # Set new label
         newLabel = lineEdit.text()
         # Update the plotDataItem name variable
-        plotDataItem.opts['name'] = newLabel
+        pdItem.opts['name'] = newLabel
 
         # Update plotWidget legend
         # Note: the changes are instant (no apply required)
@@ -196,6 +237,41 @@ class TabColorAndLineProperties(QWidget):
 
         # titleLabel = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.titleLabel
         # viewBox = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.vb
+
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
+    def updatePDItemColor(self, pdItem, colorButton):
+        """Update plotDataItem pen color.
+        Note: instant update (no apply required).
+
+        Arguments:
+            pdItem       (pg.plotDataItem) : PlotDataItem to update.
+            colorButton  (pg.ColorButton)  : ColorButton with which the new
+                                             color is set.
+        """
+        # Change pen color
+        pdItem.opts['pen'].setColor(colorButton.color())
+        pdItem.updateItems()
+
+    # TODO
+    # def updatePlotStyle()
+
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
+    def updatePDItemWidth(self, pdItem, spinBox):
+        """Update plotDataItem pen width.
+        Note: instant update (no apply required).
+
+        Arguments:
+            pdItem  (pg.plotDataItem) : PlotDataItem to update.
+            spinBox (QDoubleSpinBox)  : SpinBox with which the new width is set.
+        """
+
+        # Change item pen width
+        pdItem.opts['pen'].setWidth(spinBox.value())
+        pdItem.updateItems()
+
+
+
+
 
 
 

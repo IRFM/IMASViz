@@ -14,8 +14,8 @@
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QAction, QMenu
-from imasviz.VizGUI.VizPlot.QVizConfigurePlotDialog \
-    import QVizConfigurePlotDialog
+from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
+    import QVizPlotConfigUI
 
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
@@ -124,5 +124,5 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
     def showConfigurePlot(self):
         """Set and show custom plot configuration GUI.
         """
-        self.plotConfDialog = QVizConfigurePlotDialog(viewBox=self)
+        self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
