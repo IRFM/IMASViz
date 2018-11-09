@@ -84,7 +84,7 @@ class QVizPlotWidget(QWidget):
 
             # Set pen
             # Note: width higher than '1' considerably decreases performance
-            pen = pg.mkPen(color=self.RGBlist[next_RGB_ID], width=3, style=style)
+            pen = pg.mkPen(color=self.RGBlist[next_RGB_ID], width=1, style=style)
 
         # Plot and plot settings
         # - Add plot

@@ -237,6 +237,13 @@ class TabColorAndLineProperties(QWidget):
             # - Add list of styles to comboBox
             symbolComboBox.addItems(symbolsList)
 
+            # - Set current symbol type to be shown
+            currentQtStyle = \
+                list(GlobalPgSymbols.symbolsDict.keys())[    \
+                list(GlobalPgSymbols.symbolsDict.values()).  \
+                index(pdItem.opts['symbol'])]
+            symbolComboBox.setCurrentText(currentQtStyle)
+
             # - Update plot pen style on value change
             symbolComboBox.currentIndexChanged.connect(partial(
                 self.updatePDItemSymbol,
@@ -246,7 +253,7 @@ class TabColorAndLineProperties(QWidget):
             # - Add comboBox to layout
             scrollLayout.addWidget(symbolComboBox, i+1, 5, 1, 1)
             # ------------------------------------------------------------------
-            # Configuring symbol size
+            # Configuring symbol size. Take current symbol size as a value
             symbolSizeSpinBox = QDoubleSpinBox(value=pdItem.opts['symbolSize'],
                                                maximum=100.0,
                                                minimum=0.0,
