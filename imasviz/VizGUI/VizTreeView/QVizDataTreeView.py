@@ -21,7 +21,6 @@
 #       def onClose(...):
 #       def onUnselectSignals(...):
 #       def onCloseAndReopenDatabase(...):
-#       def createMenuBar(...):
 #       def updateView(...):
 #
 #    - class TextCtrlLogger definition
@@ -449,7 +448,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.addDockWidgets()
 
         # Set and add menu bar
-        self.createMenuBar()
+        self.addMenuBar()
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self)
@@ -498,7 +497,7 @@ class QVizDataTreeViewFrame(QMainWindow):
                 self.dataTreeView.log.info("WARNING: GGD structure array from "
                     + "parent equilibrium.time_slice[itime] has been ignored.")
 
-    def createMenuBar(self):
+    def addMenuBar(self):
         """Create and configure the menu bar.
         """
         # Main menu bar
@@ -552,6 +551,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # action_onSetMultiplot.triggered.connect(self.onSetMultiplot)
         # subMenu_multiplot_set.addAction(action_onSetMultiplot)
 
+        # Set menu bar
         self.setMenuBar(menuBar)
 
     def addDockWidgets(self):
@@ -631,6 +631,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(DTV=self.dataTreeView).execute()
 
+    @pyqtSlot(bool)
     def onSetMultiPlot(self, all_DTV=False):
         """Apply selected signals (single or all DTVs) to MultiPlot.
 

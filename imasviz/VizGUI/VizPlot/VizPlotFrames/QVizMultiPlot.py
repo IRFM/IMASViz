@@ -15,11 +15,14 @@
 
 from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
-from PyQt5.QtWidgets import QMainWindow, QApplication
-from PyQt5.QtCore import Qt
+from PyQt5 import QtCore, QtGui, QtWidgets
+import PyQt5.QtCore
+import PyQt5.QtGui
+import PyQt5.QtWidgets
 import traceback, math
 import sys
 import numpy as np
+from functools import partial
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
     import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals \
@@ -29,11 +32,12 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, FigureTypes
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
-from PyQt5.QtGui import QFont, QTextOption, QWidget, QVBoxLayout, QScrollArea
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
+from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig \
+    import QVizSavePlotConfig
 
-class QVizMultiPlot(QMainWindow):
+class QVizMultiPlot(QtWidgets.QMainWindow):
     """Main MultiPlot window for plotting the selected signals.
     """
     def __init__(self, dataTreeView, figureKey=0, update=0,
@@ -87,6 +91,12 @@ class QVizMultiPlot(QMainWindow):
         # Adjust the window and its children size
         self.windowSizeAdjustement()
 
+        # Add menu bar
+        self.addMenuBar()
+
+        # Connect custom UI elements
+        QtCore.QMetaObject.connectSlotsByName(self)
+
         # Show MultiPlot window
         self.show()
 
@@ -122,15 +132,15 @@ class QVizMultiPlot(QMainWindow):
         """
 
         # Set scrollable area
-        scrollArea = QScrollArea(self)
-        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea = QtGui.QScrollArea(self)
+        scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
+        scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         scrollArea.setWidgetResizable(True)
         scrollArea.setEnabled(True)
-        scrollContent = QWidget(scrollArea)
+        scrollContent = QtGui.QWidget(scrollArea)
 
         # Set layout for scrollable area
-        scrollLayout = QVBoxLayout(scrollContent)
+        scrollLayout = QtGui.QVBoxLayout(scrollContent)
         scrollLayout.addWidget(graphicsWindow)
         scrollLayout.setContentsMargins(0,0,0,0)
         scrollContent.setLayout(scrollLayout)
@@ -259,6 +269,8 @@ class QVizMultiPlot(QMainWindow):
                             ylabel=ylabel)
                     # Get the current (last) plot item, created by gw.plot()
                     currentPlotItem = gw.getCurrentPlotItem()
+                    # Add new attribute to current item, holding all signal data
+                    currentPlotItem.signalData = dtv_selectedSignals[signalKey]
                     # Get titleLabel
                     tLabel = currentPlotItem.titleLabel
                     # Set title label size
@@ -270,8 +282,8 @@ class QVizMultiPlot(QMainWindow):
                     # Note: required for alignment to take effect
                     tLabel.item.setTextWidth(250)
                     # Set alignment as text option
-                    option = QTextOption()
-                    option.setAlignment(Qt.AlignCenter)
+                    option = QtGui.QTextOption()
+                    option.setAlignment(QtCore.Qt.AlignCenter)
                     tLabel.item.document().setDefaultTextOption(option)
 
                 # Next plot number
@@ -323,6 +335,21 @@ class QVizMultiPlot(QMainWindow):
         #     getSortedSelectedSignals(WxDataTreeView.selectedSignals)
         return dtv_selectedSignals, selectedsignalsMap
 
+    def addMenuBar(self):
+        """Create and configure the menu bar.
+        """
+        # Main menu bar
+        menuBar = QtWidgets.QMenuBar(self)
+        options = menuBar.addMenu('Options')
+        #-----------------------------------------------------------------------
+        # Set new menu item for saving plot configuration
+        action_onSavePlotConf = QtWidgets.QAction('Save Plot Configuration', self)
+        action_onSavePlotConf.triggered.connect(self.onSavePlotConf)
+        options.addAction(action_onSavePlotConf)
+
+        # Set menu bar
+        self.setMenuBar(menuBar)
+
     def getNumSignals(self):
         """Get number of signals intended for the MultiPlot feature
            from either opened DTVs or from configuration file if it is loaded.
@@ -369,7 +396,19 @@ class QVizMultiPlot(QMainWindow):
         """Get screen geometry.
         Note: QApplication instance required / application must be running.
         """
-        QApplication.instance().desktop().screenGeometry()
+        QtWidgets.QApplication.instance().desktop().screenGeometry()
+
+    def getPlotItemsDict(self):
+        """Return dictionary of GraphicWindow plot items."""
+        return self.gw.centralWidget.items
+
+    @QtCore.pyqtSlot()
+    def onSavePlotConf(self):
+        """Save configuration for single DTV.
+        """
+        QVizSavePlotConfig(multiPlotWindow=self).execute()
+
+
 
     # TODO
     # def applyPlotConfigurationBeforePlotting
@@ -383,7 +422,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
     def __init__(self, parent, ncols=3):
         """
         Arguments:
-            parent (QMainWindow) : Parent of MultiPlot GraphicsWindow.
+            parent (QtWidgets.QMainWindow) : Parent of MultiPlot GraphicsWindow.
             ncols  (int)         : Number of columns.
         """
 
@@ -434,7 +473,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         # - Note: self.RGBlist[0] -> blue color
         color = RGBlist[0]
         # Set style
-        style = Qt.SolidLine
+        style = QtCore.Qt.SolidLine
         # Set pen
         pen = mkPen(color=color, width=3, style=style)
 

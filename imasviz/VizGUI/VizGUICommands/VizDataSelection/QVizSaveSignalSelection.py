@@ -13,14 +13,15 @@
 
 import time
 import xml.etree.ElementTree as ET
-
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
 
 class QVizSaveSignalSelection(QVizAbstractCommand):
     """Save signal selection as a list of signal paths to '.lsp' file.
+
+    Arguments:
+        DTV (QTreeWidget) : Corresponding DataTreeView.
     """
 
     def __init__(self, DTV, nodeData=None):
@@ -51,7 +52,6 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
         configName = QVizGlobalOperations.replaceSpacesByUnderScores(configName)
         if configName.endswith(".lsp"):
             configName = configName[:-3]
-            print("* configName: ", configName)
 
         # Set file name path
         filePath = QVizGlobalOperations.getConfFilePath(configName=configName,
@@ -62,7 +62,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
         # Set root element
         root = ET.Element('SignalSelection')
         root.set('comment', 'This file has been generated automatically by '
-                 'the IMAS_VIZ application. It contains saved signal selection: '
+                 'the IMASVIZ application. It contains saved signal selection: '
                  'a list of signal paths - IDS database paths to arrays '
                  'containing data suitable for plotting.')
 
