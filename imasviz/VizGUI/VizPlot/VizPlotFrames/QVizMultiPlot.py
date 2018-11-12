@@ -265,7 +265,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                     # Add plot
                     # Note: label='' is used because it is redefined with
                     # setText(text='', size='8pt')
-                    gw.plot(n=n, x=ti, y=u, label='', xlabel=xlabel,
+                    gw.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
                     # Get the current (last) plot item, created by gw.plot()
                     currentPlotItem = gw.getCurrentPlotItem()
@@ -406,7 +406,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
     def onSavePlotConf(self):
         """Save configuration for single DTV.
         """
-        QVizSavePlotConfig(multiPlotWindow=self).execute()
+        QVizSavePlotConfig(gWin=self.gw).execute()
 
 
 
@@ -428,6 +428,8 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
 
         super(QVizMultiPlotGraphicsWindow, self).__init__(parent=parent)
         # super(QVizMultiPlotGraphicsWindow, self).__init__()
+
+        self.parent = parent
 
         # Add attribute describing the number of columns
         # (same as self.centralWidget.rows is for number of rows. Initially
@@ -451,14 +453,19 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         p = self.addPlot(name = 'Plot'+str(n),
                          title=label,
                          pen=pen,
-                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self),
+                         x = x,
+                         y = y)
         # p = self.addPlot(name='plotName',
         #                   title="Basic array plotting " + str(n),
         #                   row=rowNum,
         #                   col=colNum)
-
+        # Set plotDataItem (p.dataItems[0]) name
+        # TODO: find out how to properly pass 'name' to plot (addPlot() and
+        #       plot() does not accept it...)
+        p.dataItems[0].opts['name'] = label.replace("\n", "")
         p.showGrid(x=True, y=True)
-        p.plot(x, y, pen=pen)
+        # p.plot(x, y, pen=pen)
 
         if (n+1)%self.centralWidget.cols == 0:
             self.nextRow()
@@ -482,3 +489,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
     def getCurrentPlotItem(self):
         # Get the current (last) plot item, created by gw.plot()
         return list(self.centralWidget.items.keys())[-1]
+
+    def getPlotItemsDict(self):
+        """Return dictionary of GraphicWindow plot items."""
+        return self.centralWidget.items

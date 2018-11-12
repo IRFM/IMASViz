@@ -44,10 +44,10 @@ class QVizConfigurationListsWindow(QDialog):
         """
         self.tabWidget = QTabWidget()
         self.tabPlotConf = PlotConfigurationListsTab(parent=self)
-        self.tabSignnalListConf = ListOfSignalPathsListsTab(parent=self)
+        self.tabSignalListConf = ListOfSignalPathsListsTab(parent=self)
 
         self.tabWidget.addTab(self.tabPlotConf, 'Available Plot Configurations')
-        self.tabWidget.addTab(self.tabSignnalListConf, 'Available List of IDS paths')
+        self.tabWidget.addTab(self.tabSignalListConf, 'Available List of IDS paths')
 
         layout = QVBoxLayout()
 
@@ -56,6 +56,22 @@ class QVizConfigurationListsWindow(QDialog):
         layout.addWidget(self.tabWidget)
         self.setLayout(layout)
 
+    def updateList(self, listType='pcfg'):
+        """Update list containing either plot configurations ('pcfg') or list
+        of signal paths ('lsp').
+
+        Arguments:
+            listType (str) : String specifying which list to update
+                             (either 'pcfg' (default)or 'lsp').
+        """
+
+        # Updating list of plot configurations
+        if listType == 'pcfg':
+            self.tabPlotConf.updateList()
+        # Updating list of signal paths configuration
+        elif listType == 'lsp':
+            self.tabSignalListConf.updateList()
+
 class CommonConfigurationRoutines(QObject):
     """Common configuration routines.
     """
@@ -63,8 +79,8 @@ class CommonConfigurationRoutines(QObject):
     def __init__(self, parent=None):
         """
         Arguments:
-            parent (QWidget) : QWidget object, representing one of the tabs in the
-                               Configuration Lists Window.
+            parent (QWidget) : QWidget object, representing one of the tabs in
+                               the Configuration Lists Window.
         """
         super(CommonConfigurationRoutines, self).__init__()
         self.parent = parent

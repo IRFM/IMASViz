@@ -406,7 +406,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
         # Set empty list of configuration windows
-        self.configurationListsFrame = None
+        self.configurationListsWindow = None
 
         # Basic settings (QMainWindow)
         self.resize(800, 800)
@@ -629,7 +629,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         (QVizDataTreeView)
         """
         # Save signal selection as a list of signal paths to .lsp file
-        QVizSaveSignalSelection(DTV=self.dataTreeView).execute()
+        QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
 
     @pyqtSlot(bool)
     def onSetMultiPlot(self, all_DTV=False):

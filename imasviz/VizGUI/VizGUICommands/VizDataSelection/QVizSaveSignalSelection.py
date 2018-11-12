@@ -21,16 +21,16 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
     """Save signal selection as a list of signal paths to '.lsp' file.
 
     Arguments:
-        DTV (QTreeWidget) : Corresponding DataTreeView.
+        dataTreeView (QTreeWidget) : Corresponding DataTreeView.
     """
 
-    def __init__(self, DTV, nodeData=None):
+    def __init__(self, dataTreeView, nodeData=None):
         """Set self.nodeData = nodeData etc. with the use of the
            QVizAbstractCommand
         """
         QVizAbstractCommand.__init__(self, nodeData)
 
-        self.DTV = DTV
+        self.dataTreeView = dataTreeView
 
     def execute(self):
         defaultName = 'signalSelection-' + time.strftime('%d-%m-%Y')
@@ -38,7 +38,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
         message = 'Type the name of the configuration. \nNote. If left empty' \
             'the default name \n' + defaultName + '\nwill be used.'
         configName, ok = \
-            QVizGlobalOperations.askWithCancel(parent=self.DTV,
+            QVizGlobalOperations.askWithCancel(parent=self.dataTreeView,
                                                title='Dialog',
                                                message=message,
                                                default_value=defaultName)
@@ -69,8 +69,8 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
         # Set new subelement
         listElement = ET.SubElement(root, 'ListOfSignalPaths')
 
-        # Get list of signals, selected in the DataTreeView (DTV)
-        selectedSignalsDict = self.DTV.selectedSignalsDict
+        # Get list of signals, selected in the DataTreeView (dataTreeView)
+        selectedSignalsDict = self.dataTreeView.selectedSignalsDict
 
         n = 0
         for key in selectedSignalsDict:
@@ -99,8 +99,8 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
         treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
         #self.f.close()
 
-        if self.DTV.parent.configurationListsFrame != None:
-            self.DTV.parent.configurationListsFrame.update_lsp()
+        if self.dataTreeView.parent.configurationListsWindow != None:
+            self.dataTreeView.parent.configurationListsWindow.updateList('lsp')
 
     def saveAttribute(self, pathElement, attribute, value):
         if value != None:

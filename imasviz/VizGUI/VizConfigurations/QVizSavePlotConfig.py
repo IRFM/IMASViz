@@ -19,20 +19,24 @@ class QVizSavePlotConfig():
     """Save signal selection and plot configuration to '.pcfg' file.
 
     Arguments:
-        multiPlotWindow (QMainWindow) : Corresponding MultiPlot window.
+        gWin (pyqtgraph.GraphicsWindow) : Window containing the plots
+                                          (MultiPlot, SubPlot window).
     """
-    def __init__(self, multiPlotWindow, nodeData=None):
-        self.multiPlotWindow = multiPlotWindow
-        self.dataTreeView = multiPlotWindow.dataTreeView
+    def __init__(self, gWin, nodeData=None):
+        self.gWin = gWin
+        self.dataTreeView = gWin.parent.dataTreeView
         self.nodeData = nodeData
 
     def execute(self):
+        # Set default name of the configuration file
         defaultName = 'plotConfig-' + time.strftime('%d-%m-%Y')
         configName = None
+        # Set dialog message
         message = 'Type the name of the plot configuration. \nNote. If left ' \
             'empty the default name \n' + defaultName + '\nwill be used.'
+        # Set configuration file name via dialog
         configName, ok = \
-            QVizGlobalOperations.askWithCancel(parent=self.dataTreeView,
+            QVizGlobalOperations.askWithCancel(parent=self.gWin,
                                                title='Dialog',
                                                message=message,
                                                default_value=defaultName)
@@ -56,7 +60,7 @@ class QVizSavePlotConfig():
         print('Saving plot configuration to ' + filePath)
 
         # Set root element
-        root = ET.Element('PlotConfiguration')
+        root = ET.Element('Plot Configuration')
         root.set('comment', 'This file has been generated automatically by '
                  'the IMASVIZ application. It contains saved plot '
                  'configuration: '
@@ -65,17 +69,19 @@ class QVizSavePlotConfig():
                  'containing data suitable for plotting.')
 
         # Set new subelement
-        qwindowElement = ET.SubElement(root, 'QWindow')
+        gWinElement = ET.SubElement(root, 'GraphicsWindow')
 
         # Get dictionary of all plot items
-        plotItemsDict = self.multiPlotWindow.getPlotItemsDict()
+        plotItemsDict = self.gWin.getPlotItemsDict()
 
         # k = 0
-        # for n in range(0, len(self.multiPlotWindow.getPlotItemsDict())):
+        # for n in range(0, len(self.gWin.getPlotItemsDict())):
         for plotItem in plotItemsDict:
-
+            # Get row and column of the plot
             row = plotItemsDict[plotItem][0][0]
             column = plotItemsDict[plotItem][0][1]
+            # Set key, specifying plot row and column in graphicsWindow
+            key = (row, column)
 
             # TODO use
             # List of child plotDataItems
@@ -90,7 +96,46 @@ class QVizSavePlotConfig():
             # signal
             nodeData = plotItem.signalData['nodeData']
 
+            # Set new subelement
+            plotItemElement = ET.SubElement(gWinElement, 'PlotItem')
+            # Set subelement attribute 'key'
+            plotItemElement.set('key', str(key))
+
+            # Set new subelement
+            sourceInfoElement = ET.SubElement(plotItemElement, 'sourceInfoElement')
+
+            # Save plot source information
+            self.saveAttribute(sourceInfoElement, 'path', nodeData['Path'])
+            self.saveAttribute(sourceInfoElement, 'shotNum', plotItem.signalData['shotNumber'])
+            self.saveAttribute(sourceInfoElement, 'runNum', plotItem.signalData['runNumber'])
+            self.saveAttribute(sourceInfoElement, 'database', plotItem.signalData['imasDbName'])
+            self.saveAttribute(sourceInfoElement, 'userName', plotItem.signalData['userName'])
+
+            # Save plot configuration
+            self.saveAttribute(plotItemElement,'title', plotItem.titleLabel.item.document().toRawText())
+
             # TODO
+            # plotItem.axes.top ...
+            # plotItem.axes.bottom ...
+            # plotItem.axes.left ...
+            # plotItem.axes.right ...
+
+            # First plotDataItem
+            # plotItem.dataItems[0].opts ...
+
+            # plotItem.legend ...
+
+
+        self.indent(root)
+         # Set element tree
+        treeConfiguration = ET.ElementTree(root)
+        # Write configuration file
+        treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
+        #self.f.close()
+        # Update the DTV configuration window (for the newly created
+        # configuration to be displayed)
+        if self.dataTreeView.parent.configurationListsWindow != None:
+            self.dataTreeView.parent.configurationListsWindow.updateList('pcfg')
 
         """
 
@@ -181,12 +226,13 @@ class QVizSavePlotConfig():
         if self.DTV.parent.configurationListsFrame != None:
             self.DTV.parent.configurationListsFrame.update_pconf()
 
+    """
     def saveAttribute(self, panelElement, attribute, value):
         if value != None:
             panelElement.set(attribute, str(value))
 
-    def printCode(self, text, level):
-        return GlobalOperations.printCode(self.f, text, level)
+    # def printCode(self, text, level):
+    #     return GlobalOperations.printCode(self.f, text, level)
 
     def indent(self, elem, level=0):
         i = "\n" + level * "  "
@@ -202,4 +248,3 @@ class QVizSavePlotConfig():
         else:
             if level and (not elem.tail or not elem.tail.strip()):
                 elem.tail = i
-    """
