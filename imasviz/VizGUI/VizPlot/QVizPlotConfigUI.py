@@ -153,7 +153,6 @@ class TabColorAndLineProperties(QWidget):
         for i in range(len(listHeaderLabels)):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
-
         # Add options for each plotDataItem
         i = 0
         for pdItem in self.listPlotDataItems:
@@ -314,9 +313,6 @@ class TabColorAndLineProperties(QWidget):
         scrollLayout.setContentsMargins(0,0,0,0)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
-
-        # titleLabel = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.titleLabel
-        # viewBox = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.vb
 
         return scrollArea
 

@@ -408,8 +408,6 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """
         QVizSavePlotConfig(gWin=self.gw).execute()
 
-
-
     # TODO
     # def applyPlotConfigurationBeforePlotting
     # def applyPlotConfigurationAfterPlotting
@@ -446,16 +444,26 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         pg.setConfigOptions(antialias=True)
 
     def plot(self, n, x, y, label, xlabel, ylabel):
+        """Add new plot to MultiPlot GraphicsWindow.
+
+        Arguments:
+            n      (int)      : Plot number.
+            x      (1D array) : 1D array of X-axis values.
+            y      (1D array) : 1D array of Y-axis values.
+            label  (str)      : Plot label.
+            xlabel (str)      : Plot X-axis label.
+            ylabel (str)      : Plot Y-axis label.
+        """
 
         # Set pen
         pen = self.setPen()
         # Set new plot (use IMASViz custom plot context menu)
-        p = self.addPlot(name = 'Plot'+str(n),
+        p = self.addPlot(x=x,
+                         y=y,
+                         name='Plot'+str(n),
                          title=label,
                          pen=pen,
-                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self),
-                         x = x,
-                         y = y)
+                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         # p = self.addPlot(name='plotName',
         #                   title="Basic array plotting " + str(n),
         #                   row=rowNum,
@@ -487,7 +495,8 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         return pen
 
     def getCurrentPlotItem(self):
-        # Get the current (last) plot item, created by gw.plot()
+        """Get the current (last) plot item, created by gw.plot().
+        """
         return list(self.centralWidget.items.keys())[-1]
 
     def getPlotItemsDict(self):
