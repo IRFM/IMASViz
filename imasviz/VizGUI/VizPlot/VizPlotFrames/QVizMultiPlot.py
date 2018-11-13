@@ -19,7 +19,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import PyQt5.QtCore
 import PyQt5.QtGui
 import PyQt5.QtWidgets
-import traceback, math
+import traceback
+import math
 import sys
 import numpy as np
 from functools import partial
@@ -37,11 +38,13 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
 from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig \
     import QVizSavePlotConfig
 
+
 class QVizMultiPlot(QtWidgets.QMainWindow):
     """Main MultiPlot window for plotting the selected signals.
     """
+
     def __init__(self, dataTreeView, figureKey=0, update=0,
-                 configFile = None, all_DTV = True):
+                 configFile=None, all_DTV=True):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -73,7 +76,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         self.imas_viz_api.figureframes[figureKey] = self
 
         # Set number of rows and columns of panels in the MultiPlot frame
-        self.ncols = int(self.screenWidth*0.9/self.plotBaseDim) # round down
+        self.ncols = int(self.screenWidth * 0.9 / self.plotBaseDim)  # round down
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
@@ -142,7 +145,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         # Set layout for scrollable area
         scrollLayout = QtGui.QVBoxLayout(scrollContent)
         scrollLayout.addWidget(graphicsWindow)
-        scrollLayout.setContentsMargins(0,0,0,0)
+        scrollLayout.setContentsMargins(0, 0, 0, 0)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
 
@@ -154,13 +157,13 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
 
         # Set size of the graphics window
         # (depending on the number of plots and number of columns)
-        width_gw = self.gw.centralWidget.cols*(self.plotBaseDim+10)
-        height_gw = len(self.gw.centralWidget.rows)*self.plotBaseDim
+        width_gw = self.gw.centralWidget.cols * (self.plotBaseDim + 10)
+        height_gw = len(self.gw.centralWidget.rows) * self.plotBaseDim
         self.gw.setMinimumSize(width_gw, height_gw)
 
         # Set size of the main window
-        width_main = self.gw.centralWidget.cols*(self.plotBaseDim+20)
-        height_main = len(self.gw.centralWidget.rows)*self.plotBaseDim
+        width_main = self.gw.centralWidget.cols * (self.plotBaseDim + 20)
+        height_main = len(self.gw.centralWidget.rows) * self.plotBaseDim
         self.resize(width_main, height_main)
 
         # Set main window maximum size
@@ -299,7 +302,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                                               plots (PlotItems).
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
         """
-        selectedsignalsMap = {} #key = panel key, value = selected arrays count
+        selectedsignalsMap = {}  # key = panel key, value = selected arrays count
         pathsList = []
 
         # Unselect all signals
@@ -414,9 +417,11 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
     # def setPlotConfigAttribute
     # class modifyMultiPlot
 
+
 class QVizMultiPlotGraphicsWindow(GraphicsWindow):
     """GraphicsWindow containing the MultiPlot plots.
     """
+
     def __init__(self, parent, ncols=3):
         """
         Arguments:
@@ -436,7 +441,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
 
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
-        self.resize(1500,500)
+        self.resize(1500, 500)
         # self.adjustSize()
         # self.setWindowTitle('pyqtgraph example: Plotting')
 
@@ -460,7 +465,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         # Set new plot (use IMASViz custom plot context menu)
         p = self.addPlot(x=x,
                          y=y,
-                         name='Plot'+str(n),
+                         name='Plot' + str(n),
                          title=label,
                          pen=pen,
                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
@@ -475,7 +480,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         p.showGrid(x=True, y=True)
         # p.plot(x, y, pen=pen)
 
-        if (n+1)%self.centralWidget.cols == 0:
+        if (n + 1) % self.centralWidget.cols == 0:
             self.nextRow()
 
     @staticmethod

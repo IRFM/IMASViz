@@ -23,7 +23,8 @@ class QVizPlotWidget(QWidget):
     """PlotWidget containing pyqtgraph PlotWidget. Used for main plotting
     feature.
     """
-    def __init__(self, parent=None, size=(500,400), title='QVizPlotWidget'):
+
+    def __init__(self, parent=None, size=(500, 400), title='QVizPlotWidget'):
         super(QVizPlotWidget, self).__init__(parent)
 
         # Set default background color: white
@@ -73,9 +74,9 @@ class QVizPlotWidget(QWidget):
 
             # Set color loop counter (for cases where there are more plots
             # than available plot color+style variations)
-            color_loop_counter = int(num_plots/num_avail_colors)
+            color_loop_counter = int(num_plots / num_avail_colors)
             # Set next RGB ID
-            next_RGB_ID = num_plots - color_loop_counter*num_avail_colors
+            next_RGB_ID = num_plots - color_loop_counter * num_avail_colors
             # Set pen style
             if color_loop_counter % 2 == 0:
                 style = Qt.SolidLine
@@ -113,13 +114,13 @@ class QVizPlotWidget(QWidget):
     def setContents(self):
         """Setup QVizPlotWidget contents.
         """
-
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plot widget (use IMASViz custom plot context menu)
-        self.pgPlotWidget = pg.PlotWidget(self,
-            viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+        self.pgPlotWidget = \
+            pg.PlotWidget(self,
+                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
         self.pgPlotWidget.addLegend()

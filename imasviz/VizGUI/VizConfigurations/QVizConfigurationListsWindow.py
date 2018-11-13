@@ -31,6 +31,7 @@ class QVizConfigurationListsWindow(QDialog):
     """The configuration frame, containing tabs dealing with different
        configuration files.
     """
+
     def __init__(self, parent=None):
         super(QVizConfigurationListsWindow, self).__init__(parent)
         self.DTVFrame = parent
@@ -72,6 +73,7 @@ class QVizConfigurationListsWindow(QDialog):
         elif listType == 'lsp':
             self.tabSignalListConf.updateList()
 
+
 class CommonConfigurationRoutines(QObject):
     """Common configuration routines.
     """
@@ -104,9 +106,9 @@ class CommonConfigurationRoutines(QObject):
         # Extract signal paths from the config file and add them to a list of
         # paths
         pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
-                        configFile=selectedFile)
+            configFile=selectedFile)
         # First unselect all signals
-        QVizUnselectAllSignals(dataTreeView = self.parent.DTVFrame.dataTreeView).execute()
+        QVizUnselectAllSignals(dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
         # Select the signals, defined by a path in a list of paths, in the
         # given wxDataTreeView (DTV) window
         QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
@@ -131,10 +133,12 @@ class CommonConfigurationRoutines(QObject):
             QVizGlobalOperations.getConfigurationFilesDirectory() + \
             '/' + selectedItem.text()
         # Get Yes/No answer (returns True/False)
-        answer = QVizGlobalOperations.YesNo(question =
-            'The configuation ' + selectedFile + ' will be deleted. Are you sure?')
+        answer = \
+            QVizGlobalOperations.YesNo(question='The configuation '
+                                       + selectedFile
+                                       + ' will be deleted. Are you sure?')
         if answer:  # If True
-            print ('Removing configuration: ' + selectedFile)
+            print('Removing configuration: ' + selectedFile)
             try:
                 # Remove the config file from the system directory, containing
                 # containing all config files
@@ -147,7 +151,7 @@ class CommonConfigurationRoutines(QObject):
                 # Update the list (simple update() doesn't work)
                 self.parent.updateList()
             except OSError:
-                print ("Unable to remove file: " + selectedFile)
+                print("Unable to remove file: " + selectedFile)
 
     @staticmethod
     def setNoteLayout(DTVFrame):
@@ -155,7 +159,7 @@ class CommonConfigurationRoutines(QObject):
         """
         layout_note = QVBoxLayout()
         layout_note.setSpacing(0)
-        layout_note.setContentsMargins(10,0,10,0)
+        layout_note.setContentsMargins(10, 0, 10, 0)
         # - Set label
         label1 = QLabel()
         label1.setText('Note:')
@@ -186,10 +190,12 @@ class CommonConfigurationRoutines(QObject):
 
         return layout_note
 
+
 class PlotConfigurationListsTab(QWidget):
     """The configuration tab panel, listing the available plot configuration
        files and its features.
     """
+
     def __init__(self, parent=None):
         super(PlotConfigurationListsTab, self).__init__(parent)
         commonConf = CommonConfigurationRoutines(parent=self)
@@ -220,7 +226,7 @@ class PlotConfigurationListsTab(QWidget):
 
         # Set layout containing note
         layout_note = CommonConfigurationRoutines(parent=self) \
-            .setNoteLayout(DTVFrame = parent.DTVFrame)
+            .setNoteLayout(DTVFrame=parent.DTVFrame)
 
         # Set main layout and add the two 'sub' layouts:
         # list layout and buttons layout
@@ -246,7 +252,7 @@ class PlotConfigurationListsTab(QWidget):
         # Set list widget
         listWidget = QListWidget(self)
         listWidget.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,
-                                    QSizePolicy.Expanding))
+                                             QSizePolicy.Expanding))
 
         # Add list of configuration files to list widget
         listWidget.addItems(configurationFilesList)
@@ -266,10 +272,12 @@ class PlotConfigurationListsTab(QWidget):
         # Add list of configuration files to list widget
         self.listWidget.addItems(configurationFilesList)
 
+
 class ListOfSignalPathsListsTab(QWidget):
     """The configuration tab panel, listing the available lists of signal paths
        files and its features.
     """
+
     def __init__(self, parent=None):
         super(ListOfSignalPathsListsTab, self).__init__(parent)
         commonConf = CommonConfigurationRoutines(parent=self)
@@ -288,7 +296,7 @@ class ListOfSignalPathsListsTab(QWidget):
         layout_buttons.setContentsMargins(15, 0, 15, 28)
         # - Set buttons
         self.button1 = QPushButton('Apply list of IDS paths to current IMAS '
-                              'database')
+                                   'database')
         self.button1.clicked.connect(commonConf.applySignalSelection)
         self.button2 = QPushButton('Remove configuration')
         self.button2.clicked.connect(
@@ -299,7 +307,7 @@ class ListOfSignalPathsListsTab(QWidget):
         layout_buttons.addWidget(self.button2)
 
         # Set layout containing note
-        layout_note = commonConf.setNoteLayout(DTVFrame = parent.DTVFrame)
+        layout_note = commonConf.setNoteLayout(DTVFrame=parent.DTVFrame)
 
         # Set main layout and add the two 'sub' layouts:
         # list layout and buttons layout
@@ -322,11 +330,11 @@ class ListOfSignalPathsListsTab(QWidget):
             sorted(QVizGlobalOperations.getConfFilesList(configType='lsp'))
 
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,
-                                      QSizePolicy.Expanding))
+                                       QSizePolicy.Expanding))
         # Set list widget
         listWidget = QListWidget(self)
         listWidget.setSizePolicy(QSizePolicy(QSizePolicy.Expanding,
-                                      QSizePolicy.Expanding))
+                                             QSizePolicy.Expanding))
         # Add list of configuration files to list widget
         listWidget.addItems(configurationFilesList)
 
@@ -344,4 +352,3 @@ class ListOfSignalPathsListsTab(QWidget):
 
         # Add list of configuration files to list widget
         self.listWidget.addItems(configurationFilesList)
-

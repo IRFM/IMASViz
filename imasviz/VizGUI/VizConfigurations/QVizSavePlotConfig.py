@@ -15,6 +15,7 @@ import time
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
+
 class QVizSavePlotConfig():
     """Save signal selection and plot configuration to '.pcfg' file.
 
@@ -22,6 +23,7 @@ class QVizSavePlotConfig():
         gWin (pyqtgraph.GraphicsWindow) : Window containing the plots
                                           (MultiPlot, SubPlot window).
     """
+
     def __init__(self, gWin, nodeData=None):
         self.gWin = gWin
         self.dataTreeView = gWin.parent.dataTreeView
@@ -93,6 +95,7 @@ class QVizSavePlotConfig():
             # signal
             nodeData = plotItem.signalData['nodeData']
 
+            # ------------------------------------------------------------------
             # Set new subelement
             plotItemEl = ET.SubElement(gWindowEl, 'PlotItem')
             # Set subelement attribute 'key'
@@ -104,46 +107,49 @@ class QVizSavePlotConfig():
             sa(plotItemEl, 'title',
                 plotItem.titleLabel.item.document().toRawText())
 
+            # ------------------------------------------------------------------
             # Set new subelement for holding source information
             sourceInfoEl = ET.SubElement(plotItemEl, 'sourceInfo')
 
             # Save plot source information
-            sa(sourceInfoEl, 'path',       nodeData['Path'])
+            sa(sourceInfoEl, 'path', nodeData['Path'])
             sa(sourceInfoEl, 'shotNumber', plotItem.signalData['shotNumber'])
-            sa(sourceInfoEl, 'runNumber',  plotItem.signalData['runNumber'])
+            sa(sourceInfoEl, 'runNumber', plotItem.signalData['runNumber'])
             sa(sourceInfoEl, 'imasDbName', plotItem.signalData['imasDbName'])
-            sa(sourceInfoEl, 'userName',   plotItem.signalData['userName'])
+            sa(sourceInfoEl, 'userName', plotItem.signalData['userName'])
 
+            # ------------------------------------------------------------------
             # Set new subelement for holding plot opts configuration
             opts = plotItem.dataItems[0].opts
             optsEl = ET.SubElement(plotItemEl, 'opts')
-            sa(optsEl, 'connect',     opts['connect'])
-            sa(optsEl, 'fftMode',     opts['fftMode'])
-            sa(optsEl, 'logMode',     opts['logMode'])
-            sa(optsEl, 'alphaHint',   opts['alphaHint'])
-            sa(optsEl, 'alphaMode',   opts['alphaMode'])
+            sa(optsEl, 'connect', opts['connect'])
+            sa(optsEl, 'fftMode', opts['fftMode'])
+            sa(optsEl, 'logMode', opts['logMode'])
+            sa(optsEl, 'alphaHint', opts['alphaHint'])
+            sa(optsEl, 'alphaMode', opts['alphaMode'])
             # sa(optsEl, 'pen',         opts['pen'])
-            sa(optsEl, 'shadowPen',   opts['shadowPen'])
-            sa(optsEl, 'fillLevel',   opts['fillLevel'])
-            sa(optsEl, 'fillBrush',   opts['fillBrush'])
-            sa(optsEl, 'stepMode',    opts['stepMode'])
-            sa(optsEl, 'symbol',      opts['symbol'])
-            sa(optsEl, 'symbolSize',  opts['symbolSize'])
-            sa(optsEl, 'symbolPen',   opts['symbolPen'])
+            sa(optsEl, 'shadowPen', opts['shadowPen'])
+            sa(optsEl, 'fillLevel', opts['fillLevel'])
+            sa(optsEl, 'fillBrush', opts['fillBrush'])
+            sa(optsEl, 'stepMode', opts['stepMode'])
+            sa(optsEl, 'symbol', opts['symbol'])
+            sa(optsEl, 'symbolSize', opts['symbolSize'])
+            sa(optsEl, 'symbolPen', opts['symbolPen'])
             sa(optsEl, 'symbolBrush', opts['symbolBrush'])
-            sa(optsEl, 'pxMode',      opts['pxMode'])
-            sa(optsEl, 'antialias',   opts['antialias'])
-            sa(optsEl, 'pointMode',   opts['pointMode'])
-            sa(optsEl, 'downsample',  opts['downsample'])
-            sa(optsEl, 'autoDownsample',       opts['autoDownsample'])
-            sa(optsEl, 'downsampleMethod',     opts['downsampleMethod'])
+            sa(optsEl, 'pxMode', opts['pxMode'])
+            sa(optsEl, 'antialias', opts['antialias'])
+            sa(optsEl, 'pointMode', opts['pointMode'])
+            sa(optsEl, 'downsample', opts['downsample'])
+            sa(optsEl, 'autoDownsample', opts['autoDownsample'])
+            sa(optsEl, 'downsampleMethod', opts['downsampleMethod'])
             sa(optsEl, 'autoDownsampleFactor', opts['autoDownsampleFactor'])
-            sa(optsEl, 'clipToView',  opts['clipToView'])
-            sa(optsEl, 'data',        opts['data'])
-            sa(optsEl, 'name',        opts['name'])
+            sa(optsEl, 'clipToView', opts['clipToView'])
+            sa(optsEl, 'data', opts['data'])
+            sa(optsEl, 'name', opts['name'])
 
+            # ------------------------------------------------------------------
             # Set new subelement for holding plot pen configuration
-            pen = opts['pen'] # QPen
+            pen = opts['pen']  # QPen
             penEl = ET.SubElement(optsEl, 'pen')
             # - Brush
             penBrushEl = ET.SubElement(penEl, 'QBrush')
@@ -152,7 +158,7 @@ class QVizSavePlotConfig():
             sa(penBrushColorEl, 'colorRGB', pen.brush().color().getRgb())
             sa(penBrushColorEl, 'alpha', pen.brush().color().alpha())
             # - Cap style
-            sa(penEl, 'Qt.PenCapStyle',  pen.capStyle())
+            sa(penEl, 'Qt.PenCapStyle', pen.capStyle())
             # - Color
             penColorEl = ET.SubElement(penEl, 'QColor')
             sa(penColorEl, 'colorRGB', pen.color().getRgb())
@@ -162,28 +168,57 @@ class QVizSavePlotConfig():
             # - Pen style
             sa(penEl, 'Qt.PenStyle', pen.style())
             # - Pen width
-            sa(penEl, 'width', opts['pen'].width()) # int
-            sa(penEl, 'widthF', opts['pen'].widthF()) # float
+            sa(penEl, 'width', pen.width())  # int
+            sa(penEl, 'widthF', pen.widthF())  # float
             # - Other
-            sa(penEl, 'dashOffset', opts['pen'].dashOffset())
-            sa(penEl, 'isCosmetic', opts['pen'].isCosmetic())
-            sa(penEl, 'isSolid', opts['pen'].isSolid())
-            sa(penEl, 'miterLimit', opts['pen'].miterLimit())
+            sa(penEl, 'dashOffset', pen.dashOffset())
+            sa(penEl, 'isCosmetic', pen.isCosmetic())
+            sa(penEl, 'isSolid', pen.isSolid())
+            sa(penEl, 'miterLimit', pen.miterLimit())
+
+            # ------------------------------------------------------------------
+            # Set new subelement for holding plot axis configuration
+            axisEl = ET.SubElement(plotItemEl, 'axis')
+            # - Top axis
+            axisTopEl = ET.SubElement(axisEl, 'top')
+            pen = plotItem.axes['top']['item']._pen  # QPen
+            penEl = ET.SubElement(axisTopEl, 'pen')
+            #   - Brush
+            penBrushEl = ET.SubElement(penEl, 'QBrush')
+            penBrushColorEl = ET.SubElement(penBrushEl, 'QColor')
+            sa(penBrushColorEl, 'style', pen.brush().style())
+            sa(penBrushColorEl, 'colorRGB', pen.brush().color().getRgb())
+            sa(penBrushColorEl, 'alpha', pen.brush().color().alpha())
+            #   - Cap style
+            sa(penEl, 'Qt.PenCapStyle', pen.capStyle())
+            #   - Color
+            penColorEl = ET.SubElement(penEl, 'QColor')
+            sa(penColorEl, 'colorRGB', pen.color().getRgb())
+            sa(penColorEl, 'alpha', pen.color().alpha())
+            #   - Join style
+            sa(penEl, 'Qt.PenJoinStyle', pen.joinStyle())
+            #   - Pen style
+            sa(penEl, 'Qt.PenStyle', pen.style())
+            #   - Pen width
+            sa(penEl, 'width', pen.width())  # int
+            sa(penEl, 'widthF', pen.widthF())  # float
+            #   - Other
+            sa(penEl, 'dashOffset', pen.dashOffset())
+            sa(penEl, 'isCosmetic', pen.isCosmetic())
+            sa(penEl, 'isSolid', pen.isSolid())
+            sa(penEl, 'miterLimit', pen.miterLimit())
 
             # TODO
-            # plotItem.axes.top ...
-            # plotItem.axes.bottom ...
-            # plotItem.axes.left ...
-            # plotItem.axes.right ...
-
+            # create function for handling creation of elements related to QPen
+            # TODO
             # plotItem.legend ...
 
         self.indent(root)
-         # Set element tree
+        # Set element tree
         treeConfiguration = ET.ElementTree(root)
         # Write configuration file
         treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
-        #self.f.close()
+        # self.f.close()
         # Update the DTV configuration window (for the newly created
         # configuration to be displayed)
         if self.dataTreeView.parent.configurationListsWindow != None:
@@ -279,6 +314,7 @@ class QVizSavePlotConfig():
             self.DTV.parent.configurationListsFrame.update_pconf()
 
     """
+
     def saveAttribute(self, panelElement, attribute, value):
         if value != None:
             panelElement.set(attribute, str(value))
