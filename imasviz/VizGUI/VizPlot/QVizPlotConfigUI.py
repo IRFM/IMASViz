@@ -20,10 +20,12 @@ from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols
 
+
 class QVizPlotConfigUI(QDialog):
     """Tabbed widget allowing plot customization.
     """
-    def __init__(self, viewBox, parent=None, size=(1000,400)):
+
+    def __init__(self, viewBox, parent=None, size=(1000, 400)):
         super(QVizPlotConfigUI, self).__init__(parent)
 
         # Dialog settings
@@ -56,7 +58,7 @@ class QVizPlotConfigUI(QDialog):
         buttonBox = QDialogButtonBox(self)
         buttonBox.setGeometry(QRect(50, 240, 341, 32))
         buttonBox.setOrientation(Qt.Horizontal)
-        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|
+        buttonBox.setStandardButtons(QDialogButtonBox.Cancel |
                                      QDialogButtonBox.Ok)
         buttonBox.setObjectName("buttonBox")
         buttonBox.accepted.connect(self.accept)
@@ -84,10 +86,12 @@ class QVizPlotConfigUI(QDialog):
         # Set dialog layout
         self.setLayout(layout)
 
+
 class TabColorAndLineProperties(QWidget):
     """Widget allowing plot color and line customization.
     """
-    def __init__(self, parent=None, size=(500,400)):
+
+    def __init__(self, parent=None, size=(500, 400)):
         super(TabColorAndLineProperties, self).__init__(parent)
 
         # Widget settings
@@ -141,14 +145,14 @@ class TabColorAndLineProperties(QWidget):
         # Set header
         # - Set list of header items
         listHeaderLabels = ['#',
-                        'Label',
-                        'Color',
-                        'Style',
-                        'Thickness',
-                        'Symbol',
-                        'Symbol Size',
-                        'Symbol Color',
-                        'Symbol Outline Color']
+                            'Label',
+                            'Color',
+                            'Style',
+                            'Thickness',
+                            'Symbol',
+                            'Symbol Size',
+                            'Symbol Color',
+                            'Symbol Outline Color']
         # - Set header item for each column (i)
         for i in range(len(listHeaderLabels)):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
@@ -157,7 +161,7 @@ class TabColorAndLineProperties(QWidget):
         i = 0
         for pdItem in self.listPlotDataItems:
             # Add ID label
-            scrollLayout.addWidget(QLabel(str(i)),  i+1, 0, 1, 1)
+            scrollLayout.addWidget(QLabel(str(i)), i + 1, 0, 1, 1)
 
             # ------------------------------------------------------------------
             # Configuring legend label
@@ -166,7 +170,7 @@ class TabColorAndLineProperties(QWidget):
             # - Add item ID to labelEdit
             labelEdit.itemID = i
             # - Add labelEdit to layout
-            scrollLayout.addWidget(labelEdit, i+1, 1, 1, 1)
+            scrollLayout.addWidget(labelEdit, i + 1, 1, 1, 1)
             # - Add action triggered by modification of the text box
             labelEdit.textChanged.connect(partial(
                 self.updatePDItemLabel,
@@ -178,7 +182,7 @@ class TabColorAndLineProperties(QWidget):
             # - Set current plot pen color (takes QColor)
             penColorButton.setColor(pdItem.opts['pen'].color())
             # - Add penColorButton to layout
-            scrollLayout.addWidget(penColorButton, i+1, 2, 1, 1)
+            scrollLayout.addWidget(penColorButton, i + 1, 2, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -210,7 +214,7 @@ class TabColorAndLineProperties(QWidget):
                 comboBox=styleComboBox))
 
             # - Add comboBox to layout
-            scrollLayout.addWidget(styleComboBox, i+1, 3, 1, 1)
+            scrollLayout.addWidget(styleComboBox, i + 1, 3, 1, 1)
             # ------------------------------------------------------------------
             # Configuring plot pen width
             widthSpinBox = QDoubleSpinBox(value=pdItem.opts['pen'].width(),
@@ -218,7 +222,7 @@ class TabColorAndLineProperties(QWidget):
                                           minimum=0.0,
                                           singleStep=0.5)
             # - Add spinBox to layout
-            scrollLayout.addWidget(widthSpinBox, i+1, 4, 1, 1)
+            scrollLayout.addWidget(widthSpinBox, i + 1, 4, 1, 1)
 
             # - Update plot pen width/thickness on value change
             widthSpinBox.valueChanged.connect(partial(
@@ -238,9 +242,9 @@ class TabColorAndLineProperties(QWidget):
 
             # - Set current symbol type to be shown
             currentQtStyle = \
-                list(GlobalPgSymbols.symbolsDict.keys())[    \
-                list(GlobalPgSymbols.symbolsDict.values()).  \
-                index(pdItem.opts['symbol'])]
+                list(GlobalPgSymbols.symbolsDict.keys())[
+                    list(GlobalPgSymbols.symbolsDict.values()).
+                    index(pdItem.opts['symbol'])]
             symbolComboBox.setCurrentText(currentQtStyle)
 
             # - Update plot pen style on value change
@@ -250,7 +254,7 @@ class TabColorAndLineProperties(QWidget):
                 comboBox=symbolComboBox))
 
             # - Add comboBox to layout
-            scrollLayout.addWidget(symbolComboBox, i+1, 5, 1, 1)
+            scrollLayout.addWidget(symbolComboBox, i + 1, 5, 1, 1)
             # ------------------------------------------------------------------
             # Configuring symbol size. Take current symbol size as a value
             symbolSizeSpinBox = QDoubleSpinBox(value=pdItem.opts['symbolSize'],
@@ -258,7 +262,7 @@ class TabColorAndLineProperties(QWidget):
                                                minimum=0.0,
                                                singleStep=0.5)
             # - Add spinBox to layout
-            scrollLayout.addWidget(symbolSizeSpinBox, i+1, 6, 1, 1)
+            scrollLayout.addWidget(symbolSizeSpinBox, i + 1, 6, 1, 1)
 
             # - Update plot pen width/thickness on value change
             symbolSizeSpinBox.valueChanged.connect(partial(
@@ -271,7 +275,7 @@ class TabColorAndLineProperties(QWidget):
             # - Set current symbol fill color (takes QColor)
             symbolColorButton.setColor(pdItem.opts['symbolBrush'])
             # - Add symbolColorButton to layout
-            scrollLayout.addWidget(symbolColorButton, i+1, 7, 1, 1)
+            scrollLayout.addWidget(symbolColorButton, i + 1, 7, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -292,7 +296,7 @@ class TabColorAndLineProperties(QWidget):
             # - Set current symbol outline color (takes QColor)
             symbolOColorButton.setColor(pdItem.opts['symbolPen'])
             # - Add symbolOColorButton to layout
-            scrollLayout.addWidget(symbolOColorButton, i+1, 8, 1, 1)
+            scrollLayout.addWidget(symbolOColorButton, i + 1, 8, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -309,8 +313,22 @@ class TabColorAndLineProperties(QWidget):
 
             i += 1
 
+            # TODO: axis configuration. Use (pg.DataItem):
+            # axis = pgPlotItem.getAxis('bottom')
+            # axis.setLabel("text", "unit")
+            # axis.label.setPlainText("text")
+            # axis.label  # QGraphicsTextItem
+            # axis.labelText = "text"
+            # axis.labelUnitPrefix = "units prefix"  # str
+            # axis.labelUnits = "units"  # str
+            # axis.range  # (float,float)
+            # axis.scale = 3.0  # float
+            # axis.style  # dict
+            # axis.textHeight = 20  # int
+            # axis.textWidth  # int
+
         # Add all contents to scrollArea widget
-        scrollLayout.setContentsMargins(0,0,0,0)
+        scrollLayout.setContentsMargins(0, 0, 0, 0)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
 

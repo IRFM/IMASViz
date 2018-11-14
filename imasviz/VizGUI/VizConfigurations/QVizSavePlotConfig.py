@@ -7,9 +7,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+#*******************************************************************************
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
-#****************************************************
+#*******************************************************************************
 
 import time
 import xml.etree.ElementTree as ET
@@ -28,6 +28,7 @@ class QVizSavePlotConfig():
         self.gWin = gWin
         self.dataTreeView = gWin.parent.dataTreeView
         self.nodeData = nodeData
+        self.log = self.dataTreeView.log  # QTextEdit widget
 
     def execute(self):
         # Set default name of the configuration file
@@ -150,7 +151,71 @@ class QVizSavePlotConfig():
             # ------------------------------------------------------------------
             # Set new subelement for holding plot pen configuration
             pen = opts['pen']  # QPen
-            penEl = ET.SubElement(optsEl, 'pen')
+            self.savePenAttributes(panelElement=optsEl,
+                                   pen=pen)
+            # penEl = ET.SubElement(optsEl, 'pen')
+
+            # ------------------------------------------------------------------
+            # Set new subelement for holding plot axis configuration
+            axisEl = ET.SubElement(plotItemEl, 'axisItem')
+            # - Left axis
+            self.saveAxisAttributes(panelElement=axisEl, axisType='left',
+                                    plotItem=plotItem)
+            # - Top axis
+            self.saveAxisAttributes(panelElement=axisEl, axisType='top',
+                                    plotItem=plotItem)
+            # - Right axis
+            self.saveAxisAttributes(panelElement=axisEl, axisType='right',
+                                    plotItem=plotItem)
+            # - Bottom axis
+            self.saveAxisAttributes(panelElement=axisEl, axisType='bottom',
+                                    plotItem=plotItem)
+
+            # TODO
+            # plotItem.legend ...
+
+        self.indent(root)
+        # Set element tree
+        treeConfiguration = ET.ElementTree(root)
+        # Write configuration file
+        treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
+        # self.f.close()
+        # Update the DTV configuration window (for the newly created
+        # configuration to be displayed)
+        if self.dataTreeView.parent.configurationListsWindow != None:
+            self.dataTreeView.parent.configurationListsWindow.updateList('pcfg')
+
+    def saveAttribute(self, panelElement, attribute, value):
+        """Save attribute as string to panelElement.
+
+        Arguments:
+            panelElement (ET.SubElement) : (Sub)Element to which the attribute
+                                           is to be stored.
+            attribute    (str)           : Attribute name/label.
+            value        (any)           : Attribute value.
+        """
+        if value != None:
+            panelElement.set(attribute, str(value))
+
+    def savePenAttributes(self, panelElement, pen):
+        """Save pen attributes as string to panelElement.
+
+        Arguments:
+            panelElement (ET.SubElement) : (Sub)Element to which the attribute
+                                           is to be stored.
+            pen          (QPen)          : Pen from which pen attributes
+                                           (color, width etc.) are extracted and
+                                           saved under a new subelement tree for
+                                           panelElement.
+        """
+
+        # Set shorter name for saveAttribute function
+        sa = self.saveAttribute
+
+        if pen != None:
+            # Set new subelement of the panelElement, holding all pen attributes
+            # (in a form of a tree of subelements)
+            penEl = ET.SubElement(panelElement, 'pen')
             # - Brush
             penBrushEl = ET.SubElement(penEl, 'QBrush')
             penBrushColorEl = ET.SubElement(penBrushEl, 'QColor')
@@ -175,152 +240,78 @@ class QVizSavePlotConfig():
             sa(penEl, 'isCosmetic', pen.isCosmetic())
             sa(penEl, 'isSolid', pen.isSolid())
             sa(penEl, 'miterLimit', pen.miterLimit())
+        else:
+            # Print warning to DTV log
+            self.log.warning('savePenAttributes: Pen variable is not properly '
+                             'defined.')
 
-            # ------------------------------------------------------------------
-            # Set new subelement for holding plot axis configuration
-            axisEl = ET.SubElement(plotItemEl, 'axis')
-            # - Top axis
-            axisTopEl = ET.SubElement(axisEl, 'top')
-            pen = plotItem.axes['top']['item']._pen  # QPen
-            penEl = ET.SubElement(axisTopEl, 'pen')
-            #   - Brush
-            penBrushEl = ET.SubElement(penEl, 'QBrush')
-            penBrushColorEl = ET.SubElement(penBrushEl, 'QColor')
-            sa(penBrushColorEl, 'style', pen.brush().style())
-            sa(penBrushColorEl, 'colorRGB', pen.brush().color().getRgb())
-            sa(penBrushColorEl, 'alpha', pen.brush().color().alpha())
-            #   - Cap style
-            sa(penEl, 'Qt.PenCapStyle', pen.capStyle())
-            #   - Color
-            penColorEl = ET.SubElement(penEl, 'QColor')
-            sa(penColorEl, 'colorRGB', pen.color().getRgb())
-            sa(penColorEl, 'alpha', pen.color().alpha())
-            #   - Join style
-            sa(penEl, 'Qt.PenJoinStyle', pen.joinStyle())
-            #   - Pen style
-            sa(penEl, 'Qt.PenStyle', pen.style())
-            #   - Pen width
-            sa(penEl, 'width', pen.width())  # int
-            sa(penEl, 'widthF', pen.widthF())  # float
-            #   - Other
-            sa(penEl, 'dashOffset', pen.dashOffset())
-            sa(penEl, 'isCosmetic', pen.isCosmetic())
-            sa(penEl, 'isSolid', pen.isSolid())
-            sa(penEl, 'miterLimit', pen.miterLimit())
+    def saveAxisAttributes(self, panelElement, axisType, plotItem):
+        """Save pen attributes as string to panelElement.
 
-            # TODO
-            # create function for handling creation of elements related to QPen
-            # TODO
-            # plotItem.legend ...
-
-        self.indent(root)
-        # Set element tree
-        treeConfiguration = ET.ElementTree(root)
-        # Write configuration file
-        treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
-        # self.f.close()
-        # Update the DTV configuration window (for the newly created
-        # configuration to be displayed)
-        if self.dataTreeView.parent.configurationListsWindow != None:
-            self.dataTreeView.parent.configurationListsWindow.updateList('pcfg')
-
+        Arguments:
+            panelElement (ET.SubElement) : (Sub)Element to which the attribute
+                                           is to be stored.
+            axisType    (str)           : Axis item from which the axis
+                                           attributes (label, range etc.) are
+                                           extracted and saved under a new
+                                           subelement tree for panelElement.
+                                           Note: accepts 'bottom', 'top',
+                                           'right', 'left'.
+            plotItem     (pg.PlotItem)   : PlotItem holding the AxisItems.
         """
 
+        # Set shorter name for saveAttribute function
+        sa = self.saveAttribute
 
+        axisLabelList = ['left', 'top', 'right', 'bottom']
 
-            # Set new subelement
-            panelElement = ET.SubElement(frameElement, 'panel')
-            # Set subelement attribute 'key'
-            panelElement.set('key', str(key))
+        # if axisType is not None and is 'bottom' or 'top' or 'left' or 'right':
+        if axisType is not None and axisType in axisLabelList:
+            # Set new subelement of the panelElement, holding all axis attributes
+            # (in a form of a tree of subelements)
+            axisItemEl = ET.SubElement(panelElement, axisType)
+            AxisItem = plotItem.getAxis(axisType)  # pg.AxisItem
+            # Set new subelement for holding plot pen configuration
+            pen = AxisItem._pen  # QPen
+            self.savePenAttributes(axisItemEl, pen)
+            # Set new subelement for holding axis label configuration
+            axisItemLabelEl = ET.SubElement(axisItemEl, 'label')
+            axisItemLabel = AxisItem.label  # QGraphicsTextItem
+            sa(axisItemLabelEl, 'text', axisItemLabel.toPlainText())
+            sa(axisItemLabelEl, 'textWidth', axisItemLabel.textWidth())
+            # sa(axisItemLabelEl, 'document', axisItemLabel.document()) # QTextDocument
+            # Set new subelement for holding axis label font configuration
+            axisItemLabelFontEl = ET.SubElement(axisItemEl, 'font')
+            axisItemLabelFont = AxisItem.label.font()  # QGraphicsTextItem
+            sa(axisItemLabelFontEl, 'bold', axisItemLabelFont.bold())
+            sa(axisItemLabelFontEl, 'capitalization', axisItemLabelFont.capitalization())
+            sa(axisItemLabelFontEl, 'family', axisItemLabelFont.family())
+            sa(axisItemLabelFontEl, 'italic', axisItemLabelFont.italic())
+            sa(axisItemLabelFontEl, 'overline', axisItemLabelFont.overline())
+            sa(axisItemLabelFontEl, 'style', axisItemLabelFont.style())
+            sa(axisItemLabelFontEl, 'underline', axisItemLabelFont.underline())
+            sa(axisItemLabelFontEl, 'weight', axisItemLabelFont.weight())
+            # Set new subelement for holding axis style configuration
+            axisItemStyleEl = ET.SubElement(axisItemEl, 'style')
+            axisItemStyle = AxisItem.labelStyle  # dict
+            sa(axisItemStyleEl, 'color', axisItemStyle['color'])
+            # Save other axis attributes
+            sa(axisItemEl, 'labelText', AxisItem.labelText)
+            sa(axisItemEl, 'labelUnitPrefix', AxisItem.labelUnitPrefix)
+            sa(axisItemEl, 'labelUnits', AxisItem.labelUnits)
+            sa(axisItemEl, 'range', AxisItem.range)
+            sa(axisItemEl, 'scale', AxisItem.scale)
+            # sa(axisItemEl, 'style', AxisItem.style)
+            sa(axisItemEl, 'textHeight', AxisItem.textHeight)
+            sa(axisItemEl, 'textWidth', AxisItem.textWidth)
 
-            # Set new subelement
-            selectedArrayElement = ET.SubElement(panelElement, 'selectedArray')
+        else:
+            # Print warning to DTV log
+            self.log.warning('saveAxisAttributes: AxisItem variable is not '
+                             'properly defined.')
 
-            # Extract signal node data (it contains also 'path') from the
-            # signal
-            selectedArray = panel.signal
-            nodeData = selectedArray[1]
-
-            self.saveAttribute(selectedArrayElement, 'path', nodeData['Path'])
-
-            self.saveAttribute(selectedArrayElement, 'shotnum', selectedArray[0])
-            self.saveAttribute(selectedArrayElement, 'runnum', selectedArray[3])
-            self.saveAttribute(selectedArrayElement, 'database', selectedArray[4])
-            self.saveAttribute(selectedArrayElement, 'username', selectedArray[5])
-
-            self.saveAttribute(panelElement,'title', panel.conf.title)
-            self.saveAttribute(panelElement,'xlabel', panel.conf.xlabel)
-            self.saveAttribute(panelElement,'ylabel', panel.conf.ylabel)
-            self.saveAttribute(panelElement,'y2label', panel.conf.y2label)
-            self.saveAttribute(panelElement,'xscale', panel.conf.xscale)
-            self.saveAttribute(panelElement,'yscale', panel.conf.yscale)
-            self.saveAttribute(panelElement,'plot_type', panel.conf.plot_type)
-            self.saveAttribute(panelElement,'scatter_size', panel.conf.scatter_size)
-            self.saveAttribute(panelElement,'scatter_normalcolor', panel.conf.scatter_normalcolor)
-            self.saveAttribute(panelElement,'scatter_normaledge', panel.conf.scatter_normaledge)
-            self.saveAttribute(panelElement,'scatter_selectcolor', panel.conf.scatter_selectcolor)
-            self.saveAttribute(panelElement,'scatter_selectedge', panel.conf.scatter_selectedge)
-            self.saveAttribute(panelElement,'scatter_data', panel.conf.scatter_data)
-            self.saveAttribute(panelElement,'scatter_coll', panel.conf.scatter_coll)
-            self.saveAttribute(panelElement,'scatter_mask', panel.conf.scatter_mask)
-            self.saveAttribute(panelElement, 'show_legend', panel.conf.show_legend)
-            self.saveAttribute(panelElement, 'show_grid', panel.conf.show_grid)
-
-            self.saveAttribute(panelElement, 'legend_loc', panel.conf.legend_loc)
-            self.saveAttribute(panelElement, 'legend_onaxis', panel.conf.legend_onaxis)
-            self.saveAttribute(panelElement, 'mpl_legend', panel.conf.mpl_legend)
-            self.saveAttribute(panelElement, 'draggable_legend', panel.conf.draggable_legend)
-            self.saveAttribute(panelElement, 'hidewith_legend', panel.conf.hidewith_legend)
-            self.saveAttribute(panelElement, 'show_legend_frame', panel.conf.show_legend_frame)
-            self.saveAttribute(panelElement, 'axes_style', panel.conf.axes_style)
-
-            self.saveAttribute(panelElement, 'bgcolor', panel.conf.bgcolor)
-            self.saveAttribute(panelElement, 'textcolor', panel.conf.textcolor)
-            self.saveAttribute(panelElement, 'gridcolor', panel.conf.gridcolor)
-            self.saveAttribute(panelElement, 'framecolor', panel.conf.framecolor)
-            self.saveAttribute(panelElement, 'color_theme', panel.conf.color_theme)
-
-            # self.margins = None
-            # self.auto_margins = True
-
-            j = 0
-            for trace in panel.conf.traces:
-                traceElement = ET.SubElement(panelElement, 'trace')
-                self.saveAttribute(traceElement,'index', str(j))
-                self.saveAttribute(traceElement, 'color', str(trace.color))
-                self.saveAttribute(traceElement, 'style', str(trace.style))
-                self.saveAttribute(traceElement, 'drawstyle', str(trace.drawstyle))
-                self.saveAttribute(traceElement, 'linewidth', str(trace.linewidth))
-                self.saveAttribute(traceElement, 'marker', str(trace.marker))
-                self.saveAttribute(traceElement, 'markersize', str(trace.markersize))
-                self.saveAttribute(traceElement, 'markercolor', str(trace.markercolor))
-                self.saveAttribute(traceElement, 'label', str(trace.label))
-                self.saveAttribute(traceElement, 'zorder', str(trace.zorder))
-
-                dataRangeElement = ET.SubElement(traceElement, 'data_range')
-                self.saveAttribute(dataRangeElement, 'dr1', str(trace.data_range[0]))
-                self.saveAttribute(dataRangeElement, 'dr2', str(trace.data_range[1]))
-                self.saveAttribute(dataRangeElement, 'dr3', str(trace.data_range[2]))
-                self.saveAttribute(dataRangeElement, 'dr4', str(trace.data_range[3]))
-
-                j = j + 1
-            k += 1
-
-        self.indent(root)
-        treeConfiguration = ET.ElementTree(root)
-        treeConfiguration.write(fileName, encoding="utf-8", xml_declaration=True)
-        #self.f.close()
-        if self.DTV.parent.configurationListsFrame != None:
-            self.DTV.parent.configurationListsFrame.update_pconf()
-
-    """
-
-    def saveAttribute(self, panelElement, attribute, value):
-        if value != None:
-            panelElement.set(attribute, str(value))
-
-    # def printCode(self, text, level):
-    #     return GlobalOperations.printCode(self.f, text, level)
+    def printCode(self, text, level):
+        return QVizGlobalOperations.printCode(self.f, text, level)
 
     def indent(self, elem, level=0):
         i = "\n" + level * "  "
