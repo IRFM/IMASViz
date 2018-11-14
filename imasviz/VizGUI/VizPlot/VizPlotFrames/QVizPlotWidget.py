@@ -89,13 +89,17 @@ class QVizPlotWidget(QWidget):
 
         # Plot and plot settings
         # - Add plot
-        self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)
-        # - Set x-axis label
-        self.pgPlotWidget.setLabel('left', xlabel, units='')
-        # - Set y-axis label
-        self.pgPlotWidget.setLabel('bottom', ylabel, units='')
-        # - Enable grid
-        self.pgPlotWidget.showGrid(x=True, y=True)
+        self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
+        # Set only when adding the first plot. All additionally added plots
+        # should correspond to the same xlabel, ylabel and grid and thus
+        # should NOT change it.
+        if len(self.getPlotList()) == 1:
+            # - Set x-axis label
+            self.pgPlotWidget.setLabel('left', xlabel, units='')
+            # - Set y-axis label
+            self.pgPlotWidget.setLabel('bottom', ylabel, units='')
+            # - Enable grid
+            self.pgPlotWidget.showGrid(x=True, y=True)
 
         return self
 
@@ -118,9 +122,8 @@ class QVizPlotWidget(QWidget):
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plot widget (use IMASViz custom plot context menu)
-        self.pgPlotWidget = \
-            pg.PlotWidget(self,
-                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+        self.pgPlotWidget = pg.PlotWidget(self,
+                                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
         self.pgPlotWidget.addLegend()

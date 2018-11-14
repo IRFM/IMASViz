@@ -163,7 +163,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
 
         # Set size of the main window
         width_main = self.gw.centralWidget.cols * (self.plotBaseDim + 20)
-        height_main = len(self.gw.centralWidget.rows) * self.plotBaseDim
+        height_main = len(self.gw.centralWidget.rows) * self.plotBaseDim + 20
         self.resize(width_main, height_main)
 
         # Set main window maximum size
@@ -466,19 +466,26 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         p = self.addPlot(x=x,
                          y=y,
                          name='Plot' + str(n),
-                         title=label,
+                         title=label.replace("\n", ""),
+                         xlabel=xlabel,
+                         ylabel=ylabel,
                          pen=pen,
                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+                         # pg.PlotItem
+
         # p = self.addPlot(name='plotName',
         #                   title="Basic array plotting " + str(n),
         #                   row=rowNum,
         #                   col=colNum)
-        # Set plotDataItem (p.dataItems[0]) name
-        # TODO: find out how to properly pass 'name' to plot (addPlot() and
-        #       plot() does not accept it...)
-        p.dataItems[0].opts['name'] = label.replace("\n", "")
-        p.showGrid(x=True, y=True)
         # p.plot(x, y, pen=pen)
+        # Set axis labels
+        p.setLabel('left', ylabel, units='')
+        p.setLabel('bottom', xlabel, units='')
+        # Enable grid
+        p.showGrid(x=True, y=True)
+        # Add a name attribute directly to pg.PlotDataItem - a child of
+        # pg.PlotData
+        p.dataItems[0].opts['name'] = label.replace("\n", "")
 
         if (n + 1) % self.centralWidget.cols == 0:
             self.nextRow()
@@ -505,5 +512,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         return list(self.centralWidget.items.keys())[-1]
 
     def getPlotItemsDict(self):
-        """Return dictionary of GraphicWindow plot items."""
+        """Return dictionary of GraphicWindow plot items
+        (list of pg.DataItem-s).
+        """
         return self.centralWidget.items

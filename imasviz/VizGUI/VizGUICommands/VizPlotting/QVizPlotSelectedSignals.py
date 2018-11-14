@@ -29,7 +29,7 @@ from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractComman
 
 class QVizPlotSelectedSignals(QVizAbstractCommand):
     def __init__(self, dataTreeView, figureKey=None, update=0,
-            configFile=None, all_DTV=True):
+                 configFile=None, all_DTV=True):
         QVizAbstractCommand.__init__(self, dataTreeView, None)
         self.figureKey = figureKey
         self.update = update
@@ -46,10 +46,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
     def execute(self):
         if self.raiseErrorIfNoSelectedArrays():
             if len(self.dataTreeView.selectedSignalsDict) == 0:
-                    raise ValueError("No signal selected.")
+                raise ValueError("No signal selected.")
 
         self.plot1DSelectedSignals(self.figureKey, self.update,
-                                   all_DTV = self.all_DTV)
+                                   all_DTV=self.all_DTV)
 
         # # Check the plot dimension
         # for key in self.dataTreeView.selectedSignalsDict:
@@ -91,7 +91,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             plotWidget = api.figureframes[figureKey]
         else:
             figureKey = api.GetNextKeyForFigurePlots()
-            plotWidget = QVizPlotWidget(size=(600,500), title=figureKey)
+            plotWidget = QVizPlotWidget(size=(600, 500), title=figureKey)
             api.figureframes[figureKey] = plotWidget
         return plotWidget
 
@@ -109,9 +109,9 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         plotWidget = self.getPlotWidget(figureKey)
 
         # TODO
-        #def lambda_f(evt, i=figureKey, api=self.api):
+        # def lambda_f(evt, i=figureKey, api=self.api):
         #    self.onHide(self.api, i)
-        #if figureKey != None:
+        # if figureKey != None:
         #    plotWidget.Bind(wx.EVT_CLOSE, lambda_f)
 
         i = 0
@@ -160,6 +160,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                     QVizPlotSignal.plotOptions(dtv, signalNodeData, shotNumber)
 
                 if i == 0 and update == 0:
+                    # Adding the first plot (first selected signal)
                     # If the selected node array (selected signal) is the
                     # first in line for the plot (and with update
                     # disabled), create new plot
@@ -170,8 +171,9 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                         ti = t[0]
                         # Create plot
                         plotWidget.plot(x=ti, y=u, title='', xlabel=xlabel,
-                                   ylabel=ylabel, label=label)
+                                        ylabel=ylabel, label=label)
                 else:
+                    # Appending plot (the remaining selected signals)
                     # Else add the remaining selected node arrays
                     # (selected signals) to the existing plot
                     for j in range(0, nbRows):
@@ -180,6 +182,9 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                         # x-axis values
                         ti = t[0]
                         # Add to plot
+                        # Note: do not pass again title, xlabel and ylabel
+                        #       arguments if those attributes from the first
+                        #       plot are to be kept.
                         plotWidget.plot(x=ti, y=u, label=label)
                 i += 1
         # Show the plotWidget, holding the plot
@@ -189,8 +194,6 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         #     traceback.print_exc(file=sys.stdout)
         #     raise ValueError("Error while plotting 1D selected signal(s).")
 
-
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys():
             api.figureframes[figureKey].Hide()
-

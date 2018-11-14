@@ -689,7 +689,7 @@ class Logger:
         """
         print(message)
         # Pass as html
-        self.logWidget.insertHtml("<font color='blue'>" + message
+        self.logWidget.insertHtml("<font color='black'>" + message
                                   + "</font><br />")
 
     def error(self, message):
@@ -702,4 +702,16 @@ class Logger:
         # Pass as html
         self.logWidget.insertHtml("<b><font color='red'>"
                                   + "ERROR! </font></b><font color='red'>"
+                                  + message + "</font><br />")
+
+    def warning(self, message):
+        """Print message as warning.
+
+        Arguments:
+            message (str) : Message to print.
+        """
+        print(message)
+        # Pass as html
+        self.logWidget.insertHtml("<b><font color='orange'>"
+                                  + "WARNING! </font></b><font color='red'>"
                                   + message + "</font><br />")
