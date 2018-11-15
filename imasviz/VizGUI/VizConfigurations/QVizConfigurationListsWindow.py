@@ -25,6 +25,7 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import GlobalFonts
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlot import QVizMultiPlot
 
 
 class QVizConfigurationListsWindow(QDialog):
@@ -200,6 +201,7 @@ class PlotConfigurationListsTab(QWidget):
         super(PlotConfigurationListsTab, self).__init__(parent)
         commonConf = CommonConfigurationRoutines(parent=self)
         self.DTVFrame = parent.DTVFrame
+        self.dataTreeView = self.DTVFrame.dataTreeView
 
         # Set layout containing the list widget
         layout_list = QVBoxLayout()
@@ -212,7 +214,7 @@ class PlotConfigurationListsTab(QWidget):
         layout_buttons.setContentsMargins(15, 0, 15, 0)
         # - Set buttons
         self.button1 = QPushButton('Apply selection and plot selected data')
-        # TODO button1 action on clicked
+        self.button1.clicked.connect(self.applyMultiPlotConfiguration)
         self.button2 = QPushButton('Apply selection only')
         self.button2.clicked.connect(commonConf.applySignalSelection)
         self.button3 = QPushButton('Remove configuration')
@@ -271,6 +273,33 @@ class PlotConfigurationListsTab(QWidget):
 
         # Add list of configuration files to list widget
         self.listWidget.addItems(configurationFilesList)
+
+    def applyMultiPlotConfiguration(self):
+        """Apply signal selection from the config file - apply it directly
+           to MultiPlot feature.
+        """
+        # TODO: the selection part could be made into a function as
+        # removeConfiguration() and applySignalConfiguration() use this part of
+        # code
+
+        # Get the selection list (config file name)
+        selectedItems = self.listWidget.selectedItems()
+        # Set the first selected item from the list
+        # Note: Only one item can be selected at a time, so a list of one item
+        # is provided
+        selectedItem = selectedItems[0]
+        # Get system path to the selected configuration file
+        selectedFile = \
+            QVizGlobalOperations.getConfigurationFilesDirectory() + \
+            '/' + selectedItem.text()
+
+        # Get next figurekey (label) for the MultiPlot
+        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
+        # Set up and show the MultiPlot using the config file
+        QVizMultiPlot(self.dataTreeView,
+                      figureKey=figureKey,
+                      update=1,
+                      configFile=selectedFile)
 
 
 class ListOfSignalPathsListsTab(QWidget):

@@ -20,7 +20,7 @@ dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIV
 
 f = api.CreateDataTree(dataSource)
 configFileName = os.environ['HOME'] + "/.imasviz/magnetics1.pcfg"
-figurekey =api.GetNextKeyForMultiplePlots()
+figurekey =api.getNextKeyForMultiplePlots()
 
 #api.ApplyMultiPlotConfiguration(f, figureKey=figurekey, update=0, configFileName=configFileName)
 

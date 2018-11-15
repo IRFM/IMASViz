@@ -19,6 +19,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import PyQt5.QtCore
 import PyQt5.QtGui
 import PyQt5.QtWidgets
+import xml.etree.ElementTree as ET
 import traceback
 import math
 import sys
@@ -44,7 +45,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
     """
 
     def __init__(self, dataTreeView, figureKey=0, update=0,
-                 configFile=None, all_DTV=True):
+                 configFile=None, all_DTV=False):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -59,8 +60,13 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         super(QVizMultiPlot, self).__init__(parent=dataTreeView)
 
         self.dataTreeView = dataTreeView
-        self.configFile = configFile
+        self.configFile = configFile # Full path to configuration file + filename
+        self.plotConfig = None
+        if self.configFile != None:
+            # Set plot configuration dictionary
+            self.plotConfig = ET.parse(self.configFile) # dictionary
         self.imas_viz_api = self.dataTreeView.imas_viz_api
+        self.log = self.dataTreeView.log  # QTextEdit widget
 
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -70,7 +76,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         # Set MultiPlot object name and title if not already set
         if figureKey == None:
             figureKey = \
-                self.imas_viz_api.GetNextKeyForMultiplePlots()
+                self.imas_viz_api.getNextKeyForMultiplePlots()
         self.setObjectName(figureKey)
         self.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = self
@@ -118,7 +124,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """
         if figureKey == None:
             figureKey = \
-                self.imas_viz_api.GetNextKeyForMultiplePlots()
+                self.imas_viz_api.getNextKeyForMultiplePlots()
         gwin = QVizMultiPlotGraphicsWindow(parent=self, ncols=self.ncols)
         gwin.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = gwin
@@ -194,19 +200,18 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
 
         MultiPlotWindow_DTVList = []
 
-        # plotConfig_used = False
-
-        # If plotConfig is available (e.g. save configuration was loaded)
-        if self.configFile != None:
+        # If configuration file is available (e.g. save configuration was
+        # loaded)
+        if self.plotConfig != None:
             # Select signals, saved in the save configuration. Return the
             # list of signals as 'dtv_selectedSignals'.
             # Get panel plots count
             dtv_selectedSignals, panelPlotsCount = \
-                self.selectSignals(gw, dataTreeView=self.dataTreeView)
+                self.selectSignalsFromConfig(gw, dataTreeView=self.dataTreeView)
             # Add a single DTV to the list
             MultiPlotWindow_DTVList.append(self.dataTreeView)
         else:
-            # Else if plotConfig is not present (save configuration was
+            # Else if configuration file is not present (save configuration was
             # not used)
             if self.all_DTV != False:
                 # Get the list of all currently opened DTVs
@@ -271,7 +276,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                     gw.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
                     # Get the current (last) plot item, created by gw.plot()
-                    currentPlotItem = gw.getCurrentPlotItem()
+                    currentPlotItem = gw.getCurrentPlotItem() # pg.PlotItem
                     # Add new attribute to current item, holding all signal data
                     currentPlotItem.signalData = dtv_selectedSignals[signalKey]
                     # Get titleLabel
@@ -289,12 +294,20 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                     option.setAlignment(QtCore.Qt.AlignCenter)
                     tLabel.item.document().setDefaultTextOption(option)
 
+                    # Set plotItem key (row, column)
+                    plotItemKey = (currentPlotItem.row, currentPlotItem.column)
+
+                    # If configuration is present
+                    if self.plotConfig is not None:
+                        self.applyPlotConfigurationAfterPlotting(currentPlotItem,
+                                                                 self.plotConfig)
+
                 # Next plot number
                 n += 1
 
         return gw
 
-    def selectSignals(self, graphicsWindow, dataTreeView):
+    def selectSignalsFromConfig(self, graphicsWindow, dataTreeView):
         """Select signals, listed in the configuration file.
 
         Arguments:
@@ -302,41 +315,45 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                                               plots (PlotItems).
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
         """
-        selectedsignalsMap = {}  # key = panel key, value = selected arrays count
+        plotItem_plotDataItemCountMap = {}  # key = panel key, value = selected arrays count
         pathsList = []
 
         # Unselect all signals
         QVizUnselectAllSignals(dataTreeView).execute()
 
-        # for n in range(0, len(frame.panels)):
+        # Get main 'GraphicsWindow' element
+        graphicsWindowEl = self.plotConfig.find('GraphicsWindow')
+        # Get a list of PlotItem elements
+        plotItemElements = graphicsWindowEl.findall('PlotItem')
+        # Get number of plot panels (pg.PlotItem-s)
+        num_plotItems = len(plotItemElements)
 
-        # Extract all paths from the configuration file
-        getNextPath = True
-        n = 0
-        while getNextPath == True:
-            key = QVizGlobalOperations.getNextPanelKey(n, ncols=self.ncols)
+        # Go through pg.PlotItems
+        for pItemElement in plotItemElements:
+            # Get key attribute (key=(column,row))
+            key = pItemElement.get('key')
+            # Get a list of pg.PlotDataItems
+            # Note: Only one per MultiPlot PlotItem
+            plotItemDataElements = pItemElement.findall('PlotDataItem')
+            # Get number of plots (pg.PlotDataItem-s)
+            num_plots = len(plotItemDataElements)
+            # Go through pg.PlotdataItems / plots / lines
+            for pdItemElement in plotItemDataElements:
+                # Find sourceInfo element
+                sourceInfoEl = pdItemElement.find('sourceInfo')
+                # Append node path from the sourceInfo element
+                pathsList.append(sourceInfoEl.get("path"))
+            # Add plot panel plot/line count/pg.PlotDataItems count to dict
+            # for plot panel (pg.Item) key
+            plotItem_plotDataItemCountMap[key] = num_plots
 
-            selectedArrays = \
-                self.plotConfig.findall(".//*[@key='" + str(key) +
-                                        "']/selectedArray")
-            if selectedArrays == None:
-                getNextPath = False
-                break
-
-            selectedsignalsMap[key] = len(selectedArrays)
-            for selectedArray in selectedArrays:
-                # Get signal paths
-                pathsList.append(selectedArray.get("path"))
-
-        # Select the signals
+        # Select the signals using list of paths
         QVizSelectSignals(dataTreeView, pathsList).execute()
 
         # Get a dictionary of selected signals
         dtv_selectedSignals = dataTreeView.selectedSignalsDict
 
-        # QVizGlobalOperations. \
-        #     getSortedSelectedSignals(WxDataTreeView.selectedSignals)
-        return dtv_selectedSignals, selectedsignalsMap
+        return dtv_selectedSignals, plotItem_plotDataItemCountMap
 
     def addMenuBar(self):
         """Create and configure the menu bar.
@@ -357,10 +374,10 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """Get number of signals intended for the MultiPlot feature
            from either opened DTVs or from configuration file if it is loaded.
         """
-        if self.configFile != None and self.plotConfig != False:
+        if self.plotConfig != None:
             # Get number of signals through number of signal paths
             pathsList = QVizGlobalOperations.\
-                getSignalsPathsFromConfigurationFile(self.configFile)
+                getSignalsPathsFromConfigurationFile(self.plotConfig)
             nSignals = len(pathsList)
         else:
             # If plotConfig is not present (save configuration was
@@ -410,6 +427,88 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """Save configuration for single DTV.
         """
         QVizSavePlotConfig(gWin=self.gw).execute()
+
+    def applyPlotConfigurationAfterPlotting(self, plotItem, plotConfig):
+        """Apply configuration (from configuration file) to plot item after
+        # it was created.
+
+        Arguments:
+            plotItem (pg.PlotItem) : Plot item to which the configuration is to
+                                     be applied.
+        """
+        from ast import literal_eval
+
+        self.log.info('Applying plot configuration after plotting to plot '
+                      'view column ' + str(plotItem.column) + ' row ' + str(plotItem.row))
+
+        # TODO: Browsing through plotConfig is done also in
+        # selectSignalsFromConfig(). It would be good to create a common
+        # function for that purposes
+
+        # Get main 'GraphicsWindow' element
+        graphicsWindowEl = self.plotConfig.find('GraphicsWindow')
+        # Get a list of PlotItem elements
+        plotItemElements = graphicsWindowEl.findall('PlotItem')
+        # Get number of plot panels (pg.PlotItem-s)
+        num_plotItems = len(plotItemElements)
+
+        # Go through pg.PlotItems
+        for pItemElement in plotItemElements:
+            # Get key attribute (key=(column,row))
+            key = pItemElement.get('key')
+
+            if str(key) == str((plotItem.column, plotItem.row)):
+                # Get a list of pg.PlotDataItems
+                # Note: Only one per MultiPlot PlotItem
+                plotItemDataElements = pItemElement.findall('PlotDataItem')
+                # Get number of plots (pg.PlotDataItem-s)
+                num_plots = len(plotItemDataElements)
+                # Go through pg.PlotdataItems / plots / lines
+                pdi = 0
+                for pdItemElement in plotItemDataElements:
+
+                    pdItem = plotItem.dataItems[pdi]
+
+                    opts = pdItem.opts
+                    optsConfig = pdItemElement.find('opts')
+
+                    # opts['connect'] = optsConfig.get('connect')
+                    # opts['fftMode'] = optsConfig.get('fftMode')
+                    # opts['logMode'] = optsConfig.get('logMode')
+                    # opts['alphaHint'] = optsConfig.get('alphaHint')
+                    # opts['alphaMode'] = optsConfig.get('alphaMode')
+                    # opts['shadowPen'] = optsConfig.get('shadowPen')
+                    # opts['fillLevel'] = optsConfig.get('fillLevel')
+                    # opts['fillBrush'] = optsConfig.get('fillBrush')
+                    # opts['stepMode'] = optsConfig.get('stepMode')
+                    # opts['symbol'] = optsConfig.get('symbol')
+                    # opts['symbolSize'] = optsConfig.get('symbolSize')
+                    # opts['symbolPen'] = optsConfig.get('symbolPen')
+                    # opts['symbolBrush'] = optsConfig.get('symbolBrush')
+                    # opts['pxMode'] = optsConfig.get('pxMode')
+                    # opts['antialias'] = optsConfig.get('antialias')
+                    # opts['pointMode'] = optsConfig.get('pointMode')
+                    # opts['downsample'] = optsConfig.get('downsample')
+                    # opts['autoDownsample'] = optsConfig.get('autoDownsample')
+                    # opts['downsampleMethod'] = optsConfig.get('downsampleMethod')
+                    # opts['autoDownsampleFactor'] = optsConfig.get('autoDownsampleFactor')
+                    # opts['clipToView'] = optsConfig.get('clipToView')
+                    # opts['data'] = optsConfig.get('data')
+                    opts['name'] = optsConfig.get('name')
+
+                    optsPen = opts['pen']
+                    optsPenConfig = optsConfig.find('pen')
+                    # Extract RGBA (string) and transform in to an array of int
+                    rgba = literal_eval(optsPenConfig.find('QColor').get('colorRGB'))
+                    qcolor = QtGui.QColor(rgba[0], rgba[1], rgba[2], rgba[3])
+                    optsPen.setColor(qcolor)
+                    optsPen.setWidth(float(optsPenConfig.get('width')))
+
+                    pdItem.updateItems()
+
+
+
+
 
     # TODO
     # def applyPlotConfigurationBeforePlotting
@@ -487,7 +586,10 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         # pg.PlotData
         p.dataItems[0].opts['name'] = label.replace("\n", "")
 
-        if (n + 1) % self.centralWidget.cols == 0:
+        p.column = int(n/self.centralWidget.cols)
+        p.row  = int(n%self.centralWidget.cols)
+
+        if (n+1) % self.centralWidget.cols == 0:
             self.nextRow()
 
     @staticmethod

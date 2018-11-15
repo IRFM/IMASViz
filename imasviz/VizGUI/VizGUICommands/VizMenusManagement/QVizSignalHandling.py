@@ -405,7 +405,7 @@ class QVizSignalHandling(QObject):
                              current or all DTVs.
         """
         # Get next figure key/label
-        figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForMultiplePlots()
+        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
         if all_DTV != True:
             QVizMultiPlot(dataTreeView=self.dataTreeView, figureKey=figureKey,
                           update=1, all_DTV=False)

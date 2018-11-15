@@ -127,7 +127,7 @@ class Viz_API():
     def GetSubPlotsCount(self):
         return len(self.GetFiguresKeys(FigureTypes.SUBPLOTTYPE))
 
-    def GetNextKeyForMultiplePlots(self):
+    def getNextKeyForMultiplePlots(self):
         return FigureTypes.MULTIPLOTTYPE + str(self.GetMultiPlotsCount())
 
     def GetNextKeyForFigurePlots(self):
@@ -194,7 +194,7 @@ class Viz_API():
                                             configFileName = None,
                                             figureKey=None, update=0):
         if figureKey == None:
-            figureKey = self.GetNextKeyForMultiplePlots()
+            figureKey = self.getNextKeyForMultiplePlots()
         #TODO PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
         #                               figurekey=figureKey, update=update,
         #                               configFileName=configFileName).execute()
@@ -203,7 +203,7 @@ class Viz_API():
     def ApplyMultiPlotConfiguration(self, dataTreeFrame, configFileName=None,
                                     figureKey=None, update=0):
         if figureKey == None:
-            figureKey = self.GetNextKeyForMultiplePlots()
+            figureKey = self.getNextKeyForMultiplePlots()
         #PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
         #                               figurekey=figureKey, update=update,
         #                               configFileName=configFileName).execute()

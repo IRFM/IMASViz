@@ -1,3 +1,19 @@
+#  Name   : QVizPlotWidget
+#
+#          Provides startup handling.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#*******************************************************************************
+#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#*******************************************************************************
+
+# Add imasviz source path
+# sys.path.append((os.environ['VIZ_HOME']))
+
 import os
 import sys
 
@@ -15,7 +31,7 @@ class GUIFrame(QTabWidget):
 
         self.openShotView = QVizOpenShotView()
 
-        self.setGeometry(300,300,600,200)
+        self.setGeometry(300, 300, 600, 200)
         self.tab1 = QWidget()
         self.tab2 = QWidget()
 
@@ -32,8 +48,8 @@ class GUIFrame(QTabWidget):
         self.shell = None
 
     def closeEvent(self, event):
-         if QVizGlobalOperations.YesNo(self, "Exit IMAS_VIZ ?", "Please confirm"):
-             sys.exit(0)
+        if QVizGlobalOperations.YesNo(self, "Exit IMAS_VIZ ?", "Please confirm"):
+            sys.exit(0)
 
     def tabOne(self):
         layout = QVBoxLayout()
@@ -59,7 +75,6 @@ class GUIFrame(QTabWidget):
 
         layout.addLayout(vboxLayout2)
         self.tab1.setLayout(layout)
-
 
     def OpenDataSourceFromTab1(self, evt):
         try:
@@ -106,7 +121,7 @@ class GUIFrame(QTabWidget):
         self.cb = QComboBox()
         self.cb.addItems(publicDatabases)
         vboxlayout.addRow('Unified Data Access', self.cb)
-        #self.cb.currentIndexChanged.connect(self.cbSelectionchange)
+        # self.cb.currentIndexChanged.connect(self.cbSelectionchange)
 
         button_open2 = QPushButton('Open', self)
         button_open2.clicked.connect(self.OpenDataSourceFromTab2)
@@ -143,6 +158,7 @@ class GUIFrame(QTabWidget):
             raise ValueError("'Run number' field is empty.")
 
         QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA, int(self.shotNumber2.text()))
+
 
 def main():
     app = QApplication(sys.argv)

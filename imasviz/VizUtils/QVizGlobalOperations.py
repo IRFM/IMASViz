@@ -80,7 +80,7 @@ class QVizGlobalOperations:
         else:
             return False
 
-    @staticmethod # replace '[' by '(' and ']' by ')'
+    @staticmethod  # replace '[' by '(' and ']' by ')'
     def replaceBrackets(stringToReplace):
         if stringToReplace == None:
             return None
@@ -125,7 +125,7 @@ class QVizGlobalOperations:
 
         if configType != None:
             configurationFilePath = configurationDirectory + "/" + \
-                                    configName + "." + configType
+                configName + "." + configType
         else:
             print('getConfFilePath: File type not specified!')
             return
@@ -143,68 +143,66 @@ class QVizGlobalOperations:
 
         file.write(tabs + text.encode("utf-8") + "\n")
 
-
     @staticmethod
     def checkEnvSettings():
         if not QVizGlobalValues.TESTING:
 
-            print ("IMAS_VIZ production environment.")
+            print("IMAS_VIZ production environment.")
 
             if 'HOME' not in os.environ:
-                print ("Environment variable HOME not defined. Exiting.")
+                print("Environment variable HOME not defined. Exiting.")
                 sys.exit()
 
             if 'TS_MAPPINGS_DIR' not in os.environ:
-                print ("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
+                print("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_VERSION' not in os.environ:
-                print ("Environment variable IMAS_VERSION not defined. Exiting.")
+                print("Environment variable IMAS_VERSION not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
-                print ("Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting.")
+                print("Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting.")
                 sys.exit()
 
             if 'IMAS_MAJOR_VERSION' not in os.environ:
-                print ("Environment variable IMAS_MAJOR_VERSION not defined. Exiting.")
+                print("Environment variable IMAS_MAJOR_VERSION not defined. Exiting.")
                 sys.exit()
 
             if 'USER' not in os.environ:
-                print ("Environment variable USER not defined. Exiting.")
+                print("Environment variable USER not defined. Exiting.")
                 sys.exit()
 
             if 'VIZ_HOME' not in os.environ:
-                print ("Environment variable VIZ_HOME not defined. Exiting.")
+                print("Environment variable VIZ_HOME not defined. Exiting.")
                 sys.exit()
 
         else:
 
-            print ("IMAS_VIZ testing environment.")
+            print("IMAS_VIZ testing environment.")
 
             if 'TS_MAPPINGS_DIR' not in os.environ:
                 os.environ["TS_MAPPINGS_DIR"] = QVizGlobalValues.TESTING_TS_MAPPINGS_DIR
-                print ("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
+                print("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
 
             if 'IMAS_VERSION' not in os.environ:
                 os.environ["IMAS_VERSION"] = QVizGlobalValues.TESTING_IMAS_VERSION
-                print ("WARNING: environment variable IMAS_VERSION defined from testing environment.")
+                print("WARNING: environment variable IMAS_VERSION defined from testing environment.")
 
             if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
                 os.environ["IMAS_DATA_DICTIONARIES_DIR"] = QVizGlobalValues.TESTING_IMAS_DATA_DICTIONARIES_DIR
-                print ("WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.")
+                print("WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.")
 
             if 'IMAS_MAJOR_VERSION' not in os.environ:
                 os.environ["IMAS_MAJOR_VERSION"] = QVizGlobalValues.TESTING_IMAS_MAJOR_VERSION
-                print ("WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment.")
+                print("WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment.")
 
             if 'USER' not in os.environ:
                 os.environ['USER'] = QVizGlobalValues.TESTING_USER
-                print ("WARNING: environment variable USER defined from testing environment.")
+                print("WARNING: environment variable USER defined from testing environment.")
 
             if 'VIZ_HOME' not in os.environ:
                 os.environ['VIZ_HOME'] = QVizGlobalValues.TESTING_VIZ_HOME
-
 
     @staticmethod
     def getIDSDefFile(imas_dd_version):
@@ -227,7 +225,7 @@ class QVizGlobalOperations:
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
         l = os.listdir(configurationDirectory)
-        for i in range(0,len(l)):
+        for i in range(0, len(l)):
             if l[i].endswith("." + configType):
                 files.append(l[i])
         return files
@@ -282,8 +280,8 @@ class QVizGlobalOperations:
         return pathsList
 
     @staticmethod
-    def getNextPanelKey(n, cols):
-        a = n // cols
-        b = n - (n // cols) * cols
+    def getNextPanelKey(n, ncols):
+        a = n // ncols
+        b = n - (n // ncols) * ncols
         p = (a, b)
         return p

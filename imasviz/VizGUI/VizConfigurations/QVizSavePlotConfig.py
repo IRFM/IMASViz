@@ -62,7 +62,7 @@ class QVizSavePlotConfig():
         print('Saving plot configuration to ' + filePath)
 
         # Set root element
-        root = ET.Element('Plot Configuration')
+        root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by '
                  'the IMASVIZ application. It contains saved plot '
                  'configuration: '
@@ -97,7 +97,7 @@ class QVizSavePlotConfig():
             nodeData = plotItem.signalData['nodeData']
 
             # ------------------------------------------------------------------
-            # Set new subelement
+            # Set new subelement for holding pg.PlotItem data
             plotItemEl = ET.SubElement(gWindowEl, 'PlotItem')
             # Set subelement attribute 'key'
             sa(plotItemEl, 'key', key)
@@ -109,8 +109,13 @@ class QVizSavePlotConfig():
                 plotItem.titleLabel.item.document().toRawText())
 
             # ------------------------------------------------------------------
+            # Set new subelement for holding pg.PlotDataItem data (child of
+            # pg.PlotItem)
+            plotDataItemEl = ET.SubElement(plotItemEl, 'PlotDataItem')
+
+            # ------------------------------------------------------------------
             # Set new subelement for holding source information
-            sourceInfoEl = ET.SubElement(plotItemEl, 'sourceInfo')
+            sourceInfoEl = ET.SubElement(plotDataItemEl, 'sourceInfo')
 
             # Save plot source information
             sa(sourceInfoEl, 'path', nodeData['Path'])
@@ -122,7 +127,7 @@ class QVizSavePlotConfig():
             # ------------------------------------------------------------------
             # Set new subelement for holding plot opts configuration
             opts = plotItem.dataItems[0].opts
-            optsEl = ET.SubElement(plotItemEl, 'opts')
+            optsEl = ET.SubElement(plotDataItemEl, 'opts')
             sa(optsEl, 'connect', opts['connect'])
             sa(optsEl, 'fftMode', opts['fftMode'])
             sa(optsEl, 'logMode', opts['logMode'])
@@ -157,7 +162,7 @@ class QVizSavePlotConfig():
 
             # ------------------------------------------------------------------
             # Set new subelement for holding plot axis configuration
-            axisEl = ET.SubElement(plotItemEl, 'axisItem')
+            axisEl = ET.SubElement(plotDataItemEl, 'axisItem')
             # - Left axis
             self.saveAxisAttributes(panelElement=axisEl, axisType='left',
                                     plotItem=plotItem)
