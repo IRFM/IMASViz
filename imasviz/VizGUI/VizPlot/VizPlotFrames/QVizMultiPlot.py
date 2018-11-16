@@ -538,15 +538,25 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                     optsPen = opts['pen']
                     #   - Find pen element from configuration
                     optsPenConfig = optsConfig.find('pen')
-                    #   - Set pen color by converting attribute  (string) to int
-                    #     list (RBGA)
+                    #   - Set pen color and alpha by converting attribute
+                    #     (string) to int list (RBGA)
                     rgba = literal_eval(optsPenConfig.find('QColor').get('colorRGB'))
                     qcolor = QtGui.QColor(rgba[0], rgba[1], rgba[2], rgba[3])
                     optsPen.setColor(qcolor)
-                    #   - Set pen width by converting attribute  (string) to float
+                    #   - Set pen style by converting attribute  (string) to int
+                    #     Note: As for example, Qt.SolidLine == 1
+                    optsPen.setStyle(int(optsPenConfig.get('Qt.PenStyle')))
+                    #   - Set pen cap style by converting attribute  (string) to
+                    #     int
+                    optsPen.setCapStyle(int(optsPenConfig.get('Qt.PenCapStyle')))
+                    #   - Set pen join by converting attribute  (string) to int
+                    optsPen.setJoinStyle(int(optsPenConfig.get('Qt.PenJoinStyle')))
+                    #   - Set pen width by converting attribute  (string) to
+                    #     float
                     optsPen.setWidth(float(optsPenConfig.get('widthF')))
 
-                    # TODO: Pen style etc.
+                    # TODO: Pen Brush (is it required?) dashOffset, isCosmetic,
+                    #       isSolid and miterLimit
 
                     # TODO: Axis part
 
