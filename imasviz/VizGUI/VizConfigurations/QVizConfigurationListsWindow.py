@@ -95,25 +95,29 @@ class CommonConfigurationRoutines(QObject):
         """
         # Get in-list position of the selection (config file name)
         selectedItems = self.parent.listWidget.selectedItems()
-        # Set the first selected item from the list
-        # Note: Only one item can be selected at a time, so a list of one item
-        # is provided
-        selectedItem = selectedItems[0]
 
-        # Get system path to the selected configuration file
-        selectedFile = \
-            QVizGlobalOperations.getConfigurationFilesDirectory() + \
-            "/" + selectedItem.text()
-        # Extract signal paths from the config file and add them to a list of
-        # paths
-        pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
-            configFile=selectedFile)
-        # First unselect all signals
-        QVizUnselectAllSignals(dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
-        # Select the signals, defined by a path in a list of paths, in the
-        # given wxDataTreeView (DTV) window
-        QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
-                          pathsList=pathsList).execute()
+        if len(selectedItems) > 0:
+            # Set the first selected item from the list
+            # Note: Only one item can be selected at a time, so a list of one item
+            # is provided
+            selectedItem = selectedItems[0]
+
+            # Get system path to the selected configuration file
+            selectedFile = \
+                QVizGlobalOperations.getConfigurationFilesDirectory() + \
+                "/" + selectedItem.text()
+            # Extract signal paths from the config file and add them to a list of
+            # paths
+            pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
+                configFile=selectedFile)
+            # First unselect all signals
+            QVizUnselectAllSignals(dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
+            # Select the signals, defined by a path in a list of paths, in the
+            # given wxDataTreeView (DTV) window
+            QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
+                              pathsList=pathsList).execute()
+        else:
+            pass
 
     @pyqtSlot(str)
     def removeConfiguration(self, configType):
@@ -125,19 +129,23 @@ class CommonConfigurationRoutines(QObject):
         """
         # Get the selection list (config file name)
         selectedItems = self.parent.listWidget.selectedItems()
-        # Set the first selected item from the list
-        # Note: Only one item can be selected at a time, so a list of one item
-        # is provided
-        selectedItem = selectedItems[0]
-        # Get system path to the selected configuration file
-        selectedFile = \
-            QVizGlobalOperations.getConfigurationFilesDirectory() + \
-            '/' + selectedItem.text()
-        # Get Yes/No answer (returns True/False)
-        answer = \
-            QVizGlobalOperations.YesNo(question='The configuation '
-                                       + selectedFile
-                                       + ' will be deleted. Are you sure?')
+
+        if len(selectedItems) > 0:
+            # Set the first selected item from the list
+            # Note: Only one item can be selected at a time, so a list of one item
+            # is provided
+            selectedItem = selectedItems[0]
+            # Get system path to the selected configuration file
+            selectedFile = \
+                QVizGlobalOperations.getConfigurationFilesDirectory() + \
+                '/' + selectedItem.text()
+            # Get Yes/No answer (returns True/False)
+            answer = \
+                QVizGlobalOperations.YesNo(question='The configuation '
+                                           + selectedFile
+                                           + ' will be deleted. Are you sure?')
+        else:
+            answer = False
         if answer:  # If True
             print('Removing configuration: ' + selectedFile)
             try:
@@ -284,22 +292,26 @@ class PlotConfigurationListsTab(QWidget):
 
         # Get the selection list (config file name)
         selectedItems = self.listWidget.selectedItems()
-        # Set the first selected item from the list
-        # Note: Only one item can be selected at a time, so a list of one item
-        # is provided
-        selectedItem = selectedItems[0]
-        # Get system path to the selected configuration file
-        selectedFile = \
-            QVizGlobalOperations.getConfigurationFilesDirectory() + \
-            '/' + selectedItem.text()
 
-        # Get next figurekey (label) for the MultiPlot
-        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
-        # Set up and show the MultiPlot using the config file
-        QVizMultiPlot(self.dataTreeView,
-                      figureKey=figureKey,
-                      update=1,
-                      configFile=selectedFile)
+        if len(selectedItems) > 0:
+            # Set the first selected item from the list
+            # Note: Only one item can be selected at a time, so a list of one item
+            # is provided
+            selectedItem = selectedItems[0]
+            # Get system path to the selected configuration file
+            selectedFile = \
+                QVizGlobalOperations.getConfigurationFilesDirectory() + \
+                '/' + selectedItem.text()
+
+            # Get next figurekey (label) for the MultiPlot
+            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
+            # Set up and show the MultiPlot using the config file
+            QVizMultiPlot(self.dataTreeView,
+                          figureKey=figureKey,
+                          update=1,
+                          configFile=selectedFile)
+        else:
+            pass
 
 
 class ListOfSignalPathsListsTab(QWidget):

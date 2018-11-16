@@ -138,7 +138,11 @@ class QVizSavePlotConfig():
             sa(optsEl, 'fillLevel', opts['fillLevel'])
             sa(optsEl, 'fillBrush', opts['fillBrush'])
             sa(optsEl, 'stepMode', opts['stepMode'])
-            sa(optsEl, 'symbol', opts['symbol'])
+            # If symbol (shape) is not defined, save attribute as 'None'
+            if opts['symbol'] != None:
+                sa(optsEl, 'symbol', opts['symbol'])
+            else:
+                sa(optsEl, 'symbol', 'None')
             sa(optsEl, 'symbolSize', opts['symbolSize'])
             sa(optsEl, 'symbolPen', opts['symbolPen'])
             sa(optsEl, 'symbolBrush', opts['symbolBrush'])

@@ -457,6 +457,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
             # Get key attribute (key=(column,row))
             key = pItemElement.get('key')
 
+            # Set configuration for PlotItem that matches the key (columnt/row)
             if str(key) == str((plotItem.column, plotItem.row)):
                 # Get a list of pg.PlotDataItems
                 # Note: Only one per MultiPlot PlotItem
@@ -467,52 +468,93 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                 pdi = 0
                 for pdItemElement in plotItemDataElements:
 
+                    # Get pg.PlotDataItem
                     pdItem = plotItem.dataItems[pdi]
-
+                    # get opts attribute of the pg.PlotDataItem
                     opts = pdItem.opts
+                    # Find opts element in configuration
                     optsConfig = pdItemElement.find('opts')
+                    # Set opts configuration
+                    # TODO: resolve the configurations that are returning error
+                    #       or the type is not know (as those configurations
+                    #       were not yet actively used)
+                    # TODO: create separate functions that converts the
+                    #       element attribute value (always string) to correct
+                    #       type
 
-                    # opts['connect'] = optsConfig.get('connect')
-                    # opts['fftMode'] = optsConfig.get('fftMode')
-                    # opts['logMode'] = optsConfig.get('logMode')
-                    # opts['alphaHint'] = optsConfig.get('alphaHint')
-                    # opts['alphaMode'] = optsConfig.get('alphaMode')
-                    # opts['shadowPen'] = optsConfig.get('shadowPen')
-                    # opts['fillLevel'] = optsConfig.get('fillLevel')
-                    # opts['fillBrush'] = optsConfig.get('fillBrush')
-                    # opts['stepMode'] = optsConfig.get('stepMode')
-                    # opts['symbol'] = optsConfig.get('symbol')
-                    # opts['symbolSize'] = optsConfig.get('symbolSize')
-                    # opts['symbolPen'] = optsConfig.get('symbolPen')
-                    # opts['symbolBrush'] = optsConfig.get('symbolBrush')
-                    # opts['pxMode'] = optsConfig.get('pxMode')
-                    # opts['antialias'] = optsConfig.get('antialias')
-                    # opts['pointMode'] = optsConfig.get('pointMode')
-                    # opts['downsample'] = optsConfig.get('downsample')
-                    # opts['autoDownsample'] = optsConfig.get('autoDownsample')
-                    # opts['downsampleMethod'] = optsConfig.get('downsampleMethod')
-                    # opts['autoDownsampleFactor'] = optsConfig.get('autoDownsampleFactor')
-                    # opts['clipToView'] = optsConfig.get('clipToView')
-                    # opts['data'] = optsConfig.get('data')
+                    # opts['connect'] = optsConfig.get('connect') # error
+                    # - Set fftMode by checking if string 'True' is present as
+                    #   element attribute. If not 'True' then bool False is
+                    #   returned
+                    opts['fftMode'] = 'True' in optsConfig.get('fftMode')
+                    # - Set logMode by converting attribute  (string) to list
+                    opts['logMode'] = literal_eval(optsConfig.get('logMode'))
+                    # - Set alphaHint by converting attribute  (string) to float
+                    opts['alphaHint'] = float(optsConfig.get('alphaHint'))
+                    # - Set alphaMode by checking if string 'True' is present as
+                    #   element attribute. If not 'True' then bool False is
+                    #   returned
+                    opts['alphaMode'] = 'True' in optsConfig.get('alphaMode')
+                    # opts['shadowPen'] = tuple(optsConfig.get('shadowPen')) # unknown type
+                    # opts['fillLevel'] = literal_eval(optsConfig.get('fillLevel')) # unknown type
+                    # opts['fillBrush'] = optsConfig.get('fillBrush') # unknown type
+                    # opts['stepMode'] = optsConfig.get('stepMode') # unknown type
+                    # - Set symbol. If attribute is 'None' then skip
+                    if optsConfig.get('symbol') != 'None':
+                        opts['symbol'] = optsConfig.get('symbol')
+
+                    # - Set symbolSize by converting attribute  (string) to float
+                    opts['symbolSize'] = float(optsConfig.get('symbolSize'))
+
+                    # - Set symbolPen by converting attribute  (string) to list
+                    opts['symbolPen'] = literal_eval(optsConfig.get('symbolPen'))
+                    # - Set symbolBrush by converting attribute  (string) to list
+                    opts['symbolBrush'] = literal_eval(optsConfig.get('symbolBrush'))
+                    # - Set pxMode by checking if string 'True' is present as
+                    #   element attribute. If not 'True' then bool False is
+                    #   returned
+                    opts['pxMode'] = 'True' in optsConfig.get('pxMode')
+                    # # opts['antialias'] = bool(optsConfig.get('antialias')) # error
+                    # opts['pointMode'] = optsConfig.get('pointMode') # unknown type
+                    # - Set downsample by converting attribute  (string) to int
+                    opts['downsample'] = int(optsConfig.get('downsample'))
+                    # - Set autoDownsample by checking if string 'True' is present as
+                    #   element attribute. If not 'True' then bool False is
+                    #   returned
+                    opts['autoDownsample'] = 'True' in optsConfig.get('autoDownsample')
+                    # - Set downsampleMethod (string)
+                    opts['downsampleMethod'] = optsConfig.get('downsampleMethod')
+                    # - Set autoDownsampleFactor by converting attribute  (string) to float
+                    opts['autoDownsampleFactor'] = float(optsConfig.get('autoDownsampleFactor'))
+                    # - Set clipToView by checking if string 'True' is present as
+                    #   element attribute. If not 'True' then bool False is
+                    #   returned
+                    opts['clipToView'] = 'True' in optsConfig.get('clipToView')
+                    # opts['data'] = optsConfig.get('data') # unknown type
+                    # - Set name (string)
                     opts['name'] = optsConfig.get('name')
 
+                    # - Set pen configuration
                     optsPen = opts['pen']
+                    #   - Find pen element from configuration
                     optsPenConfig = optsConfig.find('pen')
-                    # Extract RGBA (string) and transform in to an array of int
+                    #   - Set pen color by converting attribute  (string) to int
+                    #     list (RBGA)
                     rgba = literal_eval(optsPenConfig.find('QColor').get('colorRGB'))
                     qcolor = QtGui.QColor(rgba[0], rgba[1], rgba[2], rgba[3])
                     optsPen.setColor(qcolor)
-                    optsPen.setWidth(float(optsPenConfig.get('width')))
+                    #   - Set pen width by converting attribute  (string) to float
+                    optsPen.setWidth(float(optsPenConfig.get('widthF')))
 
+                    # TODO: Pen style etc.
+
+                    # TODO: Axis part
+
+                    # Update items for the changes to be displayed
                     pdItem.updateItems()
-
-
-
-
 
     # TODO
     # def applyPlotConfigurationBeforePlotting
-    # def applyPlotConfigurationAfterPlotting
     # def setPlotConfigAttribute
     # class modifyMultiPlot
 

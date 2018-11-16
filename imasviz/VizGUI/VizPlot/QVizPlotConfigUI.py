@@ -441,7 +441,7 @@ class TabColorAndLineProperties(QWidget):
                                              color is set.
         """
         # Change symbol color
-        pdItem.opts['symbolBrush'] = colorButton.color().toRgb()
+        pdItem.opts['symbolBrush'] = colorButton.color().getRgb()
         pdItem.updateItems()
         pass
 
@@ -456,5 +456,5 @@ class TabColorAndLineProperties(QWidget):
                                              color is set.
         """
         # Change symbol outline color
-        pdItem.opts['symbolPen'] = colorButton.color().toRgb()
+        pdItem.opts['symbolPen'] = colorButton.color().getRgb()
         pdItem.updateItems()
