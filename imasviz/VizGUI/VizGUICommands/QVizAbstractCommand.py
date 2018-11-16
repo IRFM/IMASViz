@@ -6,7 +6,7 @@ class QVizAbstractCommand:
         self.nodeData = nodeData
 
     def updateNodeData(self):
-        self.nodeData = self.dataTreeView.selectedItem.itemVIZData
-        self.treeNode = self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
+        self.treeNode = self.dataTreeView.selectedItem
+        self.nodeData = self.dataTreeView.selectedItem.dataDict
 
 

@@ -74,19 +74,17 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
 
         n = 0
         for key in selectedSignalsDict:
-            signalArray = selectedSignalsDict[key]
+
+            v = selectedSignalsDict[key]
+            vizTreeNode = v['QTreeWidgetItem']
 
             # Set new subelement
             pathElement = ET.SubElement(listElement, 'IDSPath')
             # Set subelement attribute 'key'
             pathElement.set('key', str(n))
 
-            # Extract signal node data (it contains also 'path') from the
-            # signal
-            nodeData = signalArray['nodeData']
-
             # Set subelement attribute 'path'
-            self.saveAttribute(pathElement, 'path', nodeData['Path'])
+            self.saveAttribute(pathElement, 'path', vizTreeNode.getPath())
 
             # self.saveAttribute(pathElement, 'shotNumber', nodeData['shotNumber'])
             # self.saveAttribute(pathElement, 'runNumber', nodeData['runNumber'])

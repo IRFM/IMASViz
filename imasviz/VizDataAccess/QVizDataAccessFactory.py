@@ -10,7 +10,7 @@ class QVizDataAccessFactory:
         self.dataSource = dataSource
 
     def create(self):
-        if self.dataSource.name==QVizGlobalValues.TORE_SUPRA:
+        if self.dataSource.name == QVizGlobalValues.TORE_SUPRA:
             return QVizTSDataAccess(self.dataSource)
 
         elif self.dataSource.name == QVizGlobalValues.IMAS_NATIVE or self.dataSource.name == QVizGlobalValues.IMAS_UDA:

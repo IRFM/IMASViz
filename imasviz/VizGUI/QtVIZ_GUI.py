@@ -79,14 +79,13 @@ class GUIFrame(QTabWidget):
     def OpenDataSourceFromTab1(self, evt):
         try:
             self.CheckInputsFromTab1()
-            # openShotView = QVizOpenShotView()
             self.openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                    imasDbName=self.imasDbName.text(),
                                    userName=self.userName.text(),
                                    runNumber=self.runNumber.text(),
                                    shotNumber=self.shotNumber.text())
         except ValueError as e:
-            self.logFromTab1.error(str(e))
+            QVizGlobalOperations.message(self, str(e), 'Error opening file')
 
     def CheckInputsFromTab1(self):
         """Display warning message if the required parameter was not specified"""
@@ -142,7 +141,7 @@ class GUIFrame(QTabWidget):
                                             shotNumber=self.shotNumber2.text())
             openShotView.Open(evt)
         except ValueError as e:
-            self.logFromTab2.error(str(e))
+            QVizGlobalOperations.message(self, str(e), 'Error opening file')
 
     def CheckInputsFromTab2(self):
         machineName = \

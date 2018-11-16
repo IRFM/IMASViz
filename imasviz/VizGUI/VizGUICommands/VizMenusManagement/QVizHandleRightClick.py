@@ -37,7 +37,7 @@ class QVizHandleRightClick:
     def execute(self, node):
         """
         Arguments:
-            node (QTreeWidgetItem) : Item (node) from in the QTreeWidget.
+            node (QVizTreeNode) : Item (node) from in the QTreeWidget.
         """
 
         #Get the data source attached to the dataTreeView
@@ -45,7 +45,7 @@ class QVizHandleRightClick:
         showPopUp = 0
 
         #Get the Python dictionary attached to the node
-        dico = node.itemVIZData
+        dico = node.getDataDict()
 
         if dico == None:
             # TODO

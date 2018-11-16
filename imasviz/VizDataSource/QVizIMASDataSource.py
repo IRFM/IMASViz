@@ -1,11 +1,9 @@
 import os
-
 import imas
 from PyQt5.QtWidgets import QTreeWidgetItem
-
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors
-
+from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 class QVizIMASDataSource:
 
@@ -45,9 +43,11 @@ class QVizIMASDataSource:
     @staticmethod
     def try_to_open(imasDbName, userName, shotNumber, runNumber, imas_major_version='3'):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
-        ids.open_env(userName, imasDbName, imas_major_version)
-        if (ids.expIdx == -1):
-            raise ValueError("Can not open shot " + str(shotNumber) + "  from data base " + imasDbName + " of user " + userName)
+        try:
+            ids.open_env(userName, imasDbName, imas_major_version)
+        except Exception:
+            raise ValueError("Can not open shot " + str(shotNumber) +
+                             "  from data base " + imasDbName + " of user " + userName + ".")
 
     @staticmethod
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
@@ -96,7 +96,8 @@ class QVizIMASDataSource:
         return str(dataElement.find('name').text)
 
     # This defines the unique key attached to each data which can be plotted
-    def dataKey(self, nodeData):
+    def dataKey(self, treeNode):
+        nodeData = treeNode.getDataDict()
         return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
 
     def getShortLabel(self):
@@ -123,16 +124,13 @@ class QVizIMASDataSource:
             coordinate_same_as = "coordinate" + str(i) + "_same_as"
             if itemDataDict.get(coordinate) != None:
                 coordinate_display = coordinate + "=" + itemDataDict[coordinate]
-                newTreeItem = QTreeWidgetItem(viewerNode, [coordinate_display])
-                newTreeItem.itemVIZData = treeItemData
+                newTreeItem = QVizTreeNode(viewerNode, [coordinate_display])
             if itemDataDict.get(coordinate_same_as) != None:
                 coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
-                newTreeItem = QTreeWidgetItem(viewerNode, [coordinate_display])
-                newTreeItem.itemVIZData = treeItemData
+                newTreeItem = QVizTreeNode(viewerNode, [coordinate_display])
 
         doc_display = None
 
         if itemDataDict.get('documentation') != None:
             doc_display = "documentation= " + itemDataDict['documentation']
-            newTreeItem = QTreeWidgetItem(viewerNode, [doc_display])
-            newTreeItem.itemVIZData = treeItemData
+            newTreeItem = QVizTreeNode(viewerNode, [doc_display])

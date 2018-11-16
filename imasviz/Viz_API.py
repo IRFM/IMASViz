@@ -25,7 +25,7 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
 
-class Viz_API():
+class Viz_API:
 
     def __init__(self):
         self.figToNodes= {} #key = figure, values = list of selectedData
@@ -84,23 +84,23 @@ class Viz_API():
     def ShowDataTree(self, dataTreeFrame):
         dataTreeFrame.show()
 
-    def getSelectedSignalsDict(self, dataTreeView):
+    def GetSelectedSignalsDict(self, dataTreeFrame):
         """Returns the list of signals (nodes) dictionaries
         selected by the user or from script commands (from a single opened
         data tree view (DTVs)).
 
         Arguments:
-            dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
+            dataTreeFrame (QMainWindow) : DTV frame/main window object.
         """
-        return dataTreeView.selectedSignalsDict
+        return dataTreeFrame.dataTreeView.selectedSignalsDict
 
-    def getSelectedSignalsDict_allDTVs(self):
-        """Returns the list of signals (nodes) dictionaries selected by the
-        user of from script commands (from all opened data tree views (DTVs))
+    def GetSelectedSignals_AllDTVs(self):
+        """Returns the signals (nodes) selected by the user of from script
+           commands (from all opened data tree views (DTVs))
         """
         allSelectedSignals = {}
-        for i in range(len(self.DTVframeList)):
-            allSelectedSignals.update(self.DTVframeList[i].dataTreeView.selectedSignalsDict)
+        for i in range(len(self.wxDTVframeList)):
+            allSelectedSignals.update(self.wxDTVframeList[i].dataTreeView.selectedSignalsDict)
 
         return allSelectedSignals
 
@@ -217,7 +217,6 @@ class Viz_API():
     #Load IDS data for a given data tree frame and a given occurrence
     def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
                     threadingEvent=None):
-        dataTreeFrame.dataTreeView.setIDSNameSelected(IDSName)
         QVizLoadSelectedData(dataTreeFrame.dataTreeView, occurrence, threadingEvent).execute()
 
 
@@ -273,4 +272,4 @@ class Viz_API():
                                       'magnetics/flux_loop(0)/flux/data'
         """
         # Get full data of the node (given 'path' is one of them)
-        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem.itemVIZData).execute()
+        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem.dataDict).execute()

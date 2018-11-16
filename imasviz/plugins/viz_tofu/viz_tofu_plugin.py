@@ -24,7 +24,7 @@ class ToFuPlugin(VIZPlugins):
             print ('ToFuPlugin to be executed...')
             plt.ioff()
             view = pluginsConfig.get('imasviz_view')
-            node_attributes = pluginsConfig.get('node_attributes')
+            node_attributes = pluginsConfig.get('node_extra_attributes')
             figure = None
             if node_attributes.get('IDSName')=='bolometer':
                 if pluginsConfig.get('geom'):

@@ -53,12 +53,11 @@ from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors
 from imasviz.VizUtils.QVizWindowUtils import getWindowSize
+from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
-    Note: IMASViz wxPython counterpart: WxDataTreeView
-          (defined in project directory 'viz/imasviz/view/WxDataTreeView.py')
     """
 
     def __init__(self, parent, dataSource, mappingFilesDirectory,
@@ -66,22 +65,14 @@ class QVizDataTreeView(QTreeWidget):
         """
         Arguments:
             parent     (QWindow)            : QVizDataTreeView parent.
-            dataSource (QVizIMASDataSource) : IDS data source from
-                                            : QVizDataSourceFactory
-            mappingFilesDirectory (str)     : Path to IMASViz mapping files
-                                              directory
-                                              (example: viz/ts_mapping_files)
-            IDSDefFile (str)                : Path to IDS dictionary definition
-                                              .xml file (example:
-                                              viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
+            dataSource (QVizIMASDataSource) : IDS data source from QVizDataSourceFactory
+            mappingFilesDirectory (str)     : Path to IMASViz mapping files directory
+                                          (example: viz/ts_mapping_files)
+            IDSDefFile (str)                : Path to IDS dictionary definition .xml
+                                          file (example:
+                                          viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
         """
         super(QVizDataTreeView, self).__init__(parent)
-
-        # TODO: From original wxPython. Not yet turned into PyQt counterpart
-        # self.Bind(wx.EVT_TREE_ITEM_EXPANDING, self.OnExpandItem)
-        # self.Bind(wx.EVT_TREE_ITEM_COLLAPSING, self.OnCollapseItem)
-        # self.Bind(wx.EVT_MOUSE_EVENTS, self.OnMouseEvent)
-        # self.gauge = gauge
 
         # Set QTreeWidget name
         self.setObjectName('DTV')
@@ -103,46 +94,50 @@ class QVizDataTreeView(QTreeWidget):
         self.shotNumber = dataSource.shotNumber
         self.runNumber = dataSource.runNumber
         self.mappingFilesDirectory = mappingFilesDirectory
-        self.IDSNameSelected = None
 
         # Create a IDS root node with each shotnumber
-        self.IDSRoot = QTreeWidgetItem(self, ['IDSs' + '('
-                                              + str(dataSource.shotNumber)
-                                              + ')'])
+        self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + str(dataSource.shotNumber) + ')'])
 
-        # Array of signal dictionaries (replaced selectedSignals array of
-        # tuples)
+        # #Dictionary where each element is also a dictionary containing
+        # self.dataTreeView.selectedSignalsDict[key] = \
+        #     {'index': index,
+        #      'QTreeWidgetItem': self.dataTreeView.selectedItem,
+        #      'shotNumber': self.dataTreeView.dataSource.shotNumber,
+        #      'runNumber': self.dataTreeView.dataSource.runNumber,
+        #      'imasDbName': self.dataTreeView.dataSource.imasDbName,
+        #      'userName': self.dataTreeView.dataSource.userName}
         self.selectedSignalsDict = {}
 
         # List of all nodes which contain a signal (all FLT_1D nodes etc.)
         self.signalsList = []
-
-        # Extra informations attached to each leaf of the tree
-        #    - key = Node name (IMAS path), value = QVizTreeNode object
-        self.node_attributes = {}
 
         # Parent of this tree, this is the wxDataTreeViewFrame
         self.parent = parent
 
         # Keep a reference to shared data (frames, figures, ...)
         # - This is a BrowserAPI instance
-        self.imas_viz_api = None
+        self.viz_api = None
+
+        #key = idsName, value = root node (of type QVizTreeNode) of the IDS tree
+        self.IDSRoots = {}
 
         # Create the empty tree
-        self.dataTree = self.createEmptyIDSsTree(IDSDefFile)
+        self.createEmptyIDSsTree(IDSDefFile)
 
         self.log = None
 
         # Set dummy for node documentation widget
         self.ndw = None
 
-        self.ids_roots = {}  # each root is a IDS occurrence
+        #contains root nodes for each IDS occurrence
+        self.ids_roots_occurrence = {}
 
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
         Note: The original routine source (ues with wxPython) can be found in
         viz/imasviz/view/WxDataTreeView.py
         """
+        idsNode = None
         tree = ET.parse(IDSDefFile)
         # Add the node information to each IDS node
         returnedDict = {}
@@ -168,21 +163,15 @@ class QVizDataTreeView(QTreeWidget):
                 itemDataDict['availableIDSData'] = 0
                 itemDataDict['documentation'] = idsDocumentation
                 # Add the IDS node as a tree item to the tree view
-                idsNode = QTreeWidgetItem(self.IDSRoot, [idsName])
+                self.IDSRoots[idsName] = QVizTreeNode(self.DTVRoot, [idsName], itemDataDict)
                 if self.dataSource.exists(idsName) == 1:
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
                     # Set tree item text color
-                    idsNode.setForeground(0, GlobalColors.BLUE)
+                    self.IDSRoots[idsName].setForeground(0, GlobalColors.BLUE)
 
-                # Set QTreeWidgetItem custom data
-                # idsNode.setData(1, Qt.UserRole+1, itemDataDict)
-                idsNode.itemVIZData = itemDataDict
-                # Mapping the idsName with idsNode
-                returnedDict[idsName] = idsNode
-        return returnedDict
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
@@ -209,9 +198,6 @@ class QVizDataTreeView(QTreeWidget):
             elif mouseButton == "RIGHT":
                 self.selectedItem_rightClick = item
 
-    def setIDSNameSelected(self, IDSName):
-        self.IDSNameSelected = IDSName
-
     # Note: pyqtSlot needs QObject to work, in this case, self=QTreeWidget
     # (inherited)
     @pyqtSlot(QTreeWidgetItem, int)
@@ -224,7 +210,7 @@ class QVizDataTreeView(QTreeWidget):
         """
 
         # Check if item has the 'itemVIZData' attribute. If not -> return
-        if hasattr(item, 'itemVIZData'):
+        if item.getDataName() is not None:
             pass
         else:
             return
@@ -236,12 +222,12 @@ class QVizDataTreeView(QTreeWidget):
         # UPDATE NODE DOCUMENTATION WIDGET
         # - Set node label
         node_label = "..."    # Assigning default label
-        if (item.itemVIZData.get('dataName') != None):
-            node_label = str(item.itemVIZData.get('dataName'))
-        elif (item.itemVIZData.get('name') != None):
-            node_label = str(item.itemVIZData.get('name'))
+        if (item.getDataName() is not None):
+            node_label = str(item.getDataName())
+        elif (item.getName() is not None):
+            node_label = str(item.getName())
         # - Set node documentation#
-        node_doc = str(item.itemVIZData.get('documentation'))
+        node_doc = str(item.getDocumentation())
 
         # - Set all node documentation related strings to single
         # string array for better handling
@@ -260,9 +246,9 @@ class QVizDataTreeView(QTreeWidget):
             raise ValueError(error)
             self.log.error(str(error))
 
-        # UPDATE PLOT PREVIEW WIDGET
-        if (item.itemVIZData.get('isSignal') == 1 and
-            item.itemVIZData.get('data_type') == 'FLT_1D' and
+        ### UPDATE PLOT PREVIEW WIDGET
+        if (item.isDynamicData() == 1 and
+            item.getDataType() == 'FLT_1D' and
             (item.foreground(0).color().name() == GlobalColors.BLUE_HEX or
              item.foreground(0).color().name() == GlobalColors.RED_HEX)):
             # If the node holds an 1D array of values (1D_FLT) then its
@@ -289,52 +275,16 @@ class QVizDataTreeView(QTreeWidget):
             # TODO
             handleRightClick = QVizHandleRightClick(self)
             showPopUp = handleRightClick.execute(item)
-            # if showPopUp == 1:
-            #     self.OnShowPopup(pos)
-
-            # # Below is just a menu example
-            # position = event.pos()
-            # index = self.indexAt(position)
-            # if not index.isValid():
-            #     return
-
-            # level = 0
-            # while index.parent().isValid():
-            #     index = index.parent()
-            #     level += 1
-
-            # menu = QMenu()
-            # if level == 0:
-            #     menu.addAction(self.tr("Menu item 1"))
-            # elif level == 1:
-            #     menu.addAction(self.tr("Menu item 2"))
-            # elif level == 2:
-            #     menu.addAction(self.tr("Menu item 3"))
-            # menu.exec_(self.viewport().mapToGlobal(position))
-
-    # def mousePressEvent(self, QMouseEvent):
-    #     """ Override PyQt5 mousePressEvent for mouse events.
-    #     """
-    #     if QMouseEvent.button() == Qt.LeftButton:
-    #         # Left mouse button click anywhere inside the application
-    #         # For actions upon left-clicking on DTV item, the signal connect
-    #         # and 'onLefClickItem' routine are to be used.
-    #         pass
-    #     elif QMouseEvent.button() == Qt.RightButton and \
-    #         len(self.selectedItems()) == 1:
-    #         # Right mouse button click on a single tree item
-
-    #    return super(QVizDataTreeView, self).mousePressEvent(QMouseEvent)
 
     def update_view(self, idsName, occurrence, idsData):
         """ Update the tree view with the data.
         """
         self.idsAlreadyFetched[idsName] = 1
-        ids_root_node = self.dataTree[idsName]
+        #ids_root_node = self.IDSRoot[idsName]
         if idsData != None:
-            self.buildTreeView(ids_root_node, occurrence, idsData)
+            self.buildTreeView(self.IDSRoots[idsName], occurrence, idsData)
             # Expand the tree item
-            ids_root_node.setExpanded(True)
+            self.DTVRoot.setExpanded(True)
 
     def buildTreeView(self, ids_root_node, occurrence, idsData):
         """ Build the data tree view by adding a set of available IDS nodes as
@@ -346,24 +296,26 @@ class QVizDataTreeView(QTreeWidget):
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
+        rootNodeData = ids_root_node.getDataDict()
 
-        rootNodeData = ids_root_node.itemVIZData
-        idsName = rootNodeData['IDSName']
+        idsName = ids_root_node.getIDSName()
         key = idsName + "/" + str(occurrence)
-        rootNodeData['occurrence'] = occurrence
-        nodeBuilder = QVizDataTreeViewBuilder()
-        ids_root_occ = self.ids_roots.get(key)
-        # if ids_root_occ is not None:
-        #    ids_root_node.removeChild(ids_root_occ)
-        #    del self.ids_roots[key]
 
-        ids_root_occ = QTreeWidgetItem(ids_root_node,
-                                       ['occurrence ' + str(int(occurrence))])
-        ids_root_occ.itemVIZData = {}
-        ids_root_occ.itemVIZData['Path'] = rootNodeData['Path']
-        ids_root_occ.itemVIZData['IDSName'] = rootNodeData['IDSName']
-        ids_root_occ.itemVIZData['dataName'] = rootNodeData['dataName']
-        self.ids_roots[key] = ids_root_occ
+        occNodeData = rootNodeData
+        occNodeData['occurrence'] = occurrence
+
+        nodeBuilder = QVizDataTreeViewBuilder()
+        #ids_root_occ = self.ids_roots_occurrence.get(key)
+        #if ids_root_occ is not None:
+        #    ids_root_node.removeChild(ids_root_occ)
+        #    del self.ids_roots_occurrence[key]
+
+        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
+        #ids_root_occ.setPath(ids_root_node.getPath())
+        #ids_root_occ.setIDSName(ids_root_node.getIDSName())
+        #ids_root_occ.setDataName(ids_root_node.getDataName())
+
+        self.ids_roots_occurrence[key] = ids_root_occ
 
         for child in idsData:
             self.addChildren(nodeBuilder, child, ids_root_occ, idsName,
@@ -386,11 +338,6 @@ class QVizDataTreeView(QTreeWidget):
             for child in element:
                 self.addChildren(nodeBuilder, child, element_node, idsName,
                                  occurrence)
-
-    def getNodeAttributes(self, dataName):
-        if self.node_attributes != None and dataName in self.node_attributes:
-            return self.node_attributes[dataName]
-        return None
 
     def OnExpandItem(self, event):
         return

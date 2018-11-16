@@ -11,7 +11,7 @@ class ArraySizePlugin(VIZPlugins):
             size_request = pluginsConfig.get('size_request')
             if size_request != None and size_request == 1:
                 view = pluginsConfig.get('imasviz_view')
-                node_attributes = pluginsConfig.get('node_attributes')
+                node_attributes = pluginsConfig.get('node_extra_attributes')
                 ids = view.dataSource.ids
                 size = len(eval(node_attributes.get('dataName')))
                 view.log.info('Size of ' + str(node_attributes.get('dataName')) + " = " + str(size) )

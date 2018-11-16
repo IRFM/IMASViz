@@ -61,12 +61,10 @@ class QVizSignalHandling(QObject):
         # Get signal node (tree item) data
         self.nodeData = None
         if self.dataTreeView.selectedItem != None:
-            self.nodeData = self.dataTreeView.selectedItem.itemVIZData
+            self.nodeData = self.dataTreeView.selectedItem.getDataDict()
         # Get signal node dataName
-        self.treeNode = None
-        if self.nodeData != None:
-            self.treeNode = \
-                self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
+        self.treeNode = self.dataTreeView.selectedItem
+
         self.timeSlider = None
 
     def updateNodeData(self):
@@ -74,9 +72,8 @@ class QVizSignalHandling(QObject):
             TODO: use the global routine 'updateNodeData' defined in
                   QVizAbstractCommand instead.
         """
-        self.nodeData = self.dataTreeView.selectedItem.itemVIZData
-        self.treeNode = \
-            self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
+        self.nodeData = self.dataTreeView.selectedItem.getDataDict()
+        self.treeNode = self.dataTreeView.selectedItem
 
     def showPopUpMenu(self, signalName):
         """Display the popup menu for plotting data.
@@ -116,7 +113,7 @@ class QVizSignalHandling(QObject):
         # ----------------------------------------------------------------------
         # Add menu item for unselection of all selected signals if there are
         # and selected signals present
-        if bool(self.dataTreeView.selectedSignalsDict) == True:
+        if len(self.dataTreeView.selectedSignalsDict) > 0:
             action_UnselectAllSignals = QAction('Unselect all signals', self)
             action_UnselectAllSignals.triggered.connect(self.unselectAllSignals)
             self.dataTreeView.popupmenu.addAction(action_UnselectAllSignals)
@@ -334,20 +331,19 @@ class QVizSignalHandling(QObject):
     def plotSignalCommand(self):
         try:
             self.currentFigureKey = self.api.GetNextKeyForFigurePlots()
-            treeNode = self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
             label = None
             xlabel = None
-            if treeNode != None and treeNode.time_dependent_aos():
-                aos_vs_itime = treeNode.getDataPathVsTime(treeNode.aos)
-                label = treeNode.getDataPath(aos_vs_itime, 0)
-                label = label.replace("ids.", "")
-                label = QVizGlobalOperations.replaceBrackets(label)
-                label = QVizGlobalOperations.replaceDotsBySlashes(label)
-                xlabel = \
-                    QVizGlobalOperations.replaceBrackets(treeNode.evaluateCoordinate1At(0))
-                self.timeSlider = True
-            else:
-                self.timeSlider = None
+            # if self.treeNode is not None and self.treeNode.time_dependent_aos():
+            #     aos_vs_itime = self.treeNode.getDataPathVsTime(self.treeNode.aos)
+            #     label = self.treeNode.getDataPath(aos_vs_itime, 0)
+            #     label = label.replace("ids.", "")
+            #     label = QVizGlobalOperations.replaceBrackets(label)
+            #     label = QVizGlobalOperations.replaceDotsBySlashes(label)
+            #     xlabel = \
+            #         QVizGlobalOperations.replaceBrackets(self.treeNode.evaluateCoordinate1At(0))
+            #     self.timeSlider = True
+            # else:
+            #     self.timeSlider = None
             # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, self.nodeData, signal=None,
                                figureKey=self.currentFigureKey, label=label,
@@ -451,9 +447,8 @@ class QVizSignalHandling(QObject):
 
         selectedSignalsList = []
         for key in selectedDataList:
-            signalDict = selectedDataList[key]
-
-            selectedSignalsList.append(signalDict['nodeData'])
+            v = selectedDataList[key] #v is a map
+            selectedSignalsList.append(v['QTreeWidgetItem'].getDataDict())
 
         s = self.nodeData
         for si in selectedSignalsList:

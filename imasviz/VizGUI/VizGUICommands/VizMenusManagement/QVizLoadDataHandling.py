@@ -96,7 +96,7 @@ class QVizLoadDataHandling(QObject):
 
     def occurrenceAlreadyLoaded(self, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
-        if self.dataTreeView.ids_roots.get(key) is not None:
+        if self.dataTreeView.ids_roots_occurrence.get(key) is not None:
             return True
         return False
 

@@ -46,12 +46,12 @@ class QVizGlobalOperations:
         return t
 
     @staticmethod
-    def ask(parent=None, message='', default_value=''):
-        dlg = wx.TextEntryDialog(parent, message, value=default_value, style=wx.OK)
-        dlg.ShowModal()
-        result = dlg.GetValue()
-        dlg.Destroy()
-        return result
+    def message(parent=None, message='', title=''):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText(message)
+        msg.setWindowTitle(title)
+        msg.exec_()
 
     @staticmethod
     def askWithCancel(parent=None, title='', message='', default_value=''):

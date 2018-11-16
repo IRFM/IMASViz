@@ -46,10 +46,9 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         if signal == None:
             signalDataAccess = \
                 QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            treeNode = \
-                self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
+
             self.signal = signalDataAccess.GetSignal(self.nodeData,
-                            self.dataTreeView.dataSource.shotNumber, treeNode)
+                            self.dataTreeView.dataSource.shotNumber, self.treeNode)
         else:
             self.signal = signal
 
@@ -128,7 +127,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
             # Set plot options
             label, xlabel, ylabel, title = \
-                self.plotOptions(self.dataTreeView, self.nodeData,
+                self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=title)
             # Get plottable data
@@ -144,7 +143,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             raise
 
     @staticmethod
-    def plotOptions(dataTreeView, signalNodeData, shotNumber=None, title='',
+    def plotOptions(dataTreeView, signalNode, shotNumber=None, title='',
                     label=None, xlabel=None):
         """Set plot options.
 
@@ -158,24 +157,25 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             xlabel     (str) : Plot X-axis label.
         """
 
-        t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])
+        #t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])
 
         if label == None:
-            label = signalNodeData['Path']
+            label = signalNode.getPath()
 
         if xlabel == None:
-            if 'coordinate1' in signalNodeData:
+            if 'coordinate1' in signalNode.getDataDict():
                 xlabel = \
-                    QVizGlobalOperations.replaceBrackets(signalNodeData['coordinate1'])
+                    QVizGlobalOperations.replaceBrackets(signalNode.getDataDict()['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 
         ylabel = 'S(t)'
-        if t != None and not (t.isCoordinateTimeDependent(t.coordinate1)):
+        if signalNode is not None and \
+                not (signalNode.isCoordinateTimeDependent(signalNode.getDataDict()['coordinate1'])):
            ylabel = 'S'
 
-        if 'units' in signalNodeData:
-            units = signalNodeData['units']
+        if 'units' in signalNode.getDataDict():
+            units = signalNode.getDataDict()['units']
             ylabel += '[' + units + ']'
 
         label = dataTreeView.dataSource.getShortLabel() + ':' + label
@@ -183,4 +183,4 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         if xlabel == None:
             xlabel = "Time[s]"
 
-        return (label, xlabel, ylabel, title)
+        return label, xlabel, ylabel, title

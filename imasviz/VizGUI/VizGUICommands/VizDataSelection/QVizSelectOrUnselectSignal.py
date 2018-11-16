@@ -42,13 +42,12 @@ class QVizSelectOrUnselectSignal(QVizAbstractCommand):
             # Set the item color
             self.dataTreeView.selectedItem.setForeground(0, GlobalColors.RED)
             # Give the order of user selection
-            index = len(self.dataTreeView.selectedSignalsDict) -1
+            index = len(self.dataTreeView.selectedSignalsDict) - 1
             # Add a data dictionary of signal parameters to array of
             # data dictionaries of all selected signals
             # (should replace self.dataTreeView.selectedSignals)
             self.dataTreeView.selectedSignalsDict[key] = \
                  {'index'           : index,
-                 'nodeData'         : self.nodeData,
                  'QTreeWidgetItem'  : self.dataTreeView.selectedItem,
                  'shotNumber'       : self.dataTreeView.dataSource.shotNumber,
                  'runNumber'        : self.dataTreeView.dataSource.runNumber,

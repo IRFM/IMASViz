@@ -1,18 +1,18 @@
 
 import sys
 import traceback
-
 import numpy as np
+from PyQt5.QtWidgets import QApplication
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
 
 
 class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self,selectedNodeData,shotNumber, treeNode):
+    def GetSignal(self, selectedNodeData, shotNumber, treeNode):
         return self.GetSignalAt(selectedNodeData, shotNumber, treeNode, treeNode.timeValue())
 
     def GetSignalAt(self,selectedNodeData,shotNumber, treeNode, itimeValue):
@@ -48,7 +48,7 @@ class QVizIMASNativeDataAccess:
                         raise ValueError("Coordinate1 array has not the same length than the signal you want to plot.")
                     t = np.array([e])
 
-            return (t,r)
+            return t, r
         except:
             print (sys.exc_info()[0])
             traceback.print_exc(file=sys.stdout)
@@ -88,23 +88,3 @@ class QVizIMASNativeDataAccess:
         except:
             # return -1
             raise
-
-
-if __name__ == "__main__":
-    from imasviz.VizDataSource import DataSourceFactory
-    dataSource = DataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE, shotNumber=52702, runNumber=0,
-                                            userName='imas_public', imasDbName='west')
-    mdsp = QVizIMASNativeDataAccess(dataSource)
-    selectedNodeData = {}
-    selectedNodeData['dataName'] = 'dataSource.ids.magnetics.flux_loop[1].flux.data'
-    selectedNodeData['time'] = 'dataSource.ids.magnetics.flux_loop[1].flux.time'
-    selectedNodeData['occurrence'] = 0
-    #print (mdsp.GetShapeofSignal(selectedNodeData, 12))
-    #treeNode = self.view.getNodeAttributes(self.nodeData['dataName'])
-    signal = mdsp.GetSignal(selectedNodeData, dataSource.shotNumber)
-    # from imasviz.Viz_API import Viz_API
-    app = wx.App()
-    # api = Viz_API()
-    # api.plotSignal(signal)
-
-

@@ -36,7 +36,7 @@ class QVizSelectSignal(QVizAbstractCommand):
 
     def execute(self):
         self.updateNodeData()
-        key = self.dataTreeView.dataSource.dataKey(self.nodeData)
+        key = self.dataTreeView.dataSource.dataKey(self.treeNode)
         # Set the node selection status
         self.nodeData['isSelected'] = 1
 
@@ -51,7 +51,6 @@ class QVizSelectSignal(QVizAbstractCommand):
         # (should replace self.dataTreeView.selectedSignals)
         self.dataTreeView.selectedSignalsDict[key] = \
              {'index'           : index,
-             'nodeData'         : self.nodeData,
              'QTreeWidgetItem'  : selectedItem,
              'shotNumber'       : self.dataTreeView.dataSource.shotNumber,
              'runNumber'        : self.dataTreeView.dataSource.runNumber,

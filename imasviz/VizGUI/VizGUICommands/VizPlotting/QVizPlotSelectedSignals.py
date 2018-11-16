@@ -69,8 +69,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
     def getDimension(self, signalDict):
         # Finding the plot dimension
-        signalNodeData = signalDict['nodeData']
-        data_type = signalNodeData['data_type']
+        data_type = signalDict['data_type']
 
         plotDimension = None
         if data_type == 'FLT_1D' or data_type == 'INT_1D':
@@ -129,16 +128,14 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             # (each is specified by key)
             for key in dtv.selectedSignalsDict:
 
-                # Signal dictionary variable
-                signalDict = dtv.selectedSignalsDict[key]
+                v = dtv.selectedSignalsDict[key]
+                vizTreeNode = v['QTreeWidgetItem']
 
                 # Check dimension
-                plotDimension = self.getDimension(signalDict)
+                signalNodeData = vizTreeNode.getDataDict()
+                plotDimension = self.getDimension(vizTreeNode.getDataDict())
 
-                # Get signal node data
-                signalNodeData = signalDict['nodeData']
-
-                key = dtv.dataSource.dataKey(signalNodeData)
+                key = dtv.dataSource.dataKey(vizTreeNode)
                 tup = (dtv.dataSource.shotNumber, signalNodeData)
                 self.api.addNodeToFigure(figureKey, key, tup)
 
@@ -149,15 +146,12 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                 # Get array of y-axis values
                 v = QVizPlotSignal.get1DSignalValue(s)
 
-                # Get IDS case shot number
-                shotNumber = signalDict['shotNumber']
-
                 # Get number of rows of the y-axis array of values
                 nbRows = v.shape[0]
 
                 # Set plot labels and title
                 label, xlabel, ylabel, title = \
-                    QVizPlotSignal.plotOptions(dtv, signalNodeData, shotNumber)
+                    QVizPlotSignal.plotOptions(dtv, vizTreeNode, vizTreeNode.getShotNumber())
 
                 if i == 0 and update == 0:
                     # Adding the first plot (first selected signal)

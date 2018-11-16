@@ -44,7 +44,7 @@ class QVizSelectSignals(QVizAbstractCommand):
         #self.updateNodeData()
         for signal in self.dataTreeView.signalsList:
             # Get the path attribute of the signal
-            sigName = signal.itemVIZData['Path']
+            sigName = signal.getPath()
 
             # When the signal path matches the path from the given list,
             # select the signal
@@ -53,7 +53,7 @@ class QVizSelectSignals(QVizAbstractCommand):
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
                 QVizSelectSignal(dataTreeView=self.dataTreeView,
-                                 nodeData=signal.itemVIZData).execute()
+                                 nodeData=signal.getDataDict()).execute()
 
     def checkIDSOpen(self):
         """Check if the IDS (or IDSs) root tree item is opened/populated. If
@@ -83,11 +83,8 @@ class QVizSelectSignals(QVizAbstractCommand):
         for IDSName in IDSNamesList:
             # IDS already loaded ?
             key = IDSName + "/" + str(self.occurrence)
-            if self.dataTreeView.ids_roots.get(key) is not None:
+            if self.dataTreeView.ids_roots_occurrence.get(key) is not None:
                 continue
-            # Set the IDS to be checked if it is opened. If it is not,open it
-            # in the DTV
-            self.dataTreeView.setIDSNameSelected(IDSName)
             # Check/Populate the IDS tree node
             QVizLoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,
                                  async).execute()

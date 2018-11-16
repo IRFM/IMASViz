@@ -25,17 +25,18 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
         # Set empty list of signal keys to remove
         keysToRemove = []
         for key in self.dataTreeView.selectedSignalsDict:
-            signalDict = self.dataTreeView.selectedSignalsDict[key]
+            v = self.dataTreeView.selectedSignalsDict[key]
+            vizTreeNode = v['QTreeWidgetItem']
 
             # Signal/Node itemVIZData attribute
-            signalItemVIZData = signalDict['nodeData']
+            signalItemVIZData = vizTreeNode.getDataDict()
             # Signal/Node associated QTreeWidget object
-            signalTreeItem = signalDict['QTreeWidgetItem']
+            signalTreeItem = v
             # Search through the whole list of signals (all FLT_1D nodes etc.)
             for s in self.dataTreeView.signalsList:
                 # If the itemVIZData matches, add the signal key to the list
                 # of keys for removal
-                if signalItemVIZData == s.itemVIZData:
+                if signalItemVIZData == s.getDataDict():
                     # Set the signal isSelected attribute/status
                     signalItemVIZData['isSelected'] = 0
                     # Set the QTreeWidgetItem foreground color to blue

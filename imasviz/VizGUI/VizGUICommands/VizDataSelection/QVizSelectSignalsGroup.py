@@ -44,7 +44,7 @@ class QVizSelectSignalsGroup(QVizAbstractCommand):
             # 'parent.array_of_structures[0].leaf' ->
             # 'parent.array_of_structures.leaf' ).
             # This way all structures of the array have the same formatted name.
-            sigName = signal.itemVIZData['Path']
+            sigName = signal.getPath()
             # If the formatted names matches (-> the signals are of the same
             # array of structures), select tree item corresponding to the signal
             if re.sub("[\(\[].*?[\)\]]", "", startSigName) == \
@@ -53,4 +53,4 @@ class QVizSelectSignalsGroup(QVizAbstractCommand):
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
                 QVizSelectSignal(dataTreeView=self.dataTreeView,
-                                 nodeData=signal.itemVIZData).execute()
+                                 nodeData=signal.getDataDict()).execute()
