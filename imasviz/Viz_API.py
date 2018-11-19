@@ -84,7 +84,7 @@ class Viz_API:
     def ShowDataTree(self, dataTreeFrame):
         dataTreeFrame.show()
 
-    def GetSelectedSignalsDict(self, dataTreeFrame):
+    def getSelectedSignalsDict(self, dataTreeFrame):
         """Returns the list of signals (nodes) dictionaries
         selected by the user or from script commands (from a single opened
         data tree view (DTVs)).
@@ -94,7 +94,7 @@ class Viz_API:
         """
         return dataTreeFrame.dataTreeView.selectedSignalsDict
 
-    def GetSelectedSignals_AllDTVs(self):
+    def getSelectedSignals_AllDTVs(self):
         """Returns the signals (nodes) selected by the user of from script
            commands (from all opened data tree views (DTVs))
         """
@@ -149,7 +149,7 @@ class Viz_API:
 
         return FigureTypes.FIGURETYPE + str(numFig_next)
 
-    def GetNextKeyForSubPlots(self):
+    def getNextKeyForSubPlots(self):
         return FigureTypes.SUBPLOTTYPE + str(self.GetSubPlotsCount())
 
     def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):

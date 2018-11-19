@@ -513,12 +513,32 @@ class QVizDataTreeViewFrame(QMainWindow):
             partial(self.onSetMultiPlot, True))
         # Add to submenu
         subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
-        # ----
 
-        # action_onSetMultiplot = \
-        #     QAction('Plot all selected signals to a new MultiPlot', self)
-        # action_onSetMultiplot.triggered.connect(self.onSetMultiplot)
-        # subMenu_multiplot_set.addAction(action_onSetMultiplot)
+        #-----------------------------------------------------------------------
+        # Set new submenu for handling SubPlots to be added to 'Options' menu
+        subMenu_subplot = options.addMenu('SubPlot Options')
+        subMenu_subplot_set = subMenu_subplot.addMenu(
+            'Plot all selected signals to a new SubPlot')
+
+        # -----
+        # Add menu item to plot selected signals to single
+        # plot - This DTV
+        action_subplotSelectedSignals = QAction('This IMAS Database',
+                                                self)
+        action_subplotSelectedSignals.triggered.connect(
+            partial(self.onSetSubPlot, False))
+        # Add to submenu
+        subMenu_subplot_set.addAction(action_subplotSelectedSignals)
+
+        # -----
+        # Add menu item to plot selected signals to single
+        # plot - All DTVs
+        action_subplotSelectedSignals = QAction('All IMAS Databases',
+                                                self)
+        action_subplotSelectedSignals.triggered.connect(
+            partial(self.onSetSubPlot, True))
+        # Add to submenu
+        subMenu_subplot_set.addAction(action_subplotSelectedSignals)
 
         # Set menu bar
         self.setMenuBar(menuBar)
@@ -615,6 +635,19 @@ class QVizDataTreeViewFrame(QMainWindow):
         sh = QVizSignalHandling(self.dataTreeView)
         # Run the MultiPlot routine
         sh.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
+
+    @pyqtSlot(bool)
+    def onSetSubPlot(self, all_DTV=False):
+        """Apply selected signals (single or all DTVs) to SubPlot.
+
+        Arguments:
+            all_DTV (bool) : Operator to read selected signals from the
+                             current or all DTVs.
+        """
+        # Set the object to QVizSignalHandling, used to handle signals
+        sh = QVizSignalHandling(self.dataTreeView)
+        # Run the MultiPlot routine
+        sh.plotSelectedSignalsToSubPlotsFrame(all_DTV=all_DTV)
 
     # TODO:
     # def onUnselectSignals()

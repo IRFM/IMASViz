@@ -1,8 +1,9 @@
-#  Name   : QVizMultiPlot
+#  Name   : QVizSubPlot
 #
-#          Provides multiplot template.
-#          Note: The wxPython predecessor for MultiPlots is
-#          'PlotSelectedSignalsWithWxmplot' class.
+#          Provides subplot template.
+#          Note: The wxPython predecessor for MultiPlots are
+#          'IMASVIZSubPlotsFrame' and 'IMASBIZ_SubPlotManagerBaseFrame.py'
+#          classes.
 #
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
@@ -40,8 +41,8 @@ from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig \
     import QVizSavePlotConfig
 
 
-class QVizMultiPlot(QtWidgets.QMainWindow):
-    """Main MultiPlot window for plotting the selected signals.
+class QVizSubPlot(QtWidgets.QMainWindow):
+    """Main SubPlot window for plotting the selected signals.
     """
 
     def __init__(self, dataTreeView, figureKey=0, update=0,
@@ -57,32 +58,37 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                                Note: This has no effect when reading list
                                of signals from the configuration file.
         """
-        super(QVizMultiPlot, self).__init__(parent=dataTreeView)
+        super(QVizSubPlot, self).__init__(parent=dataTreeView)
+
+        # TODO: Both MultiPlot and SubPlot constructor use QMainWindow and
+        #       similar constructor behavior. Maybe create base QMainWindow
+        #       instead?
 
         self.dataTreeView = dataTreeView
-        self.configFile = configFile # Full path to configuration file + filename
+        self.figureKey = figureKey
+        self.configFile = configFile  # Full path to configuration file + filename
         self.plotConfig = None
         if self.configFile != None:
             # Set plot configuration dictionary
-            self.plotConfig = ET.parse(self.configFile) # dictionary
+            self.plotConfig = ET.parse(self.configFile)  # dictionary
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.log = self.dataTreeView.log  # QTextEdit widget
 
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
         # Set base dimension parameter for setting plot size
-        self.plotBaseDim = 300
+        self.plotBaseDim = 200
 
-        # Set MultiPlot object name and title if not already set
+        # Set SubPlot object name and title if not already set
         if figureKey == None:
             figureKey = \
-                self.imas_viz_api.getNextKeyForMultiplePlots()
+                self.imas_viz_api.getNextKeyForSubPlots()
         self.setObjectName(figureKey)
         self.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = self
 
-        # Set number of rows and columns of panels in the MultiPlot frame
-        self.ncols = int(self.screenWidth * 0.9 / self.plotBaseDim)  # round down
+        # Set number of rows and columns of panels in the SubPlot frame
+        self.ncols = 1
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
@@ -106,7 +112,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         # Connect custom UI elements
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        # Show MultiPlot window
+        # Show SubPlot window
         self.show()
 
     def raiseErrorIfNoSelectedArrays(self):
@@ -124,8 +130,8 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """
         if figureKey == None:
             figureKey = \
-                self.imas_viz_api.getNextKeyForMultiplePlots()
-        gwin = QVizMultiPlotGraphicsWindow(parent=self, ncols=self.ncols)
+                self.imas_viz_api.getNextKeyForSubPlots()
+        gwin = QVizSubPlotGraphicsWindow(parent=self, ncols=self.ncols)
         gwin.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = gwin
         # Set maximum size
@@ -141,11 +147,13 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """
 
         # Set scrollable area
-        scrollArea = QtGui.QScrollArea(self)
+        # scrollArea = QtGui.QScrollArea(self)
+        scrollArea = QVizSubPlotScrollArea(self)
         scrollArea.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         scrollArea.setWidgetResizable(True)
         scrollArea.setEnabled(True)
+        scrollArea.setMouseTracking(False)
         scrollContent = QtGui.QWidget(scrollArea)
 
         # Set layout for scrollable area
@@ -163,21 +171,21 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
 
         # Set size of the graphics window
         # (depending on the number of plots and number of columns)
-        width_gw = self.gw.centralWidget.cols * (self.plotBaseDim + 10)
-        height_gw = len(self.gw.centralWidget.rows) * self.plotBaseDim
+        width_gw = self.gw.centralWidget.cols * (5 * self.plotBaseDim + 10)
+        height_gw=len(self.gw.centralWidget.rows) * self.plotBaseDim - 2*self.gw.bPlotMargin
         self.gw.setMinimumSize(width_gw, height_gw)
 
         # Set size of the main window
-        width_main = self.gw.centralWidget.cols * (self.plotBaseDim + 20)
-        height_main = len(self.gw.centralWidget.rows) * self.plotBaseDim + 20
+        width_main=self.gw.centralWidget.cols * (5 * self.plotBaseDim + 20)
+        height_main=len(self.gw.centralWidget.rows) * self.plotBaseDim + 20 - 2*self.gw.bPlotMargin
         self.resize(width_main, height_main)
 
         # Set main window maximum size
         self.setMaximumSize(self.screenWidth, self.screenHeight)
 
-    def plot1DSelectedSignals(self, figureKey=None, update=0, all_DTV=True):
+    def plot1DSelectedSignals(self, figureKey = None, update = 0, all_DTV = True):
         """Plot the set of 1D signals, selected by the user, as a function of
-           time to MultiPlot.
+           time to SubPlot.
 
         Arguments:
             figurekey (str)  : Frame label.
@@ -189,16 +197,16 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         """
 
         # Get window
-        gw = self.getGraphicsWindow(figureKey)
+        gw=self.getGraphicsWindow(figureKey)
 
         # self.applyPlotConfigurationBeforePlotting(frame=frame)
 
         # Plot number
-        n = 0
+        n=0
 
-        dtv_selectedSignals = []
+        dtv_selectedSignals=[]
 
-        MultiPlotWindow_DTVList = []
+        MultiPlotWindow_DTVList=[]
 
         # If configuration file is available (e.g. save configuration was
         # loaded)
@@ -206,8 +214,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
             # Select signals, saved in the save configuration. Return the
             # list of signals as 'dtv_selectedSignals'.
             # Get panel plots count
-            dtv_selectedSignals, panelPlotsCount = \
-                self.selectSignalsFromConfig(gw, dataTreeView=self.dataTreeView)
+            dtv_selectedSignals, panelPlotsCount=self.selectSignalsFromConfig(gw, dataTreeView = self.dataTreeView)
             # Add a single DTV to the list
             MultiPlotWindow_DTVList.append(self.dataTreeView)
         else:
@@ -215,17 +222,17 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
             # not used)
             if self.all_DTV != False:
                 # Get the list of all currently opened DTVs
-                MultiPlotWindow_DTVList = self.imas_viz_api.DTVlist
+                MultiPlotWindow_DTVList=self.imas_viz_api.DTVlist
             else:
                 # Add a single DTV to the list
                 MultiPlotWindow_DTVList.append(self.dataTreeView)
 
         # Go through every opened/created DTV found in the list of DTVs, get
         # their selected plot signals and plot every signal to the same
-        # MultiPlot window
+        # SubPlot window
         for dtv in MultiPlotWindow_DTVList:
             # Get list of selected signals in DTV
-            dtv_selectedSignals = dtv.selectedSignalsDict
+            dtv_selectedSignals=dtv.selectedSignalsDict
             # Go through the list of selected signals for every DTV
             for signalKey in dtv_selectedSignals:
 
@@ -233,67 +240,68 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
                 signalNodeData = signalNode.dataDict
 
-                key = dtv.dataSource.dataKey(signalNodeData)
-                tup = (dtv.dataSource.shotNumber, signalNodeData)
+                key=dtv.dataSource.dataKey(signalNodeData)
+                tup=(dtv.dataSource.shotNumber, signalNodeData)
                 self.imas_viz_api.addNodeToFigure(figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, signalNodeData)
+                s=QVizPlotSignal.getSignal(dtv, signalNodeData)
                 # Get array of time values
-                t = QVizPlotSignal.getTime(s)
+                t=QVizPlotSignal.getTime(s)
                 # Get array of y-axis values
-                v = QVizPlotSignal.get1DSignalValue(s)
+                v=QVizPlotSignal.get1DSignalValue(s)
                 # TODO (idea): create global getSignal(), getTime(),
                 # get1DSignalValue to be used by all plot frame routines
 
                 # Get IDS case shot number
-                shotNumber = dtv_selectedSignals[signalKey]['shotNumber']
+                shotNumber=dtv_selectedSignals[signalKey]['shotNumber']
 
                 # Get number of rows of the y-axis array of values
                 # TODO/Note: as it seems the QVizPlotSignal is used for single
                 #            signals only, hence nbRows == 1 (always)
-                nbRows = v.shape[0]
+                nbRows=v.shape[0]
 
                 # Set plot options
-                label, xlabel, ylabel, title = \
-                    QVizPlotSignal.plotOptions(dataTreeView=dtv,
-                                               signalNode=signalNode,
-                                               shotNumber=shotNumber,
-                                               title=figureKey)
+                label, xlabel, ylabel, title=QVizPlotSignal.plotOptions(dataTreeView = dtv,
+                                               signalNode = signalNode,
+                                               shotNumber = shotNumber,
+                                               title = figureKey)
                 # Remodify label (to include '\n' for easier alignment handling)
-                label = dtv.dataSource.getShortLabel() + ":\n" \
-                    + signalNode.getPath()
+                # label=dtv.dataSource.getShortLabel() + ":\n" \
+                #     + signalNodeData['Path']
 
                 # Add plot
                 for i in range(0, nbRows):
                     # y-axis values
-                    u = v[i]
+                    u=v[i]
                     # x-axis values
                     # ti = t[i]
-                    ti = t[0]
+                    ti=t[0]
                     # Add plot
                     # Note: label='' is used because it is redefined with
                     # setText(text='', size='8pt')
-                    gw.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                            ylabel=ylabel)
+                    gw.plot(n = n, x = ti, y = u, label = label, xlabel = xlabel,
+                            ylabel=ylabel, title=title)
                     # Get the current (last) plot item, created by gw.plot()
                     currentPlotItem = gw.getCurrentPlotItem() # pg.PlotItem
                     # Add new attribute to current item, holding all signal data
                     currentPlotItem.signalData = dtv_selectedSignals[signalKey]
-                    # Get titleLabel
-                    tLabel = currentPlotItem.titleLabel
-                    # Set title label size
-                    # Note: empty text provided as requires text argument
-                    tLabel.setText(text='', size='8pt')
-                    # Set title width
-                    tLabel.item.setPlainText(label)
-                    # Set title label width
-                    # Note: required for alignment to take effect
-                    tLabel.item.setTextWidth(250)
-                    # Set alignment as text option
-                    option = QtGui.QTextOption()
-                    option.setAlignment(QtCore.Qt.AlignCenter)
-                    tLabel.item.document().setDefaultTextOption(option)
+
+                    # Modify title label
+                    # # Get titleLabel
+                    # tLabel = currentPlotItem.titleLabel
+                    # # Set title label size
+                    # # Note: empty text provided as requires text argument
+                    # tLabel.setText(text='', size='8pt')
+                    # # Set title width
+                    # tLabel.item.setPlainText(title)
+                    # # Set title label width
+                    # # Note: required for alignment to take effect
+                    # tLabel.item.setTextWidth(500)
+                    # # Set alignment as text option
+                    # option = QtGui.QTextOption()
+                    # option.setAlignment(QtCore.Qt.AlignCenter)
+                    # tLabel.item.document().setDefaultTextOption(option)
 
                     # Set plotItem key (row, column)
                     plotItemKey = (currentPlotItem.row, currentPlotItem.column)
@@ -334,7 +342,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
             # Get key attribute (key=(column,row))
             key = pItemElement.get('key')
             # Get a list of pg.PlotDataItems
-            # Note: Only one per MultiPlot PlotItem
+            # Note: Only one per SubPlot PlotItem
             plotItemDataElements = pItemElement.findall('PlotDataItem')
             # Get number of plots (pg.PlotDataItem-s)
             num_plots = len(plotItemDataElements)
@@ -372,7 +380,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
         self.setMenuBar(menuBar)
 
     def getNumSignals(self, all_DTV = True):
-        """Get number of signals intended for the MultiPlot feature
+        """Get number of signals intended for the SubPlot feature
            from either opened DTVs or from configuration file if it is loaded.
         """
         if self.plotConfig != None:
@@ -391,21 +399,6 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                     len(self.imas_viz_api.getSelectedSignalsDict(self.dataTreeView.parent))
 
         return nSignals
-
-    # def setRowsColumns(self, num_signals):
-    #     """Modify the MultiPlot rows and columns depending on total number
-    #     of signals."""
-    #         if num_signals > 6:
-    #             if num_signals <= 8:
-    #                 self.rows = 2
-    #                 self.cols = 4
-    #             elif num_signals > 8 and num_signals <= 12:
-    #                 self.rows = 3
-    #                 self.cols = 4
-    #             elif num_signals > 12:
-    #                 self.rows = 3
-    #                 self.cols = 4
-    #                 print('MultiPlot plot limit reached (12)!')
 
     def onHideFigure(self, api, figureKey):
         """
@@ -465,7 +458,7 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
             # Set configuration for PlotItem that matches the key (columnt/row)
             if str(key) == str((plotItem.column, plotItem.row)):
                 # Get a list of pg.PlotDataItems
-                # Note: Only one per MultiPlot PlotItem
+                # Note: Only one per SubPlot PlotItem
                 plotItemDataElements = pItemElement.findall('PlotDataItem')
                 # Get number of plots (pg.PlotDataItem-s)
                 num_plots = len(plotItemDataElements)
@@ -568,25 +561,32 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                     # Update items for the changes to be displayed
                     pdItem.updateItems()
 
-    # TODO
-    # def applyPlotConfigurationBeforePlotting
-    # def setPlotConfigAttribute
-    # class modifyMultiPlot
+class QVizSubPlotScrollArea(QtGui.QScrollArea):
+    """Custom QtGui.QScrollArea.
+    """
 
+    def __init__(self, parent):
+        QtGui.QScrollArea.__init__(self, parent=parent)
 
-class QVizMultiPlotGraphicsWindow(GraphicsWindow):
-    """GraphicsWindow containing the MultiPlot plots.
+    def wheelEvent(self, ev):
+        """Disable mouse scroll event.
+        """
+        if ev.type() == QtCore.QEvent.Wheel:
+            ev.ignore()
+
+class QVizSubPlotGraphicsWindow(GraphicsWindow):
+    """GraphicsWindow containing the SubPlot plots.
     """
 
     def __init__(self, parent, ncols=3):
         """
         Arguments:
-            parent (QtWidgets.QMainWindow) : Parent of MultiPlot GraphicsWindow.
+            parent (QtWidgets.QMainWindow) : Parent of SubPlot GraphicsWindow.
             ncols  (int)         : Number of columns.
         """
 
-        super(QVizMultiPlotGraphicsWindow, self).__init__(parent=parent)
-        # super(QVizMultiPlotGraphicsWindow, self).__init__()
+        super(QVizSubPlotGraphicsWindow, self).__init__(parent=parent)
+        # super(QVizSubPlotGraphicsWindow, self).__init__()
 
         self.parent = parent
 
@@ -598,14 +598,19 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
         self.resize(1500, 500)
+        self.centralWidget.setSpacing(0)
         # self.adjustSize()
         # self.setWindowTitle('pyqtgraph example: Plotting')
 
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-    def plot(self, n, x, y, label, xlabel, ylabel):
-        """Add new plot to MultiPlot GraphicsWindow.
+        # Set bottom plot margin to remove unwanted whitespace between plot
+        # widgets
+        self.bPlotMargin = -15
+
+    def plot(self, n, x, y, label, xlabel, ylabel, title):
+        """Add new plot to SubPlot GraphicsWindow.
 
         Arguments:
             n      (int)      : Plot number.
@@ -614,26 +619,46 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
             label  (str)      : Plot label.
             xlabel (str)      : Plot X-axis label.
             ylabel (str)      : Plot Y-axis label.
+            title  (str)      : SubPlot title.
         """
 
         # Set pen
         pen = self.setPen()
+
+        # Set first plot
+        if n == 0:
+            # Rules for first plot
+            # - Set  X-Axis label to None
+            xlabel = None
+        elif n == (self.parent.getNumSignals(all_DTV=False)-1):
+            # Rules for last plot
+            # - Set title to None
+            title = None
+        else:
+            # Rules for mid-plots
+            # - Set title to None
+            title = None
+            # - Set  X-Axis label to None
+            xlabel = None
+
+
         # Set new plot (use IMASViz custom plot context menu)
-        p = self.addPlot(x=x,
-                         y=y,
-                         name='Plot' + str(n),
-                         title=label.replace("\n", ""),
-                         xlabel=xlabel,
-                         ylabel=ylabel,
-                         pen=pen,
-                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
-                         # pg.PlotItem
+        p = self.addPlot(title=title)
+        # Enable legend (Note: must be done before plotting!)
+        p.addLegend()
+        p.plot(x=x,
+               y=y,
+               name=label,
+               xlabel=xlabel,
+               ylabel=ylabel,
+               pen=pen,
+               viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+               # pg.PlotItem
 
         # p = self.addPlot(name='plotName',
         #                   title="Basic array plotting " + str(n),
         #                   row=rowNum,
         #                   col=colNum)
-        # p.plot(x, y, pen=pen)
         # Set axis labels
         p.setLabel('left', ylabel, units='')
         p.setLabel('bottom', xlabel, units='')
@@ -641,13 +666,44 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         p.showGrid(x=True, y=True)
         # Add a name attribute directly to pg.PlotDataItem - a child of
         # pg.PlotData
-        p.dataItems[0].opts['name'] = label.replace("\n", "")
+        # p.dataItems[0].opts['name'] = label.replace("\n", "")
+        p.dataItems[0].opts['name'] = label
 
         p.column = int(n/self.centralWidget.cols)
         p.row  = int(n%self.centralWidget.cols)
 
-        if (n+1) % self.centralWidget.cols == 0:
-            self.nextRow()
+        # Set plot rules
+        if n == 0:
+            # Rules for first plot
+            # - Set reference global variable to first plot
+            p.getAxis('bottom').setStyle(showValues=False)
+            # - Set bottom margin
+            p.setContentsMargins(0, 0, 0, self.bPlotMargin)
+
+            p.setMinimumHeight(100)
+            self.p0 = p
+        elif n == (self.parent.getNumSignals(all_DTV=False)-1):
+            # Rules for last plot
+            # - Remove axis values
+            p.getAxis('bottom').setStyle(showValues=True)
+            # - Set X and Y-axis link to first plot
+            p.setXLink(self.p0)
+            p.setYLink(self.p0)
+            p.setMinimumHeight(100)
+
+        else:
+            # Rules for mid-plots
+            # - Remove axis values
+            p.getAxis('bottom').setStyle(showValues=False)
+            # - Set X and Y-axis link to first plot
+            p.setXLink(self.p0)
+            p.setYLink(self.p0)
+            # - Set bottom margin
+            p.setContentsMargins(0, 0, 0, self.bPlotMargin)
+
+            p.setMinimumHeight(60)
+        # Go to next row
+        self.nextRow()
 
     @staticmethod
     def setPen():
@@ -661,7 +717,7 @@ class QVizMultiPlotGraphicsWindow(GraphicsWindow):
         # Set style
         style = QtCore.Qt.SolidLine
         # Set pen
-        pen = mkPen(color=color, width=3, style=style)
+        pen = mkPen(color=color, width=1, style=style)
 
         return pen
 
