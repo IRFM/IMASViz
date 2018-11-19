@@ -118,7 +118,7 @@ class QVizDataTreeView(QTreeWidget):
         # - This is a BrowserAPI instance
         self.viz_api = None
 
-        #key = idsName, value = root node (of type QVizTreeNode) of the IDS tree
+        # key = idsName, value = root node (of type QVizTreeNode) of the IDS tree
         self.IDSRoots = {}
 
         # Create the empty tree
@@ -129,8 +129,10 @@ class QVizDataTreeView(QTreeWidget):
         # Set dummy for node documentation widget
         self.ndw = None
 
-        #contains root nodes for each IDS occurrence
+        # contains root nodes for each IDS occurrence
         self.ids_roots_occurrence = {}
+
+        self.IDSNameSelected = None
 
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
@@ -172,7 +174,6 @@ class QVizDataTreeView(QTreeWidget):
                     # Set tree item text color
                     self.IDSRoots[idsName].setForeground(0, GlobalColors.BLUE)
 
-
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
         Optional: Beside setting the base selected item, set selected item
@@ -197,6 +198,9 @@ class QVizDataTreeView(QTreeWidget):
                 self.selectedItem_leftClick = item
             elif mouseButton == "RIGHT":
                 self.selectedItem_rightClick = item
+
+    def setIDSNameSelected(self, IDSName):
+        self.IDSNameSelected = IDSName
 
     # Note: pyqtSlot needs QObject to work, in this case, self=QTreeWidget
     # (inherited)
@@ -246,7 +250,7 @@ class QVizDataTreeView(QTreeWidget):
             raise ValueError(error)
             self.log.error(str(error))
 
-        ### UPDATE PLOT PREVIEW WIDGET
+        # UPDATE PLOT PREVIEW WIDGET
         if (item.isDynamicData() == 1 and
             item.getDataType() == 'FLT_1D' and
             (item.foreground(0).color().name() == GlobalColors.BLUE_HEX or
@@ -306,14 +310,14 @@ class QVizDataTreeView(QTreeWidget):
 
         nodeBuilder = QVizDataTreeViewBuilder()
         #ids_root_occ = self.ids_roots_occurrence.get(key)
-        #if ids_root_occ is not None:
+        # if ids_root_occ is not None:
         #    ids_root_node.removeChild(ids_root_occ)
         #    del self.ids_roots_occurrence[key]
 
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
-        #ids_root_occ.setPath(ids_root_node.getPath())
-        #ids_root_occ.setIDSName(ids_root_node.getIDSName())
-        #ids_root_occ.setDataName(ids_root_node.getDataName())
+        # ids_root_occ.setPath(ids_root_node.getPath())
+        # ids_root_occ.setIDSName(ids_root_node.getIDSName())
+        # ids_root_occ.setDataName(ids_root_node.getDataName())
 
         self.ids_roots_occurrence[key] = ids_root_occ
 

@@ -23,6 +23,7 @@ from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QV
 class QVizSelectSignals(QVizAbstractCommand):
     """Select a group of all signals by given list of signal paths.
     """
+
     def __init__(self, dataTreeView, pathsList, occurrence=0):
         """
         Arguments:
@@ -41,7 +42,7 @@ class QVizSelectSignals(QVizAbstractCommand):
     def execute(self):
         # Go through the list of signals and compare their path attribute with
         # the paths from the given list
-        #self.updateNodeData()
+        # self.updateNodeData()
         for signal in self.dataTreeView.signalsList:
             # Get the path attribute of the signal
             sigName = signal.getPath()
@@ -76,16 +77,20 @@ class QVizSelectSignals(QVizAbstractCommand):
                 IDSNamesList.append(IDSName)
 
         # Load all IDS data which are referenced in the paths
-        async = False # the command SelectSignals is
-                     # synchronous so we will wait that
-                     # this event is set
+        async = False  # the command SelectSignals is
+        # synchronous so we will wait that
+        # this event is set
 
         for IDSName in IDSNamesList:
             # IDS already loaded ?
             key = IDSName + "/" + str(self.occurrence)
             if self.dataTreeView.ids_roots_occurrence.get(key) is not None:
                 continue
+
+            # Set the IDS to be checked if it is opened. If it is not,open it
+            # in the DTV
+            self.dataTreeView.setIDSNameSelected(IDSName)
+
             # Check/Populate the IDS tree node
             QVizLoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,
                                  async).execute()
-

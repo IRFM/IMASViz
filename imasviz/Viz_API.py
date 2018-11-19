@@ -217,6 +217,7 @@ class Viz_API:
     #Load IDS data for a given data tree frame and a given occurrence
     def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
                     threadingEvent=None):
+        dataTreeFrame.dataTreeView.setIDSNameSelected(IDSName)
         QVizLoadSelectedData(dataTreeFrame.dataTreeView, occurrence, threadingEvent).execute()
 
 
