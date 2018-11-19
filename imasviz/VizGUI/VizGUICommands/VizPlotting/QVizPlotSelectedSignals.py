@@ -135,7 +135,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                 signalNodeData = vizTreeNode.getDataDict()
                 plotDimension = self.getDimension(vizTreeNode.getDataDict())
 
-                key = dtv.dataSource.dataKey(vizTreeNode)
+                key = dtv.dataSource.dataKey(vizTreeNode.getDataDict())
                 tup = (dtv.dataSource.shotNumber, signalNodeData)
                 self.api.addNodeToFigure(figureKey, key, tup)
 

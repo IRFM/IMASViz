@@ -96,8 +96,8 @@ class QVizIMASDataSource:
         return str(dataElement.find('name').text)
 
     # This defines the unique key attached to each data which can be plotted
-    def dataKey(self, treeNode):
-        nodeData = treeNode.getDataDict()
+    def dataKey(self, nodeData):
+
         return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
 
     def getShortLabel(self):

@@ -36,7 +36,7 @@ class QVizSelectSignal(QVizAbstractCommand):
 
     def execute(self):
         self.updateNodeData()
-        key = self.dataTreeView.dataSource.dataKey(self.treeNode)
+        key = self.dataTreeView.dataSource.dataKey(self.nodeData)
         # Set the node selection status
         self.nodeData['isSelected'] = 1
 

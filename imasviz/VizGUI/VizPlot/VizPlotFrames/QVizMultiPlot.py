@@ -230,7 +230,8 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
             for signalKey in dtv_selectedSignals:
 
                 # Get node data
-                signalNodeData = dtv_selectedSignals[signalKey]['nodeData']
+                signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
+                signalNodeData = signalNode.dataDict
 
                 key = dtv.dataSource.dataKey(signalNodeData)
                 tup = (dtv.dataSource.shotNumber, signalNodeData)
@@ -256,12 +257,12 @@ class QVizMultiPlot(QtWidgets.QMainWindow):
                 # Set plot options
                 label, xlabel, ylabel, title = \
                     QVizPlotSignal.plotOptions(dataTreeView=dtv,
-                                               signalNodeData=signalNodeData,
+                                               signalNode=signalNode,
                                                shotNumber=shotNumber,
                                                title=figureKey)
                 # Remodify label (to include '\n' for easier alignment handling)
                 label = dtv.dataSource.getShortLabel() + ":\n" \
-                    + signalNodeData['Path']
+                    + signalNode.getPath()
 
                 # Add plot
                 for i in range(0, nbRows):

@@ -131,7 +131,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # fig =  self.plotFrame.get_figure()
 
-            key = self.dataTreeView.dataSource.dataKey(self.treeNode)
+            key = self.dataTreeView.dataSource.dataKey(self.treeNode.getDataDict())
             tup = (self.dataTreeView.dataSource.shotNumber, self.nodeData)
             api.addNodeToFigure(figureKey, key, tup)
 

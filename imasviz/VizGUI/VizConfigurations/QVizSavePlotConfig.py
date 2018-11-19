@@ -14,6 +14,7 @@
 import time
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from PyQt5.QtGui import QTextDocument
 
 
 class QVizSavePlotConfig():
@@ -94,7 +95,8 @@ class QVizSavePlotConfig():
 
             # Extract signal node data (it contains also 'path') from the
             # signal
-            nodeData = plotItem.signalData['nodeData']
+
+            nodeData = plotItem.signalData['QTreeWidgetItem'].dataDict
 
             # ------------------------------------------------------------------
             # Set new subelement for holding pg.PlotItem data
@@ -106,7 +108,7 @@ class QVizSavePlotConfig():
             sa(plotItemEl, 'column', column)
             # Set subelement attribute 'title'
             sa(plotItemEl, 'title',
-                plotItem.titleLabel.item.document().toRawText())
+                plotItem.titleLabel.item.document().toPlainText())
 
             # ------------------------------------------------------------------
             # Set new subelement for holding pg.PlotDataItem data (child of
