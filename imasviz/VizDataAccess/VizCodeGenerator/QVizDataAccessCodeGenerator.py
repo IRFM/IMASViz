@@ -103,7 +103,7 @@ class QVizDataAccessCodeGenerator:
         code1 = "parents['" + path + "'] = parent"
         self.printCode(code1, level + 1)
 
-    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents , s, index, idsName):
+    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents, s, index, idsName):
 
         for ids_child_element in child:
             index+=1
@@ -316,7 +316,8 @@ class QVizDataAccessCodeGenerator:
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
 
-                units = ids_child_element.get('units')
+                units = child.get('units')
+
                 if units != None:
                     code = "node.set(" + "'units', '" + units + "')"
                     self.printCode(code, level)
@@ -368,7 +369,7 @@ class QVizDataAccessCodeGenerator:
                 code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
                 self.printCode(code, level)
 
-                aos = ids_child_element.text
+                aos = child.text
 
                 if itimeIndex != -1:
                     aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")

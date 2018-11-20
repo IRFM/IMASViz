@@ -312,23 +312,12 @@ class QVizDataTreeView(QTreeWidget):
 
         occNodeData = rootNodeData
         occNodeData['occurrence'] = occurrence
-
         nodeBuilder = QVizDataTreeViewBuilder()
-        #ids_root_occ = self.ids_roots_occurrence.get(key)
-        # if ids_root_occ is not None:
-        #    ids_root_node.removeChild(ids_root_occ)
-        #    del self.ids_roots_occurrence[key]
-
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
-        # ids_root_occ.setPath(ids_root_node.getPath())
-        # ids_root_occ.setIDSName(ids_root_node.getIDSName())
-        # ids_root_occ.setDataName(ids_root_node.getDataName())
-
         self.ids_roots_occurrence[key] = ids_root_occ
 
         for child in idsData:
-            self.addChildren(nodeBuilder, child, ids_root_occ, idsName,
-                             occurrence)
+            self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence)
 
     def addChildren(self, nodeBuilder, element, parent, idsName, occurrence):
         """ To parent item, add all children IDS nodes as a tree view items.

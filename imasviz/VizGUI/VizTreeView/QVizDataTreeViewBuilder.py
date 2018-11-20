@@ -342,11 +342,12 @@ class QVizDataTreeViewBuilder:
         if coordinate1 != None:
             coordinate1 = coordinate1.replace("/", ".") #PATCH
 
+        extra_attributes = QVizTreeNodeExtraAttributes()
+
         #TODO !!!!
         if dataElement.get('aos') is not None: #only for native data
 
             itemDataDict['itime_index'] = dataElement.get('itime_index')
-            extra_attributes = QVizTreeNodeExtraAttributes()
             extra_attributes.aos = dataElement.get('aos').replace("self.", "")
             extra_attributes.coordinate1 = coordinate1
             extra_attributes.itime_index = dataElement.get('itime_index')
@@ -369,24 +370,24 @@ class QVizDataTreeViewBuilder:
         isSignal = 0
 
         data_type = dataElement.get('data_type')
-
-        if data_type.startswith("FLT_") or data_type.startswith("flt_") \
-            and data_type != "FLT_0D" and data_type != 'flt_0d_type':
-            isSignal = 1
-            itemDataDict['data_type'] = data_type
-            if data_type == 'FLT_1D' or data_type == 'flt_1d_type':
-               itemDataDict['coordinate1'] = coordinate1
-            else:
-                isSignal = 2
-            itemDataDict['path_doc'] = dataElement.get('path_doc')
-            item_color = dataTreeView.dataSource.colorOf(itemDataDict)
-            itemDataDict['aos'] = dataElement.get('aos')
-            itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
-            for i in range(0, len(QVizGlobalValues.indices)):
-                key_name = QVizGlobalValues.indices[str(i + 1)]
-                itemDataDict[key_name] = dataElement.get(key_name)
-                key_max_name = QVizGlobalValues.max_indices[str(i + 1)]
-                itemDataDict[key_max_name] = dataElement.get(key_max_name)
+        if data_type is not None:
+            if data_type.startswith("FLT_") or data_type.startswith("flt_") and data_type != "FLT_0D" \
+                    and data_type != 'flt_0d_type':
+                isSignal = 1
+                itemDataDict['data_type'] = data_type
+                if data_type == 'FLT_1D' or data_type == 'flt_1d_type':
+                   itemDataDict['coordinate1'] = coordinate1
+                else:
+                    isSignal = 2
+                itemDataDict['path_doc'] = dataElement.get('path_doc')
+                item_color = dataTreeView.dataSource.colorOf(itemDataDict)
+                itemDataDict['aos'] = dataElement.get('aos')
+                itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
+                for i in range(0, len(QVizGlobalValues.indices)):
+                    key_name = QVizGlobalValues.indices[str(i + 1)]
+                    itemDataDict[key_name] = dataElement.get(key_name)
+                    key_max_name = QVizGlobalValues.max_indices[str(i + 1)]
+                    itemDataDict[key_max_name] = dataElement.get(key_max_name)
 
         itemDataDict['isSignal'] = isSignal
         itemDataDict['isIDSRoot'] = 0
