@@ -132,7 +132,8 @@ class QVizDataTreeView(QTreeWidget):
         # contains root nodes for each IDS occurrence
         self.ids_roots_occurrence = {}
 
-        self.IDSNameSelected = None
+        # key=occurrence, value=IDS name
+        self.IDSNameSelected = {}
 
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
@@ -199,8 +200,12 @@ class QVizDataTreeView(QTreeWidget):
             elif mouseButton == "RIGHT":
                 self.selectedItem_rightClick = item
 
-    def setIDSNameSelected(self, IDSName):
-        self.IDSNameSelected = IDSName
+    def isAlreadyFetched(self, IDSName, occurrence):
+        # occurrence of IDS with name IDSName already loaded ?
+        key = IDSName + "/" + str(occurrence)
+        if self.ids_roots_occurrence.get(key) is not None:
+            return True
+        return False
 
     # Note: pyqtSlot needs QObject to work, in this case, self=QTreeWidget
     # (inherited)

@@ -11,9 +11,9 @@ class QVizDataSourceFactory:
     def __init__(self):
         pass
 
-    def createUDADatasource(self, shotNumber, runNumber = 0, machineName=None):
+    def createUDADatasource(self, UDAMachineName, shotNumber, runNumber = 0):
         return self.create(shotNumber, runNumber, None, None,
-                           QVizGlobalValues.IMAS_UDA, machineName)
+                           QVizGlobalValues.IMAS_UDA, UDAMachineName)
 
     def create(self, shotNumber, runNumber = 0, userName = None,
                imasDbName = None, dataSourceName = QVizGlobalValues.IMAS_NATIVE,

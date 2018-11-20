@@ -104,12 +104,12 @@ class GUIFrame(QTabWidget):
     def tabTwo(self):
 
         layout = QVBoxLayout()
-
         vboxlayout = QFormLayout()
         """Set static text for each GUI box (left from the box itself) """
         self.shotNumber2 = QLineEdit()
         vboxlayout.addRow('Shot number', self.shotNumber2)
-        self.runNumber2 = QLineEdit()
+        default_user_name, default_machine, default_run = QVizDefault().getGUIEntries()
+        self.runNumber2 = QLineEdit(default_run)
         vboxlayout.addRow('Run number', self.runNumber2)
 
         if 'UDA_LOG' in os.environ:
@@ -134,12 +134,13 @@ class GUIFrame(QTabWidget):
     def OpenDataSourceFromTab2(self, evt):
         try:
             self.CheckInputsFromTab2()
-            openShotView = QVizOpenShotView(dataSourceName=QVizGlobalValues.IMAS_UDA,
+            openShotView = QVizOpenShotView()
+            openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_UDA,
                                             imasDbName='',
                                             userName='',
                                             runNumber=self.runNumber2.text(),
-                                            shotNumber=self.shotNumber2.text())
-            openShotView.Open(evt)
+                                            shotNumber=self.shotNumber2.text(),
+                                            UDAMachineName=self.cb.currentText())
         except ValueError as e:
             QVizGlobalOperations.message(self, str(e), 'Error opening file')
 

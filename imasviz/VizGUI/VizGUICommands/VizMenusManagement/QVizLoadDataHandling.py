@@ -48,10 +48,6 @@ class QVizLoadDataHandling(QObject):
             IDSName    (str) : Name of the IDS e.g. 'magnetics'.
         """
 
-        # The name of the current selected IDS is kept and attached to the
-        # view
-        self.dataTreeView.IDSNameSelected = IDSName
-
         # Do not display popup menu if the data are already loaded for the
         # current selected item
         # if not self.dataTreeView.dataCurrentlyLoaded.get(0):
@@ -86,7 +82,7 @@ class QVizLoadDataHandling(QObject):
                 #   Note: PyQt5 lambda method is not a good way to pass the
                 #         function arguments. The use of partial is better
                 #         and more bulletproof
-                action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData, i))
+                action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData, IDSName, i))
         # Map the menu (in order to show it)
 
         if subMenu is not None:
@@ -100,20 +96,21 @@ class QVizLoadDataHandling(QObject):
             return True
         return False
 
-    def loadSelectedData(self, occurrence=0, threadingEvent=None):
+    def loadSelectedData(self, IDSName, occurrence=0, threadingEvent=None):
         """Load data of selected IDS and its occurrence.
 
         Arguments:
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
         """
-        QVizLoadSelectedData(self.dataTreeView, occurrence, threadingEvent).execute()
+        QVizLoadSelectedData(self.dataTreeView, IDSName, occurrence, threadingEvent).execute()
 
-    def refreshSelectedIDS(self, occurrence=0, threadingEvent=None):
-        """Refresh the source IDS and its data for the set occurrence.
 
-        Arguments:
-            occurrence     (int) : IDS occurrence number (0-9).
-            threadingEvent ()    : Event.
-        """
-        QVizLoadSelectedData(self.dataTreeView, occurrence, threadingEvent).refreshIDS()
+    # def refreshSelectedIDS(self, occurrence=0, threadingEvent=None):
+    #     """Refresh the source IDS and its data for the set occurrence.
+    #
+    #     Arguments:
+    #         occurrence     (int) : IDS occurrence number (0-9).
+    #         threadingEvent ()    : Event.
+    #     """
+    #     QVizLoadSelectedData(self.dataTreeView, occurrence, threadingEvent).refreshIDS()

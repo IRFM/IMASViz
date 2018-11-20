@@ -83,13 +83,8 @@ class QVizSelectSignals(QVizAbstractCommand):
 
         for IDSName in IDSNamesList:
             # IDS already loaded ?
-            key = IDSName + "/" + str(self.occurrence)
-            if self.dataTreeView.ids_roots_occurrence.get(key) is not None:
+            if self.dataTreeView.isAlreadyFetched(IDSName, self.occurrence):
                 continue
-
-            # Set the IDS to be checked if it is opened. If it is not,open it
-            # in the DTV
-            self.dataTreeView.setIDSNameSelected(IDSName)
 
             # Check/Populate the IDS tree node
             QVizLoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,

@@ -4,12 +4,14 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalValues
 
 
 class QVizGeneratedClassFactory:
-    def __init__(self, IMASDataSource, view, occurrence=0, pathsList = None, async = True):
+    def __init__(self, IMASDataSource, view, IDSName, occurrence=0, pathsList = None, async = True):
+        self.IDSName = IDSName
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
         self.pathsList = pathsList
         self.async = async
+
 
     def create(self):
         generatedDataTree = None
@@ -26,6 +28,7 @@ class QVizGeneratedClassFactory:
                                                            shotNumber=self.IMASDataSource.shotNumber,
                                                            runNumber=self.IMASDataSource.runNumber,
                                                            view=self.view,
+                                                           IDSName=self.IDSName,
                                                            occurrence=self.occurrence,
                                                            pathsList = self.pathsList,
                                                            async=self.async)
@@ -37,6 +40,7 @@ class QVizGeneratedClassFactory:
                                                                  shotNumber=self.IMASDataSource.shotNumber,
                                                                  runNumber=self.IMASDataSource.runNumber,
                                                                  view=self.view,
+                                                                 IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
@@ -48,6 +52,7 @@ class QVizGeneratedClassFactory:
                                                                  shotNumber=self.IMASDataSource.shotNumber,
                                                                  runNumber=self.IMASDataSource.runNumber,
                                                                  view=self.view,
+                                                                 IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
@@ -59,6 +64,7 @@ class QVizGeneratedClassFactory:
                                                                  shotNumber=self.IMASDataSource.shotNumber,
                                                                  runNumber=self.IMASDataSource.runNumber,
                                                                  view=self.view,
+                                                                 IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
@@ -70,6 +76,7 @@ class QVizGeneratedClassFactory:
                                                                  shotNumber=self.IMASDataSource.shotNumber,
                                                                  runNumber=self.IMASDataSource.runNumber,
                                                                  view=self.view,
+                                                                 IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
                                                                  pathsList=self.pathsList,
                                                                  async=self.async)
@@ -81,6 +88,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -92,6 +100,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -103,6 +112,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -115,6 +125,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -126,6 +137,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -137,6 +149,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -148,6 +161,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -159,6 +173,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
@@ -170,6 +185,7 @@ class QVizGeneratedClassFactory:
                                                               shotNumber=self.IMASDataSource.shotNumber,
                                                               runNumber=self.IMASDataSource.runNumber,
                                                               view=self.view,
+                                                              IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)

@@ -41,12 +41,14 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(QThread):", -1)
-                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, occurrence=0, pathsList = None, async=True):", 0)
+                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, pathsList = None, async=True):", 0)
                 self.printCode("super(" + className + ", self).__init__()", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
                 self.printCode("self.ids = None", 1)
-                self.printCode("self.idsName = self.view.IDSNameSelected", 1)
+                self.printCode("self.idsName = IDSName", 1)
+                self.printCode("self.view.IDSNameSelected[occurrence] = IDSName", 1)
+
                 self.printCode("self.pathsList = pathsList", 1)
                 self.printCode("self.async = async", 1)
                 self.printCode('', -1)

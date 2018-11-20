@@ -17,8 +17,8 @@ class QVizIMASDataSource:
         self.ids = {} #key = occurrence, value = ids object
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, occurrence=0, pathsList = None, async=True):
-        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, occurrence, pathsList, async).create()
+    def load(self, dataTreeView, IDSName, occurrence=0, pathsList = None, async=True):
+        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName, occurrence, pathsList, async).create()
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
@@ -30,10 +30,8 @@ class QVizIMASDataSource:
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
         self.generatedDataTree.ids = self.ids[occurrence]
-
-        dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected] = 1
-
-        dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + dataTreeView.IDSNameSelected + '...')
+        #dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected[occurrence]] = 1
+        dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + IDSName + '...')
 
         if async:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data

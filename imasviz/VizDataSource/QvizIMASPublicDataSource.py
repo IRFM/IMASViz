@@ -9,16 +9,15 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
         QVizIMASDataSource.__init__(self, name, None, None, shotNumber, runNumber, machineName)
 
     # Load IMAS data using IMAS api
-    def load(self, view, occurrence=0, pathsList = None, async=True):
+    def load(self, view, IDSName, occurrence=0, pathsList = None, async=True):
         print ("Loading data using UDA")
-        self.generatedDataTree = QVizGeneratedClassFactory(self, view, occurrence, pathsList, async).create()
+        self.generatedDataTree = QVizGeneratedClassFactory(self, view, IDSName, occurrence, pathsList, async).create()
         if self.ids.get(occurrence) is None:
             self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             self.ids.open_public(self.machineName)
 
         self.generatedDataTree.ids = self.ids.get(occurrence)
         view.dataCurrentlyLoaded[occurrence] = True
-        view.idsAlreadyFetched[view.IDSNameSelected] = 1
 
         if async == True:
             self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data

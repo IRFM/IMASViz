@@ -4,16 +4,18 @@ from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractComman
 
 
 class QVizLoadSelectedData(QVizAbstractCommand):
-    def __init__(self, dataTreeView, occurrence=0, pathsList = None, async=True):
+    def __init__(self, dataTreeView, IDSName, occurrence=0, pathsList = None, async=True):
         QVizAbstractCommand.__init__(self, dataTreeView, None)
         self.occurrence = occurrence
         self.async = async
         self.pathsList = pathsList
+        self.IDSName = IDSName
 
     def execute(self):
         try:
-            self.dataTreeView.dataSource.load(self.dataTreeView, self.occurrence,
+            self.dataTreeView.dataSource.load(self.dataTreeView, self.IDSName, self.occurrence,
                                            self.pathsList, self.async)
+
 
         except :
             traceback.print_exc()
