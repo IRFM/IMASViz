@@ -87,5 +87,5 @@ class QVizSelectSignals(QVizAbstractCommand):
                 continue
 
             # Check/Populate the IDS tree node
-            QVizLoadSelectedData(self.dataTreeView, self.occurrence, self.pathsList,
+            QVizLoadSelectedData(self.dataTreeView, IDSName, self.occurrence, self.pathsList,
                                  async).execute()
