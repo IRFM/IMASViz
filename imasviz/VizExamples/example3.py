@@ -25,7 +25,7 @@ for i in range(0,6):
     paths.append('magnetics/flux_loop(' + str(i) + ')/flux')
 
 api.SelectSignals(f, paths)
-#api.PlotSelectedSignalsInMultiPlotFrame(f)
+#api.PlotSelectedSignalsInTablePlotViewFrame(f)
 api.ShowDataTree(f)
 
 app.exec()

@@ -121,14 +121,14 @@ class Viz_API:
         return len(self.GetFiguresKeys())
 
     # Return the next figure number available for plotting
-    def GetMultiPlotsCount(self):
+    def GetTablePlotViewsCount(self):
         return len(self.GetFiguresKeys(FigureTypes.MULTIPLOTTYPE))
 
-    def GetSubPlotsCount(self):
+    def GetStackedPlotViewsCount(self):
         return len(self.GetFiguresKeys(FigureTypes.SUBPLOTTYPE))
 
     def getNextKeyForMultiplePlots(self):
-        return FigureTypes.MULTIPLOTTYPE + str(self.GetMultiPlotsCount())
+        return FigureTypes.MULTIPLOTTYPE + str(self.GetTablePlotViewsCount())
 
     def GetNextKeyForFigurePlots(self):
         """Returns string label for the next figure (e.c. if 'Figure i' is the
@@ -149,8 +149,8 @@ class Viz_API:
 
         return FigureTypes.FIGURETYPE + str(numFig_next)
 
-    def getNextKeyForSubPlots(self):
-        return FigureTypes.SUBPLOTTYPE + str(self.GetSubPlotsCount())
+    def getNextKeyForStackedPlotViews(self):
+        return FigureTypes.SUBPLOTTYPE + str(self.GetStackedPlotViewsCount())
 
     def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
         figureKeys = []
@@ -190,7 +190,7 @@ class Viz_API:
                                 update=update, all_DTV=all_DTV).execute()
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignalsInMultiPlotFrame(self, dataTreeFrame,
+    def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
                                             configFileName = None,
                                             figureKey=None, update=0):
         if figureKey == None:
@@ -200,7 +200,7 @@ class Viz_API:
         #                               configFileName=configFileName).execute()
 
     # Plot the set of signals selected by the user
-    def ApplyMultiPlotConfiguration(self, dataTreeFrame, configFileName=None,
+    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFileName=None,
                                     figureKey=None, update=0):
         if figureKey == None:
             figureKey = self.getNextKeyForMultiplePlots()

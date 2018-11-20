@@ -22,7 +22,7 @@ class QVizSavePlotConfig():
 
     Arguments:
         gWin (pyqtgraph.GraphicsWindow) : Window containing the plots
-                                          (MultiPlot, SubPlot window).
+                                          (TablePlotView, StackedPlotView window).
     """
 
     def __init__(self, gWin, nodeData=None):

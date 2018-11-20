@@ -22,6 +22,6 @@ f = api.CreateDataTree(dataSource)
 configFileName = os.environ['HOME'] + "/.imasviz/magnetics1.pcfg"
 figurekey =api.getNextKeyForMultiplePlots()
 
-#api.ApplyMultiPlotConfiguration(f, figureKey=figurekey, update=0, configFileName=configFileName)
+#api.ApplyTablePlotViewConfiguration(f, figureKey=figurekey, update=0, configFileName=configFileName)
 
 app.exec()

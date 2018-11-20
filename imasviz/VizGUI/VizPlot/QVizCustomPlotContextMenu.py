@@ -42,7 +42,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
 
         # Set original plot context menu
         # Note: self.menu must not be None (this way works fine for plotWidgets,
-        # but not for GraphicsWindow (MultiPlot))
+        # but not for GraphicsWindow (TablePlotView))
         self.menu = pg.ViewBoxMenu.ViewBoxMenu(self)
 
         # Menu update property

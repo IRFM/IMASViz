@@ -1,7 +1,7 @@
 #  Name   : QVizCOnfigurationlistsWindow
 #
 #          Container to handle configuration lists (list of signals,
-#          MultiPlot configuration etc.)
+#          TablePlotView configuration etc.)
 #          Note: The wxPython predecessor of this Python file is
 #          ConfigurationListsFrame.py
 #
@@ -25,7 +25,7 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import GlobalFonts
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlot import QVizMultiPlot
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
 
 
 class QVizConfigurationListsWindow(QDialog):
@@ -222,7 +222,7 @@ class PlotConfigurationListsTab(QWidget):
         layout_buttons.setContentsMargins(15, 0, 15, 0)
         # - Set buttons
         self.button1 = QPushButton('Apply selection and plot selected data')
-        self.button1.clicked.connect(self.applyMultiPlotConfiguration)
+        self.button1.clicked.connect(self.applyTablePlotViewConfiguration)
         self.button2 = QPushButton('Apply selection only')
         self.button2.clicked.connect(commonConf.applySignalSelection)
         self.button3 = QPushButton('Remove configuration')
@@ -282,9 +282,9 @@ class PlotConfigurationListsTab(QWidget):
         # Add list of configuration files to list widget
         self.listWidget.addItems(configurationFilesList)
 
-    def applyMultiPlotConfiguration(self):
+    def applyTablePlotViewConfiguration(self):
         """Apply signal selection from the config file - apply it directly
-           to MultiPlot feature.
+           to TablePlotView feature.
         """
         # TODO: the selection part could be made into a function as
         # removeConfiguration() and applySignalConfiguration() use this part of
@@ -303,10 +303,10 @@ class PlotConfigurationListsTab(QWidget):
                 QVizGlobalOperations.getConfigurationFilesDirectory() + \
                 '/' + selectedItem.text()
 
-            # Get next figurekey (label) for the MultiPlot
+            # Get next figurekey (label) for the TablePlotView
             figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
-            # Set up and show the MultiPlot using the config file
-            QVizMultiPlot(self.dataTreeView,
+            # Set up and show the TablePlotView using the config file
+            QVizTablePlotView(self.dataTreeView,
                           figureKey=figureKey,
                           update=1,
                           configFile=selectedFile)

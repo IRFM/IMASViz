@@ -483,10 +483,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         subMenu_select.addAction(action_onSaveSignalSelection)
 
         #-----------------------------------------------------------------------
-        # Set new submenu for handling MultiPlots to be added to 'Options' menu
-        subMenu_multiplot = options.addMenu('MultiPlot Options')
+        # Set new submenu for handling TablePlotViews to be added to 'Options' menu
+        subMenu_multiplot = options.addMenu('TablePlotView Options')
         subMenu_multiplot_set = subMenu_multiplot.addMenu(
-            'Plot all selected signals to a new MultiPlot')
+            'Plot all selected signals to a new TablePlotView')
 
         # -----
         # Add menu item to plot selected signals to single
@@ -494,7 +494,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_multiPlotSelectedSignals = QAction('This IMAS Database',
                                                   self)
         action_multiPlotSelectedSignals.triggered.connect(
-            partial(self.onSetMultiPlot, False))
+            partial(self.onSetTablePlotView, False))
         # Add to submenu
         subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
 
@@ -504,15 +504,15 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_multiPlotSelectedSignals = QAction('All IMAS Databases',
                                                   self)
         action_multiPlotSelectedSignals.triggered.connect(
-            partial(self.onSetMultiPlot, True))
+            partial(self.onSetTablePlotView, True))
         # Add to submenu
         subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
 
         #-----------------------------------------------------------------------
-        # Set new submenu for handling SubPlots to be added to 'Options' menu
-        subMenu_subplot = options.addMenu('SubPlot Options')
+        # Set new submenu for handling StackedPlotViews to be added to 'Options' menu
+        subMenu_subplot = options.addMenu('StackedPlotView Options')
         subMenu_subplot_set = subMenu_subplot.addMenu(
-            'Plot all selected signals to a new SubPlot')
+            'Plot all selected signals to a new StackedPlotView')
 
         # -----
         # Add menu item to plot selected signals to single
@@ -520,7 +520,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_subplotSelectedSignals = QAction('This IMAS Database',
                                                 self)
         action_subplotSelectedSignals.triggered.connect(
-            partial(self.onSetSubPlot, False))
+            partial(self.onSetStackedPlotView, False))
         # Add to submenu
         subMenu_subplot_set.addAction(action_subplotSelectedSignals)
 
@@ -530,7 +530,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_subplotSelectedSignals = QAction('All IMAS Databases',
                                                 self)
         action_subplotSelectedSignals.triggered.connect(
-            partial(self.onSetSubPlot, True))
+            partial(self.onSetStackedPlotView, True))
         # Add to submenu
         subMenu_subplot_set.addAction(action_subplotSelectedSignals)
 
@@ -618,8 +618,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
 
     @pyqtSlot(bool)
-    def onSetMultiPlot(self, all_DTV=False):
-        """Apply selected signals (single or all DTVs) to MultiPlot.
+    def onSetTablePlotView(self, all_DTV=False):
+        """Apply selected signals (single or all DTVs) to TablePlotView.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
@@ -627,12 +627,12 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Set the object to QVizSignalHandling, used to handle signals
         sh = QVizSignalHandling(self.dataTreeView)
-        # Run the MultiPlot routine
-        sh.plotSelectedSignalsToMultiPlotsFrame(all_DTV=all_DTV)
+        # Run the TablePlotView routine
+        sh.plotSelectedSignalsToTablePlotViewsFrame(all_DTV=all_DTV)
 
     @pyqtSlot(bool)
-    def onSetSubPlot(self, all_DTV=False):
-        """Apply selected signals (single or all DTVs) to SubPlot.
+    def onSetStackedPlotView(self, all_DTV=False):
+        """Apply selected signals (single or all DTVs) to StackedPlotView.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
@@ -640,8 +640,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Set the object to QVizSignalHandling, used to handle signals
         sh = QVizSignalHandling(self.dataTreeView)
-        # Run the MultiPlot routine
-        sh.plotSelectedSignalsToSubPlotsFrame(all_DTV=all_DTV)
+        # Run the TablePlotView routine
+        sh.plotSelectedSignalsToStackedPlotViewsFrame(all_DTV=all_DTV)
 
     # TODO:
     # def onUnselectSignals()
