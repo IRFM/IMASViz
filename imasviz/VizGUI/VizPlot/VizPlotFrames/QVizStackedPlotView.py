@@ -82,7 +82,7 @@ class QVizStackedPlotView(QtWidgets.QMainWindow):
         # Set StackedPlotView object name and title if not already set
         if figureKey == None:
             figureKey = \
-                self.imas_viz_api.getNextKeyForStackedPlotViews()
+                self.imas_viz_api.getNextKeyForStackedPlotView()
         self.setObjectName(figureKey)
         self.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = self
@@ -130,7 +130,7 @@ class QVizStackedPlotView(QtWidgets.QMainWindow):
         """
         if figureKey == None:
             figureKey = \
-                self.imas_viz_api.getNextKeyForStackedPlotViews()
+                self.imas_viz_api.getNextKeyForStackedPlotView()
         gwin = QVizStackedPlotViewGraphicsWindow(parent=self, ncols=self.ncols)
         gwin.setWindowTitle(figureKey)
         self.imas_viz_api.figureframes[figureKey] = gwin
@@ -153,7 +153,6 @@ class QVizStackedPlotView(QtWidgets.QMainWindow):
         scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         scrollArea.setWidgetResizable(True)
         scrollArea.setEnabled(True)
-        scrollArea.setMouseTracking(False)
         scrollContent = QtGui.QWidget(scrollArea)
 
         # Set layout for scrollable area
@@ -407,7 +406,7 @@ class QVizStackedPlotView(QtWidgets.QMainWindow):
             api       (obj)  : IMASViz Application Programming Interface.
             figurekey (str)  : Frame label.
         """
-        if figureKey in api.GetFiguresKeys(figureType=FigureTypes.MULTIPLOTTYPE):
+        if figureKey in api.GetFiguresKeys(figureType=FigureTypes.TABLEPLOTTYPE):
             api.figureframes[figureKey].hide()
 
     def getScreenGeometry(self):

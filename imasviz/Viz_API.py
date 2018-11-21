@@ -122,13 +122,13 @@ class Viz_API:
 
     # Return the next figure number available for plotting
     def GetTablePlotViewsCount(self):
-        return len(self.GetFiguresKeys(FigureTypes.MULTIPLOTTYPE))
+        return len(self.GetFiguresKeys(FigureTypes.TABLEPLOTTYPE))
 
     def GetStackedPlotViewsCount(self):
-        return len(self.GetFiguresKeys(FigureTypes.SUBPLOTTYPE))
+        return len(self.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE))
 
-    def getNextKeyForMultiplePlots(self):
-        return FigureTypes.MULTIPLOTTYPE + str(self.GetTablePlotViewsCount())
+    def getNextKeyForTablePlotView(self):
+        return FigureTypes.TABLEPLOTTYPE + str(self.GetTablePlotViewsCount())
 
     def GetNextKeyForFigurePlots(self):
         """Returns string label for the next figure (e.c. if 'Figure i' is the
@@ -149,8 +149,8 @@ class Viz_API:
 
         return FigureTypes.FIGURETYPE + str(numFig_next)
 
-    def getNextKeyForStackedPlotViews(self):
-        return FigureTypes.SUBPLOTTYPE + str(self.GetStackedPlotViewsCount())
+    def getNextKeyForStackedPlotView(self):
+        return FigureTypes.STACKEDPLOTTYPE + str(self.GetStackedPlotViewsCount())
 
     def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
         figureKeys = []
@@ -194,7 +194,7 @@ class Viz_API:
                                             configFileName = None,
                                             figureKey=None, update=0):
         if figureKey == None:
-            figureKey = self.getNextKeyForMultiplePlots()
+            figureKey = self.getNextKeyForTablePlotView()
         #TODO PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
         #                               figurekey=figureKey, update=update,
         #                               configFileName=configFileName).execute()
@@ -203,7 +203,7 @@ class Viz_API:
     def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFileName=None,
                                     figureKey=None, update=0):
         if figureKey == None:
-            figureKey = self.getNextKeyForMultiplePlots()
+            figureKey = self.getNextKeyForTablePlotView()
         #PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
         #                               figurekey=figureKey, update=update,
         #                               configFileName=configFileName).execute()

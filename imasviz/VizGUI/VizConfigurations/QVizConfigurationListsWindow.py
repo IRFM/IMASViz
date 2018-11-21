@@ -1,4 +1,4 @@
-#  Name   : QVizCOnfigurationlistsWindow
+#  Name   : QVizConfigurationlistsWindow
 #
 #          Container to handle configuration lists (list of signals,
 #          TablePlotView configuration etc.)
@@ -25,7 +25,7 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import GlobalFonts
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 
 
 class QVizConfigurationListsWindow(QDialog):
@@ -304,12 +304,12 @@ class PlotConfigurationListsTab(QWidget):
                 '/' + selectedItem.text()
 
             # Get next figurekey (label) for the TablePlotView
-            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
+            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
             # Set up and show the TablePlotView using the config file
-            QVizTablePlotView(self.dataTreeView,
-                          figureKey=figureKey,
-                          update=1,
-                          configFile=selectedFile)
+            QVizMultiPlotWindow(self.dataTreeView,
+                                figureKey=figureKey,
+                                update=1,
+                                configFile=selectedFile)
         else:
             pass
 

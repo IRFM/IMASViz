@@ -4,8 +4,8 @@ import sys
 
 class FigureTypes:
     FIGURETYPE = "Figure:"
-    MULTIPLOTTYPE = "Multiplot:"
-    SUBPLOTTYPE = "Subplot:"
+    TABLEPLOTTYPE = "TablePlotView:"
+    STACKEDPLOTTYPE = "StackedPlotView:"
 
 class Imas_Viz_Options:
 

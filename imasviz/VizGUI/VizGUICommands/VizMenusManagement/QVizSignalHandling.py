@@ -36,6 +36,7 @@ from PyQt5.QtWidgets import QAction, QMenu
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
@@ -430,12 +431,12 @@ class QVizSignalHandling(QObject):
                              current or all DTVs.
         """
         # Get next figure key/label
-        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForMultiplePlots()
+        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
         if all_DTV != True:
-            QVizTablePlotView(dataTreeView=self.dataTreeView, figureKey=figureKey,
+            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                           update=1, all_DTV=False)
         else:
-            QVizTablePlotView(dataTreeView=self.dataTreeView, figureKey=figureKey,
+            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                           update=1, all_DTV=True)
 
     @pyqtSlot(bool)
@@ -448,7 +449,7 @@ class QVizSignalHandling(QObject):
                              current or all DTVs.
         """
         # Get next figure key/label
-        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForStackedPlotViews()
+        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForStackedPlotView()
         if all_DTV != True:
             QVizStackedPlotView(dataTreeView=self.dataTreeView, figureKey=figureKey,
                         update=1, all_DTV=False)

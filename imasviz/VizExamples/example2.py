@@ -37,8 +37,8 @@ for i in range(0, 3):
     pathsList2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
 # Select signals corresponding to the paths in pathsList
-api.SelectSignals(f1, pathsList1)
-api.SelectSignals(f2, pathsList2)
+# api.SelectSignals(f1, pathsList1)
+# api.SelectSignals(f2, pathsList2)
 # Can use also
 # QVizSelectSignals(f1.dataTreeView, pathsList1).execute()
 # QVizSelectSignals(f2.dataTreeView, pathsList2).execute()
