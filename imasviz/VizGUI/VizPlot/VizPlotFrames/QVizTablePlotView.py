@@ -68,7 +68,7 @@ class QVizTablePlotView(GraphicsWindow):
         # Set base dimension parameter for setting plot size
         self.plotBaseDim = 300
 
-        # Set TablePlotView object name and title if not already set
+        # Set object name and title if not already set
         self.setObjectName(self.figureKey)
         self.setWindowTitle(self.figureKey)
         # self.imas_viz_api.figureframes[self.figureKey] = self
@@ -101,7 +101,6 @@ class QVizTablePlotView(GraphicsWindow):
            time to TablePlotView.
 
         Arguments:
-            figurekey (str)  : Frame label.
             update (int)     :
             all_DTV (bool)   : Indicator to read selected signals from single
                                DTV (from the given one) or from all DTVs.

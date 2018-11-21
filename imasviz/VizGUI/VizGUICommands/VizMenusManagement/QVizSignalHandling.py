@@ -432,6 +432,7 @@ class QVizSignalHandling(QObject):
         """
         # Get next figure key/label
         figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
+        # Note: figureKey that includes 'TablePlotView' is expected
         if all_DTV != True:
             QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                           update=1, all_DTV=False)
@@ -450,11 +451,12 @@ class QVizSignalHandling(QObject):
         """
         # Get next figure key/label
         figureKey = self.dataTreeView.imas_viz_api.getNextKeyForStackedPlotView()
+        # Note: figureKey that includes 'StackedPlotView' is expected
         if all_DTV != True:
-            QVizStackedPlotView(dataTreeView=self.dataTreeView, figureKey=figureKey,
+            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                         update=1, all_DTV=False)
         else:
-            QVizStackedPlotView(dataTreeView=self.dataTreeView, figureKey=figureKey,
+            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                         update=1, all_DTV=True)
 
 
