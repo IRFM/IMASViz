@@ -16,26 +16,10 @@
 from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-import PyQt5.QtCore
-import PyQt5.QtGui
-import PyQt5.QtWidgets
 import xml.etree.ElementTree as ET
-import traceback
-import math
-import sys
-import numpy as np
-from functools import partial
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
-    import QVizUnselectAllSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals \
-    import QVizSelectSignals
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
-    import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, FigureTypes
+from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
-from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
-    import QVizCustomPlotContextMenu
 from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig \
     import QVizSavePlotConfig
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
@@ -97,20 +81,13 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # Extract multiPlot type
         multiPlot_type = self.figureKey.split(':')[0]
 
+        # Get a list of required existing DTVs
+        self.MultiPlotView_DTVList = self.getDTVList(self.all_DTV)
+
         # Set Qt object name
         self.setObjectName(self.figureKey)
         # Set main window title
         self.setWindowTitle(self.figureKey)
-
-        # Set base dimension parameter for setting plot size
-        # self.plotBaseDim = 300
-
-        # # Set number of rows and columns of panels in the TablePlotView frame
-        # self.ncols = int(self.screenWidth * 0.9 / self.plotBaseDim)  # round down
-
-        # # Set GraphicsWindow (holding plots)
-        # self.multiPlotView = self.plot1DSelectedSignals(figureKey=self.figureKey,
-        #                                      all_DTV=self.all_DTV)
 
         # Set multiPlot view (pg.GraphicWindow)
         self.multiPlotView = self.setMultiPlotView(mpType=multiPlot_type)
@@ -180,6 +157,26 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.imas_viz_api.figureframes[self.figureKey] = self
         return mpView  # pg.GraphicsWindow
 
+    def getDTVList(self, all_DTV):
+        """Get list of required DTVs ('This' or 'All' DTVs) """
+
+        MultiPlotView_DTVList = []
+
+        # If either configuration is provided or all_DTV is set to False,
+        # use only single/current DTV.
+        # Else if all_DTV is set to True (and not configuration is not
+        # provided) use all existing DTVs
+        if (self.plotConfig != None) or (self.all_DTV == False):
+            # Add a single (current) DTV to the list
+            MultiPlotView_DTVList.append(self.dataTreeView)
+        elif self.all_DTV == True:
+            # Get the list of all currently opened DTVs
+            MultiPlotView_DTVList = self.imas_viz_api.DTVlist
+
+        return MultiPlotView_DTVList
+
+        # if (self.plotConfig != None) != (self.all_DTV == False):
+
     def raiseErrorIfNoSelectedArrays(self):
         return False
 
@@ -217,12 +214,6 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     def windowSizeAdjustement(self):
         """Adjust the size of the main window and its children.
         """
-
-        # Set size of the graphics window
-        # (depending on the number of plots and number of columns)
-        # width_gw = self.multiPlotView.centralWidget.cols * (self.plotBaseDim + 10)
-        # height_gw = len(self.multiPlotView.centralWidget.rows) * self.plotBaseDim
-        # self.multiPlotView.setMinimumSize(width_gw, height_gw)
 
         # Set size of the main window
         width = self.multiPlotView.okWidth + 100

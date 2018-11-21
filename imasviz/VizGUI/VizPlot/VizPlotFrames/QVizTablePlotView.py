@@ -13,43 +13,24 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #*******************************************************************************
 
-from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
 from PyQt5 import QtCore, QtGui, QtWidgets
-import PyQt5.QtCore
-import PyQt5.QtGui
-import PyQt5.QtWidgets
-import xml.etree.ElementTree as ET
-import traceback
-import math
-import sys
-import numpy as np
-from functools import partial
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
-    import QVizUnselectAllSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals \
-    import QVizSelectSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsFromConfig \
-    import QVizSelectSignalsFromConfig
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, FigureTypes
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
 from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
-from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig \
-    import QVizSavePlotConfig
 
 
-class QVizTablePlotView(GraphicsWindow):
-    """TablePlotView GraphicsWindow containing the plots in a table layout.
+class QVizTablePlotView(pg.GraphicsWindow):
+    """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
     def __init__(self, parent, ncols=5):
         """
         Arguments:
-            parent (QtWidgets.QMainWindow) : Parent of TablePlotView GraphicsWindow.
+            parent (QtWidgets.QMainWindow) : Parent of TablePlotView pg.GraphicsWindow.
             ncols  (int)         : Number of columns.
         """
         super(QVizTablePlotView, self).__init__(parent=parent)
@@ -85,7 +66,7 @@ class QVizTablePlotView(GraphicsWindow):
         # the centralWidget does not contain the 'cols' attribute)
         self.centralWidget.cols = self.ncols
 
-        # Set GraphicsWindow (holding plots)
+        # Set pg.GraphicsWindow (holding plots)
         self.plot1DSelectedSignals(all_DTV=self.all_DTV)
 
         self.setAntialiasing(True)
@@ -113,36 +94,10 @@ class QVizTablePlotView(GraphicsWindow):
         # Plot number
         n = 0
 
-        dtv_selectedSignals = []
-
-        TablePlotView_DTVList = []
-
-        # If configuration file is available (e.g. save configuration was
-        # loaded)
-        if self.plotConfig != None:
-            # Select signals, saved in the save configuration. Return the
-            # list of signals as 'dtv_selectedSignals'.
-            # Get panel plots count
-            dtv_selectedSignals, panelPlotsCount = \
-                QVizSelectSignalsFromConfig.execute(self,
-                                                    dataTreeView=self.dataTreeView,
-                                                    config=self.plotConfig)
-            # Add a single DTV to the list
-            TablePlotView_DTVList.append(self.dataTreeView)
-        else:
-            # Else if configuration file is not present (save configuration was
-            # not used)
-            if self.all_DTV != False:
-                # Get the list of all currently opened DTVs
-                TablePlotView_DTVList = self.imas_viz_api.DTVlist
-            else:
-                # Add a single DTV to the list
-                TablePlotView_DTVList.append(self.dataTreeView)
-
         # Go through every opened/created DTV found in the list of DTVs, get
         # their selected plot signals and plot every signal to the same
         # TablePlotView window
-        for dtv in TablePlotView_DTVList:
+        for dtv in self.parent.MultiPlotView_DTVList:
             # Get list of selected signals in DTV
             dtv_selectedSignals = dtv.selectedSignalsDict
             # Go through the list of selected signals for every DTV
@@ -218,7 +173,7 @@ class QVizTablePlotView(GraphicsWindow):
                     plotItemKey = (currentPlotItem.row, currentPlotItem.column)
 
                     # If configuration is present
-                    if self.plotConfig is not None:
+                    if self.plotConfig != None:
                         self.parent.applyPlotConfigurationAfterPlotting(currentPlotItem,
                                                                         self.plotConfig)
 
@@ -226,7 +181,7 @@ class QVizTablePlotView(GraphicsWindow):
                 n += 1
 
     def plot(self, n, x, y, label, xlabel, ylabel):
-        """Add new plot to TablePlotView GraphicsWindow.
+        """Add new plot to TablePlotView pg.GraphicsWindow.
 
         Arguments:
             n      (int)      : Plot number.
@@ -282,7 +237,7 @@ class QVizTablePlotView(GraphicsWindow):
         # Set style
         style = QtCore.Qt.SolidLine
         # Set pen
-        pen = mkPen(color=color, width=3, style=style)
+        pen = pg.mkPen(color=color, width=3, style=style)
 
         return pen
 
@@ -306,3 +261,6 @@ class QVizTablePlotView(GraphicsWindow):
         self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 10)
         self.okHeight = len(self.centralWidget.rows) * self.plotBaseDim
         self.setMinimumSize(self.okWidth, self.okHeight)
+
+    # TODO
+    # class modifyTablePlotView
