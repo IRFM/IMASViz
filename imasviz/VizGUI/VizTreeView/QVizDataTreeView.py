@@ -54,6 +54,8 @@ from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors
 from imasviz.VizUtils.QVizWindowUtils import getWindowSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
+    import QVizUnselectAllSignals
 
 
 class QVizDataTreeView(QTreeWidget):
@@ -465,74 +467,99 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Main menu bar
         menuBar = QMenuBar(self)
-        options = menuBar.addMenu('Options')
+        # Set Options menu
+        actions = menuBar.addMenu('Actions')
         #-----------------------------------------------------------------------
         # Set new menu item for showing the Configuration window
         action_onShowConfigurations = QAction('Apply Configuration', self)
         action_onShowConfigurations.triggered.connect(
             partial(self.onShowConfigurations, self))
-        options.addAction(action_onShowConfigurations)
-
+        actions.addAction(action_onShowConfigurations)
         #-----------------------------------------------------------------------
-        # Set new submenu for handling signal selection to be added to 'Options'
+
+        # Set menu handling node selection features
+        nodeSelection = menuBar.addMenu('Node Selection')
+        #-----------------------------------------------------------------------
+        # Set new submenu for handling signal selection to be added to 'Actions'
         # menu
-        subMenu_select = options.addMenu('Signal Selection Options')
+        # subMenu_select = nodeSelection.addMenu('Signal Selection Options')
 
-        action_onSaveSignalSelection = QAction('Save Signal Selection', self)
+        action_onSaveSignalSelection = QAction('Save Node Selection', self)
         action_onSaveSignalSelection.triggered.connect(self.onSaveSignalSelection)
-        subMenu_select.addAction(action_onSaveSignalSelection)
+        nodeSelection.addAction(action_onSaveSignalSelection)
+
+        # -----
+        # Add menu item to unselect all signals - This/Current DTV
+        subMenu_unselect = nodeSelection.addMenu('Unselect Nodes')
+        action_onUnselectSignals = QAction('This IMAS Database',
+                                           self)
+        action_onUnselectSignals.triggered.connect(
+            partial(self.onUnselectSignals, False))
+        # Add to submenu
+        subMenu_unselect.addAction(action_onUnselectSignals)
+
+        # -----
+        # Add menu item to unselect all signals - All DTVs
+        action_onUnselectSignals = QAction('All IMAS Databases',
+                                           self)
+        action_onUnselectSignals.triggered.connect(
+            partial(self.onUnselectSignals, True))
+        # Add to submenu
+        subMenu_unselect.addAction(action_onUnselectSignals)
 
         #-----------------------------------------------------------------------
-        # Set new submenu for handling TablePlotViews to be added to 'Options' menu
-        subMenu_multiplot = options.addMenu('TablePlotView Options')
-        subMenu_multiplot_set = subMenu_multiplot.addMenu(
+        subMenu_multiPlot = nodeSelection.addMenu('Create MultiPlot')
+
+        # Set new submenu for handling TablePlotViews
+        subMenu_tablePlotView = subMenu_multiPlot.addMenu('TablePlotView')
+        subMenu_tablePlotView_set = subMenu_tablePlotView.addMenu(
             'Plot all selected signals to a new TablePlotView')
 
         # -----
         # Add menu item to plot selected signals to single
         # plot - This DTV
-        action_multiPlotSelectedSignals = QAction('This IMAS Database',
-                                                  self)
-        action_multiPlotSelectedSignals.triggered.connect(
+        action_setTablePlotView = QAction('This IMAS Database',
+                                          self)
+        action_setTablePlotView.triggered.connect(
             partial(self.onSetTablePlotView, False))
         # Add to submenu
-        subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
+        subMenu_tablePlotView_set.addAction(action_setTablePlotView)
 
         # -----
         # Add menu item to plot selected signals to single
         # plot - All DTVs
-        action_multiPlotSelectedSignals = QAction('All IMAS Databases',
-                                                  self)
-        action_multiPlotSelectedSignals.triggered.connect(
+        action_setTablePlotViewAll = QAction('All IMAS Databases',
+                                             self)
+        action_setTablePlotViewAll.triggered.connect(
             partial(self.onSetTablePlotView, True))
         # Add to submenu
-        subMenu_multiplot_set.addAction(action_multiPlotSelectedSignals)
+        subMenu_tablePlotView_set.addAction(action_setTablePlotViewAll)
 
         #-----------------------------------------------------------------------
-        # Set new submenu for handling StackedPlotViews to be added to 'Options' menu
-        subMenu_subplot = options.addMenu('StackedPlotView Options')
-        subMenu_subplot_set = subMenu_subplot.addMenu(
+        # Set new submenu for handling StackedPlotViews
+        subMenu_stackedPlotView = subMenu_multiPlot.addMenu('StackedPlotView')
+        subMenu_stackedPlotView_set = subMenu_stackedPlotView.addMenu(
             'Plot all selected signals to a new StackedPlotView')
 
         # -----
         # Add menu item to plot selected signals to single
         # plot - This DTV
-        action_subplotSelectedSignals = QAction('This IMAS Database',
-                                                self)
-        action_subplotSelectedSignals.triggered.connect(
+        action_stackedPlotView = QAction('This IMAS Database',
+                                         self)
+        action_stackedPlotView.triggered.connect(
             partial(self.onSetStackedPlotView, False))
         # Add to submenu
-        subMenu_subplot_set.addAction(action_subplotSelectedSignals)
+        subMenu_stackedPlotView_set.addAction(action_stackedPlotView)
 
         # -----
         # Add menu item to plot selected signals to single
         # plot - All DTVs
-        action_subplotSelectedSignals = QAction('All IMAS Databases',
-                                                self)
-        action_subplotSelectedSignals.triggered.connect(
+        action_stackedPlotViewAll = QAction('All IMAS Databases',
+                                            self)
+        action_stackedPlotViewAll.triggered.connect(
             partial(self.onSetStackedPlotView, True))
         # Add to submenu
-        subMenu_subplot_set.addAction(action_subplotSelectedSignals)
+        subMenu_stackedPlotView_set.addAction(action_stackedPlotViewAll)
 
         # Set menu bar
         self.setMenuBar(menuBar)
@@ -616,6 +643,11 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
+
+    @pyqtSlot(bool)
+    def onUnselectSignals(self, all_DTV=False):
+        """Unselect all signals (single or all DTVs)."""
+        QVizUnselectAllSignals(self.dataTreeView, all_DTV).execute()
 
     @pyqtSlot(bool)
     def onSetTablePlotView(self, all_DTV=False):

@@ -18,35 +18,48 @@ from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
 class QVizUnselectAllSignals(QVizAbstractCommand):
-    def __init__(self, dataTreeView):
+    def __init__(self, dataTreeView, all_DTV=False):
         QVizAbstractCommand.__init__(self, dataTreeView)
+        self.all_DTV = all_DTV
+        self.imas_viz_api = self.dataTreeView.imas_viz_api
 
     def execute(self):
-        # Set empty list of signal keys to remove
-        keysToRemove = []
-        for key in self.dataTreeView.selectedSignalsDict:
-            v = self.dataTreeView.selectedSignalsDict[key]
-            # Signal/Node associated QTreeWidget object
-            vizTreeNode = v['QTreeWidgetItem']
 
-            # Signal/Node itemVIZData attribute
-            signalItemVIZData = vizTreeNode.getDataDict()
+        # If signals from all DTV are to be unselected, use the list of all
+        # existing DTVs. Otherwise use current DTV.
+        DTVList = []
+        if self.all_DTV != True:
+            DTVList.append(self.dataTreeView)
+        else:
+            DTVList = self.imas_viz_api.DTVlist
 
-            # Search through the whole list of signals (all FLT_1D nodes etc.)
-            for s in self.dataTreeView.signalsList:
-                # If the itemVIZData matches, add the signal key to the list
-                # of keys for removal
-                if signalItemVIZData == s.getDataDict():
-                    # Set the signal isSelected attribute/status
-                    signalItemVIZData['isSelected'] = 0
-                    # Set the QTreeWidgetItem foreground color to blue
-                    vizTreeNode.setForeground(0, GlobalColors.BLUE)
-                    key = self.dataTreeView.dataSource.dataKey(signalItemVIZData)
-                    keysToRemove.append(key)
-                    break
-        # Go through the list of selected signals and delete all of them from
-        # the same list
-        for i in range(0, len(self.dataTreeView.selectedSignalsDict)):
-            key = keysToRemove[i]
-            # Delete the signal from selectedSignalsDict list
-            del self.dataTreeView.selectedSignalsDict[key]
+        # Go through the set list of DTVs
+        for dtv in DTVList:
+            # Set empty list of signal keys to remove
+            keysToRemove = []
+            for key in dtv.selectedSignalsDict:
+                v = dtv.selectedSignalsDict[key]
+                # Signal/Node associated QTreeWidget object
+                vizTreeNode = v['QTreeWidgetItem']
+
+                # Signal/Node itemVIZData attribute
+                signalItemVIZData = vizTreeNode.getDataDict()
+
+                # Search through the whole list of signals (all FLT_1D nodes etc.)
+                for s in dtv.signalsList:
+                    # If the itemVIZData matches, add the signal key to the list
+                    # of keys for removal
+                    if signalItemVIZData == s.getDataDict():
+                        # Set the signal isSelected attribute/status
+                        signalItemVIZData['isSelected'] = 0
+                        # Set the QTreeWidgetItem foreground color to blue
+                        vizTreeNode.setForeground(0, GlobalColors.BLUE)
+                        key = dtv.dataSource.dataKey(signalItemVIZData)
+                        keysToRemove.append(key)
+                        break
+            # Go through the list of selected signals and delete all of them from
+            # the same list
+            for i in range(0, len(dtv.selectedSignalsDict)):
+                key = keysToRemove[i]
+                # Delete the signal from selectedSignalsDict list
+                del dtv.selectedSignalsDict[key]

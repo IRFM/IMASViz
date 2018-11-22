@@ -116,11 +116,27 @@ class QVizSignalHandling(QObject):
         # Add menu item for unselection of all selected signals if there are
         # and selected signals present
         if len(self.dataTreeView.selectedSignalsDict) > 0:
-            action_UnselectAllSignals = QAction('Unselect all signals', self)
-            action_UnselectAllSignals.triggered.connect(self.unselectAllSignals)
-            self.dataTreeView.popupmenu.addAction(action_UnselectAllSignals)
-            # Set bitmap to menu item
+
+            # -----
+            # Add menu item to unselect all signals - This/Current DTV
+            subMenu_unselect = self.dataTreeView.popupmenu.addMenu('Unselect Signals')
+            action_onUnselectSignals = QAction('This IMAS Database',
+                                               self)
+            action_onUnselectSignals.triggered.connect(
+                partial(self.onUnselectSignals, False))
+            # Add to submenu
+            subMenu_unselect.addAction(action_onUnselectSignals)
+
+            # -----
+            # Add menu item to unselect all signals - All DTVs
+            action_onUnselectSignalsAll = QAction('All IMAS Databases',
+                                               self)
+            action_onUnselectSignalsAll.triggered.connect(
+                partial(self.onUnselectSignals, True))
+            # Add to submenu
+            subMenu_unselect.addAction(action_onUnselectSignalsAll)
             # TODO
+            # Set bitmap to menu item
 
         # ----------------------------------------------------------------------
         # Add menu item for selection of all signals from the same array of
@@ -130,8 +146,8 @@ class QVizSignalHandling(QObject):
         action_selectAllSignalsFromSameAOS.triggered.connect(
             self.selectAllSignalsFromSameAOS)
         self.dataTreeView.popupmenu.addAction(action_selectAllSignalsFromSameAOS)
-        # Set bitmap to menu item
         # TODO
+        # Set bitmap to menu item
 
         # ----------------------------------------------------------------------
         # The popup menu behaviour in relation to the presence of pre-existing
@@ -349,9 +365,9 @@ class QVizSignalHandling(QObject):
     def selectOrUnselectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
 
-    @pyqtSlot()
-    def unselectAllSignals(self):
-        QVizUnselectAllSignals(self.dataTreeView).execute()
+    @pyqtSlot(bool)
+    def onUnselectSignals(self, all_DTV=False):
+        QVizUnselectAllSignals(self.dataTreeView, all_DTV).execute()
 
     @pyqtSlot()
     def selectAllSignalsFromSameAOS(self):

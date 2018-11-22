@@ -1,6 +1,7 @@
 #  Name   : QVizTablePlotView
 #
-#          Provides multiplot template.
+#          Provides pg.GraphicWindow that contains multiple plot panels in a
+#          table layout.
 #          Note: The wxPython predecessor for MultiPlotView is
 #          'PlotSelectedSignalsWithWxmplot' class.
 #
@@ -30,8 +31,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
     def __init__(self, parent, ncols=5):
         """
         Arguments:
-            parent (QtWidgets.QMainWindow) : Parent of TablePlotView pg.GraphicsWindow.
-            ncols  (int)         : Number of columns.
+            parent (QtWidgets.QMainWindow) : Parent of TablePlotView
+                                             pg.GraphicsWindow.
+            ncols  (int)                   : Number of columns.
         """
         super(QVizTablePlotView, self).__init__(parent=parent)
 
@@ -253,7 +255,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
         return self.centralWidget.items
 
     def modifySize(self):
-        """Modify multiplot view size.
+        """Modify TablePlotView size.
         (depending on the number of plots and number of columns)
         """
 

@@ -1,6 +1,7 @@
 #  Name   : QVizStackedPlotView
 #
-#          Provides subplot template.
+#          Provides pg.GraphicWindow that contains multiple plot panels in a
+#          stacked layout.
 #          Note: The wxPython predecessor for StackedPlotView are
 #          'IMASVIZSubPlotViewsFrame' and 'IMASVIZ_SubPlotViewManagerBaseFrame.py'
 #          classes.
@@ -29,8 +30,9 @@ class QVizStackedPlotView(pg.GraphicsWindow):
     def __init__(self, parent, ncols=1):
         """
         Arguments:
-            parent (QtWidgets.QMainWindow) : Parent of TablePlotView pg.GraphicsWindow.
-            ncols  (int)         : Number of columns.
+            parent (QtWidgets.QMainWindow) : Parent of TablePlotView
+                                             pg.GraphicsWindow.
+            ncols  (int)                   : Number of columns.
         """
         super(QVizStackedPlotView, self).__init__(parent=parent)
 
@@ -305,7 +307,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         return self.centralWidget.items
 
     def modifySize(self):
-        """Modify multiplot view size.
+        """Modify StackedPlotView view size.
         (depending on the number of plots and number of columns)
         """
 
@@ -313,3 +315,6 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 10) * 12
         self.okHeight = len(self.centralWidget.rows) * self.plotBaseDim
         self.setMinimumSize(self.okWidth, self.okHeight)
+
+    # TODO
+    # class modifyStackedPlotView
