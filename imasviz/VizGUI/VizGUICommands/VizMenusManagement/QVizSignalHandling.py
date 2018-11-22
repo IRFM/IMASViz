@@ -87,6 +87,11 @@ class QVizSignalHandling(QObject):
 
         if (signalName == None): return 0
 
+        # Get total count of figures, tablePlotViews, stackedPlotViews etc.
+        numFig = self.api.GetFigurePlotsCount()
+        numTPV = self.api.GetTablePlotViewsCount()
+        numSPV = self.api.GetStackedPlotViewsCount()
+
         # Set new popup menu
         self.dataTreeView.popupmenu = QMenu()
         s = ''
@@ -152,7 +157,13 @@ class QVizSignalHandling(QObject):
         # ----------------------------------------------------------------------
         # The popup menu behaviour in relation to the presence of pre-existing
         # plots
-        if self.api.GetFigurePlotsCount() == 0:
+        if numFig > 0 or numTPV > 0 or numSPV > 0:
+            # Create and add empty submenu to handle deletion of plot views and
+            # figures
+            subMenu_delete = QMenu('Delete')
+            self.dataTreeView.popupmenu.addMenu(subMenu_delete)
+
+        if numFig == 0:
             # ------------------------------------------------------------------
             # If there is no pre-existing figure:
             # Add menu item to plot the signal data to a new figure
@@ -177,16 +188,17 @@ class QVizSignalHandling(QObject):
             # Create and add empty submenu to handle show/hide figures
             subMenu_showHideFigure = QMenu('Show/Hide figure')
             self.dataTreeView.popupmenu.addMenu(subMenu_showHideFigure)
+
             # Create and add empty submenu to handle figures deletion
-            subMenu_deleteFigure = QMenu('Delete figure')
-            self.dataTreeView.popupmenu.addMenu(subMenu_deleteFigure)
+            subMenu_deleteFigure = QMenu('Figure')
+            subMenu_delete.addMenu(subMenu_deleteFigure)
 
             for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE):
                 # Get figure number out from the figureKey string
                 # (e.g. 'Figure:0' -> 0)
-                # numFig = int(figureKey.split(':')[1])
-                numFig = self.api.getFigureKeyNum(figureKey)
+                # id_Fig = int(figureKey.split(':')[1])
+                id_Fig = self.api.getFigureKeyNum(figureKey)
 
                 # --------------------------------------------------------------
                 # Add menu item to add plot to specific existing figure
@@ -195,7 +207,7 @@ class QVizSignalHandling(QObject):
                     # Set action
                     action_addSignalPlotToFig = QAction(figureKey, self)
                     action_addSignalPlotToFig.triggered.connect(
-                        partial(self.addSignalPlotToFig, numFig))
+                        partial(self.addSignalPlotToFig, id_Fig))
                     # Add to submenu
                     subMenu_addPlot.addAction(action_addSignalPlotToFig)
 
@@ -204,7 +216,7 @@ class QVizSignalHandling(QObject):
                 # Set action
                 action_showHideFigure = QAction(figureKey, self)
                 action_showHideFigure.triggered.connect(
-                    partial(self.showHideFigure, numFig, FigureTypes.FIGURETYPE))
+                    partial(self.showHideFigure, id_Fig, FigureTypes.FIGURETYPE))
                 # Add to submenu
                 subMenu_showHideFigure.addAction(action_showHideFigure)
 
@@ -213,7 +225,7 @@ class QVizSignalHandling(QObject):
                 # Set action
                 action_deleteFigure = QAction(figureKey, self)
                 action_deleteFigure.triggered.connect(
-                    partial(self.deleteFigure, numFig))
+                    partial(self.deleteFigure, id_Fig))
                 # Add to submenu
                 subMenu_deleteFigure.addAction(action_deleteFigure)
 
@@ -221,7 +233,8 @@ class QVizSignalHandling(QObject):
             # Add menu item to delete all existing figures
             # Set action
             action_deleteAllFigures = QAction('All', self)
-            action_deleteAllFigures.triggered.connect(self.deleteAllFigures)
+            action_deleteAllFigures.triggered.connect(partial(
+                self.deleteAllFigures, figureType=FigureTypes.FIGURETYPE))
             # Add to submenu
             subMenu_deleteFigure.addAction(action_deleteAllFigures)
 
@@ -242,15 +255,15 @@ class QVizSignalHandling(QObject):
                     figureType=FigureTypes.FIGURETYPE):
                     # Check for figures that share the same coordinates
                     if self.shareSameCoordinatesFrom(figureKey):
-                        # Get figure number out from the figureKey string
+                        # Get figure number id out from the figureKey string
                         # (e.g. 'Figure:0' -> 0)
-                        # numFig = int(figureKey.split(':')[1])
-                        numFig = self.api.getFigureKeyNum(figureKey)
+                        # id_Fig = int(figureKey.split(':')[1])
+                        id_Fig = self.api.getFigureKeyNum(figureKey)
                         # Add menu item to add plot to specific figure
                         action_addSelectedSignalsPlotToFig = \
                             QAction(figureKey, self)
                         action_addSelectedSignalsPlotToFig.triggered.connect(
-                            partial(self.addSelectedSignalsPlotToFig, numFig))
+                            partial(self.addSelectedSignalsPlotToFig, id_Fig))
                         # Add to submenu
                         subMenu_2.addAction(action_addSelectedSignalsPlotToFig)
         # Bitmap icon
@@ -340,17 +353,72 @@ class QVizSignalHandling(QObject):
             # Add to submenu
             subMenu_subPlot.addAction(action_subPlotSelectedSignals)
 
+        # Set handling existing TablePlotViews
+        if numTPV > 0:
+            # Create and add empty submenu to handle show/hide figures
+            # TODO
+            subMenu_showHideTPV = QMenu('Show/Hide TablePlotView')
+            self.dataTreeView.popupmenu.addMenu(subMenu_showHideTPV)
+
+            # Create and add empty submenu to handle figures deletion
+            subMenu_deleteTPV = QMenu('TablePlotView')
+            subMenu_delete.addMenu(subMenu_deleteTPV)
+
+            for figureKey in self.api.GetFiguresKeys(
+                figureType=FigureTypes.TABLEPLOTTYPE):
+                # Get figure id number out from the figureKey string
+                # (e.g. 'Figure:0' -> 0)
+                id_TPV = self.api.getFigureKeyNum(figureKey)
+
+                # --------------------------------------------------------------
+                # Add menu item to add plot to specific existing figure
+                # Check for figures that share the same coordinates
+                # TODO
+                # if self.shareSameCoordinatesFrom(figureKey):
+                #     # Set action
+                #     action_addSignalPlotToFig = QAction(figureKey, self)
+                #     action_addSignalPlotToFig.triggered.connect(
+                #         partial(self.addSignalPlotToFig, numTPV))
+                #     # Add to submenu
+                #     subMenu_addPlot.addAction(action_addSignalPlotToFig)
+
+                # --------------------------------------------------------------
+                # Add menu item to show/hide existing figure
+                # Set action
+                action_showHideTPV = QAction(figureKey, self)
+                action_showHideTPV.triggered.connect(
+                    partial(self.showHideFigure, id_TPV,
+                            figureType=FigureTypes.TABLEPLOTTYPE))
+                # Add to submenu
+                subMenu_showHideTPV.addAction(action_showHideTPV)
+
+                # --------------------------------------------------------------
+                # Add menu item to delete existing figure
+                # Set action
+                action_deleteTPV = QAction(figureKey, self)
+                action_deleteTPV.triggered.connect(
+                    partial(self.deleteFigure, id_TPV,
+                            figureType=FigureTypes.TABLEPLOTTYPE))
+                # Add to submenu
+                subMenu_deleteTPV.addAction(action_deleteTPV)
+
+            # ------------------------------------------------------------------
+            # Add menu item to delete all existing figures
+            # Set action
+            action_deleteAllTPV = QAction('All', self)
+            action_deleteAllTPV.triggered.connect(partial(
+                self.deleteAllFigures, figureType=FigureTypes.TABLEPLOTTYPE))
+            # Add to submenu
+            subMenu_deleteTPV.addAction(action_deleteAllTPV)
+
+
             # TODO:
             """
-            - 'Show/Hide multiplots'
             - 'Show/Hide subplots'
-            - 'Delete multiplot'
             - 'Add selection to TablePlotView'
             - 'Delete subplot'
             - 'Open subplots manager'
             - 'Plot ' + signalName + ' as a function of time'
-            - 'Plot selected signals to a multiplots frame (all opened IMAS databases)'
-            - 'Plot selected signals to a multiplots frame (this opened IMAS database'
             """
 
         # Map the menu (in order to show it)
@@ -367,6 +435,7 @@ class QVizSignalHandling(QObject):
 
     @pyqtSlot(bool)
     def onUnselectSignals(self, all_DTV=False):
+        """Unselect all signals (single or all DTVs)."""
         QVizUnselectAllSignals(self.dataTreeView, all_DTV).execute()
 
     @pyqtSlot()
@@ -543,7 +612,7 @@ class QVizSignalHandling(QObject):
         return True
 
     @pyqtSlot(int, str)
-    def showHideFigure(self, numFig, figureType):
+    def showHideFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):
         """Show/Hide figure plot widget window or TablePlotView frame.
 
         Arguments:
@@ -554,28 +623,31 @@ class QVizSignalHandling(QObject):
         """
         # Get figure key (e.g. 'Figure:0' string)
         figureKey = \
-            self.api.GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+            self.api.GetFigureKey(str(numFig), figureType)
         self.api.ShowHideFigure(figureKey)
 
-    @pyqtSlot()
-    def deleteAllFigures(self):
-        figureKeys = self.api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE)
+    @pyqtSlot(str)
+    def deleteAllFigures(self, figureType=FigureTypes.FIGURETYPE):
+        figureKeys = self.api.GetFiguresKeys(figureType)
         for figureKey in figureKeys:
             self.api.DeleteFigure(figureKey)
 
-    @pyqtSlot(int)
-    def deleteFigure(self, numFig):
+    @pyqtSlot(int, str)
+    def deleteFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):
         """Delete figure plot widget window.
 
         Arguments:
             numFig     (int) : Figure number identificator.
+            figureType (str) : Type of figure e.c. "Figure:", "Multiplot:",
+                               "Subplot"... see QVizGlobalValues.py FigureTypes
+                               class for a full list of figure types.
         """
         try:
             # Get figure key (e.g. 'Figure:0' string)
+            print("*1 numFig: ", numFig)
             figureKey = self.api. \
-                GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+                GetFigureKey(str(numFig), figureType)
+            print("*1 figureKey: ", figureKey)
             self.api.DeleteFigure(figureKey)
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
-
-# TODO: deleteTablePlotView, deleteStackedPlotView
