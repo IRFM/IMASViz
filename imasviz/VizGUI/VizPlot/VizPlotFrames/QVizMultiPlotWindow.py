@@ -57,7 +57,6 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """
         super(QVizMultiPlotWindow, self).__init__(parent=dataTreeView)
 
-
         self.dataTreeView = dataTreeView
         self.configFile = configFile  # Full path to configuration file + filename
         self.plotConfig = None
@@ -70,7 +69,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         if self.getNumSignals(all_DTV=all_DTV) < 1:
             self.log.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
-                'MultiPlotView creation.')
+                             'MultiPlotView creation.')
             return
 
         # Get screen resolution (width and height)
@@ -258,7 +257,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
             # not used)
             if all_DTV == True:
                 nSignals = \
-                    len(self.imas_viz_api.getSelectedSignalsDict_allDTVs())
+                    len(self.imas_viz_api.getSelectedSignalsDict_AllDTVs())
             elif all_DTV == False:
                 nSignals = \
                     len(self.imas_viz_api.getSelectedSignalsDict(self.dataTreeView.parent))
@@ -462,6 +461,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     # TODO
     # def applyPlotConfigurationBeforePlotting
     # def setPlotConfigAttribute
+
 
 class QVizStackedPlotViewScrollArea(QtGui.QScrollArea):
     """Custom QtGui.QScrollArea.

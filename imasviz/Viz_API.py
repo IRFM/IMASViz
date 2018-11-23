@@ -93,13 +93,13 @@ class Viz_API:
         """
         return dataTreeFrame.dataTreeView.selectedSignalsDict
 
-    def getSelectedSignals_AllDTVs(self):
+    def getSelectedSignalsDict_AllDTVs(self):
         """Returns the signals (nodes) selected by the user of from script
            commands (from all opened data tree views (DTVs))
         """
         allSelectedSignals = {}
-        for i in range(len(self.wxDTVframeList)):
-            allSelectedSignals.update(self.wxDTVframeList[i].dataTreeView.selectedSignalsDict)
+        for i in range(len(self.DTVframeList)):
+            allSelectedSignals.update(self.DTVframeList[i].dataTreeView.selectedSignalsDict)
 
         return allSelectedSignals
 
