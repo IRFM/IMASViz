@@ -14,7 +14,7 @@
 #  TODO:
 #
 #    - Function definitions (from SignalHandling class)
-#    def plotSelectedSignalsToTablePlotViewsFrame
+#    def onPlotToTablePlotView
 #    def plotSelectedSignalVsTime
 #    def plotSelectedSignalVsTimeAtIndex
 #    def plotSelectedSignalVsCoordAtTimeIndex
@@ -124,7 +124,7 @@ class QVizSignalHandling(QObject):
 
             # -----
             # Add menu item to unselect all signals - This/Current DTV
-            subMenu_unselect = self.dataTreeView.popupmenu.addMenu('Unselect Signals')
+            subMenu_unselect = self.dataTreeView.popupmenu.addMenu('Unselect Nodes')
             action_onUnselectSignals = QAction('This IMAS Database',
                                                self)
             action_onUnselectSignals.triggered.connect(
@@ -313,7 +313,7 @@ class QVizSignalHandling(QObject):
             action_multiPlotSelectedSignals = QAction('This IMAS Database',
                                                  self)
             action_multiPlotSelectedSignals.triggered.connect(
-                partial(self.plotSelectedSignalsToTablePlotViewsFrame, False))
+                partial(self.onPlotToTablePlotView, False))
             # Add to submenu
             subMenu_multiplot.addAction(action_multiPlotSelectedSignals)
 
@@ -323,7 +323,7 @@ class QVizSignalHandling(QObject):
             action_multiPlotSelectedSignals = QAction('All IMAS Databases',
                                                  self)
             action_multiPlotSelectedSignals.triggered.connect(
-                partial(self.plotSelectedSignalsToTablePlotViewsFrame, True))
+                partial(self.onPlotToTablePlotView, True))
             # Add to submenu
             subMenu_multiplot.addAction(action_multiPlotSelectedSignals)
 
@@ -339,7 +339,7 @@ class QVizSignalHandling(QObject):
             action_subPlotSelectedSignals = QAction('This IMAS Database',
                                                  self)
             action_subPlotSelectedSignals.triggered.connect(
-                partial(self.plotSelectedSignalsToStackedPlotViewsFrame, False))
+                partial(self.onPlotToStackedPlotView, False))
             # Add to submenu
             subMenu_subPlot.addAction(action_subPlotSelectedSignals)
 
@@ -349,7 +349,7 @@ class QVizSignalHandling(QObject):
             action_subPlotSelectedSignals = QAction('All IMAS Databases',
                                                  self)
             action_subPlotSelectedSignals.triggered.connect(
-                partial(self.plotSelectedSignalsToStackedPlotViewsFrame, True))
+                partial(self.onPlotToStackedPlotView, True))
             # Add to submenu
             subMenu_subPlot.addAction(action_subPlotSelectedSignals)
 
@@ -507,9 +507,9 @@ class QVizSignalHandling(QObject):
                                     all_DTV=True).execute()
 
     @pyqtSlot(bool)
-    def plotSelectedSignalsToTablePlotViewsFrame(self, all_DTV=False):
-        """Create a TablePlotView using signals selected in single/all opened DTV
-        windows.
+    def onPlotToTablePlotView(self, all_DTV=False):
+        """Plot selected nodes from single/all opened DTVs to MultiPlot
+        TablePlotView.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
@@ -526,9 +526,9 @@ class QVizSignalHandling(QObject):
                           update=1, all_DTV=True)
 
     @pyqtSlot(bool)
-    def plotSelectedSignalsToStackedPlotViewsFrame(self, all_DTV=False):
-        """Create a StackedPlotViewPlot using signals selected in single/all opened DTV
-        windows.
+    def onPlotToStackedPlotView(self, all_DTV=False):
+        """Plot selected nodes from single/all opened DTVs to MultiPlot
+        StackedPlotView.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
@@ -644,10 +644,8 @@ class QVizSignalHandling(QObject):
         """
         try:
             # Get figure key (e.g. 'Figure:0' string)
-            print("*1 numFig: ", numFig)
             figureKey = self.api. \
                 GetFigureKey(str(numFig), figureType)
-            print("*1 figureKey: ", figureKey)
             self.api.DeleteFigure(figureKey)
         except ValueError as e:
             self.dataTreeView.log.error(str(e))

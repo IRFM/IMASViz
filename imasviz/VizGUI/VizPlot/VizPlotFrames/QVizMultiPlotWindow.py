@@ -57,6 +57,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """
         super(QVizMultiPlotWindow, self).__init__(parent=dataTreeView)
 
+
         self.dataTreeView = dataTreeView
         self.configFile = configFile  # Full path to configuration file + filename
         self.plotConfig = None
@@ -66,6 +67,11 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.log = self.dataTreeView.log  # QTextEdit widget
         self.viewType = viewType
+
+        if self.getNumSignals(all_DTV=all_DTV) < 1:
+            self.log.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
+                'MultiPlotView creation.')
+            return
 
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()

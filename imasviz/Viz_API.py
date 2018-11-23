@@ -65,10 +65,9 @@ class Viz_API:
         frame = QVizDataTreeViewFrame(parent=None,
                                       views={},
                                       dataSource=dataSource,
-                                      IDSDefFile=QVizGlobalOperations.getIDSDefFile(IMAS_VERSION))
+                                      IDSDefFile=QVizGlobalOperations.getIDSDefFile(IMAS_VERSION),
+                                      imas_viz_api=self)
 
-        # Set data tree view (DTV) frame BrowserAPI
-        frame.dataTreeView.imas_viz_api = self
         frame.dataTreeView.dataSource = dataSource # update the dataSource
                                                    # attached to the view
 

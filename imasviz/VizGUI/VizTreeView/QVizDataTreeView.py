@@ -350,7 +350,7 @@ class QVizDataTreeViewFrame(QMainWindow):
     """ Set QMainWindow to contain the QTreeWidget.
     """
 
-    def __init__(self, parent, views, dataSource, IDSDefFile, *args, **kwargs):
+    def __init__(self, parent, views, dataSource, IDSDefFile, imas_viz_api, *args, **kwargs):
         """
         Arguments:
             parent     (PyQT obj)           : QVizDataTreeView parent.
@@ -392,6 +392,7 @@ class QVizDataTreeViewFrame(QMainWindow):
                              dataSource=dataSource,
                              mappingFilesDirectory=os.environ['TS_MAPPINGS_DIR'],
                              IDSDefFile=IDSDefFile)
+        self.dataTreeView.imas_viz_api = imas_viz_api
 
         # Set custom event type (ID)
         self.eventResultId = GlobalIDs.RESULT_EVENT
@@ -494,7 +495,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_onUnselectSignals = QAction('This IMAS Database',
                                            self)
         action_onUnselectSignals.triggered.connect(
-            partial(self.onUnselectSignals, False))
+            partial(QVizSignalHandling(self.dataTreeView).onUnselectSignals, False))
         # Add to submenu
         subMenu_unselect.addAction(action_onUnselectSignals)
 
@@ -503,7 +504,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_onUnselectSignals = QAction('All IMAS Databases',
                                            self)
         action_onUnselectSignals.triggered.connect(
-            partial(self.onUnselectSignals, True))
+            partial(QVizSignalHandling(self.dataTreeView).onUnselectSignals, True))
         # Add to submenu
         subMenu_unselect.addAction(action_onUnselectSignals)
 
@@ -521,7 +522,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_setTablePlotView = QAction('This IMAS Database',
                                           self)
         action_setTablePlotView.triggered.connect(
-            partial(self.onSetTablePlotView, False))
+            partial(QVizSignalHandling(self.dataTreeView).onPlotToTablePlotView, False))
         # Add to submenu
         subMenu_tablePlotView_set.addAction(action_setTablePlotView)
 
@@ -531,7 +532,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_setTablePlotViewAll = QAction('All IMAS Databases',
                                              self)
         action_setTablePlotViewAll.triggered.connect(
-            partial(self.onSetTablePlotView, True))
+            partial(QVizSignalHandling(self.dataTreeView).onPlotToTablePlotView, True))
         # Add to submenu
         subMenu_tablePlotView_set.addAction(action_setTablePlotViewAll)
 
@@ -547,7 +548,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_stackedPlotView = QAction('This IMAS Database',
                                          self)
         action_stackedPlotView.triggered.connect(
-            partial(self.onSetStackedPlotView, False))
+            partial(QVizSignalHandling(self.dataTreeView).onPlotToStackedPlotView, False))
         # Add to submenu
         subMenu_stackedPlotView_set.addAction(action_stackedPlotView)
 
@@ -557,7 +558,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_stackedPlotViewAll = QAction('All IMAS Databases',
                                             self)
         action_stackedPlotViewAll.triggered.connect(
-            partial(self.onSetStackedPlotView, True))
+            partial(QVizSignalHandling(self.dataTreeView).onPlotToStackedPlotView, True))
         # Add to submenu
         subMenu_stackedPlotView_set.addAction(action_stackedPlotViewAll)
 
@@ -644,39 +645,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
 
-    @pyqtSlot(bool)
-    def onUnselectSignals(self, all_DTV=False):
-        """Unselect all signals (single or all DTVs)."""
-        QVizUnselectAllSignals(self.dataTreeView, all_DTV).execute()
-
-    @pyqtSlot(bool)
-    def onSetTablePlotView(self, all_DTV=False):
-        """Apply selected signals (single or all DTVs) to TablePlotView.
-
-        Arguments:
-            all_DTV (bool) : Operator to read selected signals from the
-                             current or all DTVs.
-        """
-        # Set the object to QVizSignalHandling, used to handle signals
-        sh = QVizSignalHandling(self.dataTreeView)
-        # Run the TablePlotView routine
-        sh.plotSelectedSignalsToTablePlotViewsFrame(all_DTV=all_DTV)
-
-    @pyqtSlot(bool)
-    def onSetStackedPlotView(self, all_DTV=False):
-        """Apply selected signals (single or all DTVs) to StackedPlotView.
-
-        Arguments:
-            all_DTV (bool) : Operator to read selected signals from the
-                             current or all DTVs.
-        """
-        # Set the object to QVizSignalHandling, used to handle signals
-        sh = QVizSignalHandling(self.dataTreeView)
-        # Run the TablePlotView routine
-        sh.plotSelectedSignalsToStackedPlotViewsFrame(all_DTV=all_DTV)
-
     # TODO:
-    # def onUnselectSignals()
     # def onCloseAndReopenDatabase()
 
 
