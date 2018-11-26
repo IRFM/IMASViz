@@ -1,6 +1,8 @@
 
 import os
 import sys
+from PyQt5 import QtWidgets
+from PyQt5 import QtGui
 
 class FigureTypes:
     FIGURETYPE = "Figure:"
@@ -225,3 +227,66 @@ class GlobalPgSymbols:
                     'Pentagon'       : 'p',
                     'Hexagon'        : 'h',
                     'Star'           : 'star'}
+class GlobalIcons():
+    """Global IMASViz icons.
+    """
+
+    def getCustomQIcon(application, label):
+        """Get custom QIcon.
+        TODO: Make it more efficient (maybe load everything at the start of
+        the application etc.).
+
+        Arguments:
+            application (QApplication) : Running application object.
+            label       (str)          : IMASViz QIcon label.
+        """
+
+        if label == 'unselect':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/minus.ico')
+        if label == 'unselectMultiple':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/minus3x.ico')
+        elif label == 'select':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/plus.ico')
+        elif label == 'selectAOS':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/plus3x.ico')
+        elif label == 'Figure':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/Figure.ico')
+        elif label == 'TPV':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/TablePlotView.ico')
+        elif label == 'SPV':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/StackedPlotView.ico')
+        elif label == 'plotSingle':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/plotSingle.ico')
+        elif label == 'plotMultiple':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/plotMultiple.ico')
+        elif label == 'showHide':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/showHide.ico')
+        elif label == 'thisDTV':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/thisDTV.ico')
+        elif label == 'allDTV':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/allDTV.ico')
+        elif label == 'new':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/imasviz/VizUtils/VizIcons/new.ico')
+
+    def getStandardQIcon(application, QStyleID):
+        """Get standard QIcon by QStyle ID. Application must already run if the
+        list is to be accessed.
+
+        Arguments:
+            application (QApplication) : Running application object.
+            QStyleID    (int)          : QStyle icon ID.
+        """
+        return QtGui.QIcon(application.style().standardIcon(QStyleID))

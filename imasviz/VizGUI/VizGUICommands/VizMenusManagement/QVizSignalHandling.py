@@ -32,8 +32,10 @@
 from functools import partial
 
 from PyQt5.QtCore import QObject, pyqtSlot
-from PyQt5.QtWidgets import QAction, QMenu
+from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication
+from PyQt5.QtGui import QIcon, QStyle
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizGlobalValues import GlobalIcons
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
@@ -45,7 +47,6 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal i
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
-
 
 class QVizSignalHandling(QObject):
     def __init__(self, dataTreeView):
@@ -151,25 +152,26 @@ class QVizSignalHandling(QObject):
             # If the node is selected, show unselect menu
             s = 'Unselect '
             # Bitmap icon
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'unselect')
+
             # TODO
         else:
             # The node is unselected, show select menu
             s = 'Select '
             # Bitmap icon
-            # TODO
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'select')
 
         # Set action for selection/unselection of the node
-        action = QAction(s + self.signalNodeName + '...', self)
+        action = QAction(icon, s + self.signalNodeName + '...', self)
         action.triggered.connect(self.selectOrUnselectSignal)
-        # Set bitmap to menu item
-        # TODO
 
         return action
 
     def actionSelectAllSignalNodesFromSameAOS(self):
         # Set action for selection of all signals from the same array of
         # structures
-        action = QAction('Select all nodes from the same AOS', self)
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'selectAOS')
+        action = QAction(icon, 'Select all nodes from the same AOS', self)
         action.triggered.connect(
             self.selectAllSignalsFromSameAOS)
         # TODO
@@ -181,12 +183,15 @@ class QVizSignalHandling(QObject):
         """Set menu for plotting current (under the mouse selected) signal node.
         """
 
-        menu = QMenu('Plot ' + self.signalNodeName + ' to',
-                                   self.contextMenu)
+        menu = QMenu('Plot ' + self.signalNodeName + ' to', self.contextMenu)
+        menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
+
         menu_figure = menu.addMenu('Figure')
+        menu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
 
         # Add action to plot the signal data to a new figure
-        action_plotNewFigure = QAction('New', self)
+        icon_new = GlobalIcons.getCustomQIcon(QApplication, 'new')
+        action_plotNewFigure = QAction(icon_new, 'New', self)
         action_plotNewFigure.triggered.connect(self.plotSignalCommand)
         menu_figure.addAction(action_plotNewFigure)
 
@@ -216,6 +221,7 @@ class QVizSignalHandling(QObject):
 
         # Set menu
         menu = QMenu('Unselect Nodes', self.contextMenu)
+        menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'unselectMultiple'))
         # Set disables as default
         menu.setDisabled(True)
 
@@ -225,15 +231,18 @@ class QVizSignalHandling(QObject):
             menu.setDisabled(False)
 
             # Add menu item to unselect all signals - This/Current DTV
-            action_onUnselectSignals = QAction('This IMAS Database', self)
+            icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
+            action_onUnselectSignals = QAction(icon_thisDTV, 'This IMAS Database',
+                                               self)
             action_onUnselectSignals.triggered.connect(
                 partial(self.onUnselectSignals, False))
             # Add to submenu
             menu.addAction(action_onUnselectSignals)
 
             # Add menu item to unselect all signals - All DTVs
-            action_onUnselectSignalsAll = QAction('All IMAS Databases',
-                                                  self)
+            icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
+            action_onUnselectSignalsAll = QAction(icon_allDTV,
+                                                  'All IMAS Databases', self)
             action_onUnselectSignalsAll.triggered.connect(
                 partial(self.onUnselectSignals, True))
             # Add to submenu
@@ -248,19 +257,22 @@ class QVizSignalHandling(QObject):
         """
 
         menu = QMenu('Plot selected nodes to', self.contextMenu)
+        menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotMultiple'))
         menu.setDisabled(True)
 
         if len(self.dataTreeView.selectedSignalsDict) > 0:
             menu.setDisabled(False)
 
             subMenu_figure = menu.addMenu('Figure')
-
+            subMenu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
             subMenu_figure_new = subMenu_figure.addMenu('New')
+            subMenu_figure_new.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            action_figure_thisDTV = QAction('This IMAS Database', self)
+            icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
+            action_figure_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
             action_figure_thisDTV.triggered.connect(
                 partial(self.plotSelectedSignals, False))
             # Add to submenu
@@ -269,7 +281,9 @@ class QVizSignalHandling(QObject):
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            action_figure_allDTV = QAction('All IMAS Databases',
+
+            icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
+            action_figure_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
                                                  self)
             action_figure_allDTV.triggered.connect(
                 partial(self.plotSelectedSignals, True))
@@ -296,13 +310,16 @@ class QVizSignalHandling(QObject):
             # ------------------------------------------------------------------
             # TablePlotView
             subMenu_TPV = menu.addMenu('TablePlotView')
+            subMenu_TPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'TPV'))
 
             subMenu_TPV_new = subMenu_TPV.addMenu('New')
+            subMenu_TPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            action_TPV_thisDTV = QAction('This IMAS Database', self)
+            icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
+            action_TPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
             action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, False))
             # Add to submenu
@@ -311,7 +328,8 @@ class QVizSignalHandling(QObject):
             # -----
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            action_TPV_allDTV = QAction('All IMAS Databases', self)
+            icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
+            action_TPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases', self)
             action_TPV_allDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, True))
             # Add to submenu
@@ -320,13 +338,15 @@ class QVizSignalHandling(QObject):
             # ------------------------------------------------------------------
             # StackedPlotView
             subMenu_SPV = menu.addMenu('StackedPlotView')
+            subMenu_SPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'SPV'))
 
             subMenu_SPV_new = subMenu_SPV.addMenu('New')
+            subMenu_SPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            action_SPV_thisDTV = QAction('This IMAS Database', self)
+            action_SPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
             action_SPV_thisDTV.triggered.connect(
                 partial(self.onPlotToStackedPlotView, False))
             # Add to submenu
@@ -335,7 +355,7 @@ class QVizSignalHandling(QObject):
             # -----
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            action_SPV_allDTV = QAction('All IMAS Databases', self)
+            action_SPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases', self)
             action_SPV_allDTV.triggered.connect(
                 partial(self.onPlotToStackedPlotView, True))
             # Add to submenu
@@ -351,10 +371,13 @@ class QVizSignalHandling(QObject):
         # Create and add empty menu to handle show/hide status of plot views and
         # figures
         menu_showHide = QMenu('Show/Hide', self.contextMenu)
+        menu_showHide.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'showHide'))
+
         menu_showHide.setDisabled(True)
         # Create and add empty menu to handle deletion of plot views and
         # figures
         menu_delete = QMenu('Delete', self.contextMenu)
+        menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication, QStyle.SP_DialogDiscardButton))
         menu_delete.setDisabled(True)
 
         if numFig > 0 or numTPV > 0 or numSPV > 0:
@@ -366,8 +389,10 @@ class QVizSignalHandling(QObject):
 
             # Create and add empty submenu to handle figures show/hide
             submenu_showHideFigure = menu_showHide.addMenu('Figure')
+            submenu_showHideFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
             # Create and add empty submenu to handle figures deletion
             subMenu_deleteFigure = menu_delete.addMenu('Figure')
+            subMenu_deleteFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
 
             for figureKey in self.api.GetFiguresKeys(
                     figureType=FigureTypes.FIGURETYPE):
@@ -409,8 +434,10 @@ class QVizSignalHandling(QObject):
         if numTPV > 0:
             # Create and add empty submenu to handle show/hide tablePlotViews
             subMenu_showHideTPV = menu_showHide.addMenu('TablePlotView')
+            subMenu_showHideTPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'TPV'))
             # Create and add empty submenu to handle tablePlotViews deletion
             subMenu_deleteTPV = menu_delete.addMenu('TablePlotView')
+            subMenu_deleteTPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'TPV'))
 
             for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.TABLEPLOTTYPE):
@@ -451,8 +478,10 @@ class QVizSignalHandling(QObject):
         if numSPV > 0:
             # Create and add empty submenu to handle show/hide
             subMenu_showHideSPV = menu_showHide.addMenu('StackedPlotView')
+            subMenu_showHideSPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'SPV'))
             # Create and add empty submenu to handle deletion
             subMenu_deleteSPV = menu_delete.addMenu('StackedPlotView')
+            subMenu_deleteSPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'SPV'))
 
             for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.STACKEDPLOTTYPE):
