@@ -27,6 +27,7 @@ from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 class QVizHandleRightClick:
     """ Handle the mouse right click event on a PyQt5 QTreeWidget.
     """
+
     def __init__(self, dataTreeView):
         """
         Arguments:
@@ -40,11 +41,11 @@ class QVizHandleRightClick:
             node (QVizTreeNode) : Item (node) from in the QTreeWidget.
         """
 
-        #Get the data source attached to the dataTreeView
+        # Get the data source attached to the dataTreeView
         dataSource = self.dataTreeView.dataSource
         showPopUp = 0
 
-        #Get the Python dictionary attached to the node
+        # Get the Python dictionary attached to the node
         dico = node.getDataDict()
 
         if dico == None:
@@ -63,10 +64,10 @@ class QVizHandleRightClick:
 
         # If the node is a signal, call showPopUpMenu function for plotting data
         if isSignal == 1 and \
-            (node.foreground(0).color().name() == GlobalColors.BLUE_HEX or \
-            node.foreground(0).color().name() == GlobalColors.RED_HEX ):
+            (node.foreground(0).color().name() == GlobalColors.BLUE_HEX or
+             node.foreground(0).color().name() == GlobalColors.RED_HEX):
             showPopUpMenu = QVizSignalHandling(dataTreeView=self.dataTreeView)
-            showPopUp = showPopUpMenu.showPopUpMenu(signalName=dataName)
+            showPopUp = showPopUpMenu.showPopUpMenu(signalNodeName=dataName)
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if isIDSRoot != None and isIDSRoot == 1:

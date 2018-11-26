@@ -69,27 +69,36 @@ class QVizSignalHandling(QObject):
 
         self.timeSlider = None
 
-    def updateNodeData(self):
-        """ Update tree node/item data.
-            TODO: use the global routine 'updateNodeData' defined in
-                  QVizAbstractCommand instead.
-        """
-        self.nodeData = self.dataTreeView.selectedItem.getDataDict()
-        self.treeNode = self.dataTreeView.selectedItem
-
-    def showPopUpMenu(self, signalName):
+    def showPopUpMenu(self, signalNodeName):
         """Display the popup menu for plotting data.
 
         Arguments:
-            signalName (str) : Name of the signal node (tree item).
+            signalNodeName (str) : Name of the signal node (tree item).
                                (example: ids.magnetics.flux_loop[0].flux.data)
         """
 
         # TODO: popup menu gets build every time on right-click. Maybe create
         #       it once and then only enable/disable menu items on right-click
 
-        if (signalName == None):
+        # Name of the node selection
+        self.signalNodeName = signalNodeName
+
+        # Do not proceed with building the context menu if the selected node is
+        # not signal node
+        if (self.signalNodeName == None):
             return 0
+
+        # Set new popup menu
+        self.dataTreeView.popupmenu = self.buildContextMenu()
+
+        # Map the menu (in order to show it)
+        self.dataTreeView.popupmenu.exec_(
+            self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
+        return 1
+
+    def buildContextMenu(self):
+        """Build context menu.
+        """
 
         # Get total count of figures, tablePlotViews, stackedPlotViews etc.
         numFig = self.api.GetFigurePlotsCount()
@@ -97,12 +106,46 @@ class QVizSignalHandling(QObject):
         numSPV = self.api.GetStackedPlotViewsCount()
 
         # Set new popup menu
-        self.dataTreeView.popupmenu = QMenu()
+        self.contextMenu = QMenu()
 
         # SET TOP ACTIONS
-        # ----------------------------------------------------------------------
-        # The popup menu behavior in relation on the selection/unselection
-        # status of the node
+        # - Add action for setting signal node select/unselect status
+        self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
+
+        # - Add action for selection of all signals from the same array of
+        #   structures
+        self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+
+        # SET TOP MENU ITEMS
+        # - Add menu for handling plotting using the under-the-mouse selected
+        #   signal node
+        self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
+
+        # - Add menu for handling unselection of signal nodes
+        self.contextMenu.addMenu(self.menuUnselectSignalNodes())
+
+        # - Add menu for handling plotting a selection of signal nodes
+        self.contextMenu.addMenu(self.menuPlotSelectedSignalNodes())
+
+        # - Add menu for handling show/hide if figures, TablePlotViews and
+        #   StackedPlotViews.
+        menu_showHide, menu_delete = self.menusShowHideAndDelete(numFig, numTPV, numSPV)
+        self.contextMenu.addMenu(menu_showHide)
+        self.contextMenu.addMenu(menu_delete)
+
+        # TODO:
+        """
+        - 'Show/Hide subplots'
+        - 'Add selection to TablePlotView'
+        - 'Delete subplot'
+        - 'Open subplots manager'
+        - 'Plot ' + self.signalNodeName + ' as a function of time'
+        """
+        return self.contextMenu
+
+    def actionSelectOrUnselectSignalNode(self):
+        """Set action to select/unselect signal node.
+        """
         s = ''
         if self.nodeData['isSelected'] == 1:
             # If the node is selected, show unselect menu
@@ -116,81 +159,36 @@ class QVizSignalHandling(QObject):
             # TODO
 
         # Set action for selection/unselection of the node
-        action_selectOrUnselectSignal = QAction(s + signalName + '...', self)
-        action_selectOrUnselectSignal.triggered.connect(self.selectOrUnselectSignal)
-        self.dataTreeView.popupmenu.addAction(action_selectOrUnselectSignal)
+        action = QAction(s + self.signalNodeName + '...', self)
+        action.triggered.connect(self.selectOrUnselectSignal)
         # Set bitmap to menu item
         # TODO
 
-        # Add action for selection of all signals from the same array of
+        return action
+
+    def actionSelectAllSignalNodesFromSameAOS(self):
+        # Set action for selection of all signals from the same array of
         # structures
-        action_selectAllSignalsFromSameAOS = \
-            QAction('Select all nodes from the same AOS', self)
-        action_selectAllSignalsFromSameAOS.triggered.connect(
+        action = QAction('Select all nodes from the same AOS', self)
+        action.triggered.connect(
             self.selectAllSignalsFromSameAOS)
-        self.dataTreeView.popupmenu.addAction(action_selectAllSignalsFromSameAOS)
         # TODO
         # Set bitmap to menu item
 
-        # SET BASIC TEMPLATE FOR TOP MENU ITEMS
-        # ----------------------------------------------------------------------
-        menu_plotSelection = self.dataTreeView.popupmenu.addMenu('Plot ' + signalName + ' to')
+        return action
 
-        menu_unselect = self.dataTreeView.popupmenu.addMenu('Unselect Nodes')
-        menu_unselect.setDisabled(True)
+    def menuPlotCurrentSignalNode(self):
+        """Set menu for plotting current (under the mouse selected) signal node.
+        """
 
-        menu_plotSelectedNodes = self.dataTreeView.popupmenu.addMenu('Plot selected nodes to')
-        menu_plotSelectedNodes.setDisabled(True)
-
-        if len(self.dataTreeView.selectedSignalsDict) > 0:
-            menu_unselect.setDisabled(False)
-            menu_plotSelectedNodes.setDisabled(False)
-
-        menu_showHide = self.dataTreeView.popupmenu.addMenu('Show/Hide')
-        menu_showHide.setDisabled(True)
-
-        # Create and add empty submenu to handle deletion of plot views and
-        # figures
-        menu_delete = self.dataTreeView.popupmenu.addMenu('Delete')
-        menu_delete.setDisabled(True)
-        if numFig > 0 or numTPV > 0 or numSPV > 0:
-            menu_delete.setDisabled(False)
-            menu_showHide.setDisabled(False)
-
-        # ----------------------------------------------------------------------
-        # SET MENU FOR UNSELECT HANDLING
-        # Set actions for unselection of all selected signals if menu is enabled
-        if len(self.dataTreeView.selectedSignalsDict) > 0:
-            # Add menu item to unselect all signals - This/Current DTV
-            action_onUnselectSignals = QAction('This IMAS Database', self)
-            action_onUnselectSignals.triggered.connect(
-                partial(self.onUnselectSignals, False))
-            # Add to submenu
-            menu_unselect.addAction(action_onUnselectSignals)
-
-            # Add menu item to unselect all signals - All DTVs
-            action_onUnselectSignalsAll = QAction('All IMAS Databases',
-                                                  self)
-            action_onUnselectSignalsAll.triggered.connect(
-                partial(self.onUnselectSignals, True))
-            # Add to submenu
-            menu_unselect.addAction(action_onUnselectSignalsAll)
-            # TODO
-            # Set bitmap to menu item
-
-        # ----------------------------------------------------------------------
-        # SET MENU FOR NEW PLOT HANDLING
-        menu_plotSelection_figure = menu_plotSelection.addMenu('Figure')
+        menu = QMenu('Plot ' + self.signalNodeName + ' to',
+                                   self.contextMenu)
+        menu_figure = menu.addMenu('Figure')
 
         # Add action to plot the signal data to a new figure
         action_plotNewFigure = QAction('New', self)
         action_plotNewFigure.triggered.connect(self.plotSignalCommand)
-        menu_plotSelection_figure.addAction(action_plotNewFigure)
-
-        # Create and add empty submenu to handle figures deletion
-        subMenu_deleteFigure = menu_delete.addMenu('Figure')
-
-        submenu_showHideFigure = menu_showHide.addMenu('Figure')
+        menu_figure.addAction(action_plotNewFigure)
 
         for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.FIGURETYPE):
@@ -199,7 +197,6 @@ class QVizSignalHandling(QObject):
             # id_Fig = int(figureKey.split(':')[1])
             id_Fig = self.api.getFigureKeyNum(figureKey)
 
-            # --------------------------------------------------------------
             # Add menu item to add plot to specific existing figure
             # Check for figures that share the same coordinates
             if self.shareSameCoordinatesFrom(figureKey):
@@ -208,68 +205,78 @@ class QVizSignalHandling(QObject):
                 action_addSignalPlotToFig.triggered.connect(
                     partial(self.addSignalPlotToFig, id_Fig))
                 # Add to submenu
-                menu_plotSelection_figure.addAction(action_addSignalPlotToFig)
+                menu_figure.addAction(action_addSignalPlotToFig)
 
-            # --------------------------------------------------------------
-            # Add menu item to show/hide existing figure
-            # Set action
-            action_showHideFigure = QAction(figureKey, self)
-            action_showHideFigure.triggered.connect(
-                partial(self.showHideFigure, id_Fig, FigureTypes.FIGURETYPE))
+        return menu
+
+
+    def menuUnselectSignalNodes(self):
+        """Set menu for selected signal nodes unselection.
+        """
+
+        # Set menu
+        menu = QMenu('Unselect Nodes', self.contextMenu)
+        # Set disables as default
+        menu.setDisabled(True)
+
+        # If selected signals list exists, set actions for unselection of all
+        # selected signals and enable the menu item
+        if len(self.dataTreeView.selectedSignalsDict) > 0:
+            menu.setDisabled(False)
+
+            # Add menu item to unselect all signals - This/Current DTV
+            action_onUnselectSignals = QAction('This IMAS Database', self)
+            action_onUnselectSignals.triggered.connect(
+                partial(self.onUnselectSignals, False))
             # Add to submenu
-            submenu_showHideFigure.addAction(action_showHideFigure)
+            menu.addAction(action_onUnselectSignals)
 
-            # --------------------------------------------------------------
-            # Add menu item to delete existing figure
-            # Set action
-            action_deleteFigure = QAction(figureKey, self)
-            action_deleteFigure.triggered.connect(
-                partial(self.deleteFigure, id_Fig))
+            # Add menu item to unselect all signals - All DTVs
+            action_onUnselectSignalsAll = QAction('All IMAS Databases',
+                                                  self)
+            action_onUnselectSignalsAll.triggered.connect(
+                partial(self.onUnselectSignals, True))
             # Add to submenu
-            subMenu_deleteFigure.addAction(action_deleteFigure)
+            menu.addAction(action_onUnselectSignalsAll)
+            # TODO
+            # Set bitmap to menu item
 
-        # ------------------------------------------------------------------
-        # Add menu item to delete all existing figures
-        # Set action
-        action_deleteAllFigures = QAction('All', self)
-        action_deleteAllFigures.triggered.connect(partial(
-            self.deleteAllFigures, figureType=FigureTypes.FIGURETYPE))
-        # Add to submenu
-        subMenu_deleteFigure.addAction(action_deleteAllFigures)
-        # Bitmap icon
-        # TODO
+        return menu
 
-        # ------------------------------------------------------------------
-        # Add submenu to add plot selected signals to specific existing
-        # figure, if selected signals are present
-        if len(self.dataTreeView.selectedSignalsDict) > 0 \
-            and self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-            # Create and add empty submenu to main menu
+    def menuPlotSelectedSignalNodes(self):
+        """Set menu for handling plotting a selection of signal nodes.
+        """
 
-            submenu_plotSelectedNodes_figure = menu_plotSelectedNodes.addMenu('Figure')
+        menu = QMenu('Plot selected nodes to', self.contextMenu)
+        menu.setDisabled(True)
 
-            submenu_plotSelectedNodes_figure_new = submenu_plotSelectedNodes_figure.addMenu('New')
+        if len(self.dataTreeView.selectedSignalsDict) > 0:
+            menu.setDisabled(False)
+
+            subMenu_figure = menu.addMenu('Figure')
+
+            subMenu_figure_new = subMenu_figure.addMenu('New')
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            action_plotSelectedSignals = QAction('This IMAS Database',
-                                                 self)
-            action_plotSelectedSignals.triggered.connect(
+            action_figure_thisDTV = QAction('This IMAS Database', self)
+            action_figure_thisDTV.triggered.connect(
                 partial(self.plotSelectedSignals, False))
             # Add to submenu
-            submenu_plotSelectedNodes_figure_new.addAction(action_plotSelectedSignals)
+            subMenu_figure_new.addAction(action_figure_thisDTV)
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            action_plotSelectedSignals = QAction('All IMAS Databases',
+            action_figure_allDTV = QAction('All IMAS Databases',
                                                  self)
-            action_plotSelectedSignals.triggered.connect(
+            action_figure_allDTV.triggered.connect(
                 partial(self.plotSelectedSignals, True))
             # Add to submenu
-            submenu_plotSelectedNodes_figure_new.addAction(action_plotSelectedSignals)
+            subMenu_figure_new.addAction(action_figure_allDTV)
 
+            # TODO: do same for TablePlotView and StackedPlotView
             for figureKey in self.api.GetFiguresKeys(
                     figureType=FigureTypes.FIGURETYPE):
                 # Check for figures that share the same coordinates
@@ -284,74 +291,126 @@ class QVizSignalHandling(QObject):
                     action_addSelectedSignalsPlotToFig.triggered.connect(
                         partial(self.addSelectedSignalsPlotToFig, id_Fig))
                     # Add to submenu
-                    submenu_plotSelectedNodes_figure.addAction(action_addSelectedSignalsPlotToFig)
-        # Bitmap icon
-        # TODO
+                    subMenu_figure.addAction(action_addSelectedSignalsPlotToFig)
 
-        # ----------------------------------------------------------------------
-        # Set submenu for handling features for plotting selected signals to new
-        # TablePlotView and StackedPlotView
-        if len(self.dataTreeView.selectedSignalsDict) > 0:
             # ------------------------------------------------------------------
             # TablePlotView
-            submenu_plotSelectedNodes_TPV = menu_plotSelectedNodes.addMenu('TablePlotView')
+            subMenu_TPV = menu.addMenu('TablePlotView')
 
-            submenu_plotSelectedNodes_TPV_new = submenu_plotSelectedNodes_TPV.addMenu('New')
+            subMenu_TPV_new = subMenu_TPV.addMenu('New')
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            action_multiPlotSelectedSignals = QAction('This IMAS Database',
-                                                      self)
-            action_multiPlotSelectedSignals.triggered.connect(
+            action_TPV_thisDTV = QAction('This IMAS Database', self)
+            action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, False))
             # Add to submenu
-            submenu_plotSelectedNodes_TPV_new.addAction(action_multiPlotSelectedSignals)
+            subMenu_TPV_new.addAction(action_TPV_thisDTV)
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            action_multiPlotSelectedSignals = QAction('All IMAS Databases',
-                                                      self)
-            action_multiPlotSelectedSignals.triggered.connect(
+            action_TPV_allDTV = QAction('All IMAS Databases', self)
+            action_TPV_allDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, True))
             # Add to submenu
-            submenu_plotSelectedNodes_TPV_new.addAction(action_multiPlotSelectedSignals)
+            subMenu_TPV_new.addAction(action_TPV_allDTV)
 
             # ------------------------------------------------------------------
             # StackedPlotView
-            submenu_plotSelectedNodes_SPV = menu_plotSelectedNodes.addMenu('StackedPlotView')
+            subMenu_SPV = menu.addMenu('StackedPlotView')
 
-            submenu_plotSelectedNodes_SPV_new = submenu_plotSelectedNodes_SPV.addMenu('New')
+            subMenu_SPV_new = subMenu_SPV.addMenu('New')
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            action_subPlotSelectedSignals = QAction('This IMAS Database',
-                                                    self)
-            action_subPlotSelectedSignals.triggered.connect(
+            action_SPV_thisDTV = QAction('This IMAS Database', self)
+            action_SPV_thisDTV.triggered.connect(
                 partial(self.onPlotToStackedPlotView, False))
             # Add to submenu
-            submenu_plotSelectedNodes_SPV_new.addAction(action_subPlotSelectedSignals)
+            subMenu_SPV_new.addAction(action_SPV_thisDTV)
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            action_subPlotSelectedSignals = QAction('All IMAS Databases',
-                                                    self)
-            action_subPlotSelectedSignals.triggered.connect(
+            action_SPV_allDTV = QAction('All IMAS Databases', self)
+            action_SPV_allDTV.triggered.connect(
                 partial(self.onPlotToStackedPlotView, True))
             # Add to submenu
-            submenu_plotSelectedNodes_SPV_new.addAction(action_subPlotSelectedSignals)
+            subMenu_SPV_new.addAction(action_SPV_allDTV)
+
+        return menu
+
+    def menusShowHideAndDelete(self, numFig, numTPV, numSPV):
+        """Set two menus: first  for handling show/hide and second for deleting
+        of existing figures, TablePlotViews and StackedPlotViews.
+        """
+
+        # Create and add empty menu to handle show/hide status of plot views and
+        # figures
+        menu_showHide = QMenu('Show/Hide', self.contextMenu)
+        menu_showHide.setDisabled(True)
+        # Create and add empty menu to handle deletion of plot views and
+        # figures
+        menu_delete = QMenu('Delete', self.contextMenu)
+        menu_delete.setDisabled(True)
+
+        if numFig > 0 or numTPV > 0 or numSPV > 0:
+            menu_showHide.setDisabled(False)
+            menu_delete.setDisabled(False)
+
+        # Set handling existing figures
+        if numFig > 0:
+
+            # Create and add empty submenu to handle figures show/hide
+            submenu_showHideFigure = menu_showHide.addMenu('Figure')
+            # Create and add empty submenu to handle figures deletion
+            subMenu_deleteFigure = menu_delete.addMenu('Figure')
+
+            for figureKey in self.api.GetFiguresKeys(
+                    figureType=FigureTypes.FIGURETYPE):
+                # Get figure number out from the figureKey string
+                # (e.g. 'Figure:0' -> 0)
+                # id_Fig = int(figureKey.split(':')[1])
+                id_Fig = self.api.getFigureKeyNum(figureKey)
+
+                # --------------------------------------------------------------
+                # Add menu item to show/hide existing figure
+                # Set action
+                action_showHide_figure = QAction(figureKey, self)
+                action_showHide_figure.triggered.connect(
+                    partial(self.showHideFigure, id_Fig, FigureTypes.FIGURETYPE))
+                # Add to submenu
+                submenu_showHideFigure.addAction(action_showHide_figure)
+
+                # --------------------------------------------------------------
+                # Add menu item to delete existing figure
+                # Set action
+                action_delete_figure = QAction(figureKey, self)
+                action_delete_figure.triggered.connect(
+                    partial(self.deleteFigure, id_Fig, FigureTypes.FIGURETYPE))
+                # Add to submenu
+                subMenu_deleteFigure.addAction(action_delete_figure)
+
+            # ------------------------------------------------------------------
+            # Add menu item to delete all existing figures
+            # Set action
+            action_deleteAll_figure = QAction('All', self)
+            action_deleteAll_figure.triggered.connect(partial(
+                self.deleteAllFigures, figureType=FigureTypes.FIGURETYPE))
+            # Add to submenu
+            subMenu_deleteFigure.addAction(action_deleteAll_figure)
+            # Bitmap icon
+            # TODO
 
         # Set handling existing TablePlotViews
         if numTPV > 0:
-            # Create and add empty submenu to handle show/hide figures
+            # Create and add empty submenu to handle show/hide tablePlotViews
             subMenu_showHideTPV = menu_showHide.addMenu('TablePlotView')
-
-            # Create and add empty submenu to handle figures deletion
-            subMenu_deleteTPV = QMenu('TablePlotView')
-            menu_delete.addMenu(subMenu_deleteTPV)
+            # Create and add empty submenu to handle tablePlotViews deletion
+            subMenu_deleteTPV = menu_delete.addMenu('TablePlotView')
 
             for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.TABLEPLOTTYPE):
@@ -360,54 +419,40 @@ class QVizSignalHandling(QObject):
                 id_TPV = self.api.getFigureKeyNum(figureKey)
 
                 # --------------------------------------------------------------
-                # Add menu item to add plot to specific existing figure
-                # Check for figures that share the same coordinates
-                # TODO
-                # if self.shareSameCoordinatesFrom(figureKey):
-                #     # Set action
-                #     action_addSignalPlotToFig = QAction(figureKey, self)
-                #     action_addSignalPlotToFig.triggered.connect(
-                #         partial(self.addSignalPlotToFig, numTPV))
-                #     # Add to submenu
-                #     menu_plotSelectedNodes.addAction(action_addSignalPlotToFig)
-
-                # --------------------------------------------------------------
                 # Add menu item to show/hide existing figure
                 # Set action
-                action_showHideTPV = QAction(figureKey, self)
-                action_showHideTPV.triggered.connect(
+                action_showHide_TPV = QAction(figureKey, self)
+                action_showHide_TPV.triggered.connect(
                     partial(self.showHideFigure, id_TPV,
                             figureType=FigureTypes.TABLEPLOTTYPE))
                 # Add to submenu
-                subMenu_showHideTPV.addAction(action_showHideTPV)
+                subMenu_showHideTPV.addAction(action_showHide_TPV)
 
                 # --------------------------------------------------------------
                 # Add menu item to delete existing figure
                 # Set action
-                action_deleteTPV = QAction(figureKey, self)
-                action_deleteTPV.triggered.connect(
+                action_delete_TPV = QAction(figureKey, self)
+                action_delete_TPV.triggered.connect(
                     partial(self.deleteFigure, id_TPV,
                             figureType=FigureTypes.TABLEPLOTTYPE))
                 # Add to submenu
-                subMenu_deleteTPV.addAction(action_deleteTPV)
+                subMenu_deleteTPV.addAction(action_delete_TPV)
 
             # ------------------------------------------------------------------
             # Add menu item to delete all existing figures
             # Set action
-            action_deleteAllTPV = QAction('All', self)
-            action_deleteAllTPV.triggered.connect(partial(
+            action_deleteAll_TPV = QAction('All', self)
+            action_deleteAll_TPV.triggered.connect(partial(
                 self.deleteAllFigures, figureType=FigureTypes.TABLEPLOTTYPE))
             # Add to submenu
-            subMenu_deleteTPV.addAction(action_deleteAllTPV)
+            subMenu_deleteTPV.addAction(action_deleteAll_TPV)
 
         # Set handling existing StackedPlotViews
         if numSPV > 0:
             # Create and add empty submenu to handle show/hide
             subMenu_showHideSPV = menu_showHide.addMenu('StackedPlotView')
-
-            # Create and add empty submenu to handle figures deletion
-            subMenu_deleteSPV = QMenu('StackedPlotView')
-            menu_delete.addMenu(subMenu_deleteSPV)
+            # Create and add empty submenu to handle deletion
+            subMenu_deleteSPV = menu_delete.addMenu('StackedPlotView')
 
             for figureKey in self.api.GetFiguresKeys(
                 figureType=FigureTypes.STACKEDPLOTTYPE):
@@ -416,26 +461,14 @@ class QVizSignalHandling(QObject):
                 id_SPV = self.api.getFigureKeyNum(figureKey)
 
                 # --------------------------------------------------------------
-                # Add menu item to add plot to specific existing figure
-                # Check for figures that share the same coordinates
-                # TODO
-                # if self.shareSameCoordinatesFrom(figureKey):
-                #     # Set action
-                #     action_addSignalPlotToFig = QAction(figureKey, self)
-                #     action_addSignalPlotToFig.triggered.connect(
-                #         partial(self.addSignalPlotToFig, numSPV))
-                #     # Add to submenu
-                #     menu_plotSelectedNodes.addAction(action_addSignalPlotToFig)
-
-                # --------------------------------------------------------------
                 # Add menu item to show/hide existing figure
                 # Set action
-                action_showHideSPV = QAction(figureKey, self)
-                action_showHideSPV.triggered.connect(
+                action_showHide_SPV = QAction(figureKey, self)
+                action_showHide_SPV.triggered.connect(
                     partial(self.showHideFigure, id_SPV,
                             figureType=FigureTypes.STACKEDPLOTTYPE))
                 # Add to submenu
-                subMenu_showHideSPV.addAction(action_showHideSPV)
+                subMenu_showHideSPV.addAction(action_showHide_SPV)
 
                 # --------------------------------------------------------------
                 # Add menu item to delete existing figure
@@ -456,19 +489,15 @@ class QVizSignalHandling(QObject):
             # Add to submenu
             subMenu_deleteSPV.addAction(action_deleteAllSPV)
 
-            # TODO:
-            """
-            - 'Show/Hide subplots'
-            - 'Add selection to TablePlotView'
-            - 'Delete subplot'
-            - 'Open subplots manager'
-            - 'Plot ' + signalName + ' as a function of time'
-            """
+        return menu_showHide, menu_delete
 
-        # Map the menu (in order to show it)
-        self.dataTreeView.popupmenu.exec_(
-            self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
-        return 1
+    def updateNodeData(self):
+        """ Update tree node/item data.
+            TODO: use the global routine 'updateNodeData' defined in
+                  QVizAbstractCommand instead.
+        """
+        self.nodeData = self.dataTreeView.selectedItem.getDataDict()
+        self.treeNode = self.dataTreeView.selectedItem
 
     def selectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
