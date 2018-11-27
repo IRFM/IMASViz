@@ -14,13 +14,10 @@
 #  TODO:
 #
 #    - Function definitions (from SignalHandling class)
-#    def onPlotToTablePlotView
 #    def plotSelectedSignalVsTime
 #    def plotSelectedSignalVsTimeAtIndex
 #    def plotSelectedSignalVsCoordAtTimeIndex
-#    def deleteMultiplots
 #    def addSignalSelectionToTablePlotViewFrame
-#    def deleteSubplots
 #    def showStackedPlotViewsManager
 #    def # onClose
 #

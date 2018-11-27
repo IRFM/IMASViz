@@ -48,8 +48,17 @@ class GUIFrame(QTabWidget):
         self.shell = None
 
     def closeEvent(self, event):
-        if QVizGlobalOperations.YesNo(self, "Exit IMAS_VIZ ?", "Please confirm"):
-            sys.exit(0)
+        """Modify close event to request confirmation trough dialog. If
+        confirmed, close the application.
+        """
+        # Get Yes/No answer (returns True/False)
+        answer = \
+            QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
+                                       caption='Please confirm')
+        if answer==True:
+            event.accept()
+        else:
+            event.ignore()
 
     def tabOne(self):
         layout = QVBoxLayout()
@@ -167,7 +176,6 @@ def main():
     ex = GUIFrame(None)
     ex.show()
     sys.exit(app.exec_())
-
 
 if __name__ == '__main__':
     main()

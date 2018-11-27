@@ -141,9 +141,10 @@ class CommonConfigurationRoutines(QObject):
                 '/' + selectedItem.text()
             # Get Yes/No answer (returns True/False)
             answer = \
-                QVizGlobalOperations.YesNo(question='The configuation '
+                QVizGlobalOperations.YesNo(question='The configuration '
                                            + selectedFile
-                                           + ' will be deleted. Are you sure?')
+                                           + ' will be deleted. Are you sure?',
+                                           caption='Please confirm')
         else:
             answer = False
         if answer:  # If True

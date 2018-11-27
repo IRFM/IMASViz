@@ -24,7 +24,7 @@ class QVizDefault:
         if machineName is None:
             TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
             if TESTING:
-                machineName = 'WEST'
+                machineName = ''
         if machineName == 'WEST':
             return QVizDefaultGUIEntries().getDefaultEntriesForWEST()
         else:
