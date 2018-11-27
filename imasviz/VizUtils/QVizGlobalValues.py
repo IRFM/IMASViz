@@ -243,43 +243,43 @@ class GlobalIcons():
 
         if label == 'unselect':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/minus.ico')
+                               '/resources/VizIcons/minus.ico')
         if label == 'unselectMultiple':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/minus3x.ico')
+                               '/resources/VizIcons/minus3x.ico')
         elif label == 'select':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/plus.ico')
+                               '/resources/VizIcons/plus.ico')
         elif label == 'selectAOS':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/plus3x.ico')
+                               '/resources/VizIcons/plus3x.ico')
         elif label == 'Figure':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/Figure.ico')
+                               '/resources/VizIcons/Figure.ico')
         elif label == 'TPV':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/TablePlotView.ico')
+                               '/resources/VizIcons/TablePlotView.ico')
         elif label == 'SPV':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/StackedPlotView.ico')
+                               '/resources/VizIcons/StackedPlotView.ico')
         elif label == 'plotSingle':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/plotSingle.ico')
+                               '/resources/VizIcons/plotSingle.ico')
         elif label == 'plotMultiple':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/plotMultiple.ico')
+                               '/resources/VizIcons/plotMultiple.ico')
         elif label == 'showHide':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/showHide.ico')
+                               '/resources/VizIcons/showHide.ico')
         elif label == 'thisDTV':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/thisDTV.ico')
+                               '/resources/VizIcons/thisDTV.ico')
         elif label == 'allDTV':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/allDTV.ico')
+                               '/resources/VizIcons/allDTV.ico')
         elif label == 'new':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
-                               '/imasviz/VizUtils/VizIcons/new.ico')
+                               '/resources/VizIcons/new.ico')
 
     def getStandardQIcon(application, QStyleID):
         """Get standard QIcon by QStyle ID. Application must already run if the

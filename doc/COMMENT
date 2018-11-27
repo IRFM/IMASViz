@@ -1,0 +1,7 @@
+To build documentation run in this directory use on of the following:
+
+$ make html
+$ make latex
+$ make latexpdf
+
+The generated documentation can then be found within the 'build' directory. 
