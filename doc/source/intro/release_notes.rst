@@ -1,0 +1,81 @@
+.. _IMASViz_release_notes:
+
+=============
+Release notes
+=============
+
+-----------
+Version 2.0
+-----------
+
+Released:
+
+/
+
+Changes:
+
+- **Full GUI migration from wxPython and wxmPlot to PyQt and pyqtgraph Python**
+  **libraries**
+- Basic plot feature performance improved greatly.
+  Quick comparison for plotting 17 plots to a single panel using default
+  plotting options:
+   - wxPython IMASViz: ~13s
+   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
+- GUI improvements, reducing number of separate windows, introduce docked
+  widgets, introduce GUI icons
+- MultiPlot feature relabeled to TablePlotView
+- SubPlot feature relabeled to StackedPlotView
+- Add support for IMAS versions 3.20.0
+- Add sources for document generation (tutorial included)
+- Code documentation improvements
+
+.. Note::
+   The migration to PyQt5 due to IMASViz containing large code sets is not
+   yet fully complete.
+   List of know features yet to migrate to IMASViz 2.0:
+    - Equilibrium plugin
+    - Add selected nodes to existing TablePlotView
+    - StackedPlotView manager
+
+-----------
+Version 1.2
+-----------
+
+Released:
+
+24.8.2018
+
+Changes:
+
+- New functionality: selection command of nodes belonging to same parent AOS
+  (Array of Structures)
+- MultiPlot and SubPlot design improvements
+- Adding support for IMAS versions 3.19.1
+
+-----------
+Version 1.1
+-----------
+
+Released:
+
+8.6.2018
+
+Changes (since March 2017):
+
+- Bugs fixes & performance improvement
+- Code migration to Python3
+- GUI improvements
+- UDA support for visualizing remote shots data
+- Reuse of plots layout (multiplots customization can be saved as a script file
+  to be applied for any shot)
+- A first plugins mechanism has been developed which allows developers to
+  integrate their plugins to IMASViz
+- The 'Equilibrium overview plugin' developed by Morales Jorge has been
+  integrated to IMASViz
+- Concerning UDA, WEST shots can be accessed if a SSH tunnel can be established
+  to the remote WEST UDA server.
+- Introducing MultiPlot and SubPlot features
+- Add support for IMAS version 3.18.0
+
+
+.. - From our first tests, SSH tunnel cannot be established from the Gateway. The issue will be analyzed during this Code Camp.

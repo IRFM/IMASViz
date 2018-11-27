@@ -7,14 +7,18 @@ Welcome to IMASViz's documentation!
 ===================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
+   :numbered:
    :caption: Contents:
 
+   intro/index.rst
+   tutorial/index.rst
 
 
-Indices and tables
-==================
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. Indices and tables
+.. ==================
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
