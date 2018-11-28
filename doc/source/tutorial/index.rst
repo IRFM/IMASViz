@@ -1,8 +1,14 @@
-.. _IMASViz_tutorial:
+.. _tutorial:
 
 ========
 Tutorial
 ========
 
 
-.. The tutorial below is executed on the Gateway.
+.. Note::
+   The tutorial below is executed on the Gateway.
+
+.. toctree::
+   :maxdepth: 1
+
+   getting_started.rst

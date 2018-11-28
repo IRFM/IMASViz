@@ -1,4 +1,4 @@
-.. _IMASViz_description:
+.. _description:
 
 ===========
 Description

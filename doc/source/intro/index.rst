@@ -1,4 +1,4 @@
-.. _IMASViz_introduction:
+.. _introduction:
 
 ============
 Introduction

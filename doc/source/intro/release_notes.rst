@@ -19,8 +19,8 @@ Changes:
 - Basic plot feature performance improved greatly.
   Quick comparison for plotting 17 plots to a single panel using default
   plotting options:
-   - wxPython IMASViz: ~13s
-   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
+  - wxPython IMASViz: ~13s
+  - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
 - GUI improvements, reducing number of separate windows, introduce docked
   widgets, introduce GUI icons
 - MultiPlot feature relabeled to TablePlotView
@@ -33,9 +33,24 @@ Changes:
    The migration to PyQt5 due to IMASViz containing large code sets is not
    yet fully complete.
    List of know features yet to migrate to IMASViz 2.0:
-    - Equilibrium plugin
-    - Add selected nodes to existing TablePlotView
-    - StackedPlotView manager
+   - Equilibrium plugin
+   - Add selected nodes to existing TablePlotView
+   - StackedPlotView manager
+
+Quick GUI comparison between the previous and the new IMASViz GUI is shown
+below.
+
+Overview of IMASViz 1.2 GUI:
+
+.. image:: images/GUI_overview_old.png
+   :align: center
+   :scale: 80%
+
+Overview of IMASViz 2.0 GUI:
+
+.. image:: images/GUI_overview_2.0.png
+   :align: center
+   :scale: 80%
 
 -----------
 Version 1.2
