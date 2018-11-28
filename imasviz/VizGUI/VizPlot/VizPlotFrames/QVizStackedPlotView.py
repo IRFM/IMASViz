@@ -314,7 +314,8 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         # Set suitable width and height
         self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 10) * 12
         self.okHeight = len(self.centralWidget.rows) * self.plotBaseDim
-        self.setMinimumSize(self.okWidth, self.okHeight)
+        # self.setMinimumSize(self.okWidth, self.okHeight)
+        self.setMinimumSize(300, self.okHeight)
 
     # TODO
     # class modifyStackedPlotView
