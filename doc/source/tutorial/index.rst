@@ -13,3 +13,4 @@ Tutorial
 
    getting_started.rst
    loading_IDS.rst
+   plotting_1d_arrays.rst

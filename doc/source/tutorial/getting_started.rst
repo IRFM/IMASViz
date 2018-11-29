@@ -67,11 +67,13 @@ Requirements
 ~~~~~~~~~~~~
 
 The fundamental requirements in order to locally run IMASViz are:
+
 - IMAS
 - Python3 and Python libraries:
   - PyQt5
   - pyqtgraph
   - matplotlib
+  - Sphinx
 
 Obtaining the source code
 ~~~~~~~~~~~~~~~~~~~~~~~~~

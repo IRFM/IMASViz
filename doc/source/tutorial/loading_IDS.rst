@@ -1,5 +1,7 @@
-.. |icon_arrowIDSroot| image:: images/DTV_window_IDS_root_arrow.png
+.. |icon_arrowIDSroot| image:: images/DTV_IDS_root_arrow.png
    :scale: 75%
+
+.. |button_undock| image:: images/button_undock.png
 
 .. _loading_IDS:
 
@@ -53,7 +55,7 @@ the procedure will be shown on **magnetics IDS**.
 
    A navigation tree window will open, as shown in the figure below.
 
-   .. image:: images/DTVFrame_window_empty.png
+   .. image:: images/DTVFrame_empty.png
       :align: center
 
 2. Press the **arrow button** |icon_arrowIDSroot|  on the left side of the IDS
@@ -63,25 +65,28 @@ the procedure will be shown on **magnetics IDS**.
    The tree will allow browsing data for the specific shot number which is
    displayed by the root node ( IDSs(52344) ).
 
-   .. image:: images/DTV_window_IDS_root_open.png
+   .. image:: images/DTV_IDS_root_open.png
       :align: center
 
    When IDS or node label is selected the :guilabel:`Node documentation`
    widget will display base information (name and documentation) of the node,
    as shown below.
 
-   .. image:: images/DTVFrame_window_node_doc.png
+   .. image:: images/DTVFrame_node_doc.png
       :align: center
 
    The :guilabel:`Node Documentation` widget can be freely taken out from the
-   main window and positioned anywhere on the screen. Same thing goes for the
+   main window by clicking :guilabel:`undock` button |button_undock| the and positioned anywhere on the screen. Same thing goes for the
    :guilabel:`Preview Plot` and :guilabel:`Log` widget.
+
+   .. image:: images/DTVFrame_undock_example.png
+      :align: center
 
 3. Open **magnetics IDS** by right clicking on **magnetics** node and selecting
    the command :guilabel:`Get magnetics data` (occurrence 0) as shown in the
    figure below.
 
-   .. image:: images/DTV_window_open_magnetics_IDS.png
+   .. image:: images/DTV_open_magnetics_IDS.png
       :align: center
       :scale: 80%
 
@@ -90,7 +95,7 @@ the procedure will be shown on **magnetics IDS**.
    data dictionary. Inside the **magnetics** tree, plottable FLT_1D nodes are
    colored blue (array length > 0).
 
-    .. image:: images/DTV_window_magnetics_IDS_contents_FLT_1D.png
+    .. image:: images/DTV_magnetics_IDS_contents_FLT_1D.png
       :align: center
       :scale: 80%
 
