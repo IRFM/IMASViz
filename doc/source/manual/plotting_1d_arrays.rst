@@ -286,40 +286,65 @@ follows:
 
 2. Right-click on the node.
 
-3. From the pop-up menu, select the command :guilabel:`Select <node name>`.
+3. Select node arrays. This can be done in the next two ways.
 
-   .. figure:: images/DTV_popupmenu_select.png
-     :align: center
-     :scale: 75%
+   - Select nodes one-by-one:
 
-     Selecting plottable node.
+      a. From the pop-up menu, select the command
+         :guilabel:`Select <node name>`.
 
-   The selected node label gets colored into red.
+         .. figure:: images/DTV_popupmenu_select.png
+           :align: center
+           :scale: 75%
 
-   .. figure:: images/DTV_node_red.png
-     :align: center
-     :scale: 75%
+           Selecting plottable node.
 
-     Node colored red -> node is selected.
+         The selected node label gets colored into red.
 
-4. Repeat steps 1., 2., and 3. until all wanted nodes are selected,
+         .. figure:: images/DTV_node_red.png
+           :align: center
+           :scale: 75%
 
-   .. figure:: images/DTV_node_selection.png
-     :align: center
-     :scale: 75%
+           Node colored red -> node is selected.
 
-     Example of multiple nodes selection.
+      b. Repeat steps 1., 2., and 3. until all wanted nodes are selected.
 
-.. Note::
-   At the same time, nodes from other opened IDS databases too can be
-   selected.
+         .. figure:: images/DTV_node_selection.png
+           :align: center
+           :scale: 75%
 
-5. When finished with node selection, right-click on any FLT_1D node.
+           Example of multiple nodes selection.
 
-6. From the pop-up menu, navigate and select
+         .. Note::
+            At the same time, nodes from other opened IDS databases too can be
+            selected.
+
+   - Select all arrays of the same structure (AOS) (same node structure type):
+
+     a. From the pop-up menu, select the command
+        :guilabel:`Select All Nodes From The Same AOS`.
+
+        .. figure:: images/DTV_popupmenu_select_AOS.png
+          :align: center
+          :scale: 75%
+
+          Selecting plottable nodes of the same structure/type.
+
+        The selected nodes label gets colored into red.
+
+        .. figure:: images/DTV_node_selection_AOS.png
+          :align: center
+          :scale: 75%
+
+          Node colored red -> node is selected. All plottable nodes of the
+          same structure/type are selected, in this case 17 nodes.
+
+4. When finished with node selection, right-click on any FLT_1D node.
+
+5. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
    :guilabel:`Figure` |icon_Figure| -> :guilabel:`New` |icon_new|->
-   :guilabel:`This IMAS database` |icon_thisDTV|
+   :guilabel:`This IMAS database` |icon_thisDTV|.
 
    .. Note::
       The same procedure applies plotting the selection to an existing figure.
@@ -331,13 +356,55 @@ follows:
      Plotting selection to a new figure using selection from the currently
      opened IDS database.
 
+   .. figure:: images/DTV_plot_selected_nodes_to_figure_thisDTV_result.png
+     :align: center
+     :scale: 75%
 
-
+     Example of plot figure, created by plotting data from node selection.
 
 
 .. _multiplot_features:
 
 MultiPlot features
 ------------------
+
+IMASViz provides few features that allow plotting a selection of plottable
+arrays to a single plot view window.
+
+Currently there are two such features available:
+- :guilabel:`Table Plot View` and
+- :guilabel:`Stacked Plot View`.
+
+Each of those Plot Views feature its own plot display layout and plot display
+window interaction features.
+
+.. Note::
+   In the old IMASViz the :guilabel:`Table Plot View` is known as
+   :guilabel:`MultiPlot` and the :guilabel:`Stacked Plot View` is known as
+   :guilabel:`SubPlot`. The decision to rename those features was made due to
+   the previous names not properly describing the feature itself and both of
+   those features being a form of 'MultiPlot'.
+
+Table Plot View
+~~~~~~~~~~~~~~~
+
+Table Plot View plots every array from selection to its own plot display.
+The plot display are arranged to resemble a table layout, as shown in figure
+below.
+
+...
+
+
+Stacked Plot View
+~~~~~~~~~~~~~~~~~
+
+Stacked Plot View plots every array from selection to its own plot display.
+The plot display are arranged to resemble a stack layout, as shown in figure
+below.
+
+...
+
+
+
 
 
