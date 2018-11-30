@@ -8,7 +8,7 @@
 Loading IDS from IMAS local data source
 =======================================
 
-This tutorial subsection presents an example of loading IMAS IDS case within
+This manual subsection presents an example of loading IMAS IDS case within
 IMASViz and opening one of the IDS nodes.
 
 Loading IMAS IDS
@@ -20,7 +20,7 @@ The procedure to load the IDS is as follows:
 - Enter the following parameters, listed below, to the appropriate text fields.
 
 +-------------------------+-----+
-| **Tutorial IDS case**         |
+| **Manual IDS case**           |
 +--------------------+----------+
 | parameters         | values   |
 +--------------------+----------+
@@ -47,7 +47,7 @@ The filled GUI should then look as shown in the next figure:
 Open IDS
 --------
 
-The procedure of opening any IDS is the same. In this tutorial,
+The procedure of opening any IDS is the same. In this manual,
 the procedure will be shown on **magnetics IDS**.
 
 

@@ -1,3 +1,6 @@
+.. include:: ../icons.inc
+
+
 .. _plotting_1d_arrays:
 
 Plotting 1D arrays
@@ -39,8 +42,8 @@ The procedure to plot 1D array is as follows:
 2. Right-click on the **ids.magnetics.flux_loop[0].flux.data (FLT_1D)** node
 
 3. From the pop-up menu, select the command
-   :guilabel:`Plot ids.magnetics.flux_loop[0].flux.data to` ->
-   :guilabel:`figure` -> :guilabel:`New`.
+   :guilabel:`Plot ids.magnetics.flux_loop[0].flux.data to` |icon_plotSingle| ->
+   :guilabel:`figure` |icon_Figure| -> :guilabel:`New` |icon_new|.
 
    .. figure:: images/DTV_popupmenu_plotting_single_plot.png
      :align: center
@@ -70,9 +73,11 @@ are available in the right-click menu.
    and :guilabel:`Stacked Plot View` consist of multiple
    :guilabel:`Plot Displays`.
 
+.. figure:: images/plotDisplay_popupmenu.png
+  :align: center
+  :scale: 75%
 
-plotDisplay_popupmenu.png
-
+  Plot display window right-click menu.
 
 .. Disable/Enable Mouse
 .. ^^^^^^^^^^^^^^^^^^^^
@@ -138,6 +143,10 @@ Setting color and line properties of plots shown in the Plot Display.
 
      :guilabel:`Configure Plot` feature in the right-click menu.
 
+Each plot can be customized. By selecting this feature a separate GUI window
+will open, listing all plots within the plot display window and their
+properties that can be customized.
+
    .. figure:: images/plotDisplay_configurePlot_window.png
      :align: center
 
@@ -182,3 +191,41 @@ The Plot Display scene can be exported to:
 
      Comparison of IMASViz :guilabel:`Plot Widget` and
      :guilabel:`matplotlib window`
+
+.. _add_plot_to_existing_figure_:
+
+Adding a plot to an existing figure
+-----------------------------------
+
+The procedure of adding a plot to an already existing figure is as follows:
+
+1. From the previous navigation tree, navigate to the wanted node, for example
+   **ids.magnetics.flux_loop[16].flux.data**
+
+2. Right-click on the node.
+
+3. From the pop-up menu, navigate to
+   :guilabel:`Plot <node name> to` |icon_plotSingle| ->
+   :guilabel:`Figure` |icon_Figure| -> :guilabel:`Figure:0`
+
+   .. figure:: images/DTV_popupmenu_plot_to_existing_figure.png
+     :align: center
+     :scale: 75%
+
+     Plotting to existing figure.
+
+The plot will be added to the existing plot as shown in the image below.
+
+   .. figure:: images/DTV_popupmenu_plot_to_existing_figure_result.png
+     :align: center
+     :scale: 75%
+
+     Plotting to existing figure - result.
+
+
+Comparing plots between two IDS databases
+-----------------------------------------
+
+IMASViz allows comparing of FLT_1D arrays between two different shots. The
+procedure is very similar to the one presented in the section
+:ref:`add_plot_to_existing_figure_`:

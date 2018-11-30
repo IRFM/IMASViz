@@ -124,7 +124,7 @@ latex_elements = {
 
     # Additional stuff for the LaTeX preamble.
     #
-    # 'preamble': '',
+    # 'preamble': '\usepackage{graphicx}',
 
     # Latex figure (float) alignment
     #

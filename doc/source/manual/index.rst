@@ -1,12 +1,12 @@
 .. _tutorial:
 
-========
-Tutorial
-========
+======
+Manual
+======
 
 
 .. Note::
-   The tutorial below is executed on the Gateway.
+   The manual below is executed on the Gateway.
 
 .. toctree::
    :maxdepth: 1

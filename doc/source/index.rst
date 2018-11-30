@@ -12,7 +12,7 @@ Welcome to IMASViz's documentation!
    :caption: Contents:
 
    intro/index.rst
-   tutorial/index.rst
+   manual/index.rst
 
 
 
