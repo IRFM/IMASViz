@@ -12,7 +12,7 @@ of the IMASViz.
 This tutorial subsection presents the basics of plotting a 1D array, stored in
 the IDS, and how to handle the created plots.
 
-Plotting a single 1D array to plot widget
+Plotting a single 1D array to plot figure
 -----------------------------------------
 
 The procedure to plot 1D array is as follows:
@@ -29,7 +29,7 @@ The procedure to plot 1D array is as follows:
      Example of plottable FLT_1D node.
 
    By clicking on the node the preview plot will be displayed in the
-   :guilabel:`Preview Plot Widget`, located in the main browsing window. This
+   :guilabel:`Preview Plot`, located in the main browsing window. This
    feature helps to quickly check how the data, stored in the FLT_1D, looks
    when plotted.
 
@@ -37,7 +37,7 @@ The procedure to plot 1D array is as follows:
      :align: center
      :scale: 80%
 
-     Preview Plot Widget
+     Preview Plot
 
 2. Right-click on the **ids.magnetics.flux_loop[0].flux.data (FLT_1D)** node
 
@@ -49,15 +49,15 @@ The procedure to plot 1D array is as follows:
      :align: center
      :scale: 80%
 
-     Navigating through right-click menu to plot data to plot widget.
+     Navigating through right-click menu to plot data to plot figure.
 
-   The plot should display in plot widget as shown in the image below.
+   The plot should display in plot figure as shown in the image below.
 
    .. figure:: images/plotWidget_basic.png
      :align: center
      :scale: 80%
 
-     Basic plot widget display.
+     Basic plot figure display.
 
 
 Basic plot display features
@@ -68,7 +68,7 @@ are available in the right-click menu.
 
 .. Note::
    Term :guilabel:`Plot Display` is used for any base window for displaying
-   plots. Following that the :guilabel:`Plot Widget` contains a single
+   plots. Following that the :guilabel:`Plot Figure` contains a single
    :guilabel:`Plot Display`, while :guilabel:`Table Plot View`
    and :guilabel:`Stacked Plot View` consist of multiple
    :guilabel:`Plot Displays`.
@@ -189,7 +189,7 @@ The Plot Display scene can be exported to:
      :align: center
      :scale: 75%
 
-     Comparison of IMASViz :guilabel:`Plot Widget` and
+     Comparison of IMASViz :guilabel:`Plot Figure` and
      :guilabel:`matplotlib window`
 
 .. _add_plot_to_existing_figure_:
@@ -204,7 +204,7 @@ The procedure of adding a plot to an already existing figure is as follows:
 
 2. Right-click on the node.
 
-3. From the pop-up menu, navigate to
+3. From the pop-up menu, navigate and select
    :guilabel:`Plot <node name> to` |icon_plotSingle| ->
    :guilabel:`Figure` |icon_Figure| -> :guilabel:`Figure:0`
 
@@ -226,6 +226,118 @@ The plot will be added to the existing plot as shown in the image below.
 Comparing plots between two IDS databases
 -----------------------------------------
 
-IMASViz allows comparing of FLT_1D arrays between two different shots. The
-procedure is very similar to the one presented in the section
-:ref:`add_plot_to_existing_figure_`:
+IMASViz allows comparing of FLT_1D arrays between two different IDS databases
+(different shots too). The procedure is very similar to the one presented in
+the section :ref:`add_plot_to_existing_figure_`:
+
+1. Open another IMAS database, same as shown in section :ref:`loading_IDS`.
+   In this manual this will be demonstrated using IDS with :guilabel:`shot`
+   parameter **52682**.
+
+   +-------------------------+-----+
+   | **Manual IDS case**           |
+   +--------------------+----------+
+   | parameters         | values   |
+   +--------------------+----------+
+   | User name          | g2penkod |
+   +--------------------+----------+
+   | IMAS database name | viztest  |
+   +--------------------+----------+
+   | Shot number        | 52682    |
+   +--------------------+----------+
+   | Run number         | 0        |
+   +--------------------+----------+
+
+
+2. Load occurrence 0 of **magnetics** IDS
+
+3. Navigate through the IDS search for the wanted node, for example
+   **ids.magnetics.flux_loop[0].flux.data**.
+
+4. Right-click on the node.
+
+5. From the pop-up menu, navigate and select
+   :guilabel:`Plot <node name> to` |icon_plotSingle| ->
+   :guilabel:`Figure` |icon_Figure| -> :guilabel:`Figure:0`
+
+The plot will be added to the existing plot as shown in the image below.
+
+   .. figure:: images/DTV2_popupmenu_plot_to_existing_figure_result.png
+     :align: center
+     :scale: 75%
+
+     Plotting from other IDS to existing figure - result.
+
+Plotting a selection of 1D arrays to figure - Introduction to node selection feature
+------------------------------------------------------------------------------------
+
+IMASViz offers the user the ability to set or mark a selection of plottable
+arrays (nodes) as once. This way plotting multiple plots to a
+:guilabel:`Figure` or to a :guilabel:`MultiPlot View` is more convenient
+and faster, avoiding "one-by-one" plotting.
+
+.. Note::
+   For MultiPlotView features please see section :ref:`multiplot_features`.
+
+The procedure of 1D arrays selection and plotting to the same figure is as
+follows:
+
+1. Navigate to the node.
+
+2. Right-click on the node.
+
+3. From the pop-up menu, select the command :guilabel:`Select <node name>`.
+
+   .. figure:: images/DTV_popupmenu_select.png
+     :align: center
+     :scale: 75%
+
+     Selecting plottable node.
+
+   The selected node label gets colored into red.
+
+   .. figure:: images/DTV_node_red.png
+     :align: center
+     :scale: 75%
+
+     Node colored red -> node is selected.
+
+4. Repeat steps 1., 2., and 3. until all wanted nodes are selected,
+
+   .. figure:: images/DTV_node_selection.png
+     :align: center
+     :scale: 75%
+
+     Example of multiple nodes selection.
+
+.. Note::
+   At the same time, nodes from other opened IDS databases too can be
+   selected.
+
+5. When finished with node selection, right-click on any FLT_1D node.
+
+6. From the pop-up menu, navigate and select
+   :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
+   :guilabel:`Figure` |icon_Figure| -> :guilabel:`New` |icon_new|->
+   :guilabel:`This IMAS database` |icon_thisDTV|
+
+   .. Note::
+      The same procedure applies plotting the selection to an existing figure.
+
+   .. figure:: images/DTV_popupmenu_plot_selected_nodes_to_figure_thisDTV.png
+     :align: center
+     :scale: 75%
+
+     Plotting selection to a new figure using selection from the currently
+     opened IDS database.
+
+
+
+
+
+.. _multiplot_features:
+
+MultiPlot features
+------------------
+
+
