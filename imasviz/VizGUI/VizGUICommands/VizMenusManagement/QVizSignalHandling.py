@@ -297,12 +297,23 @@ class QVizSignalHandling(QObject):
                     # id_Fig = int(figureKey.split(':')[1])
                     id_Fig = self.api.getFigureKeyNum(figureKey)
                     # Add menu item to add plot to specific figure
-                    action_addSelectedSignalsPlotToFig = \
-                        QAction(figureKey, self)
-                    action_addSelectedSignalsPlotToFig.triggered.connect(
-                        partial(self.addSelectedSignalsPlotToFig, id_Fig))
+                    subMenu_figure_existing = subMenu_figure.addMenu(figureKey)
+                    # Add menu item to plot selected signals to existing
+                    # plot - This DTV
+                    action_figure_ex_thisDTV = \
+                        QAction(icon_thisDTV, 'This IMAS Database', self)
+                    action_figure_ex_thisDTV.triggered.connect(
+                        partial(self.addSelectedSignalsPlotToFig, id_Fig, False))
                     # Add to submenu
-                    subMenu_figure.addAction(action_addSelectedSignalsPlotToFig)
+                    subMenu_figure_existing.addAction(action_figure_ex_thisDTV)
+                    # Add menu item to plot selected signals to existing
+                    # plot - All DTV
+                    action_figure_ex_allDTV = \
+                        QAction(icon_thisDTV, 'All IMAS Databases', self)
+                    action_figure_ex_allDTV.triggered.connect(
+                        partial(self.addSelectedSignalsPlotToFig, id_Fig, True))
+                    # Add to submenu
+                    subMenu_figure_existing.addAction(action_figure_ex_allDTV)
 
             # ------------------------------------------------------------------
             # TablePlotView
@@ -662,7 +673,7 @@ class QVizSignalHandling(QObject):
             self.dataTreeView.log.error(str(e))
 
     @pyqtSlot(int)
-    def addSelectedSignalsPlotToFig(self, numFig):
+    def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
         """Add/Plot selected signals to existing figure.
 
         Arguments:
@@ -673,7 +684,7 @@ class QVizSignalHandling(QObject):
             GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
 
         QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=1,
-                                all_DTV=False).execute()
+                                all_DTV=all_DTV).execute()
 
     def shareSameCoordinates(self, selectedDataList):
         """Check if data in selectedDataList (dict) share the same coordinates
