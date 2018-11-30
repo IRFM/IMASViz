@@ -327,8 +327,13 @@ class TabColorAndLineProperties(QWidget):
             # axis.textHeight = 20  # int
             # axis.textWidth  # int
 
+        # Set scrollArea contents margin to keep the contents lined to the top
+        # even if not full scrollArea would be filled
+        topMargin = 270 - (i - 1)*30
+        if topMargin < 0:
+            topMargin = 0
+        scrollLayout.setContentsMargins(0, 0, 0, topMargin)
         # Add all contents to scrollArea widget
-        scrollLayout.setContentsMargins(0, 0, 0, 0)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
 

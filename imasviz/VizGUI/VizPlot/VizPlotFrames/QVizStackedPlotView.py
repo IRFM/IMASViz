@@ -217,7 +217,8 @@ class QVizStackedPlotView(pg.GraphicsWindow):
             xlabel = None
 
         # Set new plot (use IMASViz custom plot context menu)
-        p = self.addPlot(title=title)
+        p = self.addPlot(title=title,
+                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         # Enable legend (Note: must be done before plotting!)
         p.addLegend()
         p.plot(x=x,
@@ -225,8 +226,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                name=label,
                xlabel=xlabel,
                ylabel=ylabel,
-               pen=pen,
-               viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+               pen=pen)
         # pg.PlotItem
 
         # p = self.addPlot(name='plotName',
