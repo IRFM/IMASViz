@@ -208,7 +208,7 @@ class PlotConfigurationListsTab(QWidget):
 
     def __init__(self, parent=None):
         super(PlotConfigurationListsTab, self).__init__(parent)
-        commonConf = CommonConfigurationRoutines(parent=self)
+        self.commonConf = CommonConfigurationRoutines(parent=self)
         self.DTVFrame = parent.DTVFrame
         self.dataTreeView = self.DTVFrame.dataTreeView
 
@@ -225,10 +225,10 @@ class PlotConfigurationListsTab(QWidget):
         self.button1 = QPushButton('Apply selection and plot selected data')
         self.button1.clicked.connect(self.applyTablePlotViewConfiguration)
         self.button2 = QPushButton('Apply selection only')
-        self.button2.clicked.connect(commonConf.applySignalSelection)
+        self.button2.clicked.connect(self.commonConf.applySignalSelection)
         self.button3 = QPushButton('Remove configuration')
         self.button3.clicked.connect(
-            partial(commonConf.removeConfiguration, configType='pcfg'))
+            partial(self.commonConf.removeConfiguration, configType='pcfg'))
 
         # - Add buttons to the layout
         layout_buttons.addWidget(self.button1)
@@ -290,6 +290,9 @@ class PlotConfigurationListsTab(QWidget):
         # TODO: the selection part could be made into a function as
         # removeConfiguration() and applySignalConfiguration() use this part of
         # code
+
+        # Set selection of signal nodes from configuration file
+        self.commonConf.applySignalSelection()
 
         # Get the selection list (config file name)
         selectedItems = self.listWidget.selectedItems()

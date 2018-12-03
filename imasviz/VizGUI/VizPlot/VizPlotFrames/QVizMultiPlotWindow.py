@@ -63,6 +63,8 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         if self.configFile != None:
             # Set plot configuration dictionary
             self.plotConfig = ET.parse(self.configFile)  # dictionary
+            # Set configuration before plotting
+            self.applyPlotConfigurationBeforePlotting(plotConfig=self.plotConfig)
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.log = self.dataTreeView.log  # QTextEdit widget
         self.viewType = viewType
@@ -250,7 +252,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         if self.plotConfig != None:
             # Get number of signals through number of signal paths
             pathsList = QVizGlobalOperations.\
-                getSignalsPathsFromConfigurationFile(self.plotConfig)
+                getSignalsPathsFromConfigurationFile(self.configFile)
             nSignals = len(pathsList)
         else:
             # If plotConfig is not present (save configuration was
@@ -305,7 +307,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """
         QVizSavePlotConfig(gWin=self.multiPlotView).execute()
 
-    def applyPlotConfigurationAfterPlotting(self, plotItem, plotConfig):
+    def applyPlotConfigurationAfterPlotting(self, plotItem):
         """Apply configuration (from configuration file) to plot item after
         # it was created.
 
@@ -440,6 +442,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
                     # Update items for the changes to be displayed
                     pdItem.updateItems()
 
+    def applyPlotConfigurationBeforePlotting(self):
+        pass
+
     def getDTV(self):
         return self.dataTreeView
 
@@ -459,7 +464,6 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         return self.figureKey
 
     # TODO
-    # def applyPlotConfigurationBeforePlotting
     # def setPlotConfigAttribute
 
 

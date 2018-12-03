@@ -245,6 +245,7 @@ class QVizGlobalOperations:
             Full path to configuration file including file name
             (.pcfg or .lsp file).
         """
+
         selectedsignalsMap = {}
         pathsList = []
         config = None
@@ -256,7 +257,7 @@ class QVizGlobalOperations:
         if configFile.endswith('.pcfg'):
             # Get all selectedArray attributes, containing signal paths,
             # from the config file
-            selectedArrays = config.findall('.//*selectedArray')
+            selectedArrays = config.findall('.//*sourceInfo')
 
             # Display number of signals, saved in the config file
             print("Config file: Number of signals: ", len(selectedArrays))
