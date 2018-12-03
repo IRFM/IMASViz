@@ -275,83 +275,24 @@ The plot will be added to the existing plot as shown in the image below.
 
 .. _plotting_a_selection_to_figure:
 
-Plotting a selection of 1D arrays to figure - Introduction to node selection feature
-------------------------------------------------------------------------------------
-
-IMASViz offers the user the ability to set or mark a selection of plottable
-arrays (nodes) as once. This way plotting multiple plots to a
-:guilabel:`Figure` or to a :guilabel:`MultiPlot View` is more convenient
-and faster, avoiding "one-by-one" plotting.
-
-.. Note::
-   For MultiPlotView features please see section :ref:`multiplot_features`.
+Plotting a selection of 1D arrays to figure
+-------------------------------------------
 
 The procedure of 1D arrays selection and plotting to the same figure is as
 follows:
 
-1. Navigate to the node.
+1. In main tree view window set a selection of nodes holding 1D arrays.
 
-2. Right-click on the node.
+   .. note::
+      How to create a selection of arrays is described in section
+      :ref:`signal_node_selection`.
 
-3. Select node arrays. This can be done in the next two ways.
-
-   - Select nodes one-by-one:
-
-      a. From the pop-up menu, select the command
-         :guilabel:`Select <node name>`.
-
-         .. figure:: images/DTV_popupmenu_select.png
-           :align: center
-           :scale: 75%
-
-           Selecting plottable node.
-
-         The selected node label gets colored into red.
-
-         .. figure:: images/DTV_node_red.png
-           :align: center
-           :scale: 75%
-
-           Node colored red -> node is selected.
-
-      b. Repeat steps 1., 2., and 3. until all wanted nodes are selected.
-
-         .. figure:: images/DTV_node_selection.png
-           :align: center
-           :scale: 75%
-
-           Example of multiple nodes selection.
-
-         .. Note::
-            At the same time, nodes from other opened IDS databases too can be
-            selected.
-
-   - Select all arrays of the same structure (AOS) (same node structure type):
-
-     a. From the pop-up menu, select the command
-        :guilabel:`Select All Nodes From The Same AOS`.
-
-        .. figure:: images/DTV_popupmenu_select_AOS.png
-          :align: center
-          :scale: 75%
-
-          Selecting plottable nodes of the same structure/type.
-
-        The selected nodes label gets colored into red.
-
-        .. figure:: images/DTV_node_selection_AOS.png
-          :align: center
-          :scale: 75%
-
-          Node colored red -> node is selected. All plottable nodes of the
-          same structure/type are selected, in this case 17 nodes.
-
-4. When finished with node selection, either:
+2. When finished with node selection, either:
    - right-click on any FLT_1D node, or
    - click :guilabel:`Node Selection` menu on menubar of the main tree view
    window.
 
-5. From the pop-up menu, navigate and select
+3. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
    :guilabel:`Figure` |icon_Figure| -> :guilabel:`New` |icon_new|->
    :guilabel:`This IMAS database` |icon_thisDTV|.

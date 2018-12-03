@@ -13,4 +13,5 @@ Manual
 
    getting_started.rst
    loading_IDS.rst
+   signal_node_selection.rst
    plotting_1d_arrays.rst
