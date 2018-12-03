@@ -257,6 +257,7 @@ class QVizSignalHandling(QObject):
         menu = QMenu('Plot selected nodes to', parentMenu)
         menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotMultiple'))
         menu.setDisabled(True)
+        menu.setObjectName('Plot selected nodes to')
 
         if len(self.dataTreeView.selectedSignalsDict) > 0:
             menu.setDisabled(False)

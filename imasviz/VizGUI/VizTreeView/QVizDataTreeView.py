@@ -34,7 +34,7 @@ import xml.etree.ElementTree as ET
 from functools import partial
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
-from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
+from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QTextEdit
 
@@ -509,7 +509,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         subMenu_unselect.addAction(action_onUnselectSignals)
 
         #-----------------------------------------------------------------------
-
         # - Add menu for handling plotting a selection of signal nodes
         nodeSelection.addMenu(QVizSignalHandling(self.dataTreeView). \
             menuPlotSelectedSignalNodes(parentMenu=nodeSelection))
@@ -552,9 +551,10 @@ class QVizDataTreeViewFrame(QMainWindow):
             # Set tree item as selected tree item
             self.dataTreeView.selectedItem = firstItem
 
-            # Clear menu
-            menu.clear()
-
+            # Find and delete menu 'Plot selected nodes to'
+            childMenu = menu.findChildren(QMenu, 'Plot selected nodes to')[0]
+            childMenu.menuAction().setVisible(False)
+            childMenu.deleteLater()
             # Rebuild menu
             # - Add menu for handling plotting a selection of signal nodes
             # TODO: Create a set of actions that can be used by multiple
