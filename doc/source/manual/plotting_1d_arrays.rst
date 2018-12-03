@@ -55,7 +55,7 @@ The procedure to plot 1D array is as follows:
 
    .. figure:: images/plotWidget_basic.png
      :align: center
-     :scale: 80%
+     :scale: 75%
 
      Basic plot figure display.
 
@@ -151,6 +151,11 @@ properties that can be customized.
      :align: center
 
      :guilabel:`Configure Plot` GUI.
+
+   .. figure:: images/plot_configuration_example.png
+     :align: center
+
+     Plot configuration example.
 
 Plot options
 ^^^^^^^^^^^^
@@ -268,6 +273,8 @@ The plot will be added to the existing plot as shown in the image below.
 
      Plotting from other IDS to existing figure - result.
 
+.. _plotting_a_selection_to_figure:
+
 Plotting a selection of 1D arrays to figure - Introduction to node selection feature
 ------------------------------------------------------------------------------------
 
@@ -339,7 +346,10 @@ follows:
           Node colored red -> node is selected. All plottable nodes of the
           same structure/type are selected, in this case 17 nodes.
 
-4. When finished with node selection, right-click on any FLT_1D node.
+4. When finished with node selection, either:
+   - right-click on any FLT_1D node, or
+   - click :guilabel:`Node Selection` menu on menubar of the main tree view
+   window.
 
 5. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
@@ -361,7 +371,6 @@ follows:
      :scale: 75%
 
      Example of plot figure, created by plotting data from node selection.
-
 
 .. _multiplot_features:
 
@@ -385,6 +394,8 @@ window interaction features.
    the previous names not properly describing the feature itself and both of
    those features being a form of 'MultiPlot'.
 
+.. _TPV:
+
 Table Plot View
 ~~~~~~~~~~~~~~~
 
@@ -392,8 +403,102 @@ Table Plot View plots every array from selection to its own plot display.
 The plot display are arranged to resemble a table layout, as shown in figure
 below.
 
-...
+.. figure:: images/TablePlotView_example.png
+    :align: center
+    :scale: 50%
 
+    MultiPlot - :guilabel:`Table Plot View` Example.
+
+Creating new view
+^^^^^^^^^^^^^^^^^
+
+To create a new :guilabel:`Table Plot View`, follow the next steps:
+
+1. Create a selection of nodes, as described in section
+   :ref:`plotting_a_selection_to_figure`.
+
+2. When finished with node selection, either:
+   - right-click on any FLT_1D node or
+   - click :guilabel:`Node Selection` menu on menubar of the main tree view
+   window.
+
+3. From the pop-up menu, navigate and select
+   :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
+   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New` |icon_new|->
+   :guilabel:`This IMAS database` |icon_thisDTV| or
+   :guilabel:`All IMAS databases` |icon_allDTV| or.
+
+   .. figure:: images/DTV_plot_selected_nodes_to_TPV_thisDTV.png
+     :align: center
+     :scale: 75%
+
+     Plotting selection to a new figure using selection from the currently
+     opened IDS database.
+
+   The :guilabel:`Table Plot View` window will then be shown.
+
+.. note::
+   Scrolling down the :guilabel:`Table Plot View` window using the middle mouse
+   button is disabled as the same button is used to interact with the plot
+   display (zoom in and out). Scrolling can be done by clicking the scroll bar
+   on the right and dragging it up and down.
+
+Save MultiPlot configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+MultiPlot configuration (currently available only for
+:guilabel:`Table Plot View` feature) allows the user to save the MultiPlot
+session and load it later.
+
+To create MultiPlot configuration, follow the next steps:
+
+1. Create a selection of nodes, as described in section
+   :ref:`plotting_a_selection_to_figure`.
+
+2. Create a :guilabel:`Table Plot View`, as described in :ref:`TPV`.
+
+3. In :guilabel:`Table Plot View` menubar navigate to **Options** ->
+   **Save Plot Configuration**
+
+   .. figure:: images/SavePlotConfiguration_dialog.png
+     :align: center
+     :scale: 75%
+
+     Save Plot Configuration Dialog Window.
+
+4. Type configuration name in the text area.
+
+5. Press **OK**.
+
+.. Note::
+   The configurations are saved to ``$HOME/.imasviz`` folder.
+
+Load MultiPlot configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To load MultiPlot configuration, follow the next steps:
+
+1. In Main Tree View Window menu navigate to **Actions** ->
+   **Apply Plot Configuration**
+
+   .. figure:: images/ApplyPlotConfiguration_window.png
+     :align: center
+     :scale: 75%
+
+     Apply Plot Configuration GUI Window.
+
+2. Select the configuration from the list.
+
+3. Press **Apply selection and plot selected data**.
+
+   The :guilabel:`Table Plot View` will be created using the data stored in the
+   configuration file.
+
+.. Note::
+   Currently this feature will take all plot data from single (currently)
+   opened IMAS database, event though MultiPlot configuration was made using
+   plots from multiple IMAS databases at once. This feature is to be improved
+   in the future.
 
 Stacked Plot View
 ~~~~~~~~~~~~~~~~~
@@ -402,9 +507,38 @@ Stacked Plot View plots every array from selection to its own plot display.
 The plot display are arranged to resemble a stack layout, as shown in figure
 below.
 
-...
+.. figure:: images/StackedPlotView_example.png
+    :align: center
+    :scale: 50%
 
+    MultiPlot - :guilabel:`Stacked Plot View` Example.
 
+Creating new view
+^^^^^^^^^^^^^^^^^
 
+To create a new :guilabel:`Stacked Plot View`, follow the next steps:
 
+1. Create a selection of nodes, as described in section
+   :ref:`plotting_a_selection_to_figure`.
+
+2. When finished with node selection, either:
+   - right-click on any FLT_1D node or
+   - click :guilabel:`Node Selection` menu on menubar of the main tree view
+   window.
+
+3. From the pop-up menu, navigate and select
+   :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
+   :guilabel:`StackedPlotView` |icon_StackedPlotView| ->
+   :guilabel:`New` |icon_new|->
+   :guilabel:`This IMAS database` |icon_thisDTV| or
+   :guilabel:`All IMAS databases` |icon_allDTV| or.
+
+   .. figure:: images/DTV_plot_selected_nodes_to_SPV_thisDTV.png
+     :align: center
+     :scale: 75%
+
+     Plotting selection to a new figure using selection from the currently
+     opened IDS database.
+
+   The :guilabel:`Stacked Plot View` window will then be shown.
 
