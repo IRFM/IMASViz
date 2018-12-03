@@ -57,7 +57,7 @@ class QVizTreeNode(QTreeWidgetItem):
         if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.coordinate1):
             coordinate1 = coordinate1.replace("[itime]", "[" + self.timeValue() + "]")
         return coordinate1
-    
+
     def evaluateCoordinate1At(self, itimeValue):
         coordinate1 = self.evaluateCoordinate1VsTime()
         if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.coordinate1):
@@ -131,7 +131,7 @@ class QVizTreeNode(QTreeWidgetItem):
             aos_valued = path.replace(s, "[" + index_value + "]")
             path = aos_valued
         return aos_valued
-    
+
     def patchIndices(self, value):
         value = value.replace("[i1]", "[i]")
         value = value.replace("[i2]", "[j]")

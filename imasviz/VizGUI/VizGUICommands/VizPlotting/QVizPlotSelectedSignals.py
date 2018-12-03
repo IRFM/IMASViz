@@ -131,8 +131,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                 v = dtv.selectedSignalsDict[key]
                 vizTreeNode = v['QTreeWidgetItem']
 
-                # Check dimension
+                # Get node dataDict
                 signalNodeData = vizTreeNode.getDataDict()
+
+                # Check dimension
                 plotDimension = self.getDimension(vizTreeNode.getDataDict())
 
                 key = dtv.dataSource.dataKey(vizTreeNode.getDataDict())

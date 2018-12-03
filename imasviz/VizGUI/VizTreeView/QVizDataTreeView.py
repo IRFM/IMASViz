@@ -118,7 +118,7 @@ class QVizDataTreeView(QTreeWidget):
 
         # Keep a reference to shared data (frames, figures, ...)
         # - This is a BrowserAPI instance
-        self.viz_api = None
+        self.imas_viz_api = None
 
         # key = idsName, value = root node (of type QVizTreeNode) of the IDS tree
         self.IDSRoots = {}
@@ -491,7 +491,7 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # -----
         # Add menu item to unselect all signals - This/Current DTV
-        subMenu_unselect = nodeSelection.addMenu('Unselect Nodes')
+        subMenu_unselect = nodeSelection.addMenu('Unselect All Nodes')
         action_onUnselectSignals = QAction('This IMAS Database',
                                            self)
         action_onUnselectSignals.triggered.connect(
@@ -509,61 +509,61 @@ class QVizDataTreeViewFrame(QMainWindow):
         subMenu_unselect.addAction(action_onUnselectSignals)
 
         #-----------------------------------------------------------------------
-        subMenu_multiPlot = nodeSelection.addMenu('Create MultiPlot')
 
-        # Set new submenu for handling TablePlotViews
-        subMenu_tablePlotView = subMenu_multiPlot.addMenu('TablePlotView')
-        subMenu_tablePlotView_set = subMenu_tablePlotView.addMenu(
-            'Plot all selected signals to a new TablePlotView')
+        # - Add menu for handling plotting a selection of signal nodes
+        nodeSelection.addMenu(QVizSignalHandling(self.dataTreeView). \
+            menuPlotSelectedSignalNodes(parentMenu=nodeSelection))
 
-        # -----
-        # Add menu item to plot selected signals to single
-        # plot - This DTV
-        action_setTablePlotView = QAction('This IMAS Database',
-                                          self)
-        action_setTablePlotView.triggered.connect(
-            partial(QVizSignalHandling(self.dataTreeView).onPlotToTablePlotView, False))
-        # Add to submenu
-        subMenu_tablePlotView_set.addAction(action_setTablePlotView)
-
-        # -----
-        # Add menu item to plot selected signals to single
-        # plot - All DTVs
-        action_setTablePlotViewAll = QAction('All IMAS Databases',
-                                             self)
-        action_setTablePlotViewAll.triggered.connect(
-            partial(QVizSignalHandling(self.dataTreeView).onPlotToTablePlotView, True))
-        # Add to submenu
-        subMenu_tablePlotView_set.addAction(action_setTablePlotViewAll)
-
-        #-----------------------------------------------------------------------
-        # Set new submenu for handling StackedPlotViews
-        subMenu_stackedPlotView = subMenu_multiPlot.addMenu('StackedPlotView')
-        subMenu_stackedPlotView_set = subMenu_stackedPlotView.addMenu(
-            'Plot all selected signals to a new StackedPlotView')
-
-        # -----
-        # Add menu item to plot selected signals to single
-        # plot - This DTV
-        action_stackedPlotView = QAction('This IMAS Database',
-                                         self)
-        action_stackedPlotView.triggered.connect(
-            partial(QVizSignalHandling(self.dataTreeView).onPlotToStackedPlotView, False))
-        # Add to submenu
-        subMenu_stackedPlotView_set.addAction(action_stackedPlotView)
-
-        # -----
-        # Add menu item to plot selected signals to single
-        # plot - All DTVs
-        action_stackedPlotViewAll = QAction('All IMAS Databases',
-                                            self)
-        action_stackedPlotViewAll.triggered.connect(
-            partial(QVizSignalHandling(self.dataTreeView).onPlotToStackedPlotView, True))
-        # Add to submenu
-        subMenu_stackedPlotView_set.addAction(action_stackedPlotViewAll)
+        # - Update menu on show
+        nodeSelection.aboutToShow.connect(partial(self.updateMenuNodeSelection,
+            menu=nodeSelection))
 
         # Set menu bar
         self.setMenuBar(menuBar)
+
+    def updateMenuNodeSelection(self, menu):
+        """Update menu handling node selection.
+
+        Arguments:
+            menu (QMenu) : Menu that handles node selection to update.
+
+        """
+
+        # TODO: Fix the plotting routines dependency on having signal node
+        #       QTreeWidget selected in DTV in order for them to work
+        # As most plotting routines assume that signal node is set as
+        # active/selected, they fail if they're activated while
+        # non-signal node is selected (due to them first being available
+        # only from the right-click-on-signal-node popup menu)
+        # To avoid that we manually set active QTreeWidget corresponding to the
+        # first selected signal node.
+
+        # Get a list of selected node signals (red colored)
+        sigDict = self.dataTreeView.selectedSignalsDict
+
+        # Update only if selection of node signals is available
+        if len(sigDict) > 0:
+            # Get first selected node signal
+            firstKey = next(iter(sigDict))
+            # Get QTreeWidgetItem of the first node signal
+            firstItem = sigDict[firstKey]['QTreeWidgetItem']
+            # To jump to tree item (not actually selecting it)
+            # self.dataTreeView.setCurrentItem(firstItem)
+            # Set tree item as selected tree item
+            self.dataTreeView.selectedItem = firstItem
+
+            # Clear menu
+            menu.clear()
+
+            # Rebuild menu
+            # - Add menu for handling plotting a selection of signal nodes
+            # TODO: Create a set of actions that can be used by multiple
+            #       menus, buttons etc. instead of 'borrowing' them from
+            #       QVizSignalHandling
+            menu.addMenu(QVizSignalHandling(self.dataTreeView). \
+                menuPlotSelectedSignalNodes(parentMenu=menu))
+        else:
+            pass
 
     def addDockWidgets(self):
         """Add dockable widgets to DTV frame main window.
