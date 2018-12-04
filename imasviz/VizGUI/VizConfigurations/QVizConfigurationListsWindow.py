@@ -49,7 +49,7 @@ class QVizConfigurationListsWindow(QDialog):
         self.tabSignalListConf = ListOfSignalPathsListsTab(parent=self)
 
         self.tabWidget.addTab(self.tabPlotConf, 'Available Plot Configurations')
-        self.tabWidget.addTab(self.tabSignalListConf, 'Available List of IDS paths')
+        self.tabWidget.addTab(self.tabSignalListConf, 'Available Node Selection Configurations')
 
         layout = QVBoxLayout()
 
@@ -340,8 +340,8 @@ class ListOfSignalPathsListsTab(QWidget):
         layout_buttons.setSpacing(5)
         layout_buttons.setContentsMargins(15, 0, 15, 28)
         # - Set buttons
-        self.button1 = QPushButton('Apply list of IDS paths to current IMAS '
-                                   'database')
+        self.button1 = QPushButton('Apply Node Selection Configuration to '
+                                   'current IMAS database')
         self.button1.clicked.connect(commonConf.applySignalSelection)
         self.button2 = QPushButton('Remove configuration')
         self.button2.clicked.connect(

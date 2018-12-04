@@ -35,7 +35,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
     def execute(self):
         defaultName = 'signalSelection-' + time.strftime('%d-%m-%Y')
         configName = None
-        message = 'Type the name of the configuration. \nNote. If left empty' \
+        message = 'Type the name of the configuration. \nNote. If left empty ' \
             'the default name \n' + defaultName + '\nwill be used.'
         configName, ok = \
             QVizGlobalOperations.askWithCancel(parent=self.dataTreeView,
