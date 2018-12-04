@@ -14,8 +14,6 @@ implemented.
 
 The tool uses the following Python packages:
 
-
-
 **1. PyQt5**
 
     PyQt5 is comprehensive set of Python bindings for Qt v5. It is implemented as

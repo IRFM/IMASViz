@@ -340,8 +340,9 @@ window interaction features.
 Table Plot View
 ~~~~~~~~~~~~~~~
 
-Table Plot View plots every array from selection to its own plot display.
-The plot display are arranged to resemble a table layout, as shown in figure
+:guilabel:`Table Plot View` allows the user to create a multiplot window by
+plotting every array from selection to its own plot display.
+The plot displays are arranged to resemble a table layout, as shown in figure
 below.
 
 .. figure:: images/TablePlotView_example.png
@@ -379,6 +380,10 @@ To create a new :guilabel:`Table Plot View`, follow the next steps:
    The :guilabel:`Table Plot View` window will then be shown.
 
 .. note::
+   Each plot can be customized individually; right click on a node and
+   select 'Configure Plot'.
+
+.. note::
    Scrolling down the :guilabel:`Table Plot View` window using the middle mouse
    button is disabled as the same button is used to interact with the plot
    display (zoom in and out). Scrolling can be done by clicking the scroll bar
@@ -414,13 +419,19 @@ To create MultiPlot configuration, follow the next steps:
 .. Note::
    The configurations are saved to ``$HOME/.imasviz`` folder.
 
-Load MultiPlot configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Applying MultiPlot configuration to other IMAS database
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To load MultiPlot configuration, follow the next steps:
+To apply MultiPlot configuration to any IMAS database, follow the next steps:
 
-1. In Main Tree View Window menu navigate to **Actions** ->
-   **Apply Plot Configuration**
+1. Open IMAS database.
+
+   .. See also::
+      How to open IMAS database is described in :ref:`loading_IDS`.
+
+2. In Main Tree View Window menu navigate to **Actions** ->
+   **Apply Configuration**. In the shown window switch to
+   :guilabel:`Apply Plot Configuration` tab.
 
    .. figure:: images/ApplyPlotConfiguration_window.png
      :align: center
@@ -428,9 +439,9 @@ To load MultiPlot configuration, follow the next steps:
 
      Apply Plot Configuration GUI Window.
 
-2. Select the configuration from the list.
+3. Select the configuration from the list.
 
-3. Press **Apply selection and plot selected data**.
+4. Press **Apply selection and plot selected data**.
 
    The :guilabel:`Table Plot View` will be created using the data stored in the
    configuration file.
@@ -441,12 +452,20 @@ To load MultiPlot configuration, follow the next steps:
    plots from multiple IMAS databases at once. This feature is to be improved
    in the future.
 
+.. warning::
+   The plots order depends on the order in which the data selection has
+   been performed. First selected data will be the first plots in the
+   Table Plot View window.
+
 Stacked Plot View
 ~~~~~~~~~~~~~~~~~
 
-Stacked Plot View plots every array from selection to its own plot display.
-The plot display are arranged to resemble a stack layout, as shown in figure
-below.
+:guilabel:`Stacked Plot View` allows the user to create a multiplot window by
+plotting every array from selection to its own plot display.
+The plot displays are arranged to resemble a stack layout, as shown in figure
+below. All plots displays always share the same X and Y range, even when
+using plot interaction features such as :guilabel:`Zoom in/out`,
+:guilabel:`Pan Mode`, :guilabel:`Area Zoom Mode` etc.
 
 .. figure:: images/StackedPlotView_example.png
     :align: center
@@ -482,4 +501,8 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
      opened IDS database.
 
    The :guilabel:`Stacked Plot View` window will then be shown.
+
+.. note::
+   Each plot can be customized individually; right click on a node and
+   select 'Configure Plot'.
 

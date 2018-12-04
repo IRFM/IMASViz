@@ -3,8 +3,8 @@
 
 .. _signal_node_selection:
 
-Node selection
-==============
+Node selection features
+=======================
 
 IMASViz offers the user the ability to set or mark a selection of plottable
 arrays (nodes) as once. This way plotting multiple plots to the same
@@ -21,8 +21,9 @@ described.
 Select One-by-one
 -----------------
 
-To select nodes customly one by one, first right-click on the wanted node.
-From the shown pop-up menu, select the command :guilabel:`Select <node name>`.
+To select nodes one by one, first right-click on the wanted node.
+From the shown pop-up menu, select the command
+:guilabel:`Select <node name>` |icon_plus|.
 
 .. figure:: images/DTV_popupmenu_select.png
    :align: center
@@ -55,7 +56,7 @@ Select All Nodes of the same Structure (AOS)
 
 To select all nodes of the same structure (same node structure type),
 right-click on one of the nodes and from the shown popup-menu select the option
-:guilabel:`Select All Nodes From The Same AOS`.
+:guilabel:`Select All Nodes From The Same AOS` |icon_plus3x|.
 
 .. figure:: images/DTV_popupmenu_select_AOS.png
    :align: center
@@ -76,16 +77,121 @@ colored to red.
 Save Node Selection Configuration
 ---------------------------------
 
-...
+Any node selection can be saved to a configuration file and used later with any
+opened IMAS database. To save a selection, follow the next steps:
 
-Load Selection From Save Node Selection Configuration
-------------------------------------------------------
+1. In main tree view window menu navigate to **Node Selection** ->
+   **Save Node Selection**.
 
-...
+2. In opened GUI window type the name of the configuration.
+
+   .. figure:: images/SavePlotSelection_dialog.png
+      :align: center
+      :scale: 75%
+
+      Save Node Selection Dialog.
+
+3. Press **OK** button.
+
+.. Note::
+   The configurations are saved to ``$HOME/.imasviz`` folder.
+
+Apply Selection From Saved Configuration
+----------------------------------------
+
+Applying saved node selection can be performed using both
+:guilabel:`Node Selection Configuration` and
+:guilabel:`MultiPlot Configuration`.
+
+Apply Selection From Saved Node Selection Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To apply selection from Node Selection Configuration, follow the next steps:
+
+1. In Main Tree View Window menu navigate to **Actions** ->
+   **Apply Configuration**. In the shown window switch to
+   :guilabel:`Available Node Selection Configurations` tab.
+
+   .. figure:: images/ApplyPlotConfiguration_NodeSelection.png
+     :align: center
+     :scale: 75%
+
+     :guilabel:`Apply Node Selection Configuration` tab.
+
+2. Select the configuration from the list.
+
+3. Press **Apply selection only**.
+
+   The signal nodes, found in the configuration file, will then be selected.
+
+Apply Selection From MultiPlot Configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To apply selection from MultiPlot Configuration, follow the next steps:
+
+.. seealso::
+   How the create MultiPlot Configuration is described in
+   :ref:`TPV`.
+
+1. In Main Tree View Window menu navigate to **Actions** ->
+   **Apply Configuration**. In the shown window switch to
+   :guilabel:`Apply Plot Configuration` tab.
+
+   .. figure:: images/ApplyPlotConfiguration_window.png
+     :align: center
+     :scale: 75%
+
+     :guilabel:`Apply Plot Configuration` tab.
+
+2. Select the configuration from the list.
+
+3. Press **Apply selection only**.
+
+   The signal nodes, found in the configuration file, will then be selected.
+
+Unselect selected Node Signals
+------------------------------
+
+There are few features that allow node signal unselection.
+
+Unselect One-by-one
+~~~~~~~~~~~~~~~~~~~
+
+To unselect nodes one by one, first right-click on the selected node.
+From the shown pop-up menu, select the command
+:guilabel:`Unselect <node name>` |icon_minus|.
+
+.. figure:: images/DTV_popupmenu_unselect.png
+   :align: center
+   :scale: 75%
+
+   Unselecting plottable node.
+
+Unselect All
+~~~~~~~~~~~~
+
+To unselect all selected nodes, first right-click on the selected node.
+From the shown pop-up menu, select the command
+:guilabel:`Unselect Nodes` |icon_minus3x| ->
+:guilabel:`This IMAS Database` |icon_thisDTV| or
+:guilabel:`All IMAS Databases` |icon_allDTV|.
+
+.. figure:: images/DTV_popupmenu_unselect_all.png
+   :align: center
+   :scale: 75%
+
+   Unselecting multiple plottable nodes at once.
 
 
-Load Selection From MultiPlot Configuration
---------------------------------------------
 
-...
+
+
+
+
+
+
+
+
+
+
 
