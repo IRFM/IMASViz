@@ -22,7 +22,10 @@ modules:
 .. code-block:: console
 
     module load cineca
-    module load imasenv/
+    module load imasenv
+    module load itm-gcc/6.1.0
+    module load itm-python/3.6
+    module load itm-qt/5.8.0
     module load imas-viz
 
 Running IMASViz
@@ -100,6 +103,18 @@ Setting the environment
 To set the environment, go to :file:`viz` directory and set :guilabel:`VIZ_HOME` and
 :guilabel:`VIZ_PRODUCTION` environment variables by running the next commands in
 the terminal:
+
+.. TODO: Update for IMASViz2.0
+.. code-block:: console
+
+    module load cineca
+    module load imasenv
+    module load itm-gcc/6.1.0
+    module load itm-python/3.6
+    module load itm-qt/5.8.0
+    module load imas-viz
+
+and
 
 .. code-block:: console
 

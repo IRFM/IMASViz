@@ -21,6 +21,7 @@ Changes:
   plotting options:
   - wxPython IMASViz: ~13s
   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
+- Better plot export possibilities
 - GUI improvements, reducing the number of separate windows, introduce docked
   widgets, introduce GUI icons
 - MultiPlot feature relabeled to TablePlotView
