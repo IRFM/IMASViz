@@ -95,9 +95,9 @@ class QVizPlotWidget(QWidget):
         # should NOT change it.
         if len(self.getPlotList()) == 1:
             # - Set x-axis label
-            self.pgPlotWidget.setLabel('left', xlabel, units='')
+            self.pgPlotWidget.setLabel('left', ylabel, units='')
             # - Set y-axis label
-            self.pgPlotWidget.setLabel('bottom', ylabel, units='')
+            self.pgPlotWidget.setLabel('bottom', xlabel, units='')
             # - Enable grid
             self.pgPlotWidget.showGrid(x=True, y=True)
 
