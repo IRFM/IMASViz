@@ -6,11 +6,11 @@
 Plotting 1D arrays
 ==================
 
-The plotting of 1D arrays option and plot handling is one of the main features
-of the IMASViz.
+The plotting of 1D arrays option and plot handling is the main feature and
+purpose of the :guilabel:`IMASViz`.
 
-This tutorial subsection presents the basics of plotting a 1D array, stored in
-the IDS, and how to handle the created plots.
+This section describes the basics of plotting a 1D array, stored in
+the IDS, and how to handle the existing plots.
 
 Plotting a single 1D array to plot figure
 -----------------------------------------
@@ -19,7 +19,7 @@ The procedure to plot 1D array is as follows:
 
 1. Navigate through the **magnetics IDS** and search for the node containing
    **FLT_1D** data, for example **ids.magnetics.flux_loop[0].flux.data**.
-   Plottable FLT_1D nodes are colored blue (array length > 0)
+   Plottable FLT_1D nodes are colored **blue** (array length > 0)
 
    .. figure:: images/DTV_magnetics_IDS_contents_FLT_1D.png
      :align: center
@@ -29,17 +29,18 @@ The procedure to plot 1D array is as follows:
      Example of plottable FLT_1D node.
 
    By clicking on the node the preview plot will be displayed in the
-   :guilabel:`Preview Plot`, located in the main browsing window. This
+   :guilabel:`Preview Plot`, located in the main window. This
    feature helps to quickly check how the data, stored in the FLT_1D, looks
    when plotted.
 
    .. figure:: images/DTV_preview_plot.png
      :align: center
-     :scale: 80%
+     :width: 550px
+     :alt:   Preview Plot
 
      Preview Plot
 
-2. Right-click on the **ids.magnetics.flux_loop[0].flux.data (FLT_1D)** node
+2. Right-click on the **ids.magnetics.flux_loop[0].flux.data (FLT_1D)** node.
 
 3. From the pop-up menu, select the command
    :guilabel:`Plot ids.magnetics.flux_loop[0].flux.data to` |icon_plotSingle| ->
@@ -55,7 +56,7 @@ The procedure to plot 1D array is as follows:
 
    .. figure:: images/plotWidget_basic.png
      :align: center
-     :scale: 75%
+     :width: 550px
 
      Basic plot figure display.
 
@@ -67,7 +68,7 @@ The below features are available for any :guilabel:`plot display`. Most of them
 are available in the right-click menu.
 
 .. Note::
-   Term :guilabel:`Plot Display` is used for any base window for displaying
+   Term :guilabel:`Plot Display` is used for any base subwindow for displaying
    plots. Following that the :guilabel:`Plot Figure` contains a single
    :guilabel:`Plot Display`, while :guilabel:`Table Plot View`
    and :guilabel:`Stacked Plot View` consist of multiple
@@ -75,7 +76,7 @@ are available in the right-click menu.
 
 .. figure:: images/plotDisplay_popupmenu.png
   :align: center
-  :scale: 75%
+  :width: 550px
 
   Plot display window right-click menu.
 
@@ -88,7 +89,7 @@ are available in the right-click menu.
 View All
 ^^^^^^^^
 
-View whole plot area.
+Zoom to view whole plot area.
 
    .. figure:: images/plotDisplay_popupmenu_viewAll.png
      :align: center
@@ -101,7 +102,7 @@ Auto Range
 
 Similar to :guilabel:`View All` feature with the difference that it shows
 plot area between values ``X_min`` -> ``X_max`` and ``Y_min`` -> ``Y_max``,
-without 'plot margins'.
+without additional "plot margins" on the sides.
 
    .. figure:: images/plotDisplay_popupmenu_autoRange.png
      :align: center
@@ -120,6 +121,19 @@ Change between :guilabel:`Pan Mode` (move plot around) and
      :scale: 75%
 
      :guilabel:`Mouse Mode` feature in the right-click menu.
+
+   .. figure:: images/plotDisplay_area_zoom.png
+     :align: center
+     :width: 300px
+
+     :guilabel:`Area Zoom` example: Marking zoom area using.
+
+
+   .. figure:: images/plotDisplay_area_zoom_result.png
+     :align: center
+     :width: 300px
+
+     :guilabel:`Area Zoom` example: Result.
 
 Axis options
 ^^^^^^^^^^^^
@@ -155,7 +169,7 @@ properties that can be customized.
    .. figure:: images/plot_configuration_example.png
      :align: center
 
-     Plot configuration example.
+     Plot configuration example for single plot.
 
 Plot options
 ^^^^^^^^^^^^
@@ -171,12 +185,12 @@ Enable/Disable grid, log scale and more.
 Export feature
 ^^^^^^^^^^^^^^
 
-The Plot Display scene can be exported to:
-- image file (PNG, JPG, ...). A total of 16 image formats are supported.
-- scalable vector graphics (SVG)
-- matplotlib window
-- CSV
-- HDF5
+The :guilabel:`Plot Display` scene can be exported to:
+   - image file (PNG, JPG, ...). A total of **16** image formats are supported.
+   - scalable vector graphics (SVG) file
+   - matplotlib window
+   - CSV file
+   - HDF5 file
 
    .. figure:: images/plotDisplay_popupmenu_export.png
      :align: center
@@ -192,15 +206,15 @@ The Plot Display scene can be exported to:
 
    .. figure:: images/plotDisplay_export_matplotlib.png
      :align: center
-     :scale: 75%
+     :width: 550px
 
      Comparison of IMASViz :guilabel:`Plot Figure` and
      :guilabel:`matplotlib window`
 
 .. _add_plot_to_existing_figure_:
 
-Adding a plot to an existing figure
------------------------------------
+Adding a plot to existing figure
+--------------------------------
 
 The procedure of adding a plot to an already existing figure is as follows:
 
@@ -219,11 +233,12 @@ The procedure of adding a plot to an already existing figure is as follows:
 
      Plotting to existing figure.
 
-The plot will be added to the existing plot as shown in the image below.
+The plot will be added to the selected existing plot as shown in the image
+below.
 
    .. figure:: images/DTV_popupmenu_plot_to_existing_figure_result.png
      :align: center
-     :scale: 75%
+     :width: 550px
 
      Plotting to existing figure - result.
 
@@ -231,13 +246,13 @@ The plot will be added to the existing plot as shown in the image below.
 Comparing plots between two IDS databases
 -----------------------------------------
 
-IMASViz allows comparing of FLT_1D arrays between two different IDS databases
-(different shots too). The procedure is very similar to the one presented in
-the section :ref:`add_plot_to_existing_figure_`:
+:guilabel:`IMASViz` allows comparing of FLT_1D arrays between two different
+IDS databases (different shots too). The procedure is very similar to the one
+presented in the section :ref:`add_plot_to_existing_figure_`:
 
 1. Open another IMAS database, same as shown in section :ref:`loading_IDS`.
    In this manual this will be demonstrated using IDS with :guilabel:`shot`
-   parameter **52682**.
+   **52682** and :guilabel:`run` **0** parameters.
 
    +-------------------------+-----+
    | **Manual IDS case**           |
@@ -254,7 +269,7 @@ the section :ref:`add_plot_to_existing_figure_`:
    +--------------------+----------+
 
 
-2. Load occurrence 0 of **magnetics** IDS
+2. Load **occurrence 0** of **magnetics** IDS
 
 3. Navigate through the IDS search for the wanted node, for example
    **ids.magnetics.flux_loop[0].flux.data**.
@@ -269,7 +284,7 @@ The plot will be added to the existing plot as shown in the image below.
 
    .. figure:: images/DTV2_popupmenu_plot_to_existing_figure_result.png
      :align: center
-     :scale: 75%
+     :width: 550px
 
      Plotting from other IDS to existing figure - result.
 
@@ -278,7 +293,7 @@ The plot will be added to the existing plot as shown in the image below.
 Plotting a selection of 1D arrays to figure
 -------------------------------------------
 
-The procedure of 1D arrays selection and plotting to the same figure is as
+The procedure of 1D arrays selection and plotting to figure is as
 follows:
 
 1. In main tree view window set a selection of nodes holding 1D arrays.
@@ -309,7 +324,7 @@ follows:
 
    .. figure:: images/DTV_plot_selected_nodes_to_figure_thisDTV_result.png
      :align: center
-     :scale: 75%
+     :width: 550px
 
      Example of plot figure, created by plotting data from node selection.
 
@@ -322,18 +337,19 @@ IMASViz provides few features that allow plotting a selection of plottable
 arrays to a single plot view window.
 
 Currently there are two such features available:
-- :guilabel:`Table Plot View` and
-- :guilabel:`Stacked Plot View`.
+   - :guilabel:`Table Plot View` and
+   - :guilabel:`Stacked Plot View`.
 
 Each of those Plot Views feature its own plot display layout and plot display
 window interaction features.
 
 .. Note::
-   In the old IMASViz the :guilabel:`Table Plot View` is known as
+   In the old IMASViz, the :guilabel:`Table Plot View` is known as
    :guilabel:`MultiPlot` and the :guilabel:`Stacked Plot View` is known as
    :guilabel:`SubPlot`. The decision to rename those features was made due to
    the previous names not properly describing the feature itself and both of
-   those features being a form of 'MultiPlot'.
+   those features being a form of 'MultiPlot' - a window consisting of multiple
+   plot displays.
 
 .. _TPV:
 
@@ -351,7 +367,7 @@ below.
 
     MultiPlot - :guilabel:`Table Plot View` Example.
 
-Creating new view
+Creating New View
 ^^^^^^^^^^^^^^^^^
 
 To create a new :guilabel:`Table Plot View`, follow the next steps:
@@ -360,9 +376,9 @@ To create a new :guilabel:`Table Plot View`, follow the next steps:
    :ref:`plotting_a_selection_to_figure`.
 
 2. When finished with node selection, either:
-   - right-click on any FLT_1D node or
-   - click :guilabel:`Node Selection` menu on menubar of the main tree view
-   window.
+      - right-click on any **FLT_1D** node or
+      - click :guilabel:`Node Selection` menu on menubar of the main tree view
+        window.
 
 3. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
@@ -377,11 +393,11 @@ To create a new :guilabel:`Table Plot View`, follow the next steps:
      Plotting selection to a new figure using selection from the currently
      opened IDS database.
 
-   The :guilabel:`Table Plot View` window will then be shown.
+   The :guilabel:`Table Plot View` window will then be created and shown.
 
 .. note::
-   Each plot can be customized individually; right click on a node and
-   select 'Configure Plot'.
+   Each plot can be customized individually by right-clicking to the plot d
+   display and selecting option :guilabel:`Configure Plot`.
 
 .. note::
    Scrolling down the :guilabel:`Table Plot View` window using the middle mouse
@@ -389,7 +405,7 @@ To create a new :guilabel:`Table Plot View`, follow the next steps:
    display (zoom in and out). Scrolling can be done by clicking the scroll bar
    on the right and dragging it up and down.
 
-Save MultiPlot configuration
+Save MultiPlot Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 MultiPlot configuration (currently available only for
@@ -417,7 +433,7 @@ To create MultiPlot configuration, follow the next steps:
 5. Press **OK**.
 
 .. Note::
-   The configurations are saved to ``$HOME/.imasviz`` folder.
+   The configurations files are saved to :file:`$HOME/.imasviz` folder.
 
 Applying MultiPlot configuration to other IMAS database
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -455,7 +471,7 @@ To apply MultiPlot configuration to any IMAS database, follow the next steps:
 .. warning::
    The plots order depends on the order in which the data selection has
    been performed. First selected data will be the first plots in the
-   Table Plot View window.
+   :guilabel:`Table Plot View` window.
 
 Stacked Plot View
 ~~~~~~~~~~~~~~~~~
@@ -473,7 +489,7 @@ using plot interaction features such as :guilabel:`Zoom in/out`,
 
     MultiPlot - :guilabel:`Stacked Plot View` Example.
 
-Creating new view
+Creating New View
 ^^^^^^^^^^^^^^^^^
 
 To create a new :guilabel:`Stacked Plot View`, follow the next steps:
@@ -482,9 +498,9 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
    :ref:`plotting_a_selection_to_figure`.
 
 2. When finished with node selection, either:
-   - right-click on any FLT_1D node or
-   - click :guilabel:`Node Selection` menu on menubar of the main tree view
-   window.
+      - right-click on any FLT_1D node or
+      - click :guilabel:`Node Selection` menu on menubar of the main tree view
+        window.
 
 3. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->

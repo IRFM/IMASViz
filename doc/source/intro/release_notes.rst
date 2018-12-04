@@ -21,36 +21,36 @@ Changes:
   plotting options:
   - wxPython IMASViz: ~13s
   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
-- GUI improvements, reducing number of separate windows, introduce docked
+- GUI improvements, reducing the number of separate windows, introduce docked
   widgets, introduce GUI icons
 - MultiPlot feature relabeled to TablePlotView
 - SubPlot feature relabeled to StackedPlotView
 - Add support for IMAS versions 3.20.0
-- Add sources for document generation (tutorial included)
-- Code documentation improvements
+- Add sources for document generation (manual included)
+- In-code documentation greatly improved
 
 .. Note::
    The migration to PyQt5 due to IMASViz containing large code sets is not
    yet fully complete.
    List of know features yet to migrate to IMASViz 2.0:
-   - Equilibrium plugin
-   - Add selected nodes to existing TablePlotView
-   - StackedPlotView manager
+   ``Equilibrium plugin``,
+   ``Add selected nodes to existing TablePlotView``, and
+   ``StackedPlotView manager``.
 
-Quick GUI comparison between the previous and the new IMASViz GUI is shown
-below.
+A quick GUI comparison between the **previous** and the **new** IMASViz GUI is
+shown below.
 
 Overview of IMASViz 1.2 GUI:
 
 .. image:: images/GUI_overview_old.png
    :align: center
-   :scale: 80%
+   :width: 550px
 
 Overview of IMASViz 2.0 GUI:
 
 .. image:: images/GUI_overview_2.0.png
    :align: center
-   :scale: 80%
+   :width: 550px
 
 -----------
 Version 1.2
@@ -86,7 +86,7 @@ Changes (since March 2017):
 - A first plugins mechanism has been developed which allows developers to
   integrate their plugins to IMASViz
 - The 'Equilibrium overview plugin' developed by Morales Jorge has been
-  integrated to IMASViz
+  integrated into IMASViz
 - Concerning UDA, WEST shots can be accessed if a SSH tunnel can be established
   to the remote WEST UDA server.
 - Introducing MultiPlot and SubPlot features

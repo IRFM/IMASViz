@@ -3,13 +3,13 @@
 Getting Started
 ===============
 
-This tutorial subsection presents setting the environment configuration required
+This section describes setting the environment configuration required
 to run the IMASViz tool and how to run the application itself.
 
 Running IMASViz as a module on HPC cluster
 ------------------------------------------
 
-The procedure below explains how to use IMASViz if it is available as a
+The procedure below describes how to use IMASViz if it is available as a
 module on the HPC cluster (e.g. GateWay).
 
 Setting the Environment
@@ -61,7 +61,7 @@ The description of the above input parameters is as follows:
 Running IMASViz from source
 ---------------------------
 
-The procedure below explains how to run IMASViz from source.
+The procedure below describes how to run IMASViz from source.
 
 Requirements
 ~~~~~~~~~~~~
@@ -70,27 +70,21 @@ The fundamental requirements in order to locally run IMASViz are:
 
 - IMAS
 - Python3 and Python libraries:
-  - PyQt5
-  - pyqtgraph
-  - matplotlib
-  - Sphinx
+   - PyQt5
+   - pyqtgraph
+   - matplotlib
+   - Sphinx
+   - Sphinx RTD theme (:command:`pip3 install sphinx_rtd_theme`)
 
 Obtaining the source code
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To obtain the IMASViz code source the next two steps are required:
 
-1. Clone repository from **git.iter.org** (permissions are required!):
+1. Clone repository from **git.iter.org** (permissions are required!).
 
-   .. code-block:: console
-
-      git clone ssh://git@git.iter.org/vis/viz.git
-
-   or
-
-   .. code-block:: console
-
-      git clone https://penkod@git.iter.org/scm/vis/viz.git
+   Direct link to the **IMASViz** git.iter repository:
+   `IMASViz <https://git.iter.org/projects/VIS/repos/viz/browse>`_.
 
 2. Switch to IMASViz2.0 branch (required if master branch is not updated yet)
 
@@ -103,9 +97,9 @@ To obtain the IMASViz code source the next two steps are required:
 Setting the environment
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To set the enviroment, go to **viz** directory and set :guilabel:`VIZ_HOME` and
+To set the environment, go to :file:`viz` directory and set :guilabel:`VIZ_HOME` and
 :guilabel:`VIZ_PRODUCTION` environment variables by running the next commands in
-terminal:
+the terminal:
 
 .. code-block:: console
 

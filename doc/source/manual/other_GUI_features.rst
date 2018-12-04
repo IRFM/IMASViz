@@ -6,13 +6,14 @@
 Other GUI features
 ==================
 
-Other IMASViz GUI features are listed here.
+Other :guilabel:`IMASViz` GUI features are listed here.
 
 Hide/Show Plot Window
 ---------------------
 
-To hide or show any of the plot windows, first right-click on any signal node.
-From the shown pop-up menu, select the command
+To **hide** or **show** any of the plot windows (:guilabel:`Figure`,
+:guilabel:`Table Plot View` etc.), first right-click on any
+signal node. From the shown pop-up menu, select the command
 :guilabel:`Show/Hide` |icon_showHide| and select the plot window you wish to
 show or hide.
 
@@ -30,8 +31,9 @@ Delete Plot Window
 
 To delete any of the plot windows, first right-click on any signal node.
 From the shown pop-up menu, select the command
-:guilabel:`Delete` and select the plot window you wish to delete pr delete
-all plot windows of certain type (:guilabel:`Figure` etc.).
+:guilabel:`Delete` and select the plot window you wish to delete or delete
+all plot windows of certain type (:guilabel:`Figure`,
+:guilabel:`Table Plot View` etc.).
 
 .. warning::
    The plot window will be deleted permanently.
