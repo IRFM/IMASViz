@@ -33,7 +33,7 @@ Changes:
 .. Note::
    The migration to PyQt5 due to IMASViz containing large code sets is not
    yet fully complete.
-   List of know features yet to migrate to IMASViz 2.0:
+   List of known features yet to migrate to IMASViz 2.0:
    ``Equilibrium plugin``,
    ``Add selected nodes to existing TablePlotView``, and
    ``StackedPlotView manager``.

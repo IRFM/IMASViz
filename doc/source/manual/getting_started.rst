@@ -6,60 +6,60 @@ Getting Started
 This section describes setting the environment configuration required
 to run the IMASViz tool and how to run the application itself.
 
-Running IMASViz as a module on HPC cluster
-------------------------------------------
+.. Running IMASViz as a module on HPC cluster
+.. ------------------------------------------
 
-The procedure below describes how to use IMASViz if it is available as a
-module on the HPC cluster (e.g. GateWay).
+.. The procedure below describes how to use IMASViz if it is available as a
+.. module on the HPC cluster (e.g. GateWay).
 
-Setting the Environment
-~~~~~~~~~~~~~~~~~~~~~~~
+.. Setting the Environment
+.. ~~~~~~~~~~~~~~~~~~~~~~~
 
-In a new terminal, execute the following command in order to load the required
-modules:
+.. In a new terminal, execute the following command in order to load the required
+.. modules:
 
-.. TODO: Update for IMASViz2.0
-.. code-block:: console
+.. .. TODO: Update for IMASViz2.0
+.. .. code-block:: console
 
-    module load cineca
-    module load imasenv
-    module load itm-gcc/6.1.0
-    module load itm-python/3.6
-    module load itm-qt/5.8.0
-    module load imas-viz
+..     module load cineca
+..     module load imasenv
+..     module load itm-gcc/6.1.0
+..     module load itm-python/3.6
+..     module load itm-qt/5.8.0
+..     module load imas-viz
 
-Running IMASViz
-~~~~~~~~~~~~~~~
+.. Running IMASViz
+.. ~~~~~~~~~~~~~~~
 
-With the environment set, run the IMASviz by simply typing the following
-command:
+.. With the environment set, run the IMASviz by simply typing the following
+.. command:
 
-.. TODO: Update for IMASViz2.0
-.. code-block:: console
+.. .. TODO: Update for IMASViz2.0
+.. .. code-block:: console
 
-    viz
+..     viz
 
-The main GUI window of IMAS_VIZ should display, as shown in the figure below:
+.. The main GUI window of IMAS_VIZ should display, as shown in the figure below:
 
-.. image:: images/startup_window_default.png
-   :align: center
-   :scale: 80%
+.. .. image:: images/startup_window_default.png
+..    :align: center
+..    :scale: 80%
 
 
-The description of the above input parameters is as follows:
+.. The description of the above input parameters is as follows:
 
-+--------------------+-----------------------------------------------------------+
-| **GUI Fields**     | **Description**                                           |
-+====================+===========================================================+
-| User name          | Creator/owner of the IMAS IDSs database                   |
-+--------------------+-----------------------------------------------------------+
-| IMAS database name | IMAS database label, usually device/machine name of the   |
-|                    | IMAS IDS database (i. e. iter, aug, west...)              |
-+--------------------+-----------------------------------------------------------+
-| Shot number        | Pulse shot number                                         |
-+--------------------+-----------------------------------------------------------+
-| Run number         | Pulse run number                                          |
-+--------------------+-----------------------------------------------------------+
+.. +--------------------+-----------------------------------------------------------+
+.. | **GUI Fields**     | **Description**                                           |
+.. +====================+===========================================================+
+.. | User name          | Creator/owner of the IMAS IDSs database                   |
+.. +--------------------+-----------------------------------------------------------+
+.. | IMAS database name | IMAS database label, usually device/machine name of the   |
+.. |                    | IMAS IDS database (i. e. iter, aug, west...)              |
+.. +--------------------+-----------------------------------------------------------+
+.. | Shot number        | Pulse shot number                                         |
+.. +--------------------+-----------------------------------------------------------+
+.. | Run number         | Pulse run number                                          |
+.. +--------------------+-----------------------------------------------------------+
 
 Running IMASViz from source
 ---------------------------
@@ -100,21 +100,9 @@ To obtain the IMASViz code source the next two steps are required:
 Setting the environment
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To set the environment, go to :file:`viz` directory and set :guilabel:`VIZ_HOME` and
-:guilabel:`VIZ_PRODUCTION` environment variables by running the next commands in
-the terminal:
-
-.. TODO: Update for IMASViz2.0
-.. code-block:: console
-
-    module load cineca
-    module load imasenv
-    module load itm-gcc/6.1.0
-    module load itm-python/3.6
-    module load itm-qt/5.8.0
-    module load imas-viz
-
-and
+To set the environment, go to :file:`viz` directory and set :guilabel:`VIZ_HOME`
+and :guilabel:`VIZ_PRODUCTION` environment variables by running the next
+commands in the terminal:
 
 .. code-block:: console
 
@@ -126,6 +114,32 @@ and
    setenv VIZ_PRODUCTION 0
    setenv VIZ_HOME $PWD
 
+Then proceed with the next instructions.
+
+GateWay HPC
+^^^^^^^^^^^
+
+Load next modules:
+
+.. TODO: Update for IMASViz2.0
+.. code-block:: console
+
+    module load cineca
+    module load imasenv
+    module load itm-gcc/6.1.0
+    module load itm-python/3.6
+    module load itm-qt/5.8.0
+    module load imas-viz
+
+ITER HPC
+^^^^^^^^
+
+Load next module:
+
+.. code-block:: console
+
+    module load IMAS/3.20.0-3.8.3
+
 Running IMASViz
 ~~~~~~~~~~~~~~~
 
@@ -134,4 +148,25 @@ To run IMASViz, run the next commands in terminal:
 .. code-block:: console
 
    python3 $VIZ_HOME/imasviz/VizGUI/QtVIZ_GUI.py
+
+The main GUI window of IMAS_VIZ should display, as shown in the figure below:
+
+.. image:: images/startup_window_default.png
+   :align: center
+   :scale: 80%
+
+The description of the above input parameters is as follows:
+
++--------------------+-----------------------------------------------------------+
+| **GUI Fields**     | **Description**                                           |
++====================+===========================================================+
+| User name          | Creator/owner of the IMAS IDSs database                   |
++--------------------+-----------------------------------------------------------+
+| IMAS database name | IMAS database label, usually device/machine name of the   |
+|                    | IMAS IDS database (i. e. iter, aug, west...)              |
++--------------------+-----------------------------------------------------------+
+| Shot number        | Pulse shot number                                         |
++--------------------+-----------------------------------------------------------+
+| Run number         | Pulse run number                                          |
++--------------------+-----------------------------------------------------------+
 
