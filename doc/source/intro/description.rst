@@ -12,6 +12,16 @@ While the tool itself is already available for use it is still under active
 development, and various features, GUI improvements etc. are still being
 implemented.
 
+Developers:
+
+  - **Ludovic Fleury** (CEA Cadarache, Research Institute for Magnetics fusion)
+  - **Dejan Penko** (University of Ljubljana, Mech.Eng., LECAD Lab)
+
+.. Plugin developers
+
+..   - ‘Equilibrium plugin’: Jorge Morales (CEA Cadarache, Research Institute for Magnetics fusion)
+..   - ‘Tofu plugin’: Didier Vezinet (CEA Cadarache, Research Institute for Magnetics fusion)
+
 The tool uses the following Python packages:
 
 **1. PyQt5**
