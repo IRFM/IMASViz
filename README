@@ -99,6 +99,7 @@ Then navigate to
 and run
 
     # for PDF documentation
+    module load texlive
     make pdflatex
     xdg-open build/latex/IMASViz.pdf
     # for HTML documentation

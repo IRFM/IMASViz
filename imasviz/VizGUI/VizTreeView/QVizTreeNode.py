@@ -42,9 +42,8 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def index_name_of_itime(self):
         i = 0
-        #print "QVizTreeNode : self.itime_index = " + self.itime_index
         for key in QVizGlobalValues.indices:
-            if i == int(self.itime_index):
+            if i == int(self.treeNodeExtraAttributes.itime_index):
                 return QVizGlobalValues.indices[key]
             i = i + 1
 

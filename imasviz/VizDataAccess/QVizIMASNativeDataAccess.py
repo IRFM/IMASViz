@@ -34,7 +34,7 @@ class QVizIMASNativeDataAccess:
                 t = QVizGlobalOperations.getTime(ids, selectedNodeData, coordinate1)
                 t = np.array([t])
             else:
-                if "1..N" in treeNode.coordinate1 or "1...N" in treeNode.coordinate1:
+                if "1..N" in treeNode.treeNodeExtraAttributes.coordinate1 or "1...N" in treeNode.treeNodeExtraAttributes.coordinate1:
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:
