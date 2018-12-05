@@ -108,8 +108,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # Adjust the window and its children size
         self.windowSizeAdjustement()
 
-        # Add menu bar
-        self.addMenuBar()
+        # Add menu bar (don't show it for StackedPlotView)
+        if self.viewType == 'TablePlotView':
+            self.addMenuBar()
 
         # Connect custom UI elements
         QtCore.QMetaObject.connectSlotsByName(self)
