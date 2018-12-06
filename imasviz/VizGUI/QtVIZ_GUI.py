@@ -14,16 +14,15 @@
 import os
 import sys
 
+# Add imasviz source path
+sys.path.append((os.environ['VIZ_HOME']))
+
 from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
     QPushButton, QVBoxLayout, QComboBox
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
-
-# Add imasviz source path
-sys.path.append((os.environ['VIZ_HOME']))
-
 
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
