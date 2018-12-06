@@ -165,6 +165,18 @@ class QVizGeneratedClassFactory:
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
+        elif imas__dd_version == "3.19.0":
+            from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_19_0 \
+                import IDSDef_XMLParser_Generated_3_19_0
+            generatedDataTree = IDSDef_XMLParser_Generated_3_19_0(userName=self.IMASDataSource.userName,
+                                                              imasDbName=self.IMASDataSource.imasDbName,
+                                                              shotNumber=self.IMASDataSource.shotNumber,
+                                                              runNumber=self.IMASDataSource.runNumber,
+                                                              view=self.view,
+                                                              IDSName=self.IDSName,
+                                                              occurrence=self.occurrence,
+                                                              pathsList=self.pathsList,
+                                                              async=self.async)
         elif imas__dd_version == "3.19.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_19_1 \
                 import IDSDef_XMLParser_Generated_3_19_1
@@ -189,6 +201,30 @@ class QVizGeneratedClassFactory:
                                                               occurrence=self.occurrence,
                                                               pathsList=self.pathsList,
                                                               async=self.async)
+        elif imas__dd_version == "3.21.0":
+            from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_21_0 \
+                import IDSDef_XMLParser_Generated_3_21_0
+            generatedDataTree = IDSDef_XMLParser_Generated_3_21_0(userName=self.IMASDataSource.userName,
+                                                                  imasDbName=self.IMASDataSource.imasDbName,
+                                                                  shotNumber=self.IMASDataSource.shotNumber,
+                                                                  runNumber=self.IMASDataSource.runNumber,
+                                                                  view=self.view,
+                                                                  IDSName=self.IDSName,
+                                                                  occurrence=self.occurrence,
+                                                                  pathsList=self.pathsList,
+                                                                  async=self.async)
+        elif imas__dd_version == "3.21.1":
+            from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_21_1 \
+                import IDSDef_XMLParser_Generated_3_21_1
+            generatedDataTree = IDSDef_XMLParser_Generated_3_21_1(userName=self.IMASDataSource.userName,
+                                                                  imasDbName=self.IMASDataSource.imasDbName,
+                                                                  shotNumber=self.IMASDataSource.shotNumber,
+                                                                  runNumber=self.IMASDataSource.runNumber,
+                                                                  view=self.view,
+                                                                  IDSName=self.IDSName,
+                                                                  occurrence=self.occurrence,
+                                                                  pathsList=self.pathsList,
+                                                                  async=self.async)
         else:
             raise ValueError("IMAS dictionary version not supported:" + imas__dd_version)
 
