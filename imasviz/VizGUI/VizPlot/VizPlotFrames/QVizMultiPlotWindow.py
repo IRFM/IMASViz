@@ -443,7 +443,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
                     # Update items for the changes to be displayed
                     pdItem.updateItems()
 
-    def applyPlotConfigurationBeforePlotting(self):
+    def applyPlotConfigurationBeforePlotting(self, plotConfig=None):
         pass
 
     def getDTV(self):
