@@ -11,9 +11,6 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #*******************************************************************************
 
-# Add imasviz source path
-# sys.path.append((os.environ['VIZ_HOME']))
-
 import os
 import sys
 
@@ -23,6 +20,9 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+
+# Add imasviz source path
+sys.path.append((os.environ['VIZ_HOME']))
 
 
 class GUIFrame(QTabWidget):
