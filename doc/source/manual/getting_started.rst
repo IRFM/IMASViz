@@ -6,60 +6,66 @@ Getting Started
 This section describes setting the environment configuration required
 to run the IMASViz tool and how to run the application itself.
 
-.. Running IMASViz as a module on HPC cluster
-.. ------------------------------------------
+Running IMASViz as a module on The GateWay
+------------------------------------------
 
-.. The procedure below describes how to use IMASViz if it is available as a
-.. module on the HPC cluster (e.g. GateWay).
+The procedure below describes how to use IMASViz if it is available as a
+module on the HPC cluster.
 
-.. Setting the Environment
-.. ~~~~~~~~~~~~~~~~~~~~~~~
+Setting the Environment
+~~~~~~~~~~~~~~~~~~~~~~~
 
-.. In a new terminal, execute the following command in order to load the required
-.. modules:
+In a new terminal, execute the following command in order to load the required
+modules:
 
-.. .. TODO: Update for IMASViz2.0
-.. .. code-block:: console
+.. code-block:: console
 
-..     module load cineca
-..     module load imasenv
-..     module load itm-gcc/6.1.0
-..     module load itm-python/3.6
-..     module load itm-qt/5.8.0
-..     module load imas-viz
+    module load cineca
+    module load imasenv   # or any other specific imasenv module version
+    module load itm-gcc/6.1.0
+    module unload itm-python/2.7
+    module load itm-python/3.6
+    module load itm-qt/5.8.0
+    module load imas-viz/2.0.0
 
-.. Running IMASViz
-.. ~~~~~~~~~~~~~~~
+.. Warning::
+   **IMPORTANT!** IMAS databases (IDSs) were written using specific version of
+   IMAS. In order to open these IDSs the **same IMAS module version** should
+   be used due to possible IDS database structure changes through different
+   versions. Any tools or utilities that work with IDSs, including ``IMASViz``,
+   cannot work properly if this 'IMAS version mismatch' is too great (!).
 
-.. With the environment set, run the IMASviz by simply typing the following
-.. command:
+Running IMASViz
+~~~~~~~~~~~~~~~
 
-.. .. TODO: Update for IMASViz2.0
-.. .. code-block:: console
+With the environment set, run the IMASviz by simply typing the following
+command:
 
-..     viz
+.. code-block:: console
 
-.. The main GUI window of IMAS_VIZ should display, as shown in the figure below:
+    viz
 
-.. .. image:: images/startup_window_default.png
-..    :align: center
-..    :scale: 80%
+The main GUI window of IMAS_VIZ should display, as shown in the figure below:
+
+.. image:: images/startup_window_default.png
+   :align: center
+   :scale: 80%
 
 
-.. The description of the above input parameters is as follows:
+The description of the above input parameters is as follows:
 
-.. +--------------------+-----------------------------------------------------------+
-.. | **GUI Fields**     | **Description**                                           |
-.. +====================+===========================================================+
-.. | User name          | Creator/owner of the IMAS IDSs database                   |
-.. +--------------------+-----------------------------------------------------------+
-.. | IMAS database name | IMAS database label, usually device/machine name of the   |
-.. |                    | IMAS IDS database (i. e. iter, aug, west...)              |
-.. +--------------------+-----------------------------------------------------------+
-.. | Shot number        | Pulse shot number                                         |
-.. +--------------------+-----------------------------------------------------------+
-.. | Run number         | Pulse run number                                          |
-.. +--------------------+-----------------------------------------------------------+
++--------------------+-----------------------------------------------------------+
+| **GUI Fields**     | **Description**                                           |
++====================+===========================================================+
+| User name          | Creator/owner of the IMAS IDSs database                   |
++--------------------+-----------------------------------------------------------+
+| IMAS database name | IMAS database label, usually device/machine name of the   |
+|                    | IMAS IDS database (i. e. iter, aug, west...)              |
++--------------------+-----------------------------------------------------------+
+| Shot number        | Pulse shot number                                         |
++--------------------+-----------------------------------------------------------+
+| Run number         | Pulse run number                                          |
++--------------------+-----------------------------------------------------------+
 
 Running IMASViz from source
 ---------------------------
