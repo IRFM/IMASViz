@@ -312,7 +312,7 @@ class PlotConfigurationListsTab(QWidget):
             # Set up and show the TablePlotView using the config file
             QVizMultiPlotWindow(self.dataTreeView,
                                 figureKey=figureKey,
-                                update=1,
+                                update=0,
                                 configFile=selectedFile)
         else:
             pass

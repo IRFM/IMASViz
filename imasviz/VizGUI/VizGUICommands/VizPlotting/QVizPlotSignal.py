@@ -40,6 +40,8 @@ class QVizPlotSignal(QVizAbstractCommand):
 
         self.signalHandling = signalHandling
 
+        self.log = self.dataTreeView.log
+
         if signal == None:
             signalDataAccess = \
                 QVizDataAccessFactory(self.dataTreeView.dataSource).create()
@@ -143,7 +145,10 @@ class QVizPlotSignal(QVizAbstractCommand):
                 self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=self.figureKey)
+
             if update == 1:
+                # self.log.info('Updating/Overwriting existing plot.')
+
                 # Add plot to existing plot
                 for i in range(0, nbRows):
                     # y-axis values
@@ -151,8 +156,9 @@ class QVizPlotSignal(QVizAbstractCommand):
                     # x-axis values
                     # ti = t[i]
                     ti = t[0]
-                    # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                    plotWidget.plot(x=ti, y=u, label=label)
+                    # plotWidget.plot(x=ti, y=u, label=label)
+                    plotWidget.pgPlotWidget.plotItem.items[0].setData(x=ti, y=u, label=label, xlabel=xlabel)
+                    plotWidget.pgPlotWidget.centralWidget.legend.items[0][1].setText(label)
             else:
                 # Create new plot
                 for i in range(0, nbRows):

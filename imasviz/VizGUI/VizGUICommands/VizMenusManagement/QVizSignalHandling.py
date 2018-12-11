@@ -43,6 +43,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPreviewPlotSignal import QViz
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
+from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 
 class QVizSignalHandling(QObject):
@@ -636,10 +637,10 @@ class QVizSignalHandling(QObject):
         # Note: figureKey that includes 'TablePlotView' is expected
         if all_DTV != True:
             QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=1, all_DTV=False)
+                                update=0, all_DTV=False)
         else:
             QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=1, all_DTV=True)
+                                update=0, all_DTV=True)
 
     @pyqtSlot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False):
@@ -655,10 +656,10 @@ class QVizSignalHandling(QObject):
         # Note: figureKey that includes 'StackedPlotView' is expected
         if all_DTV != True:
             QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=1, all_DTV=False)
+                                update=0, all_DTV=False)
         else:
             QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=1, all_DTV=True)
+                                update=0, all_DTV=True)
 
     @pyqtSlot(int)
     def addSignalPlotToFig(self, numFig):
@@ -674,7 +675,7 @@ class QVizSignalHandling(QObject):
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=self.nodeData,
                            figureKey=figureKey,
-                           update=1).execute()
+                           update=0).execute()
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
@@ -689,7 +690,7 @@ class QVizSignalHandling(QObject):
         figureKey = self.imas_viz_api. \
             GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
 
-        QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=1,
+        QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
                                 all_DTV=all_DTV).execute()
 
     def shareSameCoordinates(self, selectedDataList):
@@ -771,3 +772,62 @@ class QVizSignalHandling(QObject):
             self.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
+
+    # TODO (below is the old wxPython code)
+    # def plotSelectedSignalVsTime(self):
+    #     self.updateNodeData()
+    #     treeNode = self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
+    #     index = 0
+    #     data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
+    #     dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+    #     signal = dataAccess.GetSignalVsTime(data_path_list,
+    #                                               self.nodeData, treeNode, index)
+    #     label, title = \
+    #         treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index,
+    #                                                        self.dataTreeView.dataSource.ids)
+    #     self.treeNode = treeNode
+    #     self.timeSlider = False
+    #     p = PlotSignal(view=self.dataTreeView, nodeData=self.nodeData, signal=signal,
+    #                    figureKey=self.currentFigureKey, title=title, label=label,
+    #                    xlabel="Time[s]", update=0, signalHandling=self)
+    #     p.execute()
+
+    # TODO (below is the old wxPython code)
+    # def plotSelectedSignalVsTimeAtIndex(self, index, currentFigureKey):
+    #     self.updateNodeData()
+    #     treeNode = self.dataTreeView.getNodeAttributes(self.nodeData['dataName'])
+    #     data_path_list = treeNode.getDataVsTime()
+    #     dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+    #     signal = dataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
+    #     label, title = \
+    #         treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index,
+    #                                                        self.dataTreeView.dataSource.ids)
+    #     if label != None:
+    #         label = label.replace("ids.", "")
+    #     PlotSignal(view=self.dataTreeView, nodeData=self.nodeData, signal=signal,
+    #                figureKey=currentFigureKey, title=title, label=label,
+    #                xlabel="Time[s]", update=0, signalHandling=self).execute()
+
+    def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey, treeNode):
+        self.updateNodeData()
+        dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+        signal = dataAccess.GetSignalAt(self.nodeData,
+                                              self.dataTreeView.dataSource.shotNumber,
+                                              treeNode,
+                                              time_index)
+        aos_vs_itime = treeNode.getDataPathVsTime(treeNode.treeNodeExtraAttributes.aos)
+        label = treeNode.getDataPath(aos_vs_itime, time_index)
+        label = treeNode.getDataPath(label, time_index)
+        label = label.replace("ids.", "")
+        label = QVizGlobalOperations.replaceBrackets(label)
+        label = QVizGlobalOperations.replaceDotsBySlashes(label)
+        xlabel = QVizGlobalOperations.replaceBrackets(
+            treeNode.evaluateCoordinate1At(time_index))
+        QVizPlotSignal(dataTreeView=self.dataTreeView,
+                   nodeData=self.nodeData,
+                   signal=signal,
+                   figureKey=currentFigureKey,
+                   label=label,
+                   xlabel=xlabel,
+                   update=1,
+                   signalHandling=self).execute()

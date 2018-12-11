@@ -260,25 +260,28 @@ class timeSliderGroup():
         """
 
         # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
-        treeNode = self.signalHandling.dataTreeView.selectedItem
+        self.active_treeNode = self.signalHandling.dataTreeView.selectedItem
+        # self.currentIndex = self.active_treeNode.treeNodeExtraAttributes.itime_index
+        self.currentIndex = self.active_treeNode.dataDict.get('i')
+
         if self.signalHandling.timeSlider == True:
             # Set minimum and maximum value
             minValue = 0
-            maxValue = int(treeNode.timeMaxValue()) - 1
+            maxValue = int(self.active_treeNode.timeMaxValue()) - 1
 
         elif self.signalHandling.timeSlider == False:
             # Set minimum and maximum value
             # TODO: NOT TESTED AS USE EXAMPLE NOT FOUND (yet)
             minValue = 0
             maxValue = \
-            treeNode.coordinate1Length(self.signalHandling.nodeData,
+            self.active_treeNode.coordinate1Length(self.signalHandling.nodeData,
                                        self.signalHandling.dataTreeView.dataSource.ids) - 1
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
         slider.setMinimum(minValue)
         slider.setMaximum(maxValue)
-        slider.setValue(minValue)
+        slider.setValue(int(self.currentIndex))
 
         return slider
 
@@ -328,8 +331,7 @@ class timeSliderGroup():
         # release. This is important to still plot on value change by
         # keyboard arrow keys
         if self.sliderPress == False:
-            # print("*PLOTTING 1")
-            pass
+            self.executePlot()
 
 
     def onSliderRelease(self):
@@ -339,10 +341,46 @@ class timeSliderGroup():
         # Set slider press status to false
         self.sliderPress = False
         # Plot
-        # print("*PLOTTING 2")
+        self.executePlot()
 
     def onSliderPress(self):
         """Action on slider press.
         """
         # Set slider press status to true
         self.sliderPress = True
+
+    def executePlot(self):
+        """Execute replotting using different time slice data.
+        """
+
+        time_index = self.slider.value()
+
+        old_path = self.active_treeNode.getPath()
+        new_path = old_path.replace( '(' + str(self.currentIndex) + ')', '(' + str(time_index) + ')')
+
+        self.currentIndex = time_index
+
+        # Signal/Node itemVIZData attribute
+        # signalItemVIZData = self.active_treeNode.getDataDict()
+
+
+        # Search through the whole list of signals (all FLT_1D nodes etc.)
+        for node in self.signalHandling.dataTreeView.signalsList:
+            if new_path == node.getPath():
+                # Set found QVizTreeNode as selected in DTV
+                # self.signalHandling.dataTreeView.setSelectedItem(s)
+
+                # Update object referring to the previous QVizTreeNode
+                self.active_treeNode = node
+
+
+
+
+        #Get title of the current QVizPlotWidget
+        currentFigureKey = self.parent.windowTitle()
+        if self.signalHandling.timeSlider:
+            self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(time_index, currentFigureKey, treeNode=self.active_treeNode)
+        else:
+            # self.signalHandling.plotSelectedSignalVsTimeAtIndex(val, currentFigureKey)
+            pass
+
