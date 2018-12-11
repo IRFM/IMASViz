@@ -22,11 +22,14 @@ modules:
 
     module load cineca
     module load imasenv   # or any other specific imasenv module version
-    module load itm-gcc/6.1.0
-    module unload itm-python/2.7
-    module load itm-python/3.6
-    module load itm-qt/5.8.0
     module load imas-viz/2.0.0
+
+    # The next few modules should be loaded together with imas-viz/2.0.0
+    # Listing them all here in case of module related issues.
+    # module load itm-gcc/6.1.0
+    # module unload itm-python/2.7
+    # module load itm-python/3.6
+    # module load itm-qt/5.8.0
 
 .. Warning::
    **IMPORTANT!** IMAS databases (IDSs) were written using specific version of
