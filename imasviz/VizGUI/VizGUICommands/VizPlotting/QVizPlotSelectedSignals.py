@@ -43,6 +43,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         # Viz_API
         self.api = self.dataTreeView.imas_viz_api
 
+        self.log = self.dataTreeView.log
+
     def execute(self):
         if self.raiseErrorIfNoSelectedArrays():
             if len(self.dataTreeView.selectedSignalsDict) == 0:
@@ -75,13 +77,18 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         if data_type == 'FLT_1D' or data_type == 'INT_1D':
             plotDimension = "1D"
         elif data_type == 'FLT_2D' or data_type == 'INT_2D':
-            raise ValueError("2D plots are not currently supported.")
+            self.log.warning('2D plots are not currently supported.')
+            return False
             plotDimension = "2D"
         elif data_type == 'FLT_3D' or data_type == 'INT_3D':
-            raise ValueError("3D plots are not currently supported.")
+            self.log.warning('3D plots are not currently supported.')
+            return False
             plotDimension = "3D"
         else:
-            raise ValueError("Plots dimension larger than 3D are not supported.")
+            self.log.warning('Plots dimension larger than 3D are currently not '
+                             'supported.')
+            self.log.warning('Data of unsupported data type passed. Aborting!')
+            return False
         return plotDimension
 
     def getPlotWidget(self, figureKey=0):
@@ -90,7 +97,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             plotWidget = api.figureframes[figureKey]
         else:
             figureKey = api.GetNextKeyForFigurePlots()
-            plotWidget = QVizPlotWidget(size=(600, 500), title=figureKey)
+            plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey)
             api.figureframes[figureKey] = plotWidget
         return plotWidget
 
@@ -136,6 +143,11 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
                 # Check dimension
                 plotDimension = self.getDimension(vizTreeNode.getDataDict())
+
+                # Cancel plotting procedure if there is something wrong with
+                # the dimension
+                if plotDimension == False:
+                    return
 
                 key = dtv.dataSource.dataKey(vizTreeNode.getDataDict())
                 tup = (dtv.dataSource.shotNumber, signalNodeData)

@@ -12,9 +12,11 @@
 #*******************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, QMetaObject
-from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
+from PyQt5.QtCore import Qt, QMetaObject, QRect
+from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
+                        QLabel, QFrame
+import PyQt5.QtWidgets as QtWidgets
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 
@@ -24,8 +26,11 @@ class QVizPlotWidget(QWidget):
     feature.
     """
 
-    def __init__(self, parent=None, size=(500, 400), title='QVizPlotWidget'):
+    def __init__(self, parent=None, size=(500, 400), title='QVizPlotWidget',
+                 signalHandling=None):
         super(QVizPlotWidget, self).__init__(parent)
+
+        self.signalHandling = signalHandling
 
         # Set default background color: white
         pg.setConfigOption('background', 'w')
@@ -133,14 +138,39 @@ class QVizPlotWidget(QWidget):
         self.gridLayout.setMenuBar(menuBar)
 
         # Set checkbox for toggling mouse
-        checkBox = self.customUI()
+        checkBox = self.checkBox()
 
-        # Set layout marigin (left, top, right, bottom)
-        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        # Set layout margin (left, top, right, bottom)
+        self.gridLayout.setContentsMargins(2, 2, 2, 2)
 
         # Add widgets to layout
-        self.gridLayout.addWidget(self.pgPlotWidget, 1, 0, 1, 1)
-        self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.pgPlotWidget, 0, 0, 1, 10)
+        self.gridLayout.addWidget(checkBox, 1, 0, 1, 1)
+
+        # If the plottable array is array of time_slices
+        if self.signalHandling != None:
+
+            # Add time slider and its corresponding widgets
+            if self.signalHandling.timeSlider == True or \
+               self.signalHandling.timeSlider == False:
+
+                self.sliderGroup = timeSliderGroup(parent=self,
+                                                   signalHandling=self.signalHandling)
+                self.sliderGroupDict = self.sliderGroup.execute()
+                self.separatorLine = self.sliderGroupDict['separatorLine']
+                self.slider = self.sliderGroupDict['slider']
+                self.sliderLabel = self.sliderGroupDict['sliderLabel']
+                self.indexLabel = self.sliderGroupDict['indexLabel']
+                self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
+
+                self.gridLayout.addWidget(self.separatorLine, 2, 0, 1, 10)
+                # Add time slider label
+                self.gridLayout.addWidget(self.sliderLabel, 3, 0, 1, 10)
+                # Add time slider
+                self.gridLayout.addWidget(self.slider, 4, 0, 1, 10)
+                # Add time slider index label and value indicator
+                self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
+                self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self)
@@ -155,12 +185,10 @@ class QVizPlotWidget(QWidget):
         exitMenu.addAction(exitAction)
         return menuBar
 
-    def customUI(self):
-        """Add custom UI elements - pure PyQt widgets, to interact with
-        pyqtgraph.
+    def checkBox(self):
+        """ Set and checkbox for toggling mouse plot interaction on/off.
         """
 
-        # Set and add checkbox for toggling mouse plot interaction on/off
         checkBox = QCheckBox(self)
         checkBox.setChecked(True)
         checkBox.setObjectName("checkBox")
@@ -178,3 +206,143 @@ class QVizPlotWidget(QWidget):
             enabled = False
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
+
+class timeSliderGroup():
+    """Set slider widget and its corresponding widgets (label,
+    line edit etc.) to set and show time slice (change plot on
+    slider change).
+    """
+
+    def __init__(self, signalHandling, parent=None):
+        self.parent = parent
+        # Set slider press variable as false
+        self.sliderPress = False
+        self.signalHandling = signalHandling
+
+    def execute(self):
+        """Set and return the group of widgets.
+        """
+
+        self.separatorLine = self.setSeparatorLine()
+
+        # Set labels
+        if self.signalHandling.timeSlider == True:
+            self.sliderLabel = self.setLabel(text='Time Slider')
+        elif self.signalHandling.timeSlider == False:
+            self.sliderLabel = self.setLabel(text='Coordinate slider')
+
+        # Set slider
+        self.slider = self.setSlider()
+
+        # Set index label
+        self.indexLabel = self.setLabel(text='Index Value:')
+
+        # Set slider value indicator
+        self.sliderValueIndicator = self.setSliderValueIndicator()
+
+        # Connect on signals
+        self.slider.valueChanged.connect(self.onSliderChange)
+        self.slider.sliderReleased.connect(self.onSliderRelease)
+        self.slider.sliderPressed.connect(self.onSliderPress)
+
+        # Set dictionary (for easier handling)
+        self.timeSliderGroup = \
+            { 'separatorLine'        : self.separatorLine,
+              'slider'               : self.slider,
+              'sliderLabel'          : self.sliderLabel,
+              'indexLabel'           : self.indexLabel,
+              'sliderValueIndicator' : self.sliderValueIndicator}
+
+        return self.timeSliderGroup
+
+    def setSlider(self):
+        """Set slider.
+        """
+
+        # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
+        treeNode = self.signalHandling.dataTreeView.selectedItem
+        if self.signalHandling.timeSlider == True:
+            # Set minimum and maximum value
+            minValue = 0
+            maxValue = int(treeNode.timeMaxValue()) - 1
+
+        elif self.signalHandling.timeSlider == False:
+            # Set minimum and maximum value
+            # TODO: NOT TESTED AS USE EXAMPLE NOT FOUND (yet)
+            minValue = 0
+            maxValue = \
+            treeNode.coordinate1Length(self.signalHandling.nodeData,
+                                       self.signalHandling.dataTreeView.dataSource.ids) - 1
+
+        slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
+        # Set default value
+        slider.setMinimum(minValue)
+        slider.setMaximum(maxValue)
+        slider.setValue(minValue)
+
+        return slider
+
+    def setSeparatorLine(self):
+        """Set separator line.
+        """
+
+        separatorLine = QFrame(self.parent)
+        separatorLine.setGeometry(QRect(0, 200, 500, 20))
+        separatorLine.setFrameShape(QFrame.HLine)
+        separatorLine.setFrameShadow(QFrame.Sunken)
+
+        return separatorLine
+
+    def setLabel(self, text=''):
+        """Set label with given text.
+        """
+
+        sliderLabel = QLabel()
+        sliderLabel.setText(text)
+        sliderLabel.setAlignment(Qt.AlignLeft)
+        sliderLabel.setWordWrap(True)
+        sliderLabel.setFixedHeight(25)
+        sliderLabel.setFont(GlobalFonts.TEXT_MEDIUM)
+
+        return sliderLabel
+
+    def setSliderValueIndicator(self):
+        """Set widget displaying current slider value.
+        """
+
+        sliderValueIndicator = QtWidgets.QLineEdit()
+        sliderValueIndicator.setReadOnly(True)
+        sliderValueIndicator.setText(str(self.slider.value()))
+        sliderValueIndicator.setMaximumWidth(50)
+
+        return sliderValueIndicator
+
+    def onSliderChange(self):
+        """Action on slider change.
+        """
+
+        # Update slider value indicator value
+        self.sliderValueIndicator.setText(str(self.slider.value()))
+
+        # Don't plot when the slider is being dragged by mouse. Plot on slider
+        # release. This is important to still plot on value change by
+        # keyboard arrow keys
+        if self.sliderPress == False:
+            # print("*PLOTTING 1")
+            pass
+
+
+    def onSliderRelease(self):
+        """Action on slider release.
+        """
+
+        # Set slider press status to false
+        self.sliderPress = False
+        # Plot
+        # print("*PLOTTING 2")
+
+    def onSliderPress(self):
+        """Action on slider press.
+        """
+        # Set slider press status to true
+        self.sliderPress = True

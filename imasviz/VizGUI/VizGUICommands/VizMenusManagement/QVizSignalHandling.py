@@ -557,21 +557,25 @@ class QVizSignalHandling(QObject):
     @pyqtSlot()
     def plotSignalCommand(self):
         try:
+
+            # Get next figure label (e.g. 'Figure:0')
             self.currentFigureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
             label = None
             xlabel = None
-            # if self.treeNode is not None and self.treeNode.time_dependent_aos():
-            #     aos_vs_itime = self.treeNode.getDataPathVsTime(self.treeNode.aos)
-            #     label = self.treeNode.getDataPath(aos_vs_itime, 0)
-            #     label = label.replace("ids.", "")
-            #     label = QVizGlobalOperations.replaceBrackets(label)
-            #     label = QVizGlobalOperations.replaceDotsBySlashes(label)
-            #     xlabel = \
-            #         QVizGlobalOperations.replaceBrackets(self.treeNode.evaluateCoordinate1At(0))
-            #     self.timeSlider = True
-            # else:
-            #     self.timeSlider = None
+
+            # If signal node is a part of time_slice array of structures
+            # (e.g. 'equilibrium.time_slice[0].profiles_1d.psi')
+            if self.treeNode != None and \
+                self.treeNode.treeNodeExtraAttributes.time_dependent_aos():
+                aos_vs_itime = self.treeNode.getDataPathVsTime(
+                    self.treeNode.treeNodeExtraAttributes.aos)
+                label = self.treeNode.getPath()
+                xlabel = QVizGlobalOperations.replaceBrackets(
+                    self.treeNode.evaluateCoordinate1At(0))
+                self.timeSlider = True
+
             # Get the signal data for plot widget
+            # TODO: remove signalHandling as an argument
             p = QVizPlotSignal(self.dataTreeView, self.nodeData, signal=None,
                                figureKey=self.currentFigureKey, label=label,
                                xlabel=xlabel, signalHandling=self)

@@ -627,8 +627,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_log)
         self.dataTreeView.log = Logger(self.logWidget)
 
-        a = QTextEdit
-
     @pyqtSlot(QMainWindow)
     def onShowConfigurations(self, parent):
         """Show configuration window.

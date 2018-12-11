@@ -85,10 +85,8 @@ class QVizPlotSignal(QVizAbstractCommand):
             plotWidget = api.figureframes[figureKey]
         else:
             figureKey = api.GetNextKeyForFigurePlots()
-            plotWidget = QVizPlotWidget(size=(600,500), title=figureKey)
-            # self.plotWidget = \
-            #     IMASVIZPlotFrame(None, size=(600, 500), title=figureKey,
-            #                      signalHandling=self.signalHandling)
+            plotWidget = QVizPlotWidget(size=(600,550), title=figureKey,
+                                        signalHandling=self.signalHandling)
             api.figureframes[figureKey] = plotWidget
         return plotWidget
 
