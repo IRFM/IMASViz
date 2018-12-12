@@ -32,11 +32,11 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     """
 
     def __init__(self, dataTreeView, figureKey, update=0,
-                 configFile=None, all_DTV=False, viewType=None):
+                 configFile=None, all_DTV=False):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
-            figureKey (str)  : Window label that also indicates type of the
+            figureKey (str)  : Plot window label that also indicates type of the
                                requested plot view type.
                                The argument can be given in next forms:
                                1.) Specifying full figureKey
@@ -67,7 +67,6 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
             self.applyPlotConfigurationBeforePlotting(plotConfig=self.plotConfig)
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.log = self.dataTreeView.log  # QTextEdit widget
-        self.viewType = viewType
 
         if self.getNumSignals(all_DTV=all_DTV) < 1:
             self.log.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
@@ -109,7 +108,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.windowSizeAdjustement()
 
         # Add menu bar (don't show it for StackedPlotView)
-        if self.viewType == 'TablePlotView':
+        if 'TablePlotView' in figureKey:
             self.addMenuBar()
 
         # Connect custom UI elements

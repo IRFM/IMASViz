@@ -154,7 +154,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                 self.api.addNodeToFigure(figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, signalNodeData)
+                s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode)
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
                 # Get array of y-axis values

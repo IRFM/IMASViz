@@ -114,7 +114,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                 self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, signalNodeData)
+                s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode=signalNode)
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
                 # Get array of y-axis values
@@ -178,8 +178,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
 
                     # If configuration is present
                     if self.plotConfig != None:
-                        self.applyPlotConfigurationAfterPlotting(currentPlotItem,
-                                                                 self.plotConfig)
+                        self.applyPlotConfigurationAfterPlotting(currentPlotItem)
 
                 # Next plot number
                 n += 1

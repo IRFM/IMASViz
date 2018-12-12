@@ -31,22 +31,47 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 
 class QVizPlotSignal(QVizAbstractCommand):
+    """Handling plot execution.
+    """
     def __init__(self, dataTreeView, nodeData=None, signal=None,
                  figureKey=None, title='', label=None, xlabel=None,
-                 update=0, signalHandling=None):
+                 update=0, signalHandling=None, vizTreeNode=None):
+        """
+        Arguments:
+            dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
+            nodeData      (dict) : QVizTreeNode data dictionary.
+            signal       (tuple) : Tuple holding plotting values.
+            figureKey      (str) : Plot window label that also indicates type
+                                   of the requested plot view type.
+            title          (str) : Plot title.
+            label          (str) : Plot label.
+            xlabel         (str) : Plot x-axis label.
+            update            () :
+            signalHandling (obj) : Object to QVizSignalHandling.
+
+        """
         QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
-        self.updateNodeData();
+        if nodeData == None or vizTreeNode == None:
+            self.updateNodeData()
+        else:
+            self.nodeData = nodeData
+            self.treeNode = vizTreeNode
 
         self.signalHandling = signalHandling
 
         self.log = self.dataTreeView.log
 
         if signal == None:
-            signalDataAccess = \
-                QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            self.signal = signalDataAccess.GetSignal(self.nodeData,
-                            self.dataTreeView.dataSource.shotNumber, self.treeNode)
+            # signalDataAccess = \
+            #     QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            # self.signal = signalDataAccess.GetSignal(self.nodeData,
+            #                 self.dataTreeView.dataSource.shotNumber, self.treeNode)
+
+            self.signal = self.getSignal(dataTreeView=self.dataTreeView,
+                                         selectedNodeData=self.nodeData,
+                                         vizTreeNode=self.treeNode)
+
         else:
             self.signal = signal
 
@@ -149,16 +174,24 @@ class QVizPlotSignal(QVizAbstractCommand):
             if update == 1:
                 # self.log.info('Updating/Overwriting existing plot.')
 
-                # Add plot to existing plot
+                # Update/Overwrite existing plot
                 for i in range(0, nbRows):
                     # y-axis values
                     u = v[i]
                     # x-axis values
                     # ti = t[i]
                     ti = t[0]
-                    # plotWidget.plot(x=ti, y=u, label=label)
-                    plotWidget.pgPlotWidget.plotItem.items[0].setData(x=ti, y=u, label=label, xlabel=xlabel)
-                    plotWidget.pgPlotWidget.centralWidget.legend.items[0][1].setText(label)
+
+                    # Get plot display PlotItem and CentralWidget
+                    pgPlotItem = plotWidget.pgPlotWidget.plotItem
+                    pgCentralWidget = plotWidget.pgPlotWidget.centralWidget
+                    # Update x and y values
+                    pgPlotItem.items[0].setData(x=ti, y=u)
+                    # Update x-axis label
+                    x_axis = pgPlotItem.getAxis('bottom')
+                    x_axis.setLabel(xlabel, "")
+                    # Update legend
+                    pgCentralWidget.legend.items[0][1].setText(label)
             else:
                 # Create new plot
                 for i in range(0, nbRows):
@@ -187,13 +220,13 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.dataTreeView.imas_viz_api.figureframes[figureKey].hide()
 
     @staticmethod
-    def getSignal(dataTreeView, selectedNodeData):
+    def getSignal(dataTreeView, selectedNodeData, vizTreeNode):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
-            treeNode = dataTreeView.selectedItem
+            # treeNode = dataTreeView.selectedItem
             s = signalDataAccess.GetSignal(selectedNodeData,
                                            dataTreeView.dataSource.shotNumber,
-                                           treeNode)
+                                           vizTreeNode)
             return s
         except:
             #dataTreeView.log.error(str(e))
@@ -221,10 +254,18 @@ class QVizPlotSignal(QVizAbstractCommand):
 
         if xlabel == None:
             if 'coordinate1' in signalNode.getDataDict():
-                xlabel = \
-                    QVizGlobalOperations.replaceBrackets(signalNode.getDataDict()['coordinate1'])
+                xlabel = QVizGlobalOperations.replaceBrackets(
+                    signalNode.getDataDict()['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
+        elif '1.' not in xlabel and '.N' not in xlabel:
+            # If xlabel is already present, then:
+            # - Replace dots '.' by slashes '/'
+            xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
+            # - If IDS name is not present (at the front) of the xlabel string,
+            #   then add it
+            if signalNode.getIDSName() not in xlabel:
+                xlabel = signalNode.getIDSName() + "/" + xlabel
 
         #ylabel = signalNodeData['dataName']
 

@@ -65,28 +65,35 @@ class QVizTreeNode(QTreeWidgetItem):
             coordinate1 = self.treeNodeExtraAttributes.coordinate1
         return coordinate1
 
-    def coordinate1LabelAndTitleForTimeSlices(self, nodeData, index, ids):
+    def coordinate1LabelAndTitleForTimeSlices(self, nodeData, index):
+        # Get time index
         itime_index = nodeData.get('itime_index')
+        # Get IDS name
         idsName = nodeData['IDSName']
         title = ''
-        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or self.treeNodeExtraAttributes.coordinate1 == "1...N":
+        xlabel= ''
+        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
+            self.treeNodeExtraAttributes.coordinate1 == "1...N":
             title = "coordinate1 = " + str(index)
         else:
-            to_eval = "ids." + idsName + \
-                      "." + self.evaluateCoordinate1() + "[" + str(index) + "]"
-            coordinate1_value = eval(to_eval)
-            tokens_list = to_eval.split(".")
+            xlabel = str("ids." + idsName + "." + self.evaluateCoordinate1())
+            tokens_list = xlabel.split(".")
             coord1 = tokens_list[-1]
-            title = coord1 + "=" + str(coordinate1_value)
-        label = nodeData['dataName'].replace("time_slice[" + str(itime_index) + "].", "")
+            title = coord1 + "[" + itime_index + "]=" + xlabel
+        # Set and format label
+        label = nodeData['dataName']
         label = label.replace('ids.','')
-        label = label.replace(idsName + ".", '')
         label = QVizGlobalOperations.replaceBrackets(label)
         label = QVizGlobalOperations.replaceDotsBySlashes(label)
-        return label, title
+        # Set and format xlabel
+        xlabel = xlabel.replace('ids.','')
+        xlabel = QVizGlobalOperations.replaceBrackets(xlabel)
+        xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
+        return label, title, xlabel
 
     def coordinate1Label(self, idsName, index, ids):
-        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or self.treeNodeExtraAttributes.coordinate1 == "1...N":
+        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
+            self.treeNodeExtraAttributes.coordinate1 == "1...N":
             return "[" + str(index) + "]"
             #return None
         to_eval = "ids." + idsName + \
@@ -102,7 +109,8 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def coordinate1Length(self, selectedNodeData, ids):
 
-        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or self.treeNodeExtraAttributes.coordinate1 == "1...N":
+        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
+            self.treeNodeExtraAttributes.coordinate1 == "1...N":
             r = np.array([eval('ids.' + selectedNodeData['dataName'])])
             return len(r[0])
 

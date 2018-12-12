@@ -572,7 +572,7 @@ class QVizSignalHandling(QObject):
                     self.treeNode.treeNodeExtraAttributes.aos)
                 label = self.treeNode.getPath()
                 xlabel = QVizGlobalOperations.replaceBrackets(
-                    self.treeNode.evaluateCoordinate1At(0))
+                    self.treeNode.evaluateCoordinate1At(self.treeNode.dataDict.get('i')))
                 self.timeSlider = True
 
             # Get the signal data for plot widget
@@ -784,7 +784,7 @@ class QVizSignalHandling(QObject):
     #                                               self.nodeData, treeNode, index)
     #     label, title = \
     #         treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index,
-    #                                                        self.dataTreeView.dataSource.ids)
+    #                       )
     #     self.treeNode = treeNode
     #     self.timeSlider = False
     #     p = PlotSignal(view=self.dataTreeView, nodeData=self.nodeData, signal=signal,
@@ -801,33 +801,49 @@ class QVizSignalHandling(QObject):
     #     signal = dataAccess.GetSignalVsTime(data_path_list, self.nodeData, treeNode, index)
     #     label, title = \
     #         treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index,
-    #                                                        self.dataTreeView.dataSource.ids)
+    #                                                        )
     #     if label != None:
     #         label = label.replace("ids.", "")
     #     PlotSignal(view=self.dataTreeView, nodeData=self.nodeData, signal=signal,
     #                figureKey=currentFigureKey, title=title, label=label,
     #                xlabel="Time[s]", update=0, signalHandling=self).execute()
 
-    def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey, treeNode):
-        self.updateNodeData()
+    def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey,
+                                             treeNode):
+        """Plot the same data (as the previous plot, currently still plotted in
+        the plot window labeled as 'currentFigureKey') just for different time
+        slice. The node must be of the same structure (sibling to the node used
+        for the previous plot and both are located within the 'time_slice[:]'
+        structure').
+
+        Arguments:
+            time_index        (int) : Time slice index.
+            currentFigureKey  (str) : Label of the current/relevant figure
+                                      window.
+            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
+                                      replace the current plot in figure window.
+        """
+
+        # self.updateNodeData()
         dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-        signal = dataAccess.GetSignalAt(self.nodeData,
-                                              self.dataTreeView.dataSource.shotNumber,
-                                              treeNode,
-                                              time_index)
-        aos_vs_itime = treeNode.getDataPathVsTime(treeNode.treeNodeExtraAttributes.aos)
-        label = treeNode.getDataPath(aos_vs_itime, time_index)
-        label = treeNode.getDataPath(label, time_index)
-        label = label.replace("ids.", "")
-        label = QVizGlobalOperations.replaceBrackets(label)
-        label = QVizGlobalOperations.replaceDotsBySlashes(label)
-        xlabel = QVizGlobalOperations.replaceBrackets(
-            treeNode.evaluateCoordinate1At(time_index))
+        # Get signal node
+        signal = dataAccess.GetSignalAt(treeNode.getDataDict(),
+                                        self.dataTreeView.dataSource.shotNumber,
+                                        treeNode,
+                                        time_index)
+        # Get label (title in this form is not needed)
+        label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
+                            nodeData=treeNode.getDataDict(),
+                            index=time_index)
+
+        # Update/Overwrite plot
         QVizPlotSignal(dataTreeView=self.dataTreeView,
-                   nodeData=self.nodeData,
+                   nodeData=treeNode.getDataDict(),
                    signal=signal,
                    figureKey=currentFigureKey,
                    label=label,
                    xlabel=xlabel,
                    update=1,
-                   signalHandling=self).execute()
+                   signalHandling=self,
+                   vizTreeNode=treeNode).execute()
+
