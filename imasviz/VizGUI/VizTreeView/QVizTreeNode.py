@@ -113,9 +113,12 @@ class QVizTreeNode(QTreeWidgetItem):
             self.treeNodeExtraAttributes.coordinate1 == "1...N":
             r = np.array([eval('ids.' + selectedNodeData['dataName'])])
             return len(r[0])
+        # Set python expression to get lenght of the array
+        to_evaluate = 'ids.' + selectedNodeData['IDSName'] + '.' + \
+                       self.evaluateCoordinate1()
+        len_to_evaluate =  eval('len(' + to_evaluate + ')')
 
-        to_evaluate = "ids." + selectedNodeData['IDSName'] + "." + self.evaluateCoordinate1()
-        return len(eval(to_evaluate))
+        return len_to_evaluate
 
     def timeMaxValue(self):
         if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.aos):

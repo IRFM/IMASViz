@@ -262,7 +262,7 @@ class timeSliderGroup():
         # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
         self.active_treeNode = self.signalHandling.dataTreeView.selectedItem
         # self.currentIndex = self.active_treeNode.treeNodeExtraAttributes.itime_index
-        self.currentIndex = self.active_treeNode.dataDict.get('i')
+        self.currentIndex = self.active_treeNode.dataDict['i']
 
         if self.signalHandling.timeSlider == True:
             # Set minimum and maximum value
@@ -271,11 +271,16 @@ class timeSliderGroup():
 
         elif self.signalHandling.timeSlider == False:
             # Set minimum and maximum value
-            # TODO: NOT TESTED AS USE EXAMPLE NOT FOUND (yet)
             minValue = 0
+
+            nodeData = self.active_treeNode.getDataDict()
+            ids  = self.signalHandling.dataTreeView.dataSource.ids[nodeData[
+                'occurrence']]
+            # maxValue = \
+            # self.active_treeNode.coordinate1Length(self.signalHandling.nodeData,
+            #                            self.signalHandling.dataTreeView.dataSource.ids) - 1
             maxValue = \
-            self.active_treeNode.coordinate1Length(self.signalHandling.nodeData,
-                                       self.signalHandling.dataTreeView.dataSource.ids) - 1
+            self.active_treeNode.coordinate1Length(nodeData, ids) - 1
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
@@ -373,13 +378,17 @@ class timeSliderGroup():
                 # Update object referring to the previous QVizTreeNode
                 self.active_treeNode = node
 
-
-
-
         #Get title of the current QVizPlotWidget
         currentFigureKey = self.parent.windowTitle()
+
+        # TODO: add actions when self.signalHanlding.timeSLider == True / False.
+        # TODO: set better indicators than True/False to better describe what
+        #       happens
         if self.signalHandling.timeSlider:
-            self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(time_index, currentFigureKey, treeNode=self.active_treeNode)
+            self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(
+                time_index=time_index,
+                currentFigureKey=currentFigureKey,
+                treeNode=self.active_treeNode)
         else:
             # self.signalHandling.plotSelectedSignalVsTimeAtIndex(val, currentFigureKey)
             pass

@@ -55,7 +55,6 @@ class QVizIMASNativeDataAccess:
             #raise ValueError("Error while getting signal " + selectedNodeData['dataName'] + " from native backend.")
             raise
 
-
     def GetSignalVsTime(self, data_path_list, selectedNodeData, treeNode, index):
         ids = self.dataSource.ids[selectedNodeData['occurrence']]
         time_slices_count = len(data_path_list)
@@ -63,13 +62,13 @@ class QVizIMASNativeDataAccess:
         v = []
         time = QVizGlobalOperations.getTime(ids, selectedNodeData, treeNode.evaluateCoordinate1())
         for i in range(0, time_slices_count):
-            value_at_index = eval(data_path_list[i] + "[" + str(index) + "]") #evaluate the array at index value
+            # Get values of the array at index
+            value_at_index = eval('ids.' + data_path_list[i])
             v.append(value_at_index)
 
         rarray = np.array([np.array(v)])
         tarray = np.array([time])
         return (tarray, rarray)
-
 
     def GetShapeofSignal(self, selectedNodeData, shotNumber):
         try:

@@ -9,16 +9,16 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #  TODO:
 #
 #    - Function definitions (from PlotSignal class)
 #    def onHide
 #    def getSignal
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
-#****************************************************
+# ****************************************************
 
 import sys
 import traceback
@@ -28,7 +28,6 @@ from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-
 
 class QVizPlotSignal(QVizAbstractCommand):
     """Handling plot execution.
@@ -192,6 +191,7 @@ class QVizPlotSignal(QVizAbstractCommand):
                     x_axis.setLabel(xlabel, "")
                     # Update legend
                     pgCentralWidget.legend.items[0][1].setText(label)
+
             else:
                 # Create new plot
                 for i in range(0, nbRows):
@@ -284,7 +284,7 @@ class QVizPlotSignal(QVizAbstractCommand):
         runNumber = str(dataTreeView.dataSource.runNumber)
 
         label = dataTreeView.dataSource.getShortLabel() + ':' + label
-        #label = machineName + ":" + shotNumber + ":" + runNumber + ':' + label
+        # label = machineName + ":" + shotNumber + ":" + runNumber + ':' + label
 
         if xlabel == None:
             xlabel = "Time[s]"
