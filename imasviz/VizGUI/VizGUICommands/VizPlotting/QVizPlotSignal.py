@@ -252,14 +252,20 @@ class QVizPlotSignal(QVizAbstractCommand):
         if label == None:
             label = signalNode.getPath()
 
+        # Setting/Checking the X-axis label
         if xlabel == None:
+            # If xlabel is not yet set
             if 'coordinate1' in signalNode.getDataDict():
                 xlabel = QVizGlobalOperations.replaceBrackets(
                     signalNode.getDataDict()['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
+        elif 'Time[s]' in xlabel:
+            # If 'Time[s]' is present in xlabel, do not modify it
+            pass
         elif '1.' not in xlabel and '.N' not in xlabel:
-            # If xlabel is already present, then:
+            # If '1...N' or '1..N' (or other similar variant)  is not present
+            # in xlabel:
             # - Replace dots '.' by slashes '/'
             xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
             # - If IDS name is not present (at the front) of the xlabel string,

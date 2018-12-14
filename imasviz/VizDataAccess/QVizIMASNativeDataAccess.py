@@ -63,7 +63,8 @@ class QVizIMASNativeDataAccess:
         time = QVizGlobalOperations.getTime(ids, selectedNodeData, treeNode.evaluateCoordinate1())
         for i in range(0, time_slices_count):
             # Get values of the array at index
-            value_at_index = eval('ids.' + data_path_list[i])
+            value_at_index = eval('ids.' + data_path_list[i] + '['
+                                  + str(index) + ']')
             v.append(value_at_index)
 
         rarray = np.array([np.array(v)])

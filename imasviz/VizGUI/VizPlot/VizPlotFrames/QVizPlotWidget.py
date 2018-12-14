@@ -265,22 +265,22 @@ class timeSliderGroup():
         self.currentIndex = self.active_treeNode.dataDict['i']
 
         if self.signalHandling.timeSlider == True:
+            # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
             minValue = 0
+            # - Get maximum value by getting the length of the array
             maxValue = int(self.active_treeNode.timeMaxValue()) - 1
-
         elif self.signalHandling.timeSlider == False:
-            # Set minimum and maximum value
-            minValue = 0
-
+            # Set index slider using time as index
             nodeData = self.active_treeNode.getDataDict()
+            # Set IDS source database
             ids  = self.signalHandling.dataTreeView.dataSource.ids[nodeData[
                 'occurrence']]
-            # maxValue = \
-            # self.active_treeNode.coordinate1Length(self.signalHandling.nodeData,
-            #                            self.signalHandling.dataTreeView.dataSource.ids) - 1
+            # Set minimum and maximum value
+            minValue = 0
+            # - Get maximum value by getting the length of the array
             maxValue = \
-            self.active_treeNode.coordinate1Length(nodeData, ids) - 1
+                self.active_treeNode.coordinate1Length(nodeData, ids) - 1
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
@@ -390,6 +390,8 @@ class timeSliderGroup():
                 currentFigureKey=currentFigureKey,
                 treeNode=self.active_treeNode)
         else:
-            # self.signalHandling.plotSelectedSignalVsTimeAtIndex(val, currentFigureKey)
-            pass
+            self.signalHandling.plotSelectedSignalVsTimeAtIndex(
+                index=time_index,
+                currentFigureKey = currentFigureKey,
+                treeNode=self.active_treeNode)
 
