@@ -112,13 +112,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         # Total number of existing DTVs
         self.num_view = len(self.api.DTVlist)
 
+        # Get plot widget
         plotWidget = self.getPlotWidget(figureKey)
-
-        # TODO
-        # def lambda_f(evt, i=figureKey, api=self.api):
-        #    self.onHide(self.api, i)
-        # if figureKey != None:
-        #    plotWidget.Bind(wx.EVT_CLOSE, lambda_f)
 
         i = 0
         # Create a list of DTVs to specify either single DTV or a list of

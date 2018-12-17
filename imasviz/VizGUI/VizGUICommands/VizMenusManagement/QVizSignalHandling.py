@@ -830,6 +830,9 @@ class QVizSignalHandling(QObject):
         # Get label and title (dummy = obsolete xlabel)
         label, title, dummy = \
             treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index)
+        # TODO: fix routines for obtaining label
+        label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
+        label = label + '[' + str(index) + ']'
         self.treeNode = treeNode
         self.timeSlider = False
         p = QVizPlotSignal(dataTreeView=self.dataTreeView,
@@ -877,6 +880,9 @@ class QVizSignalHandling(QObject):
         label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
             nodeData=treeNode.getDataDict(),
             index=index)
+        # TODO: fix routines for obtaining label
+        label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
+        label = label + '[' + str(index) + ']'
 
         # Update/Overwrite plot
         QVizPlotSignal(dataTreeView=self.dataTreeView,

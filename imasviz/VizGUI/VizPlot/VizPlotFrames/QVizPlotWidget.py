@@ -229,7 +229,7 @@ class timeSliderGroup():
         if self.signalHandling.timeSlider == True:
             self.sliderLabel = self.setLabel(text='Time Slider')
         elif self.signalHandling.timeSlider == False:
-            self.sliderLabel = self.setLabel(text='Coordinate slider')
+            self.sliderLabel = self.setLabel(text='Index Slider')
 
         # Set slider
         self.slider = self.setSlider()
@@ -281,6 +281,7 @@ class timeSliderGroup():
             # - Get maximum value by getting the length of the array
             maxValue = \
                 self.active_treeNode.coordinate1Length(nodeData, ids) - 1
+
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
