@@ -56,7 +56,7 @@ from imasviz.VizUtils.QVizWindowUtils import getWindowSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
     import QVizUnselectAllSignals
-
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling
 
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
@@ -88,6 +88,9 @@ class QVizDataTreeView(QTreeWidget):
         # On clicking on the QTreeWidgetItem (left click) the function will
         # be run
         self.itemClicked.connect(self.onLeftClickItem)
+
+        # Set action on double click on item
+        self.itemDoubleClicked.connect(self.getDefaultOccurrence)
 
         self.dataSource = dataSource
         self.idsNamesList = []
@@ -316,6 +319,7 @@ class QVizDataTreeView(QTreeWidget):
         occNodeData['occurrence'] = occurrence
         nodeBuilder = QVizDataTreeViewBuilder()
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
+
         self.ids_roots_occurrence[key] = ids_root_occ
 
         for child in idsData:
@@ -344,6 +348,34 @@ class QVizDataTreeView(QTreeWidget):
 
     def OnCollapseItem(self, event):
         return
+
+    def getDefaultOccurrence(self):
+        """Get default occurrence (0) while IDS root is selected.
+        """
+
+        # Get currently selected QTreeWidgetItem
+        # item = self.selectedItem # For some reason this always returns the
+                                   # QTreeWidgetItem corresponding to IDS root,
+                                   # even if non-IDS root is selected
+        item = self.selectedItems()[0]
+
+        # Continue, if the QTreeWidgetItem is IDS root
+        if item.dataDict['isIDSRoot'] != 1:
+            return
+
+        # Set default occurrence
+        occ = 0
+        # Get root IDS name
+        IDSName = item.getIDSName()
+        # Set class object
+        ldh_obj = QVizLoadDataHandling(self)
+        # Check if the default occurrence for IDS root was already
+        # loaded. If
+        # not then load it first time.
+        if not ldh_obj.occurrenceAlreadyLoaded(IDSName=IDSName,
+                                               occurrence=occ):
+            # Load the IDS Root occurrence
+            ldh_obj.loadSelectedData(IDSName, occ)
 
 
 class QVizDataTreeViewFrame(QMainWindow):
