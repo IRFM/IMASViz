@@ -93,8 +93,3 @@ required) under project **Visualization/VIZ**, branch **viz2.0_develop**.
 
 Direct link to the **IMASViz** git.iter repository:
 `IMASViz <https://git.iter.org/projects/VIS/repos/viz/browse>`_.
-
-
-
-
-

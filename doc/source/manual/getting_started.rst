@@ -75,6 +75,8 @@ Running IMASViz from source
 
 The procedure below describes how to run IMASViz from source.
 
+.. _IMASVIZ_requirements:
+
 Requirements
 ~~~~~~~~~~~~
 
@@ -85,8 +87,10 @@ The fundamental requirements in order to locally run IMASViz are:
    - PyQt5
    - pyqtgraph
    - matplotlib
-   - Sphinx
+   - Sphinx (:command:`pip3 install sphinx`)
    - Sphinx RTD theme (:command:`pip3 install sphinx_rtd_theme`)
+
+.. _source_code:
 
 Obtaining the source code
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -178,3 +182,32 @@ The description of the above input parameters is as follows:
 | Run number         | Pulse run number                                          |
 +--------------------+-----------------------------------------------------------+
 
+
+Latest documentation and manual
+-------------------------------
+
+The documentation provided on other sources (confluence pages etc.) than the
+project repository might not be up to date. To get the latest documentation,
+first obtain the IMASViz source code (see :ref:`source_code`).
+
+Then navigate to
+
+.. code-block:: console
+
+    cd $VIZ_HOME/doc
+
+and run
+
+.. code-block:: console
+
+    # for PDF documentation
+    module load texlive
+    make pdflatex
+    xdg-open build/latex/IMASViz.pdf
+    # for HTML documentation
+    make html
+    firefox build/html/index.html
+
+.. Note:: Additional prerequisites for generating the documentation:
+          **Sphinx** and **Sphinx RTD** theme (listed in
+          :ref:`IMASViz_requirements`)
