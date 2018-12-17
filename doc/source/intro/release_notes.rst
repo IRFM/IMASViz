@@ -19,8 +19,8 @@ Changes:
 - Basic plot feature performance improved greatly.
   Quick comparison for plotting 17 plots to a single panel using default
   plotting options:
-   - wxPython IMASViz: ~13s
-   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
+    - wxPython IMASViz: ~13s
+    - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
 - Superior plot export possibilities
 - GUI improvements, database tree browser interface, reducing the number of
   separate windows, introduce docked widgets, introduce GUI icons and more
@@ -31,9 +31,19 @@ Changes:
   source files for document generation (single source can be generated into
   multiple formats e.g. PDF, HMTL...)
 - In-code documentation greatly improved and extended
+- Short summary of files and line changes count (ignoring generated files and
+  scripts):
+   - 173 commits,
+   - 252 files changed,
+   - 10113 insertions(+),
+   - 12397 deletions(-)
+
+.. git log <from_commit>..<to_commit> --pretty=oneline | wc -l
+.. git diff --stat <to_commit> <from_commit> -- . ':!*enerated*' ':!*.xml'
+
 
 .. Note::
-   The migration to PyQt5 due to IMASViz containing large code sets is not
+   The migration to PyQt5 due to IMASViz containing a large code sets is not
    yet fully complete.
    List of known features yet to migrate to IMASViz 2.0:
    ``Equilibrium plugin``,

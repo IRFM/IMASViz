@@ -138,7 +138,6 @@ Load next modules:
     module load itm-gcc/6.1.0
     module load itm-python/3.6
     module load itm-qt/5.8.0
-    module load imas-viz
 
 ITER HPC
 ^^^^^^^^
