@@ -47,6 +47,8 @@ class QVizNodeDocumentationWidget(QWidget):
         self.l1.setMinimumHeight(25)
         self.l1.setMinimumWidth(340)
         self.l1.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.l1.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # - Set text 2
         self.l2 = QLabel()
@@ -56,6 +58,8 @@ class QVizNodeDocumentationWidget(QWidget):
         self.l2.setMinimumHeight(25)
         self.l2.setMinimumWidth(340)
         self.l2.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.l2.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # - Set text 3
         self.l3 = QLabel()
@@ -65,6 +69,8 @@ class QVizNodeDocumentationWidget(QWidget):
         self.l3.setMinimumHeight(25)
         self.l3.setMinimumWidth(340)
         self.l3.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.l3.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # - Set text 4
         self.l4 = QLabel()
@@ -74,6 +80,8 @@ class QVizNodeDocumentationWidget(QWidget):
         self.l4.setMinimumHeight(25)
         self.l4.setMinimumWidth(340)
         self.l4.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.l4.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # Set scrollable area
         scrollArea = QScrollArea(self)
