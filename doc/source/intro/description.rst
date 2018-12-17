@@ -12,10 +12,26 @@ While the tool itself is already available for use it is still under active
 development, and various features, GUI improvements etc. are still being
 implemented.
 
+For additional support or if any issues are found with IMASViz please contact
+the developers via e-mail or submit a ticket on
+`JIRA ITER Webpage <jira.iter.org>`_.
+
+While submitting the ticket please use the options listed below
+
++--------------+-------------------------+
+| **Field**    | **Required Option**     |
++==============+=========================+
+| Project      | IMAS (IMAS)             |
++--------------+-------------------------+
+| Components   | VIZ                     |
++--------------+-------------------------+
+
 Developers:
 
-  - **Ludovic Fleury** (CEA Cadarache, Research Institute for Magnetics fusion)
-  - **Dejan Penko** (University of Ljubljana, Mech.Eng., LECAD Lab)
+  - **Ludovic Fleury** (CEA Cadarache, Research Institute for Magnetics fusion,
+    e-mail: Ludovic.FLEURY@cea.fr)
+  - **Dejan Penko** (University of Ljubljana, Mech.Eng., LECAD Lab,
+    e-mail: dejan.penko@lecad.fs.uni-lj.si)
 
 .. Plugin developers
 

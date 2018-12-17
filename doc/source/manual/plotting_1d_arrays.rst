@@ -12,14 +12,16 @@ purpose of the :guilabel:`IMASViz`.
 This section describes the basics of plotting a 1D array, stored in
 the IDS, and how to handle the existing plots.
 
+.. _plotting_single_1d_array:
+
 Plotting a single 1D array to plot figure
 -----------------------------------------
 
 The procedure to plot 1D array is as follows:
 
 1. Navigate through the **magnetics IDS** and search for the node containing
-   **FLT_1D** data, for example **ids.magnetics.flux_loop[0].flux.data**.
-   Plottable FLT_1D nodes are colored **blue** (array length > 0)
+   **FLT_1D** data, for example **magnetics.flux_loop[0].flux.data**.
+   Plottable FLT_1D nodes are colored **blue** (array length > 0).
 
    .. figure:: images/DTV_magnetics_IDS_contents_FLT_1D.png
      :align: center
@@ -40,7 +42,7 @@ The procedure to plot 1D array is as follows:
 
      Preview Plot
 
-2. Right-click on the **ids.magnetics.flux_loop[0].flux.data (FLT_1D)** node.
+2. Right-click on the **magnetics.flux_loop[0].flux.data (FLT_1D)** node.
 
 3. From the pop-up menu, select the command
    :guilabel:`Plot ids.magnetics.flux_loop[0].flux.data to` |icon_plotSingle| ->
@@ -76,7 +78,7 @@ are available in the right-click menu.
 
 .. figure:: images/plotDisplay_popupmenu.png
   :align: center
-  :width: 550px
+  :width: 450px
 
   Plot display window right-click menu.
 
@@ -327,6 +329,128 @@ follows:
      :width: 550px
 
      Example of plot figure, created by plotting data from node selection.
+
+Plotting 1D array as a function of coordinate1 along the time axis
+------------------------------------------------------------------
+
+One of the IMASViz features is plotting coordinate along the time axis.
+This is allowed for IDS nodes, located within **time_slice[:]** structure, and
+it is already set as a default plotting feature for such arrays.
+
+The procedure to plot such 1D array is quite identical as in section
+:ref:`plotting_single_1d_array`. The procedure is described and demonstrated
+on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
+
+1. Navigate through the **equilibrium IDS** and search for the time slice node
+   containing
+   **FLT_1D** data, for example **equilibrium.time_slice[0].profiles_1d.phi**.
+
+   .. figure:: images/DTV_plot_as_a_function_of_coordinate1.png
+     :align: center
+     :scale: 80%
+
+     Example of plottable FLT_1D time slice node.
+
+2. Right-click on the **equilibrium.time_slice[0].profiles_1d.phi (FLT_1D)**
+   node.
+
+3. From the pop-up menu, select the command
+   :guilabel:`Plot equilibrium.time_slice[0].profiles_1d.phi to`
+   |icon_plotSingle| -> :guilabel:`figure` |icon_Figure| ->
+   :guilabel:`New` |icon_new|.
+
+   .. figure:: images/DTV_popupmenu_plotting_as_a_function_of_coordinate1.png
+     :align: center
+     :scale: 80%
+
+     Navigating through right-click menu to plot data to plot figure.
+
+   The plot should display in plot figure as shown in the image below.
+   Note that **coordinate1 = ids.equilibrium.time_slice[0].profiles_1d.psi**
+   for this FLT_1D data array.
+
+   .. figure:: images/plotWidget_function_of_coordinate1.png
+     :align: center
+     :width: 550px
+
+     Time slice plot figure display. The data are represented as a function of
+     coordinate1 (**ids.equilibrium.time_slice[0].profiles_1d.psi**) for the
+     first **phi** time slice
+     (**ids.equilibrium.time_slice[0].profiles_1d.phi**).
+
+   The time slider allows you to move along the time axis and the plot will
+   change accordingly.
+
+   .. figure:: images/plotWidget_function_of_coordinate1_2.png
+     :align: center
+     :width: 550px
+
+     Time slice plot figure display for
+     **ids.equilibrium.time_slice[48].profiles_1d.phi**. The data are
+     represented as a function of coordinate1
+     (**ids.equilibrium.time_slice[48].profiles_1d.psi**).
+
+Plotting 1D arrays at index as a function of the time
+-----------------------------------------------------
+
+One of the IMASViz features is plotting array values at certain index as a
+function of time. This is allowed for IDS nodes, located within
+**time_slice[:]** structure, and it is already set as a default plotting
+feature for such arrays.
+
+The procedure is described and demonstrated
+on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
+
+1. Navigate through the **equilibrium IDS** and search for the time slice node
+   containing
+   **FLT_1D** data, for example **equilibrium.time_slice[0].profiles_1d.f**.
+
+   .. figure:: images/DTV_plot_as_a_function_of_coordinate1.png
+     :align: center
+     :scale: 80%
+
+     Example of plottable FLT_1D time slice node.
+
+2. Right-click on the **equilibrium.time_slice[0].profiles_1d.f (FLT_1D)**
+   node.
+
+3. From the pop-up menu, select the command
+   :guilabel:`Plot equilibrium.time_slice[0].profiles_1d.f to`
+   |icon_plotSingle| -> :guilabel:`figure` |icon_Figure| ->
+   :guilabel:`New` |icon_new|.
+
+   .. figure:: images/DTV_popupmenu_plotting_as_a_function_of_time.png
+     :align: center
+     :scale: 80%
+
+     Navigating through right-click menu to plot data to plot figure.
+
+   The plot should display in plot figure as shown in the image below.
+   Note that Y-axis values are an array of
+   **equilibrium.time_slice[:].profiles_1d.f[0]** values through all time slices
+   (marked by **[:]**) and X-axis values are time values found in
+   **equilibrium.time**.
+
+   .. figure:: images/plotWidget_function_of_time_1.png
+     :align: center
+     :width: 550px
+
+     Plot as a function of time. Y-axis values are an array of
+     **equilibrium.time_slice[:].profiles_1d.f[0]** values through all time
+     slices (marked by **[:]**) and X-axis values are time values found in
+     **equilibrium.time**.
+
+   The time slider allows you to move along the array index and the plot will
+   change accordingly.
+
+   .. figure:: images/plotWidget_function_of_time_2.png
+     :align: center
+     :width: 550px
+
+     Plot as a function of time. Y-axis values are an array of
+     **equilibrium.time_slice[:].profiles_1d.f[23]** values through all time
+     slices (marked by **[:]**) and X-axis values are time values found in
+     **equilibrium.time** node (array of FLT_1D values).
 
 .. _multiplot_features:
 
