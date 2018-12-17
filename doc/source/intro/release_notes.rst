@@ -19,8 +19,10 @@ Changes:
 - Basic plot feature performance improved greatly.
   Quick comparison for plotting 17 plots to a single panel using default
   plotting options:
-    - wxPython IMASViz: ~13s
-    - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
+
+   - wxPython IMASViz: ~13s
+   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
+
 - Superior plot export possibilities
 - GUI improvements, database tree browser interface, reducing the number of
   separate windows, introduce docked widgets, introduce GUI icons and more
@@ -33,6 +35,7 @@ Changes:
 - In-code documentation greatly improved and extended
 - Short summary of files and line changes count (ignoring generated files and
   scripts):
+
    - 173 commits,
    - 252 files changed,
    - 10113 insertions(+),
