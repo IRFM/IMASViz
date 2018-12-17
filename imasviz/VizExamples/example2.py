@@ -9,6 +9,8 @@ from PyQt5.QtWidgets import QApplication
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
+    import QVizSignalHandling
 
 app = QApplication(sys.argv)
 
@@ -37,17 +39,23 @@ for i in range(0, 3):
     pathsList2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
 # Select signals corresponding to the paths in pathsList
-# api.SelectSignals(f1, pathsList1)
-# api.SelectSignals(f2, pathsList2)
-# Can use also
+api.SelectSignals(f1, pathsList1)
+api.SelectSignals(f2, pathsList2)
+# Might use also
 # QVizSelectSignals(f1.dataTreeView, pathsList1).execute()
 # QVizSelectSignals(f2.dataTreeView, pathsList2).execute()
 
 f = [f1, f2]
-# api.PlotSelectedSignalsFrom(f)
+api.PlotSelectedSignalsFrom(f)
 
 # Show the data tree window
 f1.show()
 f2.show()
+
+# Plot data from the first data source (f1) to Table Plot View
+QVizSignalHandling(f1.dataTreeView).onPlotToTablePlotView(all_DTV=False)
+
+# Plot data from the first data source (f1) to Stacked Plot View
+QVizSignalHandling(f1.dataTreeView).onPlotToStackedPlotView(all_DTV=False)
 
 sys.exit(app.exec_())
