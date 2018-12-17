@@ -89,9 +89,12 @@ class QVizIMASDataSource:
             return dataDict['dataName']
         return None
 
-    # The displayed name of the node
     def treeDisplayedNodeName(self, dataElement):
-        return str(dataElement.find('name').text)
+        """The displayed name of the node in DTV.
+        """
+        # name = str(dataElement.find('name').text) # Full path
+        name = dataElement.attrib['name']
+        return name
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
