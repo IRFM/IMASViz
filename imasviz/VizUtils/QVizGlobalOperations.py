@@ -145,6 +145,8 @@ class QVizGlobalOperations:
 
     @staticmethod
     def checkEnvSettings():
+        """Check if the mandatory systems variables are set.
+        """
         if not QVizGlobalValues.TESTING:
 
             print("IMAS_VIZ production environment.")
