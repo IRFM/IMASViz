@@ -3,18 +3,23 @@
 Scripting
 =========
 
-This section describes how to create and use **user-made** Python3
-scripts that run and populate :guilabel:`IMASViz`. This provides a faster
-and efficient way of setting an IMASViz session, loading IMAS IDS cases and
-running plotting features.
+There are two main methods to open and browse IMAS IDS database using
+:guilabel:`IMASViz`. First is the standard way of running IMASViz
+(as described in :ref:`getting_started`) and setting the parameters in the GUI,
+the second is through a script. Furthermore, some GUI actions (like node
+selection, plot action commands etc.) can be performed through scripting too.
+This way a simple IMASViz session can be set and populated on run.
+
+This section describes the second method: how to create and use
+**user-made** Python3 scripts that run and populate :guilabel:`IMASViz`.
 
 :guilabel:`IMASViz scripting` can be seen as an
 advanced alternative to the :guilabel:`Apply Configuration` features
 (described in :ref:`apply_selection_from_configuration` and
 :ref:`apply_multiplot_configuration`).
 
-The procedure below can be used with both **IMASViz module (GateWay) HPC** and
-**IMASViz from source** and the environment **must be set accordingly to the
+The procedure below can be used with either **IMASViz module** and
+**IMASViz from source** but the environment **must be set accordingly to the
 method the IMASViz is used (!)** (as described in
 :ref:`running_on_gateway_as_a_module` and :ref:`running_from_source`).
 
@@ -27,11 +32,11 @@ Adding IMASViz Path to PYTHONPATH
              pre-set! This way also the **VIZ_HOME** system variable, required
              in this manual section, is available.
 
-The IMASViz home directory can be added to to **PYTHONPATH** system variable
+The IMASViz home directory can be added to **PYTHONPATH** system variable
 by running in the terminal the command below (use the command that matches
 your shell - **c-shell** or **bash**):
 
-.. note:: **PYTHONPATH** is a "list" of paths that tells Python where to look
+.. note:: **PYTHONPATH** is a "list" of paths that tell Python where to look
           for sources, libraries etc.
 
 .. code-block:: console
@@ -52,8 +57,8 @@ already be found in project GIT repository
 `here <https://git.iter.org/projects/VIS/repos/viz/browse/imasviz/VizExamples?at=refs%2Fheads%2Fviz2.0_develop>`_.
 
 
-1. First the imports are required:
-    - constants, functions and methods of the Python interpreter,
+1. First, the imports are required:
+    - constants, functions, and methods of the Python interpreter,
     - PyQt5 classes and routines, and
     - IMASViz classes and routines.
 
@@ -133,7 +138,7 @@ already be found in project GIT repository
 
         f1.show()
 
-10. Plot selected nodes
+11. Plot selected nodes
 
     .. code-block:: Python
 
@@ -235,15 +240,16 @@ using the basic Python3 terminal command:
 
     python3 <path_to_script>/<script_name>.py
 
-By running this script all data tree views, plot widgets and multi plot views,
-previously set in the script, should show, as shown in the figure below.
+By running this script all :guilabel:`Data Tree Views`, :guilabel:`Plot Widgets`
+and :guilabel:`MultiPlot Views`, previously set in the script, should show,
+as shown in the figure below.
 
 .. figure:: images/scripting_run_result.png
   :align: center
   :width: 550px
 
   The result of running the script example:
-  guilabel:`Data Tree View (DTV)`, :guilabel:Plot Widget`,
+  :guilabel:`Data Tree View (DTV)`, :guilabel:`Plot Widget`,
   :guilabel:`Table Plot View` and :guilabel:`Stacked Plot View`
   containing multiple plots.
 

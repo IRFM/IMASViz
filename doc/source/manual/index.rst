@@ -1,8 +1,8 @@
 .. _tutorial:
 
-======
-Manual
-======
+===========
+User Manual
+===========
 
 
 .. Note::
