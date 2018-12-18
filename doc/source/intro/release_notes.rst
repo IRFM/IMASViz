@@ -44,6 +44,8 @@ Changes:
 .. git log <from_commit>..<to_commit> --pretty=oneline | wc -l
 .. git diff --stat <from_commit> <to_commit> -- . ':!*enerated*' ':!*.xml'
 
+.. from_commit = d25c4b8bddf
+.. to_commit = 274685dcade
 
 .. Note::
    The migration to PyQt5 due to IMASViz containing a large code sets is not
