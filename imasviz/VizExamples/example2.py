@@ -22,20 +22,20 @@ dataSourceFactory = QVizDataSourceFactory()
 
 f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
                                                  runNumber=0,
-                                                 userName='penkod',
+                                                 userName='g2penkod',
                                                  imasDbName='viztest'))
 f2 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52682,
                                                  runNumber=0,
-                                                 userName='penkod',
+                                                 userName='g2penkod',
                                                  imasDbName='viztest'))
 
 # Set the list of paths
 pathsList1 = []
-for i in range(0, 2):
+for i in range(0, 5):
     pathsList1.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
 pathsList2 = []
-for i in range(0, 3):
+for i in range(0, 6):
     pathsList2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
 # Select signals corresponding to the paths in pathsList
