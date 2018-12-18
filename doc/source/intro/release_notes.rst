@@ -36,13 +36,13 @@ Changes:
 - Short summary of files and line changes count (ignoring generated files and
   scripts):
 
-   - 173 commits,
-   - 252 files changed,
-   - 10113 insertions(+),
-   - 12397 deletions(-)
+   - 182 commits,
+   - 256 files changed,
+   - 12766 insertions(+),
+   - 10113 deletions(-)
 
 .. git log <from_commit>..<to_commit> --pretty=oneline | wc -l
-.. git diff --stat <to_commit> <from_commit> -- . ':!*enerated*' ':!*.xml'
+.. git diff --stat <from_commit> <to_commit> -- . ':!*enerated*' ':!*.xml'
 
 
 .. Note::
