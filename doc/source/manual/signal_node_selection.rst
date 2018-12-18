@@ -97,6 +97,8 @@ opened IMAS database. To save a selection, follow the next steps:
 .. Note::
    The configurations are saved to ``$HOME/.imasviz`` folder.
 
+.. _apply_selection_from_configuration:
+
 Apply Selection From Saved Configuration
 ----------------------------------------
 

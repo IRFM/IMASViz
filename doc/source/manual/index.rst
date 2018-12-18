@@ -6,7 +6,7 @@ Manual
 
 
 .. Note::
-   The manual below is executed on the Gateway.
+   The manual presented is executed on the **Gateway HPC**.
 
 .. toctree::
    :maxdepth: 1
@@ -16,3 +16,4 @@ Manual
    signal_node_selection.rst
    plotting_1d_arrays.rst
    other_GUI_features.rst
+   scripting.rst

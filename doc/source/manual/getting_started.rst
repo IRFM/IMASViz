@@ -6,6 +6,8 @@ Getting Started
 This section describes setting the environment configuration required
 to run the IMASViz tool and how to run the application itself.
 
+.. _running_on_gateway_as_a_module:
+
 Running IMASViz as a module on The GateWay
 ------------------------------------------
 
@@ -36,7 +38,7 @@ modules:
    IMAS. In order to open these IDSs the **same IMAS module version** should
    be used due to possible IDS database structure changes through different
    versions. Any tools or utilities that work with IDSs, including ``IMASViz``,
-   cannot work properly if this 'IMAS version mismatch' is too great (!).
+   cannot work properly if this "IMAS version mismatch" is too great (!).
 
 Running IMASViz
 ~~~~~~~~~~~~~~~
@@ -69,6 +71,33 @@ The description of the above input parameters is as follows:
 +--------------------+-----------------------------------------------------------+
 | Run number         | Pulse run number                                          |
 +--------------------+-----------------------------------------------------------+
+
+Available benchmark IMAS databases
+----------------------------------
+
+On the GateWay HPC there are a few **benchmark IMAS IDS cases** available. These
+databases are the main source of data used for IMASViz testing purposes and
+were also included in writing the this documentation. Users can freely use them
+for examples and practice purposes.
+
+.. Note:: There IMAS IDS cases are confirmed to work with IMAS versions
+          **3.19.1** - **3.20.0**.
+
++-----------------------------------------------------+
+| **Available IMAS IDS Case Parameters**              |
++--------------------+----------+----------+----------+
+| Parameters         | Case 1   | Case 2   | Case 3   |
++====================+==========+==========+==========+
+| User name          | g2penkod | g2penkod | g2penkod |
++--------------------+----------+----------+----------+
+| IMAS database name | viztest  | viztest  | viztest  |
++--------------------+----------+----------+----------+
+| Shot number        | 52344    | 52682    | 53223    |
++--------------------+----------+----------+----------+
+| Run number         | 0        | 0        | 0        |
++--------------------+----------+----------+----------+
+
+.. _running_from_source:
 
 Running IMASViz from source
 ---------------------------

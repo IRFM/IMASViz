@@ -11,20 +11,23 @@ Loading IDS from IMAS local data source
 This section describes and demonstrates how to load the **IMAS IDS case**
 within **IMASViz** and open one of the **IDS nodes**.
 
+.. Note:: The procedure below is executed on the **GateWay HPC** and thus the
+          **IMAS IDS cases** available on the GateWay are used.
+
 Loading IMAS IDS
 ----------------
 
 The procedure to load the IDS is as follows:
 
 - In the main :guilabel:`IMASViz GUI`, select the first
-  tab - **Local data source**.
+  tab - :guilabel:`Local data source`.
 - Enter the following parameters, listed below, to the appropriate text fields.
 
-+-------------------------+-----+
-| **Manual IDS case**           |
++-------------------------------+
+| **IMAS IDS case**             |
 +--------------------+----------+
-| parameters         | values   |
-+--------------------+----------+
+| Parameters         | Values   |
++====================+==========+
 | User name          | g2penkod |
 +--------------------+----------+
 | IMAS database name | viztest  |
@@ -43,7 +46,6 @@ The filled GUI should then look as shown in the next figure:
 .. image:: images/startup_window_filled.png
    :align: center
    :scale: 80%
-
 
 Open IDS
 --------

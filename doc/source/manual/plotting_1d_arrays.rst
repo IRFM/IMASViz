@@ -213,7 +213,7 @@ The :guilabel:`Plot Display` scene can be exported to:
      Comparison of IMASViz :guilabel:`Plot Figure` and
      :guilabel:`matplotlib window`
 
-.. _add_plot_to_existing_figure_:
+.. _add_plot_to_existing_figure:
 
 Adding a plot to existing figure
 --------------------------------
@@ -250,7 +250,7 @@ Comparing plots between two IDS databases
 
 :guilabel:`IMASViz` allows comparing of FLT_1D arrays between two different
 IDS databases (different shots too). The procedure is very similar to the one
-presented in the section :ref:`add_plot_to_existing_figure_`:
+presented in the section :ref:`add_plot_to_existing_figure`:
 
 1. Open another IMAS database, same as shown in section :ref:`loading_IDS`.
    In this manual this will be demonstrated using IDS with :guilabel:`shot`
@@ -390,6 +390,10 @@ on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
      represented as a function of coordinate1
      (**ids.equilibrium.time_slice[48].profiles_1d.psi**).
 
+.. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to
+          such existing plot might not work as expected, as the sliding through
+          indexes works directly only the last added plot.
+
 Plotting 1D arrays at index as a function of the time
 -----------------------------------------------------
 
@@ -451,6 +455,10 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
      **equilibrium.time_slice[:].profiles_1d.f[23]** values through all time
      slices (marked by **[:]**) and X-axis values are time values found in
      **equilibrium.time** node (array of FLT_1D values).
+
+.. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to
+          such existing plot might not work as expected, as the sliding through
+          indexes works directly only the last added plot.
 
 .. _multiplot_features:
 
@@ -529,6 +537,8 @@ To create a new :guilabel:`Table Plot View`, follow the next steps:
    display (zoom in and out). Scrolling can be done by clicking the scroll bar
    on the right and dragging it up and down.
 
+.. _save_multiplot_configuration:
+
 Save MultiPlot Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -558,6 +568,8 @@ To create MultiPlot configuration, follow the next steps:
 
 .. Note::
    The configurations files are saved to :file:`$HOME/.imasviz` folder.
+
+.. _apply_multiplot_configuration:
 
 Applying MultiPlot configuration to other IMAS database
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
