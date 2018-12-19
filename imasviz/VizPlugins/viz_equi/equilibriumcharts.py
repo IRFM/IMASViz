@@ -40,7 +40,8 @@ import imas
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # Project python modules
-from imasviz.plugins.viz_equi.ids_read_multiprocess import ids_read_multiprocess
+from imasviz.VizPlugins.viz_equi.ids_read_multiprocess import \
+    ids_read_multiprocess
 
 # Figures options
 nbr_levels         = 30  # For Psi (magnetic flux function)
@@ -971,13 +972,14 @@ class PlotFrame(QMainWindow):
     def on_flash_status_off(self, event=None):
         self.statusbar.SetStatusText('')
 
-class equilibriumcharts(VIZPlugins):
+class equilibriumcharts(VizPlugins):
     def __init__(self):
         pass
-    def execute(self, app, dictDataSource):
+    def execute(self, dictDataSource):
+
         self.frame = PlotFrame(dictDataSource)
         self.frame.Show()
-        app.MainLoop()
+        # app.MainLoop()
 
     # def getSubjects(self):
     #     subjects = {'overview':'Equilibrium overview...'}

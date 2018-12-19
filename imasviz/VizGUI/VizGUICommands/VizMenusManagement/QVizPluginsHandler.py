@@ -1,11 +1,10 @@
 
 import importlib
 
-from PyQt5.QtWidgets import QAction, QMenu
-
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from PyQt5.QtWidgets import QAction, QMenu,  QApplication
 
 class MenuIDS:
     def __init__(self):
@@ -44,7 +43,10 @@ class QVizPluginsHandler:
                         entriesList = entriesPerSubject[subject] #list of entry index (ex: [0,1])
                         for entry in entriesList:
                             if entry not in addedPluginsEntries[pluginsName]:
-                                tuple = (pluginsName, wx.NewId(), entry, pluginsObject)
+                                # TODO: properly set ID
+                                new_id = 9999
+                                tuple = (pluginsName, new_id, entry,
+                                         pluginsObject)
                                 self.menuIDS.PLUGINS_MENU_IDS.append(tuple)
                                 addedPluginsEntries[pluginsName].append(entry) #plugins entry should appear only once in the popup menu
 
@@ -63,38 +65,41 @@ class QVizPluginsHandler:
             # print entry
             # print pluginsObject
             # print pluginsCommandDescription
-            self.dataTreeView.popupmenu.Append(menuId,
-                                               pluginsCommandDescription)
+            # self.dataTreeView.popupmenu.Append(menuId,
+            #                                    pluginsCommandDescription)
 
             # Add action ...
-            # TODO: icon
-            action_onPluginHandler = QAction(icon_thisDTV, 'This IMAS Database',
-                                               self)
+            icon_onPluginHandler = GlobalIcons.getCustomQIcon(QApplication,
+                                                              'new')
+            action_onPluginHandler = QAction(icon_onPluginHandler,
+                                             pluginsCommandDescription , self.dataTreeView)
             action_onPluginHandler.triggered.connect(self.popUpMenuHandler)
             # Add to submenu
             self.dataTreeView.popupmenu.addAction(action_onPluginHandler)
+
+            # Map the menu (in order to show it)
+            self.dataTreeView.popupmenu.exec_(
+                self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
 
         # self.dataTreeView.Bind(wx.EVT_MENU, self.popUpMenuHandler)
         return 1
 
 
     def popUpMenuHandler(self, event):
-        pass
-        # for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
-        #     m = self.menuIDS.PLUGINS_MENU_IDS[i]
-        #     menuID = m[1]
-        #     if event.GetId() == menuID:
-        #         pluginsName = m[0]
-        #         entry = m[2]
-        #         pluginsObject = m[3]
-        #         allEntries = pluginsObject.getAllEntries()
-        #         pluginsConfigurationsList =
-        # VizPlugins.getPluginsConfiguration(pluginsName)
-        #         pluginsConfiguration =  pluginsConfigurationsList[
-        # allEntries[entry][0]]
-        #         pluginsConfiguration['imasviz_view'] = self.dataTreeView
-        #         """Set ArraySize Plugin 'node_attributes' option
-        #         (defined in the plugin definition .py file"""
-        #         pluginsConfiguration['node_attributes'] = self.dataDict
-        #         """Execute the plugins"""
-        #         pluginsObject.execute(wx.App(), pluginsConfiguration)
+        for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
+            m = self.menuIDS.PLUGINS_MENU_IDS[i]
+            menuID = m[1]
+            # if event.GetId() == menuID:
+            pluginsName = m[0]
+            entry = m[2]
+            pluginsObject = m[3]
+            allEntries = pluginsObject.getAllEntries()
+            pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(pluginsName)
+            pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
+            pluginsConfiguration['imasviz_view'] = self.dataTreeView
+            """Set ArraySize Plugin 'node_attributes' option
+            (defined in the plugin definition .py file"""
+            pluginsConfiguration['node_attributes'] = self.dataDict
+            """Execute the plugins"""
+            # pluginsObject.execute(wx.App(), pluginsConfiguration)
+            pluginsObject.execute(pluginsConfiguration)

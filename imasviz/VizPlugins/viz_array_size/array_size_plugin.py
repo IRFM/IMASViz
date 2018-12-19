@@ -1,9 +1,9 @@
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 import traceback
 
-class ArraySizePlugin(VIZPlugins):
+class ArraySizePlugin(VizPlugins):
     def __init__(self):
-        VIZPlugins.__init__(self)
+        VizPlugins.__init__(self)
 
     def execute(self, app, pluginsConfig):
         try:

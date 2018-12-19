@@ -75,7 +75,8 @@ class VizPlugins():
         importedObjectsList = []
         for key in getRegisteredPlugins():
             pluginsNames.append(key)
-            mod = importlib.import_module('imasviz.plugins.' + getRegisteredPlugins()[key])
+            mod = importlib.import_module('imasviz.VizPlugins.' +
+                                          getRegisteredPlugins()[key])
             importedClass = getattr(mod, key)
             importedObjectsList.append(importedClass())
         return (pluginsNames, importedObjectsList)

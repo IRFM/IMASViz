@@ -1,9 +1,9 @@
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 import traceback
 
-class TFOverviewPlugin(VIZPlugins):
+class TFOverviewPlugin(VizPlugins):
     def __init__(self):
-        VIZPlugins.__init__(self)
+        VizPlugins.__init__(self)
 
     def execute(self, app, pluginsConfig):
         try:

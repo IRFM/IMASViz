@@ -1,9 +1,9 @@
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 import traceback
 
-class ECEOverviewPlugin(VIZPlugins):
+class ECEOverviewPlugin(VizPlugins):
     def __init__(self):
-        VIZPlugins.__init__(self)
+        VizPlugins.__init__(self)
 
     def execute(self, app, pluginsConfig):
         print ('ECE overview to be executed with config -->')
