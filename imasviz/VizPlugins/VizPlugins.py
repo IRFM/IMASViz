@@ -46,7 +46,7 @@ def getRegisteredPluginsConfiguration():
         return RegisteredPluginsConfiguration
 
 
-class VIZPlugins():
+class VizPlugins():
     def __init__(self):
         pass
 

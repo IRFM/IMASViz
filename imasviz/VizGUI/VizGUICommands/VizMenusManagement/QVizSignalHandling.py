@@ -14,9 +14,6 @@
 #  TODO:
 #
 #    - Function definitions (from SignalHandling class)
-#    def plotSelectedSignalVsTime
-#    def plotSelectedSignalVsTimeAtIndex
-#    def plotSelectedSignalVsCoordAtTimeIndex
 #    def addSignalSelectionToTablePlotViewFrame
 #    def showStackedPlotViewsManager
 #    def # onClose

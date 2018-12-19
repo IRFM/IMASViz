@@ -19,7 +19,6 @@
 #    - Function definitions (from WxDataTreeViewFrame to QVizDataTreeViewFrame
 #      class)
 #       def onClose(...):
-#       def onUnselectSignals(...):
 #       def onCloseAndReopenDatabase(...):
 #       def updateView(...):
 #
@@ -37,6 +36,7 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QTextEdit
+from PyQt5.QtWidgets import QApplication
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
@@ -46,6 +46,9 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleRightClick \
     import QVizHandleRightClick
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement\
+    .QVizHandleShiftAndRightClick \
+    import QVizHandleShiftAndRightClick
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget \
     import QVizPreviewPlotWidget
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
@@ -262,9 +265,9 @@ class QVizDataTreeView(QTreeWidget):
 
         # UPDATE PLOT PREVIEW WIDGET
         if (item.isDynamicData() == 1 and
-            item.getDataType() == 'FLT_1D' and
-            (item.foreground(0).color().name() == GlobalColors.BLUE_HEX or
-             item.foreground(0).color().name() == GlobalColors.RED_HEX)):
+                item.getDataType() == 'FLT_1D' and
+                (item.foreground(0).color().name() == GlobalColors.BLUE_HEX or
+                 item.foreground(0).color().name() == GlobalColors.RED_HEX)):
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignale = 1)
 
@@ -273,22 +276,64 @@ class QVizDataTreeView(QTreeWidget):
             QVizSignalHandlingObj.plotPreviewSignalCommand()
 
     def contextMenuEvent(self, event):
-        """ Custom menu event on the right click on the tree item.
+        """ Custom menu event on the (shift +) right click on the tree item.
         """
-        # print(event)
+        """TODO: Complete the setup of the popup menu for shift + right click
+        # Get the current state of the modifier keys (SHIFT, CTRL etc.)
+        modifiers = QApplication.keyboardModifiers()
+        # If shift key is pressed while clicking the right mouse button,
+        # proceed to build and show the 'shift + right click' custom menu
+        # instead of the one provided with QVizHandleRightClick
+        if modifiers == Qt.ShiftModifier:
+            if len(self.selectedItems()) == 1:
+                # The selected tree node item
+                treeNode = self.selectedItems()[0]  # QTreeWidgetItem object
+
+                # Set selected QTreeWidgetItem on right click
+                self.setSelectedItem(item=treeNode, mouseButton="RIGHT")
+
+                # Get position
+                self.pos = event.pos()
+
+                # Set and show the popup menu
+                handleShiftAndRightClick = QVizHandleShiftAndRightClick(self)
+                showPopUp = handleShiftAndRightClick.execute(treeNode)
+
+            return
+        """
+
+        # If shift key was not pressed while mouse right clicking, proceed
+        # building and showing the 'regular' menu, handling signal nodes
         if len(self.selectedItems()) == 1:
-            # The selected item
-            item = self.selectedItems()[0]  # QTreeWidgetItem object
+            # The selected tree node item
+            treeNode = self.selectedItems()[0]  # QTreeWidgetItem object
 
             # Set selected QTreeWidgetItem on right click
-            self.setSelectedItem(item=item, mouseButton="RIGHT")
+            self.setSelectedItem(item=treeNode, mouseButton="RIGHT")
 
             # Get position
             self.pos = event.pos()
 
-            # TODO
+            # Set and show the popup
             handleRightClick = QVizHandleRightClick(self)
-            showPopUp = handleRightClick.execute(item)
+            showPopUp = handleRightClick.execute(treeNode)
+
+    # def keyPressEvent(self, QKeyEvent):
+    #     """ Execute action on specific keyboard key press.
+    #     """
+    #     print("QKeyEvent: ", QKeyEvent.key())
+    #     if QKeyEvent.key() == Qt.Key_0:
+    #         print("Key 0 pressed")
+
+
+    # def mousePressEvent(self, QMouseEvent):
+    #     """Execute action on specific mouse button press.
+    #     Warning: It overwrites/clashes with the contextMenuEvent!!
+    #     """
+    #     print("QMouseEvent: ", QMouseEvent)
+
+    #     if QMouseEvent == Qt.MiddleButton:
+    #         print("mouse right click")
 
     def update_view(self, idsName, occurrence, idsData):
         """ Update the tree view with the data.
@@ -355,8 +400,8 @@ class QVizDataTreeView(QTreeWidget):
 
         # Get currently selected QTreeWidgetItem
         # item = self.selectedItem # For some reason this always returns the
-                                   # QTreeWidgetItem corresponding to IDS root,
-                                   # even if non-IDS root is selected
+        # QTreeWidgetItem corresponding to IDS root,
+        # even if non-IDS root is selected
         item = self.selectedItems()[0]
 
         # Continue, if the QTreeWidgetItem is IDS root

@@ -3,7 +3,8 @@
 #
 #          Container to handle right click events in PyQt5.
 #          Note: The wxPython predecessor of this Python file is
-#          HandleRightClick.py
+#          HandleRightClick.py. 'HandleRightClickAndShiftDown' routine was
+#          moved to separate file - QVizHandleShiftDownAndRightClick.
 #
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
@@ -26,6 +27,8 @@ from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 class QVizHandleRightClick:
     """ Handle the mouse right click event on a PyQt5 QTreeWidget.
+    TODO: currently the right click menu creation is done in QVizSignalHandling
+          (as right click are currently performed only on signal nodes).
     """
 
     def __init__(self, dataTreeView):

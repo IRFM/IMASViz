@@ -1,4 +1,4 @@
-from imasviz.plugins.VIZPlugins import VIZPlugins
+from imasviz.VizPlugins.VizPlugins import VizPlugins
 import traceback
 
 class ECEOverviewPlugin(VIZPlugins):

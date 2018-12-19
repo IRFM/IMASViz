@@ -37,7 +37,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 # Local python modules
 import imas
 
-from imasviz.plugins.VIZPlugins import VIZPlugins
+from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # Project python modules
 from imasviz.plugins.viz_equi.ids_read_multiprocess import ids_read_multiprocess

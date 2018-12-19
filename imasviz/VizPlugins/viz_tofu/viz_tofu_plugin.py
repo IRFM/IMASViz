@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 #plt.switch_backend('Qt5Agg')
 
 # IMAS
-from imasviz.plugins.VIZPlugins import VIZPlugins
+from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # tofu
 import tofu_irfm as tfi
@@ -68,7 +68,7 @@ class ToFuPlugin(VIZPlugins):
 
     def getAllEntries(self):
         #(config number, description)
-        return [(0, 'tofu - geom...'), (1, 'tofu - data'), 
+        return [(0, 'tofu - geom...'), (1, 'tofu - data'),
                 (2, 'tofu - geom...'), (3, 'tofu - data'),
                 (4, 'tofu - geom...'), (5, 'tofu - data')]
 
