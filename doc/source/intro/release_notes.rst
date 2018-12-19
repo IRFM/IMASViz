@@ -36,16 +36,16 @@ Changes:
 - Short summary of files and line changes count (ignoring generated files and
   scripts):
 
-   - 182 commits,
+   - 186 commits,
    - 256 files changed,
-   - 12766 insertions(+),
+   - 12958 insertions(+),
    - 10113 deletions(-)
 
 .. git log <from_commit>..<to_commit> --pretty=oneline | wc -l
 .. git diff --stat <from_commit> <to_commit> -- . ':!*enerated*' ':!*.xml'
 
 .. from_commit = d25c4b8bddf
-.. to_commit = 274685dcade
+.. to_commit = 0216310d056
 
 .. Note::
    The migration to PyQt5 due to IMASViz containing a large code sets is not

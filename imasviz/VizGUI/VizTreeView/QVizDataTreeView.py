@@ -37,7 +37,6 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QTextEdit
-from PyQt5.QtGui import QTextCursor
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
@@ -427,6 +426,7 @@ class QVizDataTreeViewFrame(QMainWindow):
                              IDSDefFile=IDSDefFile)
         self.dataTreeView.imas_viz_api = imas_viz_api
 
+
         # Set custom event type (ID)
         self.eventResultId = GlobalIDs.RESULT_EVENT
 
@@ -604,7 +604,7 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # Get reference parameters
         # - DTV frame width and height
-        ref_width, ref_height = getWindowSize(self)
+        # ref_width, ref_height = getWindowSize(self)
 
         # PREVIEW PLOT WIDGET (PPW)
         # - Set the widget
@@ -614,6 +614,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.previewPlotWidget.plot()
         # - Dock the widget
         self.dockWidget_ppw = QDockWidget("Preview Plot", self)
+
         self.dockWidget_ppw.setFeatures(QDockWidget.DockWidgetFloatable)
         self.dockWidget_ppw.setObjectName("DockWidget_PPW")
         self.dockWidgetContents_ppw = QWidget()
@@ -623,7 +624,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_ppw.addWidget(self.previewPlotWidget, 0, 0, 1, 1)
         self.dockWidget_ppw.setWidget(self.dockWidgetContents_ppw)
         # - Set dockwidget size
-        self.dockWidget_ppw.setMinimumSize(QSize(ref_width / 2, ref_height / 2))
+        # self.dockWidget_ppw.setMinimumSize(QSize(ref_width / 2, ref_height / 2))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ppw)
 
         # NODE DOCUMENTATION WIDGET (NDW)
@@ -640,25 +641,37 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_ndw.addWidget(self.nodeDocumentationWidget, 0, 0, 1, 1)
         self.dockWidget_ndw.setWidget(self.dockWidgetContents_ndw)
         # - Set dockwidget size
-        self.dockWidget_ndw.setMinimumSize(QSize(ref_width / 2, ref_height / 4))
+        # self.dockWidget_ndw.resize(QSize(ref_width / 2, ref_height / 10))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
         # LOG WIDGET
         self.logWidget = QTextEdit(parent=self)
         self.logWidget.setReadOnly(True)
+        # self.logWidget.resize(QSize(ref_width / 2, ref_height / 4))
         self.dockWidget_log = QDockWidget("Log", self)
         self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
         self.dockWidget_log.setObjectName("DockWidget_LOG")
         self.dockWidgetContents_log = QWidget()
         self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
         self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
+        # - Set dockwidget size
+        # self.dockWidget_log.resize(QSize(ref_width / 2, ref_height / 4))
         self.gridLayout_log.setObjectName("GridLayout_LOG")
         self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
-        # - Set dockwidget size
-        self.dockWidget_ndw.setMinimumSize(QSize(ref_width / 2, ref_height / 4))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_log)
         self.dataTreeView.log = Logger(self.logWidget)
+
+        # Set first docked widget minimum width
+        self.dockWidget_ppw.setMinimumWidth(400)
+        # Determine how much of vertical space the docked widgets should take
+        # Note: Without using 'setMinimumWidth' on one of docked widgets
+        #       the central widget takes ~90% of horizontal space (no 'resize'
+        #       solves that ...)
+        self.resizeDocks([self.dockWidget_ppw,
+                          self.dockWidget_ndw,
+                          self.dockWidget_log],
+                         [50, 25, 25], Qt.Vertical)
 
     @pyqtSlot(QMainWindow)
     def onShowConfigurations(self, parent):

@@ -89,8 +89,10 @@ class QVizPreviewPlotWidget(QWidget):
         # self.pgPlotWidget.addLegend()
 
         # Set menu bar
-        menuBar = self.menuBar()
-        self.gridLayout.setMenuBar(menuBar)
+        # Note: Currently disabled as there are no features for preview plot
+        #       yet available
+        # menuBar = self.menuBar()
+        # self.gridLayout.setMenuBar(menuBar)
 
         # Set checkbox for toggling mouse
         #checkBox = self.customUI()
