@@ -37,6 +37,7 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QTextEdit
+from PyQt5.QtGui import QTextCursor
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
@@ -700,6 +701,8 @@ class Logger:
         # Pass as html
         self.logWidget.insertHtml("<font color='black'>" + message
                                   + "</font><br />")
+        # Scroll to bottom of the log
+        self.logWidget.ensureCursorVisible()
 
     def error(self, message):
         """Print message as error.
@@ -712,6 +715,8 @@ class Logger:
         self.logWidget.insertHtml("<b><font color='red'>"
                                   + "ERROR! </font></b><font color='red'>"
                                   + message + "</font><br />")
+        # Scroll to bottom of the log
+        self.logWidget.ensureCursorVisible()
 
     def warning(self, message):
         """Print message as warning.
@@ -724,3 +729,5 @@ class Logger:
         self.logWidget.insertHtml("<b><font color='orange'>"
                                   + "WARNING! </font></b><font color='red'>"
                                   + message + "</font><br />")
+        # Scroll to bottom of the log
+        self.logWidget.ensureCursorVisible()
