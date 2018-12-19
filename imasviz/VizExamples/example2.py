@@ -1,7 +1,9 @@
 # !/usr/bin/python
-"""This example demonstrates the procedure of plotting multiple data to a single
-plot, Table Plot View and Stacked Plot View.
+"""This example demonstrates the procedure of plotting multiple arrays to a
+single plot, Table Plot View and Stacked Plot View, using IMAS IDS databases
+located on the GateWay HPC.
 """
+
 # A module providing a number of functions and variables that can be used to
 # manipulate different parts of the Python runtime environment.
 import sys
@@ -32,6 +34,7 @@ f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
                                                  runNumber=0,
                                                  userName='g2penkod',
                                                  imasDbName='viztest'))
+
 # Load IMAS database and build the data tree view frame
 f2 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52682,
                                                  runNumber=0,
@@ -48,7 +51,7 @@ pathsList2 = []
 for i in range(0, 6):
     pathsList2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
-# Select signal nodes corresponding to the paths in pathsList
+# Select signal nodes corresponding to the paths in paths list
 api.SelectSignals(f1, pathsList1)
 api.SelectSignals(f2, pathsList2)
 # Might use also

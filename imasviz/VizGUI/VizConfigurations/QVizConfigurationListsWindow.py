@@ -113,7 +113,7 @@ class CommonConfigurationRoutines(QObject):
             # First unselect all signals
             QVizUnselectAllSignals(dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
             # Select the signals, defined by a path in a list of paths, in the
-            # given wxDataTreeView (DTV) window
+            # given DataTreeView (DTV) window
             QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
                               pathsList=pathsList).execute()
         else:

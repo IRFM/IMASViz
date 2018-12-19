@@ -23,7 +23,8 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals impor
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
-
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
+    import QVizSignalHandling
 
 class Viz_API:
 
@@ -188,21 +189,26 @@ class Viz_API:
         QVizPlotSelectedSignals(dataTreeFrame.dataTreeView, figureKey=figureKey,
                                 update=update, all_DTV=all_DTV).execute()
 
-    # Plot the set of signals selected by the user
     def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
                                             configFileName = None,
-                                            figureKey=None, update=0):
-        if figureKey == None:
-            figureKey = self.getNextKeyForTablePlotView()
-        #TODO PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
-        #                               figurekey=figureKey, update=update,
-        #                               configFileName=configFileName).execute()
+                                            update=0,
+                                            all_DTV=False):
+        """ Plot the set of signal nodes selected by the user to a new Table
+        Plot View.
+        """
+        QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(all_DTV)
 
     # Plot the set of signals selected by the user
-    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFileName=None,
-                                    figureKey=None, update=0):
-        if figureKey == None:
-            figureKey = self.getNextKeyForTablePlotView()
+    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath,
+                                    figureKey=None, update=0, all_DTV=False):
+        """ Plot the set of signal nodes selected by the user to a new Table
+        Plot View and apply configuration.
+        """
+        QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
+            all_DTV=all_DTV,
+            configFile=configFilePath)
+        #if figureKey == None:
+        #    figureKey = self.getNextKeyForTablePlotView()
         #PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
         #                               figurekey=figureKey, update=update,
         #                               configFileName=configFileName).execute()

@@ -640,7 +640,7 @@ class QVizSignalHandling(QObject):
                                     all_DTV=True).execute()
 
     @pyqtSlot(bool)
-    def onPlotToTablePlotView(self, all_DTV=False):
+    def onPlotToTablePlotView(self, all_DTV=False, configFile=None):
         """Plot selected nodes from single/all opened DTVs to MultiPlot
         TablePlotView.
 
@@ -652,11 +652,17 @@ class QVizSignalHandling(QObject):
         figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
         # Note: figureKey that includes 'TablePlotView' is expected
         if all_DTV != True:
-            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=0, all_DTV=False)
+            QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
+                                figureKey=figureKey,
+                                update=0,
+                                configFile=configFile,
+                                all_DTV=False)
         else:
-            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=0, all_DTV=True)
+            QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
+                                figureKey=figureKey,
+                                update=0,
+                                configFile=configFile,
+                                all_DTV=True)
 
     @pyqtSlot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False):
