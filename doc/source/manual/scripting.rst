@@ -52,8 +52,9 @@ Creating A Script
 -----------------
 
 This subsection will cover the basic procedure of writing a Python3 script that
-can be used with :guilabel:`IMASViz`. Few such working script examples can
-already be found in project GIT repository
+can be used with :guilabel:`IMASViz`. Few such working script examples
+are shown in section :ref:`scripting_examples`. The same examples can be found
+in project GIT repository
 `here <https://git.iter.org/projects/VIS/repos/viz/browse/imasviz/VizExamples?at=refs%2Fheads%2Fviz2.0_develop>`_.
 
 
@@ -254,14 +255,50 @@ as shown in the figure below.
   containing multiple plots.
 
 
+.. _scripting_examples:
+
+Script examples
+---------------
+
+Few complete script examples are shown below. The same examples can be found
+in project GIT repository
+`here <https://git.iter.org/projects/VIS/repos/viz/browse/imasviz/VizExamples?at=refs%2Fheads%2Fviz2.0_develop>`_.
+
+Example 1
+~~~~~~~~~
+
+.. literalinclude:: ../../../imasviz/VizExamples/example1.py
+   :language: python
+   :linenos:
+
+Example 2
+~~~~~~~~~
+
+.. literalinclude:: ../../../imasviz/VizExamples/example2.py
+   :language: python
+   :linenos:
 
 
+Example 2b
+~~~~~~~~~~
+
+.. literalinclude:: ../../../imasviz/VizExamples/example2b.py
+   :language: python
+   :linenos:
 
 
+Example 3
+~~~~~~~~~
+
+.. literalinclude:: ../../../imasviz/VizExamples/example3.py
+   :language: python
+   :linenos:
 
 
+Example 4
+~~~~~~~~~
 
-
-
-
+.. literalinclude:: ../../../imasviz/VizExamples/example4.py
+   :language: python
+   :linenos:
 
