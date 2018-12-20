@@ -102,4 +102,5 @@ class QVizPluginsHandler:
             pluginsConfiguration['node_attributes'] = self.dataDict
             """Execute the plugins"""
             # pluginsObject.execute(wx.App(), pluginsConfiguration)
-            pluginsObject.execute(pluginsConfiguration)
+            pluginsObject.execute(pluginsConfiguration,
+                                  dataTreeView=self.dataTreeView)

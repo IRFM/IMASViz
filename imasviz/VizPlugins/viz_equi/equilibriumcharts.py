@@ -33,6 +33,7 @@ import sys
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QGridLayout, QTextEdit
+from PyQt5 import QtGui
 
 # Local python modules
 import imas
@@ -49,7 +50,7 @@ fontsize_requested = 9   # Font size for axis labels and subfigure titles
 fontsize_req_ticks = 9   # Font size for tick labels
 fontsize_title     = 11  # Font size for title
 
-def DataGen(dictDataSource):
+def DataGen(dictDataSource, dataTreeView):
 
     # For test:
     #shot = 50355
@@ -57,7 +58,8 @@ def DataGen(dictDataSource):
     #machine = 'west'
     #user = getpass.getuser()
     dataSource = dictDataSource['imasviz_view'].dataSource
-    view = dictDataSource['imasviz_view']
+    if dataTreeView == None:
+        dataTreeView = dictDataSource['imasviz_view']
     shot = dataSource.shotNumber
     run = dataSource.runNumber
     machine = dataSource.imasDbName
@@ -70,16 +72,18 @@ def DataGen(dictDataSource):
     print('Reading data...')
 
     # Open shot and run of machine
-    idd = dataSource.ids
+    occurrence = 0 # default occurrence
+    idd = dataSource.ids[occurrence]
     if idd is None:
-        dataSource.load(view, occurrence=0, pathsList=None, async=False)
-        idd = dataSource.ids
+        dataSource.load(self.dataTreeView, occurrence=0, pathsList=None,
+                        async=False)
+        idd = dataSource.ids[occurrence]
 
-    if not view.idsAlreadyFetched["equilibrium"]:
+    if not dataTreeView.idsAlreadyFetched["equilibrium"]:
         idd.equilibrium.get()
 
     # Get wall geometry
-    if not view.idsAlreadyFetched["wall"]:
+    if not dataTreeView.idsAlreadyFetched["wall"]:
         idd.wall.get()
 
     # Array with all times requested
@@ -241,9 +245,13 @@ def DataGen(dictDataSource):
 class PlotFrame(QMainWindow):
     """ The main frame of the application
     """
+
     title = 'Equilibrium charts'
 
-    def __init__(self, dictDataSource):
+    def __init__(self, dictDataSource, parent=None):
+
+        super(PlotFrame, self).__init__(parent)
+
         #TODO wx.Frame.__init__(self, None, wx.ID_ANY, self.title)
         #TODO self.Bind(wx.EVT_CLOSE, self.on_exit)
 
@@ -255,7 +263,14 @@ class PlotFrame(QMainWindow):
         self.ZNodes,        self.triKnots,          self.levels1_requested, \
         self.rho_tor_label, self.prof_1d,           self.boundPlasma, \
         self.magAxis,       self.wall,              self.b0, \
-        self.r0,            self.xPoint = DataGen(dictDataSource)
+        self.r0,            self.xPoint = DataGen(dictDataSource,
+                                                  dataTreeView=parent)
+        self.mainWidget = QtGui.QWidget(self)
+
+        self.gridLayout = QtGui.QGridLayout(self.mainWidget)
+        self.gridLayout.setObjectName("gridLayout")
+        # Set layout margin (left, top, right, bottom)
+        self.gridLayout.setContentsMargins(2, 2, 2, 2)
 
        #print('In init PlotFrame id(self.Psi_val) =',    id(self.Psi_val))
        #print('In init PlotFrame type(self.Psi_val) =',  type(self.Psi_val))
@@ -272,11 +287,13 @@ class PlotFrame(QMainWindow):
         self.create_status_bar()
         self.create_main_panel()
 
+        self.setCentralWidget(self.mainWidget)
+
         #TODO self.redraw_timer = wx.Timer(self)
         #TODO self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
 
-        self.textbox.SetValue(' '.join(map(str, self.dataTimes)))
-        self.draw_figure()
+        #TODO self.textbox.SetValue(' '.join(map(str, self.dataTimes)))
+        #TODO self.draw_figure()
 
     def create_menu(self):
         pass
@@ -420,27 +437,29 @@ class PlotFrame(QMainWindow):
         #TODO self.hbox = wx.BoxSizer(wx.HORIZONTAL)
         #TODO flags  = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
         #TODO flags2 = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
-        self.hbox.AddSpacer(10)
+        #TODO self.hbox.AddSpacer(10)
         #TODO self.hbox.Add(self.slider_time, 1, border=5, flag=flags2)
-        self.hbox.AddSpacer(10)
+        #TODO self.hbox.AddSpacer(10)
         #TODO self.hbox.Add(self.drawbuttonRun, 0, border=5, flag=flags)
-        self.hbox.AddSpacer(3)
+        #TODO self.hbox.AddSpacer(3)
         #TODO self.hbox.Add(self.drawbuttonStop, 0, border=5, flag=flags)
-        self.hbox.AddSpacer(10)
+        #TODO self.hbox.AddSpacer(10)
         #TODO self.hbox.Add(self.cb_grid, 0, border=5, flag=flags)
-        self.hbox.AddSpacer(10)
+        #TODO self.hbox.AddSpacer(10)
         #TODO self.hbox.Add(self.textbox_label, 0, border=5, flag=flags)
         #TODO self.hbox.Add(self.textbox, 0, border=5, flag=flags)
-        self.hbox.AddSpacer(10)
+        #TODO self.hbox.AddSpacer(10)
 
         #TODO self.vbox.Add(self.hbox, 0, flag=wx.CENTER | wx.TOP)
-        self.vbox.AddSpacer(20)
+        #TODO self.vbox.AddSpacer(20)
 
-        self.panel.SetSizer(self.vbox)
-        self.vbox.Fit(self)
+        #TODO self.panel.SetSizer(self.vbox)
+        #TODO self.vbox.Fit(self)
 
     def create_status_bar(self):
-        self.statusbar = self.CreateStatusBar()
+        # self.statusBar = self.CreateStatusBar()
+        self.statusBar = QtGui.QStatusBar()
+        self.setStatusBar(self.statusBar)
 
     def draw_figure(self):
         """ Draws figure
@@ -652,6 +671,7 @@ class PlotFrame(QMainWindow):
             self.pltaxv[it_ax].set_xdata(self.timeEquiIDS[sliderValue])
 
         self.canvas.draw()
+        self.canvas.show()
 
     def draw_figure_on_text(self):
         """ Draws figure when enter on text
@@ -962,7 +982,7 @@ class PlotFrame(QMainWindow):
         #TODO dlg.Destroy()
 
     def flash_status_message(self, msg, flash_len_ms=1500):
-        self.statusbar.SetStatusText(msg)
+        self.statusBar.SetStatusText(msg)
         #TODO self.timeroff = wx.Timer(self)
         #TODO self.Bind(wx.EVT_TIMER, \
         #TODO          self.on_flash_status_off, \
@@ -970,15 +990,17 @@ class PlotFrame(QMainWindow):
         self.timeroff.Start(flash_len_ms, oneShot=True)
 
     def on_flash_status_off(self, event=None):
-        self.statusbar.SetStatusText('')
+        self.statusBar.SetStatusText('')
 
 class equilibriumcharts(VizPlugins):
     def __init__(self):
         pass
-    def execute(self, dictDataSource):
+    def execute(self, dictDataSource, dataTreeView):
 
-        self.frame = PlotFrame(dictDataSource)
-        self.frame.Show()
+        self.dataTreeView = dataTreeView
+
+        self.frame = PlotFrame(dictDataSource, parent=self.dataTreeView)
+        self.frame.show()
         # app.MainLoop()
 
     # def getSubjects(self):
@@ -1025,5 +1047,5 @@ if (__name__ == '__main__'):
     # Launch GUI
     app = QApplication(sys.argv)
     app.frame = PlotFrame(dictDataSource)
-    app.frame.Show()
-    app.MainLoop()
+    app.frame.show()
+    sys.exit(app.exec_())
