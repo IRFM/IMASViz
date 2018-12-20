@@ -342,7 +342,7 @@ class QVizSignalHandling(QObject):
             icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
             action_TPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
             action_TPV_thisDTV.triggered.connect(
-                partial(self.onPlotToTablePlotView, False))
+                partial(self.onPlotToTablePlotView, all_DTV=False, configFile=None))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_thisDTV)
 
@@ -352,7 +352,8 @@ class QVizSignalHandling(QObject):
             icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
             action_TPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases', self)
             action_TPV_allDTV.triggered.connect(
-                partial(self.onPlotToTablePlotView, True))
+                partial(self.onPlotToTablePlotView, all_DTV=True,
+                        configFile=None))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_allDTV)
 
