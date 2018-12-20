@@ -9,7 +9,7 @@ User Manual
    The manual presented is executed on the **Gateway HPC**.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    getting_started.rst
    loading_IDS.rst

@@ -14,7 +14,7 @@ implemented.
 
 For additional support or if any issues are found with IMASViz please contact
 the developers via e-mail or submit a ticket on
-`JIRA ITER Webpage <jira.iter.org>`_.
+`JIRA ITER Webpage <https://jira.iter.org>`_.
 
 While submitting the ticket please use the options listed below
 

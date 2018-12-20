@@ -98,6 +98,9 @@ the procedure will be shown on **magnetics IDS**.
       :align: center
       :width: 400px
 
+   .. Note:: Alternative: Double-clicking on the **IDS node label** ->
+             **occurrence 0** (default) of the selected IDS will load.
+
    The magnetics IDS nodes are displayed as new nodes in the tree, as shown in
    the figure below. Nodes of an IDS are organized according to the
    **IMAS data dictionary**. Inside the **magnetics** tree, plottable

@@ -24,28 +24,34 @@ Changes:
    - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
 
 - Superior plot export possibilities
-- GUI improvements, database tree browser interface, reducing the number of
-  separate windows, introduce docked widgets, introduce GUI icons and more
+- GUI improvements
+- Database tree browser interface display improvements
+- Added first 'node contents display' feature (displayed in the
+  :guilabel:`Node Documentation` Widget)
+- Reduced the number of separate windows, introduce docked widgets
+- Introduce first GUI icons
 - MultiPlot feature relabeled to TablePlotView
 - SubPlot feature relabeled to StackedPlotView
 - Add support for IMAS versions 3.20.0, 3.21.0 and 3.21.1
-- Create documentation + manual (~50 pages in PDF) in a form of reStructuredText
-  source files for document generation (single source can be generated into
-  multiple formats e.g. PDF, HMTL...)
+- Included **documentation + manual** (~60 pages in PDF) in a form of
+  reStructuredText source files for document generation (single source can be
+  generated into multiple formats e.g. PDF, HMTL...)
 - In-code documentation greatly improved and extended
-- Short summary of files and line changes count (ignoring generated files and
-  scripts):
+- and more...
 
-   - 186 commits,
-   - 256 files changed,
-   - 12958 insertions(+),
-   - 10113 deletions(-)
+Short summary of files and line changes count (ignoring generated files and
+scripts):
 
-.. git log <from_commit>..<to_commit> --pretty=oneline | wc -l
-.. git diff --stat <from_commit> <to_commit> -- . ':!*enerated*' ':!*.xml'
+- 193 commits,
+- 268 files changed,
+- 13316 insertions(+),
+- 10162 deletions(-)
+
+.. git log $from_commit..$to_commit --pretty=oneline | wc -l
+.. git diff --stat $from_commit $to_commit -- . ':!*enerated*' ':!*.xml'
 
 .. from_commit = d25c4b8bddf
-.. to_commit = 0216310d056
+.. to_commit = d9253fedf12d63761299a61c6930bc77f0d9b90c
 
 .. Note::
    The migration to PyQt5 due to IMASViz containing a large code sets is not

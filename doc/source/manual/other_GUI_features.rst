@@ -1,6 +1,5 @@
 .. include:: ../icons.inc
 
-
 .. _other_GUI_features:
 
 Other GUI features
