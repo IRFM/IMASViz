@@ -245,6 +245,20 @@ class QVizDataTreeView(QTreeWidget):
             node_label = str(item.getName())
         # - Set node documentation#
         node_doc = str(item.getDocumentation())
+        # - Set node contents
+        # TODO: improve and avoid try/except
+        expression = 'self.dataSource.ids[0].' + str(item.getPath())
+        expression = expression.replace('/', '.')
+        expression = expression.replace('(', '[')
+        expression = expression.replace(')', ']')
+
+        node_contents = '...'
+        # Don't obtain contents for full IDS root nodes
+        if item.getDataDict()['isIDSRoot'] != 1:
+            try:
+                node_contents = str(eval(expression))
+            except:
+                pass
 
         # - Set all node documentation related strings to single
         # string array for better handling
@@ -253,6 +267,8 @@ class QVizDataTreeView(QTreeWidget):
         node_doc_str_array.append(node_label)
         node_doc_str_array.append("Documentation: ")
         node_doc_str_array.append(node_doc)
+        node_doc_str_array.append("Contents: ")
+        node_doc_str_array.append(node_contents)
 
         # Find and update DTVFrame-docked node documentation widget (NDW)
         ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")
