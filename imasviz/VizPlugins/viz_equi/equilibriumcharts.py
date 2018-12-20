@@ -248,11 +248,10 @@ class PlotFrame(QMainWindow):
 
     title = 'Equilibrium charts'
 
-    def __init__(self, dictDataSource, parent=None):
+    def __init__(self, dictDataSource, parent=None, title=title):
 
         super(PlotFrame, self).__init__(parent)
 
-        #TODO wx.Frame.__init__(self, None, wx.ID_ANY, self.title)
         #TODO self.Bind(wx.EVT_CLOSE, self.on_exit)
 
         self.shot,          self.run,               self.machine, \

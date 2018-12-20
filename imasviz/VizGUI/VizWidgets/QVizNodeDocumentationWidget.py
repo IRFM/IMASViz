@@ -154,10 +154,12 @@ class QVizNodeDocumentationWidget(QWidget):
         """Update the text of the docked node documentation widget.
 
         Arguments:
-            documentation (4*str array) : An array containing 4 documentation
+            documentation (6*str array) : An array containing 6 documentation
                                           strings: First title, first entry,
                                           second title, second entry.
         """
+
+        # TODO: switch to dictionary instead of a common array
 
         self.l1.setText(documentation[0])
         self.l2.setText(documentation[1])
