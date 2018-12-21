@@ -15,10 +15,11 @@
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
-    QDoubleSpinBox, QComboBox
+    QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols
+# from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 
 
 class QVizPlotConfigUI(QDialog):
@@ -46,8 +47,15 @@ class QVizPlotConfigUI(QDialog):
         # Set tab widget
         tabWidget = QTabWidget(self)
         # Add tabs
-        tabWidget.addTab(TabColorAndLineProperties(parent=self),
+        # - Color and line properties
+        self.tab1 = TabColorAndLineProperties(parent=self)
+        tabWidget.addTab(self.tab1,
                          "Color and Line Properties")
+
+        # - Plot design properties
+        self.tab2 = TabPlotDesignProperties(parent=self)
+        tabWidget.addTab(self.tab2,
+                         "Plot Design Properties")
         return tabWidget
 
     def setButtons(self):
@@ -97,7 +105,7 @@ class TabColorAndLineProperties(QWidget):
         # Widget settings
         self.setObjectName("TabColorAndLineProperties")
         self.setWindowTitle("Color and Line Properties")
-        self.resize(size[0], size[1])
+        # self.resize(size[0], size[1])
 
         self.parent = parent
         # Set viewBox variable
@@ -105,6 +113,8 @@ class TabColorAndLineProperties(QWidget):
 
         # List of plotDataItems within viewBox
         self.listPlotDataItems = self.viewBox.addedItems
+
+        # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         # Set up the QWidget contents
         self.setContents()
@@ -463,3 +473,152 @@ class TabColorAndLineProperties(QWidget):
         # Change symbol outline color
         pdItem.opts['symbolPen'] = colorButton.color().getRgb()
         pdItem.updateItems()
+
+class TabPlotDesignProperties(QWidget):
+    """Widget allowing plot color and line customization.
+    """
+
+    def __init__(self, parent=None, size=(500, 400)):
+        super(TabPlotDesignProperties, self).__init__(parent)
+
+        # Widget settings
+        self.setObjectName("TabPlotDesignProperties")
+        self.setWindowTitle("Plot Design Properties")
+        # self.resize(size[0], size[1])
+
+        # self.setSizePolicy(QSizePolicy.Expanding,
+        #                             QSizePolicy.Expanding)
+
+        self.parent = parent
+        # Set viewBox variable
+        self.viewBox = self.parent.viewBox
+
+        # Set up the QWidget contents
+        self.setContents()
+
+    def setContents(self):
+        """ Set widget contents.
+        """
+        
+        # Set layout
+        self.gridLayout = QGridLayout(self)
+        self.gridLayout.setObjectName("gridLayout")
+
+        # Set widget for setting custom margin
+        self.newMarginWidget = self.setNewMargin()
+        self.gridLayout.addWidget(self.newMarginWidget, 0, 0, 1, 1)
+
+        # Set spacer (to not have widgets in the middle of the window)
+        self.spacerItem = QSpacerItem(20, 40, QSizePolicy.Minimum,
+                                        QSizePolicy.Expanding)
+        self.gridLayout.addItem(self.spacerItem, 1, 0, 1, 1)
+
+    def setNewMargin(self):
+        """ Set widget for setting custom margin.
+        """
+
+        # Configuring margin widget
+
+        # Get QVizPlotWidget
+        plotWidget = self.parent.viewBox.qWidgetParent
+
+        # Check if it has gridLayout property
+        # Note: TODO: QVizPlotWidget have it, TPV and SPV don't. Fix that
+        if hasattr(plotWidget, 'gridLayout'):
+            pass
+        else:
+            return QWidget()
+        # Get current margins
+        currentMargin = plotWidget.gridLayout.getContentsMargins()
+
+        # TODO: include changing the in-plot margin
+        # pgPlotWidget = self.parent.viewBox.qWidgetParent.pgPlotWidget
+        # pgPlotWidget.centralWidget.setContentsMargins(50,50,50,50)
+        # currentMargin = pgPlotWidget.centralWidget.layout.getContentsMargins()
+        # plotWidget = pgPlotWidget
+
+        # Set spinboxes for each margin side
+        marginSpinBox_left = QSpinBox(value=currentMargin[0],
+                                 maximum=250,
+                                 minimum=0,
+                                 singleStep=1)
+
+        marginSpinBox_top = QSpinBox(value=currentMargin[1],
+                                 maximum=250,
+                                 minimum=0,
+                                 singleStep=1)
+
+        marginSpinBox_right = QSpinBox(value=currentMargin[2],
+                                 maximum=250,
+                                 minimum=0,
+                                 singleStep=1)
+
+        marginSpinBox_bottom = QSpinBox(value=currentMargin[3],
+                                 maximum=250,
+                                 minimum=0,
+                                 singleStep=1)
+
+        # On spinbox value change, run update routine
+        # TODO: make it more efficient. Work with single spinBox, not with all
+        #       of them at once
+        marginSpinBox_left.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins,
+            plotWidget, marginSpinBox_left, marginSpinBox_top,
+            marginSpinBox_right,
+            marginSpinBox_bottom))
+
+        marginSpinBox_top.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins,
+            plotWidget, marginSpinBox_left, marginSpinBox_top,
+            marginSpinBox_right,
+            marginSpinBox_bottom))
+
+        marginSpinBox_right.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins,
+            plotWidget, marginSpinBox_left, marginSpinBox_top,
+            marginSpinBox_right,
+            marginSpinBox_bottom))
+
+        marginSpinBox_bottom.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins,
+            plotWidget, marginSpinBox_left, marginSpinBox_top,
+            marginSpinBox_right,
+            marginSpinBox_bottom))
+
+        marginWidget = QWidget(self)
+        gridLayout = QGridLayout(marginWidget)
+        gridLayout.setObjectName('gridLayout')
+
+        # Set header
+        # - Set list of header items
+        listHeaderLabels = ['Margins',
+                            'Left',
+                            'Top',
+                            'Right',
+                            'Bottom']
+        # - Set header item for each column (i)
+        for i in range(len(listHeaderLabels)):
+            gridLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
+
+        # Add widgets to layout
+        gridLayout.addWidget(marginSpinBox_left, 1, 1, 1, 1)
+        gridLayout.addWidget(marginSpinBox_top, 1, 2, 1, 1)
+        gridLayout.addWidget(marginSpinBox_right, 1, 3, 1, 1)
+        gridLayout.addWidget(marginSpinBox_bottom, 1, 4, 1, 1)
+
+        return marginWidget
+
+    @pyqtSlot(QWidget, QSpinBox, QSpinBox, QSpinBox, QSpinBox)
+    def updatePlotWidgetContentsMargins(self, plotWidget, spinBox1, spinBox2,
+                                        spinBox3, spinBox4):
+        """Update plot widget contents margins.
+        Note: instant update (no apply required).
+
+        Arguments:
+        """
+
+        # Update contents margin
+        plotWidget.gridLayout.setContentsMargins(spinBox1.value(),
+                                                 spinBox2.value(),
+                                                 spinBox3.value(),
+                                                 spinBox4.value())

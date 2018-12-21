@@ -134,14 +134,18 @@ class QVizPlotWidget(QWidget):
         self.pgPlotWidget.addLegend()
 
         # Set menu bar
-        menuBar = self.menuBar()
-        self.gridLayout.setMenuBar(menuBar)
+        # Note: hidden until it contains some useful features
+        # Note: when enable, be careful with the plot configuration margins
+        #       customization (there will be no empty space between menu
+        # bar and plot display)
+        # menuBar = self.menuBar()
+        # self.gridLayout.setMenuBar(menuBar)
 
         # Set checkbox for toggling mouse
         checkBox = self.checkBox()
 
         # Set layout margin (left, top, right, bottom)
-        self.gridLayout.setContentsMargins(2, 2, 2, 2)
+        self.gridLayout.setContentsMargins(10, 10, 10, 10)
 
         # Add widgets to layout
         self.gridLayout.addWidget(self.pgPlotWidget, 0, 0, 1, 10)
