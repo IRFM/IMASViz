@@ -22,17 +22,17 @@ from __future__ import (unicode_literals, absolute_import,  \
 import argparse
 from datetime import datetime
 import getpass
-# The recommended way to use wx with mpl is with the WXAgg
-# backend.
 import matplotlib
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import \
+    FigureCanvasQTAgg as FigCanvas
 import matplotlib.ticker as tick
 import numpy as np
 import os
 import sys
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
-                            QWidget, QGridLayout, QTextEdit
+                            QWidget, QGridLayout, QVBoxLayout
 from PyQt5 import QtGui
 
 # Local python modules
@@ -267,12 +267,10 @@ class PlotFrame(QMainWindow):
         self.magAxis,       self.wall,              self.b0, \
         self.r0,            self.xPoint = DataGen(dictDataSource,
                                                   dataTreeView=parent)
+        # Set main widget
         self.mainWidget = QtGui.QWidget(self)
-
-        self.gridLayout = QtGui.QGridLayout(self.mainWidget)
-        self.gridLayout.setObjectName("gridLayout")
-        # Set layout margin (left, top, right, bottom)
-        self.gridLayout.setContentsMargins(2, 2, 2, 2)
+        # Set box layout
+        self.boxLayout = QVBoxLayout(self.mainWidget)
 
        #print('In init PlotFrame id(self.Psi_val) =',    id(self.Psi_val))
        #print('In init PlotFrame type(self.Psi_val) =',  type(self.Psi_val))
@@ -295,7 +293,7 @@ class PlotFrame(QMainWindow):
         #TODO self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
 
         #TODO self.textbox.SetValue(' '.join(map(str, self.dataTimes)))
-        #TODO self.draw_figure()
+        self.draw_figure()
 
     def create_menu(self):
         pass
@@ -323,13 +321,18 @@ class PlotFrame(QMainWindow):
              * Control panel for interaction
         """
         #TODO self.panel = wx.Panel(self)
+        self.panel = self.mainWidget
 
         # Create the mpl Figure and FigCanvas objects.
         # 100 dots-per-inch
         self.dpi = 110
         self.fig = Figure(dpi=self.dpi)
+        # self.fig = Figure(figsize=(5, 3))
         #TODO self.canvas = FigCanvas(self.panel, wx.ID_ANY, self.fig)
+        self.canvas = FigCanvas(self.fig)
 
+        # Add canvas to box layout of the main widget
+        self.boxLayout.addWidget(self.canvas)
 
         self.fig.subplots_adjust(left=0.08, right=0.99, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.0)
@@ -467,7 +470,9 @@ class PlotFrame(QMainWindow):
         """ Draws figure
         """
 
-        sliderValue = int(round(self.slider_time.GetValue()))
+        # TODO sliderValue = int(round(self.slider_time.GetValue()))
+        sliderValue = 0
+
         print('In draw_figure, self.slider_time.GetValue = ', sliderValue)
 
         self.axes[0].plot(self.timeEquiIDS, self.Ip)
@@ -1029,8 +1034,6 @@ if (__name__ == '__main__'):
     from imasviz.VizDataSource.QVizDataSourceFactory import \
         QVizDataSourceFactory
     from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-    from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
-        import QVizSignalHandling
 
     # Set object managing the PyQt GUI application's control flow and main
     # settings
