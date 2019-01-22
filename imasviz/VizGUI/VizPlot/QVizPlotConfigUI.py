@@ -499,7 +499,7 @@ class TabPlotDesignProperties(QWidget):
     def setContents(self):
         """ Set widget contents.
         """
-        
+
         # Set layout
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName("gridLayout")
@@ -518,6 +518,8 @@ class TabPlotDesignProperties(QWidget):
         """
 
         # Configuring margin widget
+
+        # TODO: Add option to reset margins
 
         # Get QVizPlotWidget
         plotWidget = self.parent.viewBox.qWidgetParent

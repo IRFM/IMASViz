@@ -393,12 +393,12 @@ class PlotFrame(QMainWindow):
         # P'
         self.axes[13] = self.fig.add_subplot(grid_subp[5, 2])
 
-
-        #TODO self.cb_grid = wx.CheckBox(self.panel, wx.ID_ANY, \
-        #TODO                           'Grid', \
-        #TODO                           style=wx.ALIGN_RIGHT)
-        #self.Bind(wx.EVT_CHECKBOX, self.on_cb_grid, self.cb_grid)
-        #TODO self.cb_grid.Bind(wx.EVT_CHECKBOX, self.on_cb_grid)
+        self.cb_grid = QtGui.QCheckBox('Grid', self.panel)
+        self.cb_grid.setChecked(False)
+        self.cb_grid.setObjectName("GridCheckBox")
+        self.cb_grid.setText("Enable Grid")
+        self.cb_grid.stateChanged.connect(self.on_cb_grid)
+        self.boxLayout.addWidget(self.cb_grid)
 
         #TODO self.textbox = wx.TextCtrl(self.panel, size=(100,-1), \
         #TODO                           style=wx.TE_PROCESS_ENTER)
@@ -448,8 +448,6 @@ class PlotFrame(QMainWindow):
         #TODO self.hbox.Add(self.drawbuttonRun, 0, border=5, flag=flags)
         #TODO self.hbox.AddSpacer(3)
         #TODO self.hbox.Add(self.drawbuttonStop, 0, border=5, flag=flags)
-        #TODO self.hbox.AddSpacer(10)
-        #TODO self.hbox.Add(self.cb_grid, 0, border=5, flag=flags)
         #TODO self.hbox.AddSpacer(10)
         #TODO self.hbox.Add(self.textbox_label, 0, border=5, flag=flags)
         #TODO self.hbox.Add(self.textbox, 0, border=5, flag=flags)
@@ -619,7 +617,7 @@ class PlotFrame(QMainWindow):
                       self.axes[6].get_yticklabels()):
             label.set_fontsize(fontsize_req_ticks)
 
-        if (self.cb_grid.IsChecked()):
+        if (self.cb_grid.isChecked()):
             self.axes[6].minorticks_on()
             self.axes[6].grid(b=True, which='major', linestyle='-', \
                               linewidth=0.5)
@@ -813,7 +811,7 @@ class PlotFrame(QMainWindow):
         self.canvas.draw()
 
     def on_cb_grid(self, event=None):
-        if (self.cb_grid.IsChecked()):
+        if (self.cb_grid.isChecked()):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].minorticks_on()
                 self.axes[it_ax].grid(b=True, which='major', linestyle='-', \
@@ -835,7 +833,7 @@ class PlotFrame(QMainWindow):
         if (not dataTimes_in):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            #TODO if (self.cb_grid.IsChecked()):
+            #TODO if (self.cb_grid.isChecked()):
             #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.boolOnTextEnter = False
             self.slider_time.SetValue(0)
@@ -844,7 +842,7 @@ class PlotFrame(QMainWindow):
         if (not self.boolOnTextEnter):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            #TODO if (self.cb_grid.IsChecked()):
+            #TODO if (self.cb_grid.isChecked()):
             #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.dataTimes_old = dataTimes_in
             self.dataTimes     = dataTimes_in
@@ -862,7 +860,7 @@ class PlotFrame(QMainWindow):
                 if (len(self.dataTimes_old) == 1):
                     for it_ax in range(self.numAxes):
                         self.axes[it_ax].cla()
-                    #TODO if (self.cb_grid.IsChecked()):
+                    #TODO if (self.cb_grid.isChecked()):
                     #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                     self.boolOnTextEnter = False
                     idxTime = \
@@ -877,7 +875,7 @@ class PlotFrame(QMainWindow):
                     print('old > new')
                     for it_ax in range(self.numAxes):
                         self.axes[it_ax].cla()
-                    #TODOif (self.cb_grid.IsChecked()):
+                    #TODOif (self.cb_grid.isChecked()):
                     #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                     self.dataTimes_old = dataTimes_in
                     self.dataTimes     = dataTimes_in
@@ -899,7 +897,7 @@ class PlotFrame(QMainWindow):
                 self.boolOnTextEnter = False
                 for it_ax in range(self.numAxes):
                     self.axes[it_ax].cla()
-                #TODO if (self.cb_grid.IsChecked()):
+                #TODO if (self.cb_grid.isChecked()):
                 #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                 self.draw_figure()
             self.it_data = int(round(self.slider_time.GetValue()))
@@ -922,7 +920,7 @@ class PlotFrame(QMainWindow):
             self.boolOnTextEnter = False
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            #TODO if (self.cb_grid.IsChecked()):
+            #TODO if (self.cb_grid.isChecked()):
             #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.draw_figure()
         else:

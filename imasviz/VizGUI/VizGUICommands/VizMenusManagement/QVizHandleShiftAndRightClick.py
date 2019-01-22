@@ -31,7 +31,7 @@ class QVizHandleShiftAndRightClick:
         """Execute on the event
         """
 
-        # Get selected item/subject
+        # Get selected item/subject data dict
         dataDict = QVizTreeNode.getDataDict()
         # Set default variables"""
         idsName = None
