@@ -26,6 +26,8 @@ import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import \
     FigureCanvasQTAgg as FigCanvas
+from matplotlib.backends.backend_qt5agg import \
+    NavigationToolbar2QT as NavigationToolbar
 import matplotlib.ticker as tick
 import numpy as np
 import os
@@ -33,7 +35,7 @@ import sys
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
-                            QSlider
+                            QSlider, QPushButton, QHBoxLayout, QLabel
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 
@@ -271,8 +273,6 @@ class PlotFrame(QMainWindow):
                                                   dataTreeView=parent)
         # Set main widget
         self.mainWidget = QtGui.QWidget(self)
-        # Set box layout
-        self.boxLayout = QVBoxLayout(self.mainWidget)
 
        #print('In init PlotFrame id(self.Psi_val) =',    id(self.Psi_val))
        #print('In init PlotFrame type(self.Psi_val) =',  type(self.Psi_val))
@@ -332,11 +332,8 @@ class PlotFrame(QMainWindow):
         self.dpi = 110
         self.fig = Figure(dpi=self.dpi)
         # self.fig = Figure(figsize=(5, 3))
-        #TODO self.canvas = FigCanvas(self.panel, wx.ID_ANY, self.fig)
+        # Set canvas containing plots
         self.canvas = FigCanvas(self.fig)
-
-        # Add canvas to box layout of the main widget
-        self.boxLayout.addWidget(self.canvas)
 
         self.fig.subplots_adjust(left=0.08, right=0.99, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.0)
@@ -403,7 +400,7 @@ class PlotFrame(QMainWindow):
         self.cb_grid.setObjectName("GridCheckBox")
         self.cb_grid.setText("Enable Grid")
         self.cb_grid.stateChanged.connect(self.on_cb_grid)
-        self.boxLayout.addWidget(self.cb_grid)
+
 
         # Set time value text box
         #TODO self.textbox = wx.TextCtrl(self.panel, size=(100,-1), \
@@ -414,27 +411,27 @@ class PlotFrame(QMainWindow):
         self.textbox = QLineEdit(self.panel)
         self.textbox.setObjectName("TimeTextBox")
         self.textbox.returnPressed.connect(self.on_text_enter)
-        self.boxLayout.addWidget(self.textbox)
+
 
         #TODO self.drawbuttonRun = wx.Button(self.panel, wx.ID_ANY, 'Run')
         #TODO self.drawbuttonRun.Bind(wx.EVT_BUTTON, self.on_draw_buttonRun)
+        self.drawButtonRun = QPushButton("Run", self.panel)
+        self.drawButtonRun.clicked.connect(self.on_draw_buttonRun)
+
 
         #TODO self.drawbuttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
         #TODO self.drawbuttonStop.Bind(wx.EVT_BUTTON, self.on_draw_buttonStop)
+        self.drawButtonStop = QPushButton("Stop", self.panel)
+        self.drawButtonStop.clicked.connect(self.on_draw_buttonStop)
+
 
         # Set time slider
-        #TODO self.slider_time = wx.Slider(self.panel, wx.ID_ANY, \
-        #TODO                             value=0, \
-        #TODO                            minValue=0, \
-        #TODO                            maxValue=(self.lenArrTimes-1), \
-        #TODO                             size=wx.Size(600,-1))
         self.slider_time = QSlider(QtCore.Qt.Horizontal, self.panel)
         self.slider_time.setValue(0)
         self.slider_time.setMinimum(0)
         self.slider_time.setMaximumWidth(self.lenArrTimes-1)
         # self.slider_time.adjustSize()
         self.slider_time.setMinimumWidth(600)
-        self.boxLayout.addWidget(self.slider_time)
 
         # For more Slider options:
         #size=wx.DefaultSize
@@ -447,37 +444,37 @@ class PlotFrame(QMainWindow):
         #TODO self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_THUMBTRACK, \
         #TODO                      self.on_slider_track)
 
-        #TODO self.textbox_label = wx.StaticText(self.panel, wx.ID_ANY, \
-        #TODO                                  'Time values')
+        self.textbox_label = QLabel('Time values', self.panel)
 
         # Create the navigation toolbar, tied to the canvas
-        #TODO self.toolbar = NavigationToolbar(self.canvas)
+        self.toolbar = NavigationToolbar(self.canvas, self.panel)
 
-        # Layout with box sizers
-        #TODO self.vbox = wx.BoxSizer(wx.VERTICAL)
-        #TODO self.vbox.Add(self.toolbar, 0, wx.EXPAND)
-        #TODO self.vbox.Add(self.canvas, 1, wx.CENTER | wx.GROW)
-        #TODO self.vbox.AddSpacer(20)
+        # Set vertical box layout
+        self.vboxLayout = QVBoxLayout(self.mainWidget)
+        # Add canvas to box layout of the main widget
+        self.vboxLayout.addWidget(self.canvas)
+        self.vboxLayout.addWidget(self.toolbar)
+        self.vboxLayout.addSpacing(20)
 
-        #TODO self.hbox = wx.BoxSizer(wx.HORIZONTAL)
-        #TODO flags  = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
-        #TODO flags2 = wx.ALIGN_LEFT | wx.ALL | wx.ALIGN_CENTER_VERTICAL
-        #TODO self.hbox.AddSpacer(10)
-        #TODO self.hbox.Add(self.slider_time, 1, border=5, flag=flags2)
-        #TODO self.hbox.AddSpacer(10)
-        #TODO self.hbox.Add(self.drawbuttonRun, 0, border=5, flag=flags)
-        #TODO self.hbox.AddSpacer(3)
-        #TODO self.hbox.Add(self.drawbuttonStop, 0, border=5, flag=flags)
-        #TODO self.hbox.AddSpacer(10)
-        #TODO self.hbox.Add(self.textbox_label, 0, border=5, flag=flags)
-        #TODO self.hbox.Add(self.textbox, 0, border=5, flag=flags)
-        #TODO self.hbox.AddSpacer(10)
+        # Add widget for buttons etc.
+        self.interface_widget = QWidget(self.panel)
+        # Add horizontal layout
+        self.hboxLayout = QHBoxLayout(self.interface_widget)
+        # Add buttons etc.
+        self.hboxLayout.addWidget(self.slider_time)
+        self.hboxLayout.addSpacing(10)
+        self.hboxLayout.addWidget(self.drawButtonRun)
+        self.hboxLayout.addSpacing(10)
+        self.hboxLayout.addWidget(self.drawButtonStop)
+        self.hboxLayout.addSpacing(3)
+        self.hboxLayout.addWidget(self.cb_grid)
+        self.hboxLayout.addSpacing(10)
+        self.hboxLayout.addWidget(self.textbox_label)
+        self.hboxLayout.addSpacing(10)
+        self.hboxLayout.addWidget(self.textbox)
+        self.hboxLayout.addSpacing(10)
 
-        #TODO self.vbox.Add(self.hbox, 0, flag=wx.CENTER | wx.TOP)
-        #TODO self.vbox.AddSpacer(20)
-
-        #TODO self.panel.SetSizer(self.vbox)
-        #TODO self.vbox.Fit(self)
+        self.vboxLayout.addWidget(self.interface_widget)
 
     def create_status_bar(self):
         # self.statusBar = self.CreateStatusBar()
@@ -488,8 +485,8 @@ class PlotFrame(QMainWindow):
         """ Draws figure
         """
 
-        # TODO sliderValue = int(round(self.slider_time.value()))
-        sliderValue = 0
+        sliderValue = int(round(self.slider_time.value()))
+        # sliderValue = 0
 
         print('In draw_figure, self.slider_time.value = ', sliderValue)
 
