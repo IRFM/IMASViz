@@ -32,8 +32,10 @@ import os
 import sys
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
-                            QWidget, QGridLayout, QVBoxLayout
+                            QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
+                            QSlider
 from PyQt5 import QtGui
+from PyQt5 import QtCore
 
 # Local python modules
 import imas
@@ -291,6 +293,8 @@ class PlotFrame(QMainWindow):
 
         #TODO self.redraw_timer = wx.Timer(self)
         #TODO self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
+        self.redraw_timer = QtCore.QTimer(self)
+        self.redraw_timer.timeout.connect(self.on_redraw_timer)
 
         #TODO self.textbox.SetValue(' '.join(map(str, self.dataTimes)))
         self.draw_figure()
@@ -393,6 +397,7 @@ class PlotFrame(QMainWindow):
         # P'
         self.axes[13] = self.fig.add_subplot(grid_subp[5, 2])
 
+        # Set checkbox to enable/disable grid in plots
         self.cb_grid = QtGui.QCheckBox('Grid', self.panel)
         self.cb_grid.setChecked(False)
         self.cb_grid.setObjectName("GridCheckBox")
@@ -400,10 +405,16 @@ class PlotFrame(QMainWindow):
         self.cb_grid.stateChanged.connect(self.on_cb_grid)
         self.boxLayout.addWidget(self.cb_grid)
 
+        # Set time value text box
         #TODO self.textbox = wx.TextCtrl(self.panel, size=(100,-1), \
         #TODO                           style=wx.TE_PROCESS_ENTER)
         #self.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter, self.textbox)
         #TODO self.textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
+
+        self.textbox = QLineEdit(self.panel)
+        self.textbox.setObjectName("TimeTextBox")
+        self.textbox.returnPressed.connect(self.on_text_enter)
+        self.boxLayout.addWidget(self.textbox)
 
         #TODO self.drawbuttonRun = wx.Button(self.panel, wx.ID_ANY, 'Run')
         #TODO self.drawbuttonRun.Bind(wx.EVT_BUTTON, self.on_draw_buttonRun)
@@ -411,11 +422,20 @@ class PlotFrame(QMainWindow):
         #TODO self.drawbuttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
         #TODO self.drawbuttonStop.Bind(wx.EVT_BUTTON, self.on_draw_buttonStop)
 
+        # Set time slider
         #TODO self.slider_time = wx.Slider(self.panel, wx.ID_ANY, \
         #TODO                             value=0, \
         #TODO                            minValue=0, \
         #TODO                            maxValue=(self.lenArrTimes-1), \
         #TODO                             size=wx.Size(600,-1))
+        self.slider_time = QSlider(QtCore.Qt.Horizontal, self.panel)
+        self.slider_time.setValue(0)
+        self.slider_time.setMinimum(0)
+        self.slider_time.setMaximumWidth(self.lenArrTimes-1)
+        # self.slider_time.adjustSize()
+        self.slider_time.setMinimumWidth(600)
+        self.boxLayout.addWidget(self.slider_time)
+
         # For more Slider options:
         #size=wx.DefaultSize
         #style=wx.SL_AUTOTICKS | wx.SL_LABELS
@@ -468,10 +488,10 @@ class PlotFrame(QMainWindow):
         """ Draws figure
         """
 
-        # TODO sliderValue = int(round(self.slider_time.GetValue()))
+        # TODO sliderValue = int(round(self.slider_time.value()))
         sliderValue = 0
 
-        print('In draw_figure, self.slider_time.GetValue = ', sliderValue)
+        print('In draw_figure, self.slider_time.value = ', sliderValue)
 
         self.axes[0].plot(self.timeEquiIDS, self.Ip)
         self.axes[0].set_ylabel('Ip [kA]', fontsize=fontsize_requested)
@@ -584,8 +604,8 @@ class PlotFrame(QMainWindow):
         """ Updates the figure
         """
 
-        sliderValue = int(round(self.slider_time.GetValue()))
-        #print('self.slider_time.GetValue = ', sliderValue)
+        sliderValue = int(round(self.slider_time.value()))
+        #print('self.slider_time.value = ', sliderValue)
 
         #self.timeText.set_text('Time = ' + str(self.timeEquiIDS[sliderValue]))
 
@@ -682,8 +702,8 @@ class PlotFrame(QMainWindow):
         """ Draws figure when enter on text
         """
 
-        sliderValue = int(round(self.slider_time.GetValue()))
-        print('In draw_figure, self.slider_time.GetValue = ', sliderValue)
+        sliderValue = int(round(self.slider_time.value()))
+        print('In draw_figure, self.slider_time.value = ', sliderValue)
 
         if (self.nt_line_color == 0):
             self.axes[0].plot(self.timeEquiIDS, self.Ip, 'k')
@@ -803,7 +823,7 @@ class PlotFrame(QMainWindow):
     def update_time_line(self):
         ''' Updates vertical time line
         '''
-        sliderValue = int(round(self.slider_time.GetValue()))
+        sliderValue = int(round(self.slider_time.value()))
 
         for it_ax in range(6):
             self.pltaxv[it_ax].set_xdata(self.timeEquiIDS[sliderValue])
@@ -825,9 +845,9 @@ class PlotFrame(QMainWindow):
         self.canvas.draw()
 
     def on_text_enter(self, event=None):
-        if (self.redraw_timer.IsRunning()):
-            self.redraw_timer.Stop()
-        str_in = self.textbox.GetValue()
+        if (self.redraw_timer.isActive()):
+            self.redraw_timer.stop()
+        str_in = self.textbox.text()
         dataTimes_in = list(map(float, str_in.split()))
         # If no data in text entry
         if (not dataTimes_in):
@@ -836,7 +856,7 @@ class PlotFrame(QMainWindow):
             #TODO if (self.cb_grid.isChecked()):
             #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
             self.boolOnTextEnter = False
-            self.slider_time.SetValue(0)
+            self.slider_time.setValue(0)
             self.draw_figure()
             return
         if (not self.boolOnTextEnter):
@@ -866,7 +886,7 @@ class PlotFrame(QMainWindow):
                     idxTime = \
                      (np.abs(self.timeEquiIDS-self.dataTimes_old[0])).argmin()
                     print('idxTime in old==1 =', idxTime)
-                    self.slider_time.SetValue(idxTime)
+                    self.slider_time.setValue(idxTime)
                     self.draw_figure()
                     return
                 # If some time entries are removed from text:
@@ -885,12 +905,12 @@ class PlotFrame(QMainWindow):
             for varTime in self.dataTimes:
                 idxTime = (np.abs(self.timeEquiIDS-varTime)).argmin()
                 print('idxTime =', idxTime)
-                self.slider_time.SetValue(idxTime)
+                self.slider_time.setValue(idxTime)
                 self.draw_figure_on_text()
                 self.nt_line_color += 1
 
     def on_draw_buttonRun(self, event=None):
-        if (self.redraw_timer.IsRunning()):
+        if (self.redraw_timer.isActive()):
             pass
         else:
             if (self.boolOnTextEnter):
@@ -900,22 +920,22 @@ class PlotFrame(QMainWindow):
                 #TODO if (self.cb_grid.isChecked()):
                 #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
                 self.draw_figure()
-            self.it_data = int(round(self.slider_time.GetValue()))
-            self.redraw_timer.Start(400)
+            self.it_data = int(round(self.slider_time.value()))
+            self.redraw_timer.start(400)
 
     def on_draw_buttonStop(self, event=None):
-        self.redraw_timer.Stop()
+        self.redraw_timer.stop()
 
     def on_redraw_timer(self, event=None):
-        self.slider_time.SetValue(self.it_data)
+        self.slider_time.setValue(self.it_data)
         self.update_figure()
         self.it_data += 1
         self.it_data %= self.lenArrTimes
         #print('self.it_data =', self.it_data)
 
     def on_slider_time(self, event=None):
-        if (self.redraw_timer.IsRunning()):
-            self.redraw_timer.Stop()
+        if (self.redraw_timer.isActive()):
+            self.redraw_timer.stop()
         if (self.boolOnTextEnter):
             self.boolOnTextEnter = False
             for it_ax in range(self.numAxes):
@@ -927,8 +947,8 @@ class PlotFrame(QMainWindow):
             self.update_figure()
 
     def on_slider_track(self, event=None):
-        if (self.redraw_timer.IsRunning()):
-            self.redraw_timer.Stop()
+        if (self.redraw_timer.isActive()):
+            self.redraw_timer.stop()
             self.update_time_line()
         else:
             self.update_time_line()
@@ -968,7 +988,7 @@ class PlotFrame(QMainWindow):
         #     self.flash_status_message("Saved to %s" % path)
 
     def on_exit(self, event=None):
-        self.redraw_timer.Stop()
+        self.redraw_timer.stop()
         self.Destroy()
 
     def on_about(self, event=None):
