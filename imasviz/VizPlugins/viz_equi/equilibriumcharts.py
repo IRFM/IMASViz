@@ -35,7 +35,7 @@ import sys
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
-                            QSlider, QPushButton, QHBoxLayout, QLabel
+                            QSlider, QPushButton, QHBoxLayout, QLabel, QMessageBox
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 
@@ -298,23 +298,26 @@ class PlotFrame(QMainWindow):
         self.draw_figure()
 
     def create_menu(self):
-        pass
+
+        # Main menu bar
         #TODO self.menubar = wx.MenuBar()
+        self.menuBar = QMenuBar(self)
 
-        #TODO menu_file = wx.Menu()
-        #m_expt = menu_file.Append(wx.ID_SAVE, "Save plot\tCtrl-S", "Save plot to file")
-        #self.Bind(wx.EVT_MENU, self.on_save_plot, m_expt)
-        #menu_file.AppendSeparator()
+        menu_file = self.menuBar.addMenu('File')
         #TODO m_exit = menu_file.Append(wx.ID_EXIT, "Exit\tCtrl-X", "Exit")
-        #TODO self.Bind(wx.EVT_MENU, self.on_exit, m_exit)
+        exitAction = QAction('Exit', self)
+        # exitAction.triggered.connect(self.close)
+        exitAction.triggered.connect(self.on_exit)
+        menu_file.addAction(exitAction)
 
-        #TODO menu_help = wx.Menu()
+        menu_help = self.menuBar.addMenu('Help')
         #TODO m_about = menu_help.Append(wx.ID_ABOUT, "About\tF1", "About the demo")
-        #TODO self.Bind(wx.EVT_MENU, self.on_about, m_about)
+        aboutAction = QAction('About', self)
+        aboutAction.triggered.connect(self.on_about)
+        menu_help.addAction(aboutAction)
 
-        #TODO self.menubar.Append(menu_file, "File")
-        #TODO self.menubar.Append(menu_help, "Help")
-    #TODO self.SetMenuBar(self.menubar)
+        # Set menu bar
+        self.setMenuBar(self.menuBar)
 
     def create_main_panel(self):
         """ Creates the main panel with all the controls on it:
@@ -987,29 +990,33 @@ class PlotFrame(QMainWindow):
 
     def on_exit(self, event=None):
         self.redraw_timer.stop()
-        self.Destroy()
+        self.close()
 
     def on_about(self, event=None):
-        msg = ''' VACTH-EQUINOX results visualization
- using wxPython with Matplotlib:
+        """Set 'About' dialog."""
+        msg = \
+            ''' VACTH-EQUINOX results visualization using PyQt5 with Matplotlib:
 
-     * Drag the Slider to explore time
-     * Click on Run to animate the equilibrium plots
-     * Use the Text Box to compare multiple times
-     * Show or hide the grid
-     * Save plot to a file (png, jpeg, pdf...) using
-        the Matplotlib Navigation Bar located on top     '''
+                * Drag the Slider to explore time
+                * Click on Run to animate the equilibrium plots
+                * Use the Text Box to compare multiple times
+                * Show or hide the grid
+                * Save plot to a file (png, jpeg, pdf...) using
+                    the Matplotlib Navigation Bar located on top     '''
 
-        #TODO dlg = wx.MessageDialog(self, msg, "About", wx.OK)
-        #TODO dlg.ShowModal()
-        #TODO dlg.Destroy()
+        dlg = QMessageBox(self.panel)
+        dlg.setText(msg)
+        # dlg.setInformativeText("...")
+        dlg.setDefaultButton(QMessageBox.Ok)
+        dlg.setWindowTitle("About")
+        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+        dlg.exec_()
+        dlg.close()
 
     def flash_status_message(self, msg, flash_len_ms=1500):
         self.statusBar.SetStatusText(msg)
-        #TODO self.timeroff = wx.Timer(self)
-        #TODO self.Bind(wx.EVT_TIMER, \
-        #TODO          self.on_flash_status_off, \
-        #TODO          self.timeroff)
+        self.timeroff = QtCore.QTimer(self)
+        self.timeroff.timeout.connect(self.on_flash_status_off)
         self.timeroff.Start(flash_len_ms, oneShot=True)
 
     def on_flash_status_off(self, event=None):
