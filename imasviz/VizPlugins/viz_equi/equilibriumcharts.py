@@ -259,8 +259,6 @@ class PlotFrame(QMainWindow):
 
         super(PlotFrame, self).__init__(parent)
 
-        #TODO self.Bind(wx.EVT_CLOSE, self.on_exit)
-
         self.shot,          self.run,               self.machine, \
         self.user,          self.timeEquiIDS,       self.lenArrTimes,\
         self.Ip,            self.q95,               self.q_axis, \
@@ -300,7 +298,6 @@ class PlotFrame(QMainWindow):
     def create_menu(self):
 
         # Main menu bar
-        #TODO self.menubar = wx.MenuBar()
         self.menuBar = QMenuBar(self)
 
         menu_file = self.menuBar.addMenu('File')
@@ -834,8 +831,8 @@ class PlotFrame(QMainWindow):
         if (not dataTimes_in):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            #TODO if (self.cb_grid.isChecked()):
-            #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
+            if (self.cb_grid.isChecked()):
+                self.on_cb_grid.stateChanged.emit()
             self.boolOnTextEnter = False
             self.slider_time.setValue(0)
             self.draw_figure()
@@ -843,8 +840,8 @@ class PlotFrame(QMainWindow):
         if (not self.boolOnTextEnter):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            #TODO if (self.cb_grid.isChecked()):
-            #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
+            if (self.cb_grid.isChecked()):
+                self.on_cb_grid.stateChanged.emit()
             self.dataTimes_old = dataTimes_in
             self.dataTimes     = dataTimes_in
             self.boolOnTextEnter = True
@@ -861,8 +858,8 @@ class PlotFrame(QMainWindow):
                 if (len(self.dataTimes_old) == 1):
                     for it_ax in range(self.numAxes):
                         self.axes[it_ax].cla()
-                    #TODO if (self.cb_grid.isChecked()):
-                    #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
+                    if (self.cb_grid.isChecked()):
+                        self.on_cb_grid.stateChanged.emit()
                     self.boolOnTextEnter = False
                     idxTime = \
                      (np.abs(self.timeEquiIDS-self.dataTimes_old[0])).argmin()
@@ -876,8 +873,8 @@ class PlotFrame(QMainWindow):
                     print('old > new')
                     for it_ax in range(self.numAxes):
                         self.axes[it_ax].cla()
-                    #TODOif (self.cb_grid.isChecked()):
-                    #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
+                    if (self.cb_grid.isChecked()):
+                        self.on_cb_grid.stateChanged.emit()
                     self.dataTimes_old = dataTimes_in
                     self.dataTimes     = dataTimes_in
                     self.nt_line_color = 0
@@ -900,8 +897,8 @@ class PlotFrame(QMainWindow):
                 self.boolOnTextEnter = False
                 for it_ax in range(self.numAxes):
                     self.axes[it_ax].cla()
-                #TODO if (self.cb_grid.isChecked()):
-                #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
+                if (self.cb_grid.isChecked()):
+                    self.on_cb_grid.stateChanged.emit()
                 self.draw_figure()
             self.it_data = int(round(self.slider_time.value()))
             self.redraw_timer.start(400)
@@ -939,8 +936,8 @@ class PlotFrame(QMainWindow):
             self.boolOnTextEnter = False
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].cla()
-            #TODO if (self.cb_grid.isChecked()):
-            #TODO    self.on_cb_grid(wx.EVT_CHECKBOX)
+            if (self.cb_grid.isChecked()):
+                self.on_cb_grid.stateChanged.emit()
             self.draw_figure()
         else:
             self.update_figure()
@@ -964,18 +961,20 @@ class PlotFrame(QMainWindow):
         box_points = event.artist.get_bbox().get_points()
         msg = "You've clicked on a bar with coords:\n %s" % box_points
 
-        #TODO dlg = wx.MessageDialog(self, \
-        #TODO                       msg, \
-        #TODO                       "Click!", \
-        #TODO                       wx.OK | wx.ICON_INFORMATION)
-
-        #TODO dlg.ShowModal()
-        #TODO dlg.Destroy()
+        dlg = QMessageBox(self.panel)
+        dlg.setText(msg)
+        # dlg.setInformativeText("...")
+        dlg.setDefaultButton(QMessageBox.Ok)
+        dlg.setWindowTitle("Click")
+        dlg.setWindowModality(QtCore.Qt.ApplicationModal)
+        dlg.exec_()
+        dlg.close()
 
     def on_save_plot(self, event=None):
+        # Note: Not implemented for PyQt version as also in the previous
+        #       wxPython version) this routine was not used
         file_choices = "PNG (*.png)|*.png"
 
-        #TODO
         # dlg = wx.FileDialog(self, \
         #                     message="Save plot as...", \
         #                     defaultDir=os.getcwd(), \
