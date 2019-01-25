@@ -291,12 +291,10 @@ class PlotFrame(QMainWindow):
 
         self.setCentralWidget(self.mainWidget)
 
-        #TODO self.redraw_timer = wx.Timer(self)
-        #TODO self.Bind(wx.EVT_TIMER, self.on_redraw_timer, self.redraw_timer)
         self.redraw_timer = QtCore.QTimer(self)
         self.redraw_timer.timeout.connect(self.on_redraw_timer)
 
-        #TODO self.textbox.SetValue(' '.join(map(str, self.dataTimes)))
+        self.textbox.setText(' '.join(map(str, self.dataTimes)))
         self.draw_figure()
 
     def create_menu(self):
@@ -324,7 +322,6 @@ class PlotFrame(QMainWindow):
              * mpl navigation toolbar
              * Control panel for interaction
         """
-        #TODO self.panel = wx.Panel(self)
         self.panel = self.mainWidget
 
         # Create the mpl Figure and FigCanvas objects.
@@ -401,50 +398,34 @@ class PlotFrame(QMainWindow):
         self.cb_grid.setText("Enable Grid")
         self.cb_grid.stateChanged.connect(self.on_cb_grid)
 
-
         # Set time value text box
-        #TODO self.textbox = wx.TextCtrl(self.panel, size=(100,-1), \
-        #TODO                           style=wx.TE_PROCESS_ENTER)
-        #self.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter, self.textbox)
-        #TODO self.textbox.Bind(wx.EVT_TEXT_ENTER, self.on_text_enter)
-
         self.textbox = QLineEdit(self.panel)
         self.textbox.setObjectName("TimeTextBox")
         self.textbox.returnPressed.connect(self.on_text_enter)
 
-
-        #TODO self.drawbuttonRun = wx.Button(self.panel, wx.ID_ANY, 'Run')
-        #TODO self.drawbuttonRun.Bind(wx.EVT_BUTTON, self.on_draw_buttonRun)
         self.drawButtonRun = QPushButton("Run", self.panel)
         self.drawButtonRun.clicked.connect(self.on_draw_buttonRun)
+        # Set a flag to mark the status if the run is operating
+        self.runIsActive = False
 
-
-        #TODO self.drawbuttonStop = wx.Button(self.panel, wx.ID_ANY, 'Stop')
-        #TODO self.drawbuttonStop.Bind(wx.EVT_BUTTON, self.on_draw_buttonStop)
         self.drawButtonStop = QPushButton("Stop", self.panel)
         self.drawButtonStop.clicked.connect(self.on_draw_buttonStop)
-
 
         # Set time slider
         self.slider_time = QSlider(QtCore.Qt.Horizontal, self.panel)
         self.slider_time.setValue(0)
         self.slider_time.setMinimum(0)
-        self.slider_time.setMaximumWidth(self.lenArrTimes-1)
+        self.slider_time.setMaximum(self.lenArrTimes-1)
         # self.slider_time.adjustSize()
         self.slider_time.setMinimumWidth(600)
 
-        # For more Slider options:
-        #size=wx.DefaultSize
-        #style=wx.SL_AUTOTICKS | wx.SL_LABELS
-        #self.slider_time.SetTickFreq(10) #(10, 1)
-        #self.Bind(wx.EVT_COMMAND_SCROLL_CHANGED, \
-        #          self.on_slider_time, self.slider_time)
-        #TODO self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_CHANGED, \
-        #TODO                      self.on_slider_time)
-        #TODO self.slider_time.Bind(wx.EVT_COMMAND_SCROLL_THUMBTRACK, \
-        #TODO                      self.on_slider_track)
+        # Set slider event handling
+        self.slider_time.valueChanged.connect(self.on_slider)
+        # self.slider_time.sliderMoved.connect(self.on_slider_track)
+        self.slider_time.sliderReleased.connect(self.on_slider_time)
 
-        self.textbox_label = QLabel('Time values', self.panel)
+        self.textbox_label = QLabel('Time value to draw (press enter)',
+                                    self.panel)
 
         # Create the navigation toolbar, tied to the canvas
         self.toolbar = NavigationToolbar(self.canvas, self.panel)
@@ -907,6 +888,8 @@ class PlotFrame(QMainWindow):
                 self.nt_line_color += 1
 
     def on_draw_buttonRun(self, event=None):
+        # Update the run status
+        self.runIsActive = True
         if (self.redraw_timer.isActive()):
             pass
         else:
@@ -921,6 +904,8 @@ class PlotFrame(QMainWindow):
             self.redraw_timer.start(400)
 
     def on_draw_buttonStop(self, event=None):
+        # Update the run status
+        self.runIsActive = False
         self.redraw_timer.stop()
 
     def on_redraw_timer(self, event=None):
@@ -930,7 +915,21 @@ class PlotFrame(QMainWindow):
         self.it_data %= self.lenArrTimes
         #print('self.it_data =', self.it_data)
 
+    def on_slider(self, event=None):
+        """Run either on_slider_time or on_slider_track routines,
+        depending how the slider is moved.
+        """
+
+        if self.slider_time.isSliderDown() == True:
+            self.on_slider_track()
+        elif self.runIsActive != True:
+            # Only if 'run' is not running
+            # (otherwise the run operation will be interrupted)
+            self.on_slider_time()
+
     def on_slider_time(self, event=None):
+        """Redraw ALL plots for current slider time value.
+        """
         if (self.redraw_timer.isActive()):
             self.redraw_timer.stop()
         if (self.boolOnTextEnter):
@@ -944,6 +943,8 @@ class PlotFrame(QMainWindow):
             self.update_figure()
 
     def on_slider_track(self, event=None):
+        """Redraw only time track plot for current slider time value.
+        """
         if (self.redraw_timer.isActive()):
             self.redraw_timer.stop()
             self.update_time_line()
