@@ -252,28 +252,31 @@ class QVizDataTreeView(QTreeWidget):
         expression = expression.replace('(', '[')
         expression = expression.replace(')', ']')
 
-        node_contents = '...'
+        # Set dictionary for node attributes
+        node_contents_dict = {}
+        node_contents_dict['name'] = node_label
+        node_contents_dict['documentation'] = node_doc
+        node_contents_dict['contents'] = '/'
+        node_contents_dict['size'] = '/'
+
+        node_array_contents = ''
         # Don't obtain contents for full IDS root nodes
         if item.getDataDict()['isIDSRoot'] != 1:
             try:
-                node_contents = str(eval(expression))
+                # Get the array of values
+                node_array_contents = eval(expression)
+                # Get string version of the array of values
+                node_contents_dict['contents'] = str(node_array_contents)
+                # Get size of the array in as string
+                node_contents_dict['size'] = str(len(node_array_contents))
             except:
                 pass
-
-        # - Set all node documentation related strings to single
-        # string array for better handling
-        node_doc_str_array = []
-        node_doc_str_array.append("Node: ")
-        node_doc_str_array.append(node_label)
-        node_doc_str_array.append("Documentation: ")
-        node_doc_str_array.append(node_doc)
-        node_doc_str_array.append("Contents: ")
-        node_doc_str_array.append(node_contents)
 
         # Find and update DTVFrame-docked node documentation widget (NDW)
         ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")
         if ndw != None:
-            ndw.update(documentation=node_doc_str_array)
+            # ndw.update(documentation=node_doc_str_array)
+            ndw.update(node_contents_dict=node_contents_dict)
         else:
             error = 'Node Documentation Widget not found. Update not possible'
             raise ValueError(error)
