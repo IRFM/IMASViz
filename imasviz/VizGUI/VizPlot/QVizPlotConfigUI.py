@@ -517,27 +517,28 @@ class TabPlotDesignProperties(QWidget):
         """ Set widget for setting custom margin.
         """
 
-        # Configuring margin widget
-
-        # TODO: Add option to reset margins
-
         # Get QVizPlotWidget
-        plotWidget = self.parent.viewBox.qWidgetParent
+        plotWidget = self.viewBox.qWidgetParent
 
-        # Check if it has gridLayout property
-        # Note: TODO: QVizPlotWidget have it, TPV and SPV don't. Fix that
+        # Check which layout it has
+        # - gridLayout for QVizPlotWidget and QVizPreviewWidget
+        # - centralLayout for TPV and SPV
         if hasattr(plotWidget, 'gridLayout'):
-            pass
+            self.parentLayout = plotWidget.gridLayout
+        elif hasattr(plotWidget, 'centralLayout'):
+            # For TPV and SPV
+            self.parentLayout = plotWidget.centralWidget.layout
         else:
             return QWidget()
+
         # Get current margins
-        currentMargin = plotWidget.gridLayout.getContentsMargins()
+        currentMargin = self.parentLayout.getContentsMargins()
 
         self.previousMargins = currentMargin
         self.defaultMargins = (10, 10, 10, 10)
 
         # TODO: include changing the in-plot margin
-        # pgPlotWidget = self.parent.viewBox.qWidgetParent.pgPlotWidget
+        # pgPlotWidget = self.viewBox.qWidgetParent.pgPlotWidget
         # pgPlotWidget.centralWidget.setContentsMargins(50,50,50,50)
         # currentMargin = pgPlotWidget.centralWidget.layout.getContentsMargins()
         # plotWidget = pgPlotWidget
@@ -566,25 +567,23 @@ class TabPlotDesignProperties(QWidget):
         # On spinbox value change, run update routine
         # TODO: make it more efficient. Work with single spinBox, not with all
         #       of them at once
-        self.marginSpinBox_left.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins, plotWidget))
+        self.marginSpinBox_left.valueChanged.connect(
+            self.updatePlotWidgetContentsMargins)
 
-        self.marginSpinBox_top.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins, plotWidget))
+        self.marginSpinBox_top.valueChanged.connect(
+            self.updatePlotWidgetContentsMargins)
 
-        self.marginSpinBox_right.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins, plotWidget))
+        self.marginSpinBox_right.valueChanged.connect(
+            self.updatePlotWidgetContentsMargins)
 
-        self.marginSpinBox_bottom.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins, plotWidget))
+        self.marginSpinBox_bottom.valueChanged.connect(
+            self.updatePlotWidgetContentsMargins)
 
         # Set buttons
         margins2previous_button = QPushButton('Restore previous', self)
-        margins2previous_button.clicked.connect(partial(
-            self.setPreviousMargins, plotWidget))
+        margins2previous_button.clicked.connect(self.setPreviousMargins)
         margins2default_button = QPushButton('Restore default', self)
-        margins2default_button.clicked.connect(partial(
-            self.setDefaultMargins, plotWidget))
+        margins2default_button.clicked.connect(self.setDefaultMargins)
 
         marginWidget = QWidget(self)
         gridLayout = QGridLayout(marginWidget)
@@ -611,8 +610,8 @@ class TabPlotDesignProperties(QWidget):
 
         return marginWidget
 
-    @pyqtSlot(QWidget, QSpinBox, QSpinBox, QSpinBox, QSpinBox)
-    def updatePlotWidgetContentsMargins(self, plotWidget):
+    @pyqtSlot()
+    def updatePlotWidgetContentsMargins(self):
         """Update plot widget contents margins.
         Note: instant update (no apply required).
 
@@ -620,32 +619,32 @@ class TabPlotDesignProperties(QWidget):
         """
 
         # Update contents margin
-        plotWidget.gridLayout.setContentsMargins(
+        self.parentLayout.setContentsMargins(
             self.marginSpinBox_left.value(),
             self.marginSpinBox_top.value(),
             self.marginSpinBox_right.value(),
             self.marginSpinBox_bottom.value())
 
-    @pyqtSlot(QWidget)
-    def setPreviousMargins(self, plotWidget):
+    @pyqtSlot()
+    def setPreviousMargins(self):
         """Set plot widget contents margin back to previous.
         """
 
         # Update contents margin
         m = self.previousMargins
-        plotWidget.gridLayout.setContentsMargins(m[0], m[1], m[2], m[3])
+        self.parentLayout.setContentsMargins(m[0], m[1], m[2], m[3])
 
         # Update spinbox values
         self.updateMarginsSpinboxValues(m[0], m[1], m[2], m[3])
 
-    @pyqtSlot(QWidget)
-    def setDefaultMargins(self, plotWidget):
+    @pyqtSlot()
+    def setDefaultMargins(self):
         """Set plot widget contents margin back to default values.
         """
 
         # Update contents margin
         m = self.defaultMargins
-        plotWidget.gridLayout.setContentsMargins(m[0], m[1], m[2], m[3])
+        self.parentLayout.setContentsMargins(m[0], m[1], m[2], m[3])
 
         # Update spinbox values
         self.updateMarginsSpinboxValues(m[0], m[1], m[2], m[3])
