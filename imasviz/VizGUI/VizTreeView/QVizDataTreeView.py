@@ -294,12 +294,12 @@ class QVizDataTreeView(QTreeWidget):
     def contextMenuEvent(self, event):
         """ Custom menu event on the (shift +) right click on the tree item.
         """
-        """TODO: Complete the setup of the popup menu for shift + right click
         # Get the current state of the modifier keys (SHIFT, CTRL etc.)
         modifiers = QApplication.keyboardModifiers()
         # If shift key is pressed while clicking the right mouse button,
         # proceed to build and show the 'shift + right click' custom menu
         # instead of the one provided with QVizHandleRightClick
+
         if modifiers == Qt.ShiftModifier:
             if len(self.selectedItems()) == 1:
                 # The selected tree node item
@@ -316,7 +316,6 @@ class QVizDataTreeView(QTreeWidget):
                 showPopUp = handleShiftAndRightClick.execute(treeNode)
 
             return
-        """
 
         # If shift key was not pressed while mouse right clicking, proceed
         # building and showing the 'regular' menu, handling signal nodes
