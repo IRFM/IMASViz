@@ -510,7 +510,7 @@ class TabPlotDesignProperties(QWidget):
 
         # Set spacer (to not have widgets in the middle of the window)
         self.spacerItem = QSpacerItem(20, 40, QSizePolicy.Minimum,
-                                        QSizePolicy.Expanding)
+                                      QSizePolicy.Expanding)
         self.gridLayout.addItem(self.spacerItem, 1, 0, 1, 1)
 
     def setNewMargin(self):
@@ -533,6 +533,9 @@ class TabPlotDesignProperties(QWidget):
         # Get current margins
         currentMargin = plotWidget.gridLayout.getContentsMargins()
 
+        self.previousMargins = currentMargin
+        self.defaultMargins = (10, 10, 10, 10)
+
         # TODO: include changing the in-plot margin
         # pgPlotWidget = self.parent.viewBox.qWidgetParent.pgPlotWidget
         # pgPlotWidget.centralWidget.setContentsMargins(50,50,50,50)
@@ -540,52 +543,48 @@ class TabPlotDesignProperties(QWidget):
         # plotWidget = pgPlotWidget
 
         # Set spinboxes for each margin side
-        marginSpinBox_left = QSpinBox(value=currentMargin[0],
-                                 maximum=250,
-                                 minimum=0,
-                                 singleStep=1)
+        self.marginSpinBox_left = QSpinBox(value=currentMargin[0],
+                                      maximum=250,
+                                      minimum=0,
+                                      singleStep=1)
 
-        marginSpinBox_top = QSpinBox(value=currentMargin[1],
-                                 maximum=250,
-                                 minimum=0,
-                                 singleStep=1)
+        self.marginSpinBox_top = QSpinBox(value=currentMargin[1],
+                                     maximum=250,
+                                     minimum=0,
+                                     singleStep=1)
 
-        marginSpinBox_right = QSpinBox(value=currentMargin[2],
-                                 maximum=250,
-                                 minimum=0,
-                                 singleStep=1)
+        self.marginSpinBox_right = QSpinBox(value=currentMargin[2],
+                                       maximum=250,
+                                       minimum=0,
+                                       singleStep=1)
 
-        marginSpinBox_bottom = QSpinBox(value=currentMargin[3],
-                                 maximum=250,
-                                 minimum=0,
-                                 singleStep=1)
+        self.marginSpinBox_bottom = QSpinBox(value=currentMargin[3],
+                                        maximum=250,
+                                        minimum=0,
+                                        singleStep=1)
 
         # On spinbox value change, run update routine
         # TODO: make it more efficient. Work with single spinBox, not with all
         #       of them at once
-        marginSpinBox_left.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins,
-            plotWidget, marginSpinBox_left, marginSpinBox_top,
-            marginSpinBox_right,
-            marginSpinBox_bottom))
+        self.marginSpinBox_left.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins, plotWidget))
 
-        marginSpinBox_top.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins,
-            plotWidget, marginSpinBox_left, marginSpinBox_top,
-            marginSpinBox_right,
-            marginSpinBox_bottom))
+        self.marginSpinBox_top.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins, plotWidget))
 
-        marginSpinBox_right.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins,
-            plotWidget, marginSpinBox_left, marginSpinBox_top,
-            marginSpinBox_right,
-            marginSpinBox_bottom))
+        self.marginSpinBox_right.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins, plotWidget))
 
-        marginSpinBox_bottom.valueChanged.connect(partial(
-            self.updatePlotWidgetContentsMargins,
-            plotWidget, marginSpinBox_left, marginSpinBox_top,
-            marginSpinBox_right,
-            marginSpinBox_bottom))
+        self.marginSpinBox_bottom.valueChanged.connect(partial(
+            self.updatePlotWidgetContentsMargins, plotWidget))
+
+        # Set buttons
+        margins2previous_button = QPushButton('Restore previous', self)
+        margins2previous_button.clicked.connect(partial(
+            self.setPreviousMargins, plotWidget))
+        margins2default_button = QPushButton('Restore default', self)
+        margins2default_button.clicked.connect(partial(
+            self.setDefaultMargins, plotWidget))
 
         marginWidget = QWidget(self)
         gridLayout = QGridLayout(marginWidget)
@@ -603,16 +602,17 @@ class TabPlotDesignProperties(QWidget):
             gridLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
         # Add widgets to layout
-        gridLayout.addWidget(marginSpinBox_left, 1, 1, 1, 1)
-        gridLayout.addWidget(marginSpinBox_top, 1, 2, 1, 1)
-        gridLayout.addWidget(marginSpinBox_right, 1, 3, 1, 1)
-        gridLayout.addWidget(marginSpinBox_bottom, 1, 4, 1, 1)
+        gridLayout.addWidget(self.marginSpinBox_left, 1, 1, 1, 1)
+        gridLayout.addWidget(self.marginSpinBox_top, 1, 2, 1, 1)
+        gridLayout.addWidget(self.marginSpinBox_right, 1, 3, 1, 1)
+        gridLayout.addWidget(self.marginSpinBox_bottom, 1, 4, 1, 1)
+        gridLayout.addWidget(margins2previous_button, 1, 5, 1, 1)
+        gridLayout.addWidget(margins2default_button, 1, 6, 1, 1)
 
         return marginWidget
 
     @pyqtSlot(QWidget, QSpinBox, QSpinBox, QSpinBox, QSpinBox)
-    def updatePlotWidgetContentsMargins(self, plotWidget, spinBox1, spinBox2,
-                                        spinBox3, spinBox4):
+    def updatePlotWidgetContentsMargins(self, plotWidget):
         """Update plot widget contents margins.
         Note: instant update (no apply required).
 
@@ -620,7 +620,41 @@ class TabPlotDesignProperties(QWidget):
         """
 
         # Update contents margin
-        plotWidget.gridLayout.setContentsMargins(spinBox1.value(),
-                                                 spinBox2.value(),
-                                                 spinBox3.value(),
-                                                 spinBox4.value())
+        plotWidget.gridLayout.setContentsMargins(
+            self.marginSpinBox_left.value(),
+            self.marginSpinBox_top.value(),
+            self.marginSpinBox_right.value(),
+            self.marginSpinBox_bottom.value())
+
+    @pyqtSlot(QWidget)
+    def setPreviousMargins(self, plotWidget):
+        """Set plot widget contents margin back to previous.
+        """
+
+        # Update contents margin
+        m = self.previousMargins
+        plotWidget.gridLayout.setContentsMargins(m[0], m[1], m[2], m[3])
+
+        # Update spinbox values
+        self.updateMarginsSpinboxValues(m[0], m[1], m[2], m[3])
+
+    @pyqtSlot(QWidget)
+    def setDefaultMargins(self, plotWidget):
+        """Set plot widget contents margin back to default values.
+        """
+
+        # Update contents margin
+        m = self.defaultMargins
+        plotWidget.gridLayout.setContentsMargins(m[0], m[1], m[2], m[3])
+
+        # Update spinbox values
+        self.updateMarginsSpinboxValues(m[0], m[1], m[2], m[3])
+
+    def updateMarginsSpinboxValues(self, v1, v2, v3, v4):
+        """Update margins spinbox values.
+        """
+
+        self.marginSpinBox_left.setValue(v1)
+        self.marginSpinBox_top.setValue(v2)
+        self.marginSpinBox_right.setValue(v3)
+        self.marginSpinBox_bottom.setValue(v4)

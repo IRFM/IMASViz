@@ -267,7 +267,13 @@ class QVizDataTreeView(QTreeWidget):
                 node_array_contents = eval(expression)
                 # Get string version of the array of values
                 node_contents_dict['contents'] = str(node_array_contents)
+                # Formatting the string
+                # Note: makes the node documentation slider a lot slower for
+                # large arrays!
+                # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
+                #     *k) for k in enumerate(node_array_contents))
                 # Get size of the array in as string
+
                 node_contents_dict['size'] = str(len(node_array_contents))
             except:
                 pass
