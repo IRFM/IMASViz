@@ -1,4 +1,4 @@
-.. _tutorial:
+.. _manual:
 
 ===========
 User Manual
@@ -15,5 +15,6 @@ User Manual
    loading_IDS.rst
    signal_node_selection.rst
    plotting_1d_arrays.rst
+   plugins.rst
    other_GUI_features.rst
    scripting.rst

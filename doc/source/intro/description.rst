@@ -4,7 +4,7 @@
 Description
 ===========
 
-**IMASViz** is a visualization tool developed within
+**IMASViz** is a visualization tool developed to be used within
 **Integrated Modelling Analysis Suite** (**IMAS)**
 for the purposes of visualizing static and dynamic IMAS data, stored
 within IMAS **Interface Data Structures** (**IDSs**).
