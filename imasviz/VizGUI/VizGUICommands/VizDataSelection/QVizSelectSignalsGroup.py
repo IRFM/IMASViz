@@ -53,4 +53,4 @@ class QVizSelectSignalsGroup(QVizAbstractCommand):
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
                 QVizSelectSignal(dataTreeView=self.dataTreeView,
-                                 nodeData=signal.getDataDict()).execute()
+                                 nodeData=signal.getInfoDict()).execute()

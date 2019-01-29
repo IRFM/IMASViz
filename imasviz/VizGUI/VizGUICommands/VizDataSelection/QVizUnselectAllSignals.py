@@ -43,13 +43,13 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
                 vizTreeNode = v['QTreeWidgetItem']
 
                 # Signal/Node itemVIZData attribute
-                signalItemVIZData = vizTreeNode.getDataDict()
+                signalItemVIZData = vizTreeNode.getInfoDict()
 
                 # Search through the whole list of signals (all FLT_1D nodes etc.)
                 for s in dtv.signalsList:
                     # If the itemVIZData matches, add the signal key to the list
                     # of keys for removal
-                    if signalItemVIZData == s.getDataDict():
+                    if signalItemVIZData == s.getInfoDict():
                         # Set the signal isSelected attribute/status
                         signalItemVIZData['isSelected'] = 0
                         # Set the QTreeWidgetItem foreground color to blue

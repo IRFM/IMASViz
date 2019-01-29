@@ -107,7 +107,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
-                signalNodeData = signalNode.dataDict
+                signalNodeData = signalNode.infoDict
 
                 key = dtv.dataSource.dataKey(signalNodeData)
                 tup = (dtv.dataSource.shotNumber, signalNodeData)

@@ -278,4 +278,4 @@ class Viz_API:
                                       'magnetics/flux_loop(0)/flux/data'
         """
         # Get full data of the node (given 'path' is one of them)
-        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem.dataDict).execute()
+        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem.infoDict).execute()

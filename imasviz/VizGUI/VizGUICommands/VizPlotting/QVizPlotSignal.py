@@ -155,7 +155,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # fig =  self.plotFrame.get_figure()
 
-            key = self.dataTreeView.dataSource.dataKey(self.treeNode.getDataDict())
+            key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
             tup = (self.dataTreeView.dataSource.shotNumber, self.nodeData)
             api.addNodeToFigure(figureKey, key, tup)
 
@@ -255,9 +255,9 @@ class QVizPlotSignal(QVizAbstractCommand):
         # Setting/Checking the X-axis label
         if xlabel == None:
             # If xlabel is not yet set
-            if 'coordinate1' in signalNode.getDataDict():
+            if 'coordinate1' in signalNode.getInfoDict():
                 xlabel = QVizGlobalOperations.replaceBrackets(
-                    signalNode.getDataDict()['coordinate1'])
+                    signalNode.getInfoDict()['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
         elif 'Time[s]' in xlabel:
@@ -280,8 +280,8 @@ class QVizPlotSignal(QVizAbstractCommand):
                 signalNode.treeNodeExtraAttributes.coordinate1)):
            ylabel = 'S'
 
-        if 'units' in signalNode.getDataDict():
-            units = signalNode.getDataDict()['units']
+        if 'units' in signalNode.getInfoDict():
+            units = signalNode.getInfoDict()['units']
             ylabel += '[' + units + ']'
 
         # Get IDS dataSource parameters

@@ -565,8 +565,6 @@ class TabPlotDesignProperties(QWidget):
                                         singleStep=1)
 
         # On spinbox value change, run update routine
-        # TODO: make it more efficient. Work with single spinBox, not with all
-        #       of them at once
         self.marginSpinBox_left.valueChanged.connect(
             self.updatePlotWidgetContentsMargins)
 
@@ -614,8 +612,6 @@ class TabPlotDesignProperties(QWidget):
     def updatePlotWidgetContentsMargins(self):
         """Update plot widget contents margins.
         Note: instant update (no apply required).
-
-        Arguments:
         """
 
         # Update contents margin

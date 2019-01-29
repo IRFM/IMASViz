@@ -49,7 +49,7 @@ class QVizHandleRightClick:
         showPopUp = 0
 
         # Get the Python dictionary attached to the node
-        dico = node.getDataDict()
+        dico = node.getInfoDict()
 
         if dico == None:
             # TODO

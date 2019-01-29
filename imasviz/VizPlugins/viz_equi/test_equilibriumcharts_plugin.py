@@ -39,13 +39,13 @@ f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
 eq_item = f1.dataTreeView.IDSRoots['equilibrium']
 
 # Get selected item/subject data dict
-dataDict = eq_item.getDataDict()
+infoDict = eq_item.getInfoDict()
 
 # Show the data tree view window
 # f1.show()
 
 # Get equilibrium data and set plugin frame
-app.frame = equilibriumcharts.PlotFrame(dataDict, parent=f1.dataTreeView)
+app.frame = equilibriumcharts.PlotFrame(infoDict, parent=f1.dataTreeView)
 
 # Show frame
 app.frame.show()

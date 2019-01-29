@@ -32,7 +32,7 @@ class QVizHandleShiftAndRightClick:
         """
 
         # Get selected item/subject data dict
-        dataDict = QVizTreeNode.getDataDict()
+        dataDict = QVizTreeNode.getInfoDict()
         # Set default variables"""
         idsName = None
         isSignal = 0

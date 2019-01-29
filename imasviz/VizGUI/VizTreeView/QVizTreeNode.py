@@ -14,10 +14,10 @@ class QVizTreeNode(QTreeWidgetItem):
 
         if len(args) == 1:
             QTreeWidgetItem.__init__(self, *args, **kwargs)
-            self.dataDict = args[0]
+            self.infoDict = args[0]
         elif len(args) == 2:
             if type(args[0]) is QVizDataTreeView:
-                self.dataDict = {}
+                self.infoDict = {}
                 parent = args[0]
                 name = args[1]
                 QTreeWidgetItem.__init__(self, parent, name)
@@ -25,13 +25,13 @@ class QVizTreeNode(QTreeWidgetItem):
             if type(args[0]) is QVizTreeNode:
                 parent = args[0]
                 name = args[1]
-                self.dataDict = args[2]
+                self.infoDict = args[2]
                 QTreeWidgetItem.__init__(self, parent, name)
         elif len(args) == 4:
             if type(args[0]) is QVizTreeNode:
                 parent = args[0]
                 name = args[1]
-                self.dataDict = args[2]
+                self.infoDict = args[2]
                 self.treeNodeExtraAttributes = args[3]
                 QTreeWidgetItem.__init__(self, parent, name)
 
@@ -169,39 +169,39 @@ class QVizTreeNode(QTreeWidgetItem):
         return data_list
 
     def getPath(self):
-        return self.dataDict.get('Path')
+        return self.infoDict.get('Path')
 
     def getName(self):
-        return self.dataDict.get('name')
+        return self.infoDict.get('name')
 
     def getDataName(self):
-        return self.dataDict.get('dataName')
+        return self.infoDict.get('dataName')
 
     def getDocumentation(self):
-        return self.dataDict.get('documentation')
+        return self.infoDict.get('documentation')
 
-    def getDataDict(self):
-        return self.dataDict
+    def getInfoDict(self):
+        return self.infoDict
 
     def isDynamicData(self):
-        return self.dataDict.get('isSignal')
+        return self.infoDict.get('isSignal')
 
     def getDataType(self):
-        return self.dataDict.get('data_type')
+        return self.infoDict.get('data_type')
 
     def getIDSName(self):
-        return self.dataDict.get('IDSName')
+        return self.infoDict.get('IDSName')
 
     def getShotNumber(self):
-        return self.dataDict.get('shotNumber')
+        return self.infoDict.get('shotNumber')
 
     def setPath(self, path):
-        self.dataDict['Path'] = path
+        self.infoDict['Path'] = path
 
     def setIDSName(self, idsName):
-        self.dataDict['IDSName'] = idsName
+        self.infoDict['IDSName'] = idsName
 
     def setDataName(self, dataName):
-        self.dataDict['dataName'] = dataName
+        self.infoDict['dataName'] = dataName
 
 

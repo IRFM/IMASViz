@@ -59,7 +59,7 @@ class QVizSignalHandling(QObject):
         # Get signal node (tree item) data
         self.nodeData = None
         if self.dataTreeView.selectedItem != None:
-            self.nodeData = self.dataTreeView.selectedItem.getDataDict()
+            self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
         # Get signal node dataName
         self.treeNode = self.dataTreeView.selectedItem
 
@@ -547,7 +547,7 @@ class QVizSignalHandling(QObject):
             TODO: use the global routine 'updateNodeData' defined in
                   QVizAbstractCommand instead.
         """
-        self.nodeData = self.dataTreeView.selectedItem.getDataDict()
+        self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
         self.treeNode = self.dataTreeView.selectedItem
 
     def selectSignal(self):
@@ -586,7 +586,7 @@ class QVizSignalHandling(QObject):
                 label = self.treeNode.getPath()
                 xlabel = QVizGlobalOperations.replaceBrackets(
                     self.treeNode.evaluateCoordinate1At(
-                        self.treeNode.dataDict['i']))
+                        self.treeNode.infoDict['i']))
                 self.timeSlider = True
 
             # Get the signal data for plot widget
@@ -720,7 +720,7 @@ class QVizSignalHandling(QObject):
         selectedSignalsList = []
         for key in selectedDataList:
             v = selectedDataList[key]  # v is a map
-            selectedSignalsList.append(v['QTreeWidgetItem'].getDataDict())
+            selectedSignalsList.append(v['QTreeWidgetItem'].getInfoDict())
 
         s = self.nodeData
         for si in selectedSignalsList:
@@ -816,7 +816,7 @@ class QVizSignalHandling(QObject):
         treeNode = self.dataTreeView.selectedItem
         # Get signal node index
         # index = 0
-        index = treeNode.dataDict['i']
+        index = treeNode.infoDict['i']
 
         # Get list of paths of arrays through time slices
         data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
@@ -828,7 +828,7 @@ class QVizSignalHandling(QObject):
 
         dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
         signal = dataAccess.GetSignalVsTime(data_path_list,
-                                            treeNode.getDataDict(),
+                                            treeNode.getInfoDict(),
                                             treeNode,
                                             index)
         # Get label and title (dummy = obsolete xlabel)
@@ -876,13 +876,13 @@ class QVizSignalHandling(QObject):
         data_path_list = [x + missing_path_part for x in data_path_list]
         dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
         signal = dataAccess.GetSignalVsTime(data_path_list,
-                                            treeNode.getDataDict(),
+                                            treeNode.getInfoDict(),
                                             treeNode,
                                             index)
 
         # Get label, title and xlabel
         label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-            nodeData=treeNode.getDataDict(),
+            nodeData=treeNode.getInfoDict(),
             index=index)
         # TODO: fix routines for obtaining label
         label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
@@ -890,7 +890,7 @@ class QVizSignalHandling(QObject):
 
         # Update/Overwrite plot
         QVizPlotSignal(dataTreeView=self.dataTreeView,
-                       nodeData=treeNode.getDataDict(),
+                       nodeData=treeNode.getInfoDict(),
                        signal=signal,
                        figureKey=currentFigureKey,
                        title=title,
@@ -920,18 +920,18 @@ class QVizSignalHandling(QObject):
         # self.updateNodeData()
         dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
         # Get signal node
-        signal = dataAccess.GetSignalAt(treeNode.getDataDict(),
+        signal = dataAccess.GetSignalAt(treeNode.getInfoDict(),
                                         self.dataTreeView.dataSource.shotNumber,
                                         treeNode,
                                         time_index)
         # Get label and xlabel (title in this form is not needed)
         label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-                            nodeData=treeNode.getDataDict(),
+                            nodeData=treeNode.getInfoDict(),
                             index=time_index)
 
         # Update/Overwrite plot
         QVizPlotSignal(dataTreeView=self.dataTreeView,
-                       nodeData=treeNode.getDataDict(),
+                       nodeData=treeNode.getInfoDict(),
                        signal=signal,
                        figureKey=currentFigureKey,
                        label=label,

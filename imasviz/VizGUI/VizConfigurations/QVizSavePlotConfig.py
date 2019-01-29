@@ -96,7 +96,7 @@ class QVizSavePlotConfig():
             # Extract signal node data (it contains also 'path') from the
             # signal
 
-            nodeData = plotItem.signalData['QTreeWidgetItem'].dataDict
+            nodeData = plotItem.signalData['QTreeWidgetItem'].infoDict
 
             # ------------------------------------------------------------------
             # Set new subelement for holding pg.PlotItem data

@@ -261,7 +261,7 @@ class QVizDataTreeView(QTreeWidget):
 
         node_array_contents = ''
         # Don't obtain contents for full IDS root nodes
-        if item.getDataDict()['isIDSRoot'] != 1:
+        if item.getInfoDict()['isIDSRoot'] != 1:
             try:
                 # Get the array of values
                 node_array_contents = eval(expression)
@@ -379,7 +379,7 @@ class QVizDataTreeView(QTreeWidget):
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
-        rootNodeData = ids_root_node.getDataDict()
+        rootNodeData = ids_root_node.getInfoDict()
 
         idsName = ids_root_node.getIDSName()
         key = idsName + "/" + str(occurrence)
@@ -429,7 +429,7 @@ class QVizDataTreeView(QTreeWidget):
         item = self.selectedItems()[0]
 
         # Continue, if the QTreeWidgetItem is IDS root
-        if item.dataDict['isIDSRoot'] != 1:
+        if item.infoDict['isIDSRoot'] != 1:
             return
 
         # Set default occurrence

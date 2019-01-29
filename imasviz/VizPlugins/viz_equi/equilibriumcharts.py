@@ -1080,7 +1080,7 @@ if (__name__ == '__main__'):
     eq_item = f1.dataTreeView.IDSRoots['equilibrium']
 
     # Get selected item/subject data dict
-    dataDict = eq_item.getDataDict()
+    dataDict = eq_item.getInfoDict()
 
     # Show the data tree view window
     # f1.show()

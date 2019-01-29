@@ -266,7 +266,7 @@ class timeSliderGroup():
         # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
         self.active_treeNode = self.signalHandling.dataTreeView.selectedItem
         # self.currentIndex = self.active_treeNode.treeNodeExtraAttributes.itime_index
-        self.currentIndex = self.active_treeNode.dataDict['i']
+        self.currentIndex = self.active_treeNode.infoDict['i']
 
         if self.signalHandling.timeSlider == True:
             # Set index slider using coordinates as index (e.g. psi)
@@ -276,7 +276,7 @@ class timeSliderGroup():
             maxValue = int(self.active_treeNode.timeMaxValue()) - 1
         elif self.signalHandling.timeSlider == False:
             # Set index slider using time as index
-            nodeData = self.active_treeNode.getDataDict()
+            nodeData = self.active_treeNode.getInfoDict()
             # Set IDS source database
             ids  = self.signalHandling.dataTreeView.dataSource.ids[nodeData[
                 'occurrence']]
@@ -371,7 +371,7 @@ class timeSliderGroup():
         self.currentIndex = time_index
 
         # Signal/Node itemVIZData attribute
-        # signalItemVIZData = self.active_treeNode.getDataDict()
+        # signalItemVIZData = self.active_treeNode.getInfoDict()
 
 
         # Search through the whole list of signals (all FLT_1D nodes etc.)

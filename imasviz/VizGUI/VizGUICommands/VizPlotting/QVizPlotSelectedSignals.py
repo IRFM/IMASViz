@@ -134,17 +134,17 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                 vizTreeNode = v['QTreeWidgetItem']
 
                 # Get node dataDict
-                signalNodeData = vizTreeNode.getDataDict()
+                signalNodeData = vizTreeNode.getInfoDict()
 
                 # Check dimension
-                plotDimension = self.getDimension(vizTreeNode.getDataDict())
+                plotDimension = self.getDimension(vizTreeNode.getInfoDict())
 
                 # Cancel plotting procedure if there is something wrong with
                 # the dimension
                 if plotDimension == False:
                     return
 
-                key = dtv.dataSource.dataKey(vizTreeNode.getDataDict())
+                key = dtv.dataSource.dataKey(vizTreeNode.getInfoDict())
                 tup = (dtv.dataSource.shotNumber, signalNodeData)
                 self.api.addNodeToFigure(figureKey, key, tup)
 

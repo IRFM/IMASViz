@@ -14,7 +14,7 @@ class QVizPluginsHandler:
 
     def __init__(self, dataTreeView, dataDict):
         self.dataTreeView = dataTreeView
-        self.dataDict = dataDict    # Passed item/subject
+        self.infoDict = dataDict    # Passed item/subject
         self.menuIDS = MenuIDS()
         self.pluginsObjects = VizPlugins.getPluginsObjects()
 
@@ -99,7 +99,7 @@ class QVizPluginsHandler:
             pluginsConfiguration['imasviz_view'] = self.dataTreeView
             """Set ArraySize Plugin 'node_attributes' option
             (defined in the plugin definition .py file"""
-            pluginsConfiguration['node_attributes'] = self.dataDict
+            pluginsConfiguration['node_attributes'] = self.infoDict
             """Execute the plugins"""
             # pluginsObject.execute(wx.App(), pluginsConfiguration)
             pluginsObject.execute(pluginsConfiguration,

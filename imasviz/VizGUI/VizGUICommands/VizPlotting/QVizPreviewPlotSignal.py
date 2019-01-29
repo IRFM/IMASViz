@@ -163,19 +163,19 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             label = signalNode.getPath()
 
         if xlabel == None:
-            if 'coordinate1' in signalNode.getDataDict():
+            if 'coordinate1' in signalNode.getInfoDict():
                 xlabel = \
-                    QVizGlobalOperations.replaceBrackets(signalNode.getDataDict()['coordinate1'])
+                    QVizGlobalOperations.replaceBrackets(signalNode.getInfoDict()['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 
         ylabel = 'S(t)'
         if signalNode is not None and \
-                not (signalNode.isCoordinateTimeDependent(signalNode.getDataDict()['coordinate1'])):
+                not (signalNode.isCoordinateTimeDependent(signalNode.getInfoDict()['coordinate1'])):
            ylabel = 'S'
 
-        if 'units' in signalNode.getDataDict():
-            units = signalNode.getDataDict()['units']
+        if 'units' in signalNode.getInfoDict():
+            units = signalNode.getInfoDict()['units']
             ylabel += '[' + units + ']'
 
         label = dataTreeView.dataSource.getShortLabel() + ':' + label
