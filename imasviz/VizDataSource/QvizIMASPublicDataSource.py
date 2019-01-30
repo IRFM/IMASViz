@@ -6,18 +6,29 @@ from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGen
 class QVizIMASPublicDataSource(QVizIMASDataSource):
 
     def __init__(self, name, machineName, shotNumber, runNumber):
-        QVizIMASDataSource.__init__(self, name, None, None, shotNumber, runNumber, machineName)
+
+        super(QVizIMASPublicDataSource, self).__init__(name, userName=None,
+                                                       imasDbName=None,
+                                                       shotNumber=shotNumber,
+                                                       runNumber=runNumber,
+                                                       machineName=machineName)
 
     # Load IMAS data using IMAS api
-    def load(self, view, IDSName, occurrence=0, pathsList = None, async=True):
+    def load(self, dataTreeView, IDSName, occurrence=0, pathsList = None,
+             async=True):
         print ("Loading data using UDA")
-        self.generatedDataTree = QVizGeneratedClassFactory(self, view, IDSName, occurrence, pathsList, async).create()
+        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView,
+                                                           IDSName,
+                                                           occurrence,
+                                                           pathsList,
+                                                           async).create()
+        print("*: self.ids: ", self.ids)
         if self.ids.get(occurrence) is None:
-            self.ids = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-            self.ids.open_public(self.machineName)
+            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber,
+                                            0, 0)
+            self.ids[occurrence].open_public(self.machineName)
 
         self.generatedDataTree.ids = self.ids.get(occurrence)
-        view.dataCurrentlyLoaded[occurrence] = True
 
         if async == True:
             self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
