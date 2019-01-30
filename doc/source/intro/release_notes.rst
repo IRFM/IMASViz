@@ -15,7 +15,7 @@ Released:
 Changes:
 
 - **Full GUI migration from wxPython and wxmPlot to PyQt and pyqtgraph Python**
-  **libraries**
+  **libraries** (including Equilibrium overview plugin)
 - Basic plot feature performance improved greatly.
   Quick comparison for plotting 17 plots to a single panel using default
   plotting options:
@@ -57,7 +57,6 @@ scripts):
    The migration to PyQt5 due to IMASViz containing a large code sets is not
    yet fully complete.
    List of known features yet to migrate to IMASViz 2.0:
-   ``Equilibrium plugin``,
    ``Add selected nodes to existing TablePlotView``, and
    ``StackedPlotView manager``.
 

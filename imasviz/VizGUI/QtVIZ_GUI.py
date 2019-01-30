@@ -138,7 +138,7 @@ class GUIFrame(QTabWidget):
         vboxLayout2.addWidget(button_open2)
         layout.addLayout(vboxLayout2)
         self.tab2.setLayout(layout)
-        self.tab2.setDisabled(True)
+        # self.tab2.setDisabled(True)
 
     def OpenDataSourceFromTab2(self, evt):
         try:
