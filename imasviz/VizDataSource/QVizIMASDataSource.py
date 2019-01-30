@@ -66,6 +66,9 @@ class QVizIMASDataSource:
         ids = self.ids[signalNode['occurrence']] #@UnusedVariable
         if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
 
+            # And error occurs for non-homogeneous cases (time array is
+            # different or empty). This is 'solved' with the below fix using
+            # 'e' variable
             e = eval('ids.' + signalNode['dataName'])
             if e is None or e.all() is None:
                 return GlobalColors.BLACK

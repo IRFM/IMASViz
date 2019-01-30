@@ -49,7 +49,7 @@ class QVizSelectSignals(QVizAbstractCommand):
 
             # When the signal path matches the path from the given list,
             # select the signal
-            if any(sigName in s for s in self.pathsList):
+            if any(sigName == s for s in self.pathsList):
                 # Tag the signal as current DTV selected item
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
