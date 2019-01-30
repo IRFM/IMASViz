@@ -65,7 +65,9 @@ class QVizIMASDataSource:
     def colorOf(self, signalNode, obsolescent=None):
         ids = self.ids[signalNode['occurrence']] #@UnusedVariable
         if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
-            if eval('ids.' + signalNode['dataName']).all() == None:
+
+            e = eval('ids.' + signalNode['dataName'])
+            if e is None or e.all() is None:
                 return GlobalColors.BLACK
 
             # if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
