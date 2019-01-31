@@ -143,8 +143,8 @@ class GUIFrame(QTabWidget):
     def OpenDataSourceFromTab2(self, evt):
         try:
             self.CheckInputsFromTab2()
-            openShotView = QVizOpenShotView()
-            openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_UDA,
+            self.openShotView.Open(evt,
+                                   dataSourceName=QVizGlobalValues.IMAS_UDA,
                                             imasDbName='',
                                             userName='',
                                             runNumber=self.runNumber2.text(),
