@@ -121,7 +121,7 @@ class GUIFrame(QTabWidget):
         vboxlayout.addRow('Run number', self.runNumber2)
 
         if 'UDA_LOG' in os.environ:
-            publicDatabases = ['WEST', 'TCV', 'JET', 'AUG']
+            publicDatabases = ['WEST', 'TCV', 'JET', 'AUG', 'MAST']
         else:
             publicDatabases = ['WEST']
 

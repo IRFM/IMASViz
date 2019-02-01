@@ -39,7 +39,7 @@ class QVizDataSourceFactory:
             if machineName == None or machineName == '':
                 raise ValueError("A machine name is required for UDA datasource")
 
-            elif machineName in (QVizGlobalValues.WEST, QVizGlobalValues.JET, QVizGlobalValues.TCV, QVizGlobalValues.AUG):
+            elif machineName in QVizGlobalValues.ExternalSources:
                 #print "Creating QVizIMASPublicDataSource..."
                 dataSource = QVizIMASPublicDataSource(dataSourceName, machineName,
                                                       shotNumber, runNumber)

@@ -28,6 +28,9 @@ class QVizGlobalValues:
     TCV = "TCV"
     JET = "JET"
     AUG = "AUG"
+    MAST = "MAST"
+
+    ExternalSources = (MAST, WEST, TCV, JET, AUG)
 
 
     if "VIZ_PRODUCTION" not in os.environ:
