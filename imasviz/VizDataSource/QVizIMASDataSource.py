@@ -143,3 +143,39 @@ class QVizIMASDataSource:
         if itemDataDict.get('documentation') != None:
             doc_display = "documentation= " + itemDataDict['documentation']
             newTreeItem = QVizTreeNode(viewerNode, [doc_display])
+
+    def exportToLocal(self, dataTreeView, exported_ids, idsName):
+        """Export specified IDS to a new separate IDS.
+
+        Arguments:
+
+            dataTreeView (QTreeWidget) :
+            exported_ids (object)      : IDS object
+            idsName (string)           : Name of the IDS (e.g. 'magnetics')
+        """
+
+        for i in range (0,10):
+            if self.ids.get(i) == None:
+                self.load(dataTreeView, idsName, i)
+
+            command1 = "self.ids[" + str(i) + "]." + idsName + ".ids_properties.homogeneous_time"
+            if eval(command1) < -1:
+                dataTreeView.log.info('Occurrence ' + str(i) +
+                                      ' seems to be empty (' \
+                                      'ids_properties.homogeneous_time is '
+                                      'empty). Skipping all next occurrences!')
+                break
+                
+            # Set the export command
+            command2 = "self.ids[" + str(i) + "]." + idsName + \
+                      ".setExpIdx(exported_ids." + idsName + ".idx)"
+            # Run the export command
+            eval(command2)
+            print("Calling IMAS put() for IDS " + idsName + " occurrence " +
+                   str(i) + ".")
+            # writing in occurrence i
+            eval("self.ids[" + str(i) + "]."  + idsName + ".put(" + str(i) + ")")
+
+        exported_ids.close()
+
+

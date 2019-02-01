@@ -36,7 +36,7 @@ from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QTextEdit
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
@@ -578,10 +578,20 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_onShowConfigurations.triggered.connect(
             partial(self.onShowConfigurations, self))
         actions.addAction(action_onShowConfigurations)
+
+        #------
+        # Add menu item to export the contents, opened in DTV, to a new local
+        # IDS
+        action_onExportToLocal = QAction('Export browsed tree view contents to '
+                                         'local IDS', self)
+        action_onExportToLocal.triggered.connect(
+            partial(self.onExportToLocal, self.dataTreeView))
+        actions.addAction(action_onExportToLocal)
+
         #-----------------------------------------------------------------------
 
         # Set menu handling node selection features
-        nodeSelection = menuBar.addMenu('Node Selection')
+        nodeSelection = menuBar.addMenu('Node Selection Actions')
         #-----------------------------------------------------------------------
         # Set new submenu for handling signal selection to be added to 'Actions'
         # menu
@@ -757,6 +767,85 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
+
+    @pyqtSlot(QTreeWidget)
+    def onExportToLocal(self, dataTreeView):
+
+        dataSource = self.dataTreeView.dataSource
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Export to IDS")
+        dialog.resize(300,200)
+
+        userLabel = QLabel('User: ', self)
+        databaseLabel = QLabel('Database: ', self)
+        shotLabel = QLabel('Shot: ', self)
+        runLabel = QLabel('Run: ', self)
+        idsNameLabel = QLabel('IDS: ', self)
+
+        userBox = QLineEdit(self)
+        databaseBox = QLineEdit(self)
+        shotBox = QLineEdit(self)
+        runBox = QLineEdit(self)
+        idsNameBox = QLineEdit(self)
+
+        def onOk():
+            # Execute the export to local IDS
+            self.dataTreeView.log.info('Starting to export ' +
+                                       idsNameBox.text() + ' IDS with user: ' +
+                                       userBox.text() + ', database: ' +
+                                       databaseBox.text() + ', shot: ' +
+                                       shotBox.text() +
+                                       ', run: ' + runBox.text() + '.')
+            import imas
+            exported_ids = imas.ids(int(shotBox.text()), int(runBox.text()))
+            exported_ids.create_env(userBox.text(), databaseBox.text(), '3')
+
+            dataSource.exportToLocal(self.dataTreeView, exported_ids,
+                                     idsNameBox.text())
+
+            self.dataTreeView.log.info('Export finished.')
+
+        def onCancel():
+            # Close the dialog
+            dialog.destroy()
+
+        okButton = QPushButton('OK', dialog)
+        okButton.clicked.connect(onOk)
+
+        cancelButton = QPushButton('Cancel', dialog)
+        cancelButton.clicked.connect(onCancel)
+
+        # Set layout
+        layout = QGridLayout(dialog)
+        layout.setObjectName('gridLayout')
+
+        # Set layout marigin (left, top, right, bottom)
+        # layout.setContentsMargins(10, 10, 10, 10)
+
+        layout.addWidget(userLabel, 0, 0, 1, 1)
+        layout.addWidget(userBox, 0, 1, 1, 1)
+        layout.addWidget(databaseLabel, 1, 0, 1, 1)
+        layout.addWidget(databaseBox, 1, 1, 1, 1)
+        layout.addWidget(shotLabel, 2, 0, 1, 1)
+        layout.addWidget(shotBox, 2, 1, 1, 1)
+        layout.addWidget(runLabel, 3, 0, 1, 1)
+        layout.addWidget(runBox, 3, 1, 1, 1)
+        layout.addWidget(idsNameLabel, 4, 0, 1, 1)
+        layout.addWidget(idsNameBox, 4, 1, 1, 1)
+        layout.addWidget(okButton, 5, 0, 1, 2)
+        layout.addWidget(cancelButton, 6, 0, 1, 2)
+
+        dialog.show()
+
+
+
+
+
+
+
+
+
 
     # TODO:
     # def onCloseAndReopenDatabase()
