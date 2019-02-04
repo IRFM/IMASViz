@@ -144,37 +144,35 @@ class QVizIMASDataSource:
             doc_display = "documentation= " + itemDataDict['documentation']
             newTreeItem = QVizTreeNode(viewerNode, [doc_display])
 
-    def exportToLocal(self, dataTreeView, exported_ids, idsName):
+    def exportToLocal(self, dataTreeView, exported_ids):
         """Export specified IDS to a new separate IDS.
 
         Arguments:
 
             dataTreeView (QTreeWidget) :
-            exported_ids (object)      : IDS object
-            idsName (string)           : Name of the IDS (e.g. 'magnetics')
+            exported_ids (object)      : IDS object (A new IDS to which the
+                                         export is to be done)
         """
 
-        for i in range (0,10):
-            if self.ids.get(i) == None:
-                self.load(dataTreeView, idsName, i)
+        # List of loaded IDS roots with occurrences included (in form
+        # 'magnetics/0')
+        # list = dataTreeView.ids_roots_occurrence
 
-            command1 = "self.ids[" + str(i) + "]." + idsName + ".ids_properties.homogeneous_time"
-            if eval(command1) < -1:
-                dataTreeView.log.info('Occurrence ' + str(i) +
-                                      ' seems to be empty (' \
-                                      'ids_properties.homogeneous_time is '
-                                      'empty). Skipping all next occurrences!')
-                break
-                
+        for db in dataTreeView.ids_roots_occurrence:
+            # Extract IDS name and occurrence
+            idsName, occurrence = db.split("/")
+
             # Set the export command
-            command2 = "self.ids[" + str(i) + "]." + idsName + \
+            command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
                       ".setExpIdx(exported_ids." + idsName + ".idx)"
             # Run the export command
             eval(command2)
-            print("Calling IMAS put() for IDS " + idsName + " occurrence " +
-                   str(i) + ".")
-            # writing in occurrence i
-            eval("self.ids[" + str(i) + "]."  + idsName + ".put(" + str(i) + ")")
+            dataTreeView.log.info("Calling IMAS put() for IDS " + idsName +
+                                  " occurrence " + str(occurrence) + ".")
+            # Putting to occurrence
+            eval("self.ids[" + str(occurrence) + "]."  + idsName + ".put(" + str(
+                occurrence) +
+                 ")")
 
         exported_ids.close()
 

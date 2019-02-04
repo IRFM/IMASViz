@@ -23,6 +23,8 @@ Changes:
    - wxPython IMASViz: ~13s
    - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
 
+- Improved tree view build performance (wxPython IMASViz was practically
+  unable to build tree view for arrays containing 1500+ time slices)
 - Superior plot export possibilities
 - GUI improvements
 - Database tree browser interface display improvements

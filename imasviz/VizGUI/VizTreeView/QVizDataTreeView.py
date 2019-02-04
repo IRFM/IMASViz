@@ -365,7 +365,11 @@ class QVizDataTreeView(QTreeWidget):
         self.idsAlreadyFetched[idsName] = 1
         #ids_root_node = self.IDSRoot[idsName]
         if idsData != None:
+            import time
+            t1 = time.time()
             self.buildTreeView(self.IDSRoots[idsName], occurrence, idsData)
+            t2 = time.time()
+            self.log.info("Building tree view took " + str(t2-t1) + ' seconds.')
             # Expand the tree item
             self.DTVRoot.setExpanded(True)
 
@@ -386,7 +390,7 @@ class QVizDataTreeView(QTreeWidget):
 
         occNodeData = rootNodeData
         occNodeData['occurrence'] = occurrence
-        nodeBuilder = QVizDataTreeViewBuilder()
+        nodeBuilder = QVizDataTreeViewBuilder(ids = self.dataSource.ids)
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
 
         self.ids_roots_occurrence[key] = ids_root_occ
@@ -584,8 +588,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # IDS
         action_onExportToLocal = QAction('Export browsed tree view contents to '
                                          'local IDS', self)
-        action_onExportToLocal.triggered.connect(
-            partial(self.onExportToLocal, self.dataTreeView))
+        action_onExportToLocal.triggered.connect(self.onExportToLocal)
         actions.addAction(action_onExportToLocal)
 
         #-----------------------------------------------------------------------
@@ -768,8 +771,13 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
 
-    @pyqtSlot(QTreeWidget)
-    def onExportToLocal(self, dataTreeView):
+    @pyqtSlot()
+    def onExportToLocal(self):
+        """A feature that allows export of opened (!) IDSs to a new separate
+        IDS using a popup dialog window.
+        NOTE: the database (created using 'imasdb' command) must ALREADY
+        EXIST!
+        """
 
         dataSource = self.dataTreeView.dataSource
 
@@ -781,28 +789,32 @@ class QVizDataTreeViewFrame(QMainWindow):
         databaseLabel = QLabel('Database: ', self)
         shotLabel = QLabel('Shot: ', self)
         runLabel = QLabel('Run: ', self)
-        idsNameLabel = QLabel('IDS: ', self)
+
+        noteLabel1 = QLabel('Note 1: Only IDSs, that are CURRENTLY OPENED in '
+                           'the tree view, will be exported!',
+                           self)
+        noteLabel2 = QLabel('Note 2: Make sure the database/machine '
+                            '(created using imasdb command) exists!',
+                           self)
 
         userBox = QLineEdit(self)
         databaseBox = QLineEdit(self)
         shotBox = QLineEdit(self)
         runBox = QLineEdit(self)
-        idsNameBox = QLineEdit(self)
 
         def onOk():
+            import imas
             # Execute the export to local IDS
-            self.dataTreeView.log.info('Starting to export ' +
-                                       idsNameBox.text() + ' IDS with user: ' +
+            self.dataTreeView.log.info('Starting to export opened IDSs to ' +
+                                       ' IDS with user: ' +
                                        userBox.text() + ', database: ' +
                                        databaseBox.text() + ', shot: ' +
                                        shotBox.text() +
                                        ', run: ' + runBox.text() + '.')
-            import imas
             exported_ids = imas.ids(int(shotBox.text()), int(runBox.text()))
             exported_ids.create_env(userBox.text(), databaseBox.text(), '3')
 
-            dataSource.exportToLocal(self.dataTreeView, exported_ids,
-                                     idsNameBox.text())
+            dataSource.exportToLocal(self.dataTreeView, exported_ids)
 
             self.dataTreeView.log.info('Export finished.')
 
@@ -823,29 +835,30 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Set layout marigin (left, top, right, bottom)
         # layout.setContentsMargins(10, 10, 10, 10)
 
-        layout.addWidget(userLabel, 0, 0, 1, 1)
-        layout.addWidget(userBox, 0, 1, 1, 1)
-        layout.addWidget(databaseLabel, 1, 0, 1, 1)
-        layout.addWidget(databaseBox, 1, 1, 1, 1)
-        layout.addWidget(shotLabel, 2, 0, 1, 1)
-        layout.addWidget(shotBox, 2, 1, 1, 1)
-        layout.addWidget(runLabel, 3, 0, 1, 1)
-        layout.addWidget(runBox, 3, 1, 1, 1)
-        layout.addWidget(idsNameLabel, 4, 0, 1, 1)
-        layout.addWidget(idsNameBox, 4, 1, 1, 1)
-        layout.addWidget(okButton, 5, 0, 1, 2)
-        layout.addWidget(cancelButton, 6, 0, 1, 2)
+        # Set starting row index
+        r = 0
+
+        layout.addWidget(noteLabel1,     r, 0, 1, 4)
+        r += 1
+        layout.addWidget(noteLabel2,     r, 0, 1, 4)
+        r += 1
+        layout.addWidget(userLabel,     r, 0, 1, 1)
+        layout.addWidget(userBox,       r, 1, 1, 1)
+        r += 1
+        layout.addWidget(databaseLabel, r, 0, 1, 1)
+        layout.addWidget(databaseBox,   r, 1, 1, 1)
+        r += 1
+        layout.addWidget(shotLabel,     r, 0, 1, 1)
+        layout.addWidget(shotBox,       r, 1, 1, 1)
+        r += 1
+        layout.addWidget(runLabel,      r, 0, 1, 1)
+        layout.addWidget(runBox,        r, 1, 1, 1)
+        r += 1
+        layout.addWidget(okButton,      r, 0, 1, 2)
+        r += 1
+        layout.addWidget(cancelButton,  r, 0, 1, 2)
 
         dialog.show()
-
-
-
-
-
-
-
-
-
 
     # TODO:
     # def onCloseAndReopenDatabase()
