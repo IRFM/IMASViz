@@ -21,9 +21,9 @@ from imasviz.VizGUI.VizTreeView.QVizTreeNodeExtraAttributes import QVizTreeNodeE
 
 
 class QVizDataTreeViewBuilder:
-    def __init__(self):
+    def __init__(self, ids):
         self.arrayParentNodes = {}
-        self.ids = None
+        self.ids = ids
 
     def addNewNode(self, idsName, dataElement, parentNode, occurrence, dataTreeView):
         """ Add a new node (item) to the tree view.
@@ -35,28 +35,27 @@ class QVizDataTreeViewBuilder:
             parentNode   (QTreeWidgetItem) : Parent of the new-to-be tree view item.
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
         """
-        self.ids = dataTreeView.dataSource.ids
-        if dataElement.tag == 'time_dim':
-            return
+        # if dataElement.tag == 'time_dim':
+        #     return
 
-        #patch for TS
-        if (dataElement.get('index') != None and \
-            dataTreeView.dataSource.name == QVizGlobalValues.TORE_SUPRA):
-            index = int(dataElement.get('index')) - 1
-            dataElement.set('index', str(index))
+        itemDataDict = {}
+        viewerNode = None
 
         isSignal = 0
         isArray=0
         index=-1
+
         if (dataElement.get('index') != None):
-            isArray=1
-            index=dataElement.get('index')
+            #patch for TS
+            if(dataTreeView.dataSource.name == QVizGlobalValues.TORE_SUPRA):
+                index = dataElement.get('index') - 1
+                dataElement.set('index', str(index))
+            else:
+                isArray=1
+                index=dataElement.get('index')
 
         path = self.getPath(parentNode, dataElement.tag, isArray,
                             index)
-
-        itemDataDict = {}
-        viewerNode = None
 
         units = dataElement.get('units')
         if (units != None):
@@ -104,7 +103,7 @@ class QVizDataTreeViewBuilder:
                 viewerNode.setForeground(0, item_color)
 
                 dataTreeView.dataSource.addQtNodes(itemDataDict, dataTreeView,
-                                                 viewerNode, itemDataDict)
+                                                   viewerNode, itemDataDict)
 
             else:
                 # Add node information to each new node of IDS
@@ -115,11 +114,8 @@ class QVizDataTreeViewBuilder:
                 itemDataDict['dataName'] = dataElement.text
                 itemDataDict['Tag'] = dataElement.tag
 
-                if (dataElement.get('data_type') == 'FLT_0D') or  \
-                    (dataElement.get('data_type') == 'STR_0D') or \
-                    (dataElement.get('data_type') == 'INT_0D') or \
-                    dataElement.get('data_type') == 'xs:integer':
-
+                if dataElement.get('data_type') in ['FLT_0D', 'STR_0D',
+                                                    'INT_0D', 'xs:integer']:
                     if dataElement.text != None:
                         s = dataElement.text
                         lines = s.split('\n')
@@ -171,7 +167,7 @@ class QVizDataTreeViewBuilder:
                 else:
 
                     if dataElement.text != None and \
-                       dataElement.text.strip() != '':
+                            dataElement.text.strip() != '':
                         itemNodeName = dataElement.tag + '=' + str(dataElement.text)
                         if units != None:
                             itemNodeName += " [" + units + "]"
@@ -186,7 +182,7 @@ class QVizDataTreeViewBuilder:
                         viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
         else:
             itemNodeName = "Array of " + dataElement.tag + ' with ' + \
-                      dataElement.get('dim') + ' element(s)'
+                           dataElement.get('dim') + ' element(s)'
             arrayParentPath = \
                 self.getParentPath(parentNode) + "/" + itemNodeName
             if arrayParentPath not in self.arrayParentNodes:
@@ -228,7 +224,7 @@ class QVizDataTreeViewBuilder:
                 viewerNode.setForeground(0, item_color)
 
                 dataTreeView.dataSource.addQtNodes(itemDataDict, dataTreeView,
-                                                 viewerNode, QVizTreeItemData)
+                                                   viewerNode, QVizTreeItemData)
 
             else:
                 itemDataDict['IDSName'] = idsName
@@ -237,11 +233,8 @@ class QVizDataTreeViewBuilder:
                 itemDataDict['isSelected'] = 0
                 itemDataDict['dataName'] = dataElement.text
                 itemDataDict['Tag'] = dataElement.tag
-                if (dataElement.get('data_type') == 'FLT_0D') or \
-                   (dataElement.get('data_type') == 'STR_0D') or \
-                   (dataElement.get('data_type') == 'INT_0D'  or \
-                    dataElement.get('data_type') == 'xs:integer'):
-
+                if dataElement.get('data_type') in ['FLT_0D', 'STR_0D',
+                                                    'INT_0D', 'xs:integer']:
                     if dataElement.text != None:
                         itemNodeName=dataElement.tag + '=' + str(dataElement.text)
                         if units != None:
@@ -258,7 +251,7 @@ class QVizDataTreeViewBuilder:
                     #dimStr = str(int(dataElement.get('dim')) - 1)
                     index = int(dataElement.get('index')) + 1
                     itemNodeName= dataElement.tag + ' ' + str(index) + '/' + \
-                             dataElement.get('dim')
+                                  dataElement.get('dim')
                     if units != None:
                         itemNodeName += " [" + units + "]"
                     # Add tree item
