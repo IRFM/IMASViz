@@ -798,9 +798,13 @@ class QVizDataTreeViewFrame(QMainWindow):
                            self)
 
         userBox = QLineEdit(self)
+        userBox.setText('/')
         databaseBox = QLineEdit(self)
+        databaseBox.setText('/')
         shotBox = QLineEdit(self)
+        shotBox.setText('1')
         runBox = QLineEdit(self)
+        runBox.setText('1')
 
         def onOk():
             import imas
@@ -812,8 +816,15 @@ class QVizDataTreeViewFrame(QMainWindow):
                                        shotBox.text() +
                                        ', run: ' + runBox.text() + '.')
             exported_ids = imas.ids(int(shotBox.text()), int(runBox.text()))
-            exported_ids.create_env(userBox.text(), databaseBox.text(), '3')
 
+            # Patch: In case IDS database or user do not exist
+            try:
+                exported_ids.create_env(userBox.text(), databaseBox.text(), '3')
+            except:
+                self.dataTreeView.log.info('The specified database ' +
+                                           databaseBox.text() + ' for user ' +
+                                           userBox.text() + 'not found.')
+                return
             dataSource.exportToLocal(self.dataTreeView, exported_ids)
 
             self.dataTreeView.log.info('Export finished.')
