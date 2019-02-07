@@ -123,7 +123,7 @@ class GUIFrame(QTabWidget):
         if 'UDA_HOST' in os.environ:
             publicDatabases = ['WEST', 'TCV', 'JET', 'AUG', 'MAST']
         else:
-            publicDatabases = ['WEST']
+            publicDatabases = []
 
         self.cb = QComboBox()
         self.cb.addItems(publicDatabases)
