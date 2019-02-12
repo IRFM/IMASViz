@@ -586,8 +586,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         #------
         # Add menu item to export the contents, opened in DTV, to a new local
         # IDS
-        action_onExportToLocal = QAction('Export browsed tree view contents to '
-                                         'local IDS', self)
+        action_onExportToLocal = QAction('Export to IDS', self)
         action_onExportToLocal.triggered.connect(self.onExportToLocal)
         actions.addAction(action_onExportToLocal)
 
@@ -782,7 +781,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         dataSource = self.dataTreeView.dataSource
 
         dialog = QDialog(self)
-        dialog.setWindowTitle("Export to IDS")
+        dialog.setWindowTitle('Export browsed tree view contents to local ID')
         dialog.resize(300,200)
 
         userLabel = QLabel('User: ', self)
@@ -823,7 +822,7 @@ class QVizDataTreeViewFrame(QMainWindow):
             except:
                 self.dataTreeView.log.info('The specified database ' +
                                            databaseBox.text() + ' for user ' +
-                                           userBox.text() + 'not found.')
+                                           userBox.text() + ' not found.')
                 return
             dataSource.exportToLocal(self.dataTreeView, exported_ids)
 
