@@ -13,6 +13,10 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
 from PyQt5.QtGui import QIntValidator
 import getopt
 
+import matplotlib.pyplot as plt
+import matplotlib.collections
+import numpy as np
+
 # try:
 #     import BytesIO
 # except ImportError as e:
@@ -122,19 +126,19 @@ class GetDialog(QDialog):
         return variables
 
 
-class GetSOLPSWidget(QWidget):
+class GetIDS(QWidget):
     """ Push button used for plugin."""
     finished = pyqtSignal()
 
     def __init__(self, parent=None):
-        super(GetSOLPSWidget, self).__init__(parent)
+        super(GetIDS, self).__init__(parent)
 
         self.vars = {}
         for i in range(GetVars.numOfParams):
             # At the begining clear all parameters
             self.vars[i] = ''
 
-        self.thread = GetSOLPSWidgetQThread(self)
+        self.thread = GetIDSQThread(self)
         self.thread.finished.connect(self.cleanUp)
 
         self.pushButton = QPushButton(self)
@@ -251,13 +255,13 @@ class GetSOLPSWidget(QWidget):
             self.vars[key] = ''
 
 
-class GetSOLPSWidgetQThread(QThread):
+class GetIDSQThread(QThread):
     """QThread for getting data from an IDS from a separate thread.
     """
     startFlag = pyqtSignal(bool)
 
     def __init__(self, parent=None):
-        super(GetSOLPSWidgetQThread, self).__init__(parent)
+        super(GetIDSQThread, self).__init__(parent)
         self.parent = parent
         self.vars = {}
         for i in range(GetVars.numOfParams):
@@ -272,8 +276,7 @@ class GetSOLPSWidgetQThread(QThread):
             self.vars[key] = parameters[key]
 
     def run(self):
-        ids = GetSOLPSWidgetWrapper(self.vars)
-        # Data is saved if the self.dirpath and self.runName were provided.
+        ids = GetIDSWrapper(self.vars)
         if ids.state:
             ids.plotData()
         else:
@@ -281,20 +284,19 @@ class GetSOLPSWidgetQThread(QThread):
 
     @pyqtSlot()
     def on_start(self):
-        logging.info('Getting IDS...')
+        logging.info('Plugin start')
         self.startFlag.emit(False)
 
     @pyqtSlot()
     def on_finish(self):
-        logging.info('Finished reading from IDS.')
+        logging.info('Plugin finished')
         self.startFlag.emit(True)
 
 
-class GetSOLPSWidgetWrapper:
-    """This class gets the data from an IDS and save it to a directory.
+class GetIDSWrapper:
+    """This class gets the data from an IDS.
 
-    You provide the necessary id parameters so the IDS can be accessed, then
-    the data is written to the directory you specify.
+    You provide the necessary id parameters so the IDS can be accessed.
 
     Attributes:
 
@@ -325,9 +327,118 @@ class GetSOLPSWidgetWrapper:
     def plotData(self):
         """Plots edge data to 2D VTK.
         """
-        pass
-        # TODO
+        logging.info('Getting IDS')
+        self.ids.edge_profiles.get()
+        self.ep = self.ids.edge_profiles
 
+        self.ggdCheck()
+
+        # Reading IDS grid geometry and physics quantities array
+        nodes = np.zeros(shape=(self.num_obj_0D, 2))
+        quad_conn_array = np.zeros(shape=(self.num_obj_2D, 4), dtype=np.int)
+        # quad_values_array = np.zeros(self.num_obj_2D)
+
+        # List of nodes and corresponding coordinates (2D spade - x and y)
+        for i in range(self.num_obj_0D):
+            # X coordinate
+            nodes[i][0] = self.ep.grid_ggd[0].space[0].objects_per_dimension[0].object[i].geometry[0]
+            # Y coordinate
+            nodes[i][1] = self.ep.grid_ggd[0].space[0].objects_per_dimension[0].object[i].geometry[1]
+
+        # Connectivity array. Each quad is formed using 4 nodes/points
+        for i in range(self.num_obj_2D):
+            for j in range(0,4):
+                quad_conn_array[i][j] = self.ep.grid_ggd[0].space[0].objects_per_dimension[2].object[i].nodes[j] - 1
+
+        # print("quad_conn_array: ", quad_conn_array)
+
+        # Values corresponding to quads
+
+
+        # for i in range(self.num_obj_2D):
+        #     quad_values_array[i] = i
+
+        # TODO: check ... electrons.density[0].grid_subset_index etc.
+
+        quad_values_array = self.ep.ggd[0].electrons.temperature[0].values
+
+        self.showMeshPlot(nodes, quad_conn_array, quad_values_array)
+
+    def showMeshPlot(self, nodes, elements, values):
+
+        y = nodes[:,0]
+        z = nodes[:,1]
+
+        def quatplot(y,z, quatrangles, values, ax=None, **kwargs):
+
+            if not ax: ax=plt.gca()
+            yz = np.c_[y,z]
+            verts= yz[quatrangles]
+            print("*verts: ", verts)
+            white = (1,1,1,1)
+            pc = matplotlib.collections.PolyCollection(verts,
+                                                       edgecolor=white,
+                                                       linewidths=(0.1,),
+                                                       **kwargs)
+            pc.set_array(values)
+            ax.add_collection(pc)
+            ax.autoscale()
+            return pc
+
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal')
+
+        pc = quatplot(y,z, np.asarray(elements), values, ax=ax,
+                 cmap="plasma")
+        fig.colorbar(pc, ax=ax)
+        # ax.plot(y,z, marker="o", ls="", color="crimson")
+        ax.plot(y,z, ls="", color="crimson")
+        # Set background
+        ax.set_facecolor((0.75, 0.75, 0.75))
+
+        ax.set(title='This is the plot for: quad', xlabel='Y Axis', ylabel='Z Axis')
+
+        plt.show()
+
+
+
+    def ggdCheck(self):
+        """Checks if the filled grid_ggd structure (contains mandatory grid
+        geometry data) is present in the opened IDS. Check also the ggd
+        structure (contains data on physics quantities which are not mandatory.
+        """
+        num_grid_ggd_slices = len(self.ep.grid_ggd)
+        num_ggd_slices = len(self.ep.ggd)
+        logging.info('Number of grid_ggd slices: ' + str(num_grid_ggd_slices))
+        logging.info('Number of ggd slices: ' + str(num_ggd_slices))
+
+        if num_grid_ggd_slices < 1:
+            logging.warning('grid_ggd structure is empty!')
+            return
+
+        # Set variables to later hold number of elements
+        self.num_obj_0D = 0
+        self.num_obj_1D = 0
+        self.num_obj_2D = 0
+
+        # Set default ggd_slide_index
+        grid_ggd_slice_index = 0
+        # Check for nodes, edges and cells data in current IDS database and
+        # get number of objects for each dimension
+        # objects_per_dimensions(0) holds every 0D object (nodes/vertices).
+        self.num_obj_0D = len(self.ep.grid_ggd[grid_ggd_slice_index].space[0]. \
+            objects_per_dimension[0].object)
+        # objects_per_dimensions[1] holds every 1D object (edges)
+        self.num_obj_1D = len(self.ep.grid_ggd[grid_ggd_slice_index].space[0]. \
+            objects_per_dimension[1].object)
+        # objects_per_dimensions[2] holds every 2D object (faces/2D cells)
+        self.num_obj_2D = len(self.ep.grid_ggd[grid_ggd_slice_index].space[0]. \
+            objects_per_dimension[2].object)
+
+        logging.info('Grid GGD slice: ' + str(grid_ggd_slice_index))
+        logging.info('Number of 0D objects: ' + str(self.num_obj_0D))
+        logging.info('Number of 1D objects: ' + str(self.num_obj_1D))
+        logging.info('Number of 2D objects: ' + str(self.num_obj_2D))
 
 if __name__ == '__main__':
     root = logging.getLogger()
@@ -384,7 +495,7 @@ if __name__ == '__main__':
         sys.exit(2)
 
     app = QApplication(sys.argv)
-    t = GetSOLPSWidgetQThread()
+    t = GetIDSQThread()
     t.setParameters(Vars)
     t.finished.connect(app.exit)
     t.start()
