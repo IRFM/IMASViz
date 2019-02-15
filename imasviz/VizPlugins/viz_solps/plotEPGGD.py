@@ -1,15 +1,19 @@
 #! /usr/bin/env python3
 
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSpacerItem, QSizePolicy, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, \
+                            QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, \
+                            QSpacerItem, QSizePolicy, QPushButton
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, pyqtSlot
+
 
 import logging
+import matplotlib
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.collections
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -25,13 +29,20 @@ class plotEPGGD(QWidget):
     """
 
     def __init__(self, ids, parent=None, *args, **kwargs):
-        QWidget.__init__(self, *args, **kwargs)
+        QWidget.__init__(self, parent)
         self.ids = ids
         self.setLayout(QVBoxLayout())
         self.canvas = PlotCanvas(self, width=10, height=8)
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.layout().addWidget(self.toolbar)
         self.layout().addWidget(self.canvas)
+
+        # TODO: setShot, setRun, setUser, setDevice
+
+
+    @pyqtSlot()
+    def plotData(self):
+        self.canvas.plotData()
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):
@@ -42,7 +53,6 @@ class PlotCanvas(FigureCanvas):
         self.setParent(parent)
         FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
-        self.plotData()
 
     def plotData(self):
         """Plots edge data to 2D VTK.
@@ -111,7 +121,7 @@ class PlotCanvas(FigureCanvas):
         ax.set_aspect('equal')
 
         pc = quatplot(y,z, np.asarray(elements), values, ax=ax,
-                 cmap="plasma")
+                      cmap="plasma")
         self.figure.colorbar(pc, ax=ax)
         # ax.plot(y,z, marker="o", ls="", color="crimson")
         ax.plot(y,z, ls="", color="crimson")
@@ -137,6 +147,7 @@ if __name__ == '__main__':
     Vars = {0: 122264, 1: 1, 2: 'penkod', 3: 'iter', 4: '3'}
     ids = GetIDSWrapper(Vars).getIDS()
     plotWidget = plotEPGGD(ids)
+    plotWidget.plotData()
 
     mainWindow = QMainWindow()
     title = 'Test: Plot edge_profiles GGD'
