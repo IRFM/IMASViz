@@ -1,22 +1,53 @@
 #! /usr/bin/env python3
 
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QSpacerItem, QSizePolicy, QPushButton
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QSize
+
 import logging
 import matplotlib.pyplot as plt
 import matplotlib.collections
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+
 import numpy as np
 
 from getEPGGD import getEPGGD
 
-class plotEPGGD:
+import random
+
+class plotEPGGD(QWidget):
     """Plot edge_profiles (EP) IDS GGD.
     """
 
-    def __init__(self, ids, parent=None):
+    def __init__(self, ids, parent=None, *args, **kwargs):
+        QWidget.__init__(self, *args, **kwargs)
         self.ids = ids
+        self.setLayout(QVBoxLayout())
+        self.canvas = PlotCanvas(self, width=10, height=8)
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.layout().addWidget(self.toolbar)
+        self.layout().addWidget(self.canvas)
+
+class PlotCanvas(FigureCanvas):
+    def __init__(self, parent=None, width=10, height=8, dpi=100):
+        self.ids = parent.ids
+
+        self.figure = Figure(figsize=(width, height), dpi=dpi)
+        FigureCanvas.__init__(self, self.figure)
+        self.setParent(parent)
+        FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        self.plotData()
 
     def plotData(self):
         """Plots edge data to 2D VTK.
         """
+
         logging.info('Getting IDS')
         self.ids.edge_profiles.get()
         self.ep = self.ids.edge_profiles
@@ -63,9 +94,7 @@ class plotEPGGD:
 
         def quatplot(y,z, quatrangles, values, ax=None, **kwargs):
 
-            self.abc = plt
-
-            if not ax: ax=self.abc.gca()
+            if not ax: ax=plt.gca()
             yz = np.c_[y,z]
             verts= yz[quatrangles]
             white = (1,1,1,1)
@@ -78,12 +107,12 @@ class plotEPGGD:
             ax.autoscale()
             return pc
 
-        fig, ax = plt.subplots()
+        ax = self.figure.add_subplot(111)
         ax.set_aspect('equal')
 
         pc = quatplot(y,z, np.asarray(elements), values, ax=ax,
                  cmap="plasma")
-        fig.colorbar(pc, ax=ax)
+        self.figure.colorbar(pc, ax=ax)
         # ax.plot(y,z, marker="o", ls="", color="crimson")
         ax.plot(y,z, ls="", color="crimson")
         # Set background
@@ -91,14 +120,24 @@ class plotEPGGD:
 
         ax.set(title='This is the plot for: quad', xlabel='Y Axis', ylabel='Z Axis')
 
-        plt.show()
-
+        self.draw()
 
 if __name__ == '__main__':
     from getIDS import GetIDSWrapper
 
+    app = QApplication(sys.argv)
 
     Vars = {0: 122264, 1: 1, 2: 'penkod', 3: 'iter', 4: '3'}
     ids = GetIDSWrapper(Vars).getIDS()
-    plotEPGGD(ids).plotData()
+    plotWidget = plotEPGGD(ids)
 
+    mainWindow = QMainWindow()
+    title = 'Test: Plot edge_profiles GGD'
+
+    mainWindow.setWindowTitle(title)
+
+    widget =  QWidget(mainWindow)
+    mainWindow.setCentralWidget(plotWidget)
+    mainWindow.show()
+
+    sys.exit(app.exec_())
