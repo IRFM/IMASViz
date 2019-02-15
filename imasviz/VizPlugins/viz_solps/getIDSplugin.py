@@ -9,13 +9,13 @@ A SOLPS getIDS plugin for Qt designer.
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtDesigner import QPyDesignerCustomWidgetPlugin
 
-from solpswidget import GetIDS
+from getIDS import GetIDS
 
-class solpsplugin(QPyDesignerCustomWidgetPlugin):
+class getIDSplugin(QPyDesignerCustomWidgetPlugin):
     """Plugin for put_edge_ids functionality.
     """
     def __init__(self, parent=None):
-        super(solpsplugin, self).__init__(parent)
+        super(getIDSplugin, self).__init__(parent)
 
     def createWidget(self, parent):
         return GetIDS(parent)
@@ -24,13 +24,13 @@ class solpsplugin(QPyDesignerCustomWidgetPlugin):
         return "GetIDS"
 
     def group(self):
-        return "SOLPS"
+        return "IMASViz"
 
     def icon(self):
         return QIcon(_logo_pixmap)
 
     def toolTip(self):
-        return "Push button for plotting IDS data."
+        return "Push button for getting IDS."
 
     def whatsThis(self):
         return ""
@@ -39,10 +39,10 @@ class solpsplugin(QPyDesignerCustomWidgetPlugin):
         return False
 
     def domXml(self):
-        return '<widget class="GetIDS" name="solpswidget">\n</widget>'
+        return '<widget class="GetIDS" name="getIDS">\n</widget>'
 
     def includeFile(self):
-        return "solpswidget"
+        return "getIDS"
 
 # Define the image used for the icon.
 _logo_16x16_xpm = [

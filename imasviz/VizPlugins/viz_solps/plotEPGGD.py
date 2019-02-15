@@ -125,6 +125,13 @@ class PlotCanvas(FigureCanvas):
 if __name__ == '__main__':
     from getIDS import GetIDSWrapper
 
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    root.addHandler(ch)
+
+
     app = QApplication(sys.argv)
 
     Vars = {0: 122264, 1: 1, 2: 'penkod', 3: 'iter', 4: '3'}

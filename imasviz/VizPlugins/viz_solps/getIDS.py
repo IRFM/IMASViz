@@ -49,6 +49,69 @@ class GetVars:
     defaultValues[device] = 'iter'
     defaultValues[version] = '3'
 
+class GetDialog(QDialog):
+    """Dialog Demanding the shot, run, name and device for getting the data
+    from IDS.
+    """
+
+    def __init__(self, parent=None):
+        super(GetDialog, self).__init__(parent)
+
+    def prepareWidgets(self, parameters, title='IDS Variables',):
+
+        self.setModal(True)
+
+        self.setWindowTitle(title)
+
+        formLayout = QFormLayout(self)
+
+        self.lineEditContainer = {}
+
+        for i in range(GetVars.numOfParams):
+            currLineEdit = QLineEdit()
+            currLineEdit.setText(GetVars.names[i])
+            self.lineEditContainer[i] = currLineEdit
+            if parameters[i]:
+                currLineEdit.setText(parameters[i])
+            else:
+                currLineEdit.setText(GetVars.defaultValues[i])
+
+            formLayout.addRow(GetVars.names[i], currLineEdit)
+
+        # Setting integer validator for run and shot numbers.
+        self.lineEditContainer[GetVars.run].setValidator(QIntValidator())
+        self.lineEditContainer[GetVars.shot].setValidator(QIntValidator())
+
+        # Adding the Ok and Cancel button.
+        dialog_button_box = QDialogButtonBox()
+        dialog_button_box.setStandardButtons(QDialogButtonBox.Ok |
+                                             QDialogButtonBox.Cancel)
+        dialog_button_box.accepted.connect(self.accept)
+        dialog_button_box.rejected.connect(self.reject)
+        formLayout.addRow(dialog_button_box)
+
+    def getValue(self, Id):
+        return self.lineEditContainer[Id].text()
+
+    def on_close(self):
+        # Returning a dictionary of values. The values are defined in
+        # enumerator class GetVars.
+
+        variables = {}
+
+        for i in range(GetVars.numOfParams):
+            variables[i] = self.getValue(i)
+
+        # Checking if validating Integers.
+        try:
+            variables[GetVars.shot] = int(variables[GetVars.shot])
+            variables[GetVars.run] = int(variables[GetVars.run])
+        except ValueError as e:
+            variables[GetVars.shot] = -1
+            variables[GetVars.run] = -1
+
+        return variables
+
 class GetIDS(QWidget):
     """ Push button used for plugin."""
     finished = pyqtSignal()
@@ -61,6 +124,9 @@ class GetIDS(QWidget):
             # At the begining clear all parameters
             self.vars[i] = ''
 
+        self.thread = GetIDSQThread(self)
+        self.thread.finished.connect(self.cleanUp)
+
         self.pushButton = QPushButton(self)
         self.pushButton.setText("Get IDS")
         self.pushButton.clicked.connect(self.getFromIDS)
@@ -71,6 +137,9 @@ class GetIDS(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.pushButton)
         self.setLayout(layout)
+
+        self.thread.startFlag.connect(self.pushButton.setEnabled)
+        self.thread.finished.connect(self.finished)
 
     @pyqtSlot(str)
     def setUser(self, user):
@@ -163,13 +232,48 @@ class GetIDS(QWidget):
         if not self.checkDestination:
             return
 
-        self.thread.setParameters(self.vars)
-        self.thread.start()
-
     @pyqtSlot()
     def cleanUp(self):
         for key in self.vars:
             self.vars[key] = ''
+
+class GetIDSQThread(QThread):
+    """QThread for getting data from an IDS from a separate thread.
+    """
+    startFlag = pyqtSignal(bool)
+
+    def __init__(self, parent=None):
+        super(GetIDSQThread, self).__init__(parent)
+        self.parent = parent
+        self.vars = {}
+        for i in range(GetVars.numOfParams):
+            self.vars[i] = None
+        self.finished.connect(self.on_finish)
+        self.started.connect(self.on_start)
+
+    def setParameters(self, parameters):
+        """Function that sets the parameters necessary for accessing IDS.
+        """
+        for key in parameters:
+            self.vars[key] = parameters[key]
+
+    def run(self):
+        ids = GetIDSWrapper(self.vars)
+        # if ids.state:
+        #     ids.plotData()
+        # else:
+        #     logging.warning('IDS did not open correctly.')
+
+    @pyqtSlot()
+    def on_start(self):
+        logging.info('Plugin start')
+        self.startFlag.emit(False)
+
+    @pyqtSlot()
+    def on_finish(self):
+        logging.info('Plugin finished')
+        self.startFlag.emit(True)
+
 
 class GetIDSWrapper:
     """This class gets the data from an IDS.
@@ -259,6 +363,13 @@ if __name__ == '__main__':
         print('For help: -h / --help')
         sys.exit(2)
 
-    ids = GetIDSWrapper(Vars).getIDS()
-    from plotEPGGD import plotEPGGD
-    plotEPGGD(ids).plotData()
+    # app = QApplication(sys.argv)
+    # ids = GetIDSWrapper(Vars).getIDS()
+    # sys.exit(app.exec_())
+
+    app = QApplication(sys.argv)
+    t = GetIDSQThread()
+    t.setParameters(Vars)
+    t.finished.connect(app.exit)
+    t.start()
+    sys.exit(app.exec_())
