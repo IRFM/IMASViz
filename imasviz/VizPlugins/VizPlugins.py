@@ -6,7 +6,6 @@ import os
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin',
                      'Ui_MainWindow': 'viz_solps.test_designer_plugin_modified'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
@@ -16,11 +15,9 @@ RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'run': 0, \
                           'machine': 'west_equinox', \
                           'user': 'imas_private'}],
-                          'ArraySizePlugin':[{}, {'size_request':1}],
                           'Ui_MainWindow':[{}] }
 
 WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                         'ArraySizePlugin': 'viz_array_size.array_size_plugin',
                          'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
 
 WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
@@ -30,10 +27,22 @@ WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'run': 0, \
                           'machine': 'west_equinox', \
                           'user': 'imas_private'}],
-                          'ArraySizePlugin':[{}, {'size_request':1}],
                           'ToFuPlugin':[{'geom':True},{'data':True},
                                          {'geom':True},{'data':True},
                                          {'geom':True},{'data':True}]}
+
+EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0], 'overview': [0]},
+                     'ToFuPlugin': {'interferometer_overview': [0, 1],
+                     'bolometer_overview': [2, 3],
+                     'soft_x_rays_overview': [4, 5]},
+                     'Ui_MainWindow': {'edge_profiles_overview':[0], 'overview':[0]}}
+
+AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
+              'ToFuPlugin': [(0, 'tofu - geom...'), (1, 'tofu - data'),
+                             (2, 'tofu - geom...'), (3, 'tofu - data'),
+                             (4, 'tofu - geom...'), (5, 'tofu - data')],
+              'Ui_MainWindow': [(0, 'SOLPS overview...')]}
+              #(config number, description)
 
 def getRegisteredPlugins():
     if 'WEST' in os.environ and os.environ['WEST'] == 1:
@@ -58,9 +67,9 @@ class VizPlugins():
     def getAllEntries(self):
         pass
 
-    def getSubjects(self):
+    def getSubjects(self, pluginsName):
         subjects = []
-        entriesPerSubject = self.getEntriesPerSubject()
+        entriesPerSubject = self.getEntriesPerSubject(pluginsName)
         for subject in entriesPerSubject:
             subjects.append(subject)
         return subjects
@@ -93,3 +102,13 @@ class VizPlugins():
     @staticmethod
     def getPluginsConfiguration(pluginsName):
         return getRegisteredPluginsConfiguration()[pluginsName]
+
+    @staticmethod
+    def getEntriesPerSubject(pluginsName):
+        return EntriesPerSubject[pluginsName]
+
+    @staticmethod
+    def getAllEntries(pluginsName):
+        return AllEntries[pluginsName]
+
+

@@ -10,11 +10,10 @@
 # to .py' converter. It had to be further modified in order for it to be
 # usable in IMASViz too
 # TODO: set source plugin files in a way that no Qt designer created plugin must
-# be additinally modified in order for it to be compatible with IMASViz
+# be additionally modified in order for it to be compatible with IMASViz
 
 import sys
 import os
-
 # Add imasviz source path
 sys.path.append(os.environ['VIZ_HOME'])
 sys.path.append((os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps'))
@@ -57,12 +56,6 @@ class Ui_MainWindow(VizPlugins):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton.setText(_translate("MainWindow", "GetIDS"))
         self.pushButton_2.setText(_translate("MainWindow", "Run plot"))
-
-    def getEntriesPerSubject(self):
-        return {'edge_profiles_overview':[0], 'overview':[0]}
-
-    def getAllEntries(self):
-        return [(0, 'SOLPS overview...')] #(config number, description)
 
 from plotEPGGD import plotEPGGD
 
