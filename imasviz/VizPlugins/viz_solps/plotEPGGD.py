@@ -39,7 +39,7 @@ class plotEPGGD(QWidget):
     """Plot edge_profiles (EP) IDS GGD.
     """
 
-    def __init__(self, ids=None, parent=None, *args, **kwargs):
+    def __init__(self, parent=None, ids=None, *args, **kwargs):
         QWidget.__init__(self, parent)
 
         self.checkDisplay()
@@ -205,7 +205,7 @@ if __name__ == '__main__':
 
                 python3 solpswidget.py --shot=122264 --run=1 --user=penkod \
                 --device=iter --version=3
-                
+
                 """
         try:
             opts, args = getopt.getopt(sys.argv[1:], "srudvh", ["shot=",
