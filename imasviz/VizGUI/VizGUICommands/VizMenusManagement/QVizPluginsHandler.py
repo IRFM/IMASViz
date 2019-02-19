@@ -4,7 +4,7 @@ import importlib
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from PyQt5.QtWidgets import QAction, QMenu,  QApplication
+from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow
 
 class MenuIDS:
     def __init__(self):
@@ -97,10 +97,27 @@ class QVizPluginsHandler:
             pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(pluginsName)
             pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
             pluginsConfiguration['imasviz_view'] = self.dataTreeView
-            """Set ArraySize Plugin 'node_attributes' option
-            (defined in the plugin definition .py file"""
+            # Set ArraySize Plugin 'node_attributes' option
+            # (defined in the plugin definition .py file
             pluginsConfiguration['node_attributes'] = self.infoDict
-            """Execute the plugins"""
-            # pluginsObject.execute(wx.App(), pluginsConfiguration)
-            pluginsObject.execute(pluginsConfiguration,
-                                  dataTreeView=self.dataTreeView)
+            # Execute the plugins
+            if 'setupUi' in dir(pluginsObject):
+                # Execute the plugins created by using the Qt Designer and
+                # '.ui to .py converter'
+                self.dataTreeView.log.info('Running plugin with setupUi.')
+
+                MainWindow = QMainWindow()
+                MainWindow.parent = self.dataTreeView
+                pluginsObject.setupUi(MainWindow)
+                MainWindow.show()
+            elif 'execute' in dir(pluginsObject):
+                self.dataTreeView.log.info('Running plugin with execute.')
+                # pluginsObject.execute(wx.App(), pluginsConfiguration)
+                pluginsObject.execute(pluginsConfiguration,
+                                      dataTreeView=self.dataTreeView)
+
+            else:
+                print('No proper execute or setupUi routine provided by the '
+                      'plugin!')
+
+

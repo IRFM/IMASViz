@@ -6,7 +6,8 @@ import os
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin'}
+                     'ArraySizePlugin': 'viz_array_size.array_size_plugin',
+                     'Ui_MainWindow': 'viz_solps.test_designer_plugin_modified'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \
@@ -15,11 +16,12 @@ RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'run': 0, \
                           'machine': 'west_equinox', \
                           'user': 'imas_private'}],
-                          'ArraySizePlugin':[{}, {'size_request':1}]}
+                          'ArraySizePlugin':[{}, {'size_request':1}],
+                          'Ui_MainWindow':[{}] }
 
 WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin',
-                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
+                         'ArraySizePlugin': 'viz_array_size.array_size_plugin',
+                         'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
 
 WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \
@@ -57,11 +59,11 @@ class VizPlugins():
         pass
 
     def getSubjects(self):
-         subjects = []
-         entriesPerSubject = self.getEntriesPerSubject()
-         for subject in entriesPerSubject:
-             subjects.append(subject)
-         return subjects
+        subjects = []
+        entriesPerSubject = self.getEntriesPerSubject()
+        for subject in entriesPerSubject:
+            subjects.append(subject)
+        return subjects
 
     def execute(self):
         pass

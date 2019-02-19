@@ -43,8 +43,19 @@ class plotEPGGD(QWidget):
         QWidget.__init__(self, parent)
 
         self.checkDisplay()
+        self.parent = parent
+
+        try:
+            # Check if the correct DTV (from IMASViz) is available
+            self.dataTreeView = self.parent.parent.parent
+            if self.dataTreeView.objectName() == 'DTV':
+                self.usingIMASViz = True
+        except:
+            self.usingIMASViz = False
+            self.dataTreeView = None
 
         self.ids = ids
+
         self.setLayout(QVBoxLayout())
         self.canvas = PlotCanvas(self, width=5, height=4)
         self.toolbar = NavigationToolbar(self.canvas, self)
@@ -54,11 +65,21 @@ class plotEPGGD(QWidget):
 
     @pyqtSlot()
     def checkIDS(self):
+        """Check if either:
+        1. IDS object was already provided.
+        2. The plugin was run from IMASViz (checks for DTV). In this case the
+           IDS parameters are taken from IMASViz DataTreeView and the
+           corresponding IDS is opened ( 'get()' ) and IDS object is created
+        3. If neither condition from the above is satisfied, run the plugin in
+           standalone mode using Dialog for IDS parameters specification.
+        """
         self.vars = {}
         # If IDS object is not provided, display dialog window where the IDS
         # parameters can be specified. Then open the specified IDS
         if self.ids != None:
             return
+        elif self.usingIMASViz == True:
+            self.getIDSfromIMASViz()
         else:
             from getIDS import GetIDSWrapper, GetDialog
             for i in range(GetVars.numOfParams):
@@ -71,6 +92,40 @@ class plotEPGGD(QWidget):
                 self.vars = dialog.on_close()
 
             self.ids = GetIDSWrapper(self.vars).getIDS()
+
+    @pyqtSlot()
+    def getIDSfromIMASViz(self):
+        """Get IDS object from IMASViz.
+        """
+
+        # if self.dataTreeView == None:
+        #     self.dataTreeView = dictDataSource['imasviz_view']
+        dataSource = self.dataTreeView.dataSource
+        shot = dataSource.shotNumber
+        run = dataSource.runNumber
+        machine = dataSource.imasDbName
+        user = dataSource.userName
+
+        print('shot    =', shot)
+        print('run     =', run)
+        print('user    =', user)
+        print('machine =', machine)
+        print('Reading data...')
+
+        # Open shot and run of machine
+        occurrence = 0  # default occurrence
+        try:
+            self.ids = dataSource.ids[occurrence]
+        except:
+            self.ids = None
+        if self.ids is None:
+            dataSource.load(self.dataTreeView, IDSName='edge_profiles',
+                            occurrence=0,
+                            pathsList=None, async=False)
+            self.ids = dataSource.ids[occurrence]
+
+        if not self.dataTreeView.idsAlreadyFetched["edge_profiles"]:
+            self.ids.edge_profiles.get()
 
     @pyqtSlot()
     def plotData(self):
