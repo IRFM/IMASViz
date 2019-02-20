@@ -18,7 +18,7 @@ class plotEPGGDplugin(QPyDesignerCustomWidgetPlugin):
         super(plotEPGGDplugin, self).__init__(parent)
 
     def createWidget(self, parent):
-        return plotEPGGD(None, parent)
+        return plotEPGGD(parent=parent, ids=None)
 
     def name(self):
         return "plotEPGGD"
