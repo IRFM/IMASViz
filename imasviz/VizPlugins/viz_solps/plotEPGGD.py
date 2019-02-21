@@ -235,6 +235,14 @@ class PlotCanvas(FigureCanvas):
         self.showMeshPlot(nodes, quad_conn_array, qValues)
 
     def showMeshPlot(self, nodes, elements, values):
+        """Arrange the nodes, elements and values as needed and plot them to
+        matplotlib canvas as PolyCollection.
+
+        Arguments:
+            nodes (2D array)    : Array of node/point coordinates
+            elements (4D array) : Connectivity array for quad elements
+            values (1D array)   : Quantities corresponding to the quad elements
+        """
 
         y = nodes[:,0]
         z = nodes[:,1]
@@ -410,9 +418,6 @@ class GetGGDDialog(QDialog):
                 self.combobox_quantity.addItem(qLabel)
                 self.quantityValuesDict[qLabel] = ggd.electrons.density[
                     i].values
-
-    def getValue(self, Id):
-        return self.lineEditContainer[Id].text()
 
     def on_close(self):
         # Returning a dictionary of values. The values are defined in
