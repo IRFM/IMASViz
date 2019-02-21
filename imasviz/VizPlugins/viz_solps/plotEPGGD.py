@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QAction, \
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtCore import QSize, pyqtSlot
 
-
 import logging
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -22,28 +21,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 import numpy as np
 
-from getEPGGD import getEPGGD
-
-class GetIDSVars:
-    names = ['SHOT', 'RUN', 'USER', 'DEVICE', 'VERSION']
-    numOfParams = len(names)
-    shot, run, user, device, version = range(numOfParams)
-
-    defaultValues = {}
-    defaultValues[shot] = '122264'
-    defaultValues[run] = '1'
-    defaultValues[user] = os.getenv('USER')
-    defaultValues[device] = 'iter'
-    defaultValues[version] = '3'
-
-class GetGGDVars:
-    names = ['grid_ggd_slice', 'ggd_slice']
-    numOfParams = len(names)
-    grid_ggd_slice, ggd_slice = range(numOfParams)
-
-    defaultValues = {}
-    defaultValues[grid_ggd_slice] = '0'
-    defaultValues[ggd_slice] = '0'
+from getEPGGD import getEPGGD, GetGGDVars
 
 class plotEPGGD(QWidget):
 
@@ -126,7 +104,7 @@ class plotEPGGD(QWidget):
         elif self.usingIMASViz == True:
             self.getIDSfromIMASViz()
         else:
-            from getIDS import GetIDSWrapper, GetDialog
+            from getIDS import GetIDSWrapper, GetDialog, GetIDSVars
             for i in range(GetIDSVars.numOfParams):
                 # At the beginning clear all parameters
                 self.vars[i] = ''
@@ -135,17 +113,20 @@ class plotEPGGD(QWidget):
             dialog.prepareWidgets(self.vars)
             if dialog.exec_():
                 self.vars = dialog.on_close()
+            else:
+                # Canceled!
+                return self.ids == None
 
             self.ids = GetIDSWrapper(self.vars).getIDS()
 
         logging.info('Getting IDS')
         self.ids.edge_profiles.get()
 
-        # TODO: run it outside checkIDS
-        self.setGGD()
-
     @pyqtSlot()
     def setGGD(self):
+        if self.ids == None:
+            logging.warning('No IDS yet provided.')
+            return False
         dialog = GetGGDDialog(self)
         dialog.prepareWidgets(self.ggdVars)
         if dialog.exec_():
@@ -216,8 +197,10 @@ class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):
 
         self.parent = parent
+
         self.figure = Figure(figsize=(width, height), dpi=dpi)
         FigureCanvas.__init__(self, self.figure)
+
         self.setParent(parent)
         FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
@@ -226,6 +209,12 @@ class PlotCanvas(FigureCanvas):
     def plotData(self):
         """Plots edge data to 2D VTK.
         """
+
+        self.ids = self.parent.ids
+        if self.ids == None:
+            return
+
+        self.ep = self.ids.edge_profiles
 
         ggdVars = self.parent.getGGDVars()
         # TODO: Contains all possible arrays and values. Set that only the
@@ -237,12 +226,10 @@ class PlotCanvas(FigureCanvas):
         gg = ggdVars[0] # grid_ggd index
         g = ggdVars[1]  # ggd index
 
-        self.ids = self.parent.ids
-        self.ep = self.ids.edge_profiles
-
         getGGD = getEPGGD(self.ep)
 
-        self.num_obj_0D, self.num_obj_1D, self.num_obj_2D = getGGD.ggdCheck()
+        self.num_obj_0D, self.num_obj_1D, self.num_obj_2D = \
+            getGGD.getNObj(gridId=gg)
 
         # Reading IDS grid geometry and physics quantities array
         nodes = np.zeros(shape=(self.num_obj_0D, 2))
@@ -316,17 +303,31 @@ class PlotCanvas(FigureCanvas):
 
 class GetGGDDialog(QDialog):
     """Dialog Demanding the grid_ggd and ggd slice together with grid
-    subset and quantity.
+    subset and quantity (for edge_profiles IDS).
     """
 
     def __init__(self, parent=None):
         super(GetGGDDialog, self).__init__(parent)
 
+        # Set IDS object (from parent)
         self.ids = parent.ids
+
+        if self.ids == None:
+            return
+        # Set empty dictionaries
         self.gridSubsetDict = {}
         self.quantityDict = {}
+        # Set edge_profiles object
+        self.ep = self.ids.edge_profiles
+        self.getGGD = getEPGGD(self.ep)
 
-    def prepareWidgets(self, parameters, title='GGD Variables',):
+        # Get GGD properties
+        # - Number of GGD slices
+        self.nGGDSlices = len(self.ep.ggd)
+        # - Number of GGD grid slices
+        self.nGridGGDSlices = len(self.ep.grid_ggd)
+
+    def prepareWidgets(self, parameters, title='Set GGD Variables'):
 
         self.setModal(True)
 
@@ -357,8 +358,8 @@ class GetGGDDialog(QDialog):
         self.combobox_gridSubset = QComboBox()
         self.combobox_quantity = QComboBox()
 
-        self.gg_lineEdit = self.findChild(QLineEdit, 'grid_ggd_slice')
-        self.g_lineEdit = self.findChild(QLineEdit, 'ggd_slice')
+        self.gg_lineEdit = self.lineEditContainer[0]
+        self.g_lineEdit = self.lineEditContainer[1]
 
         self.populateComboBoxGS()
         self.populateComboBoxQ()
@@ -394,13 +395,19 @@ class GetGGDDialog(QDialog):
 
         gg = int(self.gg_lineEdit.text())
 
+        # Get number of GGD grid subsets
+        try:
+            self.nGridSubsets = self.getGGD.getNGridSubset(gg)
+        except:
+            logging.error('The specified IDS does not contain any grid '
+                          'subsets! Aborting.')
+            return
 
-        for i in range(len(self.ids.edge_profiles.grid_ggd[gg].grid_subset)):
-            gs_obj = self.ids.edge_profiles.grid_ggd[gg].grid_subset[i]
+        for i in range(self.nGridSubsets):
             # Only 2D grid subsets supported for now (first object dimension
             # parameter = 3 (fortan notation, 2D -> 2+1 = 3)
-            if gs_obj.element[0].object[0].dimension == 3:
-                gs_name = gs_obj.identifier.name
+            if self.getGGD.getGridSubsetDim(gridId=gg, gsId=i) == 3:
+                gs_name = self.getGGD.getGridSubsetName(gridId=gg, gsId=i)
                 self.combobox_gridSubset.addItem(gs_name)
                 self.gridSubsetDict[gs_name] = i + 1 # Fortran notation in IDS
 
@@ -422,7 +429,7 @@ class GetGGDDialog(QDialog):
         gs_name = self.combobox_gridSubset.currentText()
         gs_id = self.gridSubsetDict[gs_name]
 
-        ggd = self.ids.edge_profiles.ggd[g]
+        ggd = self.ep.ggd[g]
 
         # Electron temperature
         for i in range(len(ggd.electrons.temperature)):
@@ -461,7 +468,7 @@ class GetGGDDialog(QDialog):
 
         curr_quantity = self.combobox_quantity.currentText()
         curr_gridSubset_id = int(self.gridSubsetDict[
-            self.combobox_gridSubset.currentText()])
+                                     self.combobox_gridSubset.currentText()])
 
         return variables, curr_gridSubset_id, curr_quantity, \
                self.quantityDict[curr_quantity]

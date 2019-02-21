@@ -23,15 +23,18 @@ class Ui_MainWindow(VizPlugins):
         self.centralwidget.parent = MainWindow
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName("gridLayout")
-        self.plotEPGGD = plotEPGGD(self.centralwidget)
-        self.plotEPGGD.setObjectName("plotEPGGD")
-        self.gridLayout.addWidget(self.plotEPGGD, 0, 0, 1, 2)
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setObjectName("pushButton_2")
-        self.gridLayout.addWidget(self.pushButton_2, 1, 1, 1, 1)
+        self.gridLayout.addWidget(self.pushButton_2, 2, 2, 1, 1)
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setObjectName("pushButton")
-        self.gridLayout.addWidget(self.pushButton, 1, 0, 1, 1)
+        self.gridLayout.addWidget(self.pushButton, 2, 0, 1, 1)
+        self.plotEPGGD = plotEPGGD(self.centralwidget)
+        self.plotEPGGD.setObjectName("plotEPGGD")
+        self.gridLayout.addWidget(self.plotEPGGD, 0, 0, 1, 3)
+        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.gridLayout.addWidget(self.pushButton_3, 2, 1, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 537, 22))
@@ -44,6 +47,7 @@ class Ui_MainWindow(VizPlugins):
         self.retranslateUi(MainWindow)
         self.pushButton.clicked.connect(self.plotEPGGD.checkIDS)
         self.pushButton_2.clicked.connect(self.plotEPGGD.plotData)
+        self.pushButton_3.clicked.connect(self.plotEPGGD.setGGD)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -51,6 +55,7 @@ class Ui_MainWindow(VizPlugins):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton_2.setText(_translate("MainWindow", "Run plot"))
         self.pushButton.setText(_translate("MainWindow", "GetIDS"))
+        self.pushButton_3.setText(_translate("MainWindow", "GetGridSubset"))
 
 from plotEPGGD import plotEPGGD
 

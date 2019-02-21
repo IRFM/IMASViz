@@ -2,7 +2,7 @@
 
 """
 
-A SOLPS getIDS plugin for Qt designer.
+A SOLPS 'Plot edge_profiles GGD' plugin for Qt designer.
 
 """
 

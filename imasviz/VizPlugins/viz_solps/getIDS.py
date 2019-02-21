@@ -37,7 +37,7 @@ else:
         else:
             ENABLED = False
 
-class GetVars:
+class GetIDSVars:
     names = ['SHOT', 'RUN', 'USER', 'DEVICE', 'VERSION']
     numOfParams = len(names)
     shot, run, user, device, version = range(numOfParams)
@@ -67,20 +67,20 @@ class GetDialog(QDialog):
 
         self.lineEditContainer = {}
 
-        for i in range(GetVars.numOfParams):
+        for i in range(GetIDSVars.numOfParams):
             currLineEdit = QLineEdit()
-            currLineEdit.setText(GetVars.names[i])
+            currLineEdit.setText(GetIDSVars.names[i])
             self.lineEditContainer[i] = currLineEdit
             if parameters[i]:
                 currLineEdit.setText(parameters[i])
             else:
-                currLineEdit.setText(GetVars.defaultValues[i])
+                currLineEdit.setText(GetIDSVars.defaultValues[i])
 
-            formLayout.addRow(GetVars.names[i], currLineEdit)
+            formLayout.addRow(GetIDSVars.names[i], currLineEdit)
 
         # Setting integer validator for run and shot numbers.
-        self.lineEditContainer[GetVars.run].setValidator(QIntValidator())
-        self.lineEditContainer[GetVars.shot].setValidator(QIntValidator())
+        self.lineEditContainer[GetIDSVars.run].setValidator(QIntValidator())
+        self.lineEditContainer[GetIDSVars.shot].setValidator(QIntValidator())
 
         # Adding the Ok and Cancel button.
         dialog_button_box = QDialogButtonBox()
@@ -95,20 +95,20 @@ class GetDialog(QDialog):
 
     def on_close(self):
         # Returning a dictionary of values. The values are defined in
-        # enumerator class GetVars.
+        # enumerator class GetIDSVars.
 
         variables = {}
 
-        for i in range(GetVars.numOfParams):
+        for i in range(GetIDSVars.numOfParams):
             variables[i] = self.getValue(i)
 
         # Checking if validating Integers.
         try:
-            variables[GetVars.shot] = int(variables[GetVars.shot])
-            variables[GetVars.run] = int(variables[GetVars.run])
+            variables[GetIDSVars.shot] = int(variables[GetIDSVars.shot])
+            variables[GetIDSVars.run] = int(variables[GetIDSVars.run])
         except ValueError as e:
-            variables[GetVars.shot] = -1
-            variables[GetVars.run] = -1
+            variables[GetIDSVars.shot] = -1
+            variables[GetIDSVars.run] = -1
 
         return variables
 
@@ -120,7 +120,7 @@ class GetIDS(QWidget):
         super(GetIDS, self).__init__(parent)
 
         self.vars = {}
-        for i in range(GetVars.numOfParams):
+        for i in range(GetIDSVars.numOfParams):
             # At the begining clear all parameters
             self.vars[i] = ''
 
@@ -143,46 +143,46 @@ class GetIDS(QWidget):
 
     @pyqtSlot(str)
     def setUser(self, user):
-        self.vars[GetVars.user] = user
+        self.vars[GetIDSVars.user] = user
 
     def getUser(self):
-        return self.vars[GetVars.user]
+        return self.vars[GetIDSVars.user]
 
     user = pyqtProperty(str, getUser, setUser)
 
     @pyqtSlot(str)
     def setDevice(self, device):
-        self.vars[GetVars.device] = device
+        self.vars[GetIDSVars.device] = device
 
     def getDevice(self):
-        return self.vars[GetVars.device]
+        return self.vars[GetIDSVars.device]
 
     device = pyqtProperty(str, getDevice, setDevice)
 
     @pyqtSlot(str)
     def setVersion(self, version):
-        self.vars[GetVars.device] = version
+        self.vars[GetIDSVars.device] = version
 
     def getVersion(self):
-        return self.vars[GetVars.device]
+        return self.vars[GetIDSVars.device]
 
     version = pyqtProperty(str, getVersion, setVersion)
 
     @pyqtSlot(str)
     def setRun(self, run):
-        self.vars[GetVars.run] = run
+        self.vars[GetIDSVars.run] = run
 
     def getRun(self):
-        return self.vars[GetVars.run]
+        return self.vars[GetIDSVars.run]
 
     runNumber = pyqtProperty(str, getRun, setRun)
 
     @pyqtSlot(str)
     def setShot(self, shot):
-        self.vars[GetVars.shot] = shot
+        self.vars[GetIDSVars.shot] = shot
 
     def getShot(self):
-        return self.vars[GetVars.shot]
+        return self.vars[GetIDSVars.shot]
 
     shotNumber = pyqtProperty(str, getShot, setShot)
 
@@ -246,7 +246,7 @@ class GetIDSQThread(QThread):
         super(GetIDSQThread, self).__init__(parent)
         self.parent = parent
         self.vars = {}
-        for i in range(GetVars.numOfParams):
+        for i in range(GetIDSVars.numOfParams):
             self.vars[i] = None
         self.finished.connect(self.on_finish)
         self.started.connect(self.on_start)
@@ -287,7 +287,7 @@ class GetIDSWrapper:
     def __init__(self, parameters):
         self.vars = {}
         self.setParameters(parameters)
-        self.ids = imas.ids(self.vars[GetVars.shot], self.vars[GetVars.run])
+        self.ids = imas.ids(self.vars[GetIDSVars.shot], self.vars[GetIDSVars.run])
         self.state = self.openIDS()
 
     def setParameters(self, parameters):
@@ -296,9 +296,9 @@ class GetIDSWrapper:
 
     def openIDS(self):
         logging.info('Opening IDS')
-        self.ids.open_env(self.vars[GetVars.user],
-                          self.vars[GetVars.device],
-                          self.vars[GetVars.version])
+        self.ids.open_env(self.vars[GetIDSVars.user],
+                          self.vars[GetIDSVars.device],
+                          self.vars[GetIDSVars.version])
         if self.ids.isConnected():
             logging.info('IDS opened OK!')
             return True
@@ -336,15 +336,15 @@ if __name__ == '__main__':
         for opt, arg in opts:
             #print opt, arg
             if opt in ("-s", "--shot"):
-                Vars[GetVars.shot] = int(arg)
+                Vars[GetIDSVars.shot] = int(arg)
             elif opt in ("-r", "--run"):
-                Vars[GetVars.run] = int(arg)
+                Vars[GetIDSVars.run] = int(arg)
             elif opt in ("-u", "--user"):
-                Vars[GetVars.user] = arg
+                Vars[GetIDSVars.user] = arg
             elif opt in ("-t", "--device"):
-                Vars[GetVars.device] = arg
+                Vars[GetIDSVars.device] = arg
             elif opt in ("-v", "--version"):
-                Vars[GetVars.version] = arg
+                Vars[GetIDSVars.version] = arg
             if opt in ("-h", "--help"):
                 print(Help % (os.environ['USER'], os.path.expanduser('~')))
                 sys.exit()
@@ -354,11 +354,11 @@ if __name__ == '__main__':
         print('For help: -h / --help')
         sys.exit(2)
 
-    if len(Vars) < GetVars.numOfParams:
+    if len(Vars) < GetIDSVars.numOfParams:
         print('Not enough variables defined!')
         print('For help: -h / --help')
         sys.exit(2)
-    elif len(Vars) > GetVars.numOfParams:
+    elif len(Vars) > GetIDSVars.numOfParams:
         print('Too many variables defined!')
         print('For help: -h / --help')
         sys.exit(2)
