@@ -36,19 +36,13 @@ class plotEPGGD(QWidget):
         # Set parent
         self.parent = parent
 
-        self.grid_ggd_slice = 0
-        self.ggd_slice = 0
-        self.gridSubset_id = 0
         self.gridSubsetDict = {}
-        self.num_gridSubsets = 0
-        self.num_ggd_slices = 0
-        self.num_grid_ggd_slices = 0
 
         self.gs_id = 0
         self.qLabel = ''
         self.qValues = 0
 
-        self.quantityDict = {}
+        self.quantityValuesDict = {}
 
         self.ggdVars = {}
         for i in range(GetGGDVars.numOfParams):
@@ -130,8 +124,9 @@ class plotEPGGD(QWidget):
         dialog = GetGGDDialog(self)
         dialog.prepareWidgets(self.ggdVars)
         if dialog.exec_():
-            self.ggdVars, self.gs_id, self.qLabel, self.qValues = \
-                dialog.on_close()
+            # self.ggdVars, self.gs_id, self.qLabel, self.qValues = \
+            #     dialog.on_close()
+            self.ggdVars = dialog.on_close()
             return True
         else:
             # Canceled!
@@ -173,15 +168,15 @@ class plotEPGGD(QWidget):
 
     @pyqtSlot()
     def getQuantityValues(self):
-        return self.qValues
+        return self.ggdVars['quantityValues']
 
     @pyqtSlot()
     def getQuantityLabel(self):
-        return self.qLabel
+        return self.ggdVars['quantityLabel']
 
     @pyqtSlot()
     def getGridSubsetID(self):
-        return self.gs_id
+        return self.ggdVars['gridSubsetId']
 
     @pyqtSlot()
     def getGGDVars(self):
@@ -191,7 +186,22 @@ class plotEPGGD(QWidget):
     def plotData(self):
         """Populate (plot) the canvas.
         """
-        self.canvas.plotData()
+        if self.ids == None:
+            return
+
+        # Set edge_profiles object
+        self.ep = self.ids.edge_profiles
+        # Get GGD variables
+        ggdVars = self.getGGDVars()
+        # Extract array of quantity values
+        qValues = ggdVars['quantityValues']
+        # Set getGGD object
+        getGGD = getEPGGD(self.ep)
+        # Get array of nodes coordinates, quad connectivity array and array of
+        # quantity values (corresponding to the specified grid subset)
+        nodes, quad_conn_array = getGGD.getGSGridGeometry(ggdVars)
+        # Plot canvas with the data
+        self.canvas.plotData(nodes, quad_conn_array, qValues)
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):
@@ -206,63 +216,21 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
 
     @pyqtSlot()
-    def plotData(self):
+    def plotData(self, nodes, quad_conn_array, qValues):
         """Plots edge data to 2D VTK.
         """
 
-        self.ids = self.parent.ids
-        if self.ids == None:
+        if len(nodes) < 1:
+            logging.warning('Array of nodes coordinates is empty!')
             return
 
-        self.ep = self.ids.edge_profiles
+        if len(quad_conn_array) < 1:
+            logging.warning('Quad connectivity array is empty!')
+            return
 
-        ggdVars = self.parent.getGGDVars()
-        # TODO: Contains all possible arrays and values. Set that only the
-        # one required is passed
-        qValues = self.parent.getQuantityValues()
-        qLabel = self.parent.getQuantityLabel()
-        gs_id = self.parent.getGridSubsetID() -1
-
-        gg = ggdVars[0] # grid_ggd index
-        g = ggdVars[1]  # ggd index
-
-        getGGD = getEPGGD(self.ep)
-
-        self.num_obj_0D, self.num_obj_1D, self.num_obj_2D = \
-            getGGD.getNObj(gridId=gg)
-
-        # Reading IDS grid geometry and physics quantities array
-        nodes = np.zeros(shape=(self.num_obj_0D, 2))
-        # quad_conn_array = np.zeros(shape=(self.num_obj_2D, 4), dtype=np.int)
-        nElements = len(self.ep.grid_ggd[gg].grid_subset[gs_id].element)
-        quad_conn_array = np.zeros(shape=(nElements, 4), dtype=np.int)
-
-        # List of nodes and corresponding coordinates (2D spade - x and y)
-        for i in range(self.num_obj_0D):
-            # X coordinate
-            nodes[i][0] = \
-                self.ep.grid_ggd[gg].space[0].objects_per_dimension[0].object[i].geometry[0]
-            # Y coordinate
-            nodes[i][1] = \
-                self.ep.grid_ggd[gg].space[0].objects_per_dimension[0].object[i].geometry[1]
-        #
-        # # Connectivity array. Each quad is formed using 4 nodes/points
-        # for i in range(self.num_obj_2D):
-        #     for j in range(0,4):
-        #         quad_conn_array[i][j] = \
-        #             self.ep.grid_ggd[gg].space[0].objects_per_dimension[2].object[i].nodes[j] - 1
-
-        for i in range(nElements):
-            object = self.ep.grid_ggd[gg].grid_subset[gs_id].element[
-                i].object[0]
-            ind = object.index - 1
-            s = object.space - 1
-            d = object.dimension - 1
-
-            for j in range(0,4):
-                quad_conn_array[i][j] = \
-                    self.ep.grid_ggd[gg].space[s].objects_per_dimension[
-                        d].object[ind].nodes[j] - 1
+        if len(qValues) < 1:
+            logging.warning('Array of quantity values is empty!')
+            return
 
         self.showMeshPlot(nodes, quad_conn_array, qValues)
 
@@ -316,7 +284,7 @@ class GetGGDDialog(QDialog):
             return
         # Set empty dictionaries
         self.gridSubsetDict = {}
-        self.quantityDict = {}
+        self.quantityValuesDict = {}
         # Set edge_profiles object
         self.ep = self.ids.edge_profiles
         self.getGGD = getEPGGD(self.ep)
@@ -335,42 +303,38 @@ class GetGGDDialog(QDialog):
 
         formLayout = QFormLayout(self)
 
-        self.lineEditContainer = {}
+        # Set line edit for grid_ggd slice
+        self.g1_LineEdit = QLineEdit()
+        self.g1_LineEdit.setText(GetGGDVars.names[0])
+        if parameters[0]:
+            self.g1_LineEdit.setText(parameters[0])
+        else:
+            self.g1_LineEdit.setText(str(GetGGDVars.defaultValues[
+                                         'gridGGDSlice']))
+        self.g1_LineEdit.setValidator(QIntValidator())
+        formLayout.addRow(GetGGDVars.names[0], self.g1_LineEdit)
 
-        for i in range(GetGGDVars.numOfParams):
-            currLineEdit = QLineEdit()
-            currLineEdit.setText(GetGGDVars.names[i])
-            currLineEdit.setObjectName(GetGGDVars.names[i])
-            self.lineEditContainer[i] = currLineEdit
-            if parameters[i]:
-                currLineEdit.setText(parameters[i])
-            else:
-                currLineEdit.setText(GetGGDVars.defaultValues[i])
+        # Set line edit for ggd slice
+        self.g2_LineEdit = QLineEdit()
+        self.g2_LineEdit.setText(GetGGDVars.names[1])
+        if parameters[1]:
+            self.g2_LineEdit.setText(parameters[1])
+        else:
+            self.g2_LineEdit.setText(str(GetGGDVars.defaultValues['GGDSlice']))
+        self.g2_LineEdit.setValidator(QIntValidator())
+        formLayout.addRow(GetGGDVars.names[1], self.g2_LineEdit)
 
-            formLayout.addRow(GetGGDVars.names[i], currLineEdit)
-
-        # Setting integer validator for run and shot numbers.
-        self.lineEditContainer[GetGGDVars.ggd_slice].setValidator(
-            QIntValidator())
-        self.lineEditContainer[GetGGDVars.grid_ggd_slice].setValidator(QIntValidator())
-
-        # Set comboboxes
+        # Set combo boxes
         self.combobox_gridSubset = QComboBox()
         self.combobox_quantity = QComboBox()
-
-        self.gg_lineEdit = self.lineEditContainer[0]
-        self.g_lineEdit = self.lineEditContainer[1]
 
         self.populateComboBoxGS()
         self.populateComboBoxQ()
 
-        self.gg_lineEdit.textChanged.connect(self.populateComboBoxGS)
+        self.g1_LineEdit.textChanged.connect(self.populateComboBoxGS)
 
         self.combobox_gridSubset.currentTextChanged.connect(
             self.populateComboBoxQ)
-
-        self.findChild(QLineEdit, 'grid_ggd_slice').text()
-        self.findChild(QLineEdit, 'ggd_slice')
 
         formLayout.addRow('Grid Subset', self.combobox_gridSubset)
         formLayout.addRow('Grid Subset Quantity', self.combobox_quantity)
@@ -390,10 +354,10 @@ class GetGGDDialog(QDialog):
 
         self.combobox_gridSubset.clear()
 
-        if self.gg_lineEdit.text().isdigit() != True:
+        if self.g1_LineEdit.text().isdigit() != True:
             return
 
-        gg = int(self.gg_lineEdit.text())
+        gg = int(self.g1_LineEdit.text())
 
         # Get number of GGD grid subsets
         try:
@@ -418,14 +382,14 @@ class GetGGDDialog(QDialog):
 
         self.combobox_quantity.clear()
 
-        if self.gg_lineEdit.text().isdigit() != True:
+        if self.g1_LineEdit.text().isdigit() != True:
             return
 
-        if self.g_lineEdit.text().isdigit() != True:
+        if self.g2_LineEdit.text().isdigit() != True:
             return
 
-        gg = int(self.gg_lineEdit.text())
-        g = int(self.g_lineEdit.text())
+        gg = int(self.g1_LineEdit.text())
+        g = int(self.g2_LineEdit.text())
         gs_name = self.combobox_gridSubset.currentText()
         gs_id = self.gridSubsetDict[gs_name]
 
@@ -436,14 +400,16 @@ class GetGGDDialog(QDialog):
             if ggd.electrons.temperature[i].grid_subset_index == gs_id:
                 qLabel = 'Electron Temperature'
                 self.combobox_quantity.addItem(qLabel)
-                self.quantityDict[qLabel] = ggd.electrons.temperature[i].values
+                self.quantityValuesDict[qLabel] = ggd.electrons.temperature[
+                    i].values
 
         # Electron density
         for i in range(len(ggd.electrons.density)):
             if ggd.electrons.density[i].grid_subset_index == gs_id:
                 qLabel = 'Electron Density'
                 self.combobox_quantity.addItem(qLabel)
-                self.quantityDict[qLabel] = ggd.electrons.density[i].values
+                self.quantityValuesDict[qLabel] = ggd.electrons.density[
+                    i].values
 
     def getValue(self, Id):
         return self.lineEditContainer[Id].text()
@@ -454,24 +420,24 @@ class GetGGDDialog(QDialog):
 
         variables = {}
 
-        for i in range(GetGGDVars.numOfParams):
-            variables[i] = self.getValue(i)
+        variables['gridGGDSlice'] = self.g1_LineEdit.text()
+        variables['GGDSlice'] = self.g2_LineEdit.text()
+        variables['gridSubsetId'] = self.gridSubsetDict[self.combobox_gridSubset.currentText()]
+        variables['quantityLabel'] = self.combobox_quantity.currentText()
+        variables['quantityValues'] = self.quantityValuesDict[variables['quantityLabel'] ]
 
         # Checking if validating Integers.
         try:
-            variables[GetGGDVars.grid_ggd_slice] = int(variables[GetGGDVars.grid_ggd_slice])
-            variables[GetGGDVars.ggd_slice] = \
-                int(variables[GetGGDVars.ggd_slice])
+            variables['gridGGDSlice'] = int(variables['gridGGDSlice'])
+            variables['GGDSlice'] = int(variables['GGDSlice'])
+            variables['gridSubsetId'] = int(variables['gridSubsetId'])
         except ValueError as e:
-            variables[GetGGDVars.grid_ggd_slice] = -1
-            variables[GetGGDVars.ggd_slice] = -1
 
-        curr_quantity = self.combobox_quantity.currentText()
-        curr_gridSubset_id = int(self.gridSubsetDict[
-                                     self.combobox_gridSubset.currentText()])
+            variables['gridGGDSlice'] = -1
+            variables['GGDSlice'] = -1
+            variables['gridSubsetId'] = -1
 
-        return variables, curr_gridSubset_id, curr_quantity, \
-               self.quantityDict[curr_quantity]
+        return variables
 
 if __name__ == '__main__':
     import getopt

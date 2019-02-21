@@ -1,15 +1,16 @@
 #! /usr/bin/env python3
 
 import logging
+import numpy as np
 
 class GetGGDVars:
-    names = ['grid_ggd_slice', 'ggd_slice']
+    names = ['gridGGDSlice', 'GGDSlice']
     numOfParams = len(names)
-    grid_ggd_slice, ggd_slice = range(numOfParams)
+    gridGGDSlice, GGDSlice = range(numOfParams)
 
     defaultValues = {}
-    defaultValues[grid_ggd_slice] = '0'
-    defaultValues[ggd_slice] = '0'
+    defaultValues['gridGGDSlice'] = 0
+    defaultValues['GGDSlice'] = 0
 
 class getEPGGD():
     """Get GGD and grid topology.
@@ -99,6 +100,49 @@ class getEPGGD():
         """
         gs_obj = self.ep.grid_ggd[gridId].grid_subset[gsId]
         return gs_obj.element[0].object[0].dimension
+
+    def getGSGridGeometry(self, ggdVars):
+        """Return list of nodes/points and connectivity array for quad
+        elements.
+
+        """
+
+        gg = ggdVars['gridGGDSlice'] # grid_ggd index
+        g = ggdVars['GGDSlice']  # ggd index
+        gs_id = ggdVars['gridSubsetId'] - 1
+
+        self.num_obj_0D, self.num_obj_1D, self.num_obj_2D = \
+            self.getNObj(gridId=gg)
+
+        # Reading IDS grid geometry and physics quantities array
+        nodes = np.zeros(shape=(self.num_obj_0D, 2))
+        # quad_conn_array = np.zeros(shape=(self.num_obj_2D, 4), dtype=np.int)
+        nElements = len(self.ep.grid_ggd[gg].grid_subset[gs_id].element)
+        quad_conn_array = np.zeros(shape=(nElements, 4), dtype=np.int)
+
+        # List of nodes and corresponding coordinates (2D spade - x and y)
+        for i in range(self.num_obj_0D):
+            # R coordinate
+            nodes[i][0] = \
+                self.ep.grid_ggd[gg].space[0].objects_per_dimension[0].object[i].geometry[0]
+            # Z coordinate
+            nodes[i][1] = \
+                self.ep.grid_ggd[gg].space[0].objects_per_dimension[0].object[i].geometry[1]
+
+        for i in range(nElements):
+            object = self.ep.grid_ggd[gg].grid_subset[gs_id].element[
+                i].object[0]
+            ind = object.index - 1
+            s = object.space - 1
+            d = object.dimension - 1
+
+            for j in range(0,4):
+                quad_conn_array[i][j] = \
+                    self.ep.grid_ggd[gg].space[s].objects_per_dimension[
+                        d].object[ind].nodes[j] - 1
+
+        return nodes, quad_conn_array
+
 
 
 
