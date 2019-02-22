@@ -35,12 +35,12 @@ class QVizPluginsHandler:
                 pluginsName = pluginsNames[i]
 
                 pluginsObject = pluginsObjects[i]
-                subjects =  pluginsObject.getSubjects(pluginsName)
+                subjects =  VizPlugins().getSubjects(pluginsName=pluginsName)
                 subjects.sort()
                 for subjectKey in subjects:
                     if subject == subjectKey:
                         entriesPerSubject = \
-                            pluginsObject.getEntriesPerSubject(pluginsName)
+                            VizPlugins.getEntriesPerSubject(pluginsName)
                         entriesList = entriesPerSubject[subject] #list of entry index (ex: [0,1])
                         for entry in entriesList:
                             if entry not in addedPluginsEntries[pluginsName]:
@@ -58,7 +58,7 @@ class QVizPluginsHandler:
             menuId = m[1]
             entry = m[2]
             pluginsObject = m[3]
-            allEntries = pluginsObject.getAllEntries(pluginsName)
+            allEntries = VizPlugins.getAllEntries(pluginsName)
             pluginsCommandDescription = allEntries[entry][1]
             # print 'TESTING'
             # pluginsName = m[0]
@@ -95,8 +95,9 @@ class QVizPluginsHandler:
             pluginsName = m[0]
             entry = m[2]
             pluginsObject = m[3]
-            allEntries = pluginsObject.getAllEntries(pluginsName)
-            pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(pluginsName)
+            allEntries = VizPlugins.getAllEntries(pluginsName)
+            pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(
+                pluginsName)
             pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
             pluginsConfiguration['imasviz_view'] = self.dataTreeView
             # Set ArraySize Plugin 'node_attributes' option

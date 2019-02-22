@@ -6,18 +6,12 @@ def qtDesPy2IMASViz(filename, outfile):
     with open(filename, "rt") as fin:
         with open(outfile, "wt") as fout:
             for line in fin:
-                # print("*line: ", line)
-                fout.write(line.replace('Ui_MainWindow(object)',
-                                        'Ui_MainWindow(VizPlugins)'))
-
                 if 'from PyQt5 import QtCore, QtGui, QtWidgets' in line:
                     fout.write(
 """import sys
 import os
 # Add imasviz source path
-sys.path.append(os.environ['VIZ_HOME'])
 sys.path.append((os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps'))
-from imasviz.VizPlugins.VizPlugins import VizPlugins
 """)
                 if 'self.centralwidget.setObjectName("centralwidget")' in line:
                     fout.write('        self.centralwidget.parent = MainWindow\n')
@@ -27,10 +21,10 @@ if __name__ == '__main__':
 
     # For launching python script directly from terminal with python command
     Help = """
-    This script is used to make the .py plugin file, converted from QtDesigner 
-    .ui file, compatible with IMASViz. 
+    This script is used to make the .py plugin file, converted from QtDesigner
+    .ui file, compatible with IMASViz.
 
-    python3 qtDesigner_py_to_IMASViz.py --filename=designer_SOLPSPlugin.py 
+    python3 qtDesigner_py_to_IMASViz.py --filename=designer_SOLPSPlugin.py
     --out=SOLPSPlugin.py
     """
     try:

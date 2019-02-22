@@ -56,7 +56,6 @@ def getRegisteredPluginsConfiguration():
     else:
         return RegisteredPluginsConfiguration
 
-
 class VizPlugins():
     def __init__(self):
         pass
@@ -110,5 +109,3 @@ class VizPlugins():
     @staticmethod
     def getAllEntries(pluginsName):
         return AllEntries[pluginsName]
-
-

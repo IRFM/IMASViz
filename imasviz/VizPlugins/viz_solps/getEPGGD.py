@@ -156,8 +156,8 @@ class getEPGGD():
         # Dictionary of quantity labels ( = keys) and corresponding structure
         # objects
         quantityDict = \
-            {'Electron Density' : {'obj' : ggd.electrons.temperature},
-             'Electron Temperature' : {'obj' : ggd.electrons.density},
+            {'Electron Density [n/m³]' : {'obj' : ggd.electrons.temperature},
+             'Electron Temperature [eV]' : {'obj' : ggd.electrons.density},
              }
 
         # Go through quantity objects and add corresponding quantity array of

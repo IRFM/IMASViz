@@ -10,11 +10,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import sys
 import os
 # Add imasviz source path
-sys.path.append(os.environ['VIZ_HOME'])
 sys.path.append((os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps'))
-from imasviz.VizPlugins.VizPlugins import VizPlugins
 
-class Ui_MainWindow(VizPlugins):
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(556, 558)

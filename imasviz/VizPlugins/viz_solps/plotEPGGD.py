@@ -64,7 +64,7 @@ class plotEPGGD(QWidget):
         # Set layout
         self.setLayout(QVBoxLayout())
         # Set empty matplotliv canvas
-        self.canvas = PlotCanvas(self, width=5, height=4)
+        self.canvas = PlotCanvas(self, width=1, height=4)
         # Set matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
         # Add widgets to layout
@@ -108,7 +108,6 @@ class plotEPGGD(QWidget):
             dialog.prepareWidgets(self.vars)
             if dialog.exec_():
                 self.vars = dialog.on_close()
-                print("*3 self.vars: ", self.vars)
             else:
                 # Canceled!
                 return self.ids == None
@@ -205,7 +204,8 @@ class plotEPGGD(QWidget):
         # quantity values (corresponding to the specified grid subset)
         nodes, quad_conn_array = getGGD.getGSGridGeometry(ggdVars)
         # Plot canvas with the data
-        self.canvas.plotData(nodes, quad_conn_array, qValues)
+        self.canvas.plotData(nodes, quad_conn_array, qValues,
+                             title=ggdVars['quantityLabel'])
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):
@@ -220,9 +220,11 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
 
     @pyqtSlot()
-    def plotData(self, nodes, quad_conn_array, qValues):
+    def plotData(self, nodes, quad_conn_array, qValues, title='Plot'):
         """Plots edge data to 2D VTK.
         """
+
+        self.title = title
 
         if len(nodes) < 1:
             logging.warning('Array of nodes coordinates is empty!')
@@ -277,7 +279,7 @@ class PlotCanvas(FigureCanvas):
         # Set background
         ax.set_facecolor((0.75, 0.75, 0.75))
 
-        ax.set(title='This is the plot for: quad', xlabel='Y Axis', ylabel='Z Axis')
+        ax.set(title=self.title, xlabel='R[m] ', ylabel='Z[m]')
 
         self.draw()
 
