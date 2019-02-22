@@ -143,6 +143,31 @@ class getEPGGD():
 
         return nodes, quad_conn_array
 
+    def getQuantityDict(self, ggd, gridSubsetId):
+        """Get dictionary of available quantities and corresponding values
+        for specified grid subset.
 
+        Arguments:
+            ggd (object) : GGD slice structure object (e.g.
+                           ids.edge_profiles.ggd[0]
+            gridSubsetId (int) Grid subset index
+        """
 
+        # Dictionary of quantity labels ( = keys) and corresponding structure
+        # objects
+        quantityDict = \
+            {'Electron Density' : {'obj' : ggd.electrons.temperature},
+             'Electron Temperature' : {'obj' : ggd.electrons.density},
+             }
+
+        # Go through quantity objects and add corresponding quantity array of
+        # values
+        for qLabel in quantityDict:
+            structure = quantityDict[qLabel]['obj']
+            for i in range(len(structure)):
+                if structure[i].grid_subset_index == gridSubsetId:
+                    quantityValues = structure[i].values
+                    quantityDict[qLabel]['values'] = quantityValues
+
+        return quantityDict
 

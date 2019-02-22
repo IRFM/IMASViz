@@ -81,8 +81,9 @@ class plotEPGGD(QWidget):
             logging.error('No display available!')
 
     @pyqtSlot()
-    def checkIDS(self):
-        """Check if either:
+    def setEPIDS(self):
+        """Set and read edge_profiles IDS.
+        Check if either:
         1. IDS object was already provided.
         2. The plugin was run from IMASViz (checks for DTV). In this case the
            IDS parameters are taken from IMASViz DataTreeView and the
@@ -98,22 +99,24 @@ class plotEPGGD(QWidget):
         elif self.usingIMASViz == True:
             self.getIDSfromIMASViz()
         else:
-            from getIDS import GetIDSWrapper, GetDialog, GetIDSVars
+            from getIDS import GetIDSWrapper, GetIDSDialog, GetIDSVars
             for i in range(GetIDSVars.numOfParams):
                 # At the beginning clear all parameters
                 self.vars[i] = ''
 
-            dialog = GetDialog(self)
+            dialog = GetIDSDialog(self)
             dialog.prepareWidgets(self.vars)
             if dialog.exec_():
                 self.vars = dialog.on_close()
+                print("*3 self.vars: ", self.vars)
             else:
                 # Canceled!
                 return self.ids == None
-
+            # Set IDS with wrapper
             self.ids = GetIDSWrapper(self.vars).getIDS()
 
         logging.info('Getting IDS')
+        # Read edge_profiles IDS
         self.ids.edge_profiles.get()
 
     @pyqtSlot()
@@ -121,11 +124,12 @@ class plotEPGGD(QWidget):
         if self.ids == None:
             logging.warning('No IDS yet provided.')
             return False
+        # Get dialog
         dialog = GetGGDDialog(self)
+        # Get variable on dialog close
         dialog.prepareWidgets(self.ggdVars)
         if dialog.exec_():
-            # self.ggdVars, self.gs_id, self.qLabel, self.qValues = \
-            #     dialog.on_close()
+            # Get GGD variables on dialog close
             self.ggdVars = dialog.on_close()
             return True
         else:
@@ -292,7 +296,7 @@ class GetGGDDialog(QDialog):
             return
         # Set empty dictionaries
         self.gridSubsetDict = {}
-        self.quantityValuesDict = {}
+        self.quantityDict = {}
         # Set edge_profiles object
         self.ep = self.ids.edge_profiles
         self.getGGD = getEPGGD(self.ep)
@@ -304,31 +308,29 @@ class GetGGDDialog(QDialog):
         self.nGridGGDSlices = len(self.ep.grid_ggd)
 
     def prepareWidgets(self, parameters, title='Set GGD Variables'):
+        """Set dialog widgets (line edit etc.).
 
+        Arguments:
+            title (str) : Dialog title.
+
+        """
         self.setModal(True)
-
+        # Set window title
         self.setWindowTitle(title)
-
+        # Set layout
         formLayout = QFormLayout(self)
 
         # Set line edit for grid_ggd slice
         self.g1_LineEdit = QLineEdit()
         self.g1_LineEdit.setText(GetGGDVars.names[0])
-        if parameters[0]:
-            self.g1_LineEdit.setText(parameters[0])
-        else:
-            self.g1_LineEdit.setText(str(GetGGDVars.defaultValues[
-                                         'gridGGDSlice']))
+        self.g1_LineEdit.setText(str(GetGGDVars.defaultValues['gridGGDSlice']))
         self.g1_LineEdit.setValidator(QIntValidator())
         formLayout.addRow(GetGGDVars.names[0], self.g1_LineEdit)
 
         # Set line edit for ggd slice
         self.g2_LineEdit = QLineEdit()
         self.g2_LineEdit.setText(GetGGDVars.names[1])
-        if parameters[1]:
-            self.g2_LineEdit.setText(parameters[1])
-        else:
-            self.g2_LineEdit.setText(str(GetGGDVars.defaultValues['GGDSlice']))
+        self.g2_LineEdit.setText(str(GetGGDVars.defaultValues['GGDSlice']))
         self.g2_LineEdit.setValidator(QIntValidator())
         formLayout.addRow(GetGGDVars.names[1], self.g2_LineEdit)
 
@@ -403,21 +405,11 @@ class GetGGDDialog(QDialog):
 
         ggd = self.ep.ggd[g]
 
-        # Electron temperature
-        for i in range(len(ggd.electrons.temperature)):
-            if ggd.electrons.temperature[i].grid_subset_index == gs_id:
-                qLabel = 'Electron Temperature'
-                self.combobox_quantity.addItem(qLabel)
-                self.quantityValuesDict[qLabel] = ggd.electrons.temperature[
-                    i].values
+        self.quantityDict = \
+            self.getGGD.getQuantityDict(ggd=ggd, gridSubsetId=gs_id)
 
-        # Electron density
-        for i in range(len(ggd.electrons.density)):
-            if ggd.electrons.density[i].grid_subset_index == gs_id:
-                qLabel = 'Electron Density'
-                self.combobox_quantity.addItem(qLabel)
-                self.quantityValuesDict[qLabel] = ggd.electrons.density[
-                    i].values
+        for qLabel in self.quantityDict:
+            self.combobox_quantity.addItem(qLabel)
 
     def on_close(self):
         # Returning a dictionary of values. The values are defined in
@@ -429,7 +421,8 @@ class GetGGDDialog(QDialog):
         variables['GGDSlice'] = self.g2_LineEdit.text()
         variables['gridSubsetId'] = self.gridSubsetDict[self.combobox_gridSubset.currentText()]
         variables['quantityLabel'] = self.combobox_quantity.currentText()
-        variables['quantityValues'] = self.quantityValuesDict[variables['quantityLabel'] ]
+        variables['quantityValues'] = self.quantityDict[variables[
+            'quantityLabel']]['values']
 
         # Checking if validating Integers.
         try:
@@ -527,7 +520,7 @@ if __name__ == '__main__':
         # Open IDS (specify parameters using dialog)
         plotWidget = plotEPGGD()
 
-    plotWidget.checkIDS()
+    plotWidget.setEPIDS()
     plotWidget.setGGD()
 
     plotWidget.plotData()

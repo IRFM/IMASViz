@@ -49,13 +49,13 @@ class GetIDSVars:
     defaultValues[device] = 'iter'
     defaultValues[version] = '3'
 
-class GetDialog(QDialog):
+class GetIDSDialog(QDialog):
     """Dialog Demanding the shot, run, name and device for getting the data
     from IDS.
     """
 
     def __init__(self, parent=None):
-        super(GetDialog, self).__init__(parent)
+        super(GetIDSDialog, self).__init__(parent)
 
     def prepareWidgets(self, parameters, title='IDS Variables',):
 
@@ -198,7 +198,7 @@ class GetIDS(QWidget):
         else:
             # Not all variables are set
             logging.warning('Not all parameters are specified!')
-            dialog = GetDialog(self)
+            dialog = GetIDSDialog(self)
             dialog.prepareWidgets(self.vars)
             if dialog.exec_():
                 self.vars = dialog.on_close()

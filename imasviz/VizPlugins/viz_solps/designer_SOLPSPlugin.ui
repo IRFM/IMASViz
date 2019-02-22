@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>537</width>
-    <height>560</height>
+    <width>556</width>
+    <height>558</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,27 +15,30 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="2" column="2">
-     <widget class="QPushButton" name="pushButton_2">
-      <property name="text">
-       <string>Run plot</string>
-      </property>
-     </widget>
-    </item>
-    <item row="2" column="0">
-     <widget class="QPushButton" name="pushButton">
-      <property name="text">
-       <string>GetIDS</string>
-      </property>
-     </widget>
-    </item>
     <item row="0" column="0" colspan="3">
      <widget class="plotEPGGD" name="plotEPGGD"/>
     </item>
-    <item row="2" column="1">
+    <item row="1" column="0">
+     <widget class="QPushButton" name="pushButton">
+      <property name="text">
+       <string>GetIDS 
+</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QPushButton" name="pushButton_2">
+      <property name="text">
+       <string>Get GridSubset 
+ and quantity </string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="2">
      <widget class="QPushButton" name="pushButton_3">
       <property name="text">
-       <string>GetGridSubset</string>
+       <string>Plot 
+</string>
       </property>
      </widget>
     </item>
@@ -46,7 +49,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>537</width>
+     <width>556</width>
      <height>22</height>
     </rect>
    </property>
@@ -66,15 +69,15 @@
    <sender>pushButton</sender>
    <signal>clicked()</signal>
    <receiver>plotEPGGD</receiver>
-   <slot>checkIDS()</slot>
+   <slot>setEPIDS()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>99</x>
-     <y>512</y>
+     <x>154</x>
+     <y>487</y>
     </hint>
     <hint type="destinationlabel">
-     <x>99</x>
-     <y>480</y>
+     <x>154</x>
+     <y>423</y>
     </hint>
    </hints>
   </connection>
@@ -82,31 +85,31 @@
    <sender>pushButton_2</sender>
    <signal>clicked()</signal>
    <receiver>plotEPGGD</receiver>
-   <slot>plotData()</slot>
+   <slot>setGGD()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>527</x>
-     <y>528</y>
+     <x>316</x>
+     <y>491</y>
     </hint>
     <hint type="destinationlabel">
-     <x>186</x>
-     <y>497</y>
+     <x>315</x>
+     <y>437</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>pushButton_3</sender>
-   <signal>clicked()</signal>
+   <signal>clicked(bool)</signal>
    <receiver>plotEPGGD</receiver>
-   <slot>setGGD()</slot>
+   <slot>plotData()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>279</x>
-     <y>513</y>
+     <x>429</x>
+     <y>510</y>
     </hint>
     <hint type="destinationlabel">
-     <x>281</x>
-     <y>490</y>
+     <x>388</x>
+     <y>440</y>
     </hint>
    </hints>
   </connection>
