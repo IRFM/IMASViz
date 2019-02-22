@@ -63,15 +63,13 @@ class plotEPGGD(QWidget):
         self.ids = ids
         # Set layout
         self.setLayout(QVBoxLayout())
-        # Set empty matplotliv canvas
+        # Set empty matplotlib canvas
         self.canvas = PlotCanvas(self, width=1, height=4)
         # Set matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
         # Add widgets to layout
         self.layout().addWidget(self.canvas)
         self.layout().addWidget(self.toolbar)
-        # Resize widget
-        self.resize(200,200)
 
     @pyqtSlot( )
     def checkDisplay(self):
@@ -192,7 +190,11 @@ class plotEPGGD(QWidget):
         if self.ids == None:
             return
 
-        # Set edge_profiles object
+        # Clear canvas figure if it already exists (to avoid plot overlapping)
+        if self.canvas.figure != None:
+            self.canvas.figure.clear()
+
+        # Set edge_profiles objectž
         self.ep = self.ids.edge_profiles
         # Get GGD variables
         ggdVars = self.getGGDVars()
@@ -206,6 +208,13 @@ class plotEPGGD(QWidget):
         # Plot canvas with the data
         self.canvas.plotData(nodes, quad_conn_array, qValues,
                              title=ggdVars['quantityLabel'])
+
+    @pyqtSlot()
+    def clearPlot(self):
+        """Clear canvas plot.
+        """
+
+        self.canvas.figure.clear()
 
 class PlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):
@@ -268,18 +277,18 @@ class PlotCanvas(FigureCanvas):
             ax.autoscale()
             return pc
 
-        ax = self.figure.add_subplot(111)
-        ax.set_aspect('equal')
+        self.ax = self.figure.add_subplot(111)
+        self.ax.set_aspect('equal')
 
-        pc = quatplot(y,z, np.asarray(elements), values, ax=ax,
+        pc = quatplot(y,z, np.asarray(elements), values, ax=self.ax,
                       cmap="plasma")
-        self.figure.colorbar(pc, ax=ax)
-        # ax.plot(y,z, marker="o", ls="", color="crimson")
-        ax.plot(y,z, ls="", color="crimson")
+        self.figure.colorbar(pc, ax=self.ax)
+        # self.ax.plot(y,z, marker="o", ls="", color="crimson")
+        self.ax.plot(y,z, ls="", color="crimson")
         # Set background
-        ax.set_facecolor((0.75, 0.75, 0.75))
+        self.ax.set_facecolor((0.75, 0.75, 0.75))
 
-        ax.set(title=self.title, xlabel='R[m] ', ylabel='Z[m]')
+        self.ax.set(title=self.title, xlabel='R[m] ', ylabel='Z[m]')
 
         self.draw()
 
