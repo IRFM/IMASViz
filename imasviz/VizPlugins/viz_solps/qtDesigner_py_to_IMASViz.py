@@ -6,6 +6,7 @@ def qtDesPy2IMASViz(filename, outfile):
     with open(filename, "rt") as fin:
         with open(outfile, "wt") as fout:
             for line in fin:
+                fout.write(line)
                 if 'from PyQt5 import QtCore, QtGui, QtWidgets' in line:
                     fout.write(
 """import sys

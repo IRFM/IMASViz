@@ -64,7 +64,7 @@ class plotEPGGD(QWidget):
         # Set layout
         self.setLayout(QVBoxLayout())
         # Set empty matplotlib canvas
-        self.canvas = PlotCanvas(self, width=1, height=4)
+        self.canvas = PlotCanvas(self, width=1, height=6)
         # Set matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
         # Add widgets to layout
@@ -278,6 +278,7 @@ class PlotCanvas(FigureCanvas):
             return pc
 
         self.ax = self.figure.add_subplot(111)
+        self.figure.subplots_adjust(right=0.85)
         self.ax.set_aspect('equal')
 
         pc = quatplot(y,z, np.asarray(elements), values, ax=self.ax,

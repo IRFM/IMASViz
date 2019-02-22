@@ -15,7 +15,7 @@ sys.path.append((os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps'))
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(556, 558)
+        MainWindow.resize(429, 632)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.centralwidget.parent = MainWindow
@@ -35,7 +35,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.pushButton_3, 1, 2, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 556, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 429, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -45,18 +45,15 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.pushButton.clicked.connect(self.plotEPGGD.setEPIDS)
         self.pushButton_2.clicked.connect(self.plotEPGGD.setGGD)
-        self.pushButton_3.clicked['bool'].connect(self.plotEPGGD.plotData)
+        self.pushButton_3.clicked.connect(self.plotEPGGD.plotData)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.pushButton.setText(_translate("MainWindow", "GetIDS \n"
-""))
-        self.pushButton_2.setText(_translate("MainWindow", "Get GridSubset \n"
-" and quantity "))
-        self.pushButton_3.setText(_translate("MainWindow", "Plot \n"
-""))
+        self.pushButton.setText(_translate("MainWindow", "Set IDS"))
+        self.pushButton_2.setText(_translate("MainWindow", "Set Data"))
+        self.pushButton_3.setText(_translate("MainWindow", "Plot Data"))
 
 from plotEPGGD import plotEPGGD
 
