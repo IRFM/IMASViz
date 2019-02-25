@@ -50,7 +50,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "SOLPS Overview "
+                                                           "Plugin"))
         self.pushButton.setText(_translate("MainWindow", "Set IDS"))
         self.pushButton_2.setText(_translate("MainWindow", "Set Data"))
         self.pushButton_3.setText(_translate("MainWindow", "Plot Data"))

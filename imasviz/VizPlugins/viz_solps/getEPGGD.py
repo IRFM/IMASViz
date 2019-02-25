@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 class GetGGDVars:
-    names = ['gridGGDSlice', 'GGDSlice']
+    names = ['GGD Grid (Slice)', 'GGD Quantities (Slice)']
     numOfParams = len(names)
     gridGGDSlice, GGDSlice = range(numOfParams)
 
@@ -175,7 +175,14 @@ class getEPGGD():
                         {'obj': ggd.ion[i].density}
                 else:
                     break
-            # Ion temperature
+
+        # Ion temperature
+        for i in range(len(ggd.ion)):
+            # Get label
+            if ggd.ion[i].label != '':
+                ionLabel = ggd.ion[i].label
+            else:
+                ionLabel = ggd.ion[i].state[0].label
             for j in range(len(ggd.ion[i].temperature)):
                 # Check if there is actually an array
                 if len(ggd.ion[i].temperature[j].values) > 0:
