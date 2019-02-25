@@ -6,7 +6,7 @@ import os
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'Ui_MainWindow': 'viz_solps.SOLPSPlugin'}
+                     'Ui_MainWindow': 'viz_solps.SOLPSFinalPlugin'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \

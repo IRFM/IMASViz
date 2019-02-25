@@ -9,19 +9,19 @@ A SOLPS 'Plot edge_profiles GGD' plugin for Qt designer.
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtDesigner import QPyDesignerCustomWidgetPlugin
 
-from plotEPGGD import plotEPGGD
+from SOLPSwidget import SOLPSwidget
 
-class plotEPGGDplugin(QPyDesignerCustomWidgetPlugin):
+class SOLPSplugin(QPyDesignerCustomWidgetPlugin):
     """Plugin for put_edge_ids functionality.
     """
     def __init__(self, parent=None):
-        super(plotEPGGDplugin, self).__init__(parent)
+        super(SOLPSplugin, self).__init__(parent)
 
     def createWidget(self, parent):
-        return plotEPGGD(parent=parent, ids=None)
+        return SOLPSwidget(parent=parent, ids=None)
 
     def name(self):
-        return "plotEPGGD"
+        return "SOLPSwidget"
 
     def group(self):
         return "IMASViz"
@@ -39,10 +39,10 @@ class plotEPGGDplugin(QPyDesignerCustomWidgetPlugin):
         return False
 
     def domXml(self):
-        return '<widget class="plotEPGGD" name="plotEPGGD">\n</widget>'
+        return '<widget class="SOLPSwidget" name="SOLPSwidget">\n</widget>'
 
     def includeFile(self):
-        return "plotEPGGD"
+        return "SOLPSwidget"
 
 # Define the image used for the icon.
 _logo_16x16_xpm = [

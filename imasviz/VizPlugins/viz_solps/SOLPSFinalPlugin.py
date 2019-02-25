@@ -6,7 +6,7 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 import sys
 import os
 # Add imasviz source path
@@ -21,9 +21,9 @@ class Ui_MainWindow(object):
         self.centralwidget.parent = MainWindow
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName("gridLayout")
-        self.plotEPGGD = plotEPGGD(self.centralwidget)
-        self.plotEPGGD.setObjectName("plotEPGGD")
-        self.gridLayout.addWidget(self.plotEPGGD, 0, 0, 1, 3)
+        self.SOLPSwidget = SOLPSwidget(self.centralwidget)
+        self.SOLPSwidget.setObjectName("SOLPSwidget")
+        self.gridLayout.addWidget(self.SOLPSwidget, 0, 0, 1, 3)
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setObjectName("pushButton")
         self.gridLayout.addWidget(self.pushButton, 1, 0, 1, 1)
@@ -43,9 +43,9 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.pushButton.clicked.connect(self.plotEPGGD.setEPIDS)
-        self.pushButton_2.clicked.connect(self.plotEPGGD.setGGD)
-        self.pushButton_3.clicked.connect(self.plotEPGGD.plotData)
+        self.pushButton.clicked.connect(self.SOLPSwidget.setEPIDS)
+        self.pushButton_2.clicked.connect(self.SOLPSwidget.setGGD)
+        self.pushButton_3.clicked.connect(self.SOLPSwidget.plotData)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -56,7 +56,7 @@ class Ui_MainWindow(object):
         self.pushButton_2.setText(_translate("MainWindow", "Set Data"))
         self.pushButton_3.setText(_translate("MainWindow", "Plot Data"))
 
-from plotEPGGD import plotEPGGD
+from SOLPSwidget import SOLPSwidget
 
 if __name__ == "__main__":
     import sys
