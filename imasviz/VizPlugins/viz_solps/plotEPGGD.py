@@ -319,7 +319,7 @@ class GetGGDDialog(QDialog):
         # - Number of GGD grid slices
         self.nGridGGDSlices = len(self.ep.grid_ggd)
 
-    def prepareWidgets(self, parameters, title='Set GGD Variables'):
+    def prepareWidgets(self, parameters, title='Specify data to plot'):
         """Set dialog widgets (line edit etc.).
 
         Arguments:
