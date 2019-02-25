@@ -2,7 +2,7 @@
 
 """
 
-A SOLPS 'Plot edge_profiles GGD' plugin for Qt designer.
+A SOLPS 'Plot edge_profiles GGD' widget for Qt designer.
 
 """
 
@@ -12,7 +12,7 @@ from PyQt5.QtDesigner import QPyDesignerCustomWidgetPlugin
 from SOLPSwidget import SOLPSwidget
 
 class SOLPSplugin(QPyDesignerCustomWidgetPlugin):
-    """Plugin for put_edge_ids functionality.
+    """Plugin for SOLPSwidget functionality.
     """
     def __init__(self, parent=None):
         super(SOLPSplugin, self).__init__(parent)

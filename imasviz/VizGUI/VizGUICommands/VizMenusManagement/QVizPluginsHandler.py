@@ -16,7 +16,8 @@ class QVizPluginsHandler:
         self.dataTreeView = dataTreeView
         self.infoDict = dataDict    # Passed item/subject
         self.menuIDS = MenuIDS()
-        self.pluginsObjects = VizPlugins.getPluginsObjects()
+        self.pluginsObjects = VizPlugins.getPluginsObjects(
+            dataTreeView=self.dataTreeView)
 
     def showPopUpMenu(self, subjectsList = None):
         self.dataTreeView.popupmenu = QMenu()
@@ -104,6 +105,7 @@ class QVizPluginsHandler:
             # (defined in the plugin definition .py file
             pluginsConfiguration['node_attributes'] = self.infoDict
             # Execute the plugins
+            self.a = None
             if 'setupUi' in dir(pluginsObject):
                 # Execute the plugins created by using the Qt Designer and
                 # '.ui to .py converter'
@@ -119,6 +121,10 @@ class QVizPluginsHandler:
                 pluginsObject.execute(pluginsConfiguration,
                                       dataTreeView=self.dataTreeView)
 
+            elif 'show' in dir(pluginsObject):
+                pluginsObject.SOLPSwidget.dataTreeView = self.dataTreeView
+                pluginsObject.SOLPSwidget.usingIMASViz = True
+                pluginsObject.show()
             else:
                 print('No proper execute or setupUi routine provided by the '
                       'plugin!')

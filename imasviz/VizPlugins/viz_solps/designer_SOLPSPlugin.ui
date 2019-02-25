@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>429</width>
-    <height>632</height>
+    <width>406</width>
+    <height>643</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0" colspan="3">
-     <widget class="plotEPGGD" name="plotEPGGD"/>
+     <widget class="SOLPSwidget" name="SOLPSwidget"/>
     </item>
     <item row="1" column="0">
      <widget class="QPushButton" name="pushButton">
@@ -46,7 +46,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>429</width>
+     <width>406</width>
      <height>22</height>
     </rect>
    </property>
@@ -55,9 +55,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>plotEPGGD</class>
+   <class>SOLPSwidget</class>
    <extends>QWidget</extends>
-   <header>plotEPGGD</header>
+   <header>SOLPSwidget</header>
   </customwidget>
  </customwidgets>
  <resources/>
@@ -65,48 +65,48 @@
   <connection>
    <sender>pushButton</sender>
    <signal>clicked()</signal>
-   <receiver>plotEPGGD</receiver>
+   <receiver>SOLPSwidget</receiver>
    <slot>setEPIDS()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>81</x>
-     <y>522</y>
+     <x>112</x>
+     <y>596</y>
     </hint>
     <hint type="destinationlabel">
-     <x>81</x>
-     <y>480</y>
+     <x>119</x>
+     <y>543</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>pushButton_2</sender>
    <signal>clicked()</signal>
-   <receiver>plotEPGGD</receiver>
+   <receiver>SOLPSwidget</receiver>
    <slot>setGGD()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>199</x>
-     <y>513</y>
+     <x>209</x>
+     <y>598</y>
     </hint>
     <hint type="destinationlabel">
-     <x>203</x>
-     <y>480</y>
+     <x>207</x>
+     <y>568</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>pushButton_3</sender>
    <signal>clicked()</signal>
-   <receiver>plotEPGGD</receiver>
+   <receiver>SOLPSwidget</receiver>
    <slot>plotData()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>346</x>
-     <y>519</y>
+     <x>334</x>
+     <y>592</y>
     </hint>
     <hint type="destinationlabel">
-     <x>344</x>
-     <y>495</y>
+     <x>331</x>
+     <y>565</y>
     </hint>
    </hints>
   </connection>

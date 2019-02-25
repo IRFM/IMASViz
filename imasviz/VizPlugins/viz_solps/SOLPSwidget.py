@@ -12,6 +12,7 @@ from src.quadPlotCanvas import QuadPlotCanvas
 from src.GGDDialog import GetGGDDialog
 from src.getEPGGD import getEPGGD, GetGGDVars
 
+
 class SOLPSwidget(QWidget):
 
     """Plot edge_profiles (EP) IDS GGD.
@@ -39,14 +40,8 @@ class SOLPSwidget(QWidget):
             self.ggdVars[i] = ''
 
         # Check if the widget is run from IMASViz or as standalone
-        try:
-            # Check if the correct DTV (from IMASViz) is available
-            self.dataTreeView = self.parent.parent.parent
-            if self.dataTreeView.objectName() == 'DTV':
-                self.usingIMASViz = True
-        except:
-            self.usingIMASViz = False
-            self.dataTreeView = None
+        self.dataTreeView = None
+        self.usingIMASViz = False
 
         # Set IDS object
         self.ids = ids

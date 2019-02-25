@@ -1,12 +1,14 @@
 import importlib
-import os
+import os, sys
+
+from PyQt5.QtWidgets import QMainWindow
 
 # RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
 #                      'ECEOverviewPlugin':'viz_tests.ECE_OverviewPlugin',
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'Ui_MainWindow': 'viz_solps.SOLPSFinalPlugin'}
+                     'SOLPS':'viz_solps/designer_SOLPSPlugin.ui'}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \
@@ -15,7 +17,7 @@ RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'run': 0, \
                           'machine': 'west_equinox', \
                           'user': 'imas_private'}],
-                          'Ui_MainWindow':[{}] }
+                          'SOLPS':[{}] }
 
 WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                          'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
@@ -35,13 +37,13 @@ EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0], 'overvie
                      'ToFuPlugin': {'interferometer_overview': [0, 1],
                      'bolometer_overview': [2, 3],
                      'soft_x_rays_overview': [4, 5]},
-                     'Ui_MainWindow': {'edge_profiles_overview':[0], 'overview':[0]}}
+                     'SOLPS': {'edge_profiles_overview':[0], 'overview':[0]}}
 
 AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
               'ToFuPlugin': [(0, 'tofu - geom...'), (1, 'tofu - data'),
                              (2, 'tofu - geom...'), (3, 'tofu - data'),
                              (4, 'tofu - geom...'), (5, 'tofu - data')],
-              'Ui_MainWindow': [(0, 'SOLPS overview...')]}
+              'SOLPS': [(0, 'SOLPS overview...')]}
               #(config number, description)
 
 def getRegisteredPlugins():
@@ -80,15 +82,30 @@ class VizPlugins():
         return self.getSubjects()[subject]
 
     @staticmethod
-    def getPluginsObjects():
+    def getPluginsObjects(dataTreeView=None):
         pluginsNames = []
         importedObjectsList = []
         for key in getRegisteredPlugins():
             pluginsNames.append(key)
-            mod = importlib.import_module('imasviz.VizPlugins.' +
-                                          getRegisteredPlugins()[key])
-            importedClass = getattr(mod, key)
-            importedObjectsList.append(importedClass())
+
+            if key == 'SOLPS':
+                # Specific check for SOLPS plugin
+                # TODO avoid all hardcoding
+                from PyQt5 import uic
+                sys.path.append(
+                    (os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps'))
+                w = QMainWindow(parent=dataTreeView)
+                uiObj = uic.loadUi(os.environ['VIZ_HOME'] +
+                                   '/imasviz/VizPlugins/'
+                                   + getRegisteredPlugins()[key],
+                                   w)
+                importedObjectsList.append(w)
+
+            else:
+                mod = importlib.import_module('imasviz.VizPlugins.' +
+                                              getRegisteredPlugins()[key])
+                importedClass = getattr(mod, key)
+                importedObjectsList.append(importedClass())
         return (pluginsNames, importedObjectsList)
 
     @staticmethod
