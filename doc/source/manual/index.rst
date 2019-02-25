@@ -18,4 +18,4 @@ User Manual
    plugins.rst
    other_GUI_features.rst
    scripting.rst
-   UDA.rst
+   .. UDA.rst
