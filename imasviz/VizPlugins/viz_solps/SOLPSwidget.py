@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout
 from PyQt5.QtCore import pyqtSlot
 
 import logging
+import matplotlib
+matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 from src.quadPlotCanvas import QuadPlotCanvas
@@ -23,8 +25,8 @@ class SOLPSwidget(QWidget):
         # Check if display is available (display is mandatory, as this is
         # PyQt5 widget)
         self.checkDisplay()
-        # Set parent
-        self.parent = parent
+        # Set object name
+        # self.setObjectName('QtDesignerWidget')
 
         self.gridSubsetDict = {}
 

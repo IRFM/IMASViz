@@ -4,7 +4,7 @@ import importlib
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow
+from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow, QWidget
 
 class MenuIDS:
     def __init__(self):
@@ -104,29 +104,30 @@ class QVizPluginsHandler:
             # Set ArraySize Plugin 'node_attributes' option
             # (defined in the plugin definition .py file
             pluginsConfiguration['node_attributes'] = self.infoDict
-            # Execute the plugins
-            self.a = None
-            if 'setupUi' in dir(pluginsObject):
-                # Execute the plugins created by using the Qt Designer and
-                # '.ui to .py converter'
-                self.dataTreeView.log.info('Running plugin with setupUi.')
+            # Run the plugins
+            if type(pluginsObject) == QMainWindow:
+                # If pluginsObject is QMainWindow type (indicating that the
+                # plugin was provided as an instance of the user interface
+                # (.ui file)
+                self.dataTreeView.log.info('Running plugin as instance of the '
+                                           'user interface (.ui) file.')
+                # Find the main Qt designer widget (by widget object name)
+                qdw = pluginsObject.findChild(QWidget, 'SOLPSwidget')
 
-                MainWindow = QMainWindow()
-                MainWindow.parent = self.dataTreeView
-                pluginsObject.setupUi(MainWindow)
-                MainWindow.show()
+                # Set DTV (mandatory if the IDS loaded in the DTV is to be
+                # passed to the plugin
+                qdw.dataTreeView = self.dataTreeView
+                # Set flag that the plugin is being used within IMASViz
+                qdw.usingIMASViz = True
+                # Show the plugin user interface
+                pluginsObject.show()
             elif 'execute' in dir(pluginsObject):
                 self.dataTreeView.log.info('Running plugin with execute.')
                 # pluginsObject.execute(wx.App(), pluginsConfiguration)
                 pluginsObject.execute(pluginsConfiguration,
                                       dataTreeView=self.dataTreeView)
-
-            elif 'show' in dir(pluginsObject):
-                pluginsObject.SOLPSwidget.dataTreeView = self.dataTreeView
-                pluginsObject.SOLPSwidget.usingIMASViz = True
-                pluginsObject.show()
             else:
-                print('No proper execute or setupUi routine provided by the '
-                      'plugin!')
+                print('No proper instance of user interface or execute routine '
+                      'provided by the plugin!')
 
 
