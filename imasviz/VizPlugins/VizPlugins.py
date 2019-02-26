@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QMainWindow
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      'SOLPS_UiPlugin': {
-                         'UiFile': 'designer_SOLPSPlugin.ui',
+                         'UiFile': 'SOLPSplugin.ui',
                          'dir': os.environ['VIZ_HOME'] +
                                 '/imasviz/VizPlugins/viz_solps/',
                          'targetIDSroot' : 'edge_profiles',

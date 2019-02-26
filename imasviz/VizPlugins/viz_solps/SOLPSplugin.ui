@@ -6,17 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>406</width>
-    <height>643</height>
+    <width>439</width>
+    <height>678</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>SOLPS IDS Overview Plugin</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0" colspan="3">
-     <widget class="SOLPSwidget" name="SOLPSwidget"/>
+     <widget class="SOLPSwidget" name="mainPluginWidget"/>
     </item>
     <item row="1" column="0">
      <widget class="QPushButton" name="pushButton">
@@ -28,7 +28,7 @@
     <item row="1" column="1">
      <widget class="QPushButton" name="pushButton_2">
       <property name="text">
-       <string>Set Data</string>
+       <string>Set GGD Data</string>
       </property>
      </widget>
     </item>
@@ -46,7 +46,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>406</width>
+     <width>439</width>
      <height>22</height>
     </rect>
    </property>
@@ -65,48 +65,48 @@
   <connection>
    <sender>pushButton</sender>
    <signal>clicked()</signal>
-   <receiver>SOLPSwidget</receiver>
+   <receiver>mainPluginWidget</receiver>
    <slot>setEPIDS()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>112</x>
-     <y>596</y>
+     <x>97</x>
+     <y>631</y>
     </hint>
     <hint type="destinationlabel">
-     <x>119</x>
-     <y>543</y>
+     <x>102</x>
+     <y>575</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>pushButton_2</sender>
    <signal>clicked()</signal>
-   <receiver>SOLPSwidget</receiver>
-   <slot>setGGD()</slot>
+   <receiver>mainPluginWidget</receiver>
+   <slot>setGGDdata()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>209</x>
-     <y>598</y>
+     <x>254</x>
+     <y>638</y>
     </hint>
     <hint type="destinationlabel">
-     <x>207</x>
-     <y>568</y>
+     <x>254</x>
+     <y>573</y>
     </hint>
    </hints>
   </connection>
   <connection>
    <sender>pushButton_3</sender>
    <signal>clicked()</signal>
-   <receiver>SOLPSwidget</receiver>
+   <receiver>mainPluginWidget</receiver>
    <slot>plotData()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>334</x>
-     <y>592</y>
+     <x>373</x>
+     <y>629</y>
     </hint>
     <hint type="destinationlabel">
-     <x>331</x>
-     <y>565</y>
+     <x>363</x>
+     <y>571</y>
     </hint>
    </hints>
   </connection>

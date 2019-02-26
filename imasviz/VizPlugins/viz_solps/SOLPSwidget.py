@@ -97,7 +97,9 @@ class SOLPSwidget(QWidget):
         self.ids.edge_profiles.get()
 
     @pyqtSlot()
-    def setGGD(self):
+    def setGGDdata(self):
+        """Show dialog for setting GGD parameters.
+        """
         if self.ids == None:
             logging.warning('No IDS yet provided.')
             return False
@@ -246,7 +248,7 @@ if __name__ == '__main__':
         plotWidget = SOLPSwidget()
 
     plotWidget.setEPIDS()
-    plotWidget.setGGD()
+    plotWidget.setGGDdata()
 
     plotWidget.plotData()
 

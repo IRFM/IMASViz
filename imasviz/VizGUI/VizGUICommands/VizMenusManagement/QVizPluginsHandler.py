@@ -112,7 +112,7 @@ class QVizPluginsHandler:
                 self.dataTreeView.log.info('Running plugin through instance of '
                                            'the user interface (.ui) file.')
                 # Find the main Qt designer widget (by widget object name)
-                qdw = pluginsObject.findChild(QWidget, 'SOLPSwidget')
+                qdw = pluginsObject.findChild(QWidget, 'mainPluginWidget')
 
                 # Get IDS object from IMASViz DTV
                 # - Get data source
