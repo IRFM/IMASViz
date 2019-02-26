@@ -11,7 +11,9 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      'SOLPS_UiPlugin': {
                          'UiFile': 'designer_SOLPSPlugin.ui',
                          'dir': os.environ['VIZ_HOME'] +
-                                '/imasviz/VizPlugins/viz_solps/'}}
+                                '/imasviz/VizPlugins/viz_solps/',
+                         'targetIDSroot' : 'edge_profiles',
+                         'targetOccurrence' : 0}}
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'time_e': 32.020, \
@@ -104,6 +106,15 @@ class VizPlugins():
                 sys.path.append(dir)
                 # Set MainWindow
                 w = QMainWindow(parent=dataTreeView)
+
+
+                dataSource = dataTreeView.dataSource
+                # Get IDS case object
+                ids = None
+                w.targetOccurrence = \
+                    getRegisteredPlugins()[key]['targetOccurrence']
+                w.targetIDSroot = getRegisteredPlugins()[key]['targetIDSroot']
+
                 # Set an instance of the user interface
                 uiObj = uic.loadUi(dir + UiFile, w)
                 # Add the MainWindow (containing the user interface) to

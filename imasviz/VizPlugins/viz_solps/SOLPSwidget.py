@@ -41,10 +41,6 @@ class SOLPSwidget(QWidget):
             # At the begining clear all parameters
             self.ggdVars[i] = ''
 
-        # Check if the widget is run from IMASViz or as standalone
-        self.dataTreeView = None
-        self.usingIMASViz = False
-
         # Set IDS object
         self.ids = ids
         # Set layout
@@ -80,8 +76,6 @@ class SOLPSwidget(QWidget):
         # parameters can be specified. Then open the specified IDS
         if self.ids != None:
             return
-        elif self.usingIMASViz == True:
-            self.getIDSfromIMASViz()
         else:
             from src.getIDS import GetIDSWrapper, GetIDSDialog, GetIDSVars
             for i in range(GetIDSVars.numOfParams):
@@ -118,40 +112,6 @@ class SOLPSwidget(QWidget):
         else:
             # Canceled!
             return False
-
-    @pyqtSlot()
-    def getIDSfromIMASViz(self):
-        """Get IDS object from IMASViz.
-        """
-
-        # if self.dataTreeView == None:
-        #     self.dataTreeView = dictDataSource['imasviz_view']
-        dataSource = self.dataTreeView.dataSource
-        shot = dataSource.shotNumber
-        run = dataSource.runNumber
-        machine = dataSource.imasDbName
-        user = dataSource.userName
-
-        print('shot    =', shot)
-        print('run     =', run)
-        print('user    =', user)
-        print('machine =', machine)
-        print('Reading data...')
-
-        # Open shot and run of machine
-        occurrence = 0  # default occurrence
-        try:
-            self.ids = dataSource.ids[occurrence]
-        except:
-            self.ids = None
-        if self.ids is None:
-            dataSource.load(self.dataTreeView, IDSName='edge_profiles',
-                            occurrence=0,
-                            pathsList=None, async=False)
-            self.ids = dataSource.ids[occurrence]
-
-        if not self.dataTreeView.idsAlreadyFetched["edge_profiles"]:
-            self.ids.edge_profiles.get()
 
     @pyqtSlot()
     def getQuantityValues(self):

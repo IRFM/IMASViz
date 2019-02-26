@@ -109,16 +109,34 @@ class QVizPluginsHandler:
                 # If pluginsObject is QMainWindow type (indicating that the
                 # plugin was provided as an instance of the user interface
                 # (.ui file)
-                self.dataTreeView.log.info('Running plugin as instance of the '
-                                           'user interface (.ui) file.')
+                self.dataTreeView.log.info('Running plugin through instance of '
+                                           'the user interface (.ui) file.')
                 # Find the main Qt designer widget (by widget object name)
                 qdw = pluginsObject.findChild(QWidget, 'SOLPSwidget')
 
-                # Set DTV (mandatory if the IDS loaded in the DTV is to be
-                # passed to the plugin
-                qdw.dataTreeView = self.dataTreeView
-                # Set flag that the plugin is being used within IMASViz
-                qdw.usingIMASViz = True
+                # Get IDS object from IMASViz DTV
+                # - Get data source
+                dataSource = self.dataTreeView.dataSource
+                # - get IDS object
+                try:
+                    ids = dataSource.ids[pluginsObject.targetOccurrence]
+                except:
+                    ids = None
+                if ids is None:
+                    # -Get IDS object for target IDS root and target occurrence
+                    # Note: This will also populate and update the IDS tree view
+                    #       structure
+                    dataSource.load(self.dataTreeView,
+                                    IDSName=pluginsObject.targetIDSroot,
+                                    occurrence=pluginsObject.targetOccurrence,
+                                    pathsList=None,
+                                    async=False)
+                    # Set IDS
+                    ids = dataSource.ids[pluginsObject.targetOccurrence]
+
+                # Set/Pass IDS object to main Qt designer widget
+                qdw.ids = ids
+
                 # Show the plugin user interface
                 pluginsObject.show()
             elif 'execute' in dir(pluginsObject):
