@@ -53,7 +53,7 @@ class SOLPSwidget(QWidget):
         self.layout().addWidget(self.canvas)
         self.layout().addWidget(self.toolbar)
 
-    @pyqtSlot( )
+    @pyqtSlot()
     def checkDisplay(self):
         try:
             os.environ['DISPLAY']

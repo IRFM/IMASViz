@@ -38,15 +38,15 @@ else:
             ENABLED = False
 
 class GetIDSVars:
-    names = ['SHOT', 'RUN', 'USER', 'DEVICE', 'VERSION']
+    names = ['Shot', 'Run', 'User', 'Device', 'IMAS Major Version']
     numOfParams = len(names)
     shot, run, user, device, version = range(numOfParams)
 
     defaultValues = {}
-    defaultValues[shot] = '122264'
-    defaultValues[run] = '1'
+    defaultValues[shot] = '0'
+    defaultValues[run] = '0'
     defaultValues[user] = os.getenv('USER')
-    defaultValues[device] = 'iter'
+    defaultValues[device] = ''
     defaultValues[version] = '3'
 
 class GetIDSDialog(QDialog):
