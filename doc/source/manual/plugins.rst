@@ -1,10 +1,11 @@
-.. _plugins:
+.. _IMASViz_plugins:
 
 Plugins
 =======
 
-IMASViz enables the use of custom made plugins. The plugins currently available
-are listed here together with a manual section on how to use them.
+IMASViz allows the use of custom-made plugins which further extend the IMASViz
+functionality. The plugins currently available are listed here together with a
+manual section on how to use them.
 
 Equilibrium overview plugin
 ---------------------------
