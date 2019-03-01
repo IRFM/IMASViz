@@ -37,14 +37,21 @@ In this HOWTO section it will be described how to:
   6. How to use of the **UI plugin** in **IMASViz**
 
 As a main example to work with, the **SOLPS overview Plugin**, also described
-(as IMASViz plugin) in :ref:`_IMASViz_plugins`, will be used.
+(as IMASViz plugin) in :ref:`IMASViz_plugins`, will be used.
 
 A short demonstration video, showing the procedures described in points **3-6**
 (PyQt5 widget code development is **NOT** included!), is available below.
 
+.. TODO: video is shown only in HTML documentation!
 .. raw:: html
 
    <video controls width="600" src="../_static/QtDesigner_and_IMASViz_plugin_short_demo.mp4"></video>
+
+.. TODO: works only for PDF documentation
+
+`PDFDocVideoLink`_
+
+.. _PDFDocVideoLink: QtDesigner_and_IMASViz_plugin_short_demo.mp4
 
 .. image sources (to be used)
 

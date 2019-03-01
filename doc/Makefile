@@ -18,3 +18,10 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+# Custom rules for latexpdf
+latexpdf: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	# Copy .mp4 sources to latex directory
+	mkdir -p $(BUILDDIR)/latex/
+	cp -f $(SOURCEDIR)/_static/*.mp4 $(BUILDDIR)/latex/
