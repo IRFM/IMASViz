@@ -14,6 +14,7 @@
 from PyQt5.QtWidgets import QLineEdit, QDialog, QFormLayout, QDialogButtonBox, \
                             QComboBox
 from PyQt5.QtGui import QIntValidator
+import logging
 
 from src.getEPGGD import getEPGGD, GetGGDVars
 
@@ -113,6 +114,13 @@ class GetGGDDialog(QDialog):
                           'subsets! Aborting.')
             return
 
+        if self.getGGD.getNGridSubset(gg) < 1:
+            logging.error('The specified IDS does not contain any grid '
+                          'subsets! Aborting.')
+            return
+
+
+
         for i in range(self.nGridSubsets):
             # Only 2D grid subsets supported for now (first object dimension
             # parameter = 3 (fortan notation, 2D -> 2+1 = 3)
@@ -137,6 +145,10 @@ class GetGGDDialog(QDialog):
         gg = int(self.g1_LineEdit.text())
         g = int(self.g2_LineEdit.text())
         gs_name = self.combobox_gridSubset.currentText()
+        
+        # Return if the combo box is empty
+        if gs_name == '':
+            return
         gs_id = self.gridSubsetDict[gs_name]
 
         ggd = self.ep.ggd[g]
