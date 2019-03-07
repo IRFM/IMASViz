@@ -1,5 +1,20 @@
 #! /usr/bin/env python3
 
+#  Name   : SOLPSwidget
+#
+#          A PyQt5 widget, embedding Matplotlib canvas (plot space). It contains
+#          also defined PyQt5 slots for setting the edge_profiles IDS, GGD
+#          parameters and a slot (function) for executing the plot procedure,
+#          populating/filling the Matplotlib canvas.
+#
+#  Author :
+#         Dejan Penko
+#  E-mail :
+#         dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2019- D. Penko
+
 import sys
 import os
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout

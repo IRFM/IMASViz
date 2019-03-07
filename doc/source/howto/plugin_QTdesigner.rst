@@ -22,7 +22,7 @@ and to connect its signals and slots.
 
 .. note::
    For more information on QT Designer and PyQt5 based plugins and widgets
-   check `this Link <http://pyqt.sourceforge.net/Docs/PyQt5/designer.html>`_.
+   check `this link <http://pyqt.sourceforge.net/Docs/PyQt5/designer.html>`_.
 
 In this HOWTO section it will be described how to:
   1. How to develop a **custom PyQt5 widget**
@@ -39,19 +39,23 @@ In this HOWTO section it will be described how to:
 As a main example to work with, the **SOLPS overview Plugin**, also described
 (as IMASViz plugin) in :ref:`IMASViz_plugins`, will be used.
 
-A short demonstration video, showing the procedures described in points **3-6**
-(PyQt5 widget code development is **NOT** included!), is available below.
+A short demonstration video, showing the procedures described in the above
+listed points **3-6** (PyQt5 widget code development is **NOT** included!),
+is available below.
 
-.. TODO: video is shown only in HTML documentation!
-.. raw:: html
 
-   <video controls width="600" src="../_static/QtDesigner_and_IMASViz_plugin_short_demo.mp4"></video>
+.. only:: html
 
-.. TODO: works only for PDF documentation
+   .. raw:: html
 
-`PDFDocVideoLink`_
+      <video controls width="600" src="../_static/QtDesigner_and_IMASViz_plugin_short_demo.mp4"></video>
 
-.. _PDFDocVideoLink: QtDesigner_and_IMASViz_plugin_short_demo.mp4
+
+.. only:: latex
+
+   .. TODO: requires the .mp4 file to be in the same directory as the .pdf file
+
+   `Local Video Link <QtDesigner_and_IMASViz_plugin_short_demo.mp4>`_.
 
 .. image sources (to be used)
 
