@@ -22,6 +22,6 @@ help:
 # Custom rules for latexpdf
 latexpdf: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	# Copy .mp4 sources to latex directory
-	mkdir -p $(BUILDDIR)/latex/
+	# Copy .mp4 sources to latex directory (works only if IMASViz.pdf is run
+	# from just generated latex file (same directory))
 	cp -f $(SOURCEDIR)/_static/*.mp4 $(BUILDDIR)/latex/
