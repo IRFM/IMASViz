@@ -1,29 +1,64 @@
 #! /usr/bin/env python3
 
+#  Name   : exampleWidget
+#
+#          A PyQt5 widget to serve as an example how to create custom widgets
+#          that can be used within Qt designer.
+#          This widget embeds Matplotlib canvas (plot space). It contains also
+#          defined PyQt5 slots for setting the magnetics IDS parameters and
+#          a slot (function) for executing the plot procedure,
+#          populating/filling the Matplotlib canvas.
+#
+#  Author :
+#         Dejan Penko
+#  E-mail :
+#         dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2019- D. Penko
+
+# import common python modules
 import sys
 import os
+# import PyQt5 related modules
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
 from PyQt5.QtCore import pyqtSlot
-
+# import matplotlib related modules
 import matplotlib
 matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
-import random
+# import IMAS module
 import imas
 
 class exampleWidget(QWidget):
+    """A widget for opening magnetics IDS, extracting the flux loop or
+    poloidal probe quantities and plotting them to matplotlib figure canvas.
+    """
 
     def __init__(self, parent=None, ids=None, *args, **kwargs):
-        QWidget.__init__(self, parent)
+        """
+        Arguments:
+            parent (PyQt5 object) : Qt widget parent (e.g. QMainWindow)
+            ids    (IDS object)   : IDS object - optional parameter.
+                                    This widget does not require IDS object in
+                                    order to work (the default IDS parameters
+                                    will be used to open the IDS).
+                                    However, if an IDS object is already
+                                    available it can be passed to the widget
+                                    to be used instead (for example, passing
+                                    the IDS object from the IMASViz to this
+                                    widget).
+        """
+        # Run QWidget constructor
+        super(QWidget, self).__init__(parent)
 
         # Check if display is available (display is mandatory, as this is
         # PyQt5 widget)
         self.checkDisplay()
-
+        # Set IDS object
+        # Note: if not provided as an argument it will be set to None
         self.ids = ids
 
         # Set IDS case parameters
@@ -42,15 +77,13 @@ class exampleWidget(QWidget):
         # - label of the IDS to be used
         self.idsParameters['idsName'] = 'magnetics'
 
-        # Set IDS object
-        self.ids = ids
         # Set widget layout
         self.setLayout(QVBoxLayout())
         # Set empty matplotlib canvas
         self.canvas = PlotCanvas(self)
         # Set matplotlib toolbar
         self.toolbar = NavigationToolbar(self.canvas, self)
-        # Add widgets to layout
+        # Add canvas and toolbar to widget layout
         self.layout().addWidget(self.canvas)
         self.layout().addWidget(self.toolbar)
 
@@ -70,19 +103,13 @@ class exampleWidget(QWidget):
     def openIDS(self):
         """Open magnetics IDS.
         """
+        # Open IDS
         self.ids = imas.ids(int(self.idsParameters['shot']),
                             int(self.idsParameters['run']))
-        # logging.info('Opening IDS')
         self.ids.open_env(self.idsParameters['user'],
                           self.idsParameters['device'],
                           self.idsParameters['IMAS major version'])
-        # if self.ids.isConnected():
-        #     # logging.info('IDS opened OK!')
-        #     return True
-        # else:
-        #     # logging.error('IDS open failed!')
-        #     return False
-
+        # Get magnetics IDS
         self.ids.magnetics.get()
 
     def getIDS(self):
@@ -138,43 +165,89 @@ class exampleWidget(QWidget):
             logging.error('No display available!')
 
 class PlotCanvas(FigureCanvas):
+    """Matplotlib figure canvas that is to be embedded within the widget.
+    FigureCanvas is the area onto which the figure is drawn
+    """
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
+        """
+        Arguments:
+            parent (PyQt5 object) : PyQt5 parent (e.g. QWidget).
+            width  (int)          : Canvas width.
+            height (int)          : Canvas height.
+            dpi    (int)          : Dots per inch.
+        """
 
-
+        # Set figure
         fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
-
+        # Set canvas (pass figure)
         FigureCanvas.__init__(self, fig)
+        # Set canvas parent
         self.setParent(parent)
-
+        # Set canvas size policy
         FigureCanvas.setSizePolicy(self,
                                    QSizePolicy.Expanding,
                                    QSizePolicy.Expanding)
-        FigureCanvas.updateGeometry(self)
 
     def plotFluxAoS(self, ids=None):
         """Plot values found in flux loops AoS.
+
+        Arguments:
+            ids (IDS object) : IDS object referring to the IDS from which the
+                               data is to be extracted.
         """
+
+        # Add/Update IDS reference to the object (figure canvas)
         self.ids = ids
+        # Set subplot
         ax = self.figure.add_subplot(111)
+        # Extract X-axis values (time)
+        time_values = self.ids.magnetics.time
+        x = time_values
+        # Get the size of Aos (number of arrays)
         num_flux_loop_AoS = len(self.ids.magnetics.flux_loop)
+        # For each array extract array values and create a plot
         for i in range(num_flux_loop_AoS):
-            data = self.ids.magnetics.flux_loop[i].flux.data
-            ax.plot(data, '-')
-        ax.set_title('Flux loop plots')
+            # Extract array values
+            y = self.ids.magnetics.flux_loop[i].flux.data
+            # Set plot (line) defined by X and Y values
+            ax.plot(x, y, '-')
+        # Enable grid
+        ax.grid()
+        # Set axis labels and plot title
+        ax.set(xlabel='time [s]', ylabel='Flux Loop values',
+               title='Flux loop')
+        # Draw/Show plots
         self.draw()
 
     def plotBPolAoS(self, ids=None):
         """Plot poloidal field probe values.
+
+        Arguments:
+            ids (IDS object) : IDS object referring to the IDS from which the
+                               data is to be extracted.
         """
+        # Add/Update IDS reference to the object (figure canvas)
         self.ids = ids
+        # Set subplot
         ax = self.figure.add_subplot(111)
+        # Extract X-axis values (time)
+        time_values = self.ids.magnetics.time
+        x = time_values
+        # Get the size of Aos (number of arrays)
         num_bpol_probe_AoS = len(self.ids.magnetics.bpol_probe)
+        # For each array extract array values and create a plot
         for i in range(num_bpol_probe_AoS):
-            data = self.ids.magnetics.bpol_probe[i].field.data
-            ax.plot(data, '-')
-        ax.set_title('Poloidal field probe plots')
+            # Extract array values
+            y = self.ids.magnetics.bpol_probe[i].field.data
+            # Set plot (line) defined by X and Y values
+            ax.plot(x, y, '-')
+        # Enable grid
+        ax.grid()
+        # Set axis labels and plot title
+        ax.set(xlabel='time [s]', ylabel='Poloidal field probe values',
+               title='Poloidal field probe')
+        # Draw/Show plots
         self.draw()
 
 if __name__ == '__main__':
