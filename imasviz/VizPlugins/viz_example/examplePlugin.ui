@@ -14,8 +14,8 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0">
-    <item row="1" column="2">
+   <layout class="QGridLayout" name="gridLayout_2" rowstretch="0,0,0,0">
+    <item row="2" column="2">
      <spacer name="verticalSpacer">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -28,7 +28,7 @@
       </property>
      </spacer>
     </item>
-    <item row="0" column="0" rowspan="3" colspan="2">
+    <item row="0" column="0" rowspan="4" colspan="2">
      <widget class="exampleWidget" name="mainPluginWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -53,7 +53,13 @@
        </size>
       </property>
       <property name="title">
-       <string>IDS parameters</string>
+       <string>Open IDS </string>
+      </property>
+      <property name="checkable">
+       <bool>true</bool>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
       </property>
       <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0">
        <property name="leftMargin">
@@ -82,20 +88,6 @@
         <widget class="QLabel" name="label">
          <property name="text">
           <string>Shot:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="1">
-        <widget class="QPushButton" name="pushButton_2">
-         <property name="text">
-          <string>Plot flux loop</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QPushButton" name="pushButton">
-         <property name="text">
-          <string>Open IDS</string>
          </property>
         </widget>
        </item>
@@ -147,10 +139,17 @@
          </property>
         </widget>
        </item>
+       <item row="5" column="1">
+        <widget class="QPushButton" name="pushButton">
+         <property name="text">
+          <string>Open IDS</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
-    <item row="2" column="2">
+    <item row="3" column="2">
      <spacer name="verticalSpacer_2">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -162,6 +161,29 @@
        </size>
       </property>
      </spacer>
+    </item>
+    <item row="1" column="2">
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="title">
+       <string>Plot actions</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="0" column="0">
+        <widget class="QPushButton" name="pushButton_3">
+         <property name="text">
+          <string>Plot poloidal field</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QPushButton" name="pushButton_2">
+         <property name="text">
+          <string>Plot flux loop</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -273,12 +295,44 @@
    <slot>plotFluxAoS()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>874</x>
-     <y>189</y>
+     <x>865</x>
+     <y>275</y>
     </hint>
     <hint type="destinationlabel">
      <x>272</x>
      <y>595</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>pushButton_3</sender>
+   <signal>clicked()</signal>
+   <receiver>mainPluginWidget</receiver>
+   <slot>plotBPolAoS()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>793</x>
+     <y>220</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>617</x>
+     <y>218</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>mainPluginWidget</sender>
+   <signal>idsSet(bool)</signal>
+   <receiver>groupBox</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>572</x>
+     <y>72</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>712</x>
+     <y>38</y>
     </hint>
    </hints>
   </connection>

@@ -22,7 +22,7 @@ import sys
 import os
 # import PyQt5 related modules
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
-from PyQt5.QtCore import pyqtSlot
+from PyQt5.QtCore import pyqtSlot, pyqtSignal
 # import matplotlib related modules
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -36,6 +36,9 @@ class exampleWidget(QWidget):
     """A widget for opening magnetics IDS, extracting the flux loop or
     poloidal probe quantities and plotting them to matplotlib figure canvas.
     """
+
+    # create signal
+    idsSet = pyqtSignal(bool)
 
     def __init__(self, parent=None, ids=None, *args, **kwargs):
         """
@@ -91,12 +94,16 @@ class exampleWidget(QWidget):
     def plotFluxAoS(self):
         """Plot Flux Loop arrays to canvas.
         """
+        if self.canvas.figure != None:
+            self.canvas.figure.clear()
         self.canvas.plotFluxAoS(self.ids)
 
     @pyqtSlot()
     def plotBPolAoS(self):
         """Plot poloidal field probe arrays to canvas.
         """
+        if self.canvas.figure != None:
+            self.canvas.figure.clear()
         self.canvas.plotBPolAoS(self.ids)
 
     @pyqtSlot()
@@ -111,6 +118,11 @@ class exampleWidget(QWidget):
                           self.idsParameters['IMAS major version'])
         # Get magnetics IDS
         self.ids.magnetics.get()
+
+    def setIDS(self, ids):
+        self.ids = ids
+        # Emit signal indicating that the IDS object is set
+        self.idsSet.emit(False)
 
     def getIDS(self):
         return self.ids

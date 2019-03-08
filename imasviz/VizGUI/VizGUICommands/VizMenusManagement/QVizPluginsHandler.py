@@ -134,8 +134,9 @@ class QVizPluginsHandler:
                     # Set IDS
                     ids = dataSource.ids[pluginsObject.targetOccurrence]
 
-                # Set/Pass IDS object to main Qt designer widget
-                qdw.ids = ids
+                # Set IDS object for the main Qt designer widget
+                qdw.setIDS(ids)
+
 
                 # Show the plugin user interface
                 pluginsObject.show()

@@ -13,7 +13,13 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                          'dir': os.environ['VIZ_HOME'] +
                                 '/imasviz/VizPlugins/viz_solps/',
                          'targetIDSroot' : 'edge_profiles',
-                         'targetOccurrence' : 0}
+                         'targetOccurrence' : 0},
+                     'example_UiPlugin': {
+                         'UiFile': 'examplePlugin.ui',
+                         'dir': os.environ['VIZ_HOME'] +
+                                '/imasviz/VizPlugins/viz_example/',
+                         'targetIDSroot': 'magnetics',
+                         'targetOccurrence': 0}
                      }
 
 RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
@@ -23,7 +29,8 @@ RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
                           'run': 0, \
                           'machine': 'west_equinox', \
                           'user': 'imas_private'}],
-                          'SOLPS_UiPlugin':[{}]
+                          'SOLPS_UiPlugin':[{}],
+                          'example_UiPlugin':[{}]
                            }
 
 WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
@@ -47,14 +54,17 @@ EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0], 'overvie
                      'bolometer_overview': [2, 3],
                      'soft_x_rays_overview': [4, 5]},
                      'SOLPS_UiPlugin': {'edge_profiles_overview':[0],
-                                       'overview':[0]}
+                                       'overview':[0]},
+                     'example_UiPlugin': {'magnetics_overview': [0],
+                                        'overview': [0]}
                      }
 
 AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
               'ToFuPlugin': [(0, 'tofu - geom...'), (1, 'tofu - data'),
                              (2, 'tofu - geom...'), (3, 'tofu - data'),
                              (4, 'tofu - geom...'), (5, 'tofu - data')],
-              'SOLPS_UiPlugin': [(0, 'SOLPS overview...')]
+              'SOLPS_UiPlugin': [(0, 'SOLPS overview...')],
+              'example_UiPlugin': [(0, 'Magnetics overview...')]
               }
               #(config number, description)
 

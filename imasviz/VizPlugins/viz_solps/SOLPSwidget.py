@@ -58,6 +58,7 @@ class SOLPSwidget(QWidget):
 
         # Set IDS object
         self.ids = ids
+
         # Set layout
         self.setLayout(QVBoxLayout())
         # Set empty matplotlib canvas
@@ -74,6 +75,9 @@ class SOLPSwidget(QWidget):
             os.environ['DISPLAY']
         except:
             logging.error('No display available!')
+
+    def setIDS(self, ids):
+        self.ids = ids
 
     @pyqtSlot()
     def setEPIDS(self):
