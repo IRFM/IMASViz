@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>887</width>
+    <width>890</width>
     <height>841</height>
    </rect>
   </property>
@@ -61,7 +61,7 @@
       <property name="checked">
        <bool>true</bool>
       </property>
-      <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0">
+      <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0,0,0,0">
        <property name="leftMargin">
         <number>0</number>
        </property>
@@ -77,56 +77,76 @@
        <property name="spacing">
         <number>0</number>
        </property>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_3">
+       <item row="0" column="0" colspan="2">
+        <widget class="QLabel" name="label_5">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>180</height>
+          </size>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
          <property name="text">
-          <string>User:</string>
+          <string>Notes: 
+ - If disabled on start, the IDS is already available from other sources (application etc.) 
+ - Below are the default parameters for the benchmark IDS case (GateWay)</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label">
-         <property name="text">
-          <string>Shot:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="lineEdit_3">
-         <property name="text">
-          <string>penkod</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="0">
+       <item row="4" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>Device:</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1">
-        <widget class="QLineEdit" name="lineEdit_4">
-         <property name="text">
-          <string>viztest</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
+       <item row="2" column="0">
         <widget class="QLabel" name="label_2">
          <property name="text">
           <string>Run:</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="1" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Shot:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="lineEdit_3">
+         <property name="text">
+          <string>g2penkod</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
         <widget class="QLineEdit" name="lineEdit_2">
          <property name="text">
           <string>0</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>User:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
         <widget class="QLineEdit" name="lineEdit">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -139,7 +159,14 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="1">
+       <item row="4" column="1">
+        <widget class="QLineEdit" name="lineEdit_4">
+         <property name="text">
+          <string>viztest</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
         <widget class="QPushButton" name="pushButton">
          <property name="text">
           <string>Open IDS</string>
@@ -168,17 +195,17 @@
        <string>Plot actions</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
-        <widget class="QPushButton" name="pushButton_3">
-         <property name="text">
-          <string>Plot poloidal field</string>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="0">
         <widget class="QPushButton" name="pushButton_2">
          <property name="text">
           <string>Plot flux loop</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QPushButton" name="pushButton_3">
+         <property name="text">
+          <string>Plot poloidal field</string>
          </property>
         </widget>
        </item>
@@ -192,7 +219,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>887</width>
+     <width>890</width>
      <height>22</height>
     </rect>
    </property>
@@ -296,7 +323,7 @@
    <hints>
     <hint type="sourcelabel">
      <x>865</x>
-     <y>275</y>
+     <y>244</y>
     </hint>
     <hint type="destinationlabel">
      <x>272</x>
@@ -311,8 +338,8 @@
    <slot>plotBPolAoS()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>793</x>
-     <y>220</y>
+     <x>865</x>
+     <y>275</y>
     </hint>
     <hint type="destinationlabel">
      <x>617</x>
