@@ -1,5 +1,3 @@
-#! /usr/bin/env python3
-
 #  Name   : exampleWidget
 #
 #          A PyQt5 widget to serve as an example how to create custom widgets
@@ -17,19 +15,20 @@
 #****************************************************
 #     Copyright(c) 2019- D. Penko
 
-# import common python modules
+# import module providing system-specific parameters and functions
 import sys
+# import module providing  miscellaneous operating system interfaces
 import os
-# import PyQt5 related modules
+# import modules providing PyQt5 parameters, functions etc.
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
-# import matplotlib related modules
+# import module providing matplotlib parameters, functions etc.
 import matplotlib
-matplotlib.use('Qt5Agg')
+matplotlib.use('Qt5Agg') # Use Qt rendering
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-# import IMAS module
+# import module providing IMAS and IDS related parameters, functions etc.
 import imas
 
 class exampleWidget(QWidget):
