@@ -36,7 +36,7 @@ class exampleWidget(QWidget):
     poloidal probe quantities and plotting them to matplotlib figure canvas.
     """
 
-    # create signal
+    # Create custom signal
     idsSet = pyqtSignal(bool)
 
     def __init__(self, parent=None, ids=None, *args, **kwargs):
@@ -59,6 +59,7 @@ class exampleWidget(QWidget):
         # Check if display is available (display is mandatory, as this is
         # PyQt5 widget)
         self.checkDisplay()
+
         # Set IDS object
         # Note: if not provided as an argument it will be set to None
         self.ids = ids

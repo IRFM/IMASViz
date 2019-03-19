@@ -60,7 +60,7 @@ IMASViz plugin) can be found in section :ref:`IMASViz_plugins`.
 Developing custom PyQt5 widget
 ------------------------------
 
-This section described and demonstrates how to write a complete custom PyQt5
+This section describes and demonstrates how to write a complete custom PyQt5
 widget dealing with the data stored within the **Magnetics IDS**. The same
 widget will be then used to create **Magnetics IDS overview Plugin** using Qt
 designer.
@@ -94,21 +94,8 @@ This section is split into the next subsections:
 Code header
 ^^^^^^^^^^^
 
-Every code should contain a documentation. It either explains what the code
-does, how it operates, how to use it etc. Documentation is an important part
-of software engineering.
-
-Documentation should be as important to a developer as all other facets of
-development. No matter what the code contains, chances are that someday other
-users will try to understand and use it. Even code authors don't remember
-everything they've done after just few weeks after the last time they worked on
-the code in question.
-
-Taking that extra time to write a proper description on the contents of the
-code will save huge amounts of time and effort for everybody to understand the
-code.
-
-In the case of the custom PyQt5 widget, the header should consist of:
+The header of the custom PyQt5 widget .py source file should contain some basic
+information about the code:
 - the .py file name,
 - short description what the script is used for,
 - author name and
@@ -119,6 +106,20 @@ In the case of the custom PyQt5 widget, the header should consist of:
    :lineno-start: 1
    :lines: 1-16
    :linenos:
+
+Documentation should be as important to a developer as all other facets of
+development. **Every code should contain a documentation** (in form of a header,
+code comments etc.). It either explains what the code does, how it operates,
+how to use it etc. Documentation is an important part of software engineering.
+
+No matter what the code contains, chances are that someday other
+users will try to understand and use it. Even code authors don't remember
+everything they've done after just few weeks after the last time they worked on
+the code in question.
+
+Taking that extra time to write a proper description on the contents of the
+code will save huge amounts of time and effort for everybody to understand the
+code.
 
 Import statements
 ^^^^^^^^^^^^^^^^^
@@ -164,11 +165,125 @@ IMAS modules:
 Widget
 ^^^^^^
 
+This section describes and demonstrates how to define a new widget class in
+Python3.
+
 Class definition
 """"""""""""""""
 
+One of the main parts of this code is the definition of a new class inheriting
+from the PyQt5 **QWidget** class. In this case we label our class as
+**example Widget**.
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 34
+   :lines: 34-37
+   :linenos:
+
+.. note::
+   Do not forget to describe the class - what it its purpose etc.
+
+Here also a new PyQt signal is set, which will be used later in code and when
+running the plugin.
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 39
+   :lines: 39-40
+   :linenos:
+
+In short, the signal on its own does not perform any action. Instead, it is
+``connected`` to a ``slot``. The slot can be any callable Python function.
+When the signal gets emitted the connected slot (Python function) gets called.
+
+.. note::
+   More on signal and slots:
+   `Link <https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.html>`_
+
 Constructor definition
 """"""""""""""""""""""
+
+Constructors are generally used for instantiating an object. The task of
+constructors is to initialize (assign values) to the data members of the
+class when an object of class is created.
+
+In case of this custom widget the constructor must take additional arguments:
+- parent (can be either Qt object, later our case QMainWindow), and
+- ids (an IDS object).
+
+Both arguments are set as **None** (default values).
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 42
+   :lines: 42-55
+   :linenos:
+
+And the **ids** object is set with:
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 63
+   :lines: 63-65
+   :linenos:
+
+Regarding the **ids** object, the main idea is to make our widget capable of
+performing in two different ways. Either:
+
+  - use IDS object, passed to the widget (in which case **ids != None**),
+  - if no IDS object was passed (**ids == None**), open IDS and create a new
+    **ids** object.
+
+For example, in **IMASViz** there is and IDS open and thus have the **ids**
+object available. Instead of opening the IDS again, the **ids** object can be
+just passed to the custom widget as an argument and the widget can continue to
+use it.
+
+If there is no IDS object already available (meaning no IDS is already being
+read), it should be created/opened. In constructor we define a dictionary
+labeled **self.idsParameters** which should contain all IDS parameters for IDS
+(will be used later to open the correct IDS):
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 67
+   :lines: 67-81
+   :linenos:
+
+Constructor should contain also a check if the widget is being run in a desktop
+environment. As this is a widget which deals with GUI and visualization this is
+mandatory. The code should not be run from a "terminal-only" environment (for
+example ``ssh user@host`` etc.).
+
+In this case we define a **checkDisplay()** function:
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 172
+   :lines: 172-177
+   :linenos:
+
+and add its execution to the constructor:
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 59
+   :lines: 59-61
+   :linenos:
+
+Lastly, we define default layout of our widget and its contents (plot canvas and
+matplotlib navigation toolbar):
+
+.. note::
+   The **PlotCanvas** class and its routines definition will be done later in
+   the later sections.
+
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
+   :language: python
+   :lineno-start: 83
+   :lines: 83-91
+   :linenos:
 
 Base "set" and "get" routines
 """""""""""""""""""""""""""""
