@@ -1,6 +1,6 @@
 #  Name   : exampleWidget
 #
-#          A PyQt5 widget to serve as an example how to create custom widgets
+#          A PyQt5 widget to serve as an example of how to create custom widgets
 #          that can be used within Qt designer.
 #          This widget embeds Matplotlib canvas (plot space). It contains also
 #          defined PyQt5 slots for setting the magnetics IDS parameters and
@@ -28,7 +28,7 @@ matplotlib.use('Qt5Agg') # Use Qt rendering
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-# import module providing IMAS and IDS related parameters, functions etc.
+# import module providing IMAS and IDS-related parameters, functions etc.
 import imas
 
 class exampleWidget(QWidget):
@@ -36,7 +36,7 @@ class exampleWidget(QWidget):
     poloidal probe quantities and plotting them to matplotlib figure canvas.
     """
 
-    # Create custom signal
+    # Create a custom signal
     idsSet = pyqtSignal(bool)
 
     def __init__(self, parent=None, ids=None, *args, **kwargs):

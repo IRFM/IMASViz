@@ -9,43 +9,47 @@ windows etc. using on-screen forms and a user-friendly simple drag-and-drop
 interface. It also provides the user with a convenient ability to preview the
 designs to ensure they work as intended.
 
-In general, Qt Designer mainly offers basic QT widgets such as Push Button,
-Line Edit, List Widget etc. This list of the QT Designer widgets can be extended
-by writing so-called **Qt designer plugins** (do not confuse with
+In general, Qt Designer mainly offers basic Qt widgets such as **Push Button**,
+**Line Edit**, **List Widget** etc. This list of the Qt Designer widgets can be
+extended by writing so-called **Qt designer plugins** (do not confuse with
 **IMASViz plugins**!). Normally this is done using C++ but PyQt5 also allows
-you to write QT Designer plugins in Python.
+you to write Qt Designer plugins in Python3 programming language.
 
-Most of the time such designer plugin is used to expose a custom widget
-(written in Python) to QT Designer so that it appears in Designer’s widget box
-just like any other widget. It is possible to change the widget’s properties
-and to connect its signals and slots.
+Such designer plugin is used to expose a custom widget source code
+(written in Python3) to Qt Designer. This way the widget becomes available
+within the Qt designer where it can be interactively moved, designed, connected
+to signals and slots and more.
 
 .. note::
-   For more information on QT Designer and PyQt5 based plugins and widgets
+   For more information on Qt Designer and PyQt5 based plugins and widgets
    check `this link <http://pyqt.sourceforge.net/Docs/PyQt5/designer.html>`_.
 
 In this HOWTO section it will be described how to:
-  #. How to develop a **custom PyQt5 widget**
-  #. How to expose the **custom PyQt5 widget** class to **Qt designer** as a
+  #. Develop a **custom PyQt5 widget**
+  #. Expose the **custom PyQt5 widget** class to **Qt designer** as a
      **Qt designer plugin**
-  #. How to use the **custom PyQt5 widget** as a **Qt designer plugin** within
+  #. Use the **custom PyQt5 widget** as a **Qt designer plugin** within
      the Qt Designer
-  #. How to design of a custom **user interface (UI) plugin** (which includes
+  #. Design of a custom **user interface (UI) plugin** (which includes
      the custom **Qt designer plugin**) with Qt designer
-  #. How to use the **UI plugin** in a standalone way as a
+  #. Use the **UI plugin** in a standalone way as a
      **PyQt5 application**
-  #. How to use the **UI plugin** in **IMASViz**
+  #. Use the **UI plugin** in **IMASViz**
 
 .. Warning::
    Qt version of used PyQt5 (compiled with Qt) and Qt designer must match!
 
-As the main example to work with, the **Magnetics IDS overview Plugin**, also
-referred to as **Example Plugin** (made especially for the purposes of this
-HowTo manual section), will be used.
+For the purposes of this HowTo section a widget source code for the
+**Magnetics IDS overview Plugin** was developed and it is available in the
+IMASViz source code (VizPlugins/viz_example). As it is mainly intended only
+as an example of a plugin (including an example of the widget source code), it
+is referred to mainly as an **Example Plugin** (same goes for source files -
+exampleWidget.py and exampleplugin.py, introduced later in this howTo section).
 
-Below is a short demonstration video of **SOLPS overview Plugin**, showing an
-example of the processes listed in points **3-6**. More on this plugin (as
-IMASViz plugin) can be found in section :ref:`IMASViz_plugins`.
+As and addition, below is a short demonstration video of
+**SOLPS overview Plugin**, showing an example of the processes listed in
+points **3-6**. More on this plugin (as IMASViz plugin) can be found in section
+:ref:`IMASViz_plugins`.
 
 .. only:: html
 
@@ -591,12 +595,15 @@ Full final code of the example PyQt5 widget
 Exposing custom PyQt5 widget to Qt designer
 -------------------------------------------
 
-In order to "expose" our custom PyQt5 widget to Qt designer, a separate Python
-**.py** file is required. The name of this file is very important in order for
-the Qt designer to recognize it as a plugin. The name of this file should end
-with **plugin.py**. In this case, the file will be named **exampleplugin.py**.
-This file must be placed in the same directory as the widget source code -
-**exampleWidget.py**.
+In order to "expose" our custom PyQt5 widget to Qt designer, a separate Qt
+plugin Python file is required, written in Python3 programming language.
+Through this plugin file is used to "expose" a custom widget Python3 source code
+to Qt Designer.
+
+The name of this file is very important in order for the Qt designer to
+recognize it as a plugin. The name of this file should end with **plugin.py**.
+In this case, the file will be named **exampleplugin.py**. This file must be
+placed in the same directory as the widget source code - **exampleWidget.py**.
 
 A plugin *.py* file for Qt designer follows certain template which can be reused
 and then modified.
@@ -743,11 +750,11 @@ A startup window will open, as shown in the figure below.
 
   Qt designer startup window.
 
-On the far left side of the window is a **Widget Box**, listing all available
-widgets. On the bottom of the list, there is a group **IMASViz** containing
-widget labeled **exampleWidget**. This is our widget which was developed
-through the first half of this manual section. The group **IMASViz** was defined
-in the **plugin.py** file (**def group**).
+On the far left side of the window is a **Widget Box**, displaying a collection
+of all available widgets. On the bottom of the list, there is a group
+**IMASViz** containing widget labeled **exampleWidget**. This is our widget
+which was developed through the first half of this manual section. The group
+**IMASViz** was defined in the **plugin.py** file (**def group**).
 
 .. figure:: images/QtDesigner_witdgetBox_customWidgets.png
   :align: center
