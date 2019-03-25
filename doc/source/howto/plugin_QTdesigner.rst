@@ -1,12 +1,12 @@
 .. _plugins_qtdesigner:
 
-Developing custom user interface (UI) plugins with Qt designer
-==============================================================
+Developing a custom user interface (UI) plugins with Qt designer
+================================================================
 
 **Qt Designer** is a tool for designing and building **Qt-based graphical user**
 **interfaces**. It allows the user to design custom widgets, dialogs, main
 windows etc. using on-screen forms and a user-friendly simple drag-and-drop
-interface. It also provides the user with convenient ability to preview the
+interface. It also provides the user with a convenient ability to preview the
 designs to ensure they work as intended.
 
 In general, Qt Designer mainly offers basic QT widgets such as Push Button,
@@ -32,15 +32,15 @@ In this HOWTO section it will be described how to:
      the Qt Designer
   #. How to design of a custom **user interface (UI) plugin** (which includes
      the custom **Qt designer plugin**) with Qt designer
-  #. How to use of the **UI plugin** in a standalone way as a
+  #. How to use the **UI plugin** in a standalone way as a
      **PyQt5 application**
-  #. How to use of the **UI plugin** in **IMASViz**
+  #. How to use the **UI plugin** in **IMASViz**
 
 .. Warning::
    Qt version of used PyQt5 (compiled with Qt) and Qt designer must match!
 
-As a main example to work with, the **Magnetics IDS overview Plugin**, also
-referred to as **Example Plugin** (made specially for the purposes of this
+As the main example to work with, the **Magnetics IDS overview Plugin**, also
+referred to as **Example Plugin** (made especially for the purposes of this
 HowTo manual section), will be used.
 
 Below is a short demonstration video of **SOLPS overview Plugin**, showing an
@@ -74,18 +74,18 @@ In the end, the main features of this custom plugin are:
 - convenient plotting of all **flux_loop** and **poloidal field probe** signals
 found in the **Magnetics IDS** (arrays of values).
 
-In this case the whole code is written in **exampleWidget.py** Python file.
+In this case, the whole code is written in **exampleWidget.py** Python file.
 
 The final code can be already
 observed and compared here: :ref:`exampleWidget_code`.
 
 .. Note::
    It is recommended to have the finished code opened on the side while going
-   through this tutorial for better overall understanding of this section.
+   through this tutorial for a better overall understanding of this section.
 
 .. Note::
    It is recommended to have at least some basic knowledge from programming
-   (specially with Python programming language) before proceeding with the widget
+   (especially with Python programming language) before proceeding with the widget
    development instructions. A complete beginner might find those instructions
    a bit overwhelming.
 
@@ -107,7 +107,7 @@ Code header
 
 The header of the custom PyQt5 widget .py source file should contain some basic
 information about the code:
-- the .py file name,
+- the .py filename,
 - short description what the script is used for,
 - author name and
 - authors contact (e-mail is most convenient).
@@ -119,16 +119,16 @@ information about the code:
    :linenos:
 
 Documentation should be as important to a developer as all other facets of
-development. **Every code should contain a documentation** (in form of a header,
-code comments etc.). It either explains what the code does, how it operates,
-how to use it etc. Documentation is an important part of software engineering.
+development. **Every code should include documentation** (in the forms of a
+header, code comments etc.). It either explains what the code does, how it
+operates, how to use it etc. Documentation is an important part of software engineering.
 
 No matter what the code contains, chances are that someday other
 users will try to understand and use it. Even code authors don't remember
-everything they've done after just few weeks after the last time they worked on
-the code in question.
+everything they've done after just a few weeks after the last time they worked
+on the code in question.
 
-Taking that extra time to write a proper description on the contents of the
+Taking that extra time to write a proper description of the contents of the
 code will save huge amounts of time and effort for everybody to understand the
 code.
 
@@ -185,7 +185,7 @@ Class definition
 """"""""""""""""
 
 One of the main parts of this code is the definition of a new class inheriting
-from the PyQt5 **QWidget** class. In this case we label our class as
+from the PyQt5 **QWidget** class. In this case, we label our class as
 **example Widget**.
 
 This class defined the QWidget (contents, design, functions related to the
@@ -198,7 +198,7 @@ widget etc.).
    :linenos:
 
 .. note::
-   Do not forget to describe the class - what it its purpose etc.
+   Do not forget to describe the class - what is its purpose etc.
 
 Here also a new PyQt signal is set, which will be used later in code and when
 running the plugin.
@@ -222,9 +222,9 @@ Constructor definition
 
 Constructors are generally used for instantiating an object. The task of
 constructors is to initialize (assign values) to the data members of the
-class when an object of class is created.
+class when an object of the class is created.
 
-In case of this custom widget the constructor takes additional arguments:
+In case of this custom widget, the constructor takes additional arguments:
 - :guilabel:`parent` (can be either Qt object, later our case QMainWindow), and
 - :guilabel:`ids` (an IDS object).
 
@@ -247,7 +247,7 @@ And the **ids** object is set with:
 Regarding the **ids** object, the main idea is to make our widget capable of
 performing in two different ways. Either:
 
-  - use IDS object, passed to the widget (in which case **ids != None**),
+  - use IDS object passed to the widget (in which case **ids != None**),
   - if no IDS object was passed (**ids == None**), open IDS and create a new
     **ids** object.
 
@@ -288,7 +288,7 @@ and add its execution to the constructor:
    :lines: 59-61
    :linenos:
 
-Lastly, we define default layout of our widget and its contents (plot canvas and
+Lastly, we define the default layout of our widget and its contents (plot canvas and
 matplotlib navigation toolbar):
 
 .. note::
@@ -311,7 +311,7 @@ The **set** routines must be set as **slots (@pyqtSlot)**. This clearly marks
 the function as a slot for PyQt5. This also increases the speed and performance
 while executing the functions as slots in PyQt5 applications.
 
-The **get** routines are a simple functions which return the variable value.
+The **get** routines are simple functions which return the variable value.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -352,7 +352,7 @@ will be used to initiate the execution of certain functions on signal-emit.
    :linenos:
 
 The second "bundle" of functions deals with executing the plotting procedures
-to populate the **matplotlib canvas**. At this point in the manual the
+to populate the **matplotlib canvas**. At this point in this tutorial, the
 **PlotCanvas** class is not yet defined. This will be done in the next section.
 The functions are:
 
@@ -377,8 +377,8 @@ Class definition
 """"""""""""""""
 
 One of the main parts of this code is the definition of a new class inheriting
-from the matplotlib :guilabel:`FigureCanvas` class. In this case we label our class as
-**PlotCanvas**.
+from the matplotlib :guilabel:`FigureCanvas` class. In this case, we label our
+class as **PlotCanvas**.
 
 This class defines the plot frame (canvas) and functions related to it.
 
@@ -483,7 +483,7 @@ Next, set figure subplot:
    :lines: 214-215
    :linenos:
 
-Next, extract time values to :guilabel:`time_values` array. The time values
+Next, extract time values to a :guilabel:`time_values` array. The time values
 will correspond to plot X-axis, thus, for easier representation, a new array
 :guilabel:`x` can be defined and the same values added to it.
 
@@ -695,8 +695,8 @@ new widget, in order to properly refer to the widget source code - in this case
    :lines: 48-72
    :linenos:
 
-Use of custom PyQt5 widget in Qt designer
------------------------------------------
+Use of custom PyQt5 widget within Qt designer
+---------------------------------------------
 
 After the source and plugin code (.py files) are completed they are ready to be
 used within Qt designer.
@@ -744,14 +744,14 @@ A startup window will open, as shown in the figure below.
   Qt designer startup window.
 
 On the far left side of the window is a **Widget Box**, listing all available
-widgets. On the bottom of the list there is a group **IMASViz** containing
+widgets. On the bottom of the list, there is a group **IMASViz** containing
 widget labeled **exampleWidget**. This is our widget which was developed
 through the first half of this manual section. The group **IMASViz** was defined
 in the **plugin.py** file (**def group**).
 
 .. figure:: images/QtDesigner_witdgetBox_customWidgets.png
   :align: center
-  :width: 550px
+  :width: 200px
 
   Custom widget in Qt designer.
 
@@ -766,37 +766,37 @@ Adding plugin to IMASViz
 
 .. image sources (to be used)
 
-.. images/QtDesigner_EmptyMainWindow.png
-.. images/QtDesigner_SOLPSwidget_drag.png
-.. images/QtDesigner_SOLPSwidget_drop.png
-.. images/QtDesigner_SOLPSwidget_objectNameChange_before.png
-.. images/QtDesigner_SOLPSwidget_objectNameChange_after.png
-.. images/QtDesigner_MainWindow_windowTitleChange_before.png
-.. images/QtDesigner_MainWindow_windowTitleChange_after.png
-.. images/QtDesigner_widgetBox.png
-.. images/QtDesigner_PushButton_drag.png
-.. images/QtDesigner_add_3x_PushButton.png
-.. images/QtDesigner_PushButton_textEdit_before.png
-.. images/QtDesigner_PushButton_textEdit_after.png
-.. images/QtDesigner_PushButton_textEdit_finished.png
-.. images/QtDesigner_setToGridLayout_menu.png
-.. images/QtDesigner_setToGridLayout_finished.png
-.. images/QtDesigner_editSignalsSlots_menu.png
-.. images/QtDesigner_editSignalsSlots_redColorIndicator.png
-.. images/QtDesigner_editSignalsSlots_SetIDS_drag.png
-.. images/QtDesigner_editSignalsSlots_SetIDS_conf.png
-.. images/QtDesigner_editSignalsSlots_SetIDS_finished.png
-.. images/QtDesigner_editSignalsSlots_SetGGDData_conf.png
-.. images/QtDesigner_editSignalsSlots_PlotData_conf.png
-.. images/QtDesigner_editSignalsSlots_all_finished.png
-.. images/QtDesigner_preview_menu.png
-.. images/QtDesigner_preview_run.png
-.. images/QtDesigner_preview_run_IDSvariables.png
-.. images/QtDesigner_preview_run_SpecifyDataToPlot_default.png
-.. images/QtDesigner_preview_run_SpecifyDataToPlot_listOfQuantities.png
-.. images/QtDesigner_preview_run_PlotData.png
-.. images/QtDesigner_saveAs_menu.png
-.. images/QtDesigner_saveAs_set.png
+.. images/QtD_SOLPSovPl_EmptyMainWindow.png
+.. images/QtD_SOLPSovPl_SOLPSwidget_drag.png
+.. images/QtD_SOLPSovPl_SOLPSwidget_drop.png
+.. images/QtD_SOLPSovPl_SOLPSwidget_objectNameChange_before.png
+.. images/QtD_SOLPSovPl_SOLPSwidget_objectNameChange_after.png
+.. images/QtD_SOLPSovPl_MainWindow_windowTitleChange_before.png
+.. images/QtD_SOLPSovPl_MainWindow_windowTitleChange_after.png
+.. images/QtD_SOLPSovPl_widgetBox.png
+.. images/QtD_SOLPSovPl_PushButton_drag.png
+.. images/QtD_SOLPSovPl_add_3x_PushButton.png
+.. images/QtD_SOLPSovPl_PushButton_textEdit_before.png
+.. images/QtD_SOLPSovPl_PushButton_textEdit_after.png
+.. images/QtD_SOLPSovPl_PushButton_textEdit_finished.png
+.. images/QtD_SOLPSovPl_setToGridLayout_menu.png
+.. images/QtD_SOLPSovPl_setToGridLayout_finished.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_menu.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_redColorIndicator.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_SetIDS_drag.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_SetIDS_conf.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_SetIDS_finished.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_SetGGDData_conf.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_PlotData_conf.png
+.. images/QtD_SOLPSovPl_editSignalsSlots_all_finished.png
+.. images/QtD_SOLPSovPl_preview_menu.png
+.. images/QtD_SOLPSovPl_preview_run.png
+.. images/QtD_SOLPSovPl_preview_run_IDSvariables.png
+.. images/QtD_SOLPSovPl_preview_run_SpecifyDataToPlot_default.png
+.. images/QtD_SOLPSovPl_preview_run_SpecifyDataToPlot_listOfQuantities.png
+.. images/QtD_SOLPSovPl_preview_run_PlotData.png
+.. images/QtD_SOLPSovPl_saveAs_menu.png
+.. images/QtD_SOLPSovPl_saveAs_set.png
 
 
 
