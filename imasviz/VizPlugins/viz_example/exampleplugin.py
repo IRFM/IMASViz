@@ -35,6 +35,7 @@ class exampleplugin(QPyDesignerCustomWidgetPlugin):
 
     def whatsThis(self):
         return ""
+
     def isContainer(self):
         return False
 
@@ -45,6 +46,7 @@ class exampleplugin(QPyDesignerCustomWidgetPlugin):
         return "exampleWidget"
 
 # Define the image used for the icon.
+# Note: This is IMASviz default pixmap.
 _logo_16x16_xpm = [
     "16 16 3 1 ",
     "  c black",
@@ -68,5 +70,3 @@ _logo_16x16_xpm = [
     "XXXXXXXXXXXXXXXX"]
 
 _logo_pixmap = QPixmap(_logo_16x16_xpm)
-
-

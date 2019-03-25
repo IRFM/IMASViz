@@ -201,7 +201,7 @@ class PlotCanvas(FigureCanvas):
                                    QSizePolicy.Expanding,
                                    QSizePolicy.Expanding)
 
-    def plotFluxAoS(self, ids=None):
+    def plotFluxAoS(self, ids):
         """Plot values found in flux loops AoS.
 
         Arguments:
@@ -216,23 +216,26 @@ class PlotCanvas(FigureCanvas):
         # Extract X-axis values (time)
         time_values = self.ids.magnetics.time
         x = time_values
-        # Get the size of Aos (number of arrays)
+        # Get the size of AoS (number of arrays)
         num_flux_loop_AoS = len(self.ids.magnetics.flux_loop)
         # For each array extract array values and create a plot
         for i in range(num_flux_loop_AoS):
             # Extract array values
             y = self.ids.magnetics.flux_loop[i].flux.data
-            # Set plot (line) defined by X and Y values
-            ax.plot(x, y, '-')
+            # Set plot (line) defined by X and Y values +
+            # set line as full line (-) and add legend label.
+            ax.plot(x, y, '-', label='Flux_loop[' + str(i) + ']')
         # Enable grid
         ax.grid()
         # Set axis labels and plot title
         ax.set(xlabel='time [s]', ylabel='Flux Loop values',
                title='Flux loop')
+        # Enable legend
+        ax.legend()
         # Draw/Show plots
         self.draw()
 
-    def plotBPolAoS(self, ids=None):
+    def plotBPolAoS(self, ids):
         """Plot poloidal field probe values.
 
         Arguments:
@@ -246,23 +249,27 @@ class PlotCanvas(FigureCanvas):
         # Extract X-axis values (time)
         time_values = self.ids.magnetics.time
         x = time_values
-        # Get the size of Aos (number of arrays)
+        # Get the size of AoS (number of arrays)
         num_bpol_probe_AoS = len(self.ids.magnetics.bpol_probe)
         # For each array extract array values and create a plot
         for i in range(num_bpol_probe_AoS):
             # Extract array values
             y = self.ids.magnetics.bpol_probe[i].field.data
-            # Set plot (line) defined by X and Y values
-            ax.plot(x, y, '-')
+            # Set plot (line) defined by X and Y values +
+            # set line as full line (-) and add legend label.
+            ax.plot(x, y, '-', label='bpol_probe[' + str(i) + ']')
         # Enable grid
         ax.grid()
         # Set axis labels and plot title
         ax.set(xlabel='time [s]', ylabel='Poloidal field probe values',
                title='Poloidal field probe')
+        # Enable legend
+        ax.legend()
         # Draw/Show plots
         self.draw()
 
 if __name__ == '__main__':
+
     # Set application object
     app = QApplication(sys.argv)
     # Set main PyQt5 window
