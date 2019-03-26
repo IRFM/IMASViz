@@ -68,52 +68,69 @@ Developing custom PyQt5 widget
 ------------------------------
 
 This section describes and demonstrates how to write a complete custom PyQt5
-widget dealing with the data stored within the **Magnetics IDS**. The same
-widget will be then used to create **Magnetics IDS overview Plugin** using Qt
-designer.
+widget that handles data stored within the **Magnetics IDS**. Later in this
+HowTo section, the same widget will be then used to create
+**Magnetics IDS overview Plugin** using Qt designer.
 
-In the end, the main features of this custom plugin are:
-- **Opening and reading an IDS** for the set case parameters **OR**
-**reading the IDS which was passed by the application**, and
-- convenient plotting of all **flux_loop** and **poloidal field probe** signals
-found in the **Magnetics IDS** (arrays of values).
+The main final features of this custom plugin will be:
 
-In this case, the whole code is written in **exampleWidget.py** Python file.
+-
+  - **Opening and reading the contents a specified IDS** (speficied by the set
+    case parameters)
 
-The final code can be already
-observed and compared here: :ref:`exampleWidget_code`.
+  **OR**
+
+  - **reading the contents of an IDS which was passed to the plugin by "host"
+    application**, and
+- convenient plotting of all **flux_loop** and **poloidal field probe** (AoS)
+  signals found in the **Magnetics IDS** (arrays of values).
+
+In this case, the whole widget source code is written in Python3 file named
+**exampleWidget.py**.
+
+The final code can be already observed and compared here:
+:ref:`exampleWidget_code`.
 
 .. Note::
-   It is recommended to have the finished code opened on the side while going
-   through this tutorial for a better overall understanding of this section.
+   It is highly recommended to have the finished code opened on the side while
+   going through this HowTo section to better understand the whole code.
 
 .. Note::
-   It is recommended to have at least some basic knowledge from programming
-   (especially with Python programming language) before proceeding with the widget
-   development instructions. A complete beginner might find those instructions
-   a bit overwhelming.
+   It is recommended to have at least basic knowledge from programming
+   (especially with Python programming language) before proceeding with the
+   widget development instructions. A complete beginner might find those
+   instructions a bit overwhelming.
 
-This section is split into the next subsections:
+The steps are split into the next subsections:
 
-  #. Code header
-  #. Import statements
-  #. Widget Class definition
-      #. Widget Constructor definition
-      #. Widget base "set" and "get" routines
-      #. Widget custom routines
-  #. PlotCanvas Class definition
-      #. PlotCanvas Constructor definition
-      #. PlotCanvas custom plotting routines
-  #. Running the code as the main program (standalone)
+  1. Code header
+
+  2. Import statements
+
+  3. Widget Class definition
+
+      3.1 Widget Constructor definition
+
+      3.2 Widget base "set" and "get" routines
+
+      3.3 Widget custom routines
+
+  4. PlotCanvas Class definition
+
+      4.1 PlotCanvas Constructor definition
+
+      4.2 PlotCanvas custom plotting routines
+
+  5. Running the code as the main program (standalone)
 
 Code header
 ^^^^^^^^^^^
 
-The header of the custom PyQt5 widget .py source file should contain some basic
-information about the code:
-- the .py filename,
-- short description what the script is used for,
-- author name and
+The header of the custom PyQt5 widget source code should contain the basic
+information about the code itself:
+- the source code (.py) filename,
+- short description and the purpose of this script
+- authors name and
 - authors contact (e-mail is most convenient).
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
@@ -128,13 +145,9 @@ header, code comments etc.). It either explains what the code does, how it
 operates, how to use it etc. Documentation is an important part of software engineering.
 
 No matter what the code contains, chances are that someday other
-users will try to understand and use it. Even code authors don't remember
-everything they've done after just a few weeks after the last time they worked
-on the code in question.
-
-Taking that extra time to write a proper description of the contents of the
-code will save huge amounts of time and effort for everybody to understand the
-code.
+users will try to understand and use it. Taking that extra time to write a
+proper description of the contents of the code will save huge amounts of time
+and effort for everybody to understand the code.
 
 .. _plugins_qtdesigner_import_statement:
 
@@ -143,9 +156,9 @@ Import statements
 
 The custom PyQt5 widget requires additional sources - modules.
 
-The ones required are:
+The ones required in this case are:
 
-Common system and OS modules:
+- Common system and OS modules:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -153,7 +166,7 @@ Common system and OS modules:
    :lines: 18-21
    :linenos:
 
-PyQt5 modules:
+- PyQt5 modules:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -161,7 +174,7 @@ PyQt5 modules:
    :lines: 22-24
    :linenos:
 
-Matplotlib modules and setting matplotlib to use the Qt rendering:
+- Matplotlib modules and setting matplotlib to use the Qt rendering:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -170,7 +183,7 @@ Matplotlib modules and setting matplotlib to use the Qt rendering:
    :linenos:
    :emphasize-lines: 3
 
-IMAS modules:
+- IMAS modules:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -188,12 +201,12 @@ Python3.
 Class definition
 """"""""""""""""
 
-One of the main parts of this code is the definition of a new class inheriting
-from the PyQt5 **QWidget** class. In this case, we label our class as
-**example Widget**.
+First main part of this code is the definition of a new class inheriting
+from the PyQt5 **QWidget** class. In this case, the class is named
+:guilabel:`exampleWidget`.
 
-This class defined the QWidget (contents, design, functions related to the
-widget etc.).
+This class will later fully define the QWidget (contents, design, functions
+related to the widget and more).
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -204,8 +217,7 @@ widget etc.).
 .. note::
    Do not forget to describe the class - what is its purpose etc.
 
-Here also a new PyQt signal is set, which will be used later in code and when
-running the plugin.
+Here also a new PyQt signal is set, which will be needed later in code.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -221,15 +233,20 @@ When the signal gets emitted the connected slot (Python function) gets called.
    More on signal and slots:
    `Link <https://www.tutorialspoint.com/pyqt/pyqt_signals_and_slots.html>`_
 
+.. _widget_constructor:
+
 Constructor definition
 """"""""""""""""""""""
 
-Constructors are generally used for instantiating an object. The task of
-constructors is to initialize (assign values) to the data members of the
-class when an object of the class is created.
+In short, constructors are generally used for initiating an object. The task of
+constructors is to initialize the data members of the class when an object of
+the class is created.
 
-In case of this custom widget, the constructor takes additional arguments:
+In case of this custom widget, the constructor required two additional
+arguments:
+
 - :guilabel:`parent` (can be either Qt object, later our case QMainWindow), and
+
 - :guilabel:`ids` (an IDS object).
 
 Both arguments are set as **None** (default values).
@@ -240,7 +257,7 @@ Both arguments are set as **None** (default values).
    :lines: 42-55
    :linenos:
 
-And the **ids** object is set with:
+And the :guilabel:`ids` object is set with:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -248,22 +265,23 @@ And the **ids** object is set with:
    :lines: 63-65
    :linenos:
 
-Regarding the **ids** object, the main idea is to make our widget capable of
-performing in two different ways. Either:
+Regarding the :guilabel:`ids` object, the main idea is to make our widget
+capable of performing in two different ways. Either:
 
-  - use IDS object passed to the widget (in which case **ids != None**),
-  - if no IDS object was passed (**ids == None**), open IDS and create a new
-    **ids** object.
+- use IDS object passed to the widget (in which case **ids != None**),
+- if no IDS object was passed (**ids == None**), open IDS and create a new
+  :guilabel:`ids` object.
 
-For example, in **IMASViz** there is and IDS open and thus have the **ids**
-object available. Instead of opening the IDS again, the **ids** object can be
-just passed to the custom widget as an argument and the widget can continue to
-use it.
+For example, in **IMASViz** there is at least one IDS open at time and thus
+have the :guilabel:`ids` object available. Instead of opening the IDS again,
+the :guilabel:`ids` object can be just passed to the custom widget as an
+argument and the widget can continue to use it.
 
-If there is no IDS object already available (meaning no IDS is already being
-read), it should be created/opened. In constructor we define a dictionary
-labeled **self.idsParameters** which should contain all IDS parameters for IDS
-(will be used later to open the correct IDS):
+If there is no IDS object available (meaning no IDS is already being
+opened), an IDS must be opened thus creating an object referring to the IDS.
+In constructor we define a dictionary labeled as :guilabel:`self.idsParameters`
+which should contain all IDS parameters for IDS (will be used later to open the
+needed IDS):
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -272,11 +290,11 @@ labeled **self.idsParameters** which should contain all IDS parameters for IDS
    :linenos:
 
 Constructor should contain also a check if the widget is being run in a desktop
-environment. As this is a widget which deals with GUI and visualization this is
-mandatory. The code should not be run from a "terminal-only" environment (for
+environment. This is mandatory as this is a widget which deals with GUI and
+visualization. The code should not be run from a "terminal-only" environment (for
 example ``ssh user@host`` etc.).
 
-In this case we define a **checkDisplay()** function:
+In this case we define a function named :guilabel:`checkDisplay()`:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -284,7 +302,7 @@ In this case we define a **checkDisplay()** function:
    :lines: 172-177
    :linenos:
 
-and add its execution to the constructor:
+and execute it in the constructor:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -292,12 +310,12 @@ and add its execution to the constructor:
    :lines: 59-61
    :linenos:
 
-Lastly, we define the default layout of our widget and its contents (plot canvas and
+Lastly, a widget layout and its contents need to be defined (plot canvas and
 matplotlib navigation toolbar):
 
 .. note::
-   The **PlotCanvas** class and its routines definition will be done in the
-   later sections.
+   The **PlotCanvas** class definition and the definition of its routines
+   will be done in the following sections.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -308,14 +326,15 @@ matplotlib navigation toolbar):
 Base "set" and "get" routines
 """""""""""""""""""""""""""""
 
-For setting and getting/returning the IDS case parameters, a set of **set/get**
-routines must be defined.
+For setting and getting/returning the IDS case parameters, the definition of
+a few :guilabel:`set/get` routines is required.
 
-The **set** routines must be set as **slots (@pyqtSlot)**. This clearly marks
-the function as a slot for PyQt5. This also increases the speed and performance
-while executing the functions as slots in PyQt5 applications.
+The :guilabel:`set` routines must be set as **slots (@pyqtSlot)**. This clearly
+marks the function as a slot for PyQt5 and it also increases its speed and
+performance when being executed as slots in PyQt5 applications.
 
-The **get** routines are simple functions which return the variable value.
+The :guilabel:`get` routines are simple functions which return one variable
+value.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -323,12 +342,13 @@ The **get** routines are simple functions which return the variable value.
    :lines: 130-170
    :linenos:
 
-Custom routines
-"""""""""""""""
+Custom functions (routines)
+"""""""""""""""""""""""""""
 
 The first "bundle" of functions deals with IDSs:
+
 1. :guilabel:`openIDS`: for opening the IDS (using the IDS case parameters,
-defined with the ``self.idsParameters`` dictionary),
+defined with the :guilabel:`self.idsParameters` dictionary),
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -336,18 +356,19 @@ defined with the ``self.idsParameters`` dictionary),
    :lines: 109-120
    :linenos:
 
-2. :guilabel:`setIDS`: for setting the IDS object (``self.ids``). Here also the
+2. :guilabel:`setIDS`: for setting the IDS object (:guilabel:`self.ids`). Here also the
 **emit signal** statement is included. This way every time this function will be
 called/executed, this signal will get emmited. Later in the plugin this signal
 will be used to initiate the execution of certain functions on signal-emit.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 120
-   :lines: 120-125
+   :lineno-start: 122
+   :lines: 122-125
    :linenos:
 
-3. :guilabel:`getIDS`: for getting/returning the IDS object (``self.ids``).
+3. :guilabel:`getIDS`: for getting/returning the IDS object
+(:guilabel:`self.ids`).
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -357,13 +378,13 @@ will be used to initiate the execution of certain functions on signal-emit.
 
 The second "bundle" of functions deals with executing the plotting procedures
 to populate the **matplotlib canvas**. At this point in this tutorial, the
-**PlotCanvas** class is not yet defined. This will be done in the next section.
-The functions are:
+**PlotCanvas** class is not yet defined. This will be done in the next HowTo
+section. The functions needed are:
 
 - :guilabel:`plotFluxAoS`: for plotting all **Flux_loop** signal arrays values,
-   and
+  and
 - :guilabel:`plotBPolAoS`: for plotting all **poloidal field probe** signal
-   arrays values
+  arrays values
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -380,11 +401,13 @@ FigureCanvas class in Python3.
 Class definition
 """"""""""""""""
 
-One of the main parts of this code is the definition of a new class inheriting
-from the matplotlib :guilabel:`FigureCanvas` class. In this case, we label our
-class as **PlotCanvas**.
+Second main part this code (with the first being the definition of the
+:guilabel:`exampleWindget` class) is the definition of a new class inheriting
+from the matplotlib :guilabel:`FigureCanvas` class. In this case, the class
+is named :guilabel:`PlotCanvas`.
 
-This class defines the plot frame (canvas) and functions related to it.
+This class will later fully define the matplotlib plot frame (canvas) and
+functions related to it.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -395,7 +418,8 @@ This class defines the plot frame (canvas) and functions related to it.
 Constructor definition
 """"""""""""""""""""""
 
-In this case the constructor takes additional arguments:
+In this case the constructor takes 4 additional arguments:
+
 - :guilabel:`parent` (our custom QWidget),
 - :guilabel:`width` (canvas width),
 - :guilabel:`height` (canvas height), and
@@ -424,7 +448,7 @@ Next, a figure object :guilabel:`fig` is set:
 
 Next, the (by class) inherited :guilabel:`FigureCanvas` constructor is executed.
 The :guilabel:`fig` object is passed to it as an argument. This way the
-**figure** is going to be embedded withing the **matplotlib canvas**.
+**figure** is embedded within the **matplotlib canvas**.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -432,7 +456,7 @@ The :guilabel:`fig` object is passed to it as an argument. This way the
    :lines: 196-197
    :linenos:
 
-Next, the parent of the :guilabel:`FigureCanvas` is set:
+Next, the **parent** of the :guilabel:`FigureCanvas` is set:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -440,7 +464,7 @@ Next, the parent of the :guilabel:`FigureCanvas` is set:
    :lines: 197-198
    :linenos:
 
-Lastly, the :guilabel:`FigureCanvas` size policy is set.
+Lastly, the :guilabel:`FigureCanvas` **size policy** is set.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -460,18 +484,19 @@ The whole :guilabel:`PlotCanvas` constructor code:
 Custom plotting functions
 """""""""""""""""""""""""
 
-There are two plotting functions requires:
+There are two plotting functions required:
 
-1. :guilabel:`plotFluxAoS`, for plotting all **Flux_loop** signal arrays, and
+1. :guilabel:`plotFluxAoS`, for plotting all **flux_loop** signal arrays, and
 2. :guilabel:`plotBPolAoS`, for plotting all **poloidal field probe** signal
    arrays values.
 
-Both are very similar, the only difference between them is which data is read
-and used for plotting. Because of this similarity only function
-:guilabel:`plotFluxAoS` will be described in depth.
+Both are very similar, the only difference between them is which data is
+extracted from the IDS and used for plotting. Because of this similarity only
+the function :guilabel:`plotFluxAoS` will be described in depth.
 
-The function :guilabel:`plotFluxAoS` required one argument: the IDS object.
-The function must also set the provided **ids** object to **self.ids** object.
+The function :guilabel:`plotFluxAoS` requires only one argument: the IDS object.
+The function must also set the provided :guilabel:`ids` object to
+:guilabel:`self.ids` object.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -479,7 +504,7 @@ The function must also set the provided **ids** object to **self.ids** object.
    :lines: 204-213
    :linenos:
 
-Next, set figure subplot:
+Next, figure subplot must be set:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -487,9 +512,10 @@ Next, set figure subplot:
    :lines: 214-215
    :linenos:
 
-Next, extract time values to a :guilabel:`time_values` array. The time values
-will correspond to plot X-axis, thus, for easier representation, a new array
-:guilabel:`x` can be defined and the same values added to it.
+Next, the time values must be extracted and assigned to :guilabel:`time_values`
+array. The time values will correspond to plot X-axis, thus, for easier
+representation, a new array :guilabel:`x` can be defined and the same values
+assigned to it.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -497,10 +523,11 @@ will correspond to plot X-axis, thus, for easier representation, a new array
    :lines: 216-218
    :linenos:
 
-Next, loop through all structured of the **Flux_loop** AoS. Extract the array
-values (Y-axis values) and using the previously set time values (X-axis) add a
-new plot to the matplotlib figure. This gets repeated until no more AoS arrays
-are left.
+Next, looping through all structured of the **flux_loop** AoS is required.
+Each array values (Y-axis values) need to be extracted and then together with
+the previously set time values (X-axis) a new plot can be added to the
+matplotlib figure. Because of the loop this gets repeated until no more AoS
+arrays are left.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -508,12 +535,13 @@ are left.
    :lines: 219-227
    :linenos:
 
-Next:
-- enable plot grid,
-- set X-axis, Y-axis label,
-- set plot title,
-- enable legend, and
-- draw the plot.
+Next, few additional modifications are required:
+
+- enabling plot grid,
+- setting X-axis, Y-axis label,
+- setting plot title,
+- enabling legend, and
+- drawing the plot.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -529,7 +557,7 @@ Final :guilabel:`plotFluxAoS` code:
    :lines: 204-236
    :linenos:
 
-As already mentioned, :guilabel:`plotBPolAoS` function code is almost identical
+As already stated, :guilabel:`plotBPolAoS` function code is almost identical
 to :guilabel:`plotFluxAoS` code.
 
 Final :guilabel:`plotBPolAoS`:
@@ -539,8 +567,9 @@ Final :guilabel:`plotBPolAoS`:
    :lineno-start: 238
    :lines: 238-269
    :linenos:
+   :emphasize-lines: 15-23
 
-At this point the **exampleWidget.py** code is finished and ready to be used.
+At this point the **exampleWidget.py** code is finished and ready for use.
 
 Running the code as the main program (standalone)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -548,10 +577,10 @@ Running the code as the main program (standalone)
 To run this example widget in a standalone way, few more lines must be added to
 the **exampleWidget.py**.
 
-This part of the code contains setting the **QApplication**, **QMainWindow**,
-initiating the :guilabel:`exampleWidget` class, reading the IDS (parameters are
-set in the :guilabel:`exampleWidget` constructor) and executing the plotting
-procedures.
+This part of the code contains setting the :guilabel:`QApplication`,
+:guilabel:`QMainWindow`, initiating the :guilabel:`exampleWidget` class,
+reading the IDS (parameters are set in the :guilabel:`exampleWidget`
+constructor) and executing the plotting procedures.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -559,20 +588,21 @@ procedures.
    :lines: 265-287
    :linenos:
 
-The code can now be run with
+The code can now be run from the terminal with the next command:
 
 .. code-block:: console
 
     python3 exampleWidget.py
 
 .. Note::
-   Make sure that the IDS (the one you want to open) exists!
+   Make sure that the IDS with the specified case parameters exists (done in
+   :ref:`widget_constructor` using :guilabel:`idsParameters` dictionary)!
 
 .. figure:: images/exampleWidget_standalone_run_flux_loop.png
   :align: center
   :width: 550px
 
-  **exampleWidget.py**: Plotting all **magnetics IDS** arrays of AoS
+  **exampleWidget.py**: Plotting all **magnetics IDS** arrays (17) of AoS
   **flux_loop** found in IDS (on GateWay HPC) shot: 52344;   run: 0;
   user: g2penkod; device: viztest.
 
@@ -580,7 +610,7 @@ The code can now be run with
   :align: center
   :width: 550px
 
-  **exampleWidget.py**: Plotting all **magnetics IDS** arrays of AoS
+  **exampleWidget.py**: Plotting all **magnetics IDS** arrays (ABOUT 130) of AoS
   **bpol_probe** found in IDS (on GateWay HPC) shot: 52344;   run: 0;
   user: g2penkod; device: viztest.
 
@@ -595,18 +625,15 @@ Full final code of the example PyQt5 widget
 Exposing custom PyQt5 widget to Qt designer
 -------------------------------------------
 
-In order to "expose" our custom PyQt5 widget to Qt designer, a separate Qt
-plugin Python file is required, written in Python3 programming language.
-Through this plugin file is used to "expose" a custom widget Python3 source code
-to Qt Designer.
-
+In order to "expose" the **custom PyQt5 widget** to **Qt designer**, a separate
+Qt plugin Python file is required, written in Python3 programming language.
 The name of this file is very important in order for the Qt designer to
-recognize it as a plugin. The name of this file should end with **plugin.py**.
-In this case, the file will be named **exampleplugin.py**. This file must be
-placed in the same directory as the widget source code - **exampleWidget.py**.
+recognize it. The name of this file should end with **plugin.py** (case
+sensitive!). In this case, the file is named **exampleplugin.py**. it must
+be placed in the same directory as the widget source code - **exampleWidget.py**.
 
-A plugin *.py* file for Qt designer follows certain template which can be reused
-and then modified.
+This plugin *.py* file for Qt designer follows certain template which can be reused
+and only few parts of it need to be modified.
 
 The whole code is shown below.
 
@@ -641,11 +668,12 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 18
    :lines: 18-19
    :linenos:
+   :emphasize-lines: 2
 
 4. Returning custom widget object on :guilabel:`createWidget`.
 
 .. Note::
-   If widget constructor required arguments they must be defined here! In this
+   If widget constructor requires arguments they must be included here! In this
    case :guilabel:`parent` and :guilabel:`ids`.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
@@ -653,6 +681,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 21
    :lines: 21-22
    :linenos:
+   :emphasize-lines: 2
 
 5. Name:
 
@@ -661,6 +690,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 24
    :lines: 24-25
    :linenos:
+   :emphasize-lines: 2
 
 6. Group:
 
@@ -669,6 +699,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 27
    :lines: 27-28
    :linenos:
+   :emphasize-lines: 2
 
 7. Tool tip:
 
@@ -677,6 +708,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 33
    :lines: 33-34
    :linenos:
+   :emphasize-lines: 2
 
 8. XML attribute definition:
 
@@ -685,6 +717,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 42
    :lines: 42-43
    :linenos:
+   :emphasize-lines: 2
 
 9. Include file:
 
@@ -693,6 +726,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lineno-start: 45
    :lines: 45-46
    :linenos:
+   :emphasize-lines: 2
 
 10. Icon - pixmap (optional):
 
@@ -706,11 +740,11 @@ Use of custom PyQt5 widget within Qt designer
 ---------------------------------------------
 
 After the source and plugin code (.py files) are completed they are ready to be
-used within Qt designer.
+used with the Qt designer.
 
 To achieve that, first the location of the necessary files must be provided to
-the Qt designer. This is done by adding a path to the ``$PYQTDESIGNERPATH`` system
-environment.
+the Qt designer. This is done by adding a path to the ``$PYQTDESIGNERPATH``
+system environment variable.
 
 .. code-block:: console
 
@@ -728,13 +762,12 @@ in this case
     # C-shell
     setenv PYQTDESIGNERPATH $VIZ_HOME/imasviz/VizPlugins/viz_example:${PYQTDESIGNERPATH}
 
-When this is done run the Qt designer.
+After this step is completed run the Qt designer.
 
 .. Warning::
-   Qt version of used PyQt5 (compiled with Qt) and Qt designer must match!
+   Qt version of used PyQt5 (compiled with Qt) and Qt designer **must match**!
    Qt designer with Qt version X will not be able to find a plugin which
-   source (widget code) was written using PyQt5 which was compiled with
-   Qt version Y!
+   source (widget code) was written using PyQt5 compiled with Qt version Y!
 
 Qt designer is (usually) run with
 
@@ -750,11 +783,12 @@ A startup window will open, as shown in the figure below.
 
   Qt designer startup window.
 
-On the far left side of the window is a **Widget Box**, displaying a collection
-of all available widgets. On the bottom of the list, there is a group
-**IMASViz** containing widget labeled **exampleWidget**. This is our widget
-which was developed through the first half of this manual section. The group
-**IMASViz** was defined in the **plugin.py** file (**def group**).
+On the far left side of the window lays a **Widget Box** which displays a
+collection of all available widgets. On the bottom of the list, a group
+**IMASViz** containing widget labeled **exampleWidget** can be found. This is
+the custom widget which was developed through the first half of this manual
+section. The group **IMASViz** was defined in the **plugin.py** file
+(**def group**).
 
 .. figure:: images/QtDesigner_witdgetBox_customWidgets.png
   :align: center
