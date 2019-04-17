@@ -67,6 +67,8 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             if len(self.signal) == 2:
                 t = QVizPreviewPlotSignal.getTime(self.signal)
                 v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
+                if (len(t) != len(v)):
+                    raise ValueError("1D data can not be previewed, x and y shapes are different.")
                 self.plot1DSignal(shotNumber = self.dataTreeView.shotNumber,
                                   t = t, v = v, title = self.title,
                                   label = self.label, xlabel = self.xlabel)
