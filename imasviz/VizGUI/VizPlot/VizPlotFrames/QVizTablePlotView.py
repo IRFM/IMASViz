@@ -150,6 +150,11 @@ class QVizTablePlotView(pg.GraphicsWindow):
                     # Add plot
                     # Note: label='' is used because it is redefined with
                     # setText(text='', size='8pt')
+                    if (len(u) != len(ti)):
+                        mess = 'x,y shapes are different, ignoring plot with label:' + label
+                        print(mess)
+                        dtv.log.error(mess)
+                        continue
                     self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
                               ylabel=ylabel)
                     # Get the current (last) plot item, created by self.plot()
