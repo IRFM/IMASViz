@@ -564,10 +564,7 @@ class QVizDataTreeViewFrame(QMainWindow):
             self.dataTreeView.log.info("View update ended.")
 
             if (idsName == 'equilibrium'):
-                self.dataTreeView.log.info("WARNING: GGD structure array from "
-                                           + "parent "
-                                           + "equilibrium.time_slice[itime] "
-                                           + "has been ignored.")
+                self.dataTreeView.log.info("WARNING: GGD structure has been ignored.")
 
     def addMenuBar(self):
         """Create and configure the menu bar.
