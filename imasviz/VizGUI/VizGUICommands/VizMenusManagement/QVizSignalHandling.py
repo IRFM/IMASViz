@@ -108,6 +108,9 @@ class QVizSignalHandling(QObject):
         # - Add action for setting signal node select/unselect status
         self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
 
+        # - Add action for ploting signal node as a function of time
+        self.contextMenu.addAction(self.actionPlotAsFunctionOfTime())
+
         # - Add action for selection of all signals from the same array of
         #   structures
         self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
@@ -139,6 +142,22 @@ class QVizSignalHandling(QObject):
         - 'Plot ' + self.signalNodeName + ' as a function of time'
         """
         return self.contextMenu
+
+    def actionPlotAsFunctionOfTime(self):
+        # Add action to plot the signal data as a function of time
+        # TODO: icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
+        action_plotAsFunctionOfTime = QAction(icon, 'Plot as function of time', self)
+        action_plotAsFunctionOfTime.setDisabled(True)
+        #menu_figure.addAction(action_plotAsFunctionOfTime)
+        # - Enable this action if the conditions are met
+        if self.treeNode != None and \
+                self.treeNode.treeNodeExtraAttributes.time_dependent(
+                    self.treeNode.treeNodeExtraAttributes.aos):
+            action_plotAsFunctionOfTime.triggered.connect(
+                self.plotSignalVsTimeCommand)
+            action_plotAsFunctionOfTime.setDisabled(False)
+        return action_plotAsFunctionOfTime
 
     def actionSelectOrUnselectSignalNode(self):
         """Set action to select/unselect signal node.
@@ -208,19 +227,6 @@ class QVizSignalHandling(QObject):
                 # Add to submenu
                 menu_figure.addAction(action_addSignalPlotToFig)
 
-
-        # Add action to plot the signal data as a function of time
-        # TODO: icon
-        action_plotAsFunctionOfTime = QAction('Plot as function of time', self)
-        action_plotAsFunctionOfTime.setDisabled(True)
-        menu_figure.addAction(action_plotAsFunctionOfTime)
-        # - Enable this action if the conditions are met
-        if self.treeNode != None and \
-                self.treeNode.treeNodeExtraAttributes.time_dependent(
-                    self.treeNode.treeNodeExtraAttributes.aos):
-            action_plotAsFunctionOfTime.triggered.connect(
-                self.plotSignalVsTimeCommand)
-            action_plotAsFunctionOfTime.setDisabled(False)
 
         return menu
 
@@ -382,6 +388,7 @@ class QVizSignalHandling(QObject):
                 partial(self.onPlotToStackedPlotView, True))
             # Add to submenu
             subMenu_SPV_new.addAction(action_SPV_allDTV)
+
 
         return menu
 
