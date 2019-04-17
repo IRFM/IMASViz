@@ -54,11 +54,11 @@ class QVizGlobalValues:
                 print ("Environment variable TESTING_VIZ_HOME not defined. Check the QVizGlobalValues.py file. Exiting.")
                 sys.exit(-1)
 
-
+        os.environ["UDA_DISABLED"] = "1"
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.20.0"
+        TESTING_IMAS_VERSION = "3.22.0"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)

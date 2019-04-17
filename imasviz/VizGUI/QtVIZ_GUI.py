@@ -120,10 +120,15 @@ class GUIFrame(QTabWidget):
         self.runNumber2 = QLineEdit(default_run)
         vboxlayout.addRow('Run number', self.runNumber2)
 
-        if 'UDA_HOST' in os.environ:
-            publicDatabases = ['WEST', 'TCV', 'JET', 'AUG', 'MAST']
+        publicDatabases = ['WEST', 'TCV', 'JET', 'AUG', 'MAST']
+
+        if (os.environ.get('UDA_DISABLED') == "1"):
+            self.tab2.setDisabled(True)
         else:
-            publicDatabases = []
+            if ('UDA_HOST' in os.environ) :
+                self.tab2.setDisabled(False)
+            else:
+                self.tab2.setDisabled(True)
 
         self.cb = QComboBox()
         self.cb.addItems(publicDatabases)

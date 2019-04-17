@@ -141,8 +141,8 @@ class QVizDataAccessCodeGenerator:
 
             elif data_type == 'struct_array':
 
-                if (ids_child_element.get('name') == "ggd" and child.text == "equilibrium.time_slice[i]"):
-                    print("WARNING: GGD structure array from parent equilibrium.time_slice[i] has been ignored")
+                if (ids_child_element.get('name') == "ggd" or ids_child_element.get('name') == "grids_ggd" ):
+                    print("WARNING: GGD structure has been ignored")
                     continue
 
                 code = child.text + "." + ids_child_element.get('name') + '(:)'
