@@ -92,14 +92,25 @@ class GUIFrame(QTabWidget):
     def OpenDataSourceFromTab1(self, evt):
         try:
             self.CheckInputsFromTab1()
-            self.openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+            tokens = self.shotNumber.text().split()
+            try:
+                for shotNumber in tokens:
+                    val = int(shotNumber)
+
+                    """Check if data source is available"""
+                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE, val)
+
+                    self.openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                    imasDbName=self.imasDbName.text(),
                                    userName=self.userName.text(),
                                    runNumber=self.runNumber.text(),
-                                   shotNumber=self.shotNumber.text())
+                                   shotNumber=str(val))
+
+            except ValueError as e:
+                raise ValueError(str(e))
 
         except ValueError as e:
-            QVizGlobalOperations.message(self, str(e), 'Error opening file')
+            QVizGlobalOperations.message(self, str(e), 'IMASViz error')
 
     def CheckInputsFromTab1(self):
         """Display warning message if the required parameter was not specified"""
@@ -111,9 +122,6 @@ class GUIFrame(QTabWidget):
 
         if self.shotNumber.text() == '' or self.runNumber.text() == '':
             raise ValueError("'Shot number' or 'run number' field is empty.")
-
-        """Check if data source is available"""
-        QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE, int(self.shotNumber.text()))
 
     def tabTwo(self):
 
@@ -294,7 +302,7 @@ class GUIFrame(QTabWidget):
             dtv = self.openShotView.api.GetDTVFrames()[index]
             if dtv.isVisible():
                 dtv.hide()
-                self.openShotView.api.removeDTVFrame(dtv)
+            self.openShotView.api.removeDTVFrame(dtv)
 
     # def menuShowWindows(self):
     #
@@ -339,6 +347,7 @@ def main():
     QVizGlobalOperations.checkEnvSettings()
     #label = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
     window = VizMainWindow(None);
+    window.setGeometry(400, 400, 600, 300)
     window.show()
     sys.exit(app.exec_())
 
