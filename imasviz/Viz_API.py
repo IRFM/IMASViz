@@ -41,6 +41,13 @@ class Viz_API:
         self.DTVframeList = []
         self.DTVlist = []
 
+    def GetDTVFrames(self):
+        return self.DTVframeList
+
+    def removeDTVFrame(self, frame):
+        self.DTVframeList.remove(frame)
+        self.DTVlist.remove(frame.dataTreeView)
+
     def addNodeToFigure(self, figureKey, key, tup):
         if figureKey not in self.figToNodes:
             self.figToNodes[figureKey] = {}

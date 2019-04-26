@@ -13,6 +13,9 @@
 
 import os
 import sys
+from functools import partial
+from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle
+from imasviz.VizUtils.QVizGlobalValues import GlobalIcons
 
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
@@ -43,8 +46,10 @@ class GUIFrame(QTabWidget):
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
 
-        self.handlerValue = 0
-        self.shell = None
+        #self.openedDTVs = []
+        self.contextMenu = None
+
+
 
     def closeEvent(self, event):
         """Modify close event to request confirmation trough dialog. If
@@ -92,6 +97,7 @@ class GUIFrame(QTabWidget):
                                    userName=self.userName.text(),
                                    runNumber=self.runNumber.text(),
                                    shotNumber=self.shotNumber.text())
+
         except ValueError as e:
             QVizGlobalOperations.message(self, str(e), 'Error opening file')
 
@@ -173,13 +179,167 @@ class GUIFrame(QTabWidget):
 
         QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA, int(self.shotNumber2.text()))
 
+    def contextMenuEvent(self, event):
+
+        # Get position
+        self.pos = event.pos()
+        self.showPopUpMenu()
+
+    def showPopUpMenu(self):
+        """Display the popup menu .
+        """
+        self.contextMenu = QMenu()
+        # Set new popup menu
+        self.popupmenu = self.buildContextMenu()
+
+        # Map the menu (in order to show it)
+        self.popupmenu.exec_(self.mapToGlobal(self.pos))
+        return 1
+
+    def buildContextMenu(self):
+        numWindows = len(self.openShotView.api.GetDTVFrames())
+        menu_showHide, menu_delete = self.menusShowHideAndDelete(numWindows)
+        self.contextMenu.addMenu(menu_showHide)
+        self.contextMenu.addMenu(menu_delete)
+        return self.contextMenu
+
+    def menusShowHideAndDelete(self, numWindows):
+
+        menu_showHide = QMenu('Show/Hide', self.contextMenu)
+        menu_showHide.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'showHide'))
+        menu_showHide.setDisabled(True)
+        # Create and add empty menu to handle deletion of plot views and
+        # figures
+        menu_delete = QMenu('Delete', self.contextMenu)
+        menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication, QStyle.SP_DialogDiscardButton))
+        menu_delete.setDisabled(True)
+
+        if numWindows > 0:
+            menu_showHide.setDisabled(False)
+            menu_delete.setDisabled(False)
+
+            # Create and add empty submenu to handle windows show/hide
+            submenu_showHideView = menu_showHide.addMenu('Views')
+            submenu_showHideView.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+            # Create and add empty submenu to handle windows deletion
+            subMenu_deleteView = menu_delete.addMenu('Views')
+            subMenu_deleteView.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+
+            for i in range(0, numWindows):
+
+                # --------------------------------------------------------------
+                # Add menu item to show/hide existing window
+                # Set action
+                dtv = self.openShotView.api.GetDTVFrames()[i]
+                dataSource = dtv.dataTreeView.dataSource
+                shotNumber = dataSource.shotNumber
+                runNumber = dataSource.runNumber
+                actionLabel = "Shot:" + str(shotNumber) + " Run:" + str(runNumber) + " DB:" + dataSource.imasDbName
+                action_showHide_view = QAction(actionLabel, self)
+                action_showHide_view.triggered.connect(
+                    partial(self.showHideView, i))
+                # Add to submenu
+                submenu_showHideView.addAction(action_showHide_view)
+
+                # --------------------------------------------------------------
+                # Add menu item to delete existing window
+                # Set action
+                action_delete_view = QAction(actionLabel, self)
+                action_delete_view.triggered.connect(
+                    partial(self.deleteView, i))
+                # Add to submenu
+                subMenu_deleteView.addAction(action_delete_view)
+
+            # ------------------------------------------------------------------
+            # Add menu item to delete all existing figures
+            # Set action
+            action_deleteAll_views = QAction('All', self)
+            action_deleteAll_views.triggered.connect(partial(
+                self.deleteAllViews))
+            # Add to submenu
+            subMenu_deleteView.addAction(action_deleteAll_views)
+            # Bitmap icon
+            # TODO
+        return menu_showHide, menu_delete
+
+    def showHideView(self, index):
+        """Hide/show a DTV.
+        Argument:
+            index : DTV index in the openedDTVs list
+        """
+        #dtv = self.openedDTVs[index]
+        dtv = self.openShotView.api.GetDTVFrames()[index]
+        if dtv.isVisible():
+            dtv.hide()
+        else:
+            dtv.show()
+
+    def deleteView(self, index):
+        """Remove a DTV.
+        Argument:
+            index : DTV index in the openedDTVs list
+        """
+        #dtv = self.openedDTVs[index]
+        dtv = self.openShotView.api.GetDTVFrames()[index]
+        if dtv.isVisible():
+            dtv.hide()
+            self.openShotView.api.removeDTVFrame(dtv)
+
+    def deleteAllViews(self, index):
+        """Remove a DTV.
+        Argument:
+            index : DTV index in the openedDTVs list
+        """
+        for i in range(0, len(self.openShotView.api.GetDTVFrames())):
+            dtv = self.openShotView.api.GetDTVFrames()[index]
+            if dtv.isVisible():
+                dtv.hide()
+                self.openShotView.api.removeDTVFrame(dtv)
+
+    # def menuShowWindows(self):
+    #
+    #     menu = QMenu('Window', self.contextMenu)
+    #     menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
+    #
+    #     frameIndex = 0
+    #     for frame in self.openShotView.api.DTVframeList:
+    #         # Add menu item to add plot to specific existing figure
+    #         # Check for figures that share the same coordinates
+    #         # Set action
+    #         shotNumber = frame.dataTreeView.shotNumber
+    #         runNumber = frame.dataTreeView.runNumber
+    #         actionName = str(shotNumber) + "-" + str(runNumber)
+    #         action_ShowFrame = QAction(actionName, self)
+    #         action_ShowFrame.triggered.connect(
+    #             partial(self.showDTV, frameIndex))
+    #         # Add to submenu
+    #         menu.addAction(action_ShowFrame)
+    #         frameIndex += 1
+    #
+    #     return menu
+    #
+    # def showDTV(self, frameIndex):
+    #     imas_viz_api = self.openShotView.api
+    #     imas_viz_api.ShowDataTree(imas_viz_api.DTVframeList[frameIndex])
+
+class VizMainWindow(QMainWindow):
+    def __init__(self, parent):
+        super(VizMainWindow, self).__init__(parent)
+        ex = GUIFrame(None)
+        # Main menu bar
+        #menuBar = QMenuBar()
+        # Set Options menu
+        #actions = menuBar.addMenu(ex.menuShowWindows())
+        #self.setMenuBar(menuBar)
+        self.setCentralWidget(ex)
+
 
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     #label = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
-    ex = GUIFrame(None)
-    ex.show()
+    window = VizMainWindow(None);
+    window.show()
     sys.exit(app.exec_())
 
 if __name__ == '__main__':
