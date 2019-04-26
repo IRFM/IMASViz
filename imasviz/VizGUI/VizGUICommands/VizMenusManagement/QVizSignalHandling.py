@@ -113,7 +113,8 @@ class QVizSignalHandling(QObject):
 
         # - Add action for selection of all signals from the same array of
         #   structures
-        self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+        if self.nodeData.get('aos_parents_count') != '0':
+            self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
 
         # SET TOP MENU ITEMS
         # - Add menu for handling plotting using the under-the-mouse selected
