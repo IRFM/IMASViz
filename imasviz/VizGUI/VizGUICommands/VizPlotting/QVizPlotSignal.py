@@ -97,7 +97,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             if len(self.signal) == 2:
                 t = QVizPlotSignal.getTime(self.signal)
                 v = QVizPlotSignal.get1DSignalValue(self.signal)
-                if (len(t) != len(v)):
+                if (len(t[0]) != len(v[0])):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
                 self.plot1DSignal(self.dataTreeView.shotNumber, t, v,
                                   self.figureKey, self.title, self.label,
