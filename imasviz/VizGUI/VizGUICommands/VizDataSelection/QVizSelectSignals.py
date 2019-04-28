@@ -24,32 +24,43 @@ class QVizSelectSignals(QVizAbstractCommand):
     """Select a group of all signals by given list of signal paths.
     """
 
-    def __init__(self, dataTreeView, pathsList, occurrence=0):
+    def __init__(self, dataTreeView, pathsMap):
         """
         Arguments:
             dataTreeView (QTreeWidget) : QTreeWidget object (DTV tree widget).
-            nodeData     (array)       : A list if signal paths (e.g.
+            pathsMap     (dict)       : A list if signal paths (e.g.
                                          ['magnetics/flux_loop(0)/flux/data'])
-            occurrence   (int)         : IDS occurrence number (default = 0).
         """
         QVizAbstractCommand.__init__(self, dataTreeView)
-        self.pathsList = pathsList
-        self.occurrence = occurrence
+        self.pathsMap = pathsMap
+
+    def execute(self):
+
+        if self.pathsMap is None or self.pathsMap == {}:
+            return
 
         # Check if required IDS root tree items are opened
         self.checkIDSOpen()
 
-    def execute(self):
         # Go through the list of signals and compare their path attribute with
         # the paths from the given list
         # self.updateNodeData()
         for signal in self.dataTreeView.signalsList:
             # Get the path attribute of the signal
-            sigName = signal.getPath()
+            #sigName = signal.getPath()
 
             # When the signal path matches the path from the given list,
             # select the signal
-            if any(sigName == s for s in self.pathsList):
+            pathsList = self.pathsMap.get('paths')
+            occurrencesList = self.pathsMap.get('occurrences')
+            #if any(sigName == s for s in pathsList):
+            for i in range(0, len(pathsList)):
+                selectedOccurrence = int(occurrencesList[i])
+                s = pathsList[i]
+                if selectedOccurrence != signal.getOccurrence():
+                    continue
+                if s != signal.getPath():
+                    continue
                 # Tag the signal as current DTV selected item
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
@@ -63,29 +74,22 @@ class QVizSelectSignals(QVizAbstractCommand):
         signalsList populated.
         """
 
-        # Set empty list of IDS names
-        IDSNamesList = []
-        # Go through the list of paths and extract all different IDS names
-        # E.g. 'magnetics', 'core_profiles', 'edge_profiles' etc.
-        for path in self.pathsList:
-            # Extract the IDS name
-            IDSName = path.split('/').pop(0)
-            # If the extracted IDS name is already in the list don't add it
-            # again
-            if IDSName not in IDSNamesList:
-                # Add the IDS name to the list of IDS names
-                IDSNamesList.append(IDSName)
+        pathsList = self.pathsMap.get('paths')
+        occurrencesList = self.pathsMap.get('occurrences')
 
-        # Load all IDS data which are referenced in the paths
         async = False  # the command SelectSignals is
         # synchronous so we will wait that
         # this event is set
+        for i in range(0, len(pathsList)):
 
-        for IDSName in IDSNamesList:
-            # IDS already loaded ?
-            if self.dataTreeView.isAlreadyFetched(IDSName, self.occurrence):
+            # Extract the IDS name
+            IDSName = pathsList[i].split('/').pop(0)
+
+            if occurrencesList[i] is None:
+                occurrencesList[i] = 0
+            # Load all IDS data which are referenced in the paths
+            if self.dataTreeView.isAlreadyFetched(IDSName, occurrencesList[i]):
                 continue
 
             # Check/Populate the IDS tree node
-            QVizLoadSelectedData(self.dataTreeView, IDSName, self.occurrence, self.pathsList,
-                                 async).execute()
+            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrencesList[i]), async).execute()

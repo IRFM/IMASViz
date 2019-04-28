@@ -37,7 +37,9 @@ class QVizSelectSignalsFromConfig():
                                   configuration dictionary.
         """
         plotItem_plotDataItemCountMap = {}  # key = panel key, value = selected arrays count
+        pathsMap = []
         pathsList = []
+        occurrencesList = []
 
         # If path to configuration file was given, get the dictionary. If
         # configuration dictionary is was given, used it
@@ -73,12 +75,15 @@ class QVizSelectSignalsFromConfig():
                 sourceInfoEl = pdItemElement.find('sourceInfo')
                 # Append node path from the sourceInfo element
                 pathsList.append(sourceInfoEl.get("path"))
+                occurrencesList.append(sourceInfoEl.get("occurrence"))
             # Add plot panel plot/line count/pg.PlotDataItems count to dict
             # for plot panel (pg.Item) key
             plotItem_plotDataItemCountMap[key] = num_plots
 
+        pathsMap['paths'] = pathsList
+        pathsMap['occurrences'] = occurrencesList
         # Select the signals using list of paths
-        QVizSelectSignals(dataTreeView, pathsList).execute()
+        QVizSelectSignals(dataTreeView, pathsMap).execute()
 
         # Get a dictionary of selected signals
         dtv_selectedSignals = dataTreeView.selectedSignalsDict

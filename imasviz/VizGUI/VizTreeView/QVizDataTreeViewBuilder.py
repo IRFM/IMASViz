@@ -246,8 +246,15 @@ class QVizDataTreeViewBuilder:
                 else:
                     #dimStr = str(int(dataElement.get('dim')) - 1)
                     index = int(dataElement.get('index')) + 1
-                    itemNodeName= dataElement.tag + ' ' + str(index) + '/' + \
-                                  dataElement.get('dim')
+                    # if dataElement.get('limited_nodes') != None and dataElement.get('limited_nodes') == "1":
+                    #     itemNodeName= dataElement.tag + ' ' + "i" + '/' + \
+                    #                   dataElement.get('dim')
+                    # else:
+                    #     itemNodeName = dataElement.tag + ' ' + str(index) + '/' + \
+                    #                    dataElement.get('dim')
+
+                    itemNodeName = dataElement.tag + ' ' + str(index) + '/' + \
+                                   dataElement.get('dim')
                     if units != None:
                         itemNodeName += " [" + units + "]"
                     # Add tree item

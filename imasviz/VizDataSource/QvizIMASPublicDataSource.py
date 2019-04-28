@@ -14,13 +14,11 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
                                                        machineName=machineName)
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, pathsList = None,
-             async=True):
+    def load(self, dataTreeView, IDSName, occurrence=0,async=True):
         print ("Loading data using UDA")
         self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView,
                                                            IDSName,
                                                            occurrence,
-                                                           pathsList,
                                                            async).create()
         print("*: self.ids: ", self.ids)
         if self.ids.get(occurrence) is None:

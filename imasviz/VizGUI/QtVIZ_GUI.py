@@ -291,7 +291,7 @@ class GUIFrame(QTabWidget):
         dtv = self.openShotView.api.GetDTVFrames()[index]
         if dtv.isVisible():
             dtv.hide()
-            self.openShotView.api.removeDTVFrame(dtv)
+        self.openShotView.api.removeDTVFrame(dtv)
 
     def deleteAllViews(self, index):
         """Remove a DTV.
