@@ -41,6 +41,13 @@ class Viz_API:
         self.DTVframeList = []
         self.DTVlist = []
 
+    def GetDTVFrames(self):
+        return self.DTVframeList
+
+    def removeDTVFrame(self, frame):
+        self.DTVframeList.remove(frame)
+        self.DTVlist.remove(frame.dataTreeView)
+
     def addNodeToFigure(self, figureKey, key, tup):
         if figureKey not in self.figToNodes:
             self.figToNodes[figureKey] = {}
@@ -163,6 +170,8 @@ class Viz_API:
         if figureKey in self.figureframes:
             self.figureframes[figureKey].close()
             del self.figureframes[figureKey]
+        if figureKey in self.figToNodes:
+            del self.figToNodes[figureKey]
 
     def GetFigureKey(self, userKey, figureType):
         return figureType + userKey
@@ -226,17 +235,18 @@ class Viz_API:
         QVizLoadSelectedData(dataTreeFrame.dataTreeView, occurrence, threadingEvent).execute()
 
 
-    def SelectSignals(self, dataTreeWindow, pathsList):
+    def SelectSignals(self, dataTreeWindow, pathsMap):
         """Select signals from a list of IMAS paths for the given tree view
         QMainWindow.
 
         Arguments:
             dataTreeWindow (QMainWindow) : DTV QMainWindow object (containing
                                            DTV - QTreeWidget).
-            nodeData       (array)       : A list if signal paths (e.g.
+            pathsMap       (dict)       : pathsMap['paths'] : a list if signal paths (e.g.
                                            ['magnetics/flux_loop(0)/flux/data'])
+                                           pathsMap['occurrences'] : a list of occurrences
         """
-        QVizSelectSignals(dataTreeWindow.dataTreeView, pathsList).execute()
+        QVizSelectSignals(dataTreeWindow.dataTreeView, pathsMap).execute()
 
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None, all_DTV=False):
         """Plot select signals from multiple data tree frames (different shots)

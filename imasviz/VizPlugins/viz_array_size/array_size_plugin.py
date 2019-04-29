@@ -5,18 +5,19 @@ class ArraySizePlugin(VizPlugins):
     def __init__(self):
         VizPlugins.__init__(self)
 
-    def execute(self, app, pluginsConfig):
+    def execute(self, dictDataSource, dataTreeView):
         try:
             print ('ArraySizePlugin to be executed...')
-            size_request = pluginsConfig.get('size_request')
+            #pluginsConfig = self.getPluginsConfiguration('ArraySizePlugin')
+            size_request = dictDataSource['size_request']
             if size_request != None and size_request == 1:
-                view = pluginsConfig.get('imasviz_view')
-                node_attributes = pluginsConfig.get('node_extra_attributes')
-                ids = view.dataSource.ids
-                size = len(eval(node_attributes.get('dataName')))
+                view = dictDataSource['imasviz_view']
+                node_attributes = dictDataSource['node_attributes']
+                ids = view.dataSource.ids[0]
+                size = len(eval('ids.' + node_attributes.get('dataName')))
                 view.log.info('Size of ' + str(node_attributes.get('dataName')) + " = " + str(size) )
 
-            app.MainLoop()
+            #app.MainLoop()
         except :
             traceback.print_exc()
             view.log.error(traceback.format_exc())

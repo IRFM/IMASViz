@@ -540,18 +540,15 @@ class QVizDataTreeViewFrame(QMainWindow):
         idsData = event.data[2]
         pathsList = event.data[3]
         threadingEvent = event.data[4]
-        self.updateView(idsName, occurrence, idsData, pathsList, threadingEvent)
+        self.updateView(idsName, occurrence, idsData)
 
-    def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
-                   threadingEvent=None):
+    def updateView(self, idsName, occurrence, idsData=None):
         """ Update QVizDataTreeViewFrame.
 
         Arguments:
             idsName        (str) : Name of the IDS e.g. 'magnetics'.
             occurrence     (int) : IDS occurrence number (0-9).
             idsData        (obj) : Object (element) holding IDS data.
-            pathsList      () :
-            threadingEvent () :
         """
         # t4 = time.time()
         if idsData != None:
@@ -563,8 +560,8 @@ class QVizDataTreeViewFrame(QMainWindow):
             self.dataTreeView.update_view(idsName, occurrence, idsData)
             self.dataTreeView.log.info("View update ended.")
 
-            if (idsName == 'equilibrium'):
-                self.dataTreeView.log.info("WARNING: GGD structure has been ignored.")
+            if (idsName == 'equilibrium' or idsName == 'wall'):
+                self.dataTreeView.log.info("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
 
     def addMenuBar(self):
         """Create and configure the menu bar.

@@ -250,6 +250,8 @@ class QVizGlobalOperations:
 
         selectedsignalsMap = {}
         pathsList = []
+        occurrencesList = []
+        pathsMap = {}
         config = None
         if configFile != None:
             config = ET.parse(configFile)
@@ -267,6 +269,7 @@ class QVizGlobalOperations:
             # Extract the paths of the signals and add them to the pathsList
             for selectedSignal in selectedArrays:
                 pathsList.append(selectedSignal.get("path"))
+                occurrencesList.append(selectedSignal.get("occurrence"))
 
         elif configFile.endswith('lsp'):
             # Get all selectedArray attributes, containing signal paths,
@@ -279,8 +282,11 @@ class QVizGlobalOperations:
             # Extract the paths of the signals and add them to the pathsList
             for selectedPath in selectedArrays:
                 pathsList.append(selectedPath.get("path"))
+                occurrencesList.append(selectedPath.get("occurrence"))
 
-        return pathsList
+        pathsMap['paths'] = pathsList
+        pathsMap['occurrences'] = occurrencesList
+        return pathsMap
 
     @staticmethod
     def getNextPanelKey(n, ncols):

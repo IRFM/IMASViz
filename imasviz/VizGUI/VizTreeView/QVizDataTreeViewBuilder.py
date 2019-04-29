@@ -75,11 +75,7 @@ class QVizDataTreeViewBuilder:
         if (dataElement.get('index') == None):
 
             if dataElement.find('name') != None:
-                # # ids = self.ids  # @UnusedVariable
-                # # itemDataDict['dataName'] = dataElement.find('name').text
-                # # if len(eval(itemDataDict['dataName'])) != 0:
 
-                # print("*dataElement.find('name').text: ", dataElement.find('name').text)
                 QVizTreeItemData, extra_attributes, isSignal, item_color = \
                     self.buildNamedDataElement_FLT1D(dataElement,
                                                      itemDataDict,
@@ -250,8 +246,15 @@ class QVizDataTreeViewBuilder:
                 else:
                     #dimStr = str(int(dataElement.get('dim')) - 1)
                     index = int(dataElement.get('index')) + 1
-                    itemNodeName= dataElement.tag + ' ' + str(index) + '/' + \
-                                  dataElement.get('dim')
+                    # if dataElement.get('limited_nodes') != None and dataElement.get('limited_nodes') == "1":
+                    #     itemNodeName= dataElement.tag + ' ' + "i" + '/' + \
+                    #                   dataElement.get('dim')
+                    # else:
+                    #     itemNodeName = dataElement.tag + ' ' + str(index) + '/' + \
+                    #                    dataElement.get('dim')
+
+                    itemNodeName = dataElement.tag + ' ' + str(index) + '/' + \
+                                   dataElement.get('dim')
                     if units != None:
                         itemNodeName += " [" + units + "]"
                     # Add tree item

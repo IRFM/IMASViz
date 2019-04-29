@@ -42,6 +42,11 @@ class QVizGlobalValues:
         TESTING_VIZ_HOME = None
         if "VIZ_HOME" in os.environ:
             TESTING_VIZ_HOME = os.environ["VIZ_HOME"]
+        else:
+            os.environ["VIZ_HOME"] = os.environ["HOME"] + "viz"
+
+        if os.getenv("TOKAMAK_NAME") is None:
+            os.environ["TOKAMAK_NAME"] = "WEST"
 
         if TESTING_VIZ_HOME is None:
             if os.environ["HOSTNAME"] == 'r000u11l06':

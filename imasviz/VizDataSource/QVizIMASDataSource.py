@@ -17,8 +17,8 @@ class QVizIMASDataSource:
         self.ids = {} #key = occurrence, value = ids object
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, pathsList = None, async=True):
-        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName, occurrence, pathsList, async).create()
+    def load(self, dataTreeView, IDSName, occurrence=0, async=True):
+        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName, occurrence, async).create()
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
@@ -106,8 +106,8 @@ class QVizIMASDataSource:
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
-
-        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" \
+               + str(self.runNumber) + '::' + nodeData['Path'] + '::' + str(nodeData['occurrence'])
 
     def getShortLabel(self):
         return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
@@ -162,9 +162,14 @@ class QVizIMASDataSource:
             # Extract IDS name and occurrence
             idsName, occurrence = db.split("/")
 
-            # Set the export command
-            command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
-                      ".setExpIdx(exported_ids." + idsName + ".idx)"
+            if os.getenv('IMAS_PREFIX') != None and 'IMAS' in os.getenv('IMAS_PREFIX'):
+                # Set the export command
+                command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
+                          ".setExpIdx(exported_ids." + idsName + "._idx)"
+            else:
+                command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
+                           ".setExpIdx(exported_ids." + idsName + ".idx)"
+
             # Run the export command
             eval(command2)
             dataTreeView.log.info("Calling IMAS put() for IDS " + idsName +

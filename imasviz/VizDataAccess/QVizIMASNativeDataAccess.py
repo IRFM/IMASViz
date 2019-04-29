@@ -2,6 +2,7 @@
 import sys
 import traceback
 import numpy as np
+import re
 from PyQt5.QtWidgets import QApplication
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
@@ -15,19 +16,19 @@ class QVizIMASNativeDataAccess:
     def GetSignal(self, selectedNodeData, shotNumber, treeNode):
         return self.GetSignalAt(selectedNodeData, shotNumber, treeNode, treeNode.timeValue())
 
-    def GetSignalAt(self,selectedNodeData,shotNumber, treeNode, itimeValue):
+    def GetSignalAt(self, selectedNodeData, shotNumber, treeNode, itimeValue):
 
         try:
             if selectedNodeData is None:
                 return
 
             coordinate1 = treeNode.evaluateCoordinate1At(itimeValue)
-
             ids = self.dataSource.ids[selectedNodeData['occurrence']]
-
             t = None
+            signalPath = 'ids.' + selectedNodeData['dataName']
+            signalPath = signalPath.replace('time_slice[0]', 'time_slice[' +  str(itimeValue) + ']')
+            rval = eval(signalPath)
 
-            rval = eval('ids.' + selectedNodeData['dataName'])
             r = np.array([rval])
 
             if selectedNodeData["coordinate1_itime_dependent"] == 1:
@@ -38,9 +39,7 @@ class QVizIMASNativeDataAccess:
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:
-
                     path = "ids." + selectedNodeData['IDSName'] + "." + coordinate1
-
                     e = eval(path)
                     if len(e) == 0:
                         raise ValueError("Coordinate1 has no values.")

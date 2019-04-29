@@ -68,7 +68,6 @@ class QVizPlotWidget(QWidget):
             ylabel      (str) : Plot Y-axis label.
             pen        (QPen) : Plot line style.
         """
-
         # Set pen (line design). Color and style are chosen depending on the
         # number of already present plots
         if self.RGBlist != None:

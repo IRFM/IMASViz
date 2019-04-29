@@ -41,15 +41,13 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(QThread):", -1)
-                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, pathsList = None, async=True):", 0)
+                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, async=True):", 0)
                 self.printCode("super(" + className + ", self).__init__()", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
                 self.printCode("self.ids = None", 1)
                 self.printCode("self.idsName = IDSName", 1)
                 self.printCode("self.view.IDSNameSelected[occurrence] = IDSName", 1)
-
-                self.printCode("self.pathsList = pathsList", 1)
                 self.printCode("self.async = async", 1)
                 self.printCode('', -1)
 
@@ -74,10 +72,10 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
                     self.printCode('if self.async==True:', 2)
 
-                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.pathsList, self), self.view.parent.eventResultId))',3)
+                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self), self.view.parent.eventResultId))',3)
                     self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('else:', 2)
-                    self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData, self.pathsList)', 3)
+                    self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData)', 3)
 
                 self.printCode('\n', -1)
 
@@ -106,7 +104,7 @@ class QVizDataAccessCodeGenerator:
     def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents, s, index, idsName):
 
         for ids_child_element in child:
-            index+=1
+            index += 1
             data_type = ids_child_element.get('data_type')
 
             if data_type == 'structure':
@@ -141,8 +139,8 @@ class QVizDataAccessCodeGenerator:
 
             elif data_type == 'struct_array':
 
-                if (ids_child_element.get('name') == "ggd" or ids_child_element.get('name') == "grids_ggd" ):
-                    print("WARNING: GGD structure has been ignored")
+                if (ids_child_element.get('name') == "ggd" or ids_child_element.get('name') == "grids_ggd" or ids_child_element.get('name') == "description_ggd" ):
+                    print("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
                     continue
 
                 code = child.text + "." + ids_child_element.get('name') + '(:)'
@@ -159,7 +157,25 @@ class QVizDataAccessCodeGenerator:
                 parameter = m + ' = ' + code_parameter + '\n'
                 self.printCode(parameter, level)
                 self.printCode(s + '= 0', level)
-                self.printCode ('while ' + s + ' < ' + m + ':' + '\n', level)
+
+                time_slices_IDSs = (idsName == "core_profiles" or idsName == "equilibrium")
+                dim = m
+
+                if level == 1 and time_slices_IDSs is True:
+                     time_slices = "1"
+                     m = "1"
+                else:
+                     time_slices = "-1" #all time slices will be added to the tree
+
+                self.printCode('while ' + s + ' < ' + m + ':' + '\n', level)
+
+                code = "if " + m + " > 1000:"
+                self.printCode(code, level + 1)
+
+                code = "if " + s + " > 0:"
+                self.printCode(code, level + 2)
+                code = "break"
+                self.printCode(code, level + 3)
 
                 code = "current_parent_" + str(level) + "= parent"  #keep in memory the parent of the current level
                 self.printCode(code, level + 1)
@@ -167,10 +183,11 @@ class QVizDataAccessCodeGenerator:
                 parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
                 self.printCode(parentCode, level + 1)
 
-
                 code = "parent.set(" + "'index', str(" + s + "))"
                 self.printCode(code, level + 1)
-                code = "parent.set(" + "'dim', str(" + m + "))"
+                code = "parent.set(" + "'dim', str(" + dim + "))"
+                self.printCode(code, level + 1)
+                code = "parent.set(" + "'limited_nodes', str(" + time_slices + "))"
                 self.printCode(code, level + 1)
                 code = "parent.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level + 1)
@@ -203,12 +220,6 @@ class QVizDataAccessCodeGenerator:
 
                 code = "parent = current_parent_" + str(level)  # keep the parent of the current level
                 self.printCode(code, level + 1)
-
-                # code = "if parent.tag == 'equilibrium':"
-                # self.printCode(code, level + 1)
-                # self.printCode(s + '+=' + str(self.time_step), level + 2)
-                # self.printCode("else:", level + 1)
-                # self.printCode(s + '+= 1', level + 2)
                 self.printCode(s + '+= 1', level + 1)
 
 

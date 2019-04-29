@@ -24,7 +24,7 @@
 
 # from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from functools import partial
-
+import re
 from PyQt5.QtCore import QObject, pyqtSlot
 from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication
 from PyQt5.QtGui import QIcon, QStyle
@@ -113,7 +113,8 @@ class QVizSignalHandling(QObject):
 
         # - Add action for selection of all signals from the same array of
         #   structures
-        self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+        if self.nodeData.get('aos_parents_count') != '0':
+            self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
 
         # SET TOP MENU ITEMS
         # - Add menu for handling plotting using the under-the-mouse selected
@@ -635,14 +636,17 @@ class QVizSignalHandling(QObject):
         """
         # Get label for the next figure (e.c. if 'Figure 2' already exists,
         # value 'Figure 3' will be returned)
-        figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
-        # Plot the selected signals
-        if all_DTV == False:
-            QVizPlotSelectedSignals(self.dataTreeView, figureKey,
-                                    all_DTV=False).execute()
-        else:
-            QVizPlotSelectedSignals(self.dataTreeView, figureKey,
-                                    all_DTV=True).execute()
+        try:
+            figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
+            # Plot the selected signals
+            if all_DTV == False:
+                QVizPlotSelectedSignals(self.dataTreeView, figureKey,
+                                        all_DTV=False).execute()
+            else:
+                QVizPlotSelectedSignals(self.dataTreeView, figureKey,
+                                        all_DTV=True).execute()
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 
     @pyqtSlot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None):
@@ -654,20 +658,23 @@ class QVizSignalHandling(QObject):
                              current or all DTVs.
         """
         # Get next figure key/label
-        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
-        # Note: figureKey that includes 'TablePlotView' is expected
-        if all_DTV != True:
-            QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
-                                figureKey=figureKey,
-                                update=0,
-                                configFile=configFile,
-                                all_DTV=False)
-        else:
-            QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
-                                figureKey=figureKey,
-                                update=0,
-                                configFile=configFile,
-                                all_DTV=True)
+        try:
+            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
+            # Note: figureKey that includes 'TablePlotView' is expected
+            if all_DTV != True:
+                QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
+                                    figureKey=figureKey,
+                                    update=0,
+                                    configFile=configFile,
+                                    all_DTV=False)
+            else:
+                QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
+                                    figureKey=figureKey,
+                                    update=0,
+                                    configFile=configFile,
+                                    all_DTV=True)
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 
     @pyqtSlot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False):
@@ -678,15 +685,18 @@ class QVizSignalHandling(QObject):
             all_DTV (bool) : Operator to read selected signals from the
                              current or all DTVs.
         """
-        # Get next figure key/label
-        figureKey = self.dataTreeView.imas_viz_api.getNextKeyForStackedPlotView()
-        # Note: figureKey that includes 'StackedPlotView' is expected
-        if all_DTV != True:
-            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=0, all_DTV=False)
-        else:
-            QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
-                                update=0, all_DTV=True)
+        try:
+            # Get next figure key/label
+            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForStackedPlotView()
+            # Note: figureKey that includes 'StackedPlotView' is expected
+            if all_DTV != True:
+                QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
+                                    update=0, all_DTV=False)
+            else:
+                QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
+                                    update=0, all_DTV=True)
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 
     @pyqtSlot(int)
     def addSignalPlotToFig(self, numFig):
@@ -714,11 +724,14 @@ class QVizSignalHandling(QObject):
             numFig (int) : Number identification of the existing figure.
         """
         # Get figure key (e.g. 'Figure:0' string)
-        figureKey = self.imas_viz_api. \
-            GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+        try:
+            figureKey = self.imas_viz_api. \
+                GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
 
-        QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
-                                all_DTV=all_DTV).execute()
+            QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
+                                    all_DTV=all_DTV).execute()
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 
     def shareSameCoordinates(self, selectedDataList):
         """Check if data in selectedDataList (dict) share the same coordinates
@@ -820,42 +833,45 @@ class QVizSignalHandling(QObject):
         """
         # self.updateNodeData()
         # Get currently selected QVizTreeNode (QTreeWidgetItem)
-        treeNode = self.dataTreeView.selectedItem
-        # Get signal node index
-        # index = 0
-        index = treeNode.infoDict['i']
+        try:
+            treeNode = self.dataTreeView.selectedItem
+            # Get signal node index
+            # index = 0
+            index = treeNode.infoDict['i']
 
-        # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
-        # - Add missing part to the end (the name of the array ('phi',
-        #   'psi' etc.) is missing
-        # TODO: fix 'getDataVsTime' to get full required path
-        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
-        data_path_list = [x + missing_path_part for x in data_path_list]
+            # Get list of paths of arrays through time slices
+            data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
+            # - Add missing part to the end (the name of the array ('phi',
+            #   'psi' etc.) is missing
+            # TODO: fix 'getDataVsTime' to get full required path
+            missing_path_part = '.' + treeNode.getPath().split('/')[-1]
+            data_path_list = [x + missing_path_part for x in data_path_list]
 
-        dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-        signal = dataAccess.GetSignalVsTime(data_path_list,
-                                            treeNode.getInfoDict(),
-                                            treeNode,
-                                            index)
-        # Get label and title (dummy = obsolete xlabel)
-        label, title, dummy = \
-            treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index)
-        # TODO: fix routines for obtaining label
-        label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
-        label = label + '[' + str(index) + ']'
-        self.treeNode = treeNode
-        self.timeSlider = False
-        p = QVizPlotSignal(dataTreeView=self.dataTreeView,
-                       nodeData=self.nodeData,
-                       signal=signal,
-                       figureKey=self.currentFigureKey,
-                       title=title,
-                       label=label,
-                       xlabel="Time[s]",
-                       update=0,
-                       signalHandling=self)
-        p.execute()
+            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            signal = dataAccess.GetSignalVsTime(data_path_list,
+                                                treeNode.getInfoDict(),
+                                                treeNode,
+                                                index)
+            # Get label and title (dummy = obsolete xlabel)
+            label, title, dummy = \
+                treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index)
+            # TODO: fix routines for obtaining label
+            label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
+            label = label + '[' + str(index) + ']'
+            self.treeNode = treeNode
+            self.timeSlider = False
+            p = QVizPlotSignal(dataTreeView=self.dataTreeView,
+                           nodeData=self.nodeData,
+                           signal=signal,
+                           figureKey=self.currentFigureKey,
+                           title=title,
+                           label=label,
+                           xlabel="Time[s]",
+                           update=0,
+                           signalHandling=self)
+            p.execute()
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 
     def plotSelectedSignalVsTimeAtIndex(self, index, currentFigureKey,
                                         treeNode):
@@ -873,39 +889,41 @@ class QVizSignalHandling(QObject):
                                       replace the current plot in figure window.
         """
         # self.updateNodeData()
+        try:
+            # Get list of paths of arrays through time slices
+            data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
+            # - Add missing part to the end (the name of the array ('phi',
+            #   'psi' etc.) is missing
+            # TODO: fix 'getDataVsTime' to get full required path
+            missing_path_part = '.' + treeNode.getPath().split('/')[-1]
+            data_path_list = [x + missing_path_part for x in data_path_list]
+            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            signal = dataAccess.GetSignalVsTime(data_path_list,
+                                                treeNode.getInfoDict(),
+                                                treeNode,
+                                                index)
 
-        # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
-        # - Add missing part to the end (the name of the array ('phi',
-        #   'psi' etc.) is missing
-        # TODO: fix 'getDataVsTime' to get full required path
-        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
-        data_path_list = [x + missing_path_part for x in data_path_list]
-        dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-        signal = dataAccess.GetSignalVsTime(data_path_list,
-                                            treeNode.getInfoDict(),
-                                            treeNode,
-                                            index)
+            # Get label, title and xlabel
+            label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
+                nodeData=treeNode.getInfoDict(),
+                index=index)
+            # TODO: fix routines for obtaining label
+            label = label.replace('time_slice(0)', 'time_slice(:)')
+            label = label + '[' + str(index) + ']'
 
-        # Get label, title and xlabel
-        label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-            nodeData=treeNode.getInfoDict(),
-            index=index)
-        # TODO: fix routines for obtaining label
-        label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
-        label = label + '[' + str(index) + ']'
-
-        # Update/Overwrite plot
-        QVizPlotSignal(dataTreeView=self.dataTreeView,
-                       nodeData=treeNode.getInfoDict(),
-                       signal=signal,
-                       figureKey=currentFigureKey,
-                       title=title,
-                       label=label,
-                       xlabel="Time[s]",
-                       update=1,
-                       signalHandling=self,
-                       vizTreeNode=treeNode).execute()
+            # Update/Overwrite plot
+            QVizPlotSignal(dataTreeView=self.dataTreeView,
+                           nodeData=treeNode.getInfoDict(),
+                           signal=signal,
+                           figureKey=currentFigureKey,
+                           title=title,
+                           label=label,
+                           xlabel="Time[s]",
+                           update=1,
+                           signalHandling=self,
+                           vizTreeNode=treeNode).execute()
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey,
                                              treeNode):
@@ -923,27 +941,30 @@ class QVizSignalHandling(QObject):
             treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
                                       replace the current plot in figure window.
         """
-
-        # self.updateNodeData()
-        dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-        # Get signal node
-        signal = dataAccess.GetSignalAt(treeNode.getInfoDict(),
-                                        self.dataTreeView.dataSource.shotNumber,
-                                        treeNode,
-                                        time_index)
-        # Get label and xlabel (title in this form is not needed)
-        label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-                            nodeData=treeNode.getInfoDict(),
-                            index=time_index)
-
-        # Update/Overwrite plot
-        QVizPlotSignal(dataTreeView=self.dataTreeView,
-                       nodeData=treeNode.getInfoDict(),
-                       signal=signal,
-                       figureKey=currentFigureKey,
-                       label=label,
-                       xlabel=xlabel,
-                       update=1,
-                       signalHandling=self,
-                       vizTreeNode=treeNode).execute()
+        try:
+            # self.updateNodeData()
+            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            # Get signal node
+            signal = dataAccess.GetSignalAt(treeNode.getInfoDict(),
+                                            self.dataTreeView.dataSource.shotNumber,
+                                            treeNode,
+                                            time_index)
+            # Get label and xlabel (title in this form is not needed)
+            label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
+                                nodeData=treeNode.getInfoDict(),
+                                index=time_index)
+            xlabel = xlabel.replace('time_slice(0)', 'time_slice(' + str(time_index) + ')')
+            label = label.replace('time_slice(0)', 'time_slice(' + str(time_index) + ')')
+            # Update/Overwrite plot
+            QVizPlotSignal(dataTreeView=self.dataTreeView,
+                           nodeData=treeNode.getInfoDict(),
+                           signal=signal,
+                           figureKey=currentFigureKey,
+                           label=label,
+                           xlabel=xlabel,
+                           update=1,
+                           signalHandling=self,
+                           vizTreeNode=treeNode).execute()
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
 

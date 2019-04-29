@@ -108,94 +108,96 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             figurekey (str) : Figure key/label.
             update    (int) :
         """
-        # try:
-        # Total number of existing DTVs
-        self.num_view = len(self.api.DTVlist)
+        try:
+            # Total number of existing DTVs
+            self.num_view = len(self.api.DTVlist)
 
-        # Get plot widget
-        plotWidget = self.getPlotWidget(figureKey)
+            # Get plot widget
+            plotWidget = self.getPlotWidget(figureKey)
 
-        i = 0
-        # Create a list of DTVs to specify either single DTV or a list of
-        # DTVs fro, which the signals should be plotted to a single plot
-        plot_DTVlist = []
-        if all_DTV == False:
-            plot_DTVlist = [self.dataTreeView]
-        else:
-            plot_DTVlist = self.api.DTVlist
-        # Go through the list of opened DTVs, get its selected plot signals dict
-        # and plot the signals to the same plot widget
-        for dtv in plot_DTVlist:
-            # Go through DTV selected signal dictionaries
-            # (each is specified by key)
-            for key in dtv.selectedSignalsDict:
+            i = 0
+            # Create a list of DTVs to specify either single DTV or a list of
+            # DTVs fro, which the signals should be plotted to a single plot
+            plot_DTVlist = []
+            if all_DTV == False:
+                plot_DTVlist = [self.dataTreeView]
+            else:
+                plot_DTVlist = self.api.DTVlist
+            # Go through the list of opened DTVs, get its selected plot signals dict
+            # and plot the signals to the same plot widget
+            for dtv in plot_DTVlist:
+                # Go through DTV selected signal dictionaries
+                # (each is specified by key)
+                for key in dtv.selectedSignalsDict:
 
-                v = dtv.selectedSignalsDict[key]
-                vizTreeNode = v['QTreeWidgetItem']
+                    v = dtv.selectedSignalsDict[key]
+                    vizTreeNode = v['QTreeWidgetItem']
 
-                # Get node dataDict
-                signalNodeData = vizTreeNode.getInfoDict()
+                    # Get node dataDict
+                    signalNodeData = vizTreeNode.getInfoDict()
 
-                # Check dimension
-                plotDimension = self.getDimension(vizTreeNode.getInfoDict())
+                    # Check dimension
+                    plotDimension = self.getDimension(vizTreeNode.getInfoDict())
 
-                # Cancel plotting procedure if there is something wrong with
-                # the dimension
-                if plotDimension == False:
-                    return
+                    # Cancel plotting procedure if there is something wrong with
+                    # the dimension
+                    if plotDimension == False:
+                        return
 
-                key = dtv.dataSource.dataKey(vizTreeNode.getInfoDict())
-                tup = (dtv.dataSource.shotNumber, signalNodeData)
-                self.api.addNodeToFigure(figureKey, key, tup)
+                    key = dtv.dataSource.dataKey(vizTreeNode.getInfoDict())
+                    tup = (dtv.dataSource.shotNumber, signalNodeData)
+                    self.api.addNodeToFigure(figureKey, key, tup)
 
-                # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode)
-                # Get array of time values
-                t = QVizPlotSignal.getTime(s)
-                # Get array of y-axis values
-                v = QVizPlotSignal.get1DSignalValue(s)
+                    # Get signal properties and values
+                    s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode)
+                    # Get array of time values
+                    t = QVizPlotSignal.getTime(s)
+                    # Get array of y-axis values
+                    v = QVizPlotSignal.get1DSignalValue(s)
 
-                # Get number of rows of the y-axis array of values
-                nbRows = v.shape[0]
+                    # Get number of rows of the y-axis array of values
+                    nbRows = v.shape[0]
 
-                # Set plot labels and title
-                label, xlabel, ylabel, title = \
-                    QVizPlotSignal.plotOptions(dtv, vizTreeNode, vizTreeNode.getShotNumber())
+                    # Set plot labels and title
+                    label, xlabel, ylabel, title = \
+                        QVizPlotSignal.plotOptions(dtv, vizTreeNode, vizTreeNode.getShotNumber())
 
-                if i == 0 and update == 0:
-                    # Adding the first plot (first selected signal)
-                    # If the selected node array (selected signal) is the
-                    # first in line for the plot (and with update
-                    # disabled), create new plot
-                    for j in range(0, nbRows):
-                        # y-axis values
-                        u = v[j]
-                        # x-axis values
-                        ti = t[0]
-                        # Create plot
-                        plotWidget.plot(x=ti, y=u, title='', xlabel=xlabel,
-                                        ylabel=ylabel, label=label)
-                else:
-                    # Appending plot (the remaining selected signals)
-                    # Else add the remaining selected node arrays
-                    # (selected signals) to the existing plot
-                    for j in range(0, nbRows):
-                        # y-axis values
-                        u = v[j]
-                        # x-axis values
-                        ti = t[0]
-                        # Add to plot
-                        # Note: do not pass again title, xlabel and ylabel
-                        #       arguments if those attributes from the first
-                        #       plot are to be kept.
-                        plotWidget.plot(x=ti, y=u, label=label)
-                i += 1
-        # Show the plotWidget, holding the plot
-        plotWidget.show()
+                    if i == 0 and update == 0:
+                        # Adding the first plot (first selected signal)
+                        # If the selected node array (selected signal) is the
+                        # first in line for the plot (and with update
+                        # disabled), create new plot
+                        for j in range(0, nbRows):
+                            # y-axis values
+                            u = v[j]
+                            # x-axis values
+                            ti = t[0]
+                            # Create plot
+                            plotWidget.plot(x=ti, y=u, title='', xlabel=xlabel,
+                                            ylabel=ylabel, label=label)
+                    else:
+                        # Appending plot (the remaining selected signals)
+                        # Else add the remaining selected node arrays
+                        # (selected signals) to the existing plot
+                        for j in range(0, nbRows):
+                            # y-axis values
+                            u = v[j]
+                            # x-axis values
+                            ti = t[0]
+                            # Add to plot
+                            # Note: do not pass again title, xlabel and ylabel
+                            #       arguments if those attributes from the first
+                            #       plot are to be kept.
+                            plotWidget.plot(x=ti, y=u, label=label)
+                    i += 1
+            # Show the plotWidget, holding the plot
+            plotWidget.show()
 
-        # except:
-        #     traceback.print_exc(file=sys.stdout)
-        #     raise ValueError("Error while plotting 1D selected signal(s).")
+        except ValueError as e:
+            self.dataTreeView.log.error(str(e))
+
+        except Exception as e:
+            self.dataTreeView.log.error(str(e))
 
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys():

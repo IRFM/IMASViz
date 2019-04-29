@@ -20,7 +20,7 @@ class QVizDefault:
 
     @staticmethod
     def getGUIEntries():
-        machineName = os.getenv('DEFAULT_TOKAMAK_NAME')
+        machineName = os.getenv('TOKAMAK_NAME')
         if machineName is None:
             TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
             if TESTING:

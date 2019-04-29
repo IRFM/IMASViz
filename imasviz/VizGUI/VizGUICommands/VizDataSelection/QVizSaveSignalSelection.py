@@ -85,7 +85,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
 
             # Set subelement attribute 'path'
             self.saveAttribute(pathElement, 'path', vizTreeNode.getPath())
-
+            self.saveAttribute(pathElement, 'occurrence', vizTreeNode.getOccurrence())
             # self.saveAttribute(pathElement, 'shotNumber', nodeData['shotNumber'])
             # self.saveAttribute(pathElement, 'runNumber', nodeData['runNumber'])
             # self.saveAttribute(pathElement, 'imasDbName', nodeData['imasDbName'])
