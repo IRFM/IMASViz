@@ -15,7 +15,6 @@ import os
 import sys
 from functools import partial
 from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle
-from imasviz.VizUtils.QVizGlobalValues import GlobalIcons
 
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
@@ -25,7 +24,8 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLin
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
+
 
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
