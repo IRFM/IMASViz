@@ -50,20 +50,6 @@ class GUIFrame(QTabWidget):
         self.contextMenu = None
 
 
-
-    def closeEvent(self, event):
-        """Modify close event to request confirmation trough dialog. If
-        confirmed, close the application.
-        """
-        # Get Yes/No answer (returns True/False)
-        answer = \
-            QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
-                                       caption='Please confirm')
-        if answer==True:
-            event.accept()
-        else:
-            event.ignore()
-
     def tabOne(self):
         layout = QVBoxLayout()
         default_user_name, default_machine, default_run = QVizDefault().getGUIEntries()
@@ -242,7 +228,8 @@ class GUIFrame(QTabWidget):
                 dataSource = dtv.dataTreeView.dataSource
                 shotNumber = dataSource.shotNumber
                 runNumber = dataSource.runNumber
-                actionLabel = "Shot:" + str(shotNumber) + " Run:" + str(runNumber) + " DB:" + dataSource.imasDbName
+                actionLabel = "Shot:" + str(shotNumber) + " Run:" + str(runNumber) + " DB:" + dataSource.imasDbName \
+                              + " User:" + dataSource.userName
                 action_showHide_view = QAction(actionLabel, self)
                 action_showHide_view.triggered.connect(
                     partial(self.showHideView, i))
@@ -334,18 +321,27 @@ class VizMainWindow(QMainWindow):
     def __init__(self, parent):
         super(VizMainWindow, self).__init__(parent)
         ex = GUIFrame(None)
-        # Main menu bar
-        #menuBar = QMenuBar()
-        # Set Options menu
-        #actions = menuBar.addMenu(ex.menuShowWindows())
-        #self.setMenuBar(menuBar)
+        title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
+        self.setWindowTitle(title)
         self.setCentralWidget(ex)
+
+    def closeEvent(self, event):
+        """Modify close event to request confirmation trough dialog. If
+        confirmed, close the application.
+        """
+        # Get Yes/No answer (returns True/False)
+        answer = \
+            QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
+                                       caption='Please confirm')
+        if answer==True:
+            event.accept()
+        else:
+            event.ignore()
 
 
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
-    #label = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
     window = VizMainWindow(None);
     window.setGeometry(400, 400, 600, 300)
     window.show()
