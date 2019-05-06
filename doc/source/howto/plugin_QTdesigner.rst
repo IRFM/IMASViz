@@ -794,10 +794,154 @@ section. The group **IMASViz** was defined in the **plugin.py** file
   :align: center
   :width: 200px
 
-  Custom widget in Qt designer.
+  Custom widget (``exampleWidget``) in Qt designer.
 
 Designing custom user interface - plugin creation
 -------------------------------------------------
+
+.. figure:: images/QtDesigner_examplePlugin_final.png
+  :align: center
+  :width: 200px
+
+  Final design of the example plugin, indented for plotting all slices of
+  **flux loop** and **poloidal field** data found in **magnetics IDS**.
+
+1. Create new **MainWindow**.
+2. Drag and drop **exampleWidget** to **MainWindow**.
+
+.. figure:: images/QtDesigner_examplePlugin_step_1.png
+  :align: center
+  :width: 200px
+
+  **exampleWidget** within **MainWindow**.
+
+3. Drag and drop 2x **group box** and 2x **vertical spacer**, as shown in figure.
+
+.. figure:: images/QtDesigner_examplePlugin_step_2.png
+  :align: center
+  :width: 200px
+
+  Added 2x **group box** and 2x **vertical spacer** to **MainWindow**.
+
+4. In top **group box**:
+
+4.1 add 5x **Label**,  4x **LineEdit** and 1x **Push Button** widgets, as shown in figure.
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_top_1.png
+  :align: center
+  :width: 200px
+
+
+4.2 Right click within the box and select **Layout** ->
+   **Lay Out in a Grid**.
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_top_2.png
+  :align: center
+  :width: 200px
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_top_3.png
+  :align: center
+  :width: 200px
+
+  Grid layout in the top **group box**.
+
+
+4.3 Set suitable texts to **groupbox**, **Label** and **Push Button** widgets.
+    Set default values to **LineEdit** widgets.
+
+.. Note::
+   Top **Label** widget contains text ``Notes: \n - If disabled on start, the
+   IDS is already available from other sources (application etc.) \n - Below
+   are the default parameters for the benchmark IDS case (GateWay)``
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
+  :align: center
+  :width: 200px
+
+4.4 Select **group box ** and change its next properties in the **Property Editor**
+    found on the right side of the Qt Designer application:
+
+- QGroupBox -> checkable = True (check)
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
+  :align: center
+  :width: 200px
+
+  **group box** property ``checkable`` found in the **Property Editor**.
+
+- QWidget -> sizePolicy -> Horizontal policy = Minimum
+- QWidget -> maximumSize -> Width = 175
+- Layout -> layoutLeftMargin = 0
+- Layout -> layoutTopMargin = 0
+- Layout -> layoutRightMargin = 0
+- Layout -> layoutBottomMargin = 0
+- Layout -> layoutHorizontalSpacing = 0
+- Layout -> layoutVerticalSpacing = 0
+
+4.5 Select the top **Label** widget and change its next properties in the
+    **Property Editor**:
+
+- QFrame -> frameShape = StyledPanel
+- QLabel -> wordwrap = True (checked)
+
+.. Note::
+   Manually (with mouse cursor) resize the **group box** and the **Label** to
+   see the whole text of the top label.
+
+4.6 Set next properties to all **LineEdit** widgets:
+
+- QWidget -> sizePolicy -> Horizontal policy = Minimum
+- QWidget -> sizePolicy -> Vertical policy = Fixed
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_top_final.png
+  :align: center
+  :width: 200px
+
+  Finished top **group box**.
+
+
+5. In bottom **group box**:
+
+5.1 Add 2x **Push Button** widget.
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_bottom_1.png
+  :align: center
+  :width: 200px
+
+5.2 Label the **group box** and **Push Button** widgets.
+
+5.3 Right click within the box and select **Layout** ->
+   **Lay Out in a Grid**.
+
+.. figure:: images/QtDesigner_examplePlugin_groupbox_bottom_final.png
+  :align: center
+  :width: 200px
+
+6. Right click within the **MainWindow** and select **Layout** ->
+   **Lay Out in a Grid**.
+
+.. figure:: images/QtDesigner_examplePlugin_before_grid_layout.png
+  :align: center
+  :width: 200px
+
+.. figure:: images/QtDesigner_examplePlugin_after_grid_layout.png
+  :align: center
+  :width: 200px
+
+7. Change **MainWindow** properties:
+
+- QWidget -> windowTitle = Magnetics IDS Overview Plugin
+
+8. Change **exampleWidget** properties:
+
+- QObject -> objectName = mainPluginWidget
+
+.. Warning::
+   This property definition is crucial in the later sections in this HowTo
+   manual when linking the plugin in IMASViz.
+
+- QWidget -> sizePolicy -> HorizontalPolicy = Expanding
+- QWidget -> sizePolicy -> VerticalPolicy = Expanding
 
 Adding plugin to IMASViz
 ------------------------
