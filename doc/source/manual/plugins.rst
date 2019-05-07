@@ -109,6 +109,10 @@ electron density, ion temperature etc.) stored within
    (the same one as used in IMASViz) run command
    ``python3 run_plugin_ui_standalone.py``.
 
+.. Note::
+   The development procedure of the **SOLPS overview plugin** can be seen in a
+   short movie found in section :ref:`plugins_qtdesigner`.
+
 Executing the SOLPS overview plugin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

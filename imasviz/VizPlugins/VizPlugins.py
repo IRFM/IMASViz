@@ -22,49 +22,52 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                          'targetOccurrence': 0}
                      }
 
-RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
-                          'time_e': 32.020, \
-                          'delta_t': 0.02, \
-                          'shot': 50642, \
-                          'run': 0, \
-                          'machine': 'west_equinox', \
-                          'user': 'imas_private'}],
-                          'SOLPS_UiPlugin':[{}],
-                          'example_UiPlugin':[{}]
+RegisteredPluginsConfiguration = {'equilibriumcharts':[{
+                                      'time_i': 31.880, \
+                                      'time_e': 32.020, \
+                                      'delta_t': 0.02, \
+                                      'shot': 50642, \
+                                      'run': 0, \
+                                      'machine': 'west_equinox', \
+                                      'user': 'imas_private'}],
+                                  'SOLPS_UiPlugin':[{}],
+                                  'example_UiPlugin':[{}]
                            }
 
 WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                          'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
 
-WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
-                          'time_e': 32.020, \
-                          'delta_t': 0.02, \
-                          'shot': 50642, \
-                          'run': 0, \
-                          'machine': 'west_equinox', \
-                          'user': 'imas_private'}],
-                          'ToFuPlugin':[{'geom':True},{'data':True},
-                                         {'geom':True},{'data':True},
-                                         {'geom':True},{'data':True}]}
+WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{
+                                            'time_i': 31.880, \
+                                            'time_e': 32.020, \
+                                            'delta_t': 0.02, \
+                                            'shot': 50642, \
+                                            'run': 0, \
+                                            'machine': 'west_equinox', \
+                                      'user': 'imas_private'}],
+                                      'ToFuPlugin':[{'geom':True},{'data':True},
+                                                    {'geom':True},{'data':True},
+                                                    {'geom':True},{'data':True}]}
 
 # The 'overview' key should match the IDS name
 # (for example: for edge_profiles IDS -> 'edge_profiles_overview')
-EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0], 'overview': [0]},
-                     'ToFuPlugin': {'interferometer_overview': [0, 1],
-                     'bolometer_overview': [2, 3],
-                     'soft_x_rays_overview': [4, 5]},
-                     'SOLPS_UiPlugin': {'edge_profiles_overview':[0],
-                                       'overview':[0]},
-                     'example_UiPlugin': {'magnetics_overview': [0],
-                                        'overview': [0]}
+EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0],
+                                           'overview': [0]},
+                     'ToFuPlugin':        {'interferometer_overview': [0, 1],
+                                           'bolometer_overview': [2, 3],
+                                           'soft_x_rays_overview': [4, 5]},
+                     'SOLPS_UiPlugin':    {'edge_profiles_overview':[0],
+                                           'overview':[0]},
+                     'example_UiPlugin':  {'magnetics_overview': [0],
+                                           'overview': [0]}
                      }
 
 AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
-              'ToFuPlugin': [(0, 'tofu - geom...'), (1, 'tofu - data'),
-                             (2, 'tofu - geom...'), (3, 'tofu - data'),
-                             (4, 'tofu - geom...'), (5, 'tofu - data')],
-              'SOLPS_UiPlugin': [(0, 'SOLPS overview...')],
-              'example_UiPlugin': [(0, 'Magnetics overview...')]
+              'ToFuPlugin':        [(0, 'tofu - geom...'), (1, 'tofu - data'),
+                                    (2, 'tofu - geom...'), (3, 'tofu - data'),
+                                    (4, 'tofu - geom...'), (5, 'tofu - data')],
+              'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')],
+              'example_UiPlugin':  [(0, 'Magnetics overview...')]
               }
               #(config number, description)
 
