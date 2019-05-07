@@ -102,7 +102,10 @@ class SOLPSwidget(QWidget):
                 self.vars[i] = ''
 
             dialog = GetIDSDialog(self)
-            dialog.prepareWidgets(self.vars)
+            # Set note
+            note = 'Note: this plugin should be used \nonly with IDSs which ' \
+                   + 'contain \npopulated edge_profiles IDS!'
+            dialog.prepareWidgets(self.vars, note=note)
             if dialog.exec_():
                 self.vars = dialog.on_close()
             else:
@@ -185,6 +188,7 @@ class SOLPSwidget(QWidget):
 
 if __name__ == '__main__':
     import getopt
+    from src.getIDS import GetIDSVars
 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
@@ -210,7 +214,7 @@ if __name__ == '__main__':
                 In order to run this plugin, shot, run, user, device and version must
                 be defined. Example (terminal):
 
-                python3 solpswidget.py --shot=122264 --run=1 --user=penkod \
+                python3 SOLPSwidget.py --shot=122264 --run=1 --user=penkod \
                 --device=iter --version=3
 
                 """

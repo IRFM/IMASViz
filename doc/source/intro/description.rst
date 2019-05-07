@@ -65,7 +65,7 @@ The tool uses the following Python packages:
     PyQtgraph makes heavy use of the Qt GUI platform (via PyQt or PySide) for its
     high-performance graphics and numpy for heavy number crunching. In particular,
     pyqtgraph uses Qt’s GraphicsView framework which is a highly capable graphics
-    system on its own; we bring optimized and simplified primitives to this
+    system on its own and brings optimized and simplified primitives to this
     framework to allow data visualization with minimal effort.
 
     For more on **pyqtgraph** see
@@ -82,7 +82,7 @@ The tool uses the following Python packages:
 
 **4. sphinx**
 
-    Sphinx is a tool originally created as a Python documentation generator
+    Sphinx is a tool originally created as a Python documentation generator,
     but it allows also generating documentation in form of html, latex etc.
 
     For more on **Sphinx** see

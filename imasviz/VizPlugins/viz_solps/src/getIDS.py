@@ -7,7 +7,7 @@ import logging
 from PyQt5.QtCore import pyqtSlot, QThread, pyqtSignal, pyqtProperty
 from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
                              QGridLayout, QDialogButtonBox, QWidget,
-                             QFormLayout)
+                             QFormLayout, QLabel)
 from PyQt5.QtGui import QIntValidator
 import getopt
 
@@ -57,7 +57,7 @@ class GetIDSDialog(QDialog):
     def __init__(self, parent=None):
         super(GetIDSDialog, self).__init__(parent)
 
-    def prepareWidgets(self, parameters, title='IDS Variables',):
+    def prepareWidgets(self, parameters, title='IDS Variables', note=''):
 
         self.setModal(True)
 
@@ -89,6 +89,11 @@ class GetIDSDialog(QDialog):
         dialog_button_box.accepted.connect(self.accept)
         dialog_button_box.rejected.connect(self.reject)
         formLayout.addRow(dialog_button_box)
+
+        # Add qlabel note below if given:
+        if note != '':
+            note_qlabel = QLabel(note)
+            formLayout.addRow(note_qlabel)
 
     def getValue(self, Id):
         return self.lineEditContainer[Id].text()
