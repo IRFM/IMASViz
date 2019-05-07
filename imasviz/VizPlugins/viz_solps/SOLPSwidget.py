@@ -188,7 +188,6 @@ class SOLPSwidget(QWidget):
 
 if __name__ == '__main__':
     import getopt
-    from src.getIDS import GetIDSVars
 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)

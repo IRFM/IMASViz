@@ -17,8 +17,10 @@
 
 # import module providing system-specific parameters and functions
 import sys
-# import module providing  miscellaneous operating system interfaces
+# import module providing miscellaneous operating system interfaces
 import os
+# import module providing log handling
+import logging
 # import modules providing PyQt5 parameters, functions etc.
 from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
@@ -94,16 +96,30 @@ class exampleWidget(QWidget):
     def plotFluxAoS(self):
         """Plot Flux Loop arrays to canvas.
         """
+
+        # IDS check
+        if self.ids == None:
+            logging.error(' IDS was not set/opened!')
+            return
+        # Canvas figure check
         if self.canvas.figure != None:
             self.canvas.figure.clear()
+        # Plot flux loop Aos
         self.canvas.plotFluxAoS(self.ids)
 
     @pyqtSlot()
     def plotBPolAoS(self):
         """Plot poloidal field probe arrays to canvas.
         """
+
+        # IDS check
+        if self.ids == None:
+            logging.error(' IDS was not set/opened!')
+            return
+        # Canvas figure check
         if self.canvas.figure != None:
             self.canvas.figure.clear()
+        # Plot Poloidal field AoS
         self.canvas.plotBPolAoS(self.ids)
 
     @pyqtSlot()
@@ -211,6 +227,10 @@ class PlotCanvas(FigureCanvas):
 
         # Add/Update IDS reference to the object (figure canvas)
         self.ids = ids
+        # IDS check
+        if self.ids == None:
+            logging.error('IDS was not set/opened!')
+            return
         # Set subplot
         ax = self.figure.add_subplot(111)
         # Extract X-axis values (time)
@@ -244,6 +264,10 @@ class PlotCanvas(FigureCanvas):
         """
         # Add/Update IDS reference to the object (figure canvas)
         self.ids = ids
+        # IDS check
+        if self.ids == None:
+            logging.error('IDS was not set/opened!')
+            return
         # Set subplot
         ax = self.figure.add_subplot(111)
         # Extract X-axis values (time)
