@@ -9,8 +9,9 @@ windows etc. using on-screen forms and a user-friendly simple drag-and-drop
 interface. It also provides the user with a convenient ability to preview the
 designs to ensure they work as intended.
 
-In general, Qt Designer mainly offers basic Qt widgets such as **Push Button**,
-**Line Edit**, **List Widget** etc. This list of the Qt Designer widgets can be
+In general, Qt Designer mainly offers basic Qt widgets such as
+:guilabel:`Push Button`, :guilabel:`Line Edit`, :guilabel:`List Widget` etc.
+This list of the **Qt Designer** widgets can be
 extended by writing so-called **Qt designer plugins** (do not confuse with
 **IMASViz plugins**!). Normally this is done using C++ but PyQt5 also allows
 you to write Qt Designer plugins in Python3 programming language.
@@ -736,10 +737,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :lines: 48-72
    :linenos:
 
-Use of custom PyQt5 widget within Qt designer
----------------------------------------------
-
-After the source and plugin code (.py files) are completed they are ready to be
+With the source and plugin code (.py files) completed they are ready to be
 used with the Qt designer.
 
 To achieve that, first the location of the necessary files must be provided to
@@ -762,49 +760,20 @@ in this case
     # C-shell
     setenv PYQTDESIGNERPATH $VIZ_HOME/imasviz/VizPlugins/viz_example:${PYQTDESIGNERPATH}
 
-After this step is completed run the Qt designer.
 
-.. Warning::
-   Qt version of used PyQt5 (compiled with Qt) and Qt designer **must match**!
-   Qt designer with Qt version X will not be able to find a plugin which
-   source (widget code) was written using PyQt5 compiled with Qt version Y!
+With this step completed the PyQt5 widget, now Qt Designer plugin, is ready to
+be used within **Qt Designer**.
 
-Qt designer is (usually) run with
+.. _exampleWidget_creating_app:
 
-.. code-block:: console
+Creating custom application/plugin with Qt Designer
+---------------------------------------------------
 
-    designer-qt5
-
-A startup window will open, as shown in the figure below.
-
-.. figure:: images/QtDesigner_startup.png
-  :align: center
-  :width: 550px
-
-  Qt designer startup window.
-
-On the far left side of the window lays a **Widget Box** which displays a
-collection of all available widgets. On the bottom of the list, a group
-**IMASViz** containing widget labeled **exampleWidget** can be found. This is
-the custom widget which was developed through the first half of this manual
-section. The group **IMASViz** was defined in the **plugin.py** file
-(**def group**).
-
-.. figure:: images/QtDesigner_witdgetBox_customWidgets.png
-  :align: center
-  :width: 200px
-
-  Custom widget (``exampleWidget``) in Qt designer.
-
-Constructing custom user interface - plugin creation
-----------------------------------------------------
-
-.. _exampleWidget_designing_GUI:
-
-Designing GUI
-^^^^^^^^^^^^^
-
-Adding widgets, layout and widget arrangement design...
+In this subsection, the procedure of creating a custom plugin/application GUI is
+presented.
+In **Qt Designer**, the GUI design and layout can be done conveniently with
+mouse drag-and-drop, popup-menu configurations and more. The figure below
+presents the final look at the end of the plugin GUI design procedure.
 
 .. figure:: images/QtDesigner_examplePlugin_final.png
   :align: center
@@ -813,143 +782,188 @@ Adding widgets, layout and widget arrangement design...
   Final design of the example plugin, indented for plotting all slices of
   **flux loop** and **poloidal field** data found in **magnetics IDS**.
 
-1. Create new **MainWindow**.
-2. Drag and drop **exampleWidget** to **MainWindow**.
+Qt designer is (usually) run with
+
+.. code-block:: console
+
+    designer-qt5
+
+.. Warning::
+   Qt version of used PyQt5 (compiled with Qt) and Qt designer **must match**!
+   Qt designer with Qt version X will not be able to find a plugin which
+   source (widget code) was written using PyQt5 compiled with Qt version Y!
+
+A startup window will appear, as shown in the figure below.
+
+GUI design procedure
+^^^^^^^^^^^^^^^^^^^^
+
+1. First, a new **Main Window** must be created. This is done by selecting
+   **Main Window** option from the list of :guilabel:`templates/forms` and clicking
+   the :guilabel:`Create` button, as shown in the figure below.
+
+   .. figure:: images/QtDesigner_startup.png
+     :align: center
+     :width: 550px
+
+     Qt designer startup window.
+
+   After this is done, on the far left side of the window lays a **Widget Box**
+   which displays a
+   collection of all available widgets. On the bottom of the list, a group
+   **IMASViz** containing widget labeled **exampleWidget** can be found. This is
+   the custom widget which was developed through the first half of this manual
+   section. The group **IMASViz** was defined in the **plugin.py** file
+   (**def group**).
+
+   .. figure:: images/QtDesigner_witdgetBox_customWidgets.png
+     :align: center
+     :width: 200px
+
+     Custom widget (``exampleWidget``) in Qt designer.
+
+2. Next, drag and drop **exampleWidget** to :guilabel:`MainWindow`. The result should be
+   similar as in the figure below.
 
 .. figure:: images/QtDesigner_examplePlugin_step_1.png
   :align: center
   :width: 200px
 
-  **exampleWidget** within **MainWindow**.
+  **exampleWidget** within :guilabel:`MainWindow`.
 
-3. Drag and drop 2x **group box** and 2x **vertical spacer**, as shown in figure.
+3. Next, drag and drop 2x :guilabel:`Group Box` and 2x :guilabel:`vertical spacer`.
 
 .. figure:: images/QtDesigner_examplePlugin_step_2.png
   :align: center
   :width: 200px
 
-  Added 2x **group box** and 2x **vertical spacer** to **MainWindow**.
+  Added 2x :guilabel:`Group Box` and 2x :guilabel:`vertical spacer` to :guilabel:`MainWindow`.
 
-4. In top **group box**:
+4. In top :guilabel:`Group Box`:
 
-4.1 add 5x **Label**,  4x **LineEdit** and 1x **Push Button** widgets, as shown in figure.
+   4.1. Add 5x :guilabel:`Label`,  4x :guilabel:`LineEdit` and 1x
+   :guilabel:`Push Button` widgets.
 
-.. figure:: images/QtDesigner_examplePlugin_groupbox_top_1.png
-  :align: center
-  :width: 200px
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_1.png
+          :align: center
+          :width: 200px
 
+          Rough :guilabel:`Group Box` design and layout.
 
-4.2 Right click within the box and select **Layout** ->
-   **Lay Out in a Grid**.
+   4.2. Right click within the box and select :guilabel:`Layout` ->
+   :guilabel:`Lay Out in a Grid`.
 
-.. figure:: images/QtDesigner_examplePlugin_groupbox_top_2.png
-  :align: center
-  :width: 200px
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_2.png
+          :align: center
+          :width: 200px
 
-.. figure:: images/QtDesigner_examplePlugin_groupbox_top_3.png
-  :align: center
-  :width: 200px
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_3.png
+          :align: center
+          :width: 200px
 
-  Grid layout in the top **group box**.
-
-
-4.3 Set suitable texts to **groupbox**, **Label** and **Push Button** widgets.
-    Set default values to **LineEdit** widgets.
-
-.. Note::
-   Top **Label** widget contains text ``Notes: \n - If disabled on start, the
-   IDS is already available from other sources (application etc.) \n - Below
-   are the default parameters for the benchmark IDS case (GateWay)``
-
-.. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
-  :align: center
-  :width: 200px
-
-4.4 Select **group box ** and change its next properties in the **Property Editor**
-    found on the right side of the Qt Designer application:
-
-- QGroupBox -> checkable = True (check)
-
-.. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
-  :align: center
-  :width: 200px
-
-  **group box** property ``checkable`` found in the **Property Editor**.
-
-- QWidget -> sizePolicy -> Horizontal policy = Minimum
-- QWidget -> maximumSize -> Width = 175
-- Layout -> layoutLeftMargin = 0
-- Layout -> layoutTopMargin = 0
-- Layout -> layoutRightMargin = 0
-- Layout -> layoutBottomMargin = 0
-- Layout -> layoutHorizontalSpacing = 0
-- Layout -> layoutVerticalSpacing = 0
-
-4.5 Select the top **Label** widget and change its next properties in the
-    **Property Editor**:
-
-- QFrame -> frameShape = StyledPanel
-- QLabel -> wordwrap = True (checked)
-
-.. Note::
-   Manually (with mouse cursor) resize the **group box** and the **Label** to
-   see the whole text of the top label.
-
-4.6 Set next properties to all **LineEdit** widgets:
-
-- QWidget -> sizePolicy -> Horizontal policy = Minimum
-- QWidget -> sizePolicy -> Vertical policy = Fixed
-
-.. figure:: images/QtDesigner_examplePlugin_groupbox_top_final.png
-  :align: center
-  :width: 200px
-
-  Finished top **group box**.
+          Grid layout in the top :guilabel:`Group Box`.
 
 
-5. In bottom **group box**:
+   4.3. Set suitable texts to :guilabel:`groupbox`, :guilabel:`Label` and
+   :guilabel:`Push Button` widgets. Set default values to :guilabel:`LineEdit`
+   widgets.
 
-5.1 Add 2x **Push Button** widget.
+        .. Note::
+           Top :guilabel:`Label` widget contains text ``Notes: \n - If disabled on start, the
+           IDS is already available from other sources (application etc.) \n - Below
+           are the default parameters for the benchmark IDS case (GateWay)``
 
-.. figure:: images/QtDesigner_examplePlugin_groupbox_bottom_1.png
-  :align: center
-  :width: 200px
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
+          :align: center
+          :width: 200px
 
-5.2 Label the **group box** and **Push Button** widgets.
+   4.4. Select :guilabel:`Group Box` and change its next properties in the
+   :guilabel:`Property Editor` found on the right side of the Qt Designer
+   application:
 
-5.3 Right click within the box and select **Layout** ->
-   **Lay Out in a Grid**.
+        - QGroupBox -> checkable = True (check)
 
-.. figure:: images/QtDesigner_examplePlugin_groupbox_bottom_final.png
-  :align: center
-  :width: 200px
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
+          :align: center
+          :width: 200px
 
-6. Right click within the **MainWindow** and select **Layout** ->
-   **Lay Out in a Grid**.
+          :guilabel:`Group Box` property ``checkable`` found in the
+          :guilabel:`Property Editor`.
 
-.. figure:: images/QtDesigner_examplePlugin_before_grid_layout.png
-  :align: center
-  :width: 200px
+        - QWidget -> sizePolicy -> Horizontal policy = Minimum
+        - QWidget -> maximumSize -> Width = 175
+        - Layout -> layoutLeftMargin = 0
+        - Layout -> layoutTopMargin = 0
+        - Layout -> layoutRightMargin = 0
+        - Layout -> layoutBottomMargin = 0
+        - Layout -> layoutHorizontalSpacing = 0
+        - Layout -> layoutVerticalSpacing = 0
 
-.. figure:: images/QtDesigner_examplePlugin_after_grid_layout.png
-  :align: center
-  :width: 200px
+   4.5. Select the top :guilabel:`Label` widget and change its next properties in the
+   :guilabel:`Property Editor`:
 
-7. Change **MainWindow** properties:
+        - QFrame -> frameShape = StyledPanel
+        - QLabel -> wordwrap = True (checked)
 
-- QWidget -> windowTitle = Magnetics IDS Overview Plugin
+        .. Note::
+           Manually (with mouse cursor) resize the :guilabel:`Group Box` and
+           the :guilabel:`Label` to see the whole text of the top label.
+
+   4.6 Set next properties to all :guilabel:`LineEdit` widgets:
+
+       - QWidget -> sizePolicy -> Horizontal policy = Minimum
+       - QWidget -> sizePolicy -> Vertical policy = Fixed
+
+       .. figure:: images/QtDesigner_examplePlugin_groupbox_top_final.png
+           :align: center
+           :width: 200px
+
+           Finished top :guilabel:`Group Box`.
+
+5. In bottom :guilabel:`Group Box`:
+
+   5.1. Add 2x :guilabel:`Push Button` widget.
+
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_bottom_1.png
+          :align: center
+          :width: 200px
+
+   5.2. Label the :guilabel:`Group Box` and :guilabel:`Push Button` widgets.
+
+   5.3. Right click within the box and select :guilabel:`Layout` ->
+   :guilabel:`Lay Out in a Grid`.
+
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_bottom_final.png
+          :align: center
+          :width: 200px
+
+6. Right click within the :guilabel:`MainWindow` and select :guilabel:`Layout` ->
+:guilabel:`Lay Out in a Grid`.
+
+   .. figure:: images/QtDesigner_examplePlugin_before_grid_layout.png
+     :align: center
+     :width: 200px
+
+   .. figure:: images/QtDesigner_examplePlugin_after_grid_layout.png
+     :align: center
+     :width: 200px
+
+7. Change :guilabel:`MainWindow` properties:
+
+   - QWidget -> windowTitle = Magnetics IDS Overview Plugin
 
 8. Change **exampleWidget** properties:
 
-- QObject -> objectName = mainPluginWidget
+   - QObject -> objectName = mainPluginWidget
 
-.. Warning::
-   This property definition is crucial in the later sections in this HowTo
-   manual when linking the plugin in IMASViz.
+   .. Warning::
+      This property definition is crucial in the later sections in this HowTo
+      manual when linking the plugin in IMASViz.
 
-- QWidget -> sizePolicy -> HorizontalPolicy = Expanding
-- QWidget -> sizePolicy -> VerticalPolicy = Expanding
+   - QWidget -> sizePolicy -> HorizontalPolicy = Expanding
+   - QWidget -> sizePolicy -> VerticalPolicy = Expanding
 
+.. _plugins_qtdesigner_signals_slots:
 
 Edit signals/slots
 ^^^^^^^^^^^^^^^^^^
@@ -973,7 +987,7 @@ To edit **signals/slots**, in menubar, navigate to **Edit** ->
   While in **Edit Signals/Slots mode**, hovering with mouse over widgets
   marks them with slight red color.
 
-Link **Line Edit** widgets (located in the top **Group Box**) signals to
+Link **Line Edit** widgets (located in the top :guilabel:`Group Box`) signals to
 **exampleWidget** slots. This is done by clicking on one of the **Line Edit**
 widgets (in this case those one which holds the **Shot** value), holding and
 dragging the shown arrow to **exampleWidget**, as shown in the figure below.
@@ -1105,6 +1119,8 @@ case it is saved as **examplePlugin.ui** (do not confuse it with
 directory as the source files, in this case **exampleWidget.py** and
 **examplePlugin.py**.
 
+.. _exampleWidget_running_ui:
+
 Running the plugin .ui
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1131,9 +1147,159 @@ Adding plugin to IMASViz
 
 .. warning::
    Before proceeding, make sure that you made the step 8. in
-   :ref:`exampleWidget_designing_GUI`.
+   :ref:`exampleWidget_creating_app`. Setting the **objectName** of the
+   custom widget to **mainPluginWidget** is mandatory!
+
+The main idea for integration of plugin in IMASViz is to simplify the plugin
+usage and to add further functionalities to IMASViz. By running the plugin
+from IMASViz the IMASViz created **IDS object** is passed to the plugin, thus
+opening and setting the IDS is not necessary (required when running the plugin
+as standalone application as shown in :ref:`exampleWidget_running_ui`).
+
+To run the plugin from IMASViz it must be first added (registered) in IMASViz
+``$VIZ_HOME/imasviz/VizPlugins/VizPlugins.py`` source file. This is done through
+next few steps:
+
+1. Add plugin to a list of registered plugins
+
+The **RegisteredPlugins** dictionary contains major plugin properties. The
+relevant properties for **examplePlugin** are highlighted in the code block
+below, where:
+
+- **example_UiPlugin** is a dictionary key (dictionary within
+  **RegisteredPlugins** dictionary).
+
+.. warning::
+   Mandatory: in case the plugin is created with the help of **Qt Designer** and
+   **.ui** file is created, the key must contain suffix **_UiPlugin** in order
+   for IMASViz to recognize and use it correctly!
+
+- **UiFile** dictionary key, holding full **.ui** filename.
+- **dir** dictionary key, holding path to dictionary where the **.ui** filename
+  (and other plugin sources) are located.
+- **targetIDSroot** dictionary key, holding target **IDS** label.
+- **targetOccurrence** dictionary key, holding target **IDS occurrence** integer.
+
+.. code-block:: python
+   :emphasize-lines: 8-13
+
+   RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
+                        'SOLPS_UiPlugin': {
+                            'UiFile': 'SOLPSplugin.ui',
+                            'dir': os.environ['VIZ_HOME'] +
+                                   '/imasviz/VizPlugins/viz_solps/',
+                            'targetIDSroot' : 'edge_profiles',
+                            'targetOccurrence' : 0},
+                        'example_UiPlugin': {
+                            'UiFile': 'examplePlugin.ui',
+                            'dir': os.environ['VIZ_HOME'] +
+                                   '/imasviz/VizPlugins/viz_example/',
+                            'targetIDSroot': 'magnetics',
+                            'targetOccurrence': 0}
+                        }
 
 
+2. Add plugin configuration
+
+Each plugin can have its own specific configuration. In the case of the
+**examplePlugin** there are no configurations required. Still, and empty
+configuration must be given, as highlighted in the code block below.
+
+.. code-block:: python
+   :emphasize-lines: 10
+
+   RegisteredPluginsConfiguration = {'equilibriumcharts':[{
+                                         'time_i': 31.880, \
+                                         'time_e': 32.020, \
+                                         'delta_t': 0.02, \
+                                         'shot': 50642, \
+                                         'run': 0, \
+                                         'machine': 'west_equinox', \
+                                         'user': 'imas_private'}],
+                                     'SOLPS_UiPlugin':[{}],
+                                     'example_UiPlugin':[{}]
+                              }
+
+3. Add necessary entries
+
+The entries are mainly related to plugin identification and presentation in
+IMASViz in terms of label in pop-up menus. The required entries are highlighted
+in the code blocks below.
+
+.. code-block:: python
+   :emphasize-lines: 8-9
+
+   EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0],
+                                              'overview': [0]},
+                        'ToFuPlugin':        {'interferometer_overview': [0, 1],
+                                              'bolometer_overview': [2, 3],
+                                              'soft_x_rays_overview': [4, 5]},
+                        'SOLPS_UiPlugin':    {'edge_profiles_overview':[0],
+                                              'overview':[0]},
+                        'example_UiPlugin':  {'magnetics_overview': [0],
+                                              'overview': [0]}
+                        }
+
+
+.. code-block:: python
+   :emphasize-lines: 6
+
+   AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
+                 'ToFuPlugin':        [(0, 'tofu - geom...'), (1, 'tofu - data'),
+                                       (2, 'tofu - geom...'), (3, 'tofu - data'),
+                                       (4, 'tofu - geom...'), (5, 'tofu - data')],
+                 'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')],
+                 'example_UiPlugin':  [(0, 'Magnetics overview...')]
+                 }
+
+Now everything is ready to run the plugin from IMASViz.
+
+Running the custom plugin in IMASViz
+------------------------------------
+
+When running the IMASViz, open the IDS with the same parameters as defined in
+:ref:`plugins_qtdesigner_signals_slots`.
+
+.. figure:: images/examplePlugin_IMASViz_IDS_parameters.png
+  :align: center
+  :width: 200px
+
+In the :guilabel:`tree window`, navigate to :guilabel:`magnetics`.
+While holding **shift key** right click on the :guilabel:`magnetics` label and
+in the popup menu select the :guilabel:`Magnetics overview...` option.
+
+.. figure:: images/examplePlugin_IMASViz_DTV_popupmenu.png
+  :align: center
+  :width: 200px
+
+On selection, the **examplePlugin**, now reffered to as
+**Magnetics IDS Overview Plugin**, window is shown.
+
+.. figure:: images/examplePlugin_IMASViz_window_1.png
+  :align: center
+  :width: 200px
+
+  **Magnetics IDS Overview Plugin** on startup when run from within **IMASViz**.
+
+It can be noticed, that the top :guilabel:`Group Box` is disabled. This is due to our
+code and signal/slots, done in the plugin development phase in previous
+sections. This way if IDS object (now provided by IMASViz) is already provided
+on plugin startup the IDS set/open/read procedures are not required, but if
+needed are still functional and can be enabled with checking the checkbox. This
+way the plugin can be conveniently used as standalone or within other
+applications.
+
+By pressing either :guilabel:`Plot flux loop` or :guilabel:`Plot poloidal field`
+buttons the corresponding data, specified in the plugin code development phase,
+are be plotted.
+
+.. figure:: images/examplePlugin_IMASViz_window_2.png
+  :align: center
+  :width: 200px
+
+  **Magnetics IDS Overview Plugin** with plotted all **Flux loop** data from
+  the **magnetics IDS** (parameters (on GateWay HPC!) **Shot:** 52344,
+  **Run:** 0, **user**: g2penkod, **device**: viztest.
 
 
 .. image sources (to be used)
