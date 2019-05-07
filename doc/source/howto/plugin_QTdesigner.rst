@@ -158,28 +158,28 @@ The custom PyQt5 widget requires additional sources - modules.
 
 The ones required in this case are:
 
-- Common system and OS modules:
+- Common system, OS and logging modules:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 18
-   :lines: 18-21
+   :lines: 18-23
    :linenos:
 
 - PyQt5 modules:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 22
-   :lines: 22-24
+   :lineno-start: 24
+   :lines: 24-26
    :linenos:
 
 - Matplotlib modules and setting matplotlib to use the Qt rendering:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 25
-   :lines: 25-30
+   :lineno-start: 27
+   :lines: 27-32
    :linenos:
    :emphasize-lines: 3
 
@@ -187,13 +187,14 @@ The ones required in this case are:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 31
-   :lines: 31-32
+   :lineno-start: 33
+   :lines: 33-34
    :linenos:
 
+.. _plugins_qtdesigner_widget_class:
 
-Widget
-^^^^^^
+Widget class
+^^^^^^^^^^^^
 
 This section describes and demonstrates how to define a new widget class in
 Python3.
@@ -210,8 +211,8 @@ related to the widget and more).
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 34
-   :lines: 34-37
+   :lineno-start: 36
+   :lines: 36-39
    :linenos:
 
 .. note::
@@ -221,8 +222,8 @@ Here also a new PyQt signal is set, which will be needed later in code.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 39
-   :lines: 39-40
+   :lineno-start: 41
+   :lines: 41-42
    :linenos:
 
 In short, the signal on its own does not perform any action. Instead, it is
@@ -253,16 +254,16 @@ Both arguments are set as **None** (default values).
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 42
-   :lines: 42-55
+   :lineno-start: 44
+   :lines: 44-57
    :linenos:
 
 And the :guilabel:`ids` object is set with:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 63
-   :lines: 63-65
+   :lineno-start: 65
+   :lines: 65-67
    :linenos:
 
 Regarding the :guilabel:`ids` object, the main idea is to make our widget
@@ -285,8 +286,8 @@ needed IDS):
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 67
-   :lines: 67-81
+   :lineno-start: 69
+   :lines: 69-83
    :linenos:
 
 Constructor should contain also a check if the widget is being run in a desktop
@@ -298,16 +299,16 @@ In this case we define a function named :guilabel:`checkDisplay()`:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 172
-   :lines: 172-177
+   :lineno-start: 188
+   :lines: 188-193
    :linenos:
 
 and execute it in the constructor:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 59
-   :lines: 59-61
+   :lineno-start: 61
+   :lines: 61-63
    :linenos:
 
 Lastly, a widget layout and its contents need to be defined (plot canvas and
@@ -319,8 +320,8 @@ matplotlib navigation toolbar):
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 83
-   :lines: 83-91
+   :lineno-start: 85
+   :lines: 85-93
    :linenos:
 
 Base "set" and "get" routines
@@ -338,8 +339,8 @@ value.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 130
-   :lines: 130-170
+   :lineno-start: 146
+   :lines: 146-186
    :linenos:
 
 Custom functions (routines)
@@ -352,8 +353,8 @@ defined with the :guilabel:`self.idsParameters` dictionary),
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 109
-   :lines: 109-120
+   :lineno-start: 125
+   :lines: 125-136
    :linenos:
 
 2. :guilabel:`setIDS`: for setting the IDS object (:guilabel:`self.ids`). Here also the
@@ -363,8 +364,8 @@ will be used to initiate the execution of certain functions on signal-emit.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 122
-   :lines: 122-125
+   :lineno-start: 138
+   :lines: 138-141
    :linenos:
 
 3. :guilabel:`getIDS`: for getting/returning the IDS object
@@ -372,8 +373,8 @@ will be used to initiate the execution of certain functions on signal-emit.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 127
-   :lines: 127-128
+   :lineno-start: 143
+   :lines: 143-144
    :linenos:
 
 The second "bundle" of functions deals with executing the plotting procedures
@@ -388,8 +389,8 @@ section. The functions needed are:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 93
-   :lines: 93-107
+   :lineno-start: 95
+   :lines: 95-123
    :linenos:
 
 PlotCanvas
@@ -411,8 +412,8 @@ functions related to it.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 179
-   :lines: 179-182
+   :lineno-start: 195
+   :lines: 195-198
    :linenos:
 
 Constructor definition
@@ -430,8 +431,8 @@ The :guilabel:`parent` argument is set as **None**, :guilabel:`width` to **5**,
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 184
-   :lines: 184-191
+   :lineno-start: 200
+   :lines: 200-207
    :linenos:
 
 Next, a figure object :guilabel:`fig` is set:
@@ -442,8 +443,8 @@ Next, a figure object :guilabel:`fig` is set:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 193
-   :lines: 193-194
+   :lineno-start: 109
+   :lines: 109-210
    :linenos:
 
 Next, the (by class) inherited :guilabel:`FigureCanvas` constructor is executed.
@@ -452,32 +453,32 @@ The :guilabel:`fig` object is passed to it as an argument. This way the
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 196
-   :lines: 196-197
+   :lineno-start: 211
+   :lines: 211-212
    :linenos:
 
 Next, the **parent** of the :guilabel:`FigureCanvas` is set:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 197
-   :lines: 197-198
+   :lineno-start: 213
+   :lines: 213-214
    :linenos:
 
 Lastly, the :guilabel:`FigureCanvas` **size policy** is set.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 199
-   :lines: 199-202
+   :lineno-start: 215
+   :lines: 215-218
    :linenos:
 
 The whole :guilabel:`PlotCanvas` constructor code:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 184
-   :lines: 184-202
+   :lineno-start: 200
+   :lines: 200-218
    :linenos:
 
 
@@ -500,16 +501,16 @@ The function must also set the provided :guilabel:`ids` object to
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 204
-   :lines: 204-213
+   :lineno-start: 220
+   :lines: 220-233
    :linenos:
 
 Next, figure subplot must be set:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 214
-   :lines: 214-215
+   :lineno-start: 234
+   :lines: 234-235
    :linenos:
 
 Next, the time values must be extracted and assigned to :guilabel:`time_values`
@@ -519,8 +520,8 @@ assigned to it.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 216
-   :lines: 216-218
+   :lineno-start: 236
+   :lines: 236-238
    :linenos:
 
 Next, looping through all structured of the **flux_loop** AoS is required.
@@ -531,8 +532,8 @@ arrays are left.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 219
-   :lines: 219-227
+   :lineno-start: 239
+   :lines: 239-247
    :linenos:
 
 Next, few additional modifications are required:
@@ -545,16 +546,16 @@ Next, few additional modifications are required:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 228
-   :lines: 228-236
+   :lineno-start: 248
+   :lines: 248-256
    :linenos:
 
 Final :guilabel:`plotFluxAoS` code:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 204
-   :lines: 204-236
+   :lineno-start: 220
+   :lines: 220-256
    :linenos:
 
 As already stated, :guilabel:`plotBPolAoS` function code is almost identical
@@ -564,10 +565,9 @@ Final :guilabel:`plotBPolAoS`:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 238
-   :lines: 238-269
+   :lineno-start: 258
+   :lines: 258-293
    :linenos:
-   :emphasize-lines: 15-23
 
 At this point the **exampleWidget.py** code is finished and ready for use.
 
@@ -584,8 +584,8 @@ constructor) and executing the plotting procedures.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
-   :lineno-start: 265
-   :lines: 265-287
+   :lineno-start: 295
+   :lines: 295-317
    :linenos:
 
 The code can now be run from the terminal with the next command:
@@ -796,8 +796,15 @@ section. The group **IMASViz** was defined in the **plugin.py** file
 
   Custom widget (``exampleWidget``) in Qt designer.
 
-Designing custom user interface - plugin creation
--------------------------------------------------
+Constructing custom user interface - plugin creation
+----------------------------------------------------
+
+.. _exampleWidget_designing_GUI:
+
+Designing GUI
+^^^^^^^^^^^^^
+
+Adding widgets, layout and widget arrangement design...
 
 .. figure:: images/QtDesigner_examplePlugin_final.png
   :align: center
@@ -943,8 +950,188 @@ Designing custom user interface - plugin creation
 - QWidget -> sizePolicy -> HorizontalPolicy = Expanding
 - QWidget -> sizePolicy -> VerticalPolicy = Expanding
 
+
+Edit signals/slots
+^^^^^^^^^^^^^^^^^^
+
+By editing **signals/slots** the wanted actions such as plot execution etc. are
+added to the widgets.
+
+To edit **signals/slots**, in menubar, navigate to **Edit** ->
+**Edit Signals/Slots**
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_1.png
+  :align: center
+  :width: 200px
+
+  **Edit Signals/Slots** in menubar.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_2.png
+  :align: center
+  :width: 200px
+
+  While in **Edit Signals/Slots mode**, hovering with mouse over widgets
+  marks them with slight red color.
+
+Link **Line Edit** widgets (located in the top **Group Box**) signals to
+**exampleWidget** slots. This is done by clicking on one of the **Line Edit**
+widgets (in this case those one which holds the **Shot** value), holding and
+dragging the shown arrow to **exampleWidget**, as shown in the figure below.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_3.png
+  :align: center
+  :width: 200px
+
+Next, the **Configure connection editor** will be shown.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_4.png
+  :align: center
+  :width: 200px
+
+  **Configure connection editor**, displaying list of available **Line Edit**
+  (left) **signals** and available **exampleWidget** slots (right).
+
+The slots are in this case actually functions/routines, which were defined
+in the **exampleWidget** source code (done in section
+:ref:`plugins_qtdesigner_widget_class`).
+
+In this case, when editing the text in **Line Edit** and applying the changes
+(pressing ``enter`` key etc.) the changed value must be passed to the
+**exampleWidget**. This is done by selecting the suitable signal and slot from
+the lists: **textEdited** and **setShot**, and pressing the
+:guilabel:`OK` button.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_5.png
+  :align: center
+  :width: 200px
+
+  Selection of **Line Edit** signal **textEdited** and **exampleWidget** slot
+  **setShot**
+
+After that, while in the **Edit Signals/Slots**, the start and the end point
+of the red arrow will indicate which signal and slot are linked.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_6.png
+  :align: center
+  :width: 200px
+
+  Red arrow indicating the **sender**, **sender signal**, **receiver** and
+  **slot**.
+
+The whole list of created slot/signal links is shown on the bottom right corner
+of the Qt Designer application.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_7.png
+  :align: center
+  :width: 200px
+
+  A list displaying a list of all created slot/signal lists, listing the
+  **sender**, **sender signal**, **receiver** and **slot** for each link.
+
+The same as the first link, few more links are required. Below is a detailed
+table listing all necessary links.
+
+For easier interpretation, the **sender** and
+**receiver** in the table below are marked with their **text label** instead
+of their **object name** (used in the Qt Designer list of signal/slots).
+
++---------------------------------------------------+--------------------------------------+
+| SENDER                                            | RECEIVER                             |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Type          | Label/Value | Signal              | Type            | Signal             |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Line Edit     | 52344       | textEdited(QString) | exampleWidget   | setShot(QString)   |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Line Edit     | 0           | textEdited(QString) | exampleWidget   | setRun(QString)    |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Line Edit     | g2penkod    | textEdited(QString) | exampleWidget   | setUser(QString)   |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Line Edit     | viztest     | textEdited(QString) | exampleWidget   | setDevice(QString) |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Push Button   | Open IDS    | clicked()           | exampleWidget   | openIDS()          |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Push Button   | Plot flux   | clicked()           | exampleWidget   | openIDS()          |
+|               | loop        |                     |                 |                    |
++---------------+-------------+---------------------+-----------------+--------------------+
+| Push Button   | Plot        | clicked()           | exampleWidget   | openIDS()          |
+|               | poloidal    |                     |                 |                    |
+|               | field       |                     |                 |                    |
++---------------+-------------+---------------------+-----------------+--------------------+
+| exampleWidget | Open IDS    | idsSet()            | Group Box (top) | SetChecked(bool)   |
++---------------+-------------+---------------------+-----------------+--------------------+
+
+The final list of necessary signal/slot links in Qt Designer for this case is
+shown in the figure below.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_8.png
+  :align: center
+  :width: 200px
+
+At this point, the plugin is completed.
+
+Qt Designer Preview
+^^^^^^^^^^^^^^^^^^^
+
+The constructed plugin can be tested with the Qt Designer **Preview** option,
+found in the **Form** menu.
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_9.png
+  :align: center
+  :width: 200px
+
+By pressing first the :guilabel:`Open IDS` button, waiting a while, and then
+pressing the :guilabel:`Plot flux loop` button, the plot panel is populated as
+shown in the figure below.
+
+.. warning::
+   This specified case is done for the GateWay HPC. Make sure, that the
+   corresponding IDS exists and that it contains the right data!
+
+.. figure:: images/QtDesigner_examplePlugin_signalSlots_10.png
+  :align: center
+  :width: 200px
+
+  Plotting all **Flux loop** plots from the **magnetics IDS** with parameters
+  (on GateWay HPC!) **Shot:** 52344, **Run:** 0, **user**: g2penkod,
+  **device**: viztest.
+
+Saving the Qt Designer form
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The created Qt Designer GUI form (**.ui** extension) can be saved by navigating
+from menubar to **File** -> **Save**. The name can be set customly, in this
+case it is saved as **examplePlugin.ui** (do not confuse it with
+**examplePlugin.py**). **IMPORTANT:** the .ui file must be saved in the same
+directory as the source files, in this case **exampleWidget.py** and
+**examplePlugin.py**.
+
+Running the plugin .ui
+^^^^^^^^^^^^^^^^^^^^^^
+
+The **.ui** plugin can be run using Python3 shell. Open Python3 shell and type
+the next commands:
+
+.. code-block:: python
+
+   from PyQt5.QtWidgets import QApplication
+   from PyQt5 import uic
+   app = QApplication([])
+   uiObj = uic.loadUi('SOLPSplugin.ui')
+   uiObj.show()
+
+A script example ``run_plugin_ui_standalone.py`` is available in the plugin
+directory. It is run with the following command:
+
+.. code-block:: console
+
+   python3 run_plugin_ui_standalone.py
+
 Adding plugin to IMASViz
 ------------------------
+
+.. warning::
+   Before proceeding, make sure that you made the step 8. in
+   :ref:`exampleWidget_designing_GUI`.
 
 
 
