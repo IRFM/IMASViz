@@ -58,7 +58,7 @@ class GUIFrame(QTabWidget):
         self.userName = QLineEdit(default_user_name)
         vboxLayout.addRow('User name', self.userName)
         self.imasDbName = QLineEdit(default_machine)
-        vboxLayout.addRow('IMAS database name', self.imasDbName)
+        vboxLayout.addRow('Tokamak', self.imasDbName)
         self.shotNumber = QLineEdit()
         vboxLayout.addRow('Shot number', self.shotNumber)
         self.runNumber = QLineEdit(default_run)
@@ -104,7 +104,7 @@ class GUIFrame(QTabWidget):
             raise ValueError("'User name' field is empty.")
 
         if self.imasDbName.text() == '':
-            raise ValueError("'IMAS database name' field is empty.")
+            raise ValueError("'Tokamak' field is empty.")
 
         if self.shotNumber.text() == '' or self.runNumber.text() == '':
             raise ValueError("'Shot number' or 'run number' field is empty.")
