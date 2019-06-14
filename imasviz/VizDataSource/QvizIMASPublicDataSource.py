@@ -39,3 +39,6 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
 
     def getShortLabel(self):
         return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+
+    def containsData(self, IDSName):
+        return True
