@@ -4,12 +4,12 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalValues
 
 
 class QVizGeneratedClassFactory:
-    def __init__(self, IMASDataSource, view, IDSName, occurrence=0, async = True):
+    def __init__(self, IMASDataSource, view, IDSName, occurrence=0, asynch=True):
         self.IDSName = IDSName
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
-        self.async = async
+        self.asynch = asynch
 
 
     def create(self):
@@ -29,7 +29,7 @@ class QVizGeneratedClassFactory:
                                                            view=self.view,
                                                            IDSName=self.IDSName,
                                                            occurrence=self.occurrence,
-                                                           async=self.async)
+                                                           asynch=self.asynch)
         elif imas__dd_version == "3.9.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_9_0 \
                 import IDSDef_XMLParser_Generated_3_9_0
@@ -40,7 +40,7 @@ class QVizGeneratedClassFactory:
                                                                  view=self.view,
                                                                  IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
-                                                                 async=self.async)
+                                                                 asynch=self.asynch)
         elif imas__dd_version == "3.9.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_9_1 \
                 import IDSDef_XMLParser_Generated_3_9_1
@@ -51,7 +51,7 @@ class QVizGeneratedClassFactory:
                                                                  view=self.view,
                                                                  IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
-                                                                 async=self.async)
+                                                                 asynch=self.asynch)
         elif imas__dd_version == "3.11.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_11_0 \
                 import IDSDef_XMLParser_Generated_3_11_0
@@ -62,7 +62,7 @@ class QVizGeneratedClassFactory:
                                                                  view=self.view,
                                                                  IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
-                                                                 async=self.async)
+                                                                 asynch=self.asynch)
         elif imas__dd_version == "3.12.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_12_0 \
                 import IDSDef_XMLParser_Generated_3_12_0
@@ -73,7 +73,7 @@ class QVizGeneratedClassFactory:
                                                                  view=self.view,
                                                                  IDSName=self.IDSName,
                                                                  occurrence=self.occurrence,
-                                                                 async=self.async)
+                                                                 asynch=self.asynch)
         elif imas__dd_version == "3.15.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_15_0 \
                 import IDSDef_XMLParser_Generated_3_15_0
@@ -84,7 +84,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.15.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_15_1 \
                 import IDSDef_XMLParser_Generated_3_15_1
@@ -95,7 +95,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.16.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_16_0 \
                 import IDSDef_XMLParser_Generated_3_16_0
@@ -106,7 +106,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
 
         elif imas__dd_version == "3.17.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_17_0 \
@@ -118,7 +118,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.17.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_17_1 \
                 import IDSDef_XMLParser_Generated_3_17_1
@@ -129,7 +129,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.17.2":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_17_2 \
                 import IDSDef_XMLParser_Generated_3_17_2
@@ -140,7 +140,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.18.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_18_0 \
                 import IDSDef_XMLParser_Generated_3_18_0
@@ -151,7 +151,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.19.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_19_0 \
                 import IDSDef_XMLParser_Generated_3_19_0
@@ -162,7 +162,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.19.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_19_1 \
                 import IDSDef_XMLParser_Generated_3_19_1
@@ -173,7 +173,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.20.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_20_0 \
                 import IDSDef_XMLParser_Generated_3_20_0
@@ -184,7 +184,7 @@ class QVizGeneratedClassFactory:
                                                               view=self.view,
                                                               IDSName=self.IDSName,
                                                               occurrence=self.occurrence,
-                                                              async=self.async)
+                                                              asynch=self.asynch)
         elif imas__dd_version == "3.21.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_21_0 \
                 import IDSDef_XMLParser_Generated_3_21_0
@@ -195,7 +195,7 @@ class QVizGeneratedClassFactory:
                                                                   view=self.view,
                                                                   IDSName=self.IDSName,
                                                                   occurrence=self.occurrence,
-                                                                  async=self.async)
+                                                                  asynch=self.asynch)
         elif imas__dd_version == "3.21.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_21_1 \
                 import IDSDef_XMLParser_Generated_3_21_1
@@ -206,7 +206,7 @@ class QVizGeneratedClassFactory:
                                                                   view=self.view,
                                                                   IDSName=self.IDSName,
                                                                   occurrence=self.occurrence,
-                                                                  async=self.async)
+                                                                  asynch=self.asynch)
         elif imas__dd_version == "3.22.0":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_22_0 \
                 import IDSDef_XMLParser_Generated_3_22_0
@@ -217,7 +217,7 @@ class QVizGeneratedClassFactory:
                                                                   view=self.view,
                                                                   IDSName=self.IDSName,
                                                                   occurrence=self.occurrence,
-                                                                  async=self.async)
+                                                                  asynch=self.asynch)
         elif imas__dd_version == "3.23.1":
             from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_23_1 \
                 import IDSDef_XMLParser_Generated_3_23_1
@@ -228,7 +228,7 @@ class QVizGeneratedClassFactory:
                                                                   view=self.view,
                                                                   IDSName=self.IDSName,
                                                                   occurrence=self.occurrence,
-                                                                  async=self.async)
+                                                                  asynch=self.asynch)
         else:
             raise ValueError("IMAS dictionary version not supported:" + imas__dd_version)
 

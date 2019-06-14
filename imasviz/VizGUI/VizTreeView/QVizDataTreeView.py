@@ -175,13 +175,17 @@ class QVizDataTreeView(QTreeWidget):
                 itemDataDict['documentation'] = idsDocumentation
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = QVizTreeNode(self.DTVRoot, [idsName], itemDataDict)
-                if self.dataSource.exists(idsName) == 1:
+                if self.dataSource.exists(idsName) == 1 and self.dataSource.containsData(idsName):
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
                     # Set tree item text color
                     self.IDSRoots[idsName].setForeground(0, GlobalColors.BLUE)
+                else:
+                    itemDataDict['availableIDSData'] = 0
+                    # Set tree item text color
+                    self.IDSRoots[idsName].setForeground(0, GlobalColors.BLACK)
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
