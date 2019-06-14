@@ -22,7 +22,7 @@ class ToreSupraDataSource:
             self.mappingFilesDirectory = os.environ["TS_MAPPINGS_DIR"]
 
     #Load IMAS (meta) data from mapping files
-    def load(self, view, IDSName, occurrence=0, async=False):
+    def load(self, view, IDSName, occurrence=0, asynch=False):
         idsObject = None
         try:
             tree = ET.parse(self.mappingFilesDirectory + '/' + IDSName + '_v1.xml')

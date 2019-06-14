@@ -77,7 +77,7 @@ class QVizSelectSignals(QVizAbstractCommand):
         pathsList = self.pathsMap.get('paths')
         occurrencesList = self.pathsMap.get('occurrences')
 
-        async = False  # the command SelectSignals is
+        asynch = False  # the command SelectSignals is
         # synchronous so we will wait that
         # this event is set
         for i in range(0, len(pathsList)):
@@ -92,4 +92,4 @@ class QVizSelectSignals(QVizAbstractCommand):
                 continue
 
             # Check/Populate the IDS tree node
-            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrencesList[i]), async).execute()
+            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrencesList[i]), asynch).execute()
