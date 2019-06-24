@@ -88,6 +88,9 @@ The tool uses the following Python packages:
     For more on **Sphinx** see
     `Sphinx webpage <http://www.sphinx-doc.org/en/master/>`_.
 
+.. TODO texlive, latexmk
+.. sudo apt-get install latexmk texlive texlive-science texlive-formats-extra
+
 IMASViz tool is available on **ITER git repository** (access permission is
 required) under project **Visualization/VIZ**, branch **viz2.0_develop**.
 

@@ -5,18 +5,18 @@ Developing a custom user interface (UI) plugins with Qt designer
 
 **Qt Designer** is a tool for designing and building **Qt-based graphical user**
 **interfaces**. It allows the user to design custom widgets, dialogs, main
-windows etc. using on-screen forms and a user-friendly simple drag-and-drop
+windows, etc. using on-screen forms and a user-friendly simple drag-and-drop
 interface. It also provides the user with a convenient ability to preview the
 designs to ensure they work as intended.
 
 In general, Qt Designer mainly offers basic Qt widgets such as
-:guilabel:`Push Button`, :guilabel:`Line Edit`, :guilabel:`List Widget` etc.
+:guilabel:`Push Button`, :guilabel:`Line Edit`, :guilabel:`List Widget`, etc.
 This list of the **Qt Designer** widgets can be
 extended by writing so-called **Qt designer plugins** (do not confuse with
 **IMASViz plugins**!). Normally this is done using C++ but PyQt5 also allows
 you to write Qt Designer plugins in Python3 programming language.
 
-Such designer plugin is used to expose a custom widget source code
+Such designer plugin is used to pass a custom widget source code
 (written in Python3) to Qt Designer. This way the widget becomes available
 within the Qt designer where it can be interactively moved, designed, connected
 to signals and slots and more.
@@ -27,7 +27,7 @@ to signals and slots and more.
 
 In this HOWTO section it will be described how to:
   #. Develop a **custom PyQt5 widget**
-  #. Expose the **custom PyQt5 widget** class to **Qt designer** as a
+  #. Pass the **custom PyQt5 widget** class to **Qt designer** as a
      **Qt designer plugin**
   #. Use the **custom PyQt5 widget** as a **Qt designer plugin** within
      the Qt Designer
@@ -40,7 +40,7 @@ In this HOWTO section it will be described how to:
 .. Warning::
    Qt version of used PyQt5 (compiled with Qt) and Qt designer must match!
 
-For the purposes of this HowTo section a widget source code for the
+For the purposes of this HowTo section, a widget source code for the
 **Magnetics IDS overview Plugin** was developed and it is available in the
 IMASViz source code (VizPlugins/viz_example). As it is mainly intended only
 as an example of a plugin (including an example of the widget source code), it
@@ -65,8 +65,8 @@ points **3-6**. More on this plugin (as IMASViz plugin) can be found in section
 
    `Local Video Link <QtDesigner_and_IMASViz_plugin_short_demo.mp4>`_.
 
-Developing custom PyQt5 widget
-------------------------------
+Custom PyQt5 widget creation (code development)
+-----------------------------------------------
 
 This section describes and demonstrates how to write a complete custom PyQt5
 widget that handles data stored within the **Magnetics IDS**. Later in this
@@ -76,7 +76,7 @@ HowTo section, the same widget will be then used to create
 The main final features of this custom plugin will be:
 
 -
-  - **Opening and reading the contents a specified IDS** (speficied by the set
+  - **Opening and reading the contents a specified IDS** (specified by the set
     case parameters)
 
   **OR**
@@ -142,7 +142,7 @@ information about the code itself:
 
 Documentation should be as important to a developer as all other facets of
 development. **Every code should include documentation** (in the forms of a
-header, code comments etc.). It either explains what the code does, how it
+header, code comments, etc.). It either explains what the code does, how it
 operates, how to use it etc. Documentation is an important part of software engineering.
 
 No matter what the code contains, chances are that someday other
@@ -159,7 +159,7 @@ The custom PyQt5 widget requires additional sources - modules.
 
 The ones required in this case are:
 
-- Common system, OS and logging modules:
+- The common system, OS and logging modules:
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
@@ -203,8 +203,8 @@ Python3.
 Class definition
 """"""""""""""""
 
-First main part of this code is the definition of a new class inheriting
-from the PyQt5 **QWidget** class. In this case, the class is named
+The initial and important part of this code is the definition of a new class
+inheriting from the PyQt5 **QWidget** class. In this case, the class is named
 :guilabel:`exampleWidget`.
 
 This class will later fully define the QWidget (contents, design, functions
@@ -244,7 +244,7 @@ In short, constructors are generally used for initiating an object. The task of
 constructors is to initialize the data members of the class when an object of
 the class is created.
 
-In case of this custom widget, the constructor required two additional
+In the case of this custom widget, the constructor required two additional
 arguments:
 
 - :guilabel:`parent` (can be either Qt object, later our case QMainWindow), and
@@ -274,14 +274,14 @@ capable of performing in two different ways. Either:
 - if no IDS object was passed (**ids == None**), open IDS and create a new
   :guilabel:`ids` object.
 
-For example, in **IMASViz** there is at least one IDS open at time and thus
+For example, in **IMASViz** there is at least one IDS open at the time and thus
 have the :guilabel:`ids` object available. Instead of opening the IDS again,
 the :guilabel:`ids` object can be just passed to the custom widget as an
 argument and the widget can continue to use it.
 
 If there is no IDS object available (meaning no IDS is already being
 opened), an IDS must be opened thus creating an object referring to the IDS.
-In constructor we define a dictionary labeled as :guilabel:`self.idsParameters`
+In the constructor we define a dictionary labeled as :guilabel:`self.idsParameters`
 which should contain all IDS parameters for IDS (will be used later to open the
 needed IDS):
 
@@ -493,7 +493,7 @@ There are two plotting functions required:
    arrays values.
 
 Both are very similar, the only difference between them is which data is
-extracted from the IDS and used for plotting. Because of this similarity only
+extracted from the IDS and used for plotting. Because of this similarity, only
 the function :guilabel:`plotFluxAoS` will be described in depth.
 
 The function :guilabel:`plotFluxAoS` requires only one argument: the IDS object.
@@ -528,7 +528,7 @@ assigned to it.
 Next, looping through all structured of the **flux_loop** AoS is required.
 Each array values (Y-axis values) need to be extracted and then together with
 the previously set time values (X-axis) a new plot can be added to the
-matplotlib figure. Because of the loop this gets repeated until no more AoS
+matplotlib figure. Because of the loop, this gets repeated until no more AoS
 arrays are left.
 
 .. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
@@ -623,18 +623,19 @@ Full final code of the example PyQt5 widget
    :language: python
    :linenos:
 
-Exposing custom PyQt5 widget to Qt designer
--------------------------------------------
+Passing custom PyQt5 widget to Qt designer
+------------------------------------------
 
-In order to "expose" the **custom PyQt5 widget** to **Qt designer**, a separate
+In order to pass the **custom PyQt5 widget** to **Qt designer**, a separate
 Qt plugin Python file is required, written in Python3 programming language.
-The name of this file is very important in order for the Qt designer to
-recognize it. The name of this file should end with **plugin.py** (case
-sensitive!). In this case, the file is named **exampleplugin.py**. it must
+**The name of this file is of major importance** as if set improperly the
+Qt designer will not recognize it!
+The name of this file should end with **plugin.py** (**case
+sensitive!**). In this case, the file is named **exampleplugin.py**. it must
 be placed in the same directory as the widget source code - **exampleWidget.py**.
 
-This plugin *.py* file for Qt designer follows certain template which can be reused
-and only few parts of it need to be modified.
+This plugin *.py* file for Qt designer follows a certain template which can be
+used and slightly modified as required..
 
 The whole code is shown below.
 
@@ -642,7 +643,7 @@ The whole code is shown below.
    :language: python
    :linenos:
 
-Below are listed parts of the Qt plugin code, which must be modified for any
+Below are listed lines of the Qt plugin code, which must be modified for any
 new widget, in order to properly refer to the widget source code - in this case
 **exampleWidget** (exampleWidget.py).
 
@@ -738,7 +739,7 @@ new widget, in order to properly refer to the widget source code - in this case
    :linenos:
 
 With the source and plugin code (.py files) completed they are ready to be
-used with the Qt designer.
+used in Qt designer.
 
 To achieve that, first the location of the necessary files must be provided to
 the Qt designer. This is done by adding a path to the ``$PYQTDESIGNERPATH``
@@ -766,18 +767,25 @@ be used within **Qt Designer**.
 
 .. _exampleWidget_creating_app:
 
-Creating custom application/plugin with Qt Designer
----------------------------------------------------
+Creating a custom application/plugin with Qt Designer
+-----------------------------------------------------
 
-In this subsection, the procedure of creating a custom plugin/application GUI is
+In this subsection, the process of creating a custom plugin/application GUI is
 presented.
 In **Qt Designer**, the GUI design and layout can be done conveniently with
-mouse drag-and-drop, popup-menu configurations and more. The figure below
-presents the final look at the end of the plugin GUI design procedure.
+mouse drag-and-drop, popup-menu configurations and more.
+
+.. note::
+   A good video presentation how to use Qt Designer is available in
+   :ref:`plugins_qtdesigner`.
+
+
+The figure below presents the final look at the end of the plugin GUI design
+procedure.
 
 .. figure:: images/QtDesigner_examplePlugin_final.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   Final design of the example plugin, indented for plotting all slices of
   **flux loop** and **poloidal field** data found in **magnetics IDS**.
@@ -799,8 +807,8 @@ GUI design procedure
 ^^^^^^^^^^^^^^^^^^^^
 
 1. First, a new **Main Window** must be created. This is done by selecting
-   **Main Window** option from the list of :guilabel:`templates/forms` and clicking
-   the :guilabel:`Create` button, as shown in the figure below.
+   The **Main Window** option from the list of :guilabel:`templates/forms` and
+   clicking the :guilabel:`Create` button, as shown in the figure below.
 
    .. figure:: images/QtDesigner_startup.png
      :align: center
@@ -827,7 +835,7 @@ GUI design procedure
 
 .. figure:: images/QtDesigner_examplePlugin_step_1.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   **exampleWidget** within :guilabel:`MainWindow`.
 
@@ -835,7 +843,7 @@ GUI design procedure
 
 .. figure:: images/QtDesigner_examplePlugin_step_2.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   Added 2x :guilabel:`Group Box` and 2x :guilabel:`vertical spacer` to :guilabel:`MainWindow`.
 
@@ -855,7 +863,7 @@ GUI design procedure
 
         .. figure:: images/QtDesigner_examplePlugin_groupbox_top_2.png
           :align: center
-          :width: 200px
+          :width: 500px
 
         .. figure:: images/QtDesigner_examplePlugin_groupbox_top_3.png
           :align: center
@@ -869,13 +877,19 @@ GUI design procedure
    widgets.
 
         .. Note::
-           Top :guilabel:`Label` widget contains text ``Notes: \n - If disabled on start, the
-           IDS is already available from other sources (application etc.) \n - Below
-           are the default parameters for the benchmark IDS case (GateWay)``
+           Top :guilabel:`Label` widget contains the next text:
+
+           **Notes: \\n - If disabled on start, the
+           IDS is already available from other sources (application etc.) \\n - Below
+           are the default parameters for the benchmark IDS case (GateWay)**
+
+           **\\n** are required to achieve line breaks.
 
         .. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
           :align: center
           :width: 200px
+
+          Top :guilabel:`Group Box` with set labels and default values.
 
    4.4. Select :guilabel:`Group Box` and change its next properties in the
    :guilabel:`Property Editor` found on the right side of the Qt Designer
@@ -883,9 +897,9 @@ GUI design procedure
 
         - QGroupBox -> checkable = True (check)
 
-        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_4.png
+        .. figure:: images/QtDesigner_examplePlugin_groupbox_top_5.png
           :align: center
-          :width: 200px
+          :width: 400px
 
           :guilabel:`Group Box` property ``checkable`` found in the
           :guilabel:`Property Editor`.
@@ -928,6 +942,8 @@ GUI design procedure
           :align: center
           :width: 200px
 
+          Bottom :guilabel:`Group Box` template.
+
    5.2. Label the :guilabel:`Group Box` and :guilabel:`Push Button` widgets.
 
    5.3. Right click within the box and select :guilabel:`Layout` ->
@@ -937,16 +953,22 @@ GUI design procedure
           :align: center
           :width: 200px
 
+          Finished bottom :guilabel:`Group Box`.
+
 6. Right click within the :guilabel:`MainWindow` and select :guilabel:`Layout` ->
 :guilabel:`Lay Out in a Grid`.
 
    .. figure:: images/QtDesigner_examplePlugin_before_grid_layout.png
      :align: center
-     :width: 200px
+     :width: 400px
+
+     :guilabel:`MainWindow` before setting grid layout.
 
    .. figure:: images/QtDesigner_examplePlugin_after_grid_layout.png
      :align: center
-     :width: 200px
+     :width: 400px
+
+     :guilabel:`MainWindow` after setting grid layout.
 
 7. Change :guilabel:`MainWindow` properties:
 
@@ -976,20 +998,20 @@ To edit **signals/slots**, in menubar, navigate to **Edit** ->
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_1.png
   :align: center
-  :width: 200px
+  :width: 400px
 
   **Edit Signals/Slots** in menubar.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_2.png
   :align: center
-  :width: 200px
+  :width: 300px
 
-  While in **Edit Signals/Slots mode**, hovering with mouse over widgets
+  While in **Edit Signals/Slots mode**, hovering with the mouse over widgets
   marks them with slight red color.
 
 Link **Line Edit** widgets (located in the top :guilabel:`Group Box`) signals to
 **exampleWidget** slots. This is done by clicking on one of the **Line Edit**
-widgets (in this case those one which holds the **Shot** value), holding and
+widgets (in this case that one which holds the **Shot** value), holding and
 dragging the shown arrow to **exampleWidget**, as shown in the figure below.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_3.png
@@ -1000,7 +1022,7 @@ Next, the **Configure connection editor** will be shown.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_4.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   **Configure connection editor**, displaying list of available **Line Edit**
   (left) **signals** and available **exampleWidget** slots (right).
@@ -1017,7 +1039,7 @@ the lists: **textEdited** and **setShot**, and pressing the
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_5.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   Selection of **Line Edit** signal **textEdited** and **exampleWidget** slot
   **setShot**
@@ -1027,7 +1049,7 @@ of the red arrow will indicate which signal and slot are linked.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_6.png
   :align: center
-  :width: 200px
+  :width: 300px
 
   Red arrow indicating the **sender**, **sender signal**, **receiver** and
   **slot**.
@@ -1037,7 +1059,7 @@ of the Qt Designer application.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_7.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   A list displaying a list of all created slot/signal lists, listing the
   **sender**, **sender signal**, **receiver** and **slot** for each link.
@@ -1079,7 +1101,7 @@ shown in the figure below.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_8.png
   :align: center
-  :width: 200px
+  :width: 500px
 
 At this point, the plugin is completed.
 
@@ -1091,11 +1113,11 @@ found in the **Form** menu.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_9.png
   :align: center
-  :width: 200px
+  :width: 400px
 
-By pressing first the :guilabel:`Open IDS` button, waiting a while, and then
-pressing the :guilabel:`Plot flux loop` button, the plot panel is populated as
-shown in the figure below.
+By pressing first the :guilabel:`Open IDS` button, waiting for a moment until
+the IDS data gets read, and then pressing the :guilabel:`Plot flux loop` button,
+the plot panel is populated as shown in the figure below.
 
 .. warning::
    This specified case is done for the GateWay HPC. Make sure, that the
@@ -1115,9 +1137,12 @@ Saving the Qt Designer form
 The created Qt Designer GUI form (**.ui** extension) can be saved by navigating
 from menubar to **File** -> **Save**. The name can be set customly, in this
 case it is saved as **examplePlugin.ui** (do not confuse it with
-**examplePlugin.py**). **IMPORTANT:** the .ui file must be saved in the same
-directory as the source files, in this case **exampleWidget.py** and
-**examplePlugin.py**.
+**examplePlugin.py**).
+
+.. warning::
+   **IMPORTANT:** **the .ui file must be saved in the same
+   directory as the source files**, in this case **exampleWidget.py** and
+   **examplePlugin.py**.
 
 .. _exampleWidget_running_ui:
 
@@ -1154,11 +1179,11 @@ The main idea for integration of plugin in IMASViz is to simplify the plugin
 usage and to add further functionalities to IMASViz. By running the plugin
 from IMASViz the IMASViz created **IDS object** is passed to the plugin, thus
 opening and setting the IDS is not necessary (required when running the plugin
-as standalone application as shown in :ref:`exampleWidget_running_ui`).
+as a standalone application as shown in :ref:`exampleWidget_running_ui`).
 
 To run the plugin from IMASViz it must be first added (registered) in IMASViz
 ``$VIZ_HOME/imasviz/VizPlugins/VizPlugins.py`` source file. This is done through
-next few steps:
+the next few steps:
 
 1. Add plugin to a list of registered plugins
 
@@ -1175,8 +1200,8 @@ below, where:
    for IMASViz to recognize and use it correctly!
 
 - **UiFile** dictionary key, holding full **.ui** filename.
-- **dir** dictionary key, holding path to dictionary where the **.ui** filename
-  (and other plugin sources) are located.
+- **dir** dictionary key, holding the path to the dictionary where the **.ui**
+  filename (and other plugin sources) are located.
 - **targetIDSroot** dictionary key, holding target **IDS** label.
 - **targetOccurrence** dictionary key, holding target **IDS occurrence** integer.
 
@@ -1202,8 +1227,8 @@ below, where:
 2. Add plugin configuration
 
 Each plugin can have its own specific configuration. In the case of the
-**examplePlugin** there are no configurations required. Still, and empty
-configuration must be given, as highlighted in the code block below.
+**examplePlugin** there are no configurations required. Still, an empty
+configuration must be provided, as highlighted in the code block below.
 
 .. code-block:: python
    :emphasize-lines: 10
@@ -1257,12 +1282,12 @@ Now everything is ready to run the plugin from IMASViz.
 Running the custom plugin in IMASViz
 ------------------------------------
 
-When running the IMASViz, open the IDS with the same parameters as defined in
-:ref:`plugins_qtdesigner_signals_slots`.
+When running the IMASViz, for the means of this manual, open the IDS with the
+same case parameters as defined in :ref:`plugins_qtdesigner_signals_slots`.
 
 .. figure:: images/examplePlugin_IMASViz_IDS_parameters.png
   :align: center
-  :width: 200px
+  :width: 500px
 
 In the :guilabel:`tree window`, navigate to :guilabel:`magnetics`.
 While holding **shift key** right click on the :guilabel:`magnetics` label and
@@ -1270,18 +1295,18 @@ in the popup menu select the :guilabel:`Magnetics overview...` option.
 
 .. figure:: images/examplePlugin_IMASViz_DTV_popupmenu.png
   :align: center
-  :width: 200px
+  :width: 400px
 
-On selection, the **examplePlugin**, now reffered to as
-**Magnetics IDS Overview Plugin**, window is shown.
+On selection confirm, the **examplePlugin**, now referred to as
+**Magnetics IDS Overview Plugin**, the plugin window is shown.
 
 .. figure:: images/examplePlugin_IMASViz_window_1.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   **Magnetics IDS Overview Plugin** on startup when run from within **IMASViz**.
 
-It can be noticed, that the top :guilabel:`Group Box` is disabled. This is due to our
+It can be observed, that the top :guilabel:`Group Box` is disabled. This is due to our
 code and signal/slots, done in the plugin development phase in previous
 sections. This way if IDS object (now provided by IMASViz) is already provided
 on plugin startup the IDS set/open/read procedures are not required, but if
@@ -1291,54 +1316,12 @@ applications.
 
 By pressing either :guilabel:`Plot flux loop` or :guilabel:`Plot poloidal field`
 buttons the corresponding data, specified in the plugin code development phase,
-are be plotted.
+are plotted.
 
 .. figure:: images/examplePlugin_IMASViz_window_2.png
   :align: center
-  :width: 200px
+  :width: 500px
 
   **Magnetics IDS Overview Plugin** with plotted all **Flux loop** data from
   the **magnetics IDS** (parameters (on GateWay HPC!) **Shot:** 52344,
   **Run:** 0, **user**: g2penkod, **device**: viztest.
-
-
-.. image sources (to be used)
-
-.. images/QtD_SOLPSovPl_EmptyMainWindow.png
-.. images/QtD_SOLPSovPl_SOLPSwidget_drag.png
-.. images/QtD_SOLPSovPl_SOLPSwidget_drop.png
-.. images/QtD_SOLPSovPl_SOLPSwidget_objectNameChange_before.png
-.. images/QtD_SOLPSovPl_SOLPSwidget_objectNameChange_after.png
-.. images/QtD_SOLPSovPl_MainWindow_windowTitleChange_before.png
-.. images/QtD_SOLPSovPl_MainWindow_windowTitleChange_after.png
-.. images/QtD_SOLPSovPl_widgetBox.png
-.. images/QtD_SOLPSovPl_PushButton_drag.png
-.. images/QtD_SOLPSovPl_add_3x_PushButton.png
-.. images/QtD_SOLPSovPl_PushButton_textEdit_before.png
-.. images/QtD_SOLPSovPl_PushButton_textEdit_after.png
-.. images/QtD_SOLPSovPl_PushButton_textEdit_finished.png
-.. images/QtD_SOLPSovPl_setToGridLayout_menu.png
-.. images/QtD_SOLPSovPl_setToGridLayout_finished.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_menu.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_redColorIndicator.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_SetIDS_drag.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_SetIDS_conf.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_SetIDS_finished.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_SetGGDData_conf.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_PlotData_conf.png
-.. images/QtD_SOLPSovPl_editSignalsSlots_all_finished.png
-.. images/QtD_SOLPSovPl_preview_menu.png
-.. images/QtD_SOLPSovPl_preview_run.png
-.. images/QtD_SOLPSovPl_preview_run_IDSvariables.png
-.. images/QtD_SOLPSovPl_preview_run_SpecifyDataToPlot_default.png
-.. images/QtD_SOLPSovPl_preview_run_SpecifyDataToPlot_listOfQuantities.png
-.. images/QtD_SOLPSovPl_preview_run_PlotData.png
-.. images/QtD_SOLPSovPl_saveAs_menu.png
-.. images/QtD_SOLPSovPl_saveAs_set.png
-
-
-
-
-
-
-
