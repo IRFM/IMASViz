@@ -175,13 +175,17 @@ class QVizDataTreeView(QTreeWidget):
                 itemDataDict['documentation'] = idsDocumentation
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = QVizTreeNode(self.DTVRoot, [idsName], itemDataDict)
-                if self.dataSource.exists(idsName) == 1:
+                if self.dataSource.exists(idsName) == 1 and self.dataSource.containsData(idsName):
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
                     itemDataDict['availableIDSData'] = 1
                     # Set tree item text color
                     self.IDSRoots[idsName].setForeground(0, GlobalColors.BLUE)
+                else:
+                    itemDataDict['availableIDSData'] = 0
+                    # Set tree item text color
+                    self.IDSRoots[idsName].setForeground(0, GlobalColors.BLACK)
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
@@ -540,18 +544,15 @@ class QVizDataTreeViewFrame(QMainWindow):
         idsData = event.data[2]
         pathsList = event.data[3]
         threadingEvent = event.data[4]
-        self.updateView(idsName, occurrence, idsData, pathsList, threadingEvent)
+        self.updateView(idsName, occurrence, idsData)
 
-    def updateView(self, idsName, occurrence, idsData=None, pathsList=None,
-                   threadingEvent=None):
+    def updateView(self, idsName, occurrence, idsData=None):
         """ Update QVizDataTreeViewFrame.
 
         Arguments:
             idsName        (str) : Name of the IDS e.g. 'magnetics'.
             occurrence     (int) : IDS occurrence number (0-9).
             idsData        (obj) : Object (element) holding IDS data.
-            pathsList      () :
-            threadingEvent () :
         """
         # t4 = time.time()
         if idsData != None:
@@ -563,11 +564,8 @@ class QVizDataTreeViewFrame(QMainWindow):
             self.dataTreeView.update_view(idsName, occurrence, idsData)
             self.dataTreeView.log.info("View update ended.")
 
-            if (idsName == 'equilibrium'):
-                self.dataTreeView.log.info("WARNING: GGD structure array from "
-                                           + "parent "
-                                           + "equilibrium.time_slice[itime] "
-                                           + "has been ignored.")
+            if (idsName == 'equilibrium' or idsName == 'wall'):
+                self.dataTreeView.log.info("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
 
     def addMenuBar(self):
         """Create and configure the menu bar.
@@ -586,8 +584,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         #------
         # Add menu item to export the contents, opened in DTV, to a new local
         # IDS
-        action_onExportToLocal = QAction('Export browsed tree view contents to '
-                                         'local IDS', self)
+        action_onExportToLocal = QAction('Export to IDS', self)
         action_onExportToLocal.triggered.connect(self.onExportToLocal)
         actions.addAction(action_onExportToLocal)
 
@@ -782,7 +779,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         dataSource = self.dataTreeView.dataSource
 
         dialog = QDialog(self)
-        dialog.setWindowTitle("Export to IDS")
+        dialog.setWindowTitle('Export browsed tree view contents to local ID')
         dialog.resize(300,200)
 
         userLabel = QLabel('User: ', self)
@@ -823,7 +820,7 @@ class QVizDataTreeViewFrame(QMainWindow):
             except:
                 self.dataTreeView.log.info('The specified database ' +
                                            databaseBox.text() + ' for user ' +
-                                           userBox.text() + 'not found.')
+                                           userBox.text() + ' not found.')
                 return
             dataSource.exportToLocal(self.dataTreeView, exported_ids)
 

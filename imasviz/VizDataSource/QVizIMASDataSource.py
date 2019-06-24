@@ -17,8 +17,8 @@ class QVizIMASDataSource:
         self.ids = {} #key = occurrence, value = ids object
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, pathsList = None, async=True):
-        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName, occurrence, pathsList, async).create()
+    def load(self, dataTreeView, IDSName, occurrence=0, asynch=True):
+        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName, occurrence, asynch).create()
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
@@ -33,7 +33,7 @@ class QVizIMASDataSource:
         #dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected[occurrence]] = 1
         dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + IDSName + '...')
 
-        if async:
+        if asynch:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
         else:
             self.generatedDataTree.run()  #This will call the get() operation for fetching IMAS data
@@ -61,10 +61,25 @@ class QVizIMASDataSource:
     def exists(self, IDSName):
         return True
 
+    def containsData(self, IDSName):
+        imas_entry = imas.ids(self.shotNumber, self.runNumber, 0, 0)
+        try:
+            imas_major_version = os.environ['IMAS_MAJOR_VERSION']
+            imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
+            ids_properties = eval("imas_entry." + IDSName + ".partialGet('ids_properties')")
+            imas_entry.close()
+            ht = ids_properties.homogeneous_time
+            if ht != 0 and ht != 1:
+                return False
+        except:
+            return False
+
+        return True
+
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
         ids = self.ids[signalNode['occurrence']] #@UnusedVariable
-        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type' :
+        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type':
 
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
@@ -106,8 +121,8 @@ class QVizIMASDataSource:
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
-
-        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" \
+               + str(self.runNumber) + '::' + nodeData['Path'] + '::' + str(nodeData['occurrence'])
 
     def getShortLabel(self):
         return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
@@ -162,9 +177,14 @@ class QVizIMASDataSource:
             # Extract IDS name and occurrence
             idsName, occurrence = db.split("/")
 
-            # Set the export command
-            command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
-                      ".setExpIdx(exported_ids." + idsName + ".idx)"
+            if os.getenv('IMAS_PREFIX') != None and 'IMAS' in os.getenv('IMAS_PREFIX'):
+                # Set the export command
+                command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
+                          ".setExpIdx(exported_ids." + idsName + "._idx)"
+            else:
+                command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
+                           ".setExpIdx(exported_ids." + idsName + ".idx)"
+
             # Run the export command
             eval(command2)
             dataTreeView.log.info("Calling IMAS put() for IDS " + idsName +

@@ -53,7 +53,7 @@ configFilePath = os.environ['HOME'] + "/.imasviz/configuration_name.pcfg"
 
 # Extract signal paths from the config file and add them to a list of
 # paths
-pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
+pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
     configFile=configFilePath)
 
 # First unselect all signals (optional)
@@ -62,7 +62,7 @@ pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
 # Select the signals, defined by a path in a list of paths, in the
 # given Data Tree View (DTV) window
 QVizSelectSignals(dataTreeView=f.dataTreeView,
-                  pathsList=pathsList).execute()
+                  pathsMap=pathsMap).execute()
 
 # Plot the set of the signal nodes selected using plot configuration file to
 # a new Table Plot View and apply plot configurations (colors, line width etc.)

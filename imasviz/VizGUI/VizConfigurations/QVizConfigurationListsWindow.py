@@ -108,14 +108,14 @@ class CommonConfigurationRoutines(QObject):
                 "/" + selectedItem.text()
             # Extract signal paths from the config file and add them to a list of
             # paths
-            pathsList = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
+            pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
                 configFile=selectedFile)
             # First unselect all signals
             QVizUnselectAllSignals(dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
             # Select the signals, defined by a path in a list of paths, in the
             # given DataTreeView (DTV) window
             QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
-                              pathsList=pathsList).execute()
+                              pathsMap=pathsMap).execute()
         else:
             pass
 

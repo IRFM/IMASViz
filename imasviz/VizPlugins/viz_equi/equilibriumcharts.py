@@ -82,16 +82,18 @@ def DataGen(dictDataSource, dataTreeView):
     except:
         idd = None
     if idd is None:
-        dataSource.load(dataTreeView, IDSName='equilibrium', occurrence=0,
-                        pathsList=None, async=False)
+        print('Loading equilibrium IDS...')
+        dataSource.load(dataTreeView, IDSName='equilibrium', occurrence=0,asynch=False)
         idd = dataSource.ids[occurrence]
 
-    if not dataTreeView.idsAlreadyFetched["equilibrium"]:
-        idd.equilibrium.get()
+    #if not dataTreeView.idsAlreadyFetched["equilibrium"]:
+    #    idd.equilibrium.get()
 
     # Get wall geometry
     if not dataTreeView.idsAlreadyFetched["wall"]:
-        idd.wall.get()
+        print('Loading wall IDS...')
+        dataSource.load(dataTreeView, IDSName='wall', occurrence=0, asynch=False)
+        #idd.wall.get()
 
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)
@@ -115,29 +117,57 @@ def DataGen(dictDataSource, dataTreeView):
 
     equi_tSlice = idd.equilibrium.time_slice[0]
     equi_space  = idd.equilibrium.time_slice[0].ggd[0]
-    NbrPoints   = len(equi_space.grid.space[0].objects_per_dimension[0].object)
-    print('NbrPoints (number of grid points) =', NbrPoints)
-    # Declaration of arrays 2d plots
-    RNodes   = np.zeros(NbrPoints)
-    ZNodes   = np.zeros(NbrPoints)
 
-    for i in range(NbrPoints):
-        RNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
-                    object[i].geometry[0]
-        ZNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
-                    object[i].geometry[1]
+    if len(equi_space.grid.space) != 0:
+        NbrPoints   = len(equi_space.grid.space[0].objects_per_dimension[0].object)
+        print('NbrPoints (number of grid points) =', NbrPoints)
+        # Declaration of arrays 2d plots
+        RNodes   = np.zeros(NbrPoints)
+        ZNodes   = np.zeros(NbrPoints)
 
-    Ntri = len(equi_space.grid.space[0].objects_per_dimension[2].object)
-    triKnots = np.zeros((Ntri, 3))
-    print('Ntri (number of grid triangles) =', Ntri)
-    # Read triangle knots indices
-    for i in range(0,Ntri):
-        triKnots[i,0] = equi_space.grid.space[0].objects_per_dimension[2]. \
-                        object[i].nodes[0]
-        triKnots[i,1] = equi_space.grid.space[0].objects_per_dimension[2]. \
-                        object[i].nodes[1]
-        triKnots[i,2] = equi_space.grid.space[0].objects_per_dimension[2]. \
-                        object[i].nodes[2]
+        for i in range(NbrPoints):
+            RNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
+                        object[i].geometry[0]
+            ZNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
+                        object[i].geometry[1]
+
+        Ntri = len(equi_space.grid.space[0].objects_per_dimension[2].object)
+        triKnots = np.zeros((Ntri, 3))
+        print('Ntri (number of grid triangles) =', Ntri)
+        # Read triangle knots indices
+        for i in range(0,Ntri):
+            triKnots[i,0] = equi_space.grid.space[0].objects_per_dimension[2]. \
+                            object[i].nodes[0]
+            triKnots[i,1] = equi_space.grid.space[0].objects_per_dimension[2]. \
+                            object[i].nodes[1]
+            triKnots[i,2] = equi_space.grid.space[0].objects_per_dimension[2]. \
+                            object[i].nodes[2]
+
+    elif len(idd.equilibrium.grids_ggd) != 0:
+        equi_grid = idd.equilibrium.grids_ggd[0].grid[0]
+        NbrPoints = len(equi_grid.space[0].objects_per_dimension[0].object)
+        print('NbrPoints (number of grid points) =', NbrPoints)
+        # Declaration of arrays 2d plots
+        RNodes = np.zeros(NbrPoints)
+        ZNodes = np.zeros(NbrPoints)
+
+        for i in range(NbrPoints):
+            RNodes[i] = equi_grid.space[0].objects_per_dimension[0]. \
+                object[i].geometry[0]
+            ZNodes[i] = equi_grid.space[0].objects_per_dimension[0]. \
+                object[i].geometry[1]
+
+        Ntri = len(equi_grid.space[0].objects_per_dimension[2].object)
+        triKnots = np.zeros((Ntri, 3))
+        print('Ntri (number of grid triangles) =', Ntri)
+        # Read triangle knots indices
+        for i in range(0, Ntri):
+            triKnots[i, 0] = equi_grid.space[0].objects_per_dimension[2]. \
+                object[i].nodes[0]
+            triKnots[i, 1] = equi_grid.space[0].objects_per_dimension[2]. \
+                object[i].nodes[1]
+            triKnots[i, 2] = equi_grid.space[0].objects_per_dimension[2]. \
+                object[i].nodes[2]
 
     unicode_type = np.dtype((np.unicode_, 12))
 

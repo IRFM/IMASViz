@@ -14,14 +14,12 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
                                                        machineName=machineName)
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, pathsList = None,
-             async=True):
+    def load(self, dataTreeView, IDSName, occurrence=0,asynch=True):
         print ("Loading data using UDA")
         self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView,
                                                            IDSName,
                                                            occurrence,
-                                                           pathsList,
-                                                           async).create()
+                                                           asynch).create()
         print("*: self.ids: ", self.ids)
         if self.ids.get(occurrence) is None:
             self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber,
@@ -30,7 +28,7 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
 
         self.generatedDataTree.ids = self.ids.get(occurrence)
 
-        if async == True:
+        if asynch == True:
             self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
         else:
             self.generatedDataTree.run()  # This will call the get() operation for fetching IMAS data
@@ -41,3 +39,6 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
 
     def getShortLabel(self):
         return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+
+    def containsData(self, IDSName):
+        return True

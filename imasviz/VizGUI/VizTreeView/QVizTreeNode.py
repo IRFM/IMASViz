@@ -16,7 +16,7 @@ class QVizTreeNode(QTreeWidgetItem):
             QTreeWidgetItem.__init__(self, *args, **kwargs)
             self.infoDict = args[0]
         elif len(args) == 2:
-            if type(args[0]) is QVizDataTreeView:
+            if type(args[0]) is QVizDataTreeView or type(args[0]) is QVizTreeNode:
                 self.infoDict = {}
                 parent = args[0]
                 name = args[1]
@@ -145,12 +145,11 @@ class QVizTreeNode(QTreeWidgetItem):
     def patchIndices(self, value):
         value = value.replace("[i1]", "[i]")
         value = value.replace("[i2]", "[j]")
-        value = value.replace("(i3]", "[k]")
+        value = value.replace("[i3]", "[k]")
         value = value.replace("[i4]", "[l]")
         value = value.replace("[i5]", "[q]")
         value = value.replace("[i6]", "[r]")
-        value = value.replace("(i7]", "[t]")
-        #print "patched value : " + value
+        value = value.replace("[i7]", "[t]")
         return value
 
     def getDataPath(self, data_path_vs_time, itime_value):
@@ -167,6 +166,9 @@ class QVizTreeNode(QTreeWidgetItem):
             data_path = self.getDataPath(aos_vs_itime, itime)
             data_list.append(data_path)
         return data_list
+
+    def getOccurrence(self):
+        return self.infoDict.get('occurrence')
 
     def getPath(self):
         return self.infoDict.get('Path')

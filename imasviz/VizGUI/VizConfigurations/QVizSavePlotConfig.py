@@ -121,6 +121,7 @@ class QVizSavePlotConfig():
 
             # Save plot source information
             sa(sourceInfoEl, 'path', nodeData['Path'])
+            sa(sourceInfoEl, 'occurrence', nodeData['occurrence'])
             sa(sourceInfoEl, 'shotNumber', plotItem.signalData['shotNumber'])
             sa(sourceInfoEl, 'runNumber', plotItem.signalData['runNumber'])
             sa(sourceInfoEl, 'imasDbName', plotItem.signalData['imasDbName'])
