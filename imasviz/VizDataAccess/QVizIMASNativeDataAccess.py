@@ -26,7 +26,9 @@ class QVizIMASNativeDataAccess:
             ids = self.dataSource.ids[selectedNodeData['occurrence']]
             t = None
             signalPath = 'ids.' + selectedNodeData['dataName']
-            signalPath = signalPath.replace('time_slice[0]', 'time_slice[' +  str(itimeValue) + ']')
+            idsName = selectedNodeData['IDSName']
+            signalPath = signalPath.replace(idsName + '.time_slice[0]', idsName + '.time_slice[' + str(itimeValue) + ']')
+            signalPath = signalPath.replace(idsName + '.profiles_1d[0]', idsName + '.profiles_1d[' + str(itimeValue) + ']')
             rval = eval(signalPath)
 
             r = np.array([rval])

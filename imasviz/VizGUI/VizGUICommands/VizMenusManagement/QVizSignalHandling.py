@@ -953,8 +953,7 @@ class QVizSignalHandling(QObject):
             label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
                                 nodeData=treeNode.getInfoDict(),
                                 index=time_index)
-            xlabel = xlabel.replace('time_slice(0)', 'time_slice(' + str(time_index) + ')')
-            label = label.replace('time_slice(0)', 'time_slice(' + str(time_index) + ')')
+
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=treeNode.getInfoDict(),
