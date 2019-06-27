@@ -174,7 +174,8 @@ class QVizPlotSignal(QVizAbstractCommand):
                                  xlabel=xlabel, title=self.figureKey)
 
             # Add username to legend label (in front)
-            label = self.dataTreeView.dataSource.userName + ":" + label
+            if self.dataTreeView.dataSource.userName != None:
+                label = self.dataTreeView.dataSource.userName + ":" + label
 
             if update == 1:
                 # self.log.info('Updating/Overwriting existing plot.')
