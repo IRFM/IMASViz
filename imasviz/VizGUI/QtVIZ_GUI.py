@@ -27,6 +27,9 @@ from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpen
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
 
 
+import matplotlib
+matplotlib.use('Qt5Agg')
+
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
         super(GUIFrame, self).__init__(parent)

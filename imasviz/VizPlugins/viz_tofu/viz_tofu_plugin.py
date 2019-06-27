@@ -59,19 +59,6 @@ class ToFuPlugin(VizPlugins):
         #panel = CanvasPanel(fr, figure)
         fr.Show()
 
-
-    def getEntriesPerSubject(self):
-        a = {'interferometer_overview':[0,1],
-             'bolometer_overview':[2,3],
-             'soft_x_rays_overview':[4,5]}
-        return a
-
-    def getAllEntries(self):
-        #(config number, description)
-        return [(0, 'tofu - geom...'), (1, 'tofu - data'),
-                (2, 'tofu - geom...'), (3, 'tofu - data'),
-                (4, 'tofu - geom...'), (5, 'tofu - data')]
-
 class Frame():
     def __init__(self, out):
         #wx.Frame.__init__(self, None, title='tofu', pos=(150, 150), size=(800, 600))

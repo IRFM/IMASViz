@@ -1062,17 +1062,6 @@ class equilibriumcharts(VizPlugins):
         self.frame.show()
         # app.MainLoop()
 
-    # def getSubjects(self):
-    #     subjects = {'overview':'Equilibrium overview...'}
-    #     return subjects
-
-    def getEntriesPerSubject(self):
-        return {'equilibrium_overview':[0], 'overview':[0]}
-
-    def getAllEntries(self):
-        return [(0, 'Equilibrium overview...')] #(config number, description)
-
-
 if (__name__ == '__main__'):
     # Test running. See also equilibrium test file.
 

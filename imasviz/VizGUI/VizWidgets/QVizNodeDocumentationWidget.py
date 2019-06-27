@@ -12,6 +12,7 @@
 #****************************************************
 
 import numpy
+import sys
 
 
 from PyQt5.QtCore import Qt
@@ -30,7 +31,7 @@ class QVizNodeDocumentationWidget(QWidget):
 
         # Set setting for numpy values to display whole arrays (otherwise only
         # few values get shown
-        numpy.set_printoptions(threshold=numpy.nan)
+        numpy.set_printoptions(threshold=sys.maxsize)
         self.create()
 
     def create(self, title='QVizNodeDocumantationWidget'):

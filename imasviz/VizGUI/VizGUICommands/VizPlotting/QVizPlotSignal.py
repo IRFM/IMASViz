@@ -84,6 +84,7 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.title = title
 
         if label == None:
+            # Set label containing node path
             self.label = self.nodeData['Path']
         else:
             self.label = label
@@ -171,6 +172,13 @@ class QVizPlotSignal(QVizAbstractCommand):
                 self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=self.figureKey)
+
+            # Add username to legend label (in front)
+            if self.dataTreeView.dataSource.userName != None:
+                label = self.dataTreeView.dataSource.userName + ":" + label
+            # In case of UDA loaded case
+            elif self.dataTreeView.dataSource.name != None:
+                label = self.dataTreeView.dataSource.name + ":" + label
 
             if update == 1:
                 # self.log.info('Updating/Overwriting existing plot.')

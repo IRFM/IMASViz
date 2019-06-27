@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="13.09621mm"
+   height="13.09621mm"
+   viewBox="0 0 13.09621 13.09621"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.2 (5c3e80d, 2017-08-06)"
+   sodipodi:docname="logo_simple.svg"
+   inkscape:export-filename="/home/penkod/WORK/git_work/viz/resources/logo_simple.png"
+   inkscape:export-xdpi="31.031879"
+   inkscape:export-ydpi="31.031879">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2.8"
+     inkscape:cx="-104.53974"
+     inkscape:cy="3.6569146"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1920"
+     inkscape:window-height="1140"
+     inkscape:window-x="0"
+     inkscape:window-y="-3"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-44.400149,-75.001068)">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.63020849px;line-height:125%;font-family:'Myriad Pro';-inkscape-font-specification:'Myriad Pro';text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       x="50.943687"
+       y="80.722015"
+       id="text817"><tspan
+         sodipodi:role="line"
+         id="tspan815"
+         x="50.943687"
+         y="80.722015"
+         style="font-weight:bold;text-align:center;text-anchor:middle;stroke-width:0.26458332px">IMAS</tspan><tspan
+         sodipodi:role="line"
+         x="50.943687"
+         y="86.509773"
+         style="font-weight:bold;text-align:center;text-anchor:middle;stroke-width:0.26458332px"
+         id="tspan819">VIZ</tspan></text>
+    <path
+       style="fill:#1100ff;fill-opacity:1;fill-rule:evenodd;stroke:#0000e3;stroke-width:0.75;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 44.400149,81.99778 H 57.496357"
+       id="path821"
+       inkscape:connector-curvature="0" />
+  </g>
+</svg>

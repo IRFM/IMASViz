@@ -1,37 +1,75 @@
 import importlib
-import os
+import os, sys
+
+from PyQt5.QtWidgets import QMainWindow
 
 # RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
 #                      'ECEOverviewPlugin':'viz_tests.ECE_OverviewPlugin',
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin'}
+                     'SOLPS_UiPlugin': {
+                         'UiFile': 'SOLPSplugin.ui',
+                         'dir': os.environ['VIZ_HOME'] +
+                                '/imasviz/VizPlugins/viz_solps/',
+                         'targetIDSroot' : 'edge_profiles',
+                         'targetOccurrence' : 0},
+                     'example_UiPlugin': {
+                         'UiFile': 'examplePlugin.ui',
+                         'dir': os.environ['VIZ_HOME'] +
+                                '/imasviz/VizPlugins/viz_example/',
+                         'targetIDSroot': 'magnetics',
+                         'targetOccurrence': 0}
+                     }
 
-RegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
-                          'time_e': 32.020, \
-                          'delta_t': 0.02, \
-                          'shot': 50642, \
-                          'run': 0, \
-                          'machine': 'west_equinox', \
-                          'user': 'imas_private'}],
-                          'ArraySizePlugin':[{}, {'size_request':1}]}
+RegisteredPluginsConfiguration = {'equilibriumcharts':[{
+                                      'time_i': 31.880, \
+                                      'time_e': 32.020, \
+                                      'delta_t': 0.02, \
+                                      'shot': 50642, \
+                                      'run': 0, \
+                                      'machine': 'west_equinox', \
+                                      'user': 'imas_private'}],
+                                  'SOLPS_UiPlugin':[{}],
+                                  'example_UiPlugin':[{}]
+                           }
 
 WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ArraySizePlugin': 'viz_array_size.array_size_plugin',
-                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
+                         'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
 
-WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{'time_i': 31.880, \
-                          'time_e': 32.020, \
-                          'delta_t': 0.02, \
-                          'shot': 50642, \
-                          'run': 0, \
-                          'machine': 'west_equinox', \
-                          'user': 'imas_private'}],
-                          'ArraySizePlugin':[{}, {'size_request':1}],
-                          'ToFuPlugin':[{'geom':True},{'data':True},
-                                         {'geom':True},{'data':True},
-                                         {'geom':True},{'data':True}]}
+WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{
+                                            'time_i': 31.880, \
+                                            'time_e': 32.020, \
+                                            'delta_t': 0.02, \
+                                            'shot': 50642, \
+                                            'run': 0, \
+                                            'machine': 'west_equinox', \
+                                      'user': 'imas_private'}],
+                                      'ToFuPlugin':[{'geom':True},{'data':True},
+                                                    {'geom':True},{'data':True},
+                                                    {'geom':True},{'data':True}]}
+
+# The 'overview' key should match the IDS name
+# (for example: for edge_profiles IDS -> 'edge_profiles_overview')
+EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0],
+                                           'overview': [0]},
+                     'ToFuPlugin':        {'interferometer_overview': [0, 1],
+                                           'bolometer_overview': [2, 3],
+                                           'soft_x_rays_overview': [4, 5]},
+                     'SOLPS_UiPlugin':    {'edge_profiles_overview':[0],
+                                           'overview':[0]},
+                     'example_UiPlugin':  {'magnetics_overview': [0],
+                                           'overview': [0]}
+                     }
+
+AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
+              'ToFuPlugin':        [(0, 'tofu - geom...'), (1, 'tofu - data'),
+                                    (2, 'tofu - geom...'), (3, 'tofu - data'),
+                                    (4, 'tofu - geom...'), (5, 'tofu - data')],
+              'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')],
+              'example_UiPlugin':  [(0, 'Magnetics overview...')]
+              }
+              #(config number, description)
 
 def getRegisteredPlugins():
     if 'WEST' in os.environ and os.environ['WEST'] == 1:
@@ -45,7 +83,6 @@ def getRegisteredPluginsConfiguration():
     else:
         return RegisteredPluginsConfiguration
 
-
 class VizPlugins():
     def __init__(self):
         pass
@@ -56,12 +93,12 @@ class VizPlugins():
     def getAllEntries(self):
         pass
 
-    def getSubjects(self):
-         subjects = []
-         entriesPerSubject = self.getEntriesPerSubject()
-         for subject in entriesPerSubject:
-             subjects.append(subject)
-         return subjects
+    def getSubjects(self, pluginsName):
+        subjects = []
+        entriesPerSubject = self.getEntriesPerSubject(pluginsName)
+        for subject in entriesPerSubject:
+            subjects.append(subject)
+        return subjects
 
     def execute(self):
         pass
@@ -70,15 +107,42 @@ class VizPlugins():
         return self.getSubjects()[subject]
 
     @staticmethod
-    def getPluginsObjects():
+    def getPluginsObjects(dataTreeView=None):
         pluginsNames = []
         importedObjectsList = []
         for key in getRegisteredPlugins():
             pluginsNames.append(key)
-            mod = importlib.import_module('imasviz.VizPlugins.' +
-                                          getRegisteredPlugins()[key])
-            importedClass = getattr(mod, key)
-            importedObjectsList.append(importedClass())
+
+            # Check for plugins created by Qt designer (.ui files)
+            if 'UiPlugin' in key:
+                from PyQt5 import uic
+                # Get directory where the plugin .ui file is located
+                dir = getRegisteredPlugins()[key]['dir']
+                # Get ui. file name
+                UiFile = getRegisteredPlugins()[key]['UiFile']
+                # Append to Python path
+                sys.path.append(dir)
+                # Set MainWindow
+                w = QMainWindow(parent=dataTreeView)
+
+
+                dataSource = dataTreeView.dataSource
+                # Get IDS case object
+                ids = None
+                w.targetOccurrence = \
+                    getRegisteredPlugins()[key]['targetOccurrence']
+                w.targetIDSroot = getRegisteredPlugins()[key]['targetIDSroot']
+
+                # Set an instance of the user interface
+                uiObj = uic.loadUi(dir + UiFile, w)
+                # Add the MainWindow (containing the user interface) to
+                # list of imported objects
+                importedObjectsList.append(w)
+            else:
+                mod = importlib.import_module('imasviz.VizPlugins.' +
+                                              getRegisteredPlugins()[key])
+                importedClass = getattr(mod, key)
+                importedObjectsList.append(importedClass())
         return (pluginsNames, importedObjectsList)
 
     @staticmethod
@@ -91,3 +155,11 @@ class VizPlugins():
     @staticmethod
     def getPluginsConfiguration(pluginsName):
         return getRegisteredPluginsConfiguration()[pluginsName]
+
+    @staticmethod
+    def getEntriesPerSubject(pluginsName):
+        return EntriesPerSubject[pluginsName]
+
+    @staticmethod
+    def getAllEntries(pluginsName):
+        return AllEntries[pluginsName]

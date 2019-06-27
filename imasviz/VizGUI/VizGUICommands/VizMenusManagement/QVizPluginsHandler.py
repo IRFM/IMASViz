@@ -4,7 +4,7 @@ import importlib
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from PyQt5.QtWidgets import QAction, QMenu,  QApplication
+from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow, QWidget
 
 class MenuIDS:
     def __init__(self):
@@ -16,7 +16,8 @@ class QVizPluginsHandler:
         self.dataTreeView = dataTreeView
         self.infoDict = dataDict    # Passed item/subject
         self.menuIDS = MenuIDS()
-        self.pluginsObjects = VizPlugins.getPluginsObjects()
+        self.pluginsObjects = VizPlugins.getPluginsObjects(
+            dataTreeView=self.dataTreeView)
 
     def showPopUpMenu(self, subjectsList = None):
         self.dataTreeView.popupmenu = QMenu()
@@ -35,11 +36,12 @@ class QVizPluginsHandler:
                 pluginsName = pluginsNames[i]
 
                 pluginsObject = pluginsObjects[i]
-                subjects =  pluginsObject.getSubjects()
+                subjects =  VizPlugins().getSubjects(pluginsName=pluginsName)
                 subjects.sort()
                 for subjectKey in subjects:
                     if subject == subjectKey:
-                        entriesPerSubject = pluginsObject.getEntriesPerSubject()
+                        entriesPerSubject = \
+                            VizPlugins.getEntriesPerSubject(pluginsName)
                         entriesList = entriesPerSubject[subject] #list of entry index (ex: [0,1])
                         for entry in entriesList:
                             if entry not in addedPluginsEntries[pluginsName]:
@@ -53,10 +55,11 @@ class QVizPluginsHandler:
         #print self.menuIDS.PLUGINS_MENU_IDS
         for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
             m = self.menuIDS.PLUGINS_MENU_IDS[i]
+            pluginsName = m[0]
             menuId = m[1]
             entry = m[2]
             pluginsObject = m[3]
-            allEntries = pluginsObject.getAllEntries()
+            allEntries = VizPlugins.getAllEntries(pluginsName)
             pluginsCommandDescription = allEntries[entry][1]
             # print 'TESTING'
             # pluginsName = m[0]
@@ -93,14 +96,57 @@ class QVizPluginsHandler:
             pluginsName = m[0]
             entry = m[2]
             pluginsObject = m[3]
-            allEntries = pluginsObject.getAllEntries()
-            pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(pluginsName)
+            allEntries = VizPlugins.getAllEntries(pluginsName)
+            pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(
+                pluginsName)
             pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
             pluginsConfiguration['imasviz_view'] = self.dataTreeView
-            """Set ArraySize Plugin 'node_attributes' option
-            (defined in the plugin definition .py file"""
+            # Set ArraySize Plugin 'node_attributes' option
+            # (defined in the plugin definition .py file
             pluginsConfiguration['node_attributes'] = self.infoDict
-            """Execute the plugins"""
-            # pluginsObject.execute(wx.App(), pluginsConfiguration)
-            pluginsObject.execute(pluginsConfiguration,
-                                  dataTreeView=self.dataTreeView)
+            # Run the plugins
+            if type(pluginsObject) == QMainWindow:
+                # If pluginsObject is QMainWindow type (indicating that the
+                # plugin was provided as an instance of the user interface
+                # (.ui file)
+                self.dataTreeView.log.info('Running plugin through instance of '
+                                           'the user interface (.ui) file.')
+                # Find the main Qt designer widget (by widget object name)
+                qdw = pluginsObject.findChild(QWidget, 'mainPluginWidget')
+
+                # Get IDS object from IMASViz DTV
+                # - Get data source
+                dataSource = self.dataTreeView.dataSource
+                # - get IDS object
+                try:
+                    ids = dataSource.ids[pluginsObject.targetOccurrence]
+                except:
+                    ids = None
+                if ids is None:
+                    # -Get IDS object for target IDS root and target occurrence
+                    # Note: This will also populate and update the IDS tree view
+                    #       structure
+                    dataSource.load(self.dataTreeView,
+                                    IDSName=pluginsObject.targetIDSroot,
+                                    occurrence=pluginsObject.targetOccurrence,
+                                    pathsList=None,
+                                    async=False)
+                    # Set IDS
+                    ids = dataSource.ids[pluginsObject.targetOccurrence]
+
+                # Set IDS object for the main Qt designer widget
+                qdw.setIDS(ids)
+
+
+                # Show the plugin user interface
+                pluginsObject.show()
+            elif 'execute' in dir(pluginsObject):
+                self.dataTreeView.log.info('Running plugin with execute.')
+                # pluginsObject.execute(wx.App(), pluginsConfiguration)
+                pluginsObject.execute(pluginsConfiguration,
+                                      dataTreeView=self.dataTreeView)
+            else:
+                print('No proper instance of user interface or execute routine '
+                      'provided by the plugin!')
+
+
