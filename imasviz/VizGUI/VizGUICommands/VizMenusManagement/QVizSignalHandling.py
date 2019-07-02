@@ -856,7 +856,9 @@ class QVizSignalHandling(QObject):
             label, title, dummy = \
                 treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index)
             # TODO: fix routines for obtaining label
-            label = label.replace('time_slice(' + str(index) + ')', 'time_slice(:)')
+            idsName = treeNode.getInfoDict()['IDSName']
+            label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(:)')
+            label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(:)')
             label = label + '[' + str(index) + ']'
             self.treeNode = treeNode
             self.timeSlider = False
@@ -908,8 +910,15 @@ class QVizSignalHandling(QObject):
                 nodeData=treeNode.getInfoDict(),
                 index=index)
             # TODO: fix routines for obtaining label
-            label = label.replace('time_slice(0)', 'time_slice(:)')
+            idsName = treeNode.getInfoDict()['IDSName']
+            xlabel = xlabel.replace(idsName + '/time_slice(0)', idsName + '/time_slice(:)')
+            label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(:)')
+
+            xlabel = xlabel.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(:)')
+            label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(:)')
+
             label = label + '[' + str(index) + ']'
+            xlabel = xlabel + '[' + str(index) + ']'
 
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
@@ -953,6 +962,12 @@ class QVizSignalHandling(QObject):
             label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
                                 nodeData=treeNode.getInfoDict(),
                                 index=time_index)
+
+            idsName = treeNode.getInfoDict()['IDSName']
+            xlabel = xlabel.replace(idsName + '/time_slice(0)', idsName + '/time_slice(' + str(time_index) + ')')
+            label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(' + str(time_index) + ')')
+            xlabel = xlabel.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(' + str(time_index) + ')')
+            label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(' + str(time_index) + ')')
 
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
