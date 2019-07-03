@@ -241,6 +241,18 @@ class QVizGeneratedClassFactory:
                                                                   IDSName=self.IDSName,
                                                                   occurrence=self.occurrence,
                                                                   asynch=self.asynch)
+
+        elif imas__dd_version == "3.23.3":
+            from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Generated_3_23_3 \
+                import IDSDef_XMLParser_Generated_3_23_3
+            generatedDataTree = IDSDef_XMLParser_Generated_3_23_3(userName=self.IMASDataSource.userName,
+                                                                  imasDbName=self.IMASDataSource.imasDbName,
+                                                                  shotNumber=self.IMASDataSource.shotNumber,
+                                                                  runNumber=self.IMASDataSource.runNumber,
+                                                                  view=self.view,
+                                                                  IDSName=self.IDSName,
+                                                                  occurrence=self.occurrence,
+                                                                  asynch=self.asynch)
         else:
             raise ValueError("IMAS dictionary version not supported:" + imas__dd_version)
 

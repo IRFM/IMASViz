@@ -1,5 +1,6 @@
 import os
 import imas
+import traceback, sys
 from PyQt5.QtWidgets import QTreeWidgetItem
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors
@@ -72,6 +73,7 @@ class QVizIMASDataSource:
             if ht != 0 and ht != 1:
                 return False
         except:
+            #traceback.print_exc(file=sys.stdout)
             return False
 
         return True

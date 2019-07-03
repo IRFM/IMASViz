@@ -484,15 +484,15 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Set title (QMainWindow)
         publicStr = ''
         if dataSource.name == QVizGlobalValues.IMAS_UDA:
-            publicStr = "public "
-            self.setWindowTitle("'" + dataSource.machineName + "' " + publicStr
-                                + "data source, shot="
-                                + str(dataSource.shotNumber) + ", run="
+            publicStr = "UDA "
+            self.setWindowTitle("Tokamak: " + dataSource.machineName + " "
+                                + "(from UDA), shot: "
+                                + str(dataSource.shotNumber) + ", run: "
                                 + str(dataSource.runNumber))
         else:
-            self.setWindowTitle("'" + dataSource.imasDbName + "' "
-                                + "data source, shot="
-                                + str(dataSource.shotNumber) + ", run="
+            self.setWindowTitle("Tokamak: " + dataSource.imasDbName + ", "
+                                + "user: " + dataSource.userName + ", shot: "
+                                + str(dataSource.shotNumber) + ", run: "
                                 + str(dataSource.runNumber))
 
         # Set Qt TreeView
