@@ -52,12 +52,30 @@ class QVizSelectSignals(QVizAbstractCommand):
             # When the signal path matches the path from the given list,
             # select the signal
             pathsList = self.pathsMap.get('paths')
+            # Check pathsList
+            if type(pathsList) is not list:
+                # Convert pathsList to a list of strings
+                pathsList = self.convertPathsLists(pathsList)
+            # Get list of occurrences
             occurrencesList = self.pathsMap.get('occurrences')
+            # In case occurrences were not given, set and use default occurrence 0
+            occurrence = None
+            if occurrencesList == None:
+                occurrence = 0
+
             #if any(sigName == s for s in pathsList):
             for i in range(0, len(pathsList)):
-                selectedOccurrence = int(occurrencesList[i])
+
+                # If default occurrence was not set, use the occurrences list
+                if occurrence == None:
+                    occurrence = occurrencesList[i]
+                # Use the first occurrence if only one was given (assuming all
+                # signals correspond to the same occurrence)
+                elif len(occurrencesList) == 1:
+                    occurrence = int(occurrencesList[0])
+
                 s = pathsList[i]
-                if selectedOccurrence != signal.getOccurrence():
+                if occurrence != signal.getOccurrence():
                     continue
                 if s != signal.getPath():
                     continue
@@ -73,9 +91,22 @@ class QVizSelectSignals(QVizAbstractCommand):
         Note: It requires open IDS root tree item in order to have the required
         signalsList populated.
         """
+        print("*pathsList: \n", self.pathsMap)
 
+        # Get paths list from dictionary
         pathsList = self.pathsMap.get('paths')
+
+        # Check pathsList
+        if type(pathsList) is not list:
+            # Convert pathsList to a list of strings
+            pathsList = self.convertPathsLists(pathsList)
+
+        # Get list of occurrences
         occurrencesList = self.pathsMap.get('occurrences')
+        # In case occurrences were not given, set and use default occurrence 0
+        occurrence = None
+        if occurrencesList == None:
+            occurrence = 0
 
         asynch = False  # the command SelectSignals is
         # synchronous so we will wait that
@@ -85,11 +116,34 @@ class QVizSelectSignals(QVizAbstractCommand):
             # Extract the IDS name
             IDSName = pathsList[i].split('/').pop(0)
 
-            if occurrencesList[i] is None:
-                occurrencesList[i] = 0
+            # If default occurrence was not set, use the occurrences list
+            if occurrence == None:
+                occurrence = occurrencesList[i]
+            # Use the first occurrence if only one was given (assuming all
+            # signals correspond to the same occurrence)
+            elif len(occurrencesList) == 1:
+                occurrence = int(occurrencesList[0])
+
             # Load all IDS data which are referenced in the paths
-            if self.dataTreeView.isAlreadyFetched(IDSName, occurrencesList[i]):
+            if self.dataTreeView.isAlreadyFetched(IDSName, occurrence):
                 continue
 
             # Check/Populate the IDS tree node
-            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrencesList[i]), asynch).execute()
+            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrence), asynch).execute()
+
+    @staticmethod
+    def convertPathsLists(pathsList):
+        """Converts the pathsList (which is actually a string) to a list
+        containing a single string.
+
+        Argument:
+            pathsList (str) : Path string.
+        """
+
+        # In case a regular single string was given as path instead of an
+        # array of paths, change it into an array holding a single path value
+        if type(pathsList) is str:
+            pathsList = [pathsList]
+
+        return pathsList
+
