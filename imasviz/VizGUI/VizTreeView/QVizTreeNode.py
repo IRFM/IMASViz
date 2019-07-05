@@ -89,10 +89,6 @@ class QVizTreeNode(QTreeWidgetItem):
         xlabel = xlabel.replace('ids.','')
         xlabel = QVizGlobalOperations.replaceBrackets(xlabel)
         xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
-        xlabel = xlabel.replace(idsName + '/time_slice(0)', idsName + '/time_slice(' + str(index) + ')')
-        label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(' + str(index) + ')')
-        xlabel = xlabel.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(' + str(index) + ')')
-        label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(' + str(index) + ')')
 
         return label, title, xlabel
 
