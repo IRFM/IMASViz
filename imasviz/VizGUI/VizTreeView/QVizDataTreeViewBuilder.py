@@ -13,7 +13,8 @@
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
 
-from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QTreeWidgetItem, QTextEdit
+from PyQt5.QtCore import QSize
 
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalColors
@@ -112,20 +113,25 @@ class QVizDataTreeViewBuilder:
 
                 if dataElement.get('data_type') in ['FLT_0D', 'STR_0D',
                                                     'INT_0D', 'xs:integer']:
+                    maxLineLengthSizeForString = 70
                     if dataElement.text != None:
                         s = dataElement.text
                         lines = s.split('\n')
-                        if len(lines) > 1:
+                        if len(lines) > 1 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
                             itemNodeName = dataElement.tag
                             if units != None:
                                 itemNodeName += " [" + units + "]"
                             # Add tree item
                             viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
 
-                            for i in range(0, len(lines)):
-                                itemNodeName = lines[i]
+                            item_0 = QTreeWidgetItem(viewerNode)
+                            q = QTextEdit()
+                            q.setMinimumHeight(150)
+                            q.setText(dataElement.text)
+                            dataTreeView.setItemWidget(item_0, 0, q)
+                            #for i in range(0, len(lines)):
                                 # Add tree item
-                                newItem = QVizTreeNode(viewerNode, [itemNodeName], itemDataDict)
+                            #    newItem = QVizTreeNode(viewerNode, [lines[i]], itemDataDict)
 
                         else:
                             itemNodeName = dataElement.tag + '=' + str(dataElement.text)
@@ -138,16 +144,24 @@ class QVizDataTreeViewBuilder:
                             text = dataElement.tag.split('=')
                             s = text[1]
                             lines = s.split('\n')
-                            if len(lines) > 2:
+                            if len(lines) > 2 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
                                 itemNodeName = text[0]
                                 if units != None:
                                     itemNodeName += " [" + units + "]"
                                 # Add tree item
                                 viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
 
-                                for i in range(0, len(lines)):
+                                item_0 = QTreeWidgetItem(viewerNode)
+                                q = QTextEdit()
+                                q.setMinimumHeight(150)
+                                q.setText(s)
+                                dataTreeView.setItemWidget(item_0, 0, q)
+
+
+                                #for i in range(0, len(lines)):
                                     # Add tree item
-                                    newItem = QVizTreeNode(viewerNode, [lines[i]], itemDataDict)
+                                #    newItem = QVizTreeNode(viewerNode, [lines[i]], itemDataDict)
+
                             else:
                                 itemNodeName = dataElement.tag
                                 if units != None:

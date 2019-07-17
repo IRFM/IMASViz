@@ -890,7 +890,6 @@ class QVizSignalHandling(QObject):
             treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
                                       replace the current plot in figure window.
         """
-        # self.updateNodeData()
         try:
             # Get list of paths of arrays through time slices
             data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...

@@ -37,13 +37,18 @@ class QVizGlobalOperations:
 
     @staticmethod
     def getTime(ids, selectedNodeData, coordinate1):
+        if coordinate1 is None:
+            return None
         homogeneous_time = QVizGlobalOperations.isTimeHomogeneous(ids, selectedNodeData)
         t = None
-        if not (homogeneous_time):
-            t = np.array(eval("ids." + selectedNodeData['IDSName'] + "." + coordinate1))
-        else:
-            t = np.array(eval("ids." + selectedNodeData['IDSName'] + ".time"))
-        return t
+        try:
+            if not (homogeneous_time):
+                t = np.array(eval("ids." + selectedNodeData['IDSName'] + "." + coordinate1))
+            else:
+                t = np.array(eval("ids." + selectedNodeData['IDSName'] + ".time"))
+            return t
+        except:
+            return None
 
     @staticmethod
     def message(parent=None, message='', title=''):

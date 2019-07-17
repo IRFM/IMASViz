@@ -11,7 +11,7 @@ class QVizTreeNode(QTreeWidgetItem):
     def __init__(self, *args, **kwargs):
         from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
         self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
-
+        self.time = None
         if len(args) == 1:
             QTreeWidgetItem.__init__(self, *args, **kwargs)
             self.infoDict = args[0]
