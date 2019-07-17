@@ -15,10 +15,12 @@
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
-    QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem
+    QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem, \
+    QApplication
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
-from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols
+from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols, \
+    GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 
 
@@ -191,7 +193,10 @@ class TabColorAndLineProperties(QWidget):
             j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring legend thickness (boldness)
-            boldButton = QPushButton('Bold', self)
+            boldButton = QPushButton('', self)
+            # Set icon
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
+            boldButton.setIcon(icon)
             # - Add boldButton to layout
             scrollLayout.addWidget(boldButton, i + 1, j, 1, 1)
             # - Add action triggered by pressing the button
