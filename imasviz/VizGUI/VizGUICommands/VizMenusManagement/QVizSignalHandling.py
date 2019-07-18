@@ -953,10 +953,7 @@ class QVizSignalHandling(QObject):
             # self.updateNodeData()
             dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
             # Get signal node
-            signal = dataAccess.GetSignalAt(treeNode.getInfoDict(),
-                                            self.dataTreeView.dataSource.shotNumber,
-                                            treeNode,
-                                            time_index)
+            signal = dataAccess.GetSignalAt(treeNode, time_index)
             # Get label and xlabel (title in this form is not needed)
             label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
                                 nodeData=treeNode.getInfoDict(),

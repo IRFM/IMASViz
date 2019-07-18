@@ -129,9 +129,6 @@ class QVizDataTreeViewBuilder:
                             q.setMinimumHeight(150)
                             q.setText(dataElement.text)
                             dataTreeView.setItemWidget(item_0, 0, q)
-                            #for i in range(0, len(lines)):
-                                # Add tree item
-                            #    newItem = QVizTreeNode(viewerNode, [lines[i]], itemDataDict)
 
                         else:
                             itemNodeName = dataElement.tag + '=' + str(dataElement.text)
@@ -156,12 +153,6 @@ class QVizDataTreeViewBuilder:
                                 q.setMinimumHeight(150)
                                 q.setText(s)
                                 dataTreeView.setItemWidget(item_0, 0, q)
-
-
-                                #for i in range(0, len(lines)):
-                                    # Add tree item
-                                #    newItem = QVizTreeNode(viewerNode, [lines[i]], itemDataDict)
-
                             else:
                                 itemNodeName = dataElement.tag
                                 if units != None:
@@ -364,9 +355,9 @@ class QVizDataTreeViewBuilder:
             extra_attributes.aos_parents_count = int(dataElement.get('aos_parents_count'))
 
             if coordinate1 is not None and extra_attributes.isCoordinateTimeDependent(coordinate1):
-                itemDataDict['coordinate1_itime_dependent'] = 1
+                itemDataDict['coordinate1_time_dependent'] = 1
             else:
-                itemDataDict['coordinate1_itime_dependent'] = 0
+                itemDataDict['coordinate1_time_dependent'] = 0
 
 
             for i in range(0, extra_attributes.aos_parents_count ):

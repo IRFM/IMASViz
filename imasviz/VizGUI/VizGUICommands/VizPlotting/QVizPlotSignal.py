@@ -155,10 +155,10 @@ class QVizPlotSignal(QVizAbstractCommand):
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
 
-            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            ids = self.dataTreeView.dataSource.ids[self.treeNode.getOccurrence()]
 
             # Get signal time
-            self.treeNode.time = dataAccess.GetTime(self.treeNode.getInfoDict(), self.treeNode)
+            self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
 
             plotWidget = self.getPlotWidget(self.figureKey)
 

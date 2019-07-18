@@ -36,18 +36,27 @@ class QVizGlobalOperations:
         return True
 
     @staticmethod
-    def getTime(ids, selectedNodeData, coordinate1):
+    def getCoordinate1D_array(ids, selectedNodeData, coordinate1):
         if coordinate1 is None:
             return None
         homogeneous_time = QVizGlobalOperations.isTimeHomogeneous(ids, selectedNodeData)
         t = None
         try:
-            if not (homogeneous_time):
+            if not homogeneous_time:
                 t = np.array(eval("ids." + selectedNodeData['IDSName'] + "." + coordinate1))
             else:
                 t = np.array(eval("ids." + selectedNodeData['IDSName'] + ".time"))
             return t
-        except:
+        except ValueError:
+            return None
+
+    @staticmethod
+    def getGlobalTimeForArraysInDynamicAOS(ids, selectedNodeData):
+        t = None
+        try:
+            t = np.array(eval("ids." + selectedNodeData['IDSName'] + ".time"))
+            return t
+        except ValueError:
             return None
 
     @staticmethod

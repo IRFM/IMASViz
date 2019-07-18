@@ -246,8 +246,8 @@ class timeSliderGroup():
         self.indexLabel = self.setLabel(text='Index Value:')
 
         self.timeFieldLabel = self.setLabel(text='Time:')
-        if (self.active_treeNode.time is not None):
-            self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.time[0]))
+        if self.active_treeNode.globalTime is not None:
+            self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]))
 
         # Set slider value indicator
         self.sliderValueIndicator = self.setSliderValueIndicator()
@@ -357,9 +357,14 @@ class timeSliderGroup():
 
         # Update slider value indicator value
         self.sliderValueIndicator.setText(str(self.slider.value()))
-        if self.timeFieldLabel is not None:
-            treeNode = self.signalHandling.dataTreeView.selectedItem
-            self.timeFieldLabel.setText("Time: " + str(treeNode.time[self.slider.value()]))
+
+        if self.signalHandling.timeSlider:
+            if self.timeFieldLabel is not None:
+                treeNode = self.signalHandling.dataTreeView.selectedItem
+                if treeNode.globalTime is not None:
+                    self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]))
+                else:
+                    self.timeFieldLabel.setText("Undefined IDS global time.")
 
         # Don't plot when the slider is being dragged by mouse. Plot on slider
         # release. This is important to still plot on value change by
