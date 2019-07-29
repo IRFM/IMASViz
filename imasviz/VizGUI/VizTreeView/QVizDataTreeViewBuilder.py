@@ -141,7 +141,7 @@ class QVizDataTreeViewBuilder:
                             text = dataElement.tag.split('=')
                             s = text[1]
                             lines = s.split('\n')
-                            if len(lines) > 2 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
+                            if len(lines) > 1 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
                                 itemNodeName = text[0]
                                 if units != None:
                                     itemNodeName += " [" + units + "]"
