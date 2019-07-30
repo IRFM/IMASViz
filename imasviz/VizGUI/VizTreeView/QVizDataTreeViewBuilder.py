@@ -113,7 +113,7 @@ class QVizDataTreeViewBuilder:
 
                 if dataElement.get('data_type') in ['FLT_0D', 'STR_0D',
                                                     'INT_0D', 'xs:integer']:
-                    maxLineLengthSizeForString = 70
+                    maxLineLengthSizeForString = 40
                     if dataElement.text != None:
                         s = dataElement.text
                         lines = s.split('\n')
@@ -138,11 +138,18 @@ class QVizDataTreeViewBuilder:
                             viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
                     else:
                         if '=' in dataElement.tag:
-                            text = dataElement.tag.split('=')
-                            s = text[1]
+                            if dataElement.tag.startswith('comment='):
+                                text = dataElement.tag.split('comment=')
+                            elif dataElement.tag.startswith('description='):
+                                text = dataElement.tag.split('description=')
+                            else:
+                                text = dataElement.tag.split('=')
+                            s = ''
+                            if len(text) > 0:
+                                s = text[1]
                             lines = s.split('\n')
                             if len(lines) > 1 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
-                                itemNodeName = text[0]
+                                itemNodeName = dataElement.tag.split('=')[0]
                                 if units != None:
                                     itemNodeName += " [" + units + "]"
                                 # Add tree item
