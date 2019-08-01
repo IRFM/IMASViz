@@ -160,6 +160,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             # Get signal time
             self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
 
+            #Get widget linked to this figure
             plotWidget = self.getPlotWidget(self.figureKey)
 
             key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
@@ -184,6 +185,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             elif self.dataTreeView.dataSource.name != None:
                 label = self.dataTreeView.dataSource.name + ":" + label
 
+            # A new plot is added to the current plot(s)
             if update == 1:
                 # self.log.info('Updating/Overwriting existing plot.')
 
