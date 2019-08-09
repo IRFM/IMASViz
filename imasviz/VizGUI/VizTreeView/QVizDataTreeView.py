@@ -42,6 +42,8 @@ from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
     import QVizSaveSignalSelection
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizDisplayCurrentSelection \
+    import QVizDisplayCurrentSelection
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleRightClick \
     import QVizHandleRightClick
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
@@ -260,24 +262,23 @@ class QVizDataTreeView(QTreeWidget):
         node_contents_dict = {}
         node_contents_dict['name'] = node_label
         node_contents_dict['documentation'] = node_doc
-        node_contents_dict['contents'] = '/'
+        #node_contents_dict['contents'] = '/'
         node_contents_dict['size'] = '/'
 
         node_array_contents = ''
         # Don't obtain contents for full IDS root nodes
-        if item.getInfoDict()['isIDSRoot'] != 1:
+        if item.getInfoDict().get('isIDSRoot') != 1:
             try:
                 # Get the array of values
                 node_array_contents = eval(expression)
                 # Get string version of the array of values
-                node_contents_dict['contents'] = str(node_array_contents)
+                #node_contents_dict['contents'] = str(node_array_contents)
                 # Formatting the string
                 # Note: makes the node documentation slider a lot slower for
                 # large arrays!
                 # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
                 #     *k) for k in enumerate(node_array_contents))
                 # Get size of the array in as string
-
                 node_contents_dict['size'] = str(len(node_array_contents))
             except:
                 pass
@@ -437,7 +438,7 @@ class QVizDataTreeView(QTreeWidget):
         item = self.selectedItems()[0]
 
         # Continue, if the QTreeWidgetItem is IDS root
-        if item.infoDict['isIDSRoot'] != 1:
+        if item.infoDict.get('isIDSRoot') != 1:
             return
 
         # Set default occurrence
@@ -597,9 +598,13 @@ class QVizDataTreeViewFrame(QMainWindow):
         # menu
         # subMenu_select = nodeSelection.addMenu('Signal Selection Options')
 
-        action_onSaveSignalSelection = QAction('Save Node Selection', self)
+        action_onSaveSignalSelection = QAction('Save Node(s) Selection', self)
         action_onSaveSignalSelection.triggered.connect(self.onSaveSignalSelection)
         nodeSelection.addAction(action_onSaveSignalSelection)
+
+        action_onDisplayNodesSelection = QAction('Display Node(s) selection', self)
+        action_onDisplayNodesSelection.triggered.connect(self.onDisplayNodesSelection)
+        nodeSelection.addAction(action_onDisplayNodesSelection)
 
         # -----
         # Add menu item to unselect all signals - This/Current DTV
@@ -767,6 +772,14 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
+
+    @pyqtSlot()
+    def onDisplayNodesSelection(self):
+        """Displays signal selection as a list of signal paths for single DTV
+        (QVizDataTreeView)
+        """
+        # Displays signal selection as a list of signal paths
+        QVizDisplayCurrentSelection(dataTreeView=self.dataTreeView).execute()
 
     @pyqtSlot()
     def onExportToLocal(self):

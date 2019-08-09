@@ -91,6 +91,11 @@ class Viz_API:
     def ShowDataTree(self, dataTreeFrame):
         dataTreeFrame.show()
 
+    def ShowNodesSelection(self, selectedSignalsDict):
+        from imasviz.VizGUI.VizWidgets.QVizNodesSelectionWindow import QVizNodesSelectionWindow
+        self.nsw = QVizNodesSelectionWindow(selectedSignalsDict)
+        self.nsw.show()
+
     def getSelectedSignalsDict(self, dataTreeFrame):
         """Returns the list of signals (nodes) dictionaries
         selected by the user or from script commands (from a single opened

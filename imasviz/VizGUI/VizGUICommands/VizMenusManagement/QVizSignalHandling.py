@@ -771,6 +771,8 @@ class QVizSignalHandling(QObject):
         for si in selectedSignalsList:
             if s['coordinate1'] != si['coordinate1']:
                 return False
+            if s['units'] != si['units']:
+                return False
             s = si
         return True
 

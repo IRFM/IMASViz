@@ -247,7 +247,7 @@ class timeSliderGroup():
 
         self.timeFieldLabel = self.setLabel(text='Time:')
         if self.active_treeNode.globalTime is not None:
-            self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]))
+            self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
 
         # Set slider value indicator
         self.sliderValueIndicator = self.setSliderValueIndicator()
