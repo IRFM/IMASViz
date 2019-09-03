@@ -277,7 +277,7 @@ class QVizDataTreeView(QTreeWidget):
 
                 # Get string version of the array of values
                 n = 1000
-                if len(node_array_contents) > n:
+                if len(node_array_contents) > n*2:
                     node_contents_dict['contents'] = 'The array size is too ' \
                         'large for display. Showing first and last ' + str(n) \
                         + ' values: \n\n' \
