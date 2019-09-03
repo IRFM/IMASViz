@@ -112,29 +112,29 @@ class QVizNodeDocumentationWidget(QWidget):
         # Set label text as selectable by mouse
         self.lNodeArraySizeText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
-        #
-        # # - Set node contents title
-        # self.lNodeContentsTitle = QLabel()
-        # self.lNodeContentsTitle.setText('Contents: ')
-        # self.lNodeContentsTitle.setAlignment(Qt.AlignLeft)
-        # self.lNodeContentsTitle.setWordWrap(True)
-        # self.lNodeContentsTitle.setMinimumHeight(25)
-        # self.lNodeContentsTitle.setMinimumWidth(340)
-        # self.lNodeContentsTitle.setFont(GlobalFonts.TITLE_BIG)
-        # # Set label text as selectable by mouse
-        # self.lNodeContentsTitle.setTextInteractionFlags(
-        #     Qt.TextSelectableByMouse)
-        #
-        # # - Set node contents text
-        # self.lNodeContentsText = QLabel()
-        # self.lNodeContentsText.setText('/')
-        # self.lNodeContentsText.setAlignment(Qt.AlignLeft)
-        # self.lNodeContentsText.setWordWrap(True)
-        # self.lNodeContentsText.setMinimumHeight(25)
-        # self.lNodeContentsText.setMinimumWidth(340)
-        # self.lNodeContentsText.setFont(GlobalFonts.TEXT_BIG)
-        # # Set label text as selectable by mouse
-        # self.lNodeContentsText.setTextInteractionFlags(Qt.TextSelectableByMouse)
+
+        # - Set node contents title
+        self.lNodeContentsTitle = QLabel()
+        self.lNodeContentsTitle.setText('Contents: ')
+        self.lNodeContentsTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeContentsTitle.setWordWrap(True)
+        self.lNodeContentsTitle.setMinimumHeight(25)
+        self.lNodeContentsTitle.setMinimumWidth(340)
+        self.lNodeContentsTitle.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeContentsTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node contents text
+        self.lNodeContentsText = QLabel()
+        self.lNodeContentsText.setText('/')
+        self.lNodeContentsText.setAlignment(Qt.AlignLeft)
+        self.lNodeContentsText.setWordWrap(True)
+        self.lNodeContentsText.setMinimumHeight(25)
+        self.lNodeContentsText.setMinimumWidth(340)
+        self.lNodeContentsText.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeContentsText.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         # Set scrollable area
         scrollArea = QScrollArea(self)
@@ -153,9 +153,9 @@ class QVizNodeDocumentationWidget(QWidget):
         scrollLayout.setWidget(4, QFormLayout.LabelRole,
                                self.lNodeArraySizeTitle)
         scrollLayout.setWidget(5, QFormLayout.LabelRole, self.lNodeArraySizeText)
-        # scrollLayout.setWidget(6, QFormLayout.LabelRole,
-        #                        self.lNodeContentsTitle)
-        # scrollLayout.setWidget(7, QFormLayout.LabelRole, self.lNodeContentsText)
+        scrollLayout.setWidget(6, QFormLayout.LabelRole,
+                               self.lNodeContentsTitle)
+        scrollLayout.setWidget(7, QFormLayout.LabelRole, self.lNodeContentsText)
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
 
@@ -190,4 +190,4 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeLabelText.setText(node_contents_dict['name'])
         self.lNodeDocText.setText(node_contents_dict['documentation'])
         self.lNodeArraySizeText.setText(node_contents_dict['size'])
-        #self.lNodeContentsText.setText(node_contents_dict['contents'])
+        self.lNodeContentsText.setText(node_contents_dict['contents'])
