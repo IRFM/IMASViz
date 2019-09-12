@@ -11,7 +11,7 @@ class QVizTreeNode(QTreeWidgetItem):
     def __init__(self, *args, **kwargs):
         from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
         self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
-
+        self.globalTime = None
         if len(args) == 1:
             QTreeWidgetItem.__init__(self, *args, **kwargs)
             self.infoDict = args[0]
@@ -39,6 +39,9 @@ class QVizTreeNode(QTreeWidgetItem):
         if '/time' in coordinate or '.time' in coordinate or coordinate == 'time':
             return True
         return False
+
+    def isCoordinate1_time_dependent(self):
+        return self.infoDict["coordinate1_time_dependent"] == 1
 
     def index_name_of_itime(self):
         i = 0
@@ -134,10 +137,10 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def evaluatePath(self, path):
         aos_valued = None
-        path = self.patchIndices(path)
-        for i in range(0, self.treeNodeExtraAttributes.aos_parents_count):
+        path = self.patchIndices(path) #replace [i1] by [i], [i2] by [j] and so on
+        for i in range(0, self.treeNodeExtraAttributes.aos_parents_count): #loop on all AOSs which contain this path
             index_name = QVizGlobalValues.indices[str(i + 1)]
-            index_value = self.treeNodeExtraAttributes.aos_indices_values[index_name]
+            index_value = self.treeNodeExtraAttributes.aos_indices_values[index_name] #AOS index value for this node
             s = "[" + index_name + "]"
             aos_valued = path.replace(s, "[" + index_value + "]")
             path = aos_valued
@@ -167,6 +170,9 @@ class QVizTreeNode(QTreeWidgetItem):
             data_path = self.getDataPath(aos_vs_itime, itime)
             data_list.append(data_path)
         return data_list
+
+    def getNodeData(self):
+        return self.infoDict
 
     def getOccurrence(self):
         return self.infoDict.get('occurrence')

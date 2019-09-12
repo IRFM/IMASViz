@@ -62,10 +62,6 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.log = self.dataTreeView.log
 
         if signal == None:
-            # signalDataAccess = \
-            #     QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            # self.signal = signalDataAccess.GetSignal(self.nodeData,
-            #                 self.dataTreeView.dataSource.shotNumber, self.treeNode)
 
             self.signal = self.getSignal(dataTreeView=self.dataTreeView,
                                          selectedNodeData=self.nodeData,
@@ -98,6 +94,10 @@ class QVizPlotSignal(QVizAbstractCommand):
             if len(self.signal) == 2:
                 t = QVizPlotSignal.getTime(self.signal)
                 v = QVizPlotSignal.get1DSignalValue(self.signal)
+                if t is None or t[0] is None:
+                    raise ValueError("Time values are not defined.")
+                if v is None or v[0] is None:
+                    raise ValueError("Array values are not defined.")
                 if (len(t[0]) != len(v[0])):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
                 self.plot1DSignal(self.dataTreeView.shotNumber, t, v,
@@ -154,9 +154,14 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
-            plotWidget = self.getPlotWidget(self.figureKey)
 
-            # fig =  self.plotFrame.get_figure()
+            ids = self.dataTreeView.dataSource.ids[self.treeNode.getOccurrence()]
+
+            # Get signal time
+            self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
+
+            #Get widget linked to this figure
+            plotWidget = self.getPlotWidget(self.figureKey)
 
             key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
             tup = (self.dataTreeView.dataSource.shotNumber, self.nodeData)
@@ -180,6 +185,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             elif self.dataTreeView.dataSource.name != None:
                 label = self.dataTreeView.dataSource.name + ":" + label
 
+            # A new plot is added to the current plot(s)
             if update == 1:
                 # self.log.info('Updating/Overwriting existing plot.')
 

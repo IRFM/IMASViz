@@ -55,30 +55,25 @@ class QVizTSDataAccess:
             if len(t.shape) == 1:
                 t = np.array([t])
 
-            return (r.shape, t.shape)
+            return r.shape, t.shape
         except:
             raise ValueError("Error while getting the shape of signal " + signalName + " - signal not found ?")
 
-if __name__ == "__main__":
-    import os
-    from imasviz.VizDataSource import DataSourceFactory
-    if 'TS_MAPPINGS_DIR' not in os.environ:
-        os.environ['TS_MAPPINGS_DIR'] = "D:/Dev/IDSVisualization/IMAS_VIZ/ts_mapping_files"
-    ts_dsf = DataSourceFactory()
-    ds = ts_dsf.create(name=QVizGlobalValues.TORE_SUPRA, shotNumber=43970)
-    mdsp = QVizTSDataAccess(ds)
-    selectedNodeData = {}
-    selectedNodeData['dataName'] = "GBFT%3"
-    # selectedNodeData['dataName'] = "GTICXS"
-
-    # selectedNodeData['dimension'] = 2
-    # selectedNodeData['dataName'] = "GBFT%3"
-    print (mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber))
-    # print mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber)[0]
-    signal = mdsp.GetSignal(selectedNodeData, ds.shotNumber)
-    #from imasviz.Viz_API import Viz_API
-    app = wx.App()
-    # api = Viz_API()
-    # api.plotSignal(signal)
+# if __name__ == "__main__":
+#     import os
+#     from imasviz.VizDataSource import DataSourceFactory
+#     if 'TS_MAPPINGS_DIR' not in os.environ:
+#         os.environ['TS_MAPPINGS_DIR'] = "D:/Dev/IDSVisualization/IMAS_VIZ/ts_mapping_files"
+#     ts_dsf = DataSourceFactory()
+#     ds = ts_dsf.create(name=QVizGlobalValues.TORE_SUPRA, shotNumber=43970)
+#     mdsp = QVizTSDataAccess(ds)
+#     selectedNodeData = {}
+#     selectedNodeData['dataName'] = "GBFT%3"
+#     # selectedNodeData['dataName'] = "GTICXS"
+#     # selectedNodeData['dimension'] = 2
+#     # selectedNodeData['dataName'] = "GBFT%3"
+#     print (mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber))
+#     # print mdsp.GetShapeofSignal(selectedNodeData, ds.shotNumber)[0]
+#     signal = mdsp.GetSignal(selectedNodeData, ds.shotNumber)
 
 

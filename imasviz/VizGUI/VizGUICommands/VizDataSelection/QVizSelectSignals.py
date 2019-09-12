@@ -68,7 +68,7 @@ class QVizSelectSignals(QVizAbstractCommand):
 
                 # If default occurrence was not set, use the occurrences list
                 if occurrence == None:
-                    occurrence = occurrencesList[i]
+                    occurrence = int(occurrencesList[i])
                 # Use the first occurrence if only one was given (assuming all
                 # signals correspond to the same occurrence)
                 elif len(occurrencesList) == 1:
