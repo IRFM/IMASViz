@@ -16,7 +16,9 @@ class Imas_Viz_Options:
 
 class QVizGlobalValues:
 
-    IMAS_VIZ_VERSION = '2.2.2'
+    IMAS_VIZ_VERSION = ''
+    if "IMAS_VIZ_VERSION" in os.environ:
+        IMAS_VIZ_VERSION = os.environ["IMAS_VIZ_VERSION"]
 
     indices = {'1': 'i', '2': 'j', '3': 'k', '4': 'l', '5': 'q', '6': 'r', '7': 't'}
     max_indices = {'1': 'N', '2': 'M', '3': 'K', '4': 'L', '5': 'Q', '6': 'R', '7': 'T'}
@@ -39,7 +41,9 @@ class QVizGlobalValues:
 
     TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
     if TESTING:
+        IMAS_VIZ_VERSION = 'DEVEL'
         TESTING_VIZ_HOME = None
+        os.environ["WEST"] = '1'
         if "VIZ_HOME" in os.environ:
             TESTING_VIZ_HOME = os.environ["VIZ_HOME"]
         else:
@@ -63,7 +67,7 @@ class QVizGlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.23.3"
+        TESTING_IMAS_VERSION = "3.24.0"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
@@ -71,6 +75,9 @@ class QVizGlobalValues:
 
     else:
         print ("VIZ_HOME:" + os.environ["VIZ_HOME"])
+        if IMAS_VIZ_VERSION == '':
+            print("IMAS_VIZ_VERSION not defined in environment. Please report to admin!")
+            IMAS_VIZ_VERSION = 'Undefined (please report to admin)'
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]

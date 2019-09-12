@@ -163,6 +163,7 @@ class QVizPlotWidget(QWidget):
                 self.separatorLine = self.sliderGroupDict['separatorLine']
                 self.slider = self.sliderGroupDict['slider']
                 self.sliderLabel = self.sliderGroupDict['sliderLabel']
+                self.timeFieldLabel = self.sliderGroupDict['timeFieldLabel']
                 self.indexLabel = self.sliderGroupDict['indexLabel']
                 self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
 
@@ -174,6 +175,10 @@ class QVizPlotWidget(QWidget):
                 # Add time slider index label and value indicator
                 self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
                 self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
+
+            if self.signalHandling.timeSlider == True:
+                # Add time label
+                self.gridLayout.addWidget(self.timeFieldLabel, 6, 0, 1, 10)
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self)
@@ -240,6 +245,10 @@ class timeSliderGroup():
         # Set index label
         self.indexLabel = self.setLabel(text='Index Value:')
 
+        self.timeFieldLabel = self.setLabel(text='Time:')
+        if self.active_treeNode.globalTime is not None:
+            self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
+
         # Set slider value indicator
         self.sliderValueIndicator = self.setSliderValueIndicator()
 
@@ -253,6 +262,7 @@ class timeSliderGroup():
             { 'separatorLine'        : self.separatorLine,
               'slider'               : self.slider,
               'sliderLabel'          : self.sliderLabel,
+              'timeFieldLabel'       : self.timeFieldLabel,
               'indexLabel'           : self.indexLabel,
               'sliderValueIndicator' : self.sliderValueIndicator}
 
@@ -277,8 +287,7 @@ class timeSliderGroup():
             # Set index slider using time as index
             nodeData = self.active_treeNode.getInfoDict()
             # Set IDS source database
-            ids  = self.signalHandling.dataTreeView.dataSource.ids[nodeData[
-                'occurrence']]
+            ids = self.signalHandling.dataTreeView.dataSource.ids[nodeData['occurrence']]
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
@@ -318,6 +327,19 @@ class timeSliderGroup():
 
         return sliderLabel
 
+    def setTimeFieldLabel(self, text=''):
+        """Set label with given text.
+        """
+
+        timeFieldLabel = QLabel()
+        timeFieldLabel.setText(text)
+        timeFieldLabel.setAlignment(Qt.AlignLeft)
+        timeFieldLabel.setWordWrap(True)
+        timeFieldLabel.setFixedHeight(25)
+        timeFieldLabel.setFont(GlobalFonts.TEXT_MEDIUM)
+
+        return timeFieldLabel
+
     def setSliderValueIndicator(self):
         """Set widget displaying current slider value.
         """
@@ -335,6 +357,14 @@ class timeSliderGroup():
 
         # Update slider value indicator value
         self.sliderValueIndicator.setText(str(self.slider.value()))
+
+        if self.signalHandling.timeSlider:
+            if self.timeFieldLabel is not None:
+                treeNode = self.signalHandling.dataTreeView.selectedItem
+                if treeNode.globalTime is not None:
+                    self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]))
+                else:
+                    self.timeFieldLabel.setText("Undefined IDS global time.")
 
         # Don't plot when the slider is being dragged by mouse. Plot on slider
         # release. This is important to still plot on value change by
@@ -365,7 +395,7 @@ class timeSliderGroup():
         time_index = self.slider.value()
 
         old_path = self.active_treeNode.getPath()
-        new_path = old_path.replace( '(' + str(self.currentIndex) + ')', '(' + str(time_index) + ')')
+        new_path = old_path.replace('(' + str(self.currentIndex) + ')', '(' + str(time_index) + ')')
 
         self.currentIndex = time_index
 
@@ -396,6 +426,6 @@ class timeSliderGroup():
         else:
             self.signalHandling.plotSelectedSignalVsTimeAtIndex(
                 index=time_index,
-                currentFigureKey = currentFigureKey,
+                currentFigureKey=currentFigureKey,
                 treeNode=self.active_treeNode)
 

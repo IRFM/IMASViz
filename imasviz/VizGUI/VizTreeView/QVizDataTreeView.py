@@ -230,8 +230,12 @@ class QVizDataTreeView(QTreeWidget):
             column (int)             : Item column.
         """
 
-        # Check if item has the 'itemVIZData' attribute. If not -> return
+        itemInfoDict = item.getInfoDict()
+
+        # Check if item has the necessary attributes. If not -> return
         if item.getDataName() is not None:
+            pass
+        elif item.getDocumentation() is not None:
             pass
         else:
             return
@@ -249,12 +253,6 @@ class QVizDataTreeView(QTreeWidget):
             node_label = str(item.getName())
         # - Set node documentation#
         node_doc = str(item.getDocumentation())
-        # - Set node contents
-        # TODO: improve and avoid try/except
-        expression = 'self.dataSource.ids[0].' + str(item.getPath())
-        expression = expression.replace('/', '.')
-        expression = expression.replace('(', '[')
-        expression = expression.replace(')', ']')
 
         # Set dictionary for node attributes
         node_contents_dict = {}
@@ -265,22 +263,36 @@ class QVizDataTreeView(QTreeWidget):
 
         node_array_contents = ''
         # Don't obtain contents for full IDS root nodes
-        if item.getInfoDict()['isIDSRoot'] != 1:
-            try:
+        if itemInfoDict['isIDSRoot'] != 1:
+
+            if itemInfoDict['isSignal'] == 1:
+                # - Set node contents
+                # TODO: improve and avoid try/except
+                expression = 'self.dataSource.ids[0].' + str(item.getPath())
+                expression = expression.replace('/', '.')
+                expression = expression.replace('(', '[')
+                expression = expression.replace(')', ']')
                 # Get the array of values
                 node_array_contents = eval(expression)
+
                 # Get string version of the array of values
-                node_contents_dict['contents'] = str(node_array_contents)
+                n = 1000
+                if len(node_array_contents) > n*2:
+                    node_contents_dict['contents'] = 'The array size is too ' \
+                        'large for display. Showing first and last ' + str(n) \
+                        + ' values: \n\n' \
+                        + str(node_array_contents[:n]) + '\n...\n' \
+                        + str(node_array_contents[-n:])
+                else:
+                    node_contents_dict['contents'] = str(node_array_contents)
                 # Formatting the string
                 # Note: makes the node documentation slider a lot slower for
                 # large arrays!
+                # Numbered array:
                 # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
                 #     *k) for k in enumerate(node_array_contents))
                 # Get size of the array in as string
-
                 node_contents_dict['size'] = str(len(node_array_contents))
-            except:
-                pass
 
         # Find and update DTVFrame-docked node documentation widget (NDW)
         ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")

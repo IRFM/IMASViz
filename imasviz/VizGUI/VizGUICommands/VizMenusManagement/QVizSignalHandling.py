@@ -771,6 +771,8 @@ class QVizSignalHandling(QObject):
         for si in selectedSignalsList:
             if s['coordinate1'] != si['coordinate1']:
                 return False
+            if s['units'] != si['units']:
+                return False
             s = si
         return True
 
@@ -890,7 +892,6 @@ class QVizSignalHandling(QObject):
             treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
                                       replace the current plot in figure window.
         """
-        # self.updateNodeData()
         try:
             # Get list of paths of arrays through time slices
             data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
@@ -954,10 +955,7 @@ class QVizSignalHandling(QObject):
             # self.updateNodeData()
             dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
             # Get signal node
-            signal = dataAccess.GetSignalAt(treeNode.getInfoDict(),
-                                            self.dataTreeView.dataSource.shotNumber,
-                                            treeNode,
-                                            time_index)
+            signal = dataAccess.GetSignalAt(treeNode, time_index)
             # Get label and xlabel (title in this form is not needed)
             label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
                                 nodeData=treeNode.getInfoDict(),

@@ -130,7 +130,7 @@ class QVizPluginsHandler:
                                     IDSName=pluginsObject.targetIDSroot,
                                     occurrence=pluginsObject.targetOccurrence,
                                     pathsList=None,
-                                    async=False)
+                                    asynch=False)
                     # Set IDS
                     ids = dataSource.ids[pluginsObject.targetOccurrence]
 

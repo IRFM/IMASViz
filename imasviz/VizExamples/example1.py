@@ -42,7 +42,7 @@ dataSource = dataSourceFactory.create(
 #                                       runNumber=0,
 #                                       userName='g2penkod',
 #                                       imasDbName='viztest')
-#
+
 
 # Build the data tree view frame
 f = api.CreateDataTree(dataSource)
@@ -51,6 +51,15 @@ f = api.CreateDataTree(dataSource)
 paths = []
 for i in range(0,6):
     paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
+
+# Change it to dictionary with paths an occurrences (!)
+paths = {'paths' : paths,
+         'occurrences' : [0]}
+
+# Optional: Option with single path in dictionary
+# paths = {'paths' : 'magnetics/flux_loop(1)/flux/data'}
+# or
+# paths = {'paths' : ['magnetics/flux_loop(1)/flux/data']}
 
 # Select signal nodes corresponding to the paths in paths list
 api.SelectSignals(f, paths)
