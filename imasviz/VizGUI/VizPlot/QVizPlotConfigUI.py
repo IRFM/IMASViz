@@ -159,6 +159,7 @@ class TabColorAndLineProperties(QWidget):
         listHeaderLabels = ['#',
                             'Legend Label',
                             'Bold',
+                            'Italic',
                             'Color',
                             'Style',
                             'Thickness',
@@ -201,10 +202,24 @@ class TabColorAndLineProperties(QWidget):
             scrollLayout.addWidget(boldButton, i + 1, j, 1, 1)
             # - Add action triggered by pressing the button
             boldButton.pressed.connect(partial(
-                self.setLegendThickness,
+                self.setLegendBold,
                 legendItemID = i))
 
             # boldButton.released.connect()
+            j += 1 # go to next column
+            # ------------------------------------------------------------------
+            # Configuring legend italic text style
+            italicButton = QPushButton('', self)
+            # Set icon
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
+            italicButton.setIcon(icon)
+            # - Add italicButton to layout
+            scrollLayout.addWidget(italicButton, i + 1, j, 1, 1)
+            # - Add action triggered by pressing the button
+            italicButton.pressed.connect(partial(
+                self.setLegendItalic,
+                legendItemID = i))
+
             j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen color
@@ -400,7 +415,7 @@ class TabColorAndLineProperties(QWidget):
         legendLabelItem.setText(newLabel)
 
     @pyqtSlot(int)
-    def setLegendThickness(self, legendItemID):
+    def setLegendBold(self, legendItemID):
 
         # - Get legendItem
         legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
@@ -410,15 +425,15 @@ class TabColorAndLineProperties(QWidget):
         key = 'bold'
         if key in legendLabelItem.opts:
             if legendLabelItem.opts['bold'] == True:
-                self.setLegendItemThicknessOFF(legendItemID=legendItemID)
+                self.setLegendItemBoldOFF(legendItemID=legendItemID)
             elif legendLabelItem.opts['bold'] == False:
-                self.setLegendItemThicknessON(legendItemID=legendItemID)
+                self.setLegendItemBoldON(legendItemID=legendItemID)
         else:
-            self.setLegendItemThicknessON(legendItemID=legendItemID)
+            self.setLegendItemBoldON(legendItemID=legendItemID)
 
 
     @pyqtSlot(int)
-    def setLegendItemThicknessON(self, legendItemID):
+    def setLegendItemBoldON(self, legendItemID):
         """Set plotDataItem legend label (in plotWidget) to bold.
         Note: instant update (no apply required).
 
@@ -442,7 +457,7 @@ class TabColorAndLineProperties(QWidget):
         legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
 
     @pyqtSlot(int)
-    def setLegendItemThicknessOFF(self, legendItemID):
+    def setLegendItemBoldOFF(self, legendItemID):
         """Set plotDataItem legend label (in plotWidget) to flat (not bold).
         Note: instant update (no apply required).
 
@@ -458,6 +473,69 @@ class TabColorAndLineProperties(QWidget):
         legendLabelItem = legendItem.items[legendItemID][1]
         # Set style
         legendLabelStyle = {'bold': False}
+
+        # Setting text style
+        # Note: setAttr('bold', False) and setProperty('bold', False) have no
+        #       effect.
+        legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
+
+    @pyqtSlot(int)
+    def setLegendItalic(self, legendItemID):
+
+        # - Get legendItem
+        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+        # - Get legend labelItem
+        legendLabelItem = legendItem.items[legendItemID][1]
+
+        key = 'italic'
+        if key in legendLabelItem.opts:
+            if legendLabelItem.opts['italic'] == True:
+                self.setLegendItemItalicOFF(legendItemID=legendItemID)
+            elif legendLabelItem.opts['italic'] == False:
+                self.setLegendItemItalicON(legendItemID=legendItemID)
+        else:
+            self.setLegendItemItalicON(legendItemID=legendItemID)
+
+
+    @pyqtSlot(int)
+    def setLegendItemItalicON(self, legendItemID):
+        """Set plotDataItem legend label (in plotWidget) to italic.
+        Note: instant update (no apply required).
+
+        Arguments:
+            legendItemID (int)         : ID of corresponding legend item,
+                                         identifying the relevant legend item
+                                         from a list of legend items.
+        """
+
+        # - Get legendItem
+        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+        # - Get legend labelItem
+        legendLabelItem = legendItem.items[legendItemID][1]
+        # Set style
+        legendLabelStyle = {'italic': True}
+        # legendLabelStyle = {'color': '#000', 'size': '12pt', 'bold': True, 'italic': False}
+
+        # Setting text style
+        legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
+
+    @pyqtSlot(int)
+    def setLegendItemItalicOFF(self, legendItemID):
+        """Set plotDataItem legend label (in plotWidget) to "not italic".
+        Note: instant update (no apply required).
+
+        Arguments:
+            legendItemID (int)         : ID of corresponding legend item,
+                                         identifying the relevant legend item
+                                         from a list of legend items.
+        """
+
+        # - Get legendItem
+        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+        # - Get legend labelItem
+        legendLabelItem = legendItem.items[legendItemID][1]
+        # Set style
+        legendLabelStyle = {'italic': False}
 
         # Setting text style
         # Note: setAttr('bold', False) and setProperty('bold', False) have no
