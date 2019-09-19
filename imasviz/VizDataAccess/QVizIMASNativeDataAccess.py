@@ -32,12 +32,7 @@ class QVizIMASNativeDataAccess:
 
             r = np.array([rval])
 
-            # Note: patch added while experiencing issues in radiation.process[i].profiles_1d[j]
-            if "profiles_1d[j]" in treeNode.infoDict['aos']:
-                coordinate1 = treeNode.evaluateCoordinate1At(int(treeNode.infoDict['j']))
-            else:
-                coordinate1 = treeNode.evaluateCoordinate1At(itimeValue)
-            print("*coordinate1: ", coordinate1)
+            coordinate1 = treeNode.evaluateCoordinate1At(itimeValue)
 
             if  treeNode.isCoordinate1_time_dependent(): #coordinate1 is a function of time
                 t = QVizGlobalOperations.getCoordinate1D_array(ids, treeNode.getNodeData(), coordinate1)

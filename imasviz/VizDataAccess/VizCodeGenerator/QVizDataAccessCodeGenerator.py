@@ -547,7 +547,7 @@ class QVizDataAccessCodeGenerator:
         try:
             path_doc.index("(itime)")
         except:
-            return itime_index
+            return itime_index #'itime' not found
 
         itime_position = 0
 
@@ -557,12 +557,9 @@ class QVizDataAccessCodeGenerator:
             p = '(i' + str(c) + ')'
             try:
                 p_index = path_doc.index(p)
+                itime_position += 1
             except:
                 return itime_position
-            if  itime_index > p_index:
-                itime_position += 1
-
-
 
 if __name__ == "__main__":
 
