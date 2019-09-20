@@ -57,12 +57,12 @@ class QVizIMASNativeDataAccess:
             raise
 
     #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
-    def GetSignalVsTime(self, data_path_list, selectedNodeData, treeNode, index):
-        ids = self.dataSource.ids[selectedNodeData['occurrence']]
+    def GetSignalVsTime(self, data_path_list, treeNode, index):
+        ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)
         v = []
-        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, selectedNodeData)
+        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, treeNode.getInfoDict())
 
         for i in range(0, time_slices_count):
             # Get values of the array at index
@@ -71,7 +71,7 @@ class QVizIMASNativeDataAccess:
 
         rarray = np.array([np.array(v)])
         tarray = np.array([time])
-        return (tarray, rarray)
+        return tarray, rarray
 
     def GetShapeofSignal(self, selectedNodeData, shotNumber):
         try:

@@ -120,8 +120,7 @@ class QVizTreeNode(QTreeWidgetItem):
         # Set python expression to get lenght of the array
         to_evaluate = 'ids.' + selectedNodeData['IDSName'] + '.' + \
                        self.evaluateCoordinate1()
-        len_to_evaluate =  eval('len(' + to_evaluate + ')')
-
+        len_to_evaluate = eval('len(' + to_evaluate + ')')
         return len_to_evaluate
 
     def timeMaxValue(self):
@@ -161,6 +160,14 @@ class QVizTreeNode(QTreeWidgetItem):
         replacement = "[" + str(itime_value) + "]"
         return data_path_vs_time.replace(s, replacement)
 
+    def containedInDynamicAOS(self):
+        if self.getPathDoc() is None:
+            return -1
+        try:
+            self.getPathDoc().index("itime")
+        except:
+            return -1  # 'itime' not found
+        return 1
 
     def getDataVsTime(self):
         data_list = []
@@ -195,8 +202,17 @@ class QVizTreeNode(QTreeWidgetItem):
     def isDynamicData(self):
         return self.infoDict.get('isSignal')
 
+    def isDataAvailable(self):
+        return self.infoDict.get('availableData')
+
     def getDataType(self):
         return self.infoDict.get('data_type')
+
+    def getUnits(self):
+        return self.infoDict.get('units')
+
+    def getPathDoc(self):
+        return self.infoDict.get('path_doc')
 
     def getIDSName(self):
         return self.infoDict.get('IDSName')

@@ -178,7 +178,7 @@ class QVizNodeDocumentationWidget(QWidget):
         # - Adjust size
         self.adjustSize()
 
-    def update(self, node_contents_dict):
+    def update(self, node_contents_dict, sizeCaption='Array size: '):
         """Update the text of the docked node documentation widget.
 
         Arguments:
@@ -186,8 +186,15 @@ class QVizNodeDocumentationWidget(QWidget):
                                         (e.g. (also keys) name, documentation,
                                         size, contents)
         """
-
+        if 'sizeCaption' not in node_contents_dict:
+            self.lNodeArraySizeTitle.setText('Array size: ')
+        else:
+            self.lNodeArraySizeTitle.setText(node_contents_dict['sizeCaption'])
         self.lNodeLabelText.setText(node_contents_dict['name'])
         self.lNodeDocText.setText(node_contents_dict['documentation'])
-        self.lNodeArraySizeText.setText(node_contents_dict['size'])
+        if 'size' not in node_contents_dict:
+            self.lNodeArraySizeText.setText(node_contents_dict[''])
+        else:
+            self.lNodeArraySizeText.setText(node_contents_dict['size'])
         self.lNodeContentsText.setText(node_contents_dict['contents'])
+

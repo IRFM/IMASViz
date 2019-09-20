@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QMainWindow
 #                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
+                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      'SOLPS_UiPlugin': {
                          'UiFile': 'SOLPSplugin.ui',
                          'dir': os.environ['VIZ_HOME'] +
@@ -30,6 +31,9 @@ RegisteredPluginsConfiguration = {'equilibriumcharts':[{
                                       'run': 0, \
                                       'machine': 'west_equinox', \
                                       'user': 'imas_private'}],
+                                    'ToFuPlugin': [{'geom': True}, {'data': True},
+                                        {'geom': True}, {'data': True},
+                                        {'geom': True}, {'data': True}],
                                   'SOLPS_UiPlugin':[{}],
                                   'example_UiPlugin':[{}]
                            }
@@ -53,11 +57,12 @@ WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{
 # (for example: for edge_profiles IDS -> 'edge_profiles_overview')
 EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0],
                                            'overview': [0]},
-                     'ToFuPlugin':        {'interferometer_overview': [0, 1],
-                                           'bolometer_overview': [2, 3],
-                                           'soft_x_rays_overview': [4, 5]},
-                     'SOLPS_UiPlugin':    {'edge_profiles_overview':[0],
-                                           'overview':[0]},
+                     'ToFuPlugin':        {'wall_overview': [0],
+                                           'interferometer_overview': [0, 1],
+                                           'bolometer_overview': [0, 1],
+                                           'soft_x_rays_overview': [0, 1]},
+                     'SOLPS_UiPlugin':    {'edge_profiles_overview': [0],
+                                           'overview': [0]},
                      'example_UiPlugin':  {'magnetics_overview': [0],
                                            'overview': [0]}
                      }

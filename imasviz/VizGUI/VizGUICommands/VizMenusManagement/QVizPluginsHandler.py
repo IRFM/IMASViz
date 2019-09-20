@@ -80,8 +80,8 @@ class QVizPluginsHandler:
             # Add to submenu
             self.dataTreeView.popupmenu.addAction(action_onPluginHandler)
 
-            # Map the menu (in order to show it)
-            self.dataTreeView.popupmenu.exec_(
+        # Map the menu (in order to show it)
+        self.dataTreeView.popupmenu.exec_(
                 self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
 
         # self.dataTreeView.Bind(wx.EVT_MENU, self.popUpMenuHandler)
@@ -99,7 +99,7 @@ class QVizPluginsHandler:
             allEntries = VizPlugins.getAllEntries(pluginsName)
             pluginsConfigurationsList = VizPlugins.getPluginsConfiguration(
                 pluginsName)
-            pluginsConfiguration =  pluginsConfigurationsList[allEntries[entry][0]]
+            pluginsConfiguration = pluginsConfigurationsList[allEntries[entry][0]]
             pluginsConfiguration['imasviz_view'] = self.dataTreeView
             # Set ArraySize Plugin 'node_attributes' option
             # (defined in the plugin definition .py file
@@ -141,7 +141,7 @@ class QVizPluginsHandler:
                 # Show the plugin user interface
                 pluginsObject.show()
             elif 'execute' in dir(pluginsObject):
-                self.dataTreeView.log.info('Running plugin with execute.')
+                self.dataTreeView.log.info('Executing plugin...')
                 # pluginsObject.execute(wx.App(), pluginsConfiguration)
                 pluginsObject.execute(pluginsConfiguration,
                                       dataTreeView=self.dataTreeView)

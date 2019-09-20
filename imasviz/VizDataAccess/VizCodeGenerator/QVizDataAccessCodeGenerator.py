@@ -111,20 +111,20 @@ class QVizDataAccessCodeGenerator:
 
                  ids_child_element.text = child.text + '.' + ids_child_element.get('name')
 
-                 units = ids_child_element.get('units')
-                 if units != None:
-                     code = "node.set(" + "'units', '" + units + "')"
-                     self.printCode(code, level)
-                 if units == "as_parent":
-                     parent_units = child.get('units')
-                     if parent_units is not None:
-                         code = "node.set(" + "'units', '" + parent_units + "')"
-                         self.printCode(code, level)
-
                  self.generateParentsCode(level, child.text)
 
                  parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
                  self.printCode(parentCode, level)
+
+                 units = ids_child_element.get('units')
+                 if units != None:
+                     code = "parent.set(" + "'units', '" + units + "')"
+                     self.printCode(code, level)
+                 if units == "as_parent":
+                     parent_units = child.get('units')
+                     if parent_units is not None:
+                         code = "parent.set(" + "'units', '" + parent_units + "')"
+                         self.printCode(code, level)
 
                  documentation = ids_child_element.get('documentation')
                  if documentation != None:
@@ -278,6 +278,16 @@ class QVizDataAccessCodeGenerator:
                     code = "node.set(" + "'name', '" + nodeName + "')"
                     self.printCode(code, level)
 
+                code = "nameNode = ET.SubElement(node, 'name')"
+                self.printCode(code, level)
+                code = "nameNode.set('data_type', 'STR_0D')"
+                self.printCode(code, level)
+                value = self.replaceIndices(ids_child_element.text)
+                value = value.replace('self.', '')
+                value = value.replace('ids.', '')
+                code = "nameNode.text = " + "'" + value + "'"
+                self.printCode(code, level)
+
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
 
                 self.generateParentsCode(level, child.text)
@@ -336,19 +346,19 @@ class QVizDataAccessCodeGenerator:
                         code = "node.set(" + "'units', '" + parent_units + "')"
                         self.printCode(code, level)
 
-                documentation = ids_child_element.get('documentation')
-                if documentation != None:
-                    documentation = documentation.replace("'","''")
-                    documentation = documentation.replace("\n", "")
-                    code = "node.set(" + "'documentation', '" + documentation + "')"
-                    self.printCode(code, level)
-
                 nodeName = ids_child_element.get('name')
                 if nodeName != None:
                     nodeName = nodeName.replace("'", "''")
                     nodeName = nodeName.replace("\n", "")
 
                     code = "node.set(" + "'name', '" + nodeName + "')"
+                    self.printCode(code, level)
+
+                documentation = ids_child_element.get('documentation')
+                if documentation != None:
+                    documentation = documentation.replace("'","''")
+                    documentation = documentation.replace("\n", "")
+                    code = "node.set(" + "'documentation', '" + documentation + "')"
                     self.printCode(code, level)
 
                 type = ids_child_element.get('type')
@@ -381,6 +391,7 @@ class QVizDataAccessCodeGenerator:
                     aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
                 code = "node.set(" + "'aos', '" + aos + "')"
+                #code = "node.set(" + "'aos_type', '" + child.get('type') + "')"
                 self.printCode(code, level)
 
                 value = self.replaceIndices(ids_child_element.text)
@@ -446,6 +457,13 @@ class QVizDataAccessCodeGenerator:
                     code = "node.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
                     self.printCode(code, level)
 
+                nodeName = ids_child_element.get('name')
+                if nodeName != None:
+                    nodeName = nodeName.replace("'", "''")
+                    nodeName = nodeName.replace("\n", "")
+                    code = "node.set(" + "'name', '" + nodeName + "')"
+                    self.printCode(code, level)
+
                 units = ids_child_element.get('units')
                 if units != None:
                     code = "node.set(" + "'units', '" + units + "')"
@@ -461,13 +479,6 @@ class QVizDataAccessCodeGenerator:
                     documentation = documentation.replace("'","''")
                     documentation = documentation.replace("\n", "")
                     code = "node.set(" + "'documentation', '" + documentation + "')"
-                    self.printCode(code, level)
-
-                nodeName = ids_child_element.get('name')
-                if nodeName != None:
-                    nodeName = nodeName.replace("'", "''")
-                    nodeName = nodeName.replace("\n", "")
-                    code = "node.set(" + "'name', '" + nodeName + "')"
                     self.printCode(code, level)
 
                 type = ids_child_element.get('type')
@@ -502,12 +513,13 @@ class QVizDataAccessCodeGenerator:
                 code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
                 self.printCode(code, level)
 
-                aos = ids_child_element.text
+                aos = child.text
 
                 if itimeIndex != -1:
                     aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
                 code = "node.set(" + "'aos', '" + aos + "')"
+                #code = "node.set(" + "'aos_type', '" + child.get('type') + "')"
                 self.printCode(code, level)
 
                 value = self.replaceIndices(ids_child_element.text)
@@ -547,20 +559,19 @@ class QVizDataAccessCodeGenerator:
         try:
             path_doc.index("(itime)")
         except:
-            return itime_index
+            return itime_index #'itime' not found
 
         itime_position = 0
-
         p_index = -1
 
         for c in range(1, 10):
             p = '(i' + str(c) + ')'
             try:
                 p_index = path_doc.index(p)
+                itime_position += 1
             except:
                 return itime_position
-            if  itime_index > p_index:
-                itime_position += 1
+
 
 
 

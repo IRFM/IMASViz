@@ -70,7 +70,7 @@ class QVizIMASDataSource:
             ids_properties = eval("imas_entry." + IDSName + ".partialGet('ids_properties')")
             imas_entry.close()
             ht = ids_properties.homogeneous_time
-            if ht != 0 and ht != 1:
+            if ht != 0 and ht != 1 and ht != 2:
                 return False
         except:
             #traceback.print_exc(file=sys.stdout)
@@ -81,7 +81,8 @@ class QVizIMASDataSource:
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
         ids = self.ids[signalNode['occurrence']] #@UnusedVariable
-        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type':
+        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type'\
+                or signalNode['data_type'] == 'INT_1D' or signalNode['data_type'] == 'int_1d_type':
 
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
@@ -92,6 +93,33 @@ class QVizIMASDataSource:
 
             # if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
             if len(eval('ids.' + signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+                if obsolescent is None or obsolescent is False:
+                    return GlobalColors.BLACK
+                elif obsolescent is True:
+                    return GlobalColors.LIGHT_GREY
+            else:
+                if obsolescent is None or obsolescent is False:
+                    return GlobalColors.BLUE  # non empty (signals) arrays appear in blue
+                elif obsolescent is True:
+                    return GlobalColors.CYAN
+
+        elif signalNode['data_type'] == 'FLT_0D' or signalNode['data_type'] == 'flt_0d_type'\
+                or signalNode['data_type'] == 'INT_0D' or signalNode['data_type'] == 'int_0d_type':
+            # And error occurs for non-homogeneous cases (time array is
+            # different or empty). This is 'solved' with the below fix using
+            # 'e' variable
+            e = eval('ids.' + signalNode['dataName'])
+
+            emptyField = False
+            if signalNode['data_type'] == 'FLT_0D' or signalNode['data_type'] == 'flt_0d_type':
+                if e == -9.0E40:
+                    emptyField = True
+
+            elif signalNode['data_type'] == 'INT_0D' or signalNode['data_type'] == 'int_0d_type':
+                if e == -999999999:
+                    emptyField = True
+
+            if emptyField:  # empty (signals) arrays appear in black
                 if obsolescent is None or obsolescent is False:
                     return GlobalColors.BLACK
                 elif obsolescent is True:
@@ -118,8 +146,7 @@ class QVizIMASDataSource:
         """The displayed name of the node in DTV.
         """
         # name = str(dataElement.find('name').text) # Full path
-        name = dataElement.attrib['name']
-        return name
+        return dataElement.attrib['name']
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
@@ -135,31 +162,27 @@ class QVizIMASDataSource:
         Arguments:
             itemDataDict (obj)             : Data dictionary of the tree item.
             dataTreeView (QTreeWidget)     : QVizDataTreeView object.
-            viewerNode   (QTreeWidgetItem) : Tree item to be added to the
+            viewerNode   (QTreeWidgetItem) : tree parent item to which new items will be added to the
                                              dataTreeView
         """
 
         coordinate_display = None
 
-        # if itemDataDict.get('coordinate1') != None:
-        #     coordinate_display = "coordinate1= " + itemDataDict['coordinate1']
-        #     dataTreeView.AppendItem(viewerNode, coordinate_display, -1, -1, treeItemData)
-
         for i in range(1,7):
             coordinate = "coordinate" + str(i)
             coordinate_same_as = "coordinate" + str(i) + "_same_as"
-            if itemDataDict.get(coordinate) != None:
+            if itemDataDict.get(coordinate) is not None:
                 coordinate_display = coordinate + "=" + itemDataDict[coordinate]
-                newTreeItem = QVizTreeNode(viewerNode, [coordinate_display])
-            if itemDataDict.get(coordinate_same_as) != None:
+                QVizTreeNode(viewerNode, [coordinate_display])
+            if itemDataDict.get(coordinate_same_as) is not None:
                 coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
-                newTreeItem = QVizTreeNode(viewerNode, [coordinate_display])
+                QVizTreeNode(viewerNode, [coordinate_display])
 
         doc_display = None
 
-        if itemDataDict.get('documentation') != None:
+        if itemDataDict.get('documentation') is not None:
             doc_display = "documentation= " + itemDataDict['documentation']
-            newTreeItem = QVizTreeNode(viewerNode, [doc_display])
+            QVizTreeNode(viewerNode, [doc_display])
 
     def exportToLocal(self, dataTreeView, exported_ids):
         """Export specified IDS to a new separate IDS.

@@ -12,43 +12,63 @@ import matplotlib.pyplot as plt
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # tofu
-import tofu_irfm as tfi
+import sys
+sys.path.insert(0,'/Home/LF218007/tofu/')
+#print(sys.path)
+import tofu as tf
+sys.path.pop(0)
+print('load ok')
+#print(tf.__version__)
 
 
 class ToFuPlugin(VizPlugins):
     def __init__(self):
         VizPlugins.__init__(self)
 
-    def execute(self, app, pluginsConfig):
+    def execute(self, pluginsConfiguration, dataTreeView):
+
+        view = pluginsConfiguration.get('imasviz_view')
+        node_attributes = pluginsConfiguration.get('node_attributes')
+
+        dids = {'shot':view.dataSource.shotNumber,
+                'user':view.dataSource.userName,
+                'tokamak':view.dataSource.machineName,
+                'run':view.dataSource.runNumber}
         try:
             print ('ToFuPlugin to be executed...')
             plt.ioff()
-            view = pluginsConfig.get('imasviz_view')
-            node_attributes = pluginsConfig.get('node_extra_attributes')
+
             figure = None
-            if node_attributes.get('IDSName')=='bolometer':
-                if pluginsConfig.get('geom'):
-                    out = tfi.Bolo.load_geom(draw=False)
-                    figure = out[1][0].get_figure()
-                elif pluginsConfig.get('data'):
-                    tfi.Bolo.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
-                    figure = plt.gcf()
-            elif node_attributes.get('IDSName')=='interferometer':
-                if pluginsConfig.get('geom'):
-                    out = tfi.Interfero.load_geom(draw=False)
-                    figure = out[1][0].get_figure()
-                elif pluginsConfig.get('data'):
-                    tfi.Interfero.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
-                    figure = plt.gcf()
-            elif node_attributes.get('IDSName')=='soft_x_rays':
-                if pluginsConfig.get('geom'):
-                    out = tfi.SXR.load_geom(draw=False)
-                    figure = out[1][0].get_figure()
-                elif pluginsConfig.get('data'):
-                    tfi.SXR.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
-                    figure = plt.gcf()
-            self.OpenWxFrame(figure)
-            app.MainLoop()
+
+            # load config
+            lids = list(set(['wall', node_attributes.get('IDSName')]))
+            multi = tf.imas2tofu.MultiIDSLoader(ids=lids, **dids)
+            if node_attributes.get('IDSName') == 'wall':
+                obj = multi.to_Config(plot=False)
+                lax = obj.plot(draw=True)
+                figure = lax[0].get_figure()
+                figure.show()
+            elif node_attributes.get('IDSName') == 'bolometer':
+                if pluginsConfiguration.get('geom'):
+                    print(1)
+                    obj = multi.to_Cam(plot=False)
+                    print(2)
+                    lax = obj.plot(draw=True)
+                    print(3)
+                    figure = lax[0].get_figure()
+                    print(4)
+                    figure.show()
+                    print(5)
+                elif pluginsConfiguration.get('data'):
+                    print(1)
+                    obj = multi.to_Data(plot=False)
+                    print(2)
+                    lax = obj.plot(draw=True)
+                    print(3)
+                    figure = lax[0].get_figure()
+                    print(4)
+                    figure.show()
+                    print(5)
         except :
             traceback.print_exc()
             view.log.error(traceback.format_exc())
@@ -58,6 +78,19 @@ class ToFuPlugin(VizPlugins):
         fr = None
         #panel = CanvasPanel(fr, figure)
         fr.Show()
+
+
+    def getEntriesPerSubject(self):
+        a = {'interferometer_overview':[0,1],
+             'bolometer_overview':[2,3],
+             'soft_x_rays_overview':[4,5]}
+        return a
+
+    def getAllEntries(self):
+        #(config number, description)
+        return [(0, 'tofu - geom...'), (1, 'tofu - data'),
+                (2, 'tofu - geom...'), (3, 'tofu - data'),
+                (4, 'tofu - geom...'), (5, 'tofu - data')]
 
 class Frame():
     def __init__(self, out):
