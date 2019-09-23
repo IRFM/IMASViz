@@ -293,10 +293,12 @@ class QVizPlotSignal(QVizAbstractCommand):
 
         #ylabel = signalNodeData['dataName']
 
-        ylabel = 'S(t)'
-        if signalNode is not None and not (signalNode.isCoordinateTimeDependent(
-                signalNode.treeNodeExtraAttributes.coordinate1)):
-           ylabel = 'S'
+        # ylabel = 'S(t)'
+        # if signalNode is not None and not (signalNode.isCoordinateTimeDependent(
+        #         signalNode.treeNodeExtraAttributes.coordinate1)):
+        #    ylabel = 'S'
+
+        ylabel = signalNode.getName();
 
         if 'units' in signalNode.getInfoDict():
             units = signalNode.getInfoDict()['units']

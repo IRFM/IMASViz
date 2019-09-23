@@ -72,6 +72,7 @@ class QVizDataTreeViewBuilder:
         attribName = dataElement.tag
         if 'name' in dataElement.attrib:
             attribName = dataElement.attrib['name']
+            itemDataDict['name'] = attribName
         path = self.getPath(parentNode, attribName, isArray,
                             index)
 

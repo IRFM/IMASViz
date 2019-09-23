@@ -36,9 +36,10 @@ class QVizTreeNode(QTreeWidgetItem):
                 QTreeWidgetItem.__init__(self, parent, name)
 
     def isCoordinateTimeDependent(self, coordinate):
-        if '/time' in coordinate or '.time' in coordinate or coordinate == 'time':
-            return True
-        return False
+         if coordinate is not None:
+             if '/time' in coordinate or '.time' in coordinate or coordinate == 'time':
+                return True
+         return False
 
     def isCoordinate1_time_dependent(self):
         return self.infoDict["coordinate1_time_dependent"] == 1
@@ -94,6 +95,18 @@ class QVizTreeNode(QTreeWidgetItem):
         xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
 
         return label, title, xlabel
+
+    def labelAndTitleForTimeSlices(self, nodeData, index):
+        # Get IDS name
+        idsName = nodeData['IDSName']
+        title = ''
+        # Set and format label
+        label = nodeData['dataName']
+        label = label.replace('ids.','')
+        label = QVizGlobalOperations.replaceBrackets(label)
+        label = QVizGlobalOperations.replaceDotsBySlashes(label)
+        label = label.replace('time_slice(0)', 'time_slice(:)')
+        return label, title
 
     def coordinate1Label(self, idsName, index, ids):
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \

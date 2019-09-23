@@ -171,10 +171,11 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             if xlabel != None and xlabel.endswith("time"):
                 xlabel +=  "[s]"
 
-        ylabel = 'S(t)'
-        if signalNode is not None and \
-                not (signalNode.isCoordinateTimeDependent(signalNode.getInfoDict()['coordinate1'])):
-           ylabel = 'S'
+        #ylabel = 'S(t)'
+        # if signalNode is not None and \
+        #         not (signalNode.isCoordinateTimeDependent(signalNode.getInfoDict()['coordinate1'])):
+        #    ylabel = 'S'
+        ylabel = signalNode.getName()
 
         if 'units' in signalNode.getInfoDict():
             units = signalNode.getInfoDict()['units']

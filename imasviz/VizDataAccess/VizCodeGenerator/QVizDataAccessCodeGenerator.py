@@ -288,6 +288,31 @@ class QVizDataAccessCodeGenerator:
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
+                path_doc = ids_child_element.get('path_doc')
+                itimeIndex = self.search_itime_index(path_doc)
+                code = "node.set(" + "'itime_index', '" + str(itimeIndex) + "')"
+                self.printCode(code, level)
+                aos = child.text
+                if itimeIndex != -1:
+                    aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+                code = "node.set(" + "'aos', '" + aos + "')"
+                self.printCode(code, level)
+
+                for i in range(0, level - 1):
+                    var_name = QVizGlobalValues.indices[str(i + 1)]
+                    var_name_max = QVizGlobalValues.max_indices[str(i + 1)]
+                    code = "var_name = " + "'" + var_name + "'"
+                    self.printCode(code, level)
+                    code = "var_name_max = " + "'" + var_name_max + "'"
+                    self.printCode(code, level)
+                    code = "node.set(var_name" + ", str(" + QVizGlobalValues.indices[str(i + 1)] + "))"
+                    self.printCode(code, level)
+                    code = "node.set(var_name_max" + ", str(" + QVizGlobalValues.max_indices[str(i + 1)] + "))"
+                    self.printCode(code, level)
+
+                code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
+                self.printCode(code, level)
+
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
 
                 self.generateParentsCode(level, child.text)
@@ -300,9 +325,7 @@ class QVizDataAccessCodeGenerator:
                 self.printCode(parentCode, level)
 
                 path_doc = ids_child_element.get('path_doc')
-
                 itimeIndex = self.search_itime_index(path_doc)
-
                 lifecycle_status = ids_child_element.get('lifecycle_status')
 
                 if lifecycle_status is not None:
@@ -391,7 +414,6 @@ class QVizDataAccessCodeGenerator:
                     aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
                 code = "node.set(" + "'aos', '" + aos + "')"
-                #code = "node.set(" + "'aos_type', '" + child.get('type') + "')"
                 self.printCode(code, level)
 
                 value = self.replaceIndices(ids_child_element.text)

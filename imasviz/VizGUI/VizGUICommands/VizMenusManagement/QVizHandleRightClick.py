@@ -66,9 +66,7 @@ class QVizHandleRightClick:
         isIDSRoot = dico['isIDSRoot']
 
         # If the node is a signal, call showPopUpMenu function for plotting data
-        if isSignal == 1 and \
-            (node.foreground(0).color().name() == GlobalColors.BLUE_HEX or
-             node.foreground(0).color().name() == GlobalColors.RED_HEX):
+        if isSignal == 1 and node.isDataAvailable():
             showPopUpMenu = QVizSignalHandling(dataTreeView=self.dataTreeView)
             showPopUp = showPopUpMenu.showPopUpMenu(signalNodeName=dataName)
         else:

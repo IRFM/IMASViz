@@ -256,7 +256,7 @@ class sliderGroup():
             if self.active_treeNode.globalTime is not None:
                 self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
         else:
-            self.timeFieldLabel = self.setLabel(text='Index:')
+            self.timeFieldLabel = self.setLabel(text='')
         #    self.timeFieldLabel = self.setLabel(text='Coordinate1:')
         #    self.timeFieldLabel.setText("Coordinate1: " + str(self.active_treeNode.evaluateCoordinate1At(0))
         #                                + " [" + str(self.active_treeNode.getUnits()) + "]")
@@ -376,8 +376,8 @@ class sliderGroup():
                 self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]) + " [s]")
             else:
                 self.timeFieldLabel.setText("Undefined IDS global time.")
-        else:
-            self.timeFieldLabel.setText("Coordinate1 index: " + str(self.slider.value()))
+        #else:
+        #    self.timeFieldLabel.setText("Coordinate1 index: " + str(self.slider.value()))
             #self.timeFieldLabel.setText("Coordinate1: " + str(self.active_treeNode.evaluateCoordinate1At(self.slider.value()))
             #                            + " [" + str(self.active_treeNode.getUnits()) + "]")
 
