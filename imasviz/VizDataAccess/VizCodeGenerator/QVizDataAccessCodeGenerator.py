@@ -12,11 +12,14 @@ class QVizDataAccessCodeGenerator:
         IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
         XMLtreeIDSDef = ET.parse(IDSDefFile)
         fileName = className + ".py"
-        os.chdir(os.getcwd() + "/../VizGeneratedCode")
+        if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] == None:
+            print("VIZ_HOME not defined! Exiting procedure.")
+            sys.exit()
+        # os.chdir(os.getcwd() + "/../VizGeneratedCode")
+        os.chdir(os.environ['VIZ_HOME'] + "/imasviz/VizDataAccess/VizGeneratedCode")
         self.f = open(fileName, 'w')
         self.generateCode(XMLtreeIDSDef, className)
         self.f.close()
-
 
     def generateCode(self, XMLtreeIDSDef, className):
 

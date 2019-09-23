@@ -1,6 +1,19 @@
 # IMASViz
 
-**IMASViz** is a visualization tool developed within **Integrated Modelling Analysis Suite** (**IMAS)** for the purposes of visualizing static and dynamic IMAS data, stored within IMAS **Interface Data Structures** (**IDSs**).
+**IMASViz** is a visualization tool developed within
+**Integrated Modelling Analysis Suite** (**IMAS)** for the purposes of
+visualizing static and dynamic IMAS data, stored within IMAS
+**Interface Data Structures** (**IDSs**).
+
+## Installing IMASViz from source
+
+IMASViz does not require full instalation. It does however require the
+generated IDSDef parser Python files
+(generated to
+/home/penkod/WORK/git_work/viz/imasviz/VizDataAccess/VizGeneratedCode/).
+This can be simply done by running make command from the $VIZ_HOME.
+
+  make
 
 ## Running IMASViz from source
 
