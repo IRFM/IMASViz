@@ -10,10 +10,10 @@ visualizing static and dynamic IMAS data, stored within IMAS
 IMASViz does not require full instalation. It does however require the
 generated IDSDef parser Python files
 (generated to
-/home/penkod/WORK/git_work/viz/imasviz/VizDataAccess/VizGeneratedCode/).
+$VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
 This can be simply done by running make command from the $VIZ_HOME.
 
-  make
+        make
 
 ## Running IMASViz from source
 
