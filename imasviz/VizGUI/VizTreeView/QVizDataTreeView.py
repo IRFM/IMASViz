@@ -465,8 +465,7 @@ class QVizDataTreeView(QTreeWidget):
         # Check if the default occurrence for IDS root was already
         # loaded. If
         # not then load it first time.
-        if not ldh_obj.occurrenceAlreadyLoaded(IDSName=IDSName,
-                                               occurrence=occ):
+        if not ldh_obj.occurrenceAlreadyLoaded(IDSName=IDSName, occurrence=occ):
             # Load the IDS Root occurrence
             ldh_obj.loadSelectedData(IDSName, occ)
 
@@ -559,7 +558,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         occurrence = event.data[1]
         idsData = event.data[2]
         pathsList = event.data[3]
-        threadingEvent = event.data[4]
+        #threadingEvent = event.data[4]
         self.updateView(idsName, occurrence, idsData)
 
     def updateView(self, idsName, occurrence, idsData=None):

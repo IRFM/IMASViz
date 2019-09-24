@@ -36,8 +36,6 @@ class QVizDataTreeViewBuilder:
             parentNode   (QTreeWidgetItem) : Parent of the new-to-be tree view item.
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
         """
-        # if dataElement.tag == 'time_dim':
-        #     return
 
         itemDataDict = {}
         itemDataDict['availableIDSData'] = 0
@@ -48,40 +46,32 @@ class QVizDataTreeViewBuilder:
         itemDataDict['Tag'] = dataElement.tag
         itemDataDict['isSignal'] = 0
 
-        if dataElement.find('name') is not None:
-            itemDataDict['dataName'] = dataElement.find('name').text #this is the name set by QVizDataAccessCodeGenerator
+        name = dataElement.text
+        dataElementName = dataElement.find('name')
+
+        if dataElementName is not None:
+            itemDataDict['dataName'] = dataElementName.text #this is the name set by QVizDataAccessCodeGenerator (IMAS data full path)
+
+        if name is None:
+            if dataElementName is not None:
+                name = dataElementName.text
 
         viewerNode = None
-
         isSignal = 0
-        isArray=0
-        index=-1
+        isArray = 0
+        index = -1
 
-        if (dataElement.get('index') != None):
-            #patch for TS
-            if(dataTreeView.dataSource.name == QVizGlobalValues.TORE_SUPRA):
-                index = dataElement.get('index') - 1
-                dataElement.set('index', str(index))
-            else:
-                isArray=1
-                index=dataElement.get('index')
+        if dataElement.get('index') is not None:
+            isArray = 1
+            index = dataElement.get('index')
 
-
-        #path = self.getPath(parentNode, dataElement.tag, isArray,
-        #                    index)
         attribName = dataElement.tag
         if 'name' in dataElement.attrib:
             attribName = dataElement.attrib['name']
-            itemDataDict['name'] = attribName
+            itemDataDict['name'] = attribName #this is the name of the element defined in IDSDef.xml file
+
         path = self.getPath(parentNode, attribName, isArray,
                             index)
-
-        name = dataElement.text
-        if name is None:
-            if dataElement.find('name') is not None:
-                name = dataElement.find('name').text
-        #if name is None:
-        #    name = dataElement.tag
 
         if dataElement.get('index') is None:
 
@@ -93,7 +83,8 @@ class QVizDataTreeViewBuilder:
                                            occurrence,
                                            dataTreeView)
 
-            viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict, extra_attributes, item_color)
+            viewerNode = self.build_nodes(dataTreeView, dataElement,
+                                          parentNode, itemDataDict, extra_attributes, item_color)
 
         else:
             itemNodeName = "Array of " + dataElement.tag + ' with ' + \
@@ -120,8 +111,7 @@ class QVizDataTreeViewBuilder:
             viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict, extra_attributes,
                                           item_color)
 
-        if viewerNode is not None:
-            self.setPath(viewerNode, path)
+        self.setPath(viewerNode, path)
 
         if isSignal == 1:
             dataTreeView.signalsList.append(viewerNode)
@@ -189,7 +179,7 @@ class QVizDataTreeViewBuilder:
                     viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
         else:
-            if dataElement.text != None and dataElement.text.strip() != '':
+            if dataElement.text is not None and dataElement.text.strip() != '':
                 itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag + '=' + str(dataElement.text), dataElement)
                 # Add tree item
                 viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
