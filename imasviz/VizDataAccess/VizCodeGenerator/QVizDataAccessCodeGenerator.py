@@ -75,7 +75,7 @@ class QVizDataAccessCodeGenerator:
                     self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self), self.view.parent.eventResultId))',3)
                     self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('else:', 2)
-                    self.printCode('self.view.parent.updateView(self.idsName, self.occurrence, idsData)', 3)
+                    self.printCode('self.view.updateView(self.idsName, self.occurrence, idsData)', 3)
 
                 self.printCode('\n', -1)
 

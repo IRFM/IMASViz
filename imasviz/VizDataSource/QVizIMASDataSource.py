@@ -10,7 +10,7 @@ class QVizIMASDataSource:
 
     def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
         self.name = name
-        self.userName =  userName
+        self.userName = userName
         self.imasDbName = imasDbName
         self.shotNumber = int(shotNumber)
         self.runNumber = int(runNumber)
@@ -137,7 +137,6 @@ class QVizIMASDataSource:
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):
-        #dico = dataDict.GetData()
         if 'dataName' in dataDict:
             return dataDict['dataName']
         return None
@@ -154,7 +153,7 @@ class QVizIMASDataSource:
                + str(self.runNumber) + '::' + nodeData['Path'] + '::' + str(nodeData['occurrence'])
 
     def getShortLabel(self):
-        return self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+        return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
     def addQtNodes(self, itemDataDict, dataTreeView, viewerNode, treeItemData):
         """ Add new nodes to the tree view.

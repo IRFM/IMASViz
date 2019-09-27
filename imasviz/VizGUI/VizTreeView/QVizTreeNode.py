@@ -9,31 +9,51 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 class QVizTreeNode(QTreeWidgetItem):
 
     def __init__(self, *args, **kwargs):
-        from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
-        self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
+        #from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
+
         self.globalTime = None
-        if len(args) == 1:
-            QTreeWidgetItem.__init__(self, *args, **kwargs)
-            self.infoDict = args[0]
-        elif len(args) == 2:
-            if type(args[0]) is QVizDataTreeView or type(args[0]) is QVizTreeNode:
-                self.infoDict = {}
-                parent = args[0]
-                name = args[1]
-                QTreeWidgetItem.__init__(self, parent, name)
+        if len(args) == 2:
+            self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
+            parent = args[0]
+            name = args[1]
+            self.infoDict = {}
+            QTreeWidgetItem.__init__(self, parent, name)
         elif len(args) == 3:
-            if type(args[0]) is QVizTreeNode:
-                parent = args[0]
-                name = args[1]
-                self.infoDict = args[2]
-                QTreeWidgetItem.__init__(self, parent, name)
+            self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
+            parent = args[0]
+            name = args[1]
+            self.infoDict = args[2]
+            QTreeWidgetItem.__init__(self, parent, name)
         elif len(args) == 4:
-            if type(args[0]) is QVizTreeNode:
-                parent = args[0]
-                name = args[1]
-                self.infoDict = args[2]
-                self.treeNodeExtraAttributes = args[3]
-                QTreeWidgetItem.__init__(self, parent, name)
+            parent = args[0]
+            name = args[1]
+            self.infoDict = args[2]
+            self.treeNodeExtraAttributes = args[3]
+            QTreeWidgetItem.__init__(self, parent, name)
+
+
+        # if len(args) == 1:
+        #     QTreeWidgetItem.__init__(self, *args, **kwargs)
+        #     self.infoDict = args[0]
+        # elif len(args) == 2:
+        #     if type(args[0]) is QVizDataTreeView or type(args[0]) is QVizTreeNode:
+        #         self.infoDict = {}
+        #         parent = args[0]
+        #         name = args[1]
+        #         QTreeWidgetItem.__init__(self, parent, name)
+        # elif len(args) == 3:
+        #     if type(args[0]) is QVizTreeNode:
+        #         parent = args[0]
+        #         name = args[1]
+        #         self.infoDict = args[2]
+        #         QTreeWidgetItem.__init__(self, parent, name)
+        # elif len(args) == 4:
+        #     if type(args[0]) is QVizTreeNode:
+        #         parent = args[0]
+        #         name = args[1]
+        #         self.infoDict = args[2]
+        #         self.treeNodeExtraAttributes = args[3]
+        #         QTreeWidgetItem.__init__(self, parent, name)
 
     def isCoordinateTimeDependent(self, coordinate):
          if coordinate is not None:
@@ -96,7 +116,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
         return label, title, xlabel
 
-    def labelAndTitleForTimeSlices(self, nodeData, index):
+    def labelAndTitleForTimeSlices(self, nodeData):
         # Get IDS name
         idsName = nodeData['IDSName']
         title = ''
@@ -107,6 +127,14 @@ class QVizTreeNode(QTreeWidgetItem):
         label = QVizGlobalOperations.replaceDotsBySlashes(label)
         label = label.replace('time_slice(0)', 'time_slice(:)')
         return label, title
+
+    def correctLabelForTimeSlices(self, label, title):
+        if label is not None:
+            label = label.replace('time_slice(0)', 'time_slice(:)')
+        if title is not None:
+            title = title.replace('time_slice(0)', 'time_slice(:)')
+        return label, title
+
 
     def coordinate1Label(self, idsName, index, ids):
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
@@ -241,5 +269,17 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setDataName(self, dataName):
         self.infoDict['dataName'] = dataName
+
+    def is0D(self):
+        return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D'
+
+    def is1D(self):
+        return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D'
+
+    def is0DAndDynamic(self):
+        return self.is0D() and self.isDynamicData()
+
+    def is1DAndDynamic(self):
+        return self.is1D() and self.isDynamicData()
 
 

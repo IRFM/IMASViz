@@ -13,7 +13,7 @@ class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self, selectedNodeData, shotNumber, treeNode):
+    def GetSignal(self, treeNode):
         return self.GetSignalAt(treeNode, treeNode.timeValue())
 
     def GetSignalAt(self, treeNode, itimeValue):
@@ -57,7 +57,15 @@ class QVizIMASNativeDataAccess:
             raise
 
     #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
-    def GetSignalVsTime(self, data_path_list, treeNode, index):
+    def GetSignalVsTime(self, treeNode, index):
+        # Get list of paths of arrays through time slices
+        data_path_list = treeNode.getDataVsTime()  # aos[0], aos[1], ... , aos[itime], ...
+        # - Add missing part to the end (the name of the array ('phi',
+        #   'psi' etc.) is missing
+        # TODO: fix 'getDataVsTime' to get full required path
+        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
+        data_path_list = [x + missing_path_part for x in data_path_list]
+
         ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)
@@ -74,7 +82,15 @@ class QVizIMASNativeDataAccess:
         return tarray, rarray
 
     #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
-    def Get0DSignalVsTime(self, data_path_list, treeNode, index):
+    def Get0DSignalVsTime(self, treeNode):
+
+        # Get list of paths of arrays through time slices
+        data_path_list = treeNode.getDataVsTime()  # aos[0], aos[1], ... , aos[itime], ...
+        # - Add missing part to the end (the name of the array ('phi',
+        #   'psi' etc.) is missing
+        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
+        data_path_list = [x + missing_path_part for x in data_path_list]
+
         ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)

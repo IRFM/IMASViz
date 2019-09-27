@@ -107,14 +107,13 @@ class QVizStackedPlotView(pg.GraphicsWindow):
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
-                signalNodeData = signalNode.infoDict
 
-                key = dtv.dataSource.dataKey(signalNodeData)
-                tup = (dtv.dataSource.shotNumber, signalNodeData)
+                key = dtv.dataSource.dataKey(signalNode.getNodeData())
+                tup = (dtv.dataSource.shotNumber, signalNode.getNodeData())
                 self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode=signalNode)
+                s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
                 # Get array of y-axis values
@@ -177,7 +176,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                     plotItemKey = (currentPlotItem.row, currentPlotItem.column)
 
                     # If configuration is present
-                    if self.plotConfig != None:
+                    if self.plotConfig is not None:
                         self.applyPlotConfigurationAfterPlotting(currentPlotItem)
 
                 # Next plot number

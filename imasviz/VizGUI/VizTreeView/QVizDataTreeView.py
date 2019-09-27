@@ -30,6 +30,7 @@
 
 import os
 import xml.etree.ElementTree as ET
+import numpy as np
 from functools import partial
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
@@ -262,6 +263,11 @@ class QVizDataTreeView(QTreeWidget):
         node_contents_dict['documentation'] = node_doc
         node_contents_dict['contents'] = '/'
         node_contents_dict['size'] = '/'
+        node_contents_dict['minimum'] = '/'
+        node_contents_dict['maximum'] = '/'
+        node_contents_dict['zeros'] = '/'
+        node_contents_dict['nans'] = '/'
+        node_contents_dict['infs'] = '/'
 
         node_array_contents = ''
         # Don't obtain contents for full IDS root nodes
@@ -280,6 +286,14 @@ class QVizDataTreeView(QTreeWidget):
                 if item.getDataType() == 'FLT_1D' or item.getDataType() == 'INT_1D':
                     # Get string version of the array of values
                     n = 1000
+                    try:
+                        node_contents_dict['minimum'] = str(min(node_array_contents))
+                        node_contents_dict['maximum'] = str(max(node_array_contents))
+                        node_contents_dict['zeros'] = str(len(np.where(node_array_contents == 0)))
+                        node_contents_dict['nans'] = str(np.count_nonzero(np.isnan(node_array_contents)))
+                        node_contents_dict['infs'] = str(np.count_nonzero(np.isinf(node_array_contents)))
+                    except:
+                        pass
                     if len(node_array_contents) > n*2:
                         node_contents_dict['contents'] = 'The array size is too ' \
                             'large for display. Showing first ' + str(n) \
@@ -312,8 +326,10 @@ class QVizDataTreeView(QTreeWidget):
             self.log.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if (item.isDynamicData() == 1 and (item.getDataType() == 'FLT_1D' or
-                        item.getDataType() == 'INT_1D') and item.isDataAvailable()):
+        if (item.isDynamicData() == 1 and
+                (item.getDataType() == 'FLT_1D' or item.getDataType() == 'INT_1D' or
+                         item.getDataType() == 'FLT_0D' or item.getDataType() == 'INT_0D')
+            and item.isDataAvailable()):
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignale = 1)
             # Set and show preview panel
@@ -359,8 +375,8 @@ class QVizDataTreeView(QTreeWidget):
             self.pos = event.pos()
 
             # Set and show the popup
-            handleRightClick = QVizHandleRightClick(self)
-            showPopUp = handleRightClick.execute(treeNode)
+            handleRightClick = QVizHandleRightClick()
+            showPopUp = handleRightClick.execute(treeNode, self)
 
     # def keyPressEvent(self, QKeyEvent):
     #     """ Execute action on specific keyboard key press.
@@ -378,6 +394,27 @@ class QVizDataTreeView(QTreeWidget):
 
     #     if QMouseEvent == Qt.MiddleButton:
     #         print("mouse right click")
+
+    def updateView(self, idsName, occurrence, idsData=None):
+        """ Update QVizDataTreeViewFrame.
+
+        Arguments:
+            idsName        (str) : Name of the IDS e.g. 'magnetics'.
+            occurrence     (int) : IDS occurrence number (0-9).
+            idsData        (obj) : Object (element) holding IDS data.
+        """
+        # t4 = time.time()
+        if idsData != None:
+            self.log.info("Loading occurrence "
+                                       + str(int(occurrence))
+                                       + " of " + idsName
+                                       + " IDS ended successfully, building "
+                                       + " view...")
+            self.update_view(idsName, occurrence, idsData)
+            self.log.info("View update ended.")
+
+            if (idsName == 'equilibrium' or idsName == 'wall'):
+                self.log.info("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
 
     def update_view(self, idsName, occurrence, idsData):
         """ Update the tree view with the data.
@@ -461,13 +498,13 @@ class QVizDataTreeView(QTreeWidget):
         # Get root IDS name
         IDSName = item.getIDSName()
         # Set class object
-        ldh_obj = QVizLoadDataHandling(self)
+        ldh_obj = QVizLoadDataHandling()
         # Check if the default occurrence for IDS root was already
         # loaded. If
         # not then load it first time.
-        if not ldh_obj.occurrenceAlreadyLoaded(IDSName=IDSName, occurrence=occ):
+        if not ldh_obj.occurrenceAlreadyLoaded(self, IDSName=IDSName, occurrence=occ):
             # Load the IDS Root occurrence
-            ldh_obj.loadSelectedData(IDSName, occ)
+            ldh_obj.loadSelectedData(self, IDSName, occ)
 
 
 class QVizDataTreeViewFrame(QMainWindow):
@@ -542,6 +579,24 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Old wx variable label. Remove when obsolete
         self.view = self.dataTreeView
 
+        #self.test()
+
+
+    # def test(self):
+    #     # Check if necessary system variables are set
+    #     from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+    #     QVizGlobalOperations.checkEnvSettings()
+    #
+    #     # Set Application Program Interface
+    #     from imasviz.Viz_API import Viz_API
+    #     from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+    #     api = Viz_API()
+    #
+    #     api.LoadIDSData(self, 'magnetics', 0, 0)
+    #
+    #     # QVizLoadSelectedData(f.dataTreeView, 'magnetics', 0, 0).execute()
+    #     self.show()
+
     def event(self, event):
         """ Listen to events.
         """
@@ -561,26 +616,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         #threadingEvent = event.data[4]
         self.updateView(idsName, occurrence, idsData)
 
-    def updateView(self, idsName, occurrence, idsData=None):
-        """ Update QVizDataTreeViewFrame.
-
-        Arguments:
-            idsName        (str) : Name of the IDS e.g. 'magnetics'.
-            occurrence     (int) : IDS occurrence number (0-9).
-            idsData        (obj) : Object (element) holding IDS data.
-        """
-        # t4 = time.time()
-        if idsData != None:
-            self.dataTreeView.log.info("Loading occurrence "
-                                       + str(int(occurrence))
-                                       + " of " + idsName
-                                       + " IDS ended successfully, building "
-                                       + " view...")
-            self.dataTreeView.update_view(idsName, occurrence, idsData)
-            self.dataTreeView.log.info("View update ended.")
-
-            if (idsName == 'equilibrium' or idsName == 'wall'):
-                self.dataTreeView.log.info("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
 
     def addMenuBar(self):
         """Create and configure the menu bar.

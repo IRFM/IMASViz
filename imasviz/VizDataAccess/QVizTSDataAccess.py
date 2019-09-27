@@ -8,10 +8,12 @@ class QVizTSDataAccess:
     def __init__(self, dataSource):
         self.conn = dataSource.conn
 
-    def GetSignal(self,selectedNodeData,shotNumber, treeNode=None):
-        signalName = selectedNodeData['dataName']
+    def GetSignal(self, treeNode):
+        signalName = treeNode.getDataName()
+        shotNumber = treeNode.getShotNumber()
+
         try:
-            if signalName == None: return
+            if signalName is None: return
             signalName.strip()
             if signalName.startswith("'") and signalName.endswith("'"):
                 signalName = signalName[1:-1]

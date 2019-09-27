@@ -113,6 +113,129 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArraySizeText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
 
+        # - Set node data stats
+
+        # - Set node minimum array title
+        self.lNodeArrayMinTitle = QLabel()
+        self.lNodeArrayMinTitle.setText('Min: ')
+        self.lNodeArrayMinTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayMinTitle.setWordWrap(True)
+        self.lNodeArrayMinTitle.setMinimumHeight(25)
+        self.lNodeArrayMinTitle.setMinimumWidth(340)
+        self.lNodeArrayMinTitle.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayMinTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node minimum array text
+        self.lNodeArrayMinText = QLabel()
+        self.lNodeArrayMinText.setText('/')
+        self.lNodeArrayMinText.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayMinText.setWordWrap(True)
+        self.lNodeArrayMinText.setMinimumHeight(25)
+        self.lNodeArrayMinText.setMinimumWidth(340)
+        self.lNodeArrayMinText.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayMinText.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node maximum array title
+        self.lNodeArrayMaxTitle = QLabel()
+        self.lNodeArrayMaxTitle.setText('Max: ')
+        self.lNodeArrayMaxTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayMaxTitle.setWordWrap(True)
+        self.lNodeArrayMaxTitle.setMinimumHeight(25)
+        self.lNodeArrayMaxTitle.setMinimumWidth(340)
+        self.lNodeArrayMaxTitle.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayMaxTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node maximum array text
+        self.lNodeArrayMaxText = QLabel()
+        self.lNodeArrayMaxText.setText('/')
+        self.lNodeArrayMaxText.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayMaxText.setWordWrap(True)
+        self.lNodeArrayMaxText.setMinimumHeight(25)
+        self.lNodeArrayMaxText.setMinimumWidth(340)
+        self.lNodeArrayMaxText.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayMaxText.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node 'number of zeros' title
+        self.lNodeArrayZerosTitle = QLabel()
+        self.lNodeArrayZerosTitle.setText('Number of zeros: ')
+        self.lNodeArrayZerosTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayZerosTitle.setWordWrap(True)
+        self.lNodeArrayZerosTitle.setMinimumHeight(25)
+        self.lNodeArrayZerosTitle.setMinimumWidth(340)
+        self.lNodeArrayZerosTitle.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayZerosTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node maximum array text
+        self.lNodeArrayZerosText = QLabel()
+        self.lNodeArrayZerosText.setText('/')
+        self.lNodeArrayZerosText.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayZerosText.setWordWrap(True)
+        self.lNodeArrayZerosText.setMinimumHeight(25)
+        self.lNodeArrayZerosText.setMinimumWidth(340)
+        self.lNodeArrayZerosText.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayZerosText.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node 'number of Nan' title
+        self.lNodeArrayNansTitle = QLabel()
+        self.lNodeArrayNansTitle.setText('Invalid entries (nan): ')
+        self.lNodeArrayNansTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayNansTitle.setWordWrap(True)
+        self.lNodeArrayNansTitle.setMinimumHeight(25)
+        self.lNodeArrayNansTitle.setMinimumWidth(340)
+        self.lNodeArrayNansTitle.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayNansTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node maximum array text
+        self.lNodeArrayNansText = QLabel()
+        self.lNodeArrayNansText.setText('/')
+        self.lNodeArrayNansText.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayNansText.setWordWrap(True)
+        self.lNodeArrayNansText.setMinimumHeight(25)
+        self.lNodeArrayNansText.setMinimumWidth(340)
+        self.lNodeArrayNansText.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayNansText.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node 'number of Nan' title
+        self.lNodeArrayInfsTitle = QLabel()
+        self.lNodeArrayInfsTitle.setText('Invalid entries (inf): ')
+        self.lNodeArrayInfsTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayInfsTitle.setWordWrap(True)
+        self.lNodeArrayInfsTitle.setMinimumHeight(25)
+        self.lNodeArrayInfsTitle.setMinimumWidth(340)
+        self.lNodeArrayInfsTitle.setFont(GlobalFonts.TITLE_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayInfsTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node maximum array text
+        self.lNodeArrayInfsText = QLabel()
+        self.lNodeArrayInfsText.setText('/')
+        self.lNodeArrayInfsText.setAlignment(Qt.AlignLeft)
+        self.lNodeArrayInfsText.setWordWrap(True)
+        self.lNodeArrayInfsText.setMinimumHeight(25)
+        self.lNodeArrayInfsText.setMinimumWidth(340)
+        self.lNodeArrayInfsText.setFont(GlobalFonts.TEXT_BIG)
+        # Set label text as selectable by mouse
+        self.lNodeArrayInfsText.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+
         # - Set node contents title
         self.lNodeContentsTitle = QLabel()
         self.lNodeContentsTitle.setText('Contents: ')
@@ -150,12 +273,21 @@ class QVizNodeDocumentationWidget(QWidget):
         scrollLayout.setWidget(1, QFormLayout.LabelRole, self.lNodeLabelText)
         scrollLayout.setWidget(2, QFormLayout.LabelRole, self.lNodeDocTitle)
         scrollLayout.setWidget(3, QFormLayout.LabelRole, self.lNodeDocText)
-        scrollLayout.setWidget(4, QFormLayout.LabelRole,
-                               self.lNodeArraySizeTitle)
+        scrollLayout.setWidget(4, QFormLayout.LabelRole,self.lNodeArraySizeTitle)
         scrollLayout.setWidget(5, QFormLayout.LabelRole, self.lNodeArraySizeText)
-        scrollLayout.setWidget(6, QFormLayout.LabelRole,
-                               self.lNodeContentsTitle)
-        scrollLayout.setWidget(7, QFormLayout.LabelRole, self.lNodeContentsText)
+        scrollLayout.setWidget(6, QFormLayout.LabelRole, self.lNodeArrayMinTitle)
+        scrollLayout.setWidget(7, QFormLayout.LabelRole, self.lNodeArrayMinText)
+        scrollLayout.setWidget(8, QFormLayout.LabelRole, self.lNodeArrayMaxTitle)
+        scrollLayout.setWidget(9, QFormLayout.LabelRole, self.lNodeArrayMaxText)
+        scrollLayout.setWidget(10, QFormLayout.LabelRole, self.lNodeArrayZerosTitle)
+        scrollLayout.setWidget(11, QFormLayout.LabelRole, self.lNodeArrayZerosText)
+        scrollLayout.setWidget(12, QFormLayout.LabelRole, self.lNodeArrayNansTitle)
+        scrollLayout.setWidget(13, QFormLayout.LabelRole, self.lNodeArrayNansText)
+        scrollLayout.setWidget(14, QFormLayout.LabelRole, self.lNodeArrayInfsTitle)
+        scrollLayout.setWidget(15, QFormLayout.LabelRole, self.lNodeArrayInfsText)
+        scrollLayout.setWidget(16, QFormLayout.LabelRole, self.lNodeContentsTitle)
+        scrollLayout.setWidget(17, QFormLayout.LabelRole, self.lNodeContentsText)
+
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
 
@@ -196,5 +328,21 @@ class QVizNodeDocumentationWidget(QWidget):
             self.lNodeArraySizeText.setText(node_contents_dict[''])
         else:
             self.lNodeArraySizeText.setText(node_contents_dict['size'])
+
         self.lNodeContentsText.setText(node_contents_dict['contents'])
+
+        if 'minimum' in node_contents_dict:
+            self.lNodeArrayMinText.setText(node_contents_dict['minimum'])
+
+        if 'maximum' in node_contents_dict:
+            self.lNodeArrayMaxText.setText(node_contents_dict['maximum'])
+
+        if 'zeros' in node_contents_dict:
+            self.lNodeArrayZerosText.setText(node_contents_dict['zeros'])
+
+        if 'nans' in node_contents_dict:
+            self.lNodeArrayNansText.setText(node_contents_dict['nans'])
+
+        if 'infs' in node_contents_dict:
+            self.lNodeArrayInfsText.setText(node_contents_dict['infs'])
 

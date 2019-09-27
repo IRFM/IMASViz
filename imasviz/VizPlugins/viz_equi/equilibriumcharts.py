@@ -1052,15 +1052,35 @@ class PlotFrame(QMainWindow):
         self.statusBar.SetStatusText('')
 
 class equilibriumcharts(VizPlugins):
+
     def __init__(self):
         pass
+
+    def isEnabled(self):
+        return True
+
     def execute(self, dictDataSource, dataTreeView):
 
         self.dataTreeView = dataTreeView
 
         self.frame = PlotFrame(dictDataSource, parent=self.dataTreeView)
         self.frame.show()
-        # app.MainLoop()
+
+    def getEntriesPerSubject(self):
+        return {'equilibrium_overview': [0], 'overview': [0]}
+
+    def getPluginsConfiguration(self):
+        return [{
+                                            'time_i': 31.880, \
+                                            'time_e': 32.020, \
+                                            'delta_t': 0.02, \
+                                            'shot': 50642, \
+                                            'run': 0, \
+                                            'machine': 'west_equinox', \
+                                            'user': 'imas_private'}]
+
+    def getAllEntries(self):
+        return [(0, 'Equilibrium overview...')]
 
 if (__name__ == '__main__'):
     # Test running. See also equilibrium test file.
