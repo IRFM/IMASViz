@@ -59,31 +59,21 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.log = self.dataTreeView.log
 
         if signal is None:
-            self.signal = self.getSignal(dataTreeView=self.dataTreeView,
-                                         vizTreeNode=self.treeNode)
-
+            self.signal = self.getSignal(dataTreeView=self.dataTreeView, vizTreeNode=self.treeNode)
         else:
             self.signal = signal
 
         # Set widget window title by getting the next figure number
         if figureKey is None:
-            self.figureKey = \
-                self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
+            self.figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
         else:
             self.figureKey = figureKey
 
         self.title = title
-
-        if label is None:
-            # Set label containing node path
-            self.label = self.nodeData['Path']
-        else:
-            self.label = label
-
+        self.label = label
         self.xlabel = xlabel
         self.update = update
         self.plotFrame = None
-
         self.addTimeSlider = addTimeSlider
         self.addCoordinateSlider = addCoordinateSlider
 
@@ -259,19 +249,13 @@ class QVizPlotSignal(QVizAbstractCommand):
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
         """
-
+        if label is None:
+            label = dataTreeView.dataSource.getShortLabel() + ':' + signalNode.getPath()
 
         if signalNode.is0DAndDynamic():
-            if label is None:
-                label = dataTreeView.dataSource.getShortLabel() + ':' + signalNode.getPath()
             label, title = signalNode.correctLabelForTimeSlices(label, title)
 
         elif signalNode.is1DAndDynamic():
-            if label is None:
-                label = signalNode.getPath()
-
-            label = dataTreeView.dataSource.getShortLabel() + ':' + label
-
             # Setting/Checking the X-axis label
             if xlabel is None:
                 # If xlabel is not yet set

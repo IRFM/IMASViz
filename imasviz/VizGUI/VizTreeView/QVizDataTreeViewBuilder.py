@@ -124,6 +124,9 @@ class QVizDataTreeViewBuilder:
         if dataElement.get('data_type') == "struct_array":
             index = int(dataElement.get('index')) + 1
             itemNodeName = dataElement.tag + ' ' + str(index) + '/' + dataElement.get('dim')
+            if dataElement.get('warning_ggd') is not None:
+                dataTreeView. IDSRoots[itemDataDict['IDSName']].getNodeData()['warning_ggd'] = 1
+                #itemDataDict['warning_ggd'] = 1
             return QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
         if dataElement.get('data_type') in ['FLT_0D', 'STR_0D','INT_0D', 'xs:integer']:
@@ -317,8 +320,7 @@ class QVizDataTreeViewBuilder:
                     if data_type == 'FLT_1D' or data_type == 'flt_1d_type' or \
                        data_type == 'INT_1D' or data_type == 'int_1d_type':
                        itemDataDict['coordinate1'] = coordinate1
-                    #else:
-                    #    isSignal = 2
+
                     itemDataDict['path_doc'] = dataElement.get('path_doc')
                     item_color = dataTreeView.dataSource.colorOf(itemDataDict)
                     itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)

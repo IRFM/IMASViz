@@ -233,8 +233,6 @@ class QVizDataTreeView(QTreeWidget):
             column (int)             : Item column.
         """
 
-        itemInfoDict = item.getInfoDict()
-
         # Check if item has the necessary attributes. If not -> return
         if item.getDataName() is not None:
             pass
@@ -247,89 +245,18 @@ class QVizDataTreeView(QTreeWidget):
         # (marked with blue fill color in DTV)
         self.setSelectedItem(item=item, mouseButton="LEFT")
 
-        # UPDATE NODE DOCUMENTATION WIDGET
-        # - Set node label
-        node_label = "..."    # Assigning default label
-        if (item.getDataName() is not None):
-            node_label = str(item.getDataName())
-        elif (item.getName() is not None):
-            node_label = str(item.getName())
-        # - Set node documentation#
-        node_doc = str(item.getDocumentation())
-
-        # Set dictionary for node attributes
-        node_contents_dict = {}
-        node_contents_dict['name'] = node_label
-        node_contents_dict['documentation'] = node_doc
-        node_contents_dict['contents'] = '/'
-        node_contents_dict['size'] = '/'
-        node_contents_dict['minimum'] = '/'
-        node_contents_dict['maximum'] = '/'
-        node_contents_dict['zeros'] = '/'
-        node_contents_dict['nans'] = '/'
-        node_contents_dict['infs'] = '/'
-
-        node_array_contents = ''
-        # Don't obtain contents for full IDS root nodes
-        if itemInfoDict['isIDSRoot'] != 1:
-
-            if itemInfoDict['isSignal'] == 1:
-                # - Set node contents
-                # TODO: improve and avoid try/except
-                expression = 'self.dataSource.ids[0].' + str(item.getPath())
-                expression = expression.replace('/', '.')
-                expression = expression.replace('(', '[')
-                expression = expression.replace(')', ']')
-                # Get the array of values
-                node_array_contents = eval(expression)
-
-                if item.getDataType() == 'FLT_1D' or item.getDataType() == 'INT_1D':
-                    # Get string version of the array of values
-                    n = 1000
-                    try:
-                        node_contents_dict['minimum'] = str(min(node_array_contents))
-                        node_contents_dict['maximum'] = str(max(node_array_contents))
-                        node_contents_dict['zeros'] = str(len(np.where(node_array_contents == 0)))
-                        node_contents_dict['nans'] = str(np.count_nonzero(np.isnan(node_array_contents)))
-                        node_contents_dict['infs'] = str(np.count_nonzero(np.isinf(node_array_contents)))
-                    except:
-                        pass
-                    if len(node_array_contents) > n*2:
-                        node_contents_dict['contents'] = 'The array size is too ' \
-                            'large for display. Showing first ' + str(n) \
-                            + ' values: \n\n' \
-                            + str(node_array_contents[:n]) + '\n...\n' \
-                            + str(node_array_contents[-n:])
-                    else:
-                        node_contents_dict['contents'] = str(node_array_contents)
-                    # Formatting the string
-                    # Note: makes the node documentation slider a lot slower for
-                    # large arrays!
-                    # Numbered array:
-                    # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
-                    #     *k) for k in enumerate(node_array_contents))
-                    # Get size of the array in as string
-                    node_contents_dict['size'] = str(len(node_array_contents))
-
-                elif item.getDataType() == 'FLT_0D' or item.getDataType() == 'INT_0D':
-                    node_contents_dict['contents'] = str(node_array_contents)
-                    node_contents_dict['sizeCaption'] = item.getDataType() + ' Scalar'
-
         # Find and update DTVFrame-docked node documentation widget (NDW)
         ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")
         if ndw is not None:
             # ndw.update(documentation=node_doc_str_array)
-            ndw.update(node_contents_dict=node_contents_dict)
+            ndw.update(item, self)
         else:
             error = 'Node Documentation Widget not found. Update not possible'
             raise ValueError(error)
             self.log.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if (item.isDynamicData() == 1 and
-                (item.getDataType() == 'FLT_1D' or item.getDataType() == 'INT_1D' or
-                         item.getDataType() == 'FLT_0D' or item.getDataType() == 'INT_0D')
-            and item.isDataAvailable()):
+        if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.isDataAvailable():
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignale = 1)
             # Set and show preview panel
@@ -413,8 +340,9 @@ class QVizDataTreeView(QTreeWidget):
             self.update_view(idsName, occurrence, idsData)
             self.log.info("View update ended.")
 
-            if (idsName == 'equilibrium' or idsName == 'wall'):
-                self.log.info("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
+            warning_ggd = self.IDSRoots[idsName].getNodeData().get('warning_ggd')
+            if warning_ggd is not None:
+                self.log.info("WARNING: GGD structures have been ignored")
 
     def update_view(self, idsName, occurrence, idsData):
         """ Update the tree view with the data.
@@ -440,16 +368,11 @@ class QVizDataTreeView(QTreeWidget):
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
-        rootNodeData = ids_root_node.getInfoDict()
-
         idsName = ids_root_node.getIDSName()
         key = idsName + "/" + str(occurrence)
-
-        occNodeData = rootNodeData
-        occNodeData['occurrence'] = occurrence
+        ids_root_node.setOccurrence(occurrence)
         nodeBuilder = QVizDataTreeViewBuilder(ids = self.dataSource.ids)
-        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
-
+        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getNodeData())
         self.ids_roots_occurrence[key] = ids_root_occ
 
         for child in idsData:

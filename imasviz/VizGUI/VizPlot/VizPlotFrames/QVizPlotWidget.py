@@ -414,16 +414,9 @@ class sliderGroup():
 
         self.currentIndex = time_index
 
-        # Signal/Node itemVIZData attribute
-        # signalItemVIZData = self.active_treeNode.getInfoDict()
-
-
         # Search through the whole list of signals (all FLT_1D nodes etc.)
         for node in self.signalHandling.dataTreeView.signalsList:
             if new_path == node.getPath():
-                # Set found QVizTreeNode as selected in DTV
-                # self.signalHandling.dataTreeView.setSelectedItem(s)
-
                 # Update object referring to the previous QVizTreeNode
                 self.active_treeNode = node
 

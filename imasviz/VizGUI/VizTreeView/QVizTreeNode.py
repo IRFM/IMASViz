@@ -89,11 +89,11 @@ class QVizTreeNode(QTreeWidgetItem):
             coordinate1 = self.treeNodeExtraAttributes.coordinate1
         return coordinate1
 
-    def coordinate1LabelAndTitleForTimeSlices(self, nodeData, index):
+    def coordinate1LabelAndTitleForTimeSlices(self, dtv, node, index):
         # Get time index
-        itime_index = nodeData.get('itime_index')
+        itime_index = node.getNodeData()['itime_index']
         # Get IDS name
-        idsName = nodeData['IDSName']
+        idsName = node.getIDSName()
         title = ''
         xlabel= ''
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
@@ -105,10 +105,13 @@ class QVizTreeNode(QTreeWidgetItem):
             coord1 = tokens_list[-1]
             title = coord1 + "[" + itime_index + "]=" + xlabel
         # Set and format label
-        label = nodeData['dataName']
-        label = label.replace('ids.','')
-        label = QVizGlobalOperations.replaceBrackets(label)
-        label = QVizGlobalOperations.replaceDotsBySlashes(label)
+
+        label = dtv.dataSource.getShortLabel() + ":" + self.getPath()
+
+        #label = nodeData['dataName']
+        #label = label.replace('ids.','')
+        #label = QVizGlobalOperations.replaceBrackets(label)
+        #label = QVizGlobalOperations.replaceDotsBySlashes(label)
         # Set and format xlabel
         xlabel = xlabel.replace('ids.','')
         xlabel = QVizGlobalOperations.replaceBrackets(xlabel)
@@ -116,19 +119,11 @@ class QVizTreeNode(QTreeWidgetItem):
 
         return label, title, xlabel
 
-    def labelAndTitleForTimeSlices(self, nodeData):
-        # Get IDS name
-        idsName = nodeData['IDSName']
-        title = ''
-        # Set and format label
-        label = nodeData['dataName']
-        label = label.replace('ids.','')
-        label = QVizGlobalOperations.replaceBrackets(label)
-        label = QVizGlobalOperations.replaceDotsBySlashes(label)
-        label = label.replace('time_slice(0)', 'time_slice(:)')
-        return label, title
-
     def correctLabelForTimeSlices(self, label, title):
+        if label is not None:
+            label = label.replace('ids.', '')
+            label = QVizGlobalOperations.replaceBrackets(label)
+            label = QVizGlobalOperations.replaceDotsBySlashes(label)
         if label is not None:
             label = label.replace('time_slice(0)', 'time_slice(:)')
         if title is not None:
@@ -225,6 +220,11 @@ class QVizTreeNode(QTreeWidgetItem):
     def getOccurrence(self):
         return self.infoDict.get('occurrence')
 
+    def isIDSRoot(self):
+        if self.infoDict.get('isIDSRoot') is not None:
+            return self.infoDict.get('isIDSRoot')
+        return 0
+
     def getPath(self):
         return self.infoDict.get('Path')
 
@@ -269,6 +269,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setDataName(self, dataName):
         self.infoDict['dataName'] = dataName
+
+    def setOccurrence(self, occurrence):
+        self.infoDict['occurrence'] = occurrence
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D'

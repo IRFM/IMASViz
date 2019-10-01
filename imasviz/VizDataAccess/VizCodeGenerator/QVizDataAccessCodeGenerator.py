@@ -1,5 +1,5 @@
 import xml.etree.ElementTree as ET
-import os
+import os, sys
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
@@ -12,11 +12,14 @@ class QVizDataAccessCodeGenerator:
         IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
         XMLtreeIDSDef = ET.parse(IDSDefFile)
         fileName = className + ".py"
-        os.chdir(os.getcwd() + "/../VizGeneratedCode")
+        if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] == None:
+            print("VIZ_HOME not defined! Exiting procedure.")
+            sys.exit()
+        # os.chdir(os.getcwd() + "/../VizGeneratedCode")
+        os.chdir(os.environ['VIZ_HOME'] + "/imasviz/VizDataAccess/VizGeneratedCode")
         self.f = open(fileName, 'w')
         self.generateCode(XMLtreeIDSDef, className)
         self.f.close()
-
 
     def generateCode(self, XMLtreeIDSDef, className):
 
@@ -149,8 +152,11 @@ class QVizDataAccessCodeGenerator:
 
             elif data_type == 'struct_array':
 
-                if (ids_child_element.get('name') == "ggd" or ids_child_element.get('name') == "grids_ggd" or ids_child_element.get('name') == "description_ggd" ):
-                    print("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
+                if ids_child_element.get('name') == "ggd" or ids_child_element.get('name').startswith("ggd_") \
+                        or ids_child_element.get('name').endswith("_ggd"):
+                    print("WARNING: GGD structures have been ignored")
+                    code = "parent.set(" + "'warning_ggd', str(" + '1' + "))"
+                    self.printCode(code, level)
                     continue
 
                 code = child.text + "." + ids_child_element.get('name') + '(:)'
@@ -168,14 +174,12 @@ class QVizDataAccessCodeGenerator:
                 self.printCode(parameter, level)
                 self.printCode(s + '= 0', level)
 
-                time_slices_IDSs = (idsName == "core_profiles" or idsName == "equilibrium")
                 dim = m
 
-                if level == 1 and time_slices_IDSs is True:
-                     time_slices = "1"
-                     m = "1"
-                else:
-                     time_slices = "-1" #all time slices will be added to the tree
+                time_slices = "-1"
+                if ids_child_element.get('type') is not None and ids_child_element.get('type') == 'dynamic':
+                    time_slices = "1"
+                    m = "1"
 
                 self.printCode('while ' + s + ' < ' + m + ':' + '\n', level)
 
@@ -593,9 +597,6 @@ class QVizDataAccessCodeGenerator:
                 itime_position += 1
             except:
                 return itime_position
-
-
-
 
 if __name__ == "__main__":
 

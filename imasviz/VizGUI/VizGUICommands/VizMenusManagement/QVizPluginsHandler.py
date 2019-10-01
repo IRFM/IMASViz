@@ -38,8 +38,9 @@ class QVizPluginsHandler:
                 pluginsName = pluginsNames[i]
                 pluginsObject = pluginsObjects[i]
 
-                if not pluginsObject.isEnabled():
-                    continue
+                if isinstance(pluginsObject, VizPlugins):
+                    if not pluginsObject.isEnabled():
+                        continue
 
                 if isinstance(pluginsObject, VizPlugins):
                     subjects = pluginsObject.getSubjects()

@@ -11,13 +11,13 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-import numpy
+import numpy as np
 import sys
-
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QScrollArea
 from PyQt5.QtWidgets import QFormLayout
+
 
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors, GlobalFonts
 
@@ -31,7 +31,7 @@ class QVizNodeDocumentationWidget(QWidget):
 
         # Set setting for numpy values to display whole arrays (otherwise only
         # few values get shown
-        numpy.set_printoptions(threshold=sys.maxsize)
+        np.set_printoptions(threshold=sys.maxsize)
         self.create()
 
     def create(self, title='QVizNodeDocumantationWidget'):
@@ -310,14 +310,82 @@ class QVizNodeDocumentationWidget(QWidget):
         # - Adjust size
         self.adjustSize()
 
-    def update(self, node_contents_dict, sizeCaption='Array size: '):
+    def update(self, item, dataTreeView):
         """Update the text of the docked node documentation widget.
 
         Arguments:
-            node_contents_dict (dict) : Dictionary holding node attributes
-                                        (e.g. (also keys) name, documentation,
-                                        size, contents)
+            item: node from the tree (DTV)
         """
+
+        # UPDATE NODE DOCUMENTATION WIDGET
+        # - Set node label
+        node_label = "..."  # Assigning default label
+        if item.getDataName() is not None:
+            node_label = str(item.getDataName())
+        elif item.getName() is not None:
+            node_label = str(item.getName())
+        # - Set node documentation#
+        node_doc = str(item.getDocumentation())
+
+        # Set dictionary for node attributes
+        node_contents_dict = {}
+        node_contents_dict['name'] = node_label
+        node_contents_dict['documentation'] = node_doc
+        node_contents_dict['contents'] = '/'
+        node_contents_dict['size'] = '/'
+        node_contents_dict['minimum'] = '/'
+        node_contents_dict['maximum'] = '/'
+        node_contents_dict['zeros'] = '/'
+        node_contents_dict['nans'] = '/'
+        node_contents_dict['infs'] = '/'
+
+        node_array_contents = ''
+        # Don't obtain contents for full IDS root nodes
+        if not item.isIDSRoot():
+
+            if item.isDynamicData():
+                # - Set node contents
+                # TODO: improve and avoid try/except
+                expression = 'dataTreeView.dataSource.ids[0].' + str(item.getPath())
+                expression = expression.replace('/', '.')
+                expression = expression.replace('(', '[')
+                expression = expression.replace(')', ']')
+                # Get the array of values
+                node_array_contents = eval(expression)
+
+                if item.is1D():
+                    # Get string version of the array of values
+                    n = 1000
+                    try:
+                        node_contents_dict['minimum'] = str(min(node_array_contents))
+                        node_contents_dict['maximum'] = str(max(node_array_contents))
+                        node_contents_dict['zeros'] = str(len(np.where(node_array_contents == 0)))
+                        node_contents_dict['nans'] = str(np.count_nonzero(np.isnan(node_array_contents)))
+                        node_contents_dict['infs'] = str(np.count_nonzero(np.isinf(node_array_contents)))
+                    except:
+                        pass
+                    if len(node_array_contents) > n * 2:
+                        node_contents_dict['contents'] = 'The array size is too ' \
+                                                         'large for display. Showing first ' + str(n) \
+                                                         + ' values: \n\n' \
+                                                         + str(node_array_contents[:n]) + '\n...\n' \
+                                                         + str(node_array_contents[-n:])
+                    else:
+                        node_contents_dict['contents'] = str(node_array_contents)
+                    # Formatting the string
+                    # Note: makes the node documentation slider a lot slower for
+                    # large arrays!
+                    # Numbered array:
+                    # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
+                    #     *k) for k in enumerate(node_array_contents))
+                    # Get size of the array in as string
+                    node_contents_dict['size'] = str(len(node_array_contents))
+
+                elif item.is0D():
+                    node_contents_dict['contents'] = str(node_array_contents)
+                    node_contents_dict['sizeCaption'] = item.getDataType() + ' Scalar'
+
+
         if 'sizeCaption' not in node_contents_dict:
             self.lNodeArraySizeTitle.setText('Array size: ')
         else:
