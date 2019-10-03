@@ -13,9 +13,15 @@
 
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QAction, QMenu
+from PyQt5.QtGui import QAction, QMenu, QTreeWidgetItem, QMainWindow
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
+
+from pyqtgraph.exporters.Matplotlib import MatplotlibExporter
+from pyqtgraph.GraphicsScene.exportDialog import ExportDialog
+from pyqtgraph.graphicsItems.PlotItem import PlotItem
+from pyqtgraph import functions as fn
+
 
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
@@ -57,6 +63,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         if self.menuUpdate is True:
             # Modify contents of the original ViewBoxMenu
             for action in self.menu.actions():
+                print("*action: ", action.text())
                 # Modify the original Mouse Mode
                 if "Mouse Mode" in action.text():
                     # Change action labels
@@ -79,6 +86,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # self.showS0.triggered.connect(self.emitShowS0)
             # self.showS0.setEnabled(True)
             # self.menu.addAction(self.showS0)
+
+            # self.sceneObj = self.qWidgetParent.pgPlotWidget.sceneObj
+            # self.exportDialog = self.sceneObj.exportDialog # None
 
             # Set menu update to false
             self.menuUpdate = False
@@ -126,3 +136,127 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         """
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
+
+
+class MatplotlibExporterPatched(MatplotlibExporter):
+    """ The pyqtgraph 0.10.0 Matplotlib exporter has many issues, one of them are:
+            1. When scientific notation is being used the labels any values
+              do not match
+            2. After closing the matplotlib window whole IMASViz closes (!).
+    The issue 2 is already solved in the develop branch of the pyqtgraph
+    library but it is unknown when there will be a new release.
+    The issue 1 is being acknowledged but it is not yet present not even in the
+    develop branch (3.10.2019: https://github.com/pyqtgraph/pyqtgraph/issues/1050#).
+
+    To tackle those issues as general fix is needed now (modifying pyqtgraph
+    source code on all HPC machines e.g. ITER HPC and GateWay is not good way
+    of solving things), the patched Matplotlib Exporter was provided.
+
+    When and if the required fixes will be released with next pyqtgraph release,
+    delete all MatplotlibExporterPatched related code.
+    """
+    Name = "Matplotlib Window (IMASViz patched)"
+
+    def __init__(self, item):
+
+        super(MatplotlibExporterPatched, self).__init__(item)
+
+    def export(self, fileName=None):
+
+        if isinstance(self.item, PlotItem):
+            mpw = MatplotlibWindowPatched()
+            MatplotlibExporter.windows.append(mpw)
+
+            stdFont = 'Arial'
+
+            fig = mpw.getFigure()
+
+            # get labels from the graphic item
+            xlabel = self.item.axes['bottom']['item'].label.toPlainText()
+            ylabel = self.item.axes['left']['item'].label.toPlainText()
+            title = self.item.titleLabel.text
+
+            # pyqtgraph by default uses scientific notation for large
+            # values. Matplotlib values and label should reflect that too.
+            SIprefix_scale_default = 1.0 # default SI prefix scale value
+            SIprefix_scale_bottom = SIprefix_scale_default
+            if self.item.axes['bottom']['item'].autoSIPrefix == True:
+                SIprefix_scale_bottom = self.item.axes['bottom']['item'].autoSIPrefixScale
+            SIprefix_scale_left = SIprefix_scale_default
+            if self.item.axes['left']['item'].autoSIPrefix == True:
+                SIprefix_scale_left = self.item.axes['left']['item'].autoSIPrefixScale
+
+            ax = fig.add_subplot(111, title=title)
+            ax.clear()
+            self.cleanAxes(ax)
+            #ax.grid(True)
+            for item in self.item.curves:
+                x, y = item.getData()
+
+                # pyqtgraph by default uses scientific notation for large
+                # values. Matplotlib values and label should reflect that too.
+                if SIprefix_scale_bottom != SIprefix_scale_default:
+                    x = x * SIprefix_scale_bottom
+                if SIprefix_scale_left != SIprefix_scale_default:
+                    y = y * SIprefix_scale_left
+
+                opts = item.opts
+                pen = fn.mkPen(opts['pen'])
+                if pen.style() == Qt.NoPen:
+                    linestyle = ''
+                else:
+                    linestyle = '-'
+                color = tuple([c/255. for c in fn.colorTuple(pen.color())])
+                symbol = opts['symbol']
+                if symbol == 't':
+                    symbol = '^'
+                symbolPen = fn.mkPen(opts['symbolPen'])
+                symbolBrush = fn.mkBrush(opts['symbolBrush'])
+                markeredgecolor = tuple([c/255. for c in fn.colorTuple(symbolPen.color())])
+                markerfacecolor = tuple([c/255. for c in fn.colorTuple(symbolBrush.color())])
+                markersize = opts['symbolSize']
+
+                if opts['fillLevel'] is not None and opts['fillBrush'] is not None:
+                    fillBrush = fn.mkBrush(opts['fillBrush'])
+                    fillcolor = tuple([c/255. for c in fn.colorTuple(fillBrush.color())])
+                    ax.fill_between(x=x, y1=y, y2=opts['fillLevel'], facecolor=fillcolor)
+
+                pl = ax.plot(x, y, marker=symbol, color=color, linewidth=pen.width(),
+                        linestyle=linestyle, markeredgecolor=markeredgecolor,
+                        markerfacecolor=markerfacecolor,
+                        markersize=markersize)
+                xr, yr = self.item.viewRange()
+
+                # pyqtgraph by default uses scientific notation for large
+                # values. Matplotlib values and label should reflect that too.
+                if SIprefix_scale_bottom != SIprefix_scale_default:
+                    xr = [a*SIprefix_scale_bottom for a in xr]
+                if SIprefix_scale_left != SIprefix_scale_default:
+                    yr = [a*SIprefix_scale_left for a in yr]
+
+                ax.set_xbound(*xr)
+                ax.set_ybound(*yr)
+            ax.set_xlabel(xlabel)  # place the labels.
+            ax.set_ylabel(ylabel)
+            mpw.draw()
+        else:
+            raise Exception("Matplotlib export currently only works with plot items")
+
+MatplotlibExporterPatched.register()
+
+class MatplotlibWindowPatched(QMainWindow):
+    """Intended for MatplotlibExporterPatched.
+    """
+    def __init__(self):
+        from pyqtgraph.widgets import MatplotlibWidget
+        QMainWindow.__init__(self)
+        self.mpl = MatplotlibWidget.MatplotlibWidget()
+        self.setCentralWidget(self.mpl)
+        self.show()
+
+    def __getattr__(self, attr):
+        return getattr(self.mpl, attr)
+
+    def closeEvent(self, ev):
+        MatplotlibExporter.windows.remove(self)
+        self.deleteLater()
