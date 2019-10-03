@@ -354,6 +354,7 @@ class QVizNodeDocumentationWidget(QWidget):
                 node_array_contents = eval(expression)
 
                 if item.is1D():
+                    self.lNodeArraySizeTitle.setText('Array size: ')
                     # Get string version of the array of values
                     n = 1000
                     try:
@@ -380,23 +381,22 @@ class QVizNodeDocumentationWidget(QWidget):
                     #     *k) for k in enumerate(node_array_contents))
                     # Get size of the array in as string
                     node_contents_dict['size'] = str(len(node_array_contents))
+                    self.lNodeArraySizeText.setText(node_contents_dict['size'])
+
+
 
                 elif item.is0D():
                     node_contents_dict['contents'] = str(node_array_contents)
-                    node_contents_dict['sizeCaption'] = item.getDataType() + ' Scalar'
+                    self.lNodeArraySizeTitle.setText(item.getDataType() + ' scalar')
+                    self.lNodeArraySizeText.setText(node_contents_dict[''])
 
+                elif item.is2DOrLarger():
+                    self.lNodeArraySizeTitle.setText(item.getDataType() + ' array')
+                    self.lNodeArraySizeTitle.setText('Array shape: ')
+                    self.lNodeArraySizeText.setText(str(node_array_contents.shape))
 
-        if 'sizeCaption' not in node_contents_dict:
-            self.lNodeArraySizeTitle.setText('Array size: ')
-        else:
-            self.lNodeArraySizeTitle.setText(node_contents_dict['sizeCaption'])
         self.lNodeLabelText.setText(node_contents_dict['name'])
         self.lNodeDocText.setText(node_contents_dict['documentation'])
-        if 'size' not in node_contents_dict:
-            self.lNodeArraySizeText.setText(node_contents_dict[''])
-        else:
-            self.lNodeArraySizeText.setText(node_contents_dict['size'])
-
         self.lNodeContentsText.setText(node_contents_dict['contents'])
 
         if 'minimum' in node_contents_dict:

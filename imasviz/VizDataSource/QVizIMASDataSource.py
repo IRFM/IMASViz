@@ -80,19 +80,18 @@ class QVizIMASDataSource:
 
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
-        ids = self.ids[signalNode['occurrence']] #@UnusedVariable
-        if signalNode['data_type'] == 'FLT_1D' or signalNode['data_type'] == 'flt_1d_type'\
-                or signalNode['data_type'] == 'INT_1D' or signalNode['data_type'] == 'int_1d_type':
+        ids = self.ids[signalNode.getOccurrence()] #@UnusedVariable
+        if signalNode.is1DAndDynamic():
 
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
-            e = eval('ids.' + signalNode['dataName'])
+            e = eval('ids.' + signalNode.getDataName())
             if e is None or e.all() is None:
                 return GlobalColors.BLACK
 
             # if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
-            if len(eval('ids.' + signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
+            if len(eval('ids.' + signalNode.getDataName())) == 0: #empty (signals) arrays appear in black
                 if obsolescent is None or obsolescent is False:
                     return GlobalColors.BLACK
                 elif obsolescent is True:
@@ -103,23 +102,35 @@ class QVizIMASDataSource:
                 elif obsolescent is True:
                     return GlobalColors.CYAN
 
-        elif signalNode['data_type'] == 'FLT_0D' or signalNode['data_type'] == 'flt_0d_type'\
-                or signalNode['data_type'] == 'INT_0D' or signalNode['data_type'] == 'int_0d_type':
+        elif signalNode.is0DAndDynamic():
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
-            e = eval('ids.' + signalNode['dataName'])
+            e = eval('ids.' + signalNode.getDataName())
 
             emptyField = False
-            if signalNode['data_type'] == 'FLT_0D' or signalNode['data_type'] == 'flt_0d_type':
+            if signalNode.getDataType() == 'FLT_0D' or signalNode.getDataType() == 'flt_0d_type':
                 if e == -9.0E40:
                     emptyField = True
 
-            elif signalNode['data_type'] == 'INT_0D' or signalNode['data_type'] == 'int_0d_type':
+            elif signalNode.getDataType() == 'INT_0D' or signalNode.getDataType() == 'int_0d_type':
                 if e == -999999999:
                     emptyField = True
 
             if emptyField:  # empty (signals) arrays appear in black
+                if obsolescent is None or obsolescent is False:
+                    return GlobalColors.BLACK
+                elif obsolescent is True:
+                    return GlobalColors.LIGHT_GREY
+            else:
+                if obsolescent is None or obsolescent is False:
+                    return GlobalColors.BLUE  # non empty (signals) arrays appear in blue
+                elif obsolescent is True:
+                    return GlobalColors.CYAN
+
+        elif signalNode.is2DOrLarger():
+            e = eval('ids.' + signalNode.getDataName())
+            if e.shape[0] == 0:
                 if obsolescent is None or obsolescent is False:
                     return GlobalColors.BLACK
                 elif obsolescent is True:

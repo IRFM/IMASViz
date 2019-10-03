@@ -274,15 +274,22 @@ class QVizTreeNode(QTreeWidgetItem):
         self.infoDict['occurrence'] = occurrence
 
     def is0D(self):
-        return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D'
+        return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \
+               self.getDataType() == 'flt_0D_type' or self.getDataType() == 'int_0D_type'
 
     def is1D(self):
-        return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D'
+        return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
+               self.getDataType() == 'flt_1D_type' or self.getDataType() == 'int_1D_type'
+
 
     def is0DAndDynamic(self):
         return self.is0D() and self.isDynamicData()
 
     def is1DAndDynamic(self):
         return self.is1D() and self.isDynamicData()
+
+    def is2DOrLarger(self):
+        if not self.is0D() and not self.is1D() and self.isDynamicData():
+            return True
 
 

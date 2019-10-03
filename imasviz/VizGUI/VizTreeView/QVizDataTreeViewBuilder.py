@@ -75,7 +75,7 @@ class QVizDataTreeViewBuilder:
 
         if dataElement.get('index') is None:
 
-            itemDataDict, extra_attributes, isSignal, item_color = \
+            itemDataDict, extra_attributes, isSignal = \
                 self.buildNamedDataElement(name,
                                            dataElement,
                                            itemDataDict,
@@ -84,7 +84,11 @@ class QVizDataTreeViewBuilder:
                                            dataTreeView)
 
             viewerNode = self.build_nodes(dataTreeView, dataElement,
-                                          parentNode, itemDataDict, extra_attributes, item_color)
+                                          parentNode, itemDataDict, extra_attributes)
+
+            item_color = dataTreeView.dataSource.colorOf(viewerNode)
+            itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)
+            viewerNode.setForeground(0, item_color) # - Set tree item text color
 
         else:
             itemNodeName = "Array of " + dataElement.tag + ' with ' + \
@@ -100,7 +104,7 @@ class QVizDataTreeViewBuilder:
                 parentNode = self.arrayParentNodes[arrayParentPath]
 
 
-            itemDataDict, extra_attributes, isSignal, item_color = \
+            itemDataDict, extra_attributes, isSignal = \
             self.buildNamedDataElement(name,
                                        dataElement,
                                        itemDataDict,
@@ -108,8 +112,10 @@ class QVizDataTreeViewBuilder:
                                        occurrence,
                                        dataTreeView)
 
-            viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict, extra_attributes,
-                                          item_color)
+            viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict, extra_attributes)
+            item_color = dataTreeView.dataSource.colorOf(viewerNode)
+            itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)
+            viewerNode.setForeground(0, item_color)  # - Set tree item text color
 
         self.setPath(viewerNode, path)
 
@@ -118,7 +124,7 @@ class QVizDataTreeViewBuilder:
 
         return viewerNode
 
-    def build_nodes(self, dataTreeView, dataElement, parentNode, itemDataDict, extra_attributes, item_color):
+    def build_nodes(self, dataTreeView, dataElement, parentNode, itemDataDict, extra_attributes):
         viewerNode = None
 
         if dataElement.get('data_type') == "struct_array":
@@ -126,7 +132,6 @@ class QVizDataTreeViewBuilder:
             itemNodeName = dataElement.tag + ' ' + str(index) + '/' + dataElement.get('dim')
             if dataElement.get('warning_ggd') is not None:
                 dataTreeView. IDSRoots[itemDataDict['IDSName']].getNodeData()['warning_ggd'] = 1
-                #itemDataDict['warning_ggd'] = 1
             return QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
         if dataElement.get('data_type') in ['FLT_0D', 'STR_0D','INT_0D', 'xs:integer']:
@@ -192,9 +197,6 @@ class QVizDataTreeViewBuilder:
                 # Add tree item
                 viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
-        # - Set tree item text color
-        viewerNode.setForeground(0, item_color)
-
         # Adding coordinate and documentation nodes
         dataTreeView.dataSource.addQtNodes(itemDataDict, dataTreeView,
                                            viewerNode, itemDataDict)
@@ -252,7 +254,7 @@ class QVizDataTreeViewBuilder:
             idsName      (str)         : Name of the IDS e.g. 'magnetics'.
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
         """
-        item_color = GlobalColors.BLACK
+
         extra_attributes = QVizTreeNodeExtraAttributes()
         isSignal = 0
 
@@ -270,7 +272,7 @@ class QVizDataTreeViewBuilder:
             itemDataDict['documentation'] = documentation
 
         if name is not None:
-            #itemDataDict['dataName'] = name
+
             for i in range(1, 7):
                 coordinate = "coordinate" + str(i)
                 if dataElement.get(coordinate) is not None:
@@ -280,10 +282,6 @@ class QVizDataTreeViewBuilder:
                     itemDataDict[coordinateSameAs] = dataElement.get(coordinateSameAs)
 
             coordinate1 = dataElement.get('coordinate1')
-
-            # if coordinate1 is None and dataTreeView.dataSource.name == "TS" and  \
-            #    dataElement.find('coordinate1') is not None:  # TODO
-            #     coordinate1 = dataElement.find('coordinate1').text
 
             if coordinate1 is not None:
                 coordinate1 = coordinate1.replace("/", ".") #PATCH
@@ -322,8 +320,6 @@ class QVizDataTreeViewBuilder:
                        itemDataDict['coordinate1'] = coordinate1
 
                     itemDataDict['path_doc'] = dataElement.get('path_doc')
-                    item_color = dataTreeView.dataSource.colorOf(itemDataDict)
-                    itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)
                     itemDataDict['aos'] = dataElement.get('aos')
                     itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
                     for i in range(0, len(QVizGlobalValues.indices)):
@@ -333,4 +329,4 @@ class QVizDataTreeViewBuilder:
                         itemDataDict[key_max_name] = dataElement.get(key_max_name)
 
             itemDataDict['isSignal'] = isSignal
-        return itemDataDict, extra_attributes, isSignal, item_color
+        return itemDataDict, extra_attributes, isSignal

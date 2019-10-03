@@ -22,7 +22,6 @@
 #     Copyright(c) 2016- L. Fleury, L. Xinyi, D. Penko
 #****************************************************
 
-# from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from functools import partial
 import re
 from PyQt5.QtCore import QObject, pyqtSlot
@@ -58,7 +57,6 @@ class QVizSignalHandling(QObject):
         self.nodeData = None
         if self.dataTreeView.selectedItem != None:
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
-        # Get signal node dataName
         self.treeNode = self.dataTreeView.selectedItem
 
     def showPopUpMenu(self, signalNodeName):
@@ -100,33 +98,35 @@ class QVizSignalHandling(QObject):
         # Set new popup menu
         self.contextMenu = QMenu()
 
-        # SET TOP ACTIONS
-        # - Add action for setting signal node select/unselect status
-        if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
-            self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
+        if not self.treeNode.is2DOrLarger():
 
-        # - Add action for selection of all signals from the same array of
-        #   structures
-        if self.treeNode.is1DAndDynamic():
-            if self.nodeData.get('aos_parents_count') != '0':
-                self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+            # SET TOP ACTIONS
+            # - Add action for setting signal node select/unselect status
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+                self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
 
-        # SET TOP MENU ITEMS
-        # - Add menu for handling plotting using the under-the-mouse selected
-        #   signal node
-        if self.treeNode.is1DAndDynamic():
-            self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
-        elif self.treeNode.is0DAndDynamic():
-            self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
+            # - Add action for selection of all signals from the same array of
+            #   structures
+            if self.treeNode.is1DAndDynamic():
+                if self.nodeData.get('aos_parents_count') != '0':
+                    self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
 
-        # - Add menu for handling unselection of signal nodes
-        if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
-            self.contextMenu.addMenu(self.menuUnselectSignalNodes())
+            # SET TOP MENU ITEMS
+            # - Add menu for handling plotting using the under-the-mouse selected
+            #   signal node
+            if self.treeNode.is1DAndDynamic():
+                self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
+            elif self.treeNode.is0DAndDynamic():
+                self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
 
-        # - Add menu for handling plotting a selection of signal nodes
-        if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
-            self.contextMenu.addMenu(
-                self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
+            # - Add menu for handling unselection of signal nodes
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+                self.contextMenu.addMenu(self.menuUnselectSignalNodes())
+
+            # - Add menu for handling plotting a selection of signal nodes
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+                self.contextMenu.addMenu(
+                    self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
 
         # - Add menu for handling show/hide if figures, TablePlotViews and
         #   StackedPlotViews.
@@ -1060,4 +1060,3 @@ class QVizSignalHandling(QObject):
                            vizTreeNode=treeNode).execute(self)
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
-

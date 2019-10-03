@@ -248,7 +248,6 @@ class QVizDataTreeView(QTreeWidget):
         # Find and update DTVFrame-docked node documentation widget (NDW)
         ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")
         if ndw is not None:
-            # ndw.update(documentation=node_doc_str_array)
             ndw.update(item, self)
         else:
             error = 'Node Documentation Widget not found. Update not possible'
@@ -258,7 +257,7 @@ class QVizDataTreeView(QTreeWidget):
         # UPDATE PLOT PREVIEW WIDGET
         if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.isDataAvailable():
             # If the node holds an 1D array of values (1D_FLT) then its
-            # isSignal attribute equals 1 (isSignale = 1)
+            # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel
             QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self)
             QVizSignalHandlingObj.plotPreviewSignalCommand()
