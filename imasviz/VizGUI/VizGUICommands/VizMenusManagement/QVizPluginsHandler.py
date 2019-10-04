@@ -156,7 +156,6 @@ class QVizPluginsHandler:
                 dataSource.load(self.dataTreeView,
                                 IDSName=pluginsObject.targetIDSroot,
                                 occurrence=pluginsObject.targetOccurrence,
-                                pathsList=None,
                                 asynch=False)
                 # Set IDS
                 ids = dataSource.ids[pluginsObject.targetOccurrence]

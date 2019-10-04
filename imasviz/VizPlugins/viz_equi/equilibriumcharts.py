@@ -83,17 +83,13 @@ def DataGen(dictDataSource, dataTreeView):
         idd = None
     if idd is None:
         print('Loading equilibrium IDS...')
-        dataSource.load(dataTreeView, IDSName='equilibrium', occurrence=0,asynch=False)
+        dataSource.load(dataTreeView, IDSName='equilibrium', occurrence=0, asynch=False)
         idd = dataSource.ids[occurrence]
-
-    #if not dataTreeView.idsAlreadyFetched["equilibrium"]:
-    #    idd.equilibrium.get()
 
     # Get wall geometry
     if not dataTreeView.idsAlreadyFetched["wall"]:
         print('Loading wall IDS...')
         dataSource.load(dataTreeView, IDSName='wall', occurrence=0, asynch=False)
-        #idd.wall.get()
 
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)
