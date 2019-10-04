@@ -26,8 +26,6 @@ from pyqtgraph import functions as fn
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
     """
-    # signalShowT0 = pyqtSignal()
-    # signalShowS0 = pyqtSignal()
 
     def __init__(self, qWidgetParent, parent=None):
         """Constructor of the QVizCustomPlotContextMenu
@@ -79,17 +77,6 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # Add custom contents to menu
             self.addCustomToMenu()
 
-            # self.showT0 = QAction('ActionTemplate1', self.menu)
-            # self.showT0.triggered.connect(self.emitShowT0)
-            # self.showT0.setCheckable(True)
-            # self.showT0.setEnabled(True)
-            # self.menu.addAction(self.showT0)
-            # self.showS0 = QAction('ActionTemplate2', self.menu)
-            # self.showS0.setCheckable(True)
-            # self.showS0.triggered.connect(self.emitShowS0)
-            # self.showS0.setEnabled(True)
-            # self.menu.addAction(self.showS0)
-
             # Set menu update to false
             self.menuUpdate = False
 
@@ -110,16 +97,6 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
         # - Add to main menu
         self.menu.addAction(self.actionConfigurePlot)
-
-    # def emitShowT0(self):
-    #     """Emit signalShowT0
-    #     """
-    #     self.signalShowT0.emit()
-
-    # def emitShowS0(self):
-    #     """Emit signalShowS0
-    #     """
-    #     self.signalShowS0.emit()
 
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
