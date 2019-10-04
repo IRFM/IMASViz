@@ -37,7 +37,38 @@ class QVizOpenShotView:
                                                     imasDbName=imasDbName,
                                                     dataSourceName=dataSourceName)
 
-        # api = Viz_API()
         dtv = self.api.CreateDataTree(dataSource)
-        self.api.ShowDataTree(dtv)
 
+        self.api.ShowDataTree(dtv)
+        #self.test(dtv)
+
+    def test(self, dtv):
+        # Check if necessary system variables are set
+        from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+        QVizGlobalOperations.checkEnvSettings()
+
+        # Set Application Program Interface
+        from imasviz.Viz_API import Viz_API
+        from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+        api = Viz_API()
+
+        # Set data source retriever/factory
+        dataSourceFactory = QVizDataSourceFactory()
+
+        from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+        # Load IMAS database
+        dataSource = dataSourceFactory.create(
+            dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+            shotNumber=54178,
+            runNumber=0,
+            userName='imas_public',
+            imasDbName='west')
+
+        #dtv.show()
+        # Build the data tree view frame
+        #f = api.CreateDataTree(dataSource)
+
+        #api.LoadIDSData(self, 'magnetics', 0, 0)
+        from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
+        QVizLoadSelectedData(dtv.dataTreeView, 'magnetics', 0, 0).execute()
+        #self.show()

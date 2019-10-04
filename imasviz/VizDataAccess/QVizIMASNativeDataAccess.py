@@ -13,7 +13,7 @@ class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self, selectedNodeData, shotNumber, treeNode):
+    def GetSignal(self, treeNode):
         return self.GetSignalAt(treeNode, treeNode.timeValue())
 
     def GetSignalAt(self, treeNode, itimeValue):
@@ -57,12 +57,20 @@ class QVizIMASNativeDataAccess:
             raise
 
     #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
-    def GetSignalVsTime(self, data_path_list, selectedNodeData, treeNode, index):
-        ids = self.dataSource.ids[selectedNodeData['occurrence']]
+    def GetSignalVsTime(self, treeNode, index):
+        # Get list of paths of arrays through time slices
+        data_path_list = treeNode.getDataVsTime()  # aos[0], aos[1], ... , aos[itime], ...
+        # - Add missing part to the end (the name of the array ('phi',
+        #   'psi' etc.) is missing
+        # TODO: fix 'getDataVsTime' to get full required path
+        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
+        data_path_list = [x + missing_path_part for x in data_path_list]
+
+        ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)
         v = []
-        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, selectedNodeData)
+        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, treeNode.getInfoDict())
 
         for i in range(0, time_slices_count):
             # Get values of the array at index
@@ -71,7 +79,31 @@ class QVizIMASNativeDataAccess:
 
         rarray = np.array([np.array(v)])
         tarray = np.array([time])
-        return (tarray, rarray)
+        return tarray, rarray
+
+    #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
+    def Get0DSignalVsTime(self, treeNode):
+
+        # Get list of paths of arrays through time slices
+        data_path_list = treeNode.getDataVsTime()  # aos[0], aos[1], ... , aos[itime], ...
+        # - Add missing part to the end (the name of the array ('phi',
+        #   'psi' etc.) is missing
+        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
+        data_path_list = [x + missing_path_part for x in data_path_list]
+
+        ids = self.dataSource.ids[treeNode.getOccurrence()]
+        time_slices_count = len(data_path_list)
+        #print "time_slices_count " + str(time_slices_count)
+        v = []
+        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, treeNode.getInfoDict())
+
+        for i in range(0, time_slices_count):# Get values of the 0D scalar at each time slice
+            value_at_index = eval('ids.' + data_path_list[i])
+            v.append(value_at_index)
+
+        rarray = np.array([np.array(v)])
+        tarray = np.array([time])
+        return tarray, rarray
 
     def GetShapeofSignal(self, selectedNodeData, shotNumber):
         try:

@@ -23,7 +23,7 @@ class QVizTreeNodeExtraAttributes:
         return False
 
     def time_dependent(self, path):
-        if '[itime]' in path:
+        if 'itime' in path:
             return True
         return False
 

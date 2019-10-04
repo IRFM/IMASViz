@@ -114,7 +114,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode=signalNode)
+                s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
                 # Get array of y-axis values
@@ -130,15 +130,19 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 #            signals only, hence nbRows == 1 (always)
                 nbRows = v.shape[0]
 
+                # Remodify label (to include '\n' for easier alignment handling)
+                label = dtv.dataSource.getShortLabel() + ":\n" + signalNode.getPath()
+
                 # Set plot options
                 label, xlabel, ylabel, title = \
                     QVizPlotSignal.plotOptions(dataTreeView=dtv,
                                                signalNode=signalNode,
                                                shotNumber=shotNumber,
-                                               title=self.figureKey)
-                # Remodify label (to include '\n' for easier alignment handling)
-                label = dtv.dataSource.getShortLabel() + ":\n" \
-                    + signalNode.getPath()
+                                               title=self.figureKey,
+                                               label=label)
+
+
+
 
                 # Add plot
                 for i in range(0, nbRows):

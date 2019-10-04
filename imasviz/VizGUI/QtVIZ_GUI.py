@@ -49,7 +49,6 @@ class GUIFrame(QTabWidget):
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
 
-        #self.openedDTVs = []
         self.contextMenu = None
 
 
@@ -94,6 +93,7 @@ class GUIFrame(QTabWidget):
                                    userName=self.userName.text(),
                                    runNumber=self.runNumber.text(),
                                    shotNumber=str(val))
+
 
             except ValueError as e:
                 raise ValueError(str(e))

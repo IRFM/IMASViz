@@ -9,36 +9,57 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 class QVizTreeNode(QTreeWidgetItem):
 
     def __init__(self, *args, **kwargs):
-        from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
-        self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
+        #from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
+
         self.globalTime = None
-        if len(args) == 1:
-            QTreeWidgetItem.__init__(self, *args, **kwargs)
-            self.infoDict = args[0]
-        elif len(args) == 2:
-            if type(args[0]) is QVizDataTreeView or type(args[0]) is QVizTreeNode:
-                self.infoDict = {}
-                parent = args[0]
-                name = args[1]
-                QTreeWidgetItem.__init__(self, parent, name)
+        if len(args) == 2:
+            self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
+            parent = args[0]
+            name = args[1]
+            self.infoDict = {}
+            QTreeWidgetItem.__init__(self, parent, name)
         elif len(args) == 3:
-            if type(args[0]) is QVizTreeNode:
-                parent = args[0]
-                name = args[1]
-                self.infoDict = args[2]
-                QTreeWidgetItem.__init__(self, parent, name)
+            self.treeNodeExtraAttributes = QVizTreeNodeExtraAttributes()
+            parent = args[0]
+            name = args[1]
+            self.infoDict = args[2]
+            QTreeWidgetItem.__init__(self, parent, name)
         elif len(args) == 4:
-            if type(args[0]) is QVizTreeNode:
-                parent = args[0]
-                name = args[1]
-                self.infoDict = args[2]
-                self.treeNodeExtraAttributes = args[3]
-                QTreeWidgetItem.__init__(self, parent, name)
+            parent = args[0]
+            name = args[1]
+            self.infoDict = args[2]
+            self.treeNodeExtraAttributes = args[3]
+            QTreeWidgetItem.__init__(self, parent, name)
+
+
+        # if len(args) == 1:
+        #     QTreeWidgetItem.__init__(self, *args, **kwargs)
+        #     self.infoDict = args[0]
+        # elif len(args) == 2:
+        #     if type(args[0]) is QVizDataTreeView or type(args[0]) is QVizTreeNode:
+        #         self.infoDict = {}
+        #         parent = args[0]
+        #         name = args[1]
+        #         QTreeWidgetItem.__init__(self, parent, name)
+        # elif len(args) == 3:
+        #     if type(args[0]) is QVizTreeNode:
+        #         parent = args[0]
+        #         name = args[1]
+        #         self.infoDict = args[2]
+        #         QTreeWidgetItem.__init__(self, parent, name)
+        # elif len(args) == 4:
+        #     if type(args[0]) is QVizTreeNode:
+        #         parent = args[0]
+        #         name = args[1]
+        #         self.infoDict = args[2]
+        #         self.treeNodeExtraAttributes = args[3]
+        #         QTreeWidgetItem.__init__(self, parent, name)
 
     def isCoordinateTimeDependent(self, coordinate):
-        if '/time' in coordinate or '.time' in coordinate or coordinate == 'time':
-            return True
-        return False
+         if coordinate is not None:
+             if '/time' in coordinate or '.time' in coordinate or coordinate == 'time':
+                return True
+         return False
 
     def isCoordinate1_time_dependent(self):
         return self.infoDict["coordinate1_time_dependent"] == 1
@@ -68,11 +89,11 @@ class QVizTreeNode(QTreeWidgetItem):
             coordinate1 = self.treeNodeExtraAttributes.coordinate1
         return coordinate1
 
-    def coordinate1LabelAndTitleForTimeSlices(self, nodeData, index):
+    def coordinate1LabelAndTitleForTimeSlices(self, dtv, node, index):
         # Get time index
-        itime_index = nodeData.get('itime_index')
+        itime_index = node.getNodeData()['itime_index']
         # Get IDS name
-        idsName = nodeData['IDSName']
+        idsName = node.getIDSName()
         title = ''
         xlabel= ''
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
@@ -84,16 +105,31 @@ class QVizTreeNode(QTreeWidgetItem):
             coord1 = tokens_list[-1]
             title = coord1 + "[" + itime_index + "]=" + xlabel
         # Set and format label
-        label = nodeData['dataName']
-        label = label.replace('ids.','')
-        label = QVizGlobalOperations.replaceBrackets(label)
-        label = QVizGlobalOperations.replaceDotsBySlashes(label)
+
+        label = dtv.dataSource.getShortLabel() + ":" + self.getPath()
+
+        #label = nodeData['dataName']
+        #label = label.replace('ids.','')
+        #label = QVizGlobalOperations.replaceBrackets(label)
+        #label = QVizGlobalOperations.replaceDotsBySlashes(label)
         # Set and format xlabel
         xlabel = xlabel.replace('ids.','')
         xlabel = QVizGlobalOperations.replaceBrackets(xlabel)
         xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
 
         return label, title, xlabel
+
+    def correctLabelForTimeSlices(self, label, title):
+        if label is not None:
+            label = label.replace('ids.', '')
+            label = QVizGlobalOperations.replaceBrackets(label)
+            label = QVizGlobalOperations.replaceDotsBySlashes(label)
+        if label is not None:
+            label = label.replace('time_slice(0)', 'time_slice(:)')
+        if title is not None:
+            title = title.replace('time_slice(0)', 'time_slice(:)')
+        return label, title
+
 
     def coordinate1Label(self, idsName, index, ids):
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
@@ -120,8 +156,7 @@ class QVizTreeNode(QTreeWidgetItem):
         # Set python expression to get lenght of the array
         to_evaluate = 'ids.' + selectedNodeData['IDSName'] + '.' + \
                        self.evaluateCoordinate1()
-        len_to_evaluate =  eval('len(' + to_evaluate + ')')
-
+        len_to_evaluate = eval('len(' + to_evaluate + ')')
         return len_to_evaluate
 
     def timeMaxValue(self):
@@ -161,6 +196,14 @@ class QVizTreeNode(QTreeWidgetItem):
         replacement = "[" + str(itime_value) + "]"
         return data_path_vs_time.replace(s, replacement)
 
+    def containedInDynamicAOS(self):
+        if self.getPathDoc() is None:
+            return -1
+        try:
+            self.getPathDoc().index("itime")
+        except:
+            return -1  # 'itime' not found
+        return 1
 
     def getDataVsTime(self):
         data_list = []
@@ -176,6 +219,11 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def getOccurrence(self):
         return self.infoDict.get('occurrence')
+
+    def isIDSRoot(self):
+        if self.infoDict.get('isIDSRoot') is not None:
+            return self.infoDict.get('isIDSRoot')
+        return 0
 
     def getPath(self):
         return self.infoDict.get('Path')
@@ -195,8 +243,17 @@ class QVizTreeNode(QTreeWidgetItem):
     def isDynamicData(self):
         return self.infoDict.get('isSignal')
 
+    def isDataAvailable(self):
+        return self.infoDict.get('availableData')
+
     def getDataType(self):
         return self.infoDict.get('data_type')
+
+    def getUnits(self):
+        return self.infoDict.get('units')
+
+    def getPathDoc(self):
+        return self.infoDict.get('path_doc')
 
     def getIDSName(self):
         return self.infoDict.get('IDSName')
@@ -212,5 +269,27 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setDataName(self, dataName):
         self.infoDict['dataName'] = dataName
+
+    def setOccurrence(self, occurrence):
+        self.infoDict['occurrence'] = occurrence
+
+    def is0D(self):
+        return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \
+               self.getDataType() == 'flt_0D_type' or self.getDataType() == 'int_0D_type'
+
+    def is1D(self):
+        return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
+               self.getDataType() == 'flt_1D_type' or self.getDataType() == 'int_1D_type'
+
+
+    def is0DAndDynamic(self):
+        return self.is0D() and self.isDynamicData()
+
+    def is1DAndDynamic(self):
+        return self.is1D() and self.isDynamicData()
+
+    def is2DOrLarger(self):
+        if not self.is0D() and not self.is1D() and self.isDynamicData():
+            return True
 
 

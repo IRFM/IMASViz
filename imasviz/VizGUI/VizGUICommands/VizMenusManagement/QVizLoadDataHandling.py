@@ -33,15 +33,14 @@ class QVizLoadDataHandling(QObject):
     """Setting the popup menu: Load the contents of the selected IDS.
     """
 
-    def __init__(self, dataTreeView):
+    def __init__(self):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
         """
         super(QVizLoadDataHandling, self).__init__()
-        self.dataTreeView = dataTreeView
 
-    def showPopUpMenu(self, IDSName):
+    def showPopUpMenu(self, IDSName, dataTreeView):
         """Show the pop up menu for loading IDS.
 
         Arguments:
@@ -50,67 +49,57 @@ class QVizLoadDataHandling(QObject):
 
         # Do not display popup menu if the data are already loaded for the
         # current selected item
-        # if not self.dataTreeView.dataCurrentlyLoaded.get(0):
+        # if not dataTreeView.dataCurrentlyLoaded.get(0):
         #     action_GET_IDS_DATA = QAction('Get ' + IDSName + \
         #         ' data... (default to occurrence 0)', self)
         #     action_GET_IDS_DATA.triggered.connect(self.loadSelectedData)
-        #     self.dataTreeView.popupmenu = QMenu()
-        #     self.dataTreeView.popupmenu.addAction(action_GET_IDS_DATA)
+        #     dataTreeView.popupmenu = QMenu()
+        #     dataTreeView.popupmenu.addAction(action_GET_IDS_DATA)
         #
         #     # We propose to load a given occurence 0
         #     # Set popup menu for IDS occurences
         #     # Set first-level popup menu
         #     subMenu = QMenu('Get ' + IDSName + ' data for occurrence')
-        #     self.dataTreeView.popupmenu.addMenu(subMenu)
+        #     dataTreeView.popupmenu.addMenu(subMenu)
         #     # Set second-level popup menu
         #     # action_GET_IDS_OCC_DATA_list = []
 
         subMenu = None
-        self.dataTreeView.popupmenu = None
+        dataTreeView.popupmenu = None
 
         for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
 
-            if self.dataTreeView.popupmenu is None:
-                self.dataTreeView.popupmenu = QMenu()
+            if dataTreeView.popupmenu is None:
+                dataTreeView.popupmenu = QMenu()
                 subMenu = QMenu('Get ' + IDSName + ' data for occurrence')
-                self.dataTreeView.popupmenu.addMenu(subMenu)
+                dataTreeView.popupmenu.addMenu(subMenu)
             # - Set new submenu action and its label
-            if not self.occurrenceAlreadyLoaded(IDSName, i):
+            if not self.occurrenceAlreadyLoaded(dataTreeView, IDSName, i):
                 action_GET_IDS_OCC_DATA = \
                     subMenu.addAction('Occurrence ' + str(i))
                 # - Connect action to function using partial
                 #   Note: PyQt5 lambda method is not a good way to pass the
                 #         function arguments. The use of partial is better
                 #         and more bulletproof
-                action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData, IDSName, i))
+                action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData, dataTreeView, IDSName, i))
         # Map the menu (in order to show it)
 
         if subMenu is not None:
-            self.dataTreeView.popupmenu.exec_( \
-                self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
+            dataTreeView.popupmenu.exec_( \
+                dataTreeView.viewport().mapToGlobal(dataTreeView.pos))
         return 1
 
-    def occurrenceAlreadyLoaded(self, IDSName, occurrence):
+    def occurrenceAlreadyLoaded(self, dataTreeView, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
-        if self.dataTreeView.ids_roots_occurrence.get(key) is not None:
+        if dataTreeView.ids_roots_occurrence.get(key) is not None:
             return True
         return False
 
-    def loadSelectedData(self, IDSName, occurrence=0, threadingEvent=None):
+    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, threadingEvent=None):
         """Load data of selected IDS and its occurrence.
 
         Arguments:
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
         """
-        QVizLoadSelectedData(self.dataTreeView, IDSName, occurrence, threadingEvent).execute()
-
-
-    # def refreshSelectedIDS(self, occurrence=0, threadingEvent=None):
-    #     """Refresh the source IDS and its data for the set occurrence.
-    #
-    #     Arguments:
-    #         occurrence     (int) : IDS occurrence number (0-9).
-    #         threadingEvent ()    : Event.
-    #     """
-    #     QVizLoadSelectedData(self.dataTreeView, occurrence, threadingEvent).refreshIDS()
+        QVizLoadSelectedData(dataTreeView, IDSName, occurrence, threadingEvent).execute()

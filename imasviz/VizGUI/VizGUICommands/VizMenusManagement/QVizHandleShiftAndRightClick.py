@@ -37,10 +37,12 @@ class QVizHandleShiftAndRightClick:
         idsName = None
         isSignal = 0
 
-        if dataDict != None:
+        if dataDict is not None:
             # If the item/subject is available...
             # Set 'isSignal'. IDSs return value 0 while FLT_1D arrays return
             # value 1
+            if 'isSignal' not in dataDict:
+                return
             isSignal = dataDict['isSignal']
 
         if dataDict != None and 'IDSName' in dataDict:
@@ -51,11 +53,11 @@ class QVizHandleShiftAndRightClick:
         # QVizPluginsHandler
         pluginsHandler = QVizPluginsHandler(self.dataTreeView, dataDict)
 
-        if idsName != None and isSignal == 0:
+        if idsName is not None and isSignal == 0:
             # If the item/subject is IDS...
             idsOverview = idsName + "_overview"
             showPopUp = pluginsHandler.showPopUpMenu([idsOverview])
-        elif idsName != None and isSignal == 1:
+        elif idsName is not None and isSignal == 1:
             # Else if the item/subject is a FLT_1D array
             # FLT_1D array -> isSignal == 1)...
             showPopUp = pluginsHandler.showPopUpMenu(['signal'])

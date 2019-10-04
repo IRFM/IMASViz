@@ -27,9 +27,11 @@ class QVizPlotWidget(QWidget):
     """
 
     def __init__(self, parent=None, size=(500, 400), title='QVizPlotWidget',
-                 signalHandling=None):
+                 addTimeSlider=False, addCoordinateSlider=False, signalHandling=None):
         super(QVizPlotWidget, self).__init__(parent)
 
+        self.addTimeSlider = addTimeSlider
+        self.addCoordinateSlider = addCoordinateSlider
         self.signalHandling = signalHandling
 
         # Set default background color: white
@@ -52,6 +54,8 @@ class QVizPlotWidget(QWidget):
 
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
+
+
 
     def plot(self, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
@@ -150,35 +154,32 @@ class QVizPlotWidget(QWidget):
         self.gridLayout.addWidget(self.pgPlotWidget, 0, 0, 1, 10)
         self.gridLayout.addWidget(checkBox, 1, 0, 1, 1)
 
-        # If the plottable array is array of time_slices
-        if self.signalHandling != None:
+        # If the plottable array needs a slider for the X axis (time or coordinate)
+        if self.addTimeSlider is True or self.addCoordinateSlider is True:
 
-            # Add time slider and its corresponding widgets
-            if self.signalHandling.timeSlider == True or \
-               self.signalHandling.timeSlider == False:
+            # Add slider time or corrdiante1D and its corresponding widgets
+            self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self, signalHandling=self.signalHandling)
+            self.sliderGroupDict = self.sliderGroup.execute()
+            self.separatorLine = self.sliderGroupDict['separatorLine']
+            self.slider = self.sliderGroupDict['slider']
+            self.sliderLabel = self.sliderGroupDict['sliderLabel']
+            self.timeFieldLabel = self.sliderGroupDict['timeFieldLabel']
+            self.indexLabel = self.sliderGroupDict['indexLabel']
+            self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
 
-                self.sliderGroup = timeSliderGroup(parent=self,
-                                                   signalHandling=self.signalHandling)
-                self.sliderGroupDict = self.sliderGroup.execute()
-                self.separatorLine = self.sliderGroupDict['separatorLine']
-                self.slider = self.sliderGroupDict['slider']
-                self.sliderLabel = self.sliderGroupDict['sliderLabel']
-                self.timeFieldLabel = self.sliderGroupDict['timeFieldLabel']
-                self.indexLabel = self.sliderGroupDict['indexLabel']
-                self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
+            self.gridLayout.addWidget(self.separatorLine, 2, 0, 1, 10)
+            # Add time slider label
+            self.gridLayout.addWidget(self.sliderLabel, 3, 0, 1, 10)
+            # Add time slider
+            self.gridLayout.addWidget(self.slider, 4, 0, 1, 10)
+            # Add time slider index label and value indicator
+            self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
+            self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
-                self.gridLayout.addWidget(self.separatorLine, 2, 0, 1, 10)
-                # Add time slider label
-                self.gridLayout.addWidget(self.sliderLabel, 3, 0, 1, 10)
-                # Add time slider
-                self.gridLayout.addWidget(self.slider, 4, 0, 1, 10)
-                # Add time slider index label and value indicator
-                self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
-                self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
-            if self.signalHandling.timeSlider == True:
-                # Add time label
-                self.gridLayout.addWidget(self.timeFieldLabel, 6, 0, 1, 10)
+            # Add time label
+            #if self.addTimeSlider is True:
+            self.gridLayout.addWidget(self.timeFieldLabel, 6, 0, 1, 10)
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self)
@@ -215,17 +216,21 @@ class QVizPlotWidget(QWidget):
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
 
-class timeSliderGroup():
+class sliderGroup():
     """Set slider widget and its corresponding widgets (label,
     line edit etc.) to set and show time slice (change plot on
     slider change).
     """
 
-    def __init__(self, signalHandling, parent=None):
+    def __init__(self, isTimeSlider, signalHandling, parent=None):
         self.parent = parent
         # Set slider press variable as false
         self.sliderPress = False
+        self.isTimeSlider = isTimeSlider #otherwise it is a coordinate1D slider
+        if signalHandling is None:
+            raise ValueError('inner sliderGroup class needs a not None signalHandling object to operate')
         self.signalHandling = signalHandling
+
 
     def execute(self):
         """Set and return the group of widgets.
@@ -234,10 +239,10 @@ class timeSliderGroup():
         self.separatorLine = self.setSeparatorLine()
 
         # Set labels
-        if self.signalHandling.timeSlider == True:
+        if self.isTimeSlider:
             self.sliderLabel = self.setLabel(text='Time Slider')
-        elif self.signalHandling.timeSlider == False:
-            self.sliderLabel = self.setLabel(text='Index Slider')
+        else:
+            self.sliderLabel = self.setLabel(text='Coordinate1 Slider')
 
         # Set slider
         self.slider = self.setSlider()
@@ -245,9 +250,17 @@ class timeSliderGroup():
         # Set index label
         self.indexLabel = self.setLabel(text='Index Value:')
 
-        self.timeFieldLabel = self.setLabel(text='Time:')
-        if self.active_treeNode.globalTime is not None:
-            self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
+
+        if self.isTimeSlider:
+            self.timeFieldLabel = self.setLabel(text='Time:')
+            if self.active_treeNode.globalTime is not None:
+                self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
+        else:
+            self.timeFieldLabel = self.setLabel(text='')
+        #    self.timeFieldLabel = self.setLabel(text='Coordinate1:')
+        #    self.timeFieldLabel.setText("Coordinate1: " + str(self.active_treeNode.evaluateCoordinate1At(0))
+        #                                + " [" + str(self.active_treeNode.getUnits()) + "]")
+
 
         # Set slider value indicator
         self.sliderValueIndicator = self.setSliderValueIndicator()
@@ -277,22 +290,21 @@ class timeSliderGroup():
         # self.currentIndex = self.active_treeNode.treeNodeExtraAttributes.itime_index
         self.currentIndex = self.active_treeNode.infoDict['i']
 
-        if self.signalHandling.timeSlider == True:
+        if self.isTimeSlider:
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
             maxValue = int(self.active_treeNode.timeMaxValue()) - 1
-        elif self.signalHandling.timeSlider == False:
+        else:
             # Set index slider using time as index
             nodeData = self.active_treeNode.getInfoDict()
             # Set IDS source database
-            ids = self.signalHandling.dataTreeView.dataSource.ids[nodeData['occurrence']]
+            ids = self.signalHandling.dataTreeView.dataSource.ids[self.active_treeNode.getOccurrence()]
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
-            maxValue = \
-                self.active_treeNode.coordinate1Length(nodeData, ids) - 1
+            maxValue = self.active_treeNode.coordinate1Length(nodeData, ids) - 1
 
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
@@ -357,14 +369,17 @@ class timeSliderGroup():
 
         # Update slider value indicator value
         self.sliderValueIndicator.setText(str(self.slider.value()))
+        treeNode = self.signalHandling.dataTreeView.selectedItem
 
-        if self.signalHandling.timeSlider:
-            if self.timeFieldLabel is not None:
-                treeNode = self.signalHandling.dataTreeView.selectedItem
-                if treeNode.globalTime is not None:
-                    self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]))
-                else:
-                    self.timeFieldLabel.setText("Undefined IDS global time.")
+        if self.isTimeSlider:
+            if treeNode.globalTime is not None:
+                self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]) + " [s]")
+            else:
+                self.timeFieldLabel.setText("Undefined IDS global time.")
+        #else:
+        #    self.timeFieldLabel.setText("Coordinate1 index: " + str(self.slider.value()))
+            #self.timeFieldLabel.setText("Coordinate1: " + str(self.active_treeNode.evaluateCoordinate1At(self.slider.value()))
+            #                            + " [" + str(self.active_treeNode.getUnits()) + "]")
 
         # Don't plot when the slider is being dragged by mouse. Plot on slider
         # release. This is important to still plot on value change by
@@ -399,16 +414,9 @@ class timeSliderGroup():
 
         self.currentIndex = time_index
 
-        # Signal/Node itemVIZData attribute
-        # signalItemVIZData = self.active_treeNode.getInfoDict()
-
-
         # Search through the whole list of signals (all FLT_1D nodes etc.)
         for node in self.signalHandling.dataTreeView.signalsList:
             if new_path == node.getPath():
-                # Set found QVizTreeNode as selected in DTV
-                # self.signalHandling.dataTreeView.setSelectedItem(s)
-
                 # Update object referring to the previous QVizTreeNode
                 self.active_treeNode = node
 
@@ -418,13 +426,13 @@ class timeSliderGroup():
         # TODO: add actions when self.signalHanlding.timeSLider == True / False.
         # TODO: set better indicators than True/False to better describe what
         #       happens
-        if self.signalHandling.timeSlider:
+        if self.isTimeSlider:
             self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(
                 time_index=time_index,
                 currentFigureKey=currentFigureKey,
                 treeNode=self.active_treeNode)
         else:
-            self.signalHandling.plotSelectedSignalVsTimeAtIndex(
+            self.signalHandling.plotSelectedSignalVsTimeAtCoordinate1D(
                 index=time_index,
                 currentFigureKey=currentFigureKey,
                 treeNode=self.active_treeNode)

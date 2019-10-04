@@ -6,14 +6,20 @@ located on the GateWay HPC.
 
 # A module providing a number of functions and variables that can be used to
 # manipulate different parts of the Python runtime environment.
-import sys
+import sys,os
+
 # PyQt library imports
 from PyQt5.QtWidgets import QApplication
+sys.path.append((os.environ['VIZ_HOME']))
 # IMASViz source imports
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
+from imasviz.VizGUI.QtVIZ_GUI import VizMainWindow
+
+
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings
@@ -36,38 +42,13 @@ dataSource = dataSourceFactory.create(
                                  userName='imas_public',
                                  imasDbName='west')
 
-# Database on the GateWay HPC (comment the above dataSource code and uncomment
-# the one below)
-# dataSource = dataSourceFactory.create(shotNumber=52344,
-#                                       runNumber=0,
-#                                       userName='g2penkod',
-#                                       imasDbName='viztest')
-
-
 # Build the data tree view frame
 f = api.CreateDataTree(dataSource)
+#f.show()
+api.LoadIDSData(f, 'equilibrium', 0, 0)
 
-# Set the list of node paths that are to be selected
-paths = []
-for i in range(0,6):
-    paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
-
-# Change it to dictionary with paths an occurrences (!)
-paths = {'paths' : paths,
-         'occurrences' : [0]}
-
-# Optional: Option with single path in dictionary
-# paths = {'paths' : 'magnetics/flux_loop(1)/flux/data'}
-# or
-# paths = {'paths' : ['magnetics/flux_loop(1)/flux/data']}
-
-# Select signal nodes corresponding to the paths in paths list
-api.SelectSignals(f, paths)
-
-# Plot signal nodes
-# Note: Data tree view does not need to be shown in order for this routine to
-#       work
-api.PlotSelectedSignals(f)
+#QVizLoadSelectedData(f.dataTreeView, 'magnetics', 0, 0).execute()
+f.show()
 
 # Keep the application running
 app.exec()

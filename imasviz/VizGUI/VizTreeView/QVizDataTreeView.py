@@ -30,6 +30,7 @@
 
 import os
 import xml.etree.ElementTree as ET
+import numpy as np
 from functools import partial
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
@@ -42,6 +43,8 @@ from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
     import QVizSaveSignalSelection
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizDisplayCurrentSelection \
+    import QVizDisplayCurrentSelection
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleRightClick \
     import QVizHandleRightClick
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
@@ -175,7 +178,7 @@ class QVizDataTreeView(QTreeWidget):
                 itemDataDict['documentation'] = idsDocumentation
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = QVizTreeNode(self.DTVRoot, [idsName], itemDataDict)
-                if self.dataSource.exists(idsName) == 1 and self.dataSource.containsData(idsName):
+                if self.dataSource.containsData(idsName):
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
@@ -230,8 +233,6 @@ class QVizDataTreeView(QTreeWidget):
             column (int)             : Item column.
         """
 
-        itemInfoDict = item.getInfoDict()
-
         # Check if item has the necessary attributes. If not -> return
         if item.getDataName() is not None:
             pass
@@ -244,74 +245,19 @@ class QVizDataTreeView(QTreeWidget):
         # (marked with blue fill color in DTV)
         self.setSelectedItem(item=item, mouseButton="LEFT")
 
-        # UPDATE NODE DOCUMENTATION WIDGET
-        # - Set node label
-        node_label = "..."    # Assigning default label
-        if (item.getDataName() is not None):
-            node_label = str(item.getDataName())
-        elif (item.getName() is not None):
-            node_label = str(item.getName())
-        # - Set node documentation#
-        node_doc = str(item.getDocumentation())
-
-        # Set dictionary for node attributes
-        node_contents_dict = {}
-        node_contents_dict['name'] = node_label
-        node_contents_dict['documentation'] = node_doc
-        node_contents_dict['contents'] = '/'
-        node_contents_dict['size'] = '/'
-
-        node_array_contents = ''
-        # Don't obtain contents for full IDS root nodes
-        if itemInfoDict['isIDSRoot'] != 1:
-
-            if itemInfoDict['isSignal'] == 1:
-                # - Set node contents
-                # TODO: improve and avoid try/except
-                expression = 'self.dataSource.ids[0].' + str(item.getPath())
-                expression = expression.replace('/', '.')
-                expression = expression.replace('(', '[')
-                expression = expression.replace(')', ']')
-                # Get the array of values
-                node_array_contents = eval(expression)
-
-                # Get string version of the array of values
-                n = 1000
-                if len(node_array_contents) > n*2:
-                    node_contents_dict['contents'] = 'The array size is too ' \
-                        'large for display. Showing first and last ' + str(n) \
-                        + ' values: \n\n' \
-                        + str(node_array_contents[:n]) + '\n...\n' \
-                        + str(node_array_contents[-n:])
-                else:
-                    node_contents_dict['contents'] = str(node_array_contents)
-                # Formatting the string
-                # Note: makes the node documentation slider a lot slower for
-                # large arrays!
-                # Numbered array:
-                # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
-                #     *k) for k in enumerate(node_array_contents))
-                # Get size of the array in as string
-                node_contents_dict['size'] = str(len(node_array_contents))
-
         # Find and update DTVFrame-docked node documentation widget (NDW)
         ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")
-        if ndw != None:
-            # ndw.update(documentation=node_doc_str_array)
-            ndw.update(node_contents_dict=node_contents_dict)
+        if ndw is not None:
+            ndw.update(item, self)
         else:
             error = 'Node Documentation Widget not found. Update not possible'
             raise ValueError(error)
             self.log.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if (item.isDynamicData() == 1 and
-                item.getDataType() == 'FLT_1D' and
-                (item.foreground(0).color().name() == GlobalColors.BLUE_HEX or
-                 item.foreground(0).color().name() == GlobalColors.RED_HEX)):
+        if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.isDataAvailable():
             # If the node holds an 1D array of values (1D_FLT) then its
-            # isSignal attribute equals 1 (isSignale = 1)
-
+            # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel
             QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self)
             QVizSignalHandlingObj.plotPreviewSignalCommand()
@@ -355,8 +301,8 @@ class QVizDataTreeView(QTreeWidget):
             self.pos = event.pos()
 
             # Set and show the popup
-            handleRightClick = QVizHandleRightClick(self)
-            showPopUp = handleRightClick.execute(treeNode)
+            handleRightClick = QVizHandleRightClick()
+            showPopUp = handleRightClick.execute(treeNode, self)
 
     # def keyPressEvent(self, QKeyEvent):
     #     """ Execute action on specific keyboard key press.
@@ -374,6 +320,28 @@ class QVizDataTreeView(QTreeWidget):
 
     #     if QMouseEvent == Qt.MiddleButton:
     #         print("mouse right click")
+
+    def updateView(self, idsName, occurrence, idsData=None):
+        """ Update QVizDataTreeViewFrame.
+
+        Arguments:
+            idsName        (str) : Name of the IDS e.g. 'magnetics'.
+            occurrence     (int) : IDS occurrence number (0-9).
+            idsData        (obj) : Object (element) holding IDS data.
+        """
+        # t4 = time.time()
+        if idsData != None:
+            self.log.info("Loading occurrence "
+                                       + str(int(occurrence))
+                                       + " of " + idsName
+                                       + " IDS ended successfully, building "
+                                       + " view...")
+            self.update_view(idsName, occurrence, idsData)
+            self.log.info("View update ended.")
+
+            warning_ggd = self.IDSRoots[idsName].getNodeData().get('warning_ggd')
+            if warning_ggd is not None:
+                self.log.info("WARNING: GGD structures have been ignored")
 
     def update_view(self, idsName, occurrence, idsData):
         """ Update the tree view with the data.
@@ -399,16 +367,11 @@ class QVizDataTreeView(QTreeWidget):
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
-        rootNodeData = ids_root_node.getInfoDict()
-
         idsName = ids_root_node.getIDSName()
         key = idsName + "/" + str(occurrence)
-
-        occNodeData = rootNodeData
-        occNodeData['occurrence'] = occurrence
+        ids_root_node.setOccurrence(occurrence)
         nodeBuilder = QVizDataTreeViewBuilder(ids = self.dataSource.ids)
-        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], occNodeData)
-
+        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getNodeData())
         self.ids_roots_occurrence[key] = ids_root_occ
 
         for child in idsData:
@@ -449,7 +412,7 @@ class QVizDataTreeView(QTreeWidget):
         item = self.selectedItems()[0]
 
         # Continue, if the QTreeWidgetItem is IDS root
-        if item.infoDict['isIDSRoot'] != 1:
+        if 'isIDSRoot' not in item.infoDict or item.infoDict['isIDSRoot'] != 1:
             return
 
         # Set default occurrence
@@ -457,14 +420,13 @@ class QVizDataTreeView(QTreeWidget):
         # Get root IDS name
         IDSName = item.getIDSName()
         # Set class object
-        ldh_obj = QVizLoadDataHandling(self)
+        ldh_obj = QVizLoadDataHandling()
         # Check if the default occurrence for IDS root was already
         # loaded. If
         # not then load it first time.
-        if not ldh_obj.occurrenceAlreadyLoaded(IDSName=IDSName,
-                                               occurrence=occ):
+        if not ldh_obj.occurrenceAlreadyLoaded(self, IDSName=IDSName, occurrence=occ):
             # Load the IDS Root occurrence
-            ldh_obj.loadSelectedData(IDSName, occ)
+            ldh_obj.loadSelectedData(self, IDSName, occ)
 
 
 class QVizDataTreeViewFrame(QMainWindow):
@@ -539,6 +501,24 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Old wx variable label. Remove when obsolete
         self.view = self.dataTreeView
 
+        #self.test()
+
+
+    # def test(self):
+    #     # Check if necessary system variables are set
+    #     from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+    #     QVizGlobalOperations.checkEnvSettings()
+    #
+    #     # Set Application Program Interface
+    #     from imasviz.Viz_API import Viz_API
+    #     from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+    #     api = Viz_API()
+    #
+    #     api.LoadIDSData(self, 'magnetics', 0, 0)
+    #
+    #     # QVizLoadSelectedData(f.dataTreeView, 'magnetics', 0, 0).execute()
+    #     self.show()
+
     def event(self, event):
         """ Listen to events.
         """
@@ -555,29 +535,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         occurrence = event.data[1]
         idsData = event.data[2]
         pathsList = event.data[3]
-        threadingEvent = event.data[4]
+        #threadingEvent = event.data[4]
         self.updateView(idsName, occurrence, idsData)
 
-    def updateView(self, idsName, occurrence, idsData=None):
-        """ Update QVizDataTreeViewFrame.
-
-        Arguments:
-            idsName        (str) : Name of the IDS e.g. 'magnetics'.
-            occurrence     (int) : IDS occurrence number (0-9).
-            idsData        (obj) : Object (element) holding IDS data.
-        """
-        # t4 = time.time()
-        if idsData != None:
-            self.dataTreeView.log.info("Loading occurrence "
-                                       + str(int(occurrence))
-                                       + " of " + idsName
-                                       + " IDS ended successfully, building "
-                                       + " view...")
-            self.dataTreeView.update_view(idsName, occurrence, idsData)
-            self.dataTreeView.log.info("View update ended.")
-
-            if (idsName == 'equilibrium' or idsName == 'wall'):
-                self.dataTreeView.log.info("WARNING: GGD structures have been ignored (ggd, grids_ggd, description_ggd)")
 
     def addMenuBar(self):
         """Create and configure the menu bar.
@@ -612,6 +572,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_onSaveSignalSelection = QAction('Save Node Selection', self)
         action_onSaveSignalSelection.triggered.connect(self.onSaveSignalSelection)
         nodeSelection.addAction(action_onSaveSignalSelection)
+
+        action_onDisplayNodesSelection = QAction('Display Node(s) selection', self)
+        action_onDisplayNodesSelection.triggered.connect(self.onDisplayNodesSelection)
+        nodeSelection.addAction(action_onDisplayNodesSelection)
 
         # -----
         # Add menu item to unselect all signals - This/Current DTV
@@ -779,6 +743,14 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
+
+    @pyqtSlot()
+    def onDisplayNodesSelection(self):
+        """Displays signal selection as a list of signal paths for single DTV
+        (QVizDataTreeView)
+        """
+        # Displays signal selection as a list of signal paths
+        QVizDisplayCurrentSelection(dataTreeView=self.dataTreeView).execute()
 
     @pyqtSlot()
     def onExportToLocal(self):

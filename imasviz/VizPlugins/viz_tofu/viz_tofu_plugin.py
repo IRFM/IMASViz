@@ -1,7 +1,8 @@
 # Built-in
+import warnings
 import traceback
 import threading
-import sys
+import sys, os
 from PyQt5.QtWidgets import QApplication
 
 # Common
@@ -12,80 +13,83 @@ import matplotlib.pyplot as plt
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # tofu
-import tofu_irfm as tfi
+import sys
+sys.path.insert(0,'/Home/LF218007/tofu/')
+#print(sys.path)
+import tofu as tf
+sys.path.pop(0)
+print('load ok')
+print(tf.__version__)
 
 
 class ToFuPlugin(VizPlugins):
     def __init__(self):
         VizPlugins.__init__(self)
+        self.lidsok = ['wall', 'bolometer', 'interferometer',
+                  'bremsstrahlung_visible', 'soft_x_rays',
+                  'ece', 'polarimeter',
+                  'spectrometer_visible']
+        self.lidsok_overview = ['%s_overview'%ids
+                                for ids in self.lidsok]
 
-    def execute(self, app, pluginsConfig):
+    def execute(self, pluginsConfiguration, dataTreeView):
+
+        view = pluginsConfiguration.get('imasviz_view')
+        node_attributes = pluginsConfiguration.get('node_attributes')
+
+        dids = {'shot':view.dataSource.shotNumber,
+                'user':view.dataSource.userName,
+                'tokamak':view.dataSource.machineName,
+                'run':view.dataSource.runNumber}
+        ids = node_attributes.get('IDSName')
+
         try:
             print ('ToFuPlugin to be executed...')
+            if ids not in self.lidsok:
+                msg = "Required ids not handled by tofu yet:\n"
+                msg += "    - ids requested: %s\n"%ids
+                msg += "    - ids avail.: %s"%str(self.lidsok)
+                warnings.warn(msg)
+                return None
+
             plt.ioff()
-            view = pluginsConfig.get('imasviz_view')
-            node_attributes = pluginsConfig.get('node_extra_attributes')
             figure = None
-            if node_attributes.get('IDSName')=='bolometer':
-                if pluginsConfig.get('geom'):
-                    out = tfi.Bolo.load_geom(draw=False)
-                    figure = out[1][0].get_figure()
-                elif pluginsConfig.get('data'):
-                    tfi.Bolo.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
-                    figure = plt.gcf()
-            elif node_attributes.get('IDSName')=='interferometer':
-                if pluginsConfig.get('geom'):
-                    out = tfi.Interfero.load_geom(draw=False)
-                    figure = out[1][0].get_figure()
-                elif pluginsConfig.get('data'):
-                    tfi.Interfero.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
-                    figure = plt.gcf()
-            elif node_attributes.get('IDSName')=='soft_x_rays':
-                if pluginsConfig.get('geom'):
-                    out = tfi.SXR.load_geom(draw=False)
-                    figure = out[1][0].get_figure()
-                elif pluginsConfig.get('data'):
-                    tfi.SXR.load_data(view.dataSource.shotNumber, draw=False, fs=(8,4))
-                    figure = plt.gcf()
-            self.OpenWxFrame(figure)
-            app.MainLoop()
+
+            # load config
+            lids = list(set(['wall', ids]))
+            multi = tf.imas2tofu.MultiIDSLoader(ids=lids, **dids)
+            if ids == 'wall':
+                obj = multi.to_Config(plot=False)
+                lax = obj.plot(draw=True)
+                figure = lax[0].get_figure()
+            else:
+                if pluginsConfiguration.get('geom'):
+                    obj = multi.to_Cam(ids=ids, plot=False)
+                    lax = obj.plot(draw=True)
+                    figure = lax[0].get_figure()
+                elif pluginsConfiguration.get('data'):
+                    obj = multi.to_Data(ids=ids, indch_auto=True,
+                                        plot=False)
+                    kh = obj.plot(draw=True)
+                    figure = kh.can.figure
+            figure.show()
         except :
             traceback.print_exc()
             view.log.error(traceback.format_exc())
 
-    def OpenWxFrame(self, figure):
-        #fr = wx.Frame(None, title='ToFu', size=(800,800))
-        fr = None
-        #panel = CanvasPanel(fr, figure)
-        fr.Show()
 
-class Frame():
-    def __init__(self, out):
-        #wx.Frame.__init__(self, None, title='tofu', pos=(150, 150), size=(800, 600))
+    def getEntriesPerSubject(self):
+        a = {ids_over: [0, 1] for ids_over in self.lidsok_overview}
+        return a
 
-        #self.panel = wx.Panel(self)
+    def getAllEntries(self):
+        #(config number, description)
+        return [(0, 'tofu - geom...'), (1, 'tofu - data')]
 
-        #self.axes = self.figure.add_subplot(111)
-        #self.canvas = FigureCanvas(self.panel, wx.ID_ANY, self.figure)
+    def getPluginsConfiguration(self):
+        return [{'geom': True}, {'data': True}]
 
-        self.KH = out.plot(fs=(10, 5))[1]
-        self.figure = self.KH.dax['t'][0].figure
-        self.axes = [[self.KH.dax[kk][ii] for ii in range(len(self.KH.dax[kk]))] for kk in self.KH.dax.keys()]
-        #self.panel = CanvasPanel(self, self.figure)
-        # rects = self.axes.bar(range(10), 20 * np.random.rand(10))
-        # self.drs = []
-        # for rect in rects:
-        #     dr = DraggableRectangle(rect)
-        #     dr.connect()
-        #     self.drs.append(dr)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    #out = tfi.Bolo.load_geom(draw=False)
-    #figure = out[1][0].get_figure()
-    out = tfi.Bolo.load_data(52699, draw=False, plot=False)
-    fr = Frame(out)
-    #panel = CanvasPanel(fr, figure)
-    fr.Show()
-
-    app.MainLoop()
+    def isEnabled(self):
+        if 'WEST' in os.environ:
+            return True
+        return False

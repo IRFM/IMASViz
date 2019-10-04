@@ -34,7 +34,7 @@ class QVizPlotSignal(QVizAbstractCommand):
     """
     def __init__(self, dataTreeView, nodeData=None, signal=None,
                  figureKey=None, title='', label=None, xlabel=None,
-                 update=0, signalHandling=None, vizTreeNode=None):
+                 update=0, vizTreeNode=None, addTimeSlider=False, addCoordinateSlider=False):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -46,50 +46,38 @@ class QVizPlotSignal(QVizAbstractCommand):
             label          (str) : Plot label.
             xlabel         (str) : Plot x-axis label.
             update            () :
-            signalHandling (obj) : Object to QVizSignalHandling.
 
         """
         QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
-        if nodeData == None or vizTreeNode == None:
+        if nodeData is None or vizTreeNode is None:
             self.updateNodeData()
         else:
             self.nodeData = nodeData
             self.treeNode = vizTreeNode
 
-        self.signalHandling = signalHandling
-
         self.log = self.dataTreeView.log
 
-        if signal == None:
-
-            self.signal = self.getSignal(dataTreeView=self.dataTreeView,
-                                         selectedNodeData=self.nodeData,
-                                         vizTreeNode=self.treeNode)
-
+        if signal is None:
+            self.signal = self.getSignal(dataTreeView=self.dataTreeView, vizTreeNode=self.treeNode)
         else:
             self.signal = signal
 
         # Set widget window title by getting the next figure number
-        if figureKey == None:
-            self.figureKey = \
-                self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
+        if figureKey is None:
+            self.figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
         else:
             self.figureKey = figureKey
 
         self.title = title
-
-        if label == None:
-            # Set label containing node path
-            self.label = self.nodeData['Path']
-        else:
-            self.label = label
-
+        self.label = label
         self.xlabel = xlabel
         self.update = update
         self.plotFrame = None
+        self.addTimeSlider = addTimeSlider
+        self.addCoordinateSlider = addCoordinateSlider
 
-    def execute(self):
+    def execute(self, signalHandling):
         try:
             if len(self.signal) == 2:
                 t = QVizPlotSignal.getTime(self.signal)
@@ -98,9 +86,12 @@ class QVizPlotSignal(QVizAbstractCommand):
                     raise ValueError("Time values are not defined.")
                 if v is None or v[0] is None:
                     raise ValueError("Array values are not defined.")
-                if (len(t[0]) != len(v[0])):
+                if len(t[0]) != len(v[0]):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
-                self.plot1DSignal(self.dataTreeView.shotNumber, t, v,
+
+                # Get widget linked to this figure
+                plotWidget = self.getPlotWidget(signalHandling, self.figureKey)
+                self.plot1DSignal(self.dataTreeView.shotNumber, t, v, plotWidget,
                                   self.figureKey, self.title, self.label,
                                   self.xlabel, self.update)
             else:
@@ -108,14 +99,16 @@ class QVizPlotSignal(QVizAbstractCommand):
         except ValueError as e:
             self.dataTreeView.log.error(str(e))
 
-    def getPlotWidget(self, figureKey=0):
+    def getPlotWidget(self, signalHandling, figureKey=0):
         api = self.dataTreeView.imas_viz_api
         if figureKey in api.figureframes:
             plotWidget = api.figureframes[figureKey]
         else:
             figureKey = api.GetNextKeyForFigurePlots()
-            plotWidget = QVizPlotWidget(size=(600,550), title=figureKey,
-                                        signalHandling=self.signalHandling)
+            plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey,
+                                        addTimeSlider=self.addTimeSlider,
+                                        addCoordinateSlider=self.addCoordinateSlider,
+                                        signalHandling=signalHandling)
             api.figureframes[figureKey] = plotWidget
         return plotWidget
 
@@ -130,7 +123,8 @@ class QVizPlotSignal(QVizAbstractCommand):
         """
         return oneDimensionSignal[1]
 
-    def plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None,
+
+    def plot1DSignal(self, shotNumber, t, v, plotWidget, figureKey=0, title='', label=None,
                      xlabel=None, update=0):
         """Plot a 1D signal as a function of time.
 
@@ -160,9 +154,6 @@ class QVizPlotSignal(QVizAbstractCommand):
             # Get signal time
             self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
 
-            #Get widget linked to this figure
-            plotWidget = self.getPlotWidget(self.figureKey)
-
             key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
             tup = (self.dataTreeView.dataSource.shotNumber, self.nodeData)
             api.addNodeToFigure(figureKey, key, tup)
@@ -177,13 +168,6 @@ class QVizPlotSignal(QVizAbstractCommand):
                 self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=self.figureKey)
-
-            # Add username to legend label (in front)
-            if self.dataTreeView.dataSource.userName != None:
-                label = self.dataTreeView.dataSource.userName + ":" + label
-            # In case of UDA loaded case
-            elif self.dataTreeView.dataSource.name != None:
-                label = self.dataTreeView.dataSource.name + ":" + label
 
             # A new plot is added to the current plot(s)
             if update == 1:
@@ -236,16 +220,19 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.dataTreeView.imas_viz_api.figureframes[figureKey].hide()
 
     @staticmethod
-    def getSignal(dataTreeView, selectedNodeData, vizTreeNode):
+    def getSignal(dataTreeView, vizTreeNode):
         try:
+
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             # treeNode = dataTreeView.selectedItem
-            s = signalDataAccess.GetSignal(selectedNodeData,
-                                           dataTreeView.dataSource.shotNumber,
-                                           vizTreeNode)
-            return s
+            if vizTreeNode.is1DAndDynamic():
+                signal = signalDataAccess.GetSignal(vizTreeNode)
+            elif vizTreeNode.is0DAndDynamic():
+                signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
+            else:
+                raise ValueError('Unexpected data type')
+            return signal
         except:
-            #dataTreeView.log.error(str(e))
             raise
 
     @staticmethod
@@ -262,53 +249,41 @@ class QVizPlotSignal(QVizAbstractCommand):
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
         """
+        if label is None:
+            label = dataTreeView.dataSource.getShortLabel() + ':' + signalNode.getPath()
 
-        #t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])
+        if signalNode.is0DAndDynamic():
+            label, title = signalNode.correctLabelForTimeSlices(label, title)
 
-        if label == None:
-            label = signalNode.getPath()
+        elif signalNode.is1DAndDynamic():
+            # Setting/Checking the X-axis label
+            if xlabel is None:
+                # If xlabel is not yet set
+                if 'coordinate1' in signalNode.getInfoDict():
+                    xlabel = QVizGlobalOperations.replaceBrackets(
+                        signalNode.getInfoDict()['coordinate1'])
+                if xlabel != None and xlabel.endswith("time"):
+                    xlabel +=  "[s]"
+            elif 'time[s]' in xlabel:
+                # If 'Time[s]' is present in xlabel, do not modify it
+                pass
+            elif '1.' not in xlabel and '.N' not in xlabel:
+                # If '1...N' or '1..N' (or other similar variant)  is not present
+                # in xlabel:
+                # - Replace dots '.' by slashes '/'
+                xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
+                # - If IDS name is not present (at the front) of the xlabel string,
+                #   then add it
+                if signalNode.getIDSName() not in xlabel:
+                    xlabel = signalNode.getIDSName() + "/" + xlabel
 
-        # Setting/Checking the X-axis label
-        if xlabel == None:
-            # If xlabel is not yet set
-            if 'coordinate1' in signalNode.getInfoDict():
-                xlabel = QVizGlobalOperations.replaceBrackets(
-                    signalNode.getInfoDict()['coordinate1'])
-            if xlabel != None and xlabel.endswith("time"):
-                xlabel +=  "[s]"
-        elif 'Time[s]' in xlabel:
-            # If 'Time[s]' is present in xlabel, do not modify it
-            pass
-        elif '1.' not in xlabel and '.N' not in xlabel:
-            # If '1...N' or '1..N' (or other similar variant)  is not present
-            # in xlabel:
-            # - Replace dots '.' by slashes '/'
-            xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
-            # - If IDS name is not present (at the front) of the xlabel string,
-            #   then add it
-            if signalNode.getIDSName() not in xlabel:
-                xlabel = signalNode.getIDSName() + "/" + xlabel
+        if xlabel is None:
+            xlabel = "time[s]"
 
-        #ylabel = signalNodeData['dataName']
-
-        ylabel = 'S(t)'
-        if signalNode is not None and not (signalNode.isCoordinateTimeDependent(
-                signalNode.treeNodeExtraAttributes.coordinate1)):
-           ylabel = 'S'
+        ylabel = signalNode.getName()
 
         if 'units' in signalNode.getInfoDict():
             units = signalNode.getInfoDict()['units']
             ylabel += '[' + units + ']'
-
-        # Get IDS dataSource parameters
-        machineName = str(dataTreeView.dataSource.imasDbName)
-        shotNumber = str(dataTreeView.dataSource.shotNumber)
-        runNumber = str(dataTreeView.dataSource.runNumber)
-
-        label = dataTreeView.dataSource.getShortLabel() + ':' + label
-        # label = machineName + ":" + shotNumber + ":" + runNumber + ':' + label
-
-        if xlabel == None:
-            xlabel = "Time[s]"
 
         return label, xlabel, ylabel, title
