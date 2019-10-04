@@ -17,7 +17,7 @@ from PyQt5.QtGui import QAction, QMenu, QTreeWidgetItem, QMainWindow
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
 
-from pyqtgraph.exporters.Matplotlib import MatplotlibExporter
+from pyqtgraph.exporters.Matplotlib import MatplotlibExporter, Exporter
 from pyqtgraph.GraphicsScene.exportDialog import ExportDialog
 from pyqtgraph.graphicsItems.PlotItem import PlotItem
 from pyqtgraph import functions as fn
@@ -54,6 +54,10 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # Menu update property
         self.menuUpdate = True
 
+        # Modify list of available exporters (in order to remove the problematic
+        # Matplotlib exporter and replace it with ours)
+        self.updateExportersList()
+
     def getMenu(self, event=None):
         """Modify the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
         routine.
@@ -63,7 +67,6 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         if self.menuUpdate is True:
             # Modify contents of the original ViewBoxMenu
             for action in self.menu.actions():
-                print("*action: ", action.text())
                 # Modify the original Mouse Mode
                 if "Mouse Mode" in action.text():
                     # Change action labels
@@ -86,9 +89,6 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # self.showS0.triggered.connect(self.emitShowS0)
             # self.showS0.setEnabled(True)
             # self.menu.addAction(self.showS0)
-
-            # self.sceneObj = self.qWidgetParent.pgPlotWidget.sceneObj
-            # self.exportDialog = self.sceneObj.exportDialog # None
 
             # Set menu update to false
             self.menuUpdate = False
@@ -137,6 +137,20 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
 
+    def updateExportersList(self):
+        """Update/Modify list of available exporters (in order to remove the
+        problematic Matplotlib exporter and replace it with ours).
+        """
+        # Remove the pyqtgrapth Matplotlib Window and add our Matplotlib Window
+        # v2 to the same place on the list (initially it is on the end of the
+        # list)
+        for exporter in Exporter.Exporters:
+            if exporter.Name == 'Matplotlib Window':
+                i = Exporter.Exporters.index(exporter)
+                del Exporter.Exporters[i]
+            if exporter.Name == 'Matplotlib Window (v2)':
+                i = Exporter.Exporters.index(exporter)
+                Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
 
 class MatplotlibExporterPatched(MatplotlibExporter):
     """ The pyqtgraph 0.10.0 Matplotlib exporter has many issues, one of them are:
@@ -155,7 +169,7 @@ class MatplotlibExporterPatched(MatplotlibExporter):
     When and if the required fixes will be released with next pyqtgraph release,
     delete all MatplotlibExporterPatched related code.
     """
-    Name = "Matplotlib Window (IMASViz patched)"
+    Name = "Matplotlib Window (v2)"
 
     def __init__(self, item):
 
