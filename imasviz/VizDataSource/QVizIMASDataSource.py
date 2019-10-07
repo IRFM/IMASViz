@@ -1,4 +1,4 @@
-import os
+import os, logging
 import imas
 import traceback, sys
 from PyQt5.QtWidgets import QTreeWidgetItem
@@ -31,8 +31,6 @@ class QVizIMASDataSource:
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
         self.generatedDataTree.ids = self.ids[occurrence]
-        #dataTreeView.idsAlreadyFetched[dataTreeView.IDSNameSelected[occurrence]] = 1
-        dataTreeView.log.info('Loading occurrence ' + str(int(occurrence)) + ' of IDS ' + IDSName + '...')
 
         if asynch:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
@@ -166,33 +164,6 @@ class QVizIMASDataSource:
     def getShortLabel(self):
         return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
-    def addQtNodes(self, itemDataDict, dataTreeView, viewerNode, treeItemData):
-        """ Add new nodes to the tree view.
-
-        Arguments:
-            itemDataDict (obj)             : Data dictionary of the tree item.
-            dataTreeView (QTreeWidget)     : QVizDataTreeView object.
-            viewerNode   (QTreeWidgetItem) : tree parent item to which new items will be added to the
-                                             dataTreeView
-        """
-
-        coordinate_display = None
-
-        for i in range(1,7):
-            coordinate = "coordinate" + str(i)
-            coordinate_same_as = "coordinate" + str(i) + "_same_as"
-            if itemDataDict.get(coordinate) is not None:
-                coordinate_display = coordinate + "=" + itemDataDict[coordinate]
-                QVizTreeNode(viewerNode, [coordinate_display])
-            if itemDataDict.get(coordinate_same_as) is not None:
-                coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
-                QVizTreeNode(viewerNode, [coordinate_display])
-
-        doc_display = None
-
-        if itemDataDict.get('documentation') is not None:
-            doc_display = "documentation= " + itemDataDict['documentation']
-            QVizTreeNode(viewerNode, [doc_display])
 
     def exportToLocal(self, dataTreeView, exported_ids):
         """Export specified IDS to a new separate IDS.
@@ -222,7 +193,7 @@ class QVizIMASDataSource:
 
             # Run the export command
             eval(command2)
-            dataTreeView.log.info("Calling IMAS put() for IDS " + idsName +
+            logging.info("Calling IMAS put() for IDS " + idsName +
                                   " occurrence " + str(occurrence) + ".")
             # Putting to occurrence
             eval("self.ids[" + str(occurrence) + "]."  + idsName + ".put(" + str(

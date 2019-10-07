@@ -20,7 +20,7 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 # ****************************************************
 
-import sys
+import sys, logging
 import traceback
 
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
@@ -55,8 +55,6 @@ class QVizPlotSignal(QVizAbstractCommand):
         else:
             self.nodeData = nodeData
             self.treeNode = vizTreeNode
-
-        self.log = self.dataTreeView.log
 
         if signal is None:
             self.signal = self.getSignal(dataTreeView=self.dataTreeView, vizTreeNode=self.treeNode)
@@ -97,7 +95,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def getPlotWidget(self, signalHandling, figureKey=0):
         api = self.dataTreeView.imas_viz_api
@@ -171,7 +169,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # A new plot is added to the current plot(s)
             if update == 1:
-                # self.log.info('Updating/Overwriting existing plot.')
+                # logging.info('Updating/Overwriting existing plot.')
 
                 # Update/Overwrite existing plot
                 for i in range(0, nbRows):

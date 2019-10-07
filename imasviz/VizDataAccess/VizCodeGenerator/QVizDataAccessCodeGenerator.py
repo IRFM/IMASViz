@@ -65,11 +65,14 @@ class QVizDataAccessCodeGenerator:
                         continue
                     #print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
+
+                    #self.diplayLoadingMessage(name_att2)
+
                     #self.printCode("self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("t1 = time.time()", 2)
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
                     self.printCode("t2 = time.time()", 2)
-                    self.printCode("print('imas get took ' + str(t2 - t1) + ' seconds')",2)
+                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')",2)
                     #self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
                     self.printCode("t3 = time.time()", 2)
@@ -93,6 +96,13 @@ class QVizDataAccessCodeGenerator:
             self.printCode("return parent", 1)
             self.printCode('',-1)
             i+=1
+
+    # def diplayLoadingMessage(self, idsName):
+    #     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + " +
+    #                    "'" + idsName + "'", 2)
+    #
+    #     self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((1, message), '
+    #                    'self.view.parent.eventResultId))', 2)
 
 
     def generateParentsCode(self, level, path):
@@ -156,7 +166,7 @@ class QVizDataAccessCodeGenerator:
                 if ids_child_element.get('name') == "ggd" or ids_child_element.get('name').startswith("ggd_") \
                         or ids_child_element.get('name').endswith("_ggd"):
                     print("WARNING: GGD structures have been ignored")
-                    code = "parent.set(" + "'warning_ggd', str(" + '1' + "))"
+                    code = "parent.set(" + "'ggd_warning', str(" + '1' + "))"
                     self.printCode(code, level)
                     continue
 

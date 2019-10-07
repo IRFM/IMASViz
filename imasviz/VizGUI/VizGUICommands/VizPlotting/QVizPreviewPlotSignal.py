@@ -21,7 +21,7 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-import sys
+import sys, logging
 import traceback
 
 from PyQt5.QtWidgets import QWidget
@@ -83,7 +83,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             else:
                 raise ValueError("Warning! Only 1D plots are currently supported.")
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     # @staticmethod
     def getPlotWidget(self):
@@ -94,7 +94,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         if plotWidget == None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
-            self.log.error(str(error))
+            logging.error(str(error))
         # self.plotWidget = \
         #     IMASVIZ_PreviewPlotFrame(None, size=(600, 500), title='Plot Preview',
         #                      signalHandling=self.signalHandling)

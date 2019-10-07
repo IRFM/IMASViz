@@ -1,4 +1,4 @@
-import traceback
+import traceback, logging
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
@@ -18,4 +18,4 @@ class QVizLoadSelectedData(QVizAbstractCommand):
 
         except :
             traceback.print_exc()
-            self.dataTreeView.log.error(traceback.format_exc())
+            logging.error(traceback.format_exc())

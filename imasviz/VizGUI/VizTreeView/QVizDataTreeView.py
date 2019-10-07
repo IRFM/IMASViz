@@ -28,15 +28,17 @@
 #     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
 #****************************************************
 
-import os
+import os, logging
 import xml.etree.ElementTree as ET
 import numpy as np
+import threading
+from threading import Thread, Condition
 from functools import partial
 
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
-    QWidget, QGridLayout, QTextEdit
+    QWidget, QGridLayout, QTextEdit, QPlainTextEdit
 from PyQt5.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
@@ -63,6 +65,9 @@ from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
     import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling
+
+
+cv = Condition()
 
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
@@ -135,8 +140,6 @@ class QVizDataTreeView(QTreeWidget):
         # Create the empty tree
         self.createEmptyIDSsTree(IDSDefFile)
 
-        self.log = None
-
         # Set dummy for node documentation widget
         self.ndw = None
 
@@ -148,14 +151,11 @@ class QVizDataTreeView(QTreeWidget):
 
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
-        Note: The original routine source (ues with wxPython) can be found in
-        viz/imasviz/view/WxDataTreeView.py
         """
         idsNode = None
-        tree = ET.parse(IDSDefFile)
-        # Add the node information to each IDS node
-        returnedDict = {}
-        for child in tree.getroot():
+        xmlTree = ET.parse(IDSDefFile)
+
+        for child in xmlTree.getroot():
             if (child.tag == 'IDS'):
                 """Extract IDS properties from IDSDef.xml file"""
                 """Get IDS name"""
@@ -166,29 +166,25 @@ class QVizDataTreeView(QTreeWidget):
                 self.idsAlreadyFetched[idsName] = 0
 
                 """Set array holding IDS properties"""
-                itemDataDict = {}
-                itemDataDict['IDSName'] = idsName
-                itemDataDict['isIDSRoot'] = 1
-                itemDataDict['dataName'] = idsName
-                itemDataDict['isSignal'] = 0
-                itemDataDict['isSelected'] = 0
-                itemDataDict['Tag'] = idsName
-                itemDataDict['Path'] = itemDataDict['Tag']
-                itemDataDict['availableIDSData'] = 0
-                itemDataDict['documentation'] = idsDocumentation
-                # Add the IDS node as a tree item to the tree view
-                self.IDSRoots[idsName] = QVizTreeNode(self.DTVRoot, [idsName], itemDataDict)
+
+                IDSRootNode = self.createIDSRootNode(idsName=idsName,
+                                                     idsDocumentation=idsDocumentation,
+                                                     DTVRoot=self.DTVRoot)
+
                 if self.dataSource.containsData(idsName):
                     # - If there is any data available from the IDS, change set
                     # its dictionary 'availableIDSData' value from 0 to 1 and
                     # color its item text (IDS name) to blue
-                    itemDataDict['availableIDSData'] = 1
+                    IDSRootNode.setAvailableIDSData(1)
                     # Set tree item text color
-                    self.IDSRoots[idsName].setForeground(0, GlobalColors.BLUE)
+                    IDSRootNode.setForeground(0, GlobalColors.BLUE)
                 else:
-                    itemDataDict['availableIDSData'] = 0
+                    IDSRootNode.setAvailableIDSData(0)
                     # Set tree item text color
-                    self.IDSRoots[idsName].setForeground(0, GlobalColors.BLACK)
+                    IDSRootNode.setForeground(0, GlobalColors.BLACK)
+
+                # Add the IDS node as a tree item to the tree view
+                self.IDSRoots[idsName] = IDSRootNode
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
@@ -252,7 +248,7 @@ class QVizDataTreeView(QTreeWidget):
         else:
             error = 'Node Documentation Widget not found. Update not possible'
             raise ValueError(error)
-            self.log.error(str(error))
+            logging.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
         if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.isDataAvailable():
@@ -321,6 +317,7 @@ class QVizDataTreeView(QTreeWidget):
     #     if QMouseEvent == Qt.MiddleButton:
     #         print("mouse right click")
 
+
     def updateView(self, idsName, occurrence, idsData=None):
         """ Update QVizDataTreeViewFrame.
 
@@ -330,54 +327,79 @@ class QVizDataTreeView(QTreeWidget):
             idsData        (obj) : Object (element) holding IDS data.
         """
         # t4 = time.time()
-        if idsData != None:
-            self.log.info("Loading occurrence "
-                                       + str(int(occurrence))
-                                       + " of " + idsName
-                                       + " IDS ended successfully, building "
-                                       + " view...")
+        if idsData is not None:
             self.update_view(idsName, occurrence, idsData)
-            self.log.info("View update ended.")
 
-            warning_ggd = self.IDSRoots[idsName].getNodeData().get('warning_ggd')
-            if warning_ggd is not None:
-                self.log.info("WARNING: GGD structures have been ignored")
 
     def update_view(self, idsName, occurrence, idsData):
         """ Update the tree view with the data.
         """
+        global cv
         self.idsAlreadyFetched[idsName] = 1
-        #ids_root_node = self.IDSRoot[idsName]
-        if idsData != None:
-            import time
-            t1 = time.time()
-            self.buildTreeView(self.IDSRoots[idsName], occurrence, idsData)
-            t2 = time.time()
-            self.log.info("Building tree view took " + str(t2-t1) + ' seconds.')
-            # Expand the tree item
-            self.DTVRoot.setExpanded(True)
+        if idsData is not None:
 
-    def buildTreeView(self, ids_root_node, occurrence, idsData):
+            #self.buildTreeView(self.IDSRoots[idsName], occurrence, idsData)
+            self.IDSRoots[idsName].setOccurrence(occurrence)
+            nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.ids)
+            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData))
+            cv.acquire()
+            thread1.start()
+            cv.wait()
+            cv.release()
+            nodeBuilder.endBuildView(idsName, occurrence, self)
+
+
+    def buildTreeView(self, nodeBuilder, idsName, occurrence, idsData):
         """ Build the data tree view by adding a set of available IDS nodes as
             an items to it.
 
         Arguments:
-            ids_root_node (QTreeWidgetItem) : IDS root tree widget item
-                                              (Example: magnetics IDS root node)
+            idsName                         : name of the IDS
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
-        idsName = ids_root_node.getIDSName()
-        key = idsName + "/" + str(occurrence)
+        cv.acquire()
+        import time
+        t1 = time.time()
+        logging.info("Loading occurrence "
+                     + str(int(occurrence))
+                     + " of " + idsName
+                     + " IDS ended successfully, building "
+                     + " view...")
+        DTVRoot = None
+        idsDocumentation = self.IDSRoots[idsName].getDocumentation()
+        ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, DTVRoot)
         ids_root_node.setOccurrence(occurrence)
-        nodeBuilder = QVizDataTreeViewBuilder(ids = self.dataSource.ids)
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getNodeData())
-        self.ids_roots_occurrence[key] = ids_root_occ
 
         for child in idsData:
             self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence)
 
-    def addChildren(self, nodeBuilder, element, parent, idsName, occurrence):
+        t2 = time.time()
+        logging.info("Building tree view took " + str(t2 - t1) + ' seconds.')
+        nodeBuilder.setIDSRootNode(ids_root_node)
+        logging.info("View update ended.")
+
+        if nodeBuilder.getGGDWarning() == 1:
+            logging.info("WARNING: GGD structures have been ignored")
+        cv.notify()
+        cv.release()
+
+    def createIDSRootNode(self, idsName, idsDocumentation, DTVRoot):
+        itemDataDict = {}
+        itemDataDict['IDSName'] = idsName
+        itemDataDict['isIDSRoot'] = 1
+        itemDataDict['dataName'] = idsName
+        itemDataDict['isSignal'] = 0
+        itemDataDict['isSelected'] = 0
+        itemDataDict['Tag'] = idsName
+        itemDataDict['Path'] = itemDataDict['Tag']
+        itemDataDict['availableIDSData'] = 0
+        itemDataDict['documentation'] = idsDocumentation
+        return QVizTreeNode(DTVRoot, [idsName], itemDataDict)
+
+    def addChildren(self, nodeBuilder, element, parent,
+                    idsName, occurrence):
         """ To parent item, add all children IDS nodes as a tree view items.
 
         Arguments:
@@ -390,7 +412,7 @@ class QVizDataTreeView(QTreeWidget):
         """
         element_node = nodeBuilder.addNewNode(idsName, element, parent,
                                               occurrence, self)
-        if element_node != None:
+        if element_node is not None:
             for child in element:
                 self.addChildren(nodeBuilder, child, element_node, idsName,
                                  occurrence)
@@ -426,7 +448,7 @@ class QVizDataTreeView(QTreeWidget):
         # not then load it first time.
         if not ldh_obj.occurrenceAlreadyLoaded(self, IDSName=IDSName, occurrence=occ):
             # Load the IDS Root occurrence
-            ldh_obj.loadSelectedData(self, IDSName, occ)
+            ldh_obj.loadSelectedData(self, IDSName, occ, True)
 
 
 class QVizDataTreeViewFrame(QMainWindow):
@@ -501,24 +523,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Old wx variable label. Remove when obsolete
         self.view = self.dataTreeView
 
-        #self.test()
-
-
-    # def test(self):
-    #     # Check if necessary system variables are set
-    #     from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-    #     QVizGlobalOperations.checkEnvSettings()
-    #
-    #     # Set Application Program Interface
-    #     from imasviz.Viz_API import Viz_API
-    #     from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-    #     api = Viz_API()
-    #
-    #     api.LoadIDSData(self, 'magnetics', 0, 0)
-    #
-    #     # QVizLoadSelectedData(f.dataTreeView, 'magnetics', 0, 0).execute()
-    #     self.show()
-
     def event(self, event):
         """ Listen to events.
         """
@@ -531,12 +535,15 @@ class QVizDataTreeViewFrame(QMainWindow):
     def onResult(self, event):
         """ Set data obtained on event (event.type() == GlobalIDs.RESULT_EVENT).
         """
-        idsName = event.data[0]
-        occurrence = event.data[1]
-        idsData = event.data[2]
-        pathsList = event.data[3]
-        #threadingEvent = event.data[4]
-        self.updateView(idsName, occurrence, idsData)
+        arg = event.data[0]
+        if arg == 1:
+            message = event.data[1]
+            logging.info(message)
+        else:
+            idsName = event.data[0]
+            occurrence = event.data[1]
+            idsData = event.data[2]
+            self.dataTreeView.updateView(idsName, occurrence, idsData)
 
 
     def addMenuBar(self):
@@ -700,9 +707,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
         # LOG WIDGET
-        self.logWidget = QTextEdit(parent=self)
+        self.logWidget = QPlainTextEdit(parent=self)
         self.logWidget.setReadOnly(True)
-        # self.logWidget.resize(QSize(ref_width / 2, ref_height / 4))
         self.dockWidget_log = QDockWidget("Log", self)
         self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
         self.dockWidget_log.setObjectName("DockWidget_LOG")
@@ -714,8 +720,11 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_log.setObjectName("GridLayout_LOG")
         self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
-        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_log)
-        self.dataTreeView.log = Logger(self.logWidget)
+        self.addDockWidget(Qt.DockWidgetArea(8), self.dockWidget_log)
+        logging.getLogger().setLevel(logging.INFO)
+        handler = Logger(self)
+        logging.getLogger().addHandler(handler)
+        handler.new_record.connect(self.logWidget.appendHtml)
 
         # Set first docked widget minimum width
         self.dockWidget_ppw.setMinimumWidth(400)
@@ -790,7 +799,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         def onOk():
             import imas
             # Execute the export to local IDS
-            self.dataTreeView.log.info('Starting to export opened IDSs to ' +
+            logging.info('Starting to export opened IDSs to ' +
                                        ' IDS with user: ' +
                                        userBox.text() + ', database: ' +
                                        databaseBox.text() + ', shot: ' +
@@ -802,13 +811,13 @@ class QVizDataTreeViewFrame(QMainWindow):
             try:
                 exported_ids.create_env(userBox.text(), databaseBox.text(), '3')
             except:
-                self.dataTreeView.log.info('The specified database ' +
+                logging.info('The specified database ' +
                                            databaseBox.text() + ' for user ' +
                                            userBox.text() + ' not found.')
                 return
             dataSource.exportToLocal(self.dataTreeView, exported_ids)
 
-            self.dataTreeView.log.info('Export finished.')
+            logging.info('Export finished.')
 
         def onCancel():
             # Close the dialog
@@ -856,54 +865,38 @@ class QVizDataTreeViewFrame(QMainWindow):
     # def onCloseAndReopenDatabase()
 
 
-class Logger:
-    """ Logger for handling passing the information and error messages to
-    logWidget.
 
-    Arguments:
-        logWidget (QTextEdit) : Docked text widget.
+from PyQt5.QtCore import pyqtSignal, QObject
+
+class Logger(QObject, logging.Handler):
+    """ Logger for handling passing the information and error messages to logWidget.
     """
+    new_record = pyqtSignal(object)
 
     def __init__(self, logWidget):
-        self.logWidget = logWidget
+        super().__init__(logWidget)
+        super(logging.Handler).__init__()
+        formatter = Formatter('%(asctime)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
+        self.setFormatter(formatter)
 
-    def info(self, message):
-        """Print message as information.
+    def emit(self, record):
+        msg = self.format(record)
 
-        Arguments:
-            message (str) : Message to print.
-        """
-        print(message)
-        # Pass as html
-        self.logWidget.insertHtml("<font color='black'>" + message
-                                  + "</font><br />")
-        # Scroll to bottom of the log
-        self.logWidget.ensureCursorVisible()
+        if 'ERROR' in msg:
+            msg = "<font color='red'>" + msg + "</font>"
+        elif 'INFO' in msg:
+            msg = "<font color='black'>" + msg + "</font>"
 
-    def error(self, message):
-        """Print message as error.
+        self.new_record.emit(msg)
 
-        Arguments:
-            message (str) : Message to print.
-        """
-        print('ERROR! ' + message)
-        # Pass as html
-        self.logWidget.insertHtml("<b><font color='red'>"
-                                  + "ERROR! </font></b><font color='red'>"
-                                  + message + "</font><br />")
-        # Scroll to bottom of the log
-        self.logWidget.ensureCursorVisible()
 
-    def warning(self, message):
-        """Print message as warning.
+class Formatter(logging.Formatter):
+    def formatException(self, ei):
+        result = super(Formatter, self).formatException(ei)
+        return result
 
-        Arguments:
-            message (str) : Message to print.
-        """
-        print(message)
-        # Pass as html
-        self.logWidget.insertHtml("<b><font color='orange'>"
-                                  + "WARNING! </font></b><font color='red'>"
-                                  + message + "</font><br />")
-        # Scroll to bottom of the log
-        self.logWidget.ensureCursorVisible()
+    def format(self, record):
+        s = super(Formatter, self).format(record)
+        if record.exc_text:
+            s = s.replace('\n', '')
+        return s
