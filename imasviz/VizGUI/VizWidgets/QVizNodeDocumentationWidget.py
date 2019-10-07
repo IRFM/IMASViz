@@ -388,7 +388,7 @@ class QVizNodeDocumentationWidget(QWidget):
                 elif item.is0D():
                     node_contents_dict['contents'] = str(node_array_contents)
                     self.lNodeArraySizeTitle.setText(item.getDataType() + ' scalar')
-                    self.lNodeArraySizeText.setText(node_contents_dict[''])
+                    self.lNodeArraySizeText.setText('')
 
                 elif item.is2DOrLarger():
                     self.lNodeArraySizeTitle.setText(item.getDataType() + ' array')
