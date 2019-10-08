@@ -36,7 +36,7 @@ class QVizDataAccessCodeGenerator:
             if i == 0:
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
                 self.printCode('import xml.etree.ElementTree as ET', -1)
-                self.printCode('import os', -1)
+                self.printCode('import os, logging', -1)
                 self.printCode('from PyQt5.QtCore import QThread', -1)
                 self.printCode('from PyQt5.QtWidgets import QApplication', -1)
                 self.printCode('import imas', -1)
@@ -66,7 +66,7 @@ class QVizDataAccessCodeGenerator:
                     #print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
 
-                    #self.diplayLoadingMessage(name_att2)
+                    self.diplayLoadingMessage(name_att2)
 
                     #self.printCode("self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("t1 = time.time()", 2)
@@ -97,9 +97,10 @@ class QVizDataAccessCodeGenerator:
             self.printCode('',-1)
             i+=1
 
-    # def diplayLoadingMessage(self, idsName):
-    #     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + " +
-    #                    "'" + idsName + "'", 2)
+    def diplayLoadingMessage(self, idsName):
+        self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
+                       "'" + idsName + "' +  ' IDS'" , 2)
+        self.printCode("logging.info(message)", 2)
     #
     #     self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((1, message), '
     #                    'self.view.parent.eventResultId))', 2)
