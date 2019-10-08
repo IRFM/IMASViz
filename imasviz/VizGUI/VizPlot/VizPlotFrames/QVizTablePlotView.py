@@ -15,6 +15,7 @@
 #*******************************************************************************
 
 import pyqtgraph as pg
+import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
@@ -156,7 +157,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                     if (len(u) != len(ti)):
                         mess = 'x,y shapes are different, ignoring plot with label:' + label
                         print(mess)
-                        dtv.log.error(mess)
+                        logging.error(mess)
                         continue
                     self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
                               ylabel=ylabel)
