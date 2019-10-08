@@ -4,14 +4,15 @@ sys.path.append((os.environ['VIZ_HOME']))
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
+ggd_warning = 0
 
 class QVizDataAccessCodeGenerator:
 
     def __init__(self, imas_dd_version):
         self.time_step = 10
         className = "IDSDef_XMLParser_Generated_" + QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
-        IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
-        XMLtreeIDSDef = ET.parse(IDSDefFile)
+        self.IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
+        XMLtreeIDSDef = ET.parse(self.IDSDefFile)
         fileName = className + ".py"
         if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] == None:
             print("VIZ_HOME not defined! Exiting procedure.")
@@ -32,6 +33,8 @@ class QVizDataAccessCodeGenerator:
                 continue
             # if name_att != 'equilibrium':
             #     continue
+            print("Generating code for: " + name_att + " from: " + self.IDSDefFile)
+
             ids.text = name_att
             if i == 0:
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
@@ -66,7 +69,7 @@ class QVizDataAccessCodeGenerator:
                     #print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
 
-                    self.diplayLoadingMessage(name_att2)
+                    self.dipslayLoadingMessage(name_att2)
 
                     #self.printCode("self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("t1 = time.time()", 2)
@@ -97,13 +100,10 @@ class QVizDataAccessCodeGenerator:
             self.printCode('',-1)
             i+=1
 
-    def diplayLoadingMessage(self, idsName):
+    def displayLoadingMessage(self, idsName):
         self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
                        "'" + idsName + "' +  ' IDS'" , 2)
         self.printCode("logging.info(message)", 2)
-    #
-    #     self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((1, message), '
-    #                    'self.view.parent.eventResultId))', 2)
 
 
     def generateParentsCode(self, level, path):
@@ -117,7 +117,7 @@ class QVizDataAccessCodeGenerator:
         self.printCode(code1, level + 1)
 
     def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents, s, index, idsName):
-
+        global ggd_warning
         for ids_child_element in child:
             index += 1
             data_type = ids_child_element.get('data_type')
@@ -166,7 +166,9 @@ class QVizDataAccessCodeGenerator:
 
                 if ids_child_element.get('name') == "ggd" or ids_child_element.get('name').startswith("ggd_") \
                         or ids_child_element.get('name').endswith("_ggd"):
-                    print("WARNING: GGD structures have been ignored")
+                    if ggd_warning == 0:
+                        print("WARNING: GGD structures have been ignored")
+                    ggd_warning = 1
                     code = "parent.set(" + "'ggd_warning', str(" + '1' + "))"
                     self.printCode(code, level)
                     continue
