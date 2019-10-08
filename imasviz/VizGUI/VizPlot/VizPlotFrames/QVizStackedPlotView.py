@@ -42,7 +42,6 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         self.dataTreeView = parent.getDTV()
         self.plotConfig = parent.getPlotConfig()  # dictionary
         self.imas_viz_api = parent.getIMASVizAPI()
-        self.log = parent.getLog()  # QTextEdit widget
         self.figureKey = parent.getFigureKey()
 
         # Set base dimension parameter for setting plot size

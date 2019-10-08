@@ -2,7 +2,7 @@
 import warnings
 import traceback
 import threading
-import sys, os
+import sys, os, logging
 from PyQt5.QtWidgets import QApplication
 
 # Common
@@ -75,7 +75,7 @@ class ToFuPlugin(VizPlugins):
             figure.show()
         except :
             traceback.print_exc()
-            view.log.error(traceback.format_exc())
+            logging.error(traceback.format_exc())
 
 
     def getEntriesPerSubject(self):

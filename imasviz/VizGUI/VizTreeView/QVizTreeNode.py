@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QTreeWidgetItem
 class QVizTreeNode(QTreeWidgetItem):
 
     def __init__(self, *args, **kwargs):
-        #from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeView
 
         self.globalTime = None
         if len(args) == 2:
@@ -30,30 +29,6 @@ class QVizTreeNode(QTreeWidgetItem):
             self.infoDict = args[2]
             self.treeNodeExtraAttributes = args[3]
             QTreeWidgetItem.__init__(self, parent, name)
-
-
-        # if len(args) == 1:
-        #     QTreeWidgetItem.__init__(self, *args, **kwargs)
-        #     self.infoDict = args[0]
-        # elif len(args) == 2:
-        #     if type(args[0]) is QVizDataTreeView or type(args[0]) is QVizTreeNode:
-        #         self.infoDict = {}
-        #         parent = args[0]
-        #         name = args[1]
-        #         QTreeWidgetItem.__init__(self, parent, name)
-        # elif len(args) == 3:
-        #     if type(args[0]) is QVizTreeNode:
-        #         parent = args[0]
-        #         name = args[1]
-        #         self.infoDict = args[2]
-        #         QTreeWidgetItem.__init__(self, parent, name)
-        # elif len(args) == 4:
-        #     if type(args[0]) is QVizTreeNode:
-        #         parent = args[0]
-        #         name = args[1]
-        #         self.infoDict = args[2]
-        #         self.treeNodeExtraAttributes = args[3]
-        #         QTreeWidgetItem.__init__(self, parent, name)
 
     def isCoordinateTimeDependent(self, coordinate):
          if coordinate is not None:
@@ -108,10 +83,6 @@ class QVizTreeNode(QTreeWidgetItem):
 
         label = dtv.dataSource.getShortLabel() + ":" + self.getPath()
 
-        #label = nodeData['dataName']
-        #label = label.replace('ids.','')
-        #label = QVizGlobalOperations.replaceBrackets(label)
-        #label = QVizGlobalOperations.replaceDotsBySlashes(label)
         # Set and format xlabel
         xlabel = xlabel.replace('ids.','')
         xlabel = QVizGlobalOperations.replaceBrackets(xlabel)
@@ -272,6 +243,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setOccurrence(self, occurrence):
         self.infoDict['occurrence'] = occurrence
+
+    def setAvailableIDSData(self, value):
+        self.infoDict['availableIDSData'] = value
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \

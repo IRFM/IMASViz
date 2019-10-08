@@ -21,7 +21,7 @@
 #****************************************************
 
 import xml.etree.ElementTree as ET
-
+import logging
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
@@ -42,8 +42,6 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         self.dataTreeView = dataTreeView
         # Viz_API
         self.api = self.dataTreeView.imas_viz_api
-        #Logger
-        self.log = self.dataTreeView.log
 
     def execute(self):
         if self.raiseErrorIfNoSelectedArrays():
@@ -61,8 +59,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         if treeNode.is1DAndDynamic() or treeNode.is0DAndDynamic():
             plotDimension = "1D"
         else:
-            self.log.warning('Plots dimension larger than 1D are currently not supported.')
-            self.log.warning('Data of unsupported data type passed. Aborting!')
+            logging.warning('Plots dimension larger than 1D are currently not supported.')
+            logging.warning('Data of unsupported data type passed. Aborting!')
             return False
         return plotDimension
 
@@ -169,10 +167,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             plotWidget.show()
 
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
         except Exception as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys():

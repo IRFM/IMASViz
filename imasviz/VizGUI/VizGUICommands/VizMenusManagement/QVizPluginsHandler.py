@@ -1,5 +1,5 @@
 
-import importlib
+import importlib, logging
 
 from functools import partial
 from PyQt5.QtCore import QObject, pyqtSlot
@@ -77,15 +77,6 @@ class QVizPluginsHandler:
                 allEntries = VizPlugins.getAllEntries(pluginsName)
 
             pluginsCommandDescription = allEntries[entry][1]
-            # print 'TESTING'
-            # pluginsName = m[0]
-            # print pluginsName
-            # print menuId
-            # print entry
-            # print pluginsObject
-            # print pluginsCommandDescription
-            # self.dataTreeView.popupmenu.Append(menuId,
-            #                                    pluginsCommandDescription)
 
             # Add action ...
             icon_onPluginHandler = GlobalIcons.getCustomQIcon(QApplication,
@@ -100,7 +91,6 @@ class QVizPluginsHandler:
         self.dataTreeView.popupmenu.exec_(
                 self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
 
-        # self.dataTreeView.Bind(wx.EVT_MENU, self.popUpMenuHandler)
         return 1
 
     @pyqtSlot(int)
@@ -136,7 +126,7 @@ class QVizPluginsHandler:
             # If pluginsObject is QMainWindow type (indicating that the
             # plugin was provided as an instance of the user interface
             # (.ui file)
-            self.dataTreeView.log.info('Running plugin through instance of '
+            logging.info('Running plugin through instance of '
                                        'the user interface (.ui) file.')
             # Find the main Qt designer widget (by widget object name)
             qdw = pluginsObject.findChild(QWidget, 'mainPluginWidget')
@@ -167,7 +157,7 @@ class QVizPluginsHandler:
             # Show the plugin user interface
             pluginsObject.show()
         elif 'execute' in dir(pluginsObject):
-            self.dataTreeView.log.info('Executing plugin...')
+            logging.info('Executing plugin...')
             pluginsObject.execute(pluginsConfiguration,
                                   dataTreeView=self.dataTreeView)
         else:

@@ -15,6 +15,7 @@
 #*******************************************************************************
 from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
+import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
@@ -66,10 +67,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
             # Set configuration before plotting
             self.applyPlotConfigurationBeforePlotting(plotConfig=self.plotConfig)
         self.imas_viz_api = self.dataTreeView.imas_viz_api
-        self.log = self.dataTreeView.log  # QTextEdit widget
 
         if self.getNumSignals(all_DTV=all_DTV) < 1:
-            self.log.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
+            logging.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
                              'MultiPlotView creation.')
             return
 
@@ -121,11 +121,11 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """Check if figure key was properly defined and if it is fully defined.
         """
         if figureKey == None:
-            self.log.warning('QVizMultiPlotWindow: FigureKey not provided!')
+            logging.warning('QVizMultiPlotWindow: FigureKey not provided!')
             return
         elif 'TablePlotView' not in figureKey != 'StackedPlotView' not in figureKey:
             # If neither required strings are not found
-            self.log.warning('QVizMultiPlotWindow: Proper figureKey not '
+            logging.warning('QVizMultiPlotWindow: Proper figureKey not '
                              'provided! See class constructor figureKey '
                              'variable description for more information.')
             return
@@ -154,7 +154,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         elif mpType == 'StackedPlotView':
             mpView = QVizStackedPlotView(parent=self)
         else:
-            self.log.error('QVizMultiPlotWindow: proper multiPlot type was not '
+            logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
                            'provided!')
 
         # Set mpView title
@@ -317,7 +317,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """
         from ast import literal_eval
 
-        self.log.info('Applying plot configuration after plotting to plot '
+        logging.info('Applying plot configuration after plotting to plot '
                       'view column ' + str(plotItem.column) + ' row ' + str(plotItem.row))
 
         # TODO: Browsing through plotConfig is done also in
@@ -458,7 +458,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         return self.imas_viz_api
 
     def getLog(self):
-        return self.log
+        return logging
 
     def getFigureKey(self):
         return self.figureKey

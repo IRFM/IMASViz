@@ -157,7 +157,7 @@ class QVizNodesSelectionWindow(QDialog):
     #                        figureKey=figureKey,
     #                        update=0).execute()
     #     except ValueError as e:
-    #         self.dataTreeView.log.error(str(e))
+    #         self.logging.error(str(e))
     #
     # @pyqtSlot()
     # def plotSignalCommand(self):
@@ -191,5 +191,5 @@ class QVizNodesSelectionWindow(QDialog):
     #         p.execute()
     #
     #     except ValueError as e:
-    #         self.dataTreeView.log.error(str(e))
+    #         self.logging.error(str(e))
 

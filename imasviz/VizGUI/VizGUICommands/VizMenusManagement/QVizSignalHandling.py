@@ -23,7 +23,7 @@
 #****************************************************
 
 from functools import partial
-import re
+import re, logging
 from PyQt5.QtCore import QObject, pyqtSlot
 from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication, QStyle
 from PyQt5.QtGui import QIcon
@@ -654,7 +654,7 @@ class QVizSignalHandling(QObject):
             p.execute(self)
 
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotPreviewSignalCommand(self):
         """Show preview plot.
@@ -672,7 +672,7 @@ class QVizSignalHandling(QObject):
             p.execute()
 
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     # @pyqtSlot(bool)
     def plotSelectedSignals(self, all_DTV=True):
@@ -694,7 +694,7 @@ class QVizSignalHandling(QObject):
                 QVizPlotSelectedSignals(self.dataTreeView, figureKey,
                                         all_DTV=True).execute()
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     @pyqtSlot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None):
@@ -722,7 +722,7 @@ class QVizSignalHandling(QObject):
                                     configFile=configFile,
                                     all_DTV=True)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     @pyqtSlot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False):
@@ -744,7 +744,7 @@ class QVizSignalHandling(QObject):
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                                     update=0, all_DTV=True)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     @pyqtSlot(int)
     def addSignalPlotToFig(self, numFig):
@@ -759,7 +759,7 @@ class QVizSignalHandling(QObject):
             title = None
             if self.treeNode.is0DAndDynamic():
                 # Get label and title (dummy = obsolete xlabel)
-                label = self.dataTreeView.dataSource.getShortLabel() + ":" + self.getPath()
+                label = self.dataTreeView.dataSource.getShortLabel() + ":" + self.treeNode.getPath()
                 label, title = self.treeNode.correctLabelForTimeSlices(label, title)
 
             # Get figure key (e.g. 'Figure:0' string)
@@ -772,7 +772,7 @@ class QVizSignalHandling(QObject):
                                figureKey=figureKey,
                                update=0).execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
 
     @pyqtSlot(int)
@@ -790,7 +790,7 @@ class QVizSignalHandling(QObject):
             QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
                                     all_DTV=all_DTV).execute()
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
 
     def nodeDataShareSameCoordinatesAs(self, selectedNodeDataList, currentNodeData):
@@ -891,7 +891,7 @@ class QVizSignalHandling(QObject):
                 GetFigureKey(str(numFig), figureType)
             self.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotSignalVsTimeCommand(self):
         """Plotting of signal node, found within the 'time_slice[:]' array of
@@ -941,7 +941,7 @@ class QVizSignalHandling(QObject):
                            addCoordinateSlider=True)
             p.execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plot0D_DataVsTimeCommand(self):
 
@@ -968,7 +968,7 @@ class QVizSignalHandling(QObject):
                            addCoordinateSlider=False)
             p.execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotSelectedSignalVsTimeAtCoordinate1D(self, index, currentFigureKey,treeNode):
         """Overwrite/Update the existing plot (done with
@@ -1014,7 +1014,7 @@ class QVizSignalHandling(QObject):
                            addCoordinateSlider=True,
                            vizTreeNode=treeNode).execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey,
                                              treeNode):
@@ -1059,4 +1059,4 @@ class QVizSignalHandling(QObject):
                            addTimeSlider=True,
                            vizTreeNode=treeNode).execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
