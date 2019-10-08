@@ -69,7 +69,7 @@ class QVizDataAccessCodeGenerator:
                     #print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 1)
 
-                    self.dipslayLoadingMessage(name_att2)
+                    self.displayLoadingMessage(name_att2)
 
                     #self.printCode("self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')", 2)
                     self.printCode("t1 = time.time()", 2)
