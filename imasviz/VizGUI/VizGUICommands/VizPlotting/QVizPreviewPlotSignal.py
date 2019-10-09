@@ -21,7 +21,7 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #****************************************************
 
-import sys
+import sys, logging
 import traceback
 
 from PyQt5.QtWidgets import QWidget
@@ -32,6 +32,7 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 
 class QVizPreviewPlotSignal(QVizAbstractCommand):
+
     def __init__(self, dataTreeView, nodeData = None, signal = None,
                  title = '', label = None, xlabel = None, signalHandling = None):
 
@@ -39,18 +40,14 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
         QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
 
-        self.updateNodeData();
+        self.updateNodeData()
 
         self.signalHandling = signalHandling
 
-        if signal == None:
-            signalDataAccess = \
-                QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+        if signal is None:
+            signal = self.get1DArrayData()
 
-            self.signal = signalDataAccess.GetSignal(self.nodeData,
-                            self.dataTreeView.dataSource.shotNumber, self.treeNode)
-        else:
-            self.signal = signal
+        self.signal = signal
 
         # Set widget window title
         self.title = 'Preview Plot'
@@ -62,7 +59,18 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
         self.xlabel = xlabel
 
+    def get1DArrayData(self):
+        signal = None
+        signalDataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+        if self.treeNode.is1DAndDynamic()and self.treeNode.isDataAvailable():
+            signal = signalDataAccess.GetSignal(self.treeNode)
+        elif self.treeNode.is0DAndDynamic()and self.treeNode.isDataAvailable():
+            signal = signalDataAccess.Get0DSignalVsTime(self.treeNode)
+        return signal
+
     def execute(self):
+        if self.signal is None:
+            return
         try:
             if len(self.signal) == 2:
                 t = QVizPreviewPlotSignal.getTime(self.signal)
@@ -75,7 +83,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             else:
                 raise ValueError("Warning! Only 1D plots are currently supported.")
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     # @staticmethod
     def getPlotWidget(self):
@@ -86,7 +94,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         if plotWidget == None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
-            self.log.error(str(error))
+            logging.error(str(error))
         # self.plotWidget = \
         #     IMASVIZ_PreviewPlotFrame(None, size=(600, 500), title='Plot Preview',
         #                      signalHandling=self.signalHandling)
@@ -161,20 +169,17 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
         #t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])
 
-        if label == None:
+        if label is None:
             label = signalNode.getPath()
 
-        if xlabel == None:
+        if xlabel is None:
             if 'coordinate1' in signalNode.getInfoDict():
                 xlabel = \
                     QVizGlobalOperations.replaceBrackets(signalNode.getInfoDict()['coordinate1'])
             if xlabel != None and xlabel.endswith("time"):
-                xlabel +=  "[s]"
+                xlabel += "[s]"
 
-        ylabel = 'S(t)'
-        if signalNode is not None and \
-                not (signalNode.isCoordinateTimeDependent(signalNode.getInfoDict()['coordinate1'])):
-           ylabel = 'S'
+        ylabel = signalNode.getName()
 
         if 'units' in signalNode.getInfoDict():
             units = signalNode.getInfoDict()['units']
@@ -182,7 +187,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
         label = dataTreeView.dataSource.getShortLabel() + ':' + label
 
-        if xlabel == None:
-            xlabel = "Time[s]"
+        if xlabel is None:
+            xlabel = "time[s]"
 
         return label, xlabel, ylabel, title

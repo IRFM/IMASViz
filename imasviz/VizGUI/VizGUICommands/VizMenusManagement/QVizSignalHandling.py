@@ -19,15 +19,14 @@
 #    def # onClose
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, L. Xinyi, D. Penko
 #****************************************************
 
-# from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from functools import partial
-import re
+import re, logging
 from PyQt5.QtCore import QObject, pyqtSlot
-from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication
-from PyQt5.QtGui import QIcon, QStyle
+from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication, QStyle
+from PyQt5.QtGui import QIcon
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import GlobalIcons
 
@@ -52,18 +51,13 @@ class QVizSignalHandling(QObject):
         super(QVizSignalHandling, self).__init__()
         self.dataTreeView = dataTreeView
         self.imas_viz_api = self.dataTreeView.imas_viz_api
-        # self.CHANGE_COORD1 = GlobalIDs.ID_CHANGE_COORD1
-        # self.CHANGE_TIME1  = GlobalIDs.ID_CHANGE_TIME1
         self.plotFrame = None
         self.currentFigureKey = None
         # Get signal node (tree item) data
         self.nodeData = None
         if self.dataTreeView.selectedItem != None:
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
-        # Get signal node dataName
         self.treeNode = self.dataTreeView.selectedItem
-
-        self.timeSlider = None
 
     def showPopUpMenu(self, signalNodeName):
         """Display the popup menu for plotting data.
@@ -81,7 +75,7 @@ class QVizSignalHandling(QObject):
 
         # Do not proceed with building the context menu if the selected node is
         # not signal node
-        if (self.signalNodeName == None):
+        if self.signalNodeName is None:
             return 0
 
         # Set new popup menu
@@ -104,29 +98,35 @@ class QVizSignalHandling(QObject):
         # Set new popup menu
         self.contextMenu = QMenu()
 
-        # SET TOP ACTIONS
-        # - Add action for setting signal node select/unselect status
-        self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
+        if not self.treeNode.is2DOrLarger():
 
-        # - Add action for ploting signal node as a function of time
-        self.contextMenu.addAction(self.actionPlotAsFunctionOfTime())
+            # SET TOP ACTIONS
+            # - Add action for setting signal node select/unselect status
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+                self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
 
-        # - Add action for selection of all signals from the same array of
-        #   structures
-        if self.nodeData.get('aos_parents_count') != '0':
-            self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+            # - Add action for selection of all signals from the same array of
+            #   structures
+            if self.treeNode.is1DAndDynamic():
+                if self.nodeData.get('aos_parents_count') != '0':
+                    self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
 
-        # SET TOP MENU ITEMS
-        # - Add menu for handling plotting using the under-the-mouse selected
-        #   signal node
-        self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
+            # SET TOP MENU ITEMS
+            # - Add menu for handling plotting using the under-the-mouse selected
+            #   signal node
+            if self.treeNode.is1DAndDynamic():
+                self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
+            elif self.treeNode.is0DAndDynamic():
+                self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
 
-        # - Add menu for handling unselection of signal nodes
-        self.contextMenu.addMenu(self.menuUnselectSignalNodes())
+            # - Add menu for handling unselection of signal nodes
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+                self.contextMenu.addMenu(self.menuUnselectSignalNodes())
 
-        # - Add menu for handling plotting a selection of signal nodes
-        self.contextMenu.addMenu(
-            self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
+            # - Add menu for handling plotting a selection of signal nodes
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+                self.contextMenu.addMenu(
+                    self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
 
         # - Add menu for handling show/hide if figures, TablePlotViews and
         #   StackedPlotViews.
@@ -140,25 +140,33 @@ class QVizSignalHandling(QObject):
         - 'Add selection to TablePlotView'
         - 'Delete subplot'
         - 'Open subplots manager'
-        - 'Plot ' + self.signalNodeName + ' as a function of time'
         """
         return self.contextMenu
 
     def actionPlotAsFunctionOfTime(self):
         # Add action to plot the signal data as a function of time
         # TODO: icon
-        icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
-        action_plotAsFunctionOfTime = QAction(icon, 'Plot as function of time', self)
-        action_plotAsFunctionOfTime.setDisabled(True)
-        #menu_figure.addAction(action_plotAsFunctionOfTime)
-        # - Enable this action if the conditions are met
-        if self.treeNode != None and \
-                self.treeNode.treeNodeExtraAttributes.time_dependent(
-                    self.treeNode.treeNodeExtraAttributes.aos):
-            action_plotAsFunctionOfTime.triggered.connect(
-                self.plotSignalVsTimeCommand)
+        action_plotAsFunctionOfTime = None
+        if self.treeNode.is1DAndDynamic() and self.treeNode.treeNodeExtraAttributes.time_dependent(
+                        self.treeNode.treeNodeExtraAttributes.aos):
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
+            action_plotAsFunctionOfTime = QAction(icon, 'Plot as function of time', self)
+            action_plotAsFunctionOfTime.triggered.connect(self.plotSignalVsTimeCommand)
             action_plotAsFunctionOfTime.setDisabled(False)
+
         return action_plotAsFunctionOfTime
+        # elif self.treeNode.is0DAndDynamic():
+        #     # Add action to plot the signal data as a function of time
+        #     # TODO: icon
+        #     icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
+        #     action_plotAsFunctionOfTime = QAction(icon, 'Plot 0D data as function of time', self)
+        #     action_plotAsFunctionOfTime.triggered.connect(
+        #             self.plot0D_DataVsTimeCommand)
+        #     action_plotAsFunctionOfTime.setDisabled(False)
+        #     return action_plotAsFunctionOfTime
+        # else:
+        #     print("Unexpected data type in actionPlotAsFunctionOfTime() function")
+
 
     def actionSelectOrUnselectSignalNode(self):
         """Set action to select/unselect signal node.
@@ -169,8 +177,6 @@ class QVizSignalHandling(QObject):
             s = 'Unselect '
             # Bitmap icon
             icon = GlobalIcons.getCustomQIcon(QApplication, 'unselect')
-
-            # TODO
         else:
             # The node is unselected, show select menu
             s = 'Select '
@@ -198,6 +204,9 @@ class QVizSignalHandling(QObject):
     def menuPlotCurrentSignalNode(self):
         """Set menu for plotting current (under the mouse selected) signal node.
         """
+        # - Add action for ploting signal node as a function of time
+        if self.actionPlotAsFunctionOfTime() is not None:
+            self.contextMenu.addAction(self.actionPlotAsFunctionOfTime())
 
         menu = QMenu('Plot ' + self.signalNodeName + ' to', self.contextMenu)
         menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
@@ -220,7 +229,7 @@ class QVizSignalHandling(QObject):
 
             # Add menu item to add plot to specific existing figure
             # Check for figures that share the same coordinates
-            if self.shareSameCoordinatesFrom(figureKey):
+            if self.nodeDataShareSameCoordinates(figureKey, self.nodeData):
                 # Set action
                 action_addSignalPlotToFig = QAction(figureKey, self)
                 action_addSignalPlotToFig.triggered.connect(
@@ -229,6 +238,38 @@ class QVizSignalHandling(QObject):
                 menu_figure.addAction(action_addSignalPlotToFig)
 
 
+        return menu
+
+    def menuPlotCurrentSignal0DNode(self):
+        """Set menu for plotting current (under the mouse selected) signal node.
+        """
+        menu = QMenu('Plot ' + self.signalNodeName + ' to', self.contextMenu)
+        menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
+
+        icon_new = GlobalIcons.getCustomQIcon(QApplication, 'new')
+        action_plotNewFigure = QAction(icon_new, 'New', self)
+        action_plotNewFigure.triggered.connect(self.plot0D_DataVsTimeCommand)
+
+        menu_figure = menu.addMenu('Figure')
+        menu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+        menu_figure.addAction(action_plotNewFigure)
+
+        for figureKey in self.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE):
+            # Get figure number out from the figureKey string
+            # (e.g. 'Figure:0' -> 0)
+            # id_Fig = int(figureKey.split(':')[1])
+            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
+
+            # Add menu item to add plot to specific existing figure
+            # Check for figures that share the same coordinates
+            if self.nodeDataShareSameCoordinates(figureKey, self.nodeData):
+                # Set action
+                action_addSignalPlotToFig = QAction(figureKey, self)
+                action_addSignalPlotToFig.triggered.connect(
+                    partial(self.addSignalPlotToFig, id_Fig))
+                # Add to submenu
+                menu_figure.addAction(action_addSignalPlotToFig)
         return menu
 
     def menuUnselectSignalNodes(self):
@@ -282,6 +323,8 @@ class QVizSignalHandling(QObject):
 
             subMenu_figure = menu.addMenu('Figure')
             subMenu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+
+
             subMenu_figure_new = subMenu_figure.addMenu('New')
             subMenu_figure_new.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
 
@@ -289,53 +332,58 @@ class QVizSignalHandling(QObject):
             # Add menu item to plot selected signals to single
             # plot - This DTV
             icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
-            action_figure_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
-            action_figure_thisDTV.triggered.connect(
-                partial(self.plotSelectedSignals, False))
-            # Add to submenu
-            subMenu_figure_new.addAction(action_figure_thisDTV)
+            icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
+            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
+                action_figure_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
+                action_figure_thisDTV.triggered.connect(
+                    partial(self.plotSelectedSignals, False))
+                # Add to submenu
+                subMenu_figure_new.addAction(action_figure_thisDTV)
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
             # plot - All DTVs
+            action_figure_allDTV = QAction(icon_allDTV, 'All IMAS Databases',self)
+            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
+                action_figure_allDTV.triggered.connect(
+                    partial(self.plotSelectedSignals, True))
+                # Add to submenu
+                subMenu_figure_new.addAction(action_figure_allDTV)
 
-            icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
-            action_figure_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
-                                                 self)
-            action_figure_allDTV.triggered.connect(
-                partial(self.plotSelectedSignals, True))
-            # Add to submenu
-            subMenu_figure_new.addAction(action_figure_allDTV)
-
-            # TODO: do same for TablePlotView and StackedPlotView
             for figureKey in self.imas_viz_api.GetFiguresKeys(
                     figureType=FigureTypes.FIGURETYPE):
                 # Check for figures that share the same coordinates
-                if self.shareSameCoordinatesFrom(figureKey):
-                    # Get figure number id out from the figureKey string
-                    # (e.g. 'Figure:0' -> 0)
-                    # id_Fig = int(figureKey.split(':')[1])
-                    id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
-                    # Add menu item to add plot to specific figure
-                    subMenu_figure_existing = subMenu_figure.addMenu(figureKey)
-                    # Add menu item to plot selected signals to existing
-                    # plot - This DTV
-                    action_figure_ex_thisDTV = \
-                        QAction(icon_thisDTV, 'This IMAS Database', self)
-                    action_figure_ex_thisDTV.triggered.connect(
-                        partial(self.addSelectedSignalsPlotToFig, id_Fig, False))
-                    # Add to submenu
-                    subMenu_figure_existing.addAction(action_figure_ex_thisDTV)
-                    # Add menu item to plot selected signals to existing
-                    # plot - All DTV
-                    action_figure_ex_allDTV = \
-                        QAction(icon_thisDTV, 'All IMAS Databases', self)
-                    action_figure_ex_allDTV.triggered.connect(
-                        partial(self.addSelectedSignalsPlotToFig, id_Fig, True))
-                    # Add to submenu
-                    subMenu_figure_existing.addAction(action_figure_ex_allDTV)
+                if not self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
+                    continue
+
+                if not self.currentSelectionShareSameCoordinates(figureKey):
+                    continue
+
+                # Get figure number id out from the figureKey string
+                # (e.g. 'Figure:0' -> 0)
+                # id_Fig = int(figureKey.split(':')[1])
+                id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
+                # Add menu item to add plot to specific figure
+                subMenu_figure_existing = subMenu_figure.addMenu(figureKey)
+                # Add menu item to plot selected signals to existing
+                # plot - This DTV
+                action_figure_ex_thisDTV = \
+                    QAction(icon_thisDTV, 'This IMAS Database', self)
+                action_figure_ex_thisDTV.triggered.connect(
+                    partial(self.addSelectedSignalsPlotToFig, id_Fig, False))
+                # Add to submenu
+                subMenu_figure_existing.addAction(action_figure_ex_thisDTV)
+                # Add menu item to plot selected signals to existing
+                # plot - All DTV
+                action_figure_ex_allDTV = \
+                    QAction(icon_thisDTV, 'All IMAS Databases', self)
+                action_figure_ex_allDTV.triggered.connect(
+                    partial(self.addSelectedSignalsPlotToFig, id_Fig, True))
+                # Add to submenu
+                subMenu_figure_existing.addAction(action_figure_ex_allDTV)
 
             # ------------------------------------------------------------------
+
             # TablePlotView
             subMenu_TPV = menu.addMenu('TablePlotView')
             subMenu_TPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'TPV'))
@@ -346,7 +394,6 @@ class QVizSignalHandling(QObject):
             # -----
             # Add menu item to plot selected signals to single
             # plot - This DTV
-            icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
             action_TPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database', self)
             action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=False, configFile=None))
@@ -356,7 +403,7 @@ class QVizSignalHandling(QObject):
             # -----
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
+            #icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
             action_TPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases', self)
             action_TPV_allDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=True,
@@ -585,28 +632,29 @@ class QVizSignalHandling(QObject):
             label = None
             xlabel = None
 
+            addTimeSlider = False
+
             # If signal node is a part of time_slice array of structures
             # (e.g. 'equilibrium.time_slice[0].profiles_1d.psi')
             if self.treeNode != None and \
                 self.treeNode.treeNodeExtraAttributes.time_dependent_aos():
                 aos_vs_itime = self.treeNode.getDataPathVsTime(
                     self.treeNode.treeNodeExtraAttributes.aos)
-                label = self.treeNode.getPath()
+                #label = self.treeNode.getPath()
                 xlabel = QVizGlobalOperations.replaceBrackets(
                     self.treeNode.evaluateCoordinate1At(
                         self.treeNode.infoDict['i']))
-                self.timeSlider = True
+                addTimeSlider = True
 
             # Get the signal data for plot widget
-            # TODO: remove signalHandling as an argument
             p = QVizPlotSignal(self.dataTreeView, self.nodeData, signal=None,
                                figureKey=self.currentFigureKey, label=label,
-                               xlabel=xlabel, signalHandling=self)
+                               xlabel=xlabel, addTimeSlider=addTimeSlider)
             # Plot signal data to plot widget
-            p.execute()
+            p.execute(self)
 
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotPreviewSignalCommand(self):
         """Show preview plot.
@@ -624,7 +672,7 @@ class QVizSignalHandling(QObject):
             p.execute()
 
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     # @pyqtSlot(bool)
     def plotSelectedSignals(self, all_DTV=True):
@@ -646,7 +694,7 @@ class QVizSignalHandling(QObject):
                 QVizPlotSelectedSignals(self.dataTreeView, figureKey,
                                         all_DTV=True).execute()
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     @pyqtSlot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None):
@@ -661,7 +709,7 @@ class QVizSignalHandling(QObject):
         try:
             figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
             # Note: figureKey that includes 'TablePlotView' is expected
-            if all_DTV != True:
+            if not all_DTV:
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
                                     figureKey=figureKey,
                                     update=0,
@@ -674,7 +722,7 @@ class QVizSignalHandling(QObject):
                                     configFile=configFile,
                                     all_DTV=True)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     @pyqtSlot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False):
@@ -696,7 +744,7 @@ class QVizSignalHandling(QObject):
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
                                     update=0, all_DTV=True)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     @pyqtSlot(int)
     def addSignalPlotToFig(self, numFig):
@@ -706,15 +754,26 @@ class QVizSignalHandling(QObject):
             numFig (int) : Number identification of the existing figure.
         """
         try:
+
+            label = None
+            title = None
+            if self.treeNode.is0DAndDynamic():
+                # Get label and title (dummy = obsolete xlabel)
+                label = self.dataTreeView.dataSource.getShortLabel() + ":" + self.treeNode.getPath()
+                label, title = self.treeNode.correctLabelForTimeSlices(label, title)
+
             # Get figure key (e.g. 'Figure:0' string)
             figureKey = self.imas_viz_api. \
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
             QVizPlotSignal(dataTreeView=self.dataTreeView,
-                           nodeData=self.nodeData,
-                           figureKey=figureKey,
-                           update=0).execute()
+                               label=label,
+                               title=title,
+                               nodeData=self.nodeData,
+                               figureKey=figureKey,
+                               update=0).execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
+
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -731,49 +790,68 @@ class QVizSignalHandling(QObject):
             QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
                                     all_DTV=all_DTV).execute()
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
-    def shareSameCoordinates(self, selectedDataList):
-        """Check if data in selectedDataList (dict) share the same coordinates
+
+    def nodeDataShareSameCoordinatesAs(self, selectedNodeDataList, currentNodeData):
+        """Check if data already in figure and next to be added signal plot
+        share the same coordinates and other conditions for a meaningful plot.
         """
-
-        selectedSignalsList = []
-        for key in selectedDataList:
-            v = selectedDataList[key]  # v is a map
-            selectedSignalsList.append(v['QTreeWidgetItem'].getInfoDict())
-
-        s = self.nodeData
-        for si in selectedSignalsList:
-            if s['coordinate1'] != si['coordinate1']:
-                return False
-            s = si
+        s = currentNodeData
+        if self.treeNode.is1DAndDynamic():
+            for si in selectedNodeDataList:
+                if 'coordinate1' in s and 'coordinate1' in si and s['coordinate1'] != si['coordinate1']:
+                    return False
+                if s['units'] != si['units']:
+                    return False
+        elif self.treeNode.is0DAndDynamic():
+            for si in selectedNodeDataList:
+                if s['units'] != si['units']:
+                    return False
         return True
 
-    def shareSameCoordinatesFrom(self, figureKey):
+    def figureDataToNodeDataList(self, figureDataList):
+        figureNodeDataList = []
+        for k in figureDataList:
+            v = figureDataList[k]
+            figureNodeDataList.append(v[1])  # v[0] = shot number, v[1] = node data
+        return figureNodeDataList
+
+    def nodeDataShareSameCoordinates(self, figureKey, currentNodeData):
+        figureDataList = self.imas_viz_api.figToNodes[figureKey]
+        figureNodeDataList = []
+        for k in figureDataList:
+            v = figureDataList[k]
+            figureNodeDataList.append(v[1])  # v[0] = shot number, v[1] = node data
+        return self.nodeDataShareSameCoordinatesAs(figureNodeDataList, currentNodeData)
+
+    def currentSelectionShareSameCoordinates(self, figureKey):
+        for k in self.dataTreeView.selectedSignalsDict:
+            signal = self.dataTreeView.selectedSignalsDict[k]
+            vizTreeNode = signal['QTreeWidgetItem']
+            if not self.nodeDataShareSameCoordinates(figureKey, vizTreeNode.getNodeData()):  # s[1] refers to node data
+                return False
+        return True
+
+    def shareSameCoordinates(self, signalsList):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates.
         """
-        selectedDataList = self.imas_viz_api.figToNodes[figureKey]
+        selectedNodeDataList = []
+        for k in signalsList:
+            signal = signalsList[k]
+            vizTreeNode = signal['QTreeWidgetItem']
+            selectedNodeDataList.append(vizTreeNode.getNodeData())  # v[0] = shot number,
+            # v[1] = node data
 
-        selectedSignalsList = []
-        for k in selectedDataList:
-            v = selectedDataList[k]
-            selectedSignalsList.append(v[1])  # v[0] = shot number,
-                                            # v[1] = node data
-        s = self.nodeData
+        return self.shareSameCoordinates2(selectedNodeDataList)
 
-        if s['isSignal'] != 1:
-            # For cases when running the QVizSignalHandling features from
-            # DTV menubar and no selected signal is set
-            # TODO: Code proper improvement necessary
-            s = selectedSignalsList[0] # Set first selected signals as the
-                                       # DTV selection (blue highlighted)
-        for si in selectedSignalsList:
-            if s['coordinate1'] != si['coordinate1']:
+    def shareSameCoordinates2(self, selectedNodeDataList):
+        """Check if data share the same coordinates.
+        """
+        for si in selectedNodeDataList:
+            if not self.nodeDataShareSameCoordinatesAs(selectedNodeDataList, si):
                 return False
-            if s['units'] != si['units']:
-                return False
-            s = si
         return True
 
     @pyqtSlot(int, str)
@@ -813,7 +891,7 @@ class QVizSignalHandling(QObject):
                 GetFigureKey(str(numFig), figureType)
             self.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotSignalVsTimeCommand(self):
         """Plotting of signal node, found within the 'time_slice[:]' array of
@@ -840,27 +918,15 @@ class QVizSignalHandling(QObject):
             # Get signal node index
             # index = 0
             index = treeNode.infoDict['i']
-
-            # Get list of paths of arrays through time slices
-            data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
-            # - Add missing part to the end (the name of the array ('phi',
-            #   'psi' etc.) is missing
-            # TODO: fix 'getDataVsTime' to get full required path
-            missing_path_part = '.' + treeNode.getPath().split('/')[-1]
-            data_path_list = [x + missing_path_part for x in data_path_list]
-
             dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            signal = dataAccess.GetSignalVsTime(data_path_list,
-                                                treeNode.getInfoDict(),
-                                                treeNode,
-                                                index)
+            signal = dataAccess.GetSignalVsTime(treeNode, index)
             # Get label and title (dummy = obsolete xlabel)
             label, title, dummy = \
-                treeNode.coordinate1LabelAndTitleForTimeSlices(self.nodeData, index)
+                treeNode.coordinate1LabelAndTitleForTimeSlices(dtv=self.dataTreeView, node=treeNode, index=index)
             # TODO: fix routines for obtaining label
-            idsName = treeNode.getInfoDict()['IDSName']
-            label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(:)')
-            label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(:)')
+            #idsName = treeNode.getInfoDict()['IDSName']
+            label = label.replace('time_slice(0)', 'time_slice(:)')
+            label = label.replace('profiles_1d(0)','profiles_1d(:)')
             label = label + '[' + str(index) + ']'
             self.treeNode = treeNode
             self.timeSlider = False
@@ -870,15 +936,41 @@ class QVizSignalHandling(QObject):
                            figureKey=self.currentFigureKey,
                            title=title,
                            label=label,
-                           xlabel="Time[s]",
+                           xlabel="time[s]",
                            update=0,
-                           signalHandling=self)
-            p.execute()
+                           addCoordinateSlider=True)
+            p.execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
-    def plotSelectedSignalVsTimeAtIndex(self, index, currentFigureKey,
-                                        treeNode):
+    def plot0D_DataVsTimeCommand(self):
+
+        """Plotting of 0D data nodes, found within timed AOS
+        """
+
+        # Get currently selected QVizTreeNode (QTreeWidgetItem)
+        try:
+            self.treeNode = self.dataTreeView.selectedItem
+            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            signal = dataAccess.Get0DSignalVsTime(self.treeNode)
+            # Get label and title (dummy = obsolete xlabel)
+            label = self.dataTreeView.dataSource.getShortLabel() + ":" + self.treeNode.getPath()
+            label, title = self.treeNode.correctLabelForTimeSlices(label, '')
+
+            p = QVizPlotSignal(dataTreeView=self.dataTreeView,
+                           nodeData=self.nodeData,
+                           signal=signal,
+                           figureKey=self.currentFigureKey,
+                           title=title,
+                           label=label,
+                           xlabel="time[s]",
+                           update=0,
+                           addCoordinateSlider=False)
+            p.execute(self)
+        except ValueError as e:
+            logging.error(str(e))
+
+    def plotSelectedSignalVsTimeAtCoordinate1D(self, index, currentFigureKey,treeNode):
         """Overwrite/Update the existing plot (done with
         'plotSignalVsTimeCommand' routine and currently still shown in
         the plot window labeled as 'currentFigureKey') using the same
@@ -893,30 +985,19 @@ class QVizSignalHandling(QObject):
                                       replace the current plot in figure window.
         """
         try:
-            # Get list of paths of arrays through time slices
-            data_path_list = treeNode.getDataVsTime() #aos[0], aos[1], ... , aos[itime], ...
-            # - Add missing part to the end (the name of the array ('phi',
-            #   'psi' etc.) is missing
-            # TODO: fix 'getDataVsTime' to get full required path
-            missing_path_part = '.' + treeNode.getPath().split('/')[-1]
-            data_path_list = [x + missing_path_part for x in data_path_list]
             dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            signal = dataAccess.GetSignalVsTime(data_path_list,
-                                                treeNode.getInfoDict(),
-                                                treeNode,
-                                                index)
+            signal = dataAccess.GetSignalVsTime(treeNode,index)
 
             # Get label, title and xlabel
             label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-                nodeData=treeNode.getInfoDict(),
-                index=index)
+                dtv=self.dataTreeView, node=treeNode, index=index)
             # TODO: fix routines for obtaining label
             idsName = treeNode.getInfoDict()['IDSName']
-            xlabel = xlabel.replace(idsName + '/time_slice(0)', idsName + '/time_slice(:)')
-            label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(:)')
+            xlabel = xlabel.replace(idsName + 'time_slice(0)', idsName + 'time_slice(:)')
+            label = label.replace(idsName + 'time_slice(0)', idsName + 'time_slice(:)')
 
-            xlabel = xlabel.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(:)')
-            label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(:)')
+            xlabel = xlabel.replace(idsName + 'profiles_1d(0)', idsName + 'profiles_1d(:)')
+            label = label.replace(idsName + 'profiles_1d(0)', idsName + 'profiles_1d(:)')
 
             label = label + '[' + str(index) + ']'
             xlabel = xlabel + '[' + str(index) + ']'
@@ -928,12 +1009,12 @@ class QVizSignalHandling(QObject):
                            figureKey=currentFigureKey,
                            title=title,
                            label=label,
-                           xlabel="Time[s]",
+                           xlabel="time[s]",
                            update=1,
-                           signalHandling=self,
-                           vizTreeNode=treeNode).execute()
+                           addCoordinateSlider=True,
+                           vizTreeNode=treeNode).execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def plotSelectedSignalVsCoordAtTimeIndex(self, time_index, currentFigureKey,
                                              treeNode):
@@ -958,7 +1039,7 @@ class QVizSignalHandling(QObject):
             signal = dataAccess.GetSignalAt(treeNode, time_index)
             # Get label and xlabel (title in this form is not needed)
             label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-                                nodeData=treeNode.getInfoDict(),
+                                dtv=self.dataTreeView, node=treeNode,
                                 index=time_index)
 
             idsName = treeNode.getInfoDict()['IDSName']
@@ -975,8 +1056,7 @@ class QVizSignalHandling(QObject):
                            label=label,
                            xlabel=xlabel,
                            update=1,
-                           signalHandling=self,
-                           vizTreeNode=treeNode).execute()
+                           addTimeSlider=True,
+                           vizTreeNode=treeNode).execute(self)
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
-
+            logging.error(str(e))

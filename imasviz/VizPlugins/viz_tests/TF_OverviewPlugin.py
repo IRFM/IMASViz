@@ -1,5 +1,5 @@
 from imasviz.VizPlugins.VizPlugins import VizPlugins
-import traceback
+import traceback, logging
 
 class TFOverviewPlugin(VizPlugins):
     def __init__(self):
@@ -12,7 +12,7 @@ class TFOverviewPlugin(VizPlugins):
 
         except :
             traceback.print_exc()
-            self.view.log.error(traceback.format_exc())
+            logging.error(traceback.format_exc())
 
     # def getSubjects(self):
     #     subjects = {'overview':'TF overview...', 'tf':'TF overview...'}

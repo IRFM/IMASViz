@@ -3,105 +3,69 @@ import os, sys
 
 from PyQt5.QtWidgets import QMainWindow
 
-# RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-#                      'ECEOverviewPlugin':'viz_tests.ECE_OverviewPlugin',
-#                      'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin' }
-
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'SOLPS_UiPlugin': {
-                         'UiFile': 'SOLPSplugin.ui',
-                         'dir': os.environ['VIZ_HOME'] +
-                                '/imasviz/VizPlugins/viz_solps/',
-                         'targetIDSroot' : 'edge_profiles',
-                         'targetOccurrence' : 0},
-                     'example_UiPlugin': {
-                         'UiFile': 'examplePlugin.ui',
-                         'dir': os.environ['VIZ_HOME'] +
-                                '/imasviz/VizPlugins/viz_example/',
-                         'targetIDSroot': 'magnetics',
-                         'targetOccurrence': 0}
+                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
+                     'SOLPS_UiPlugin': '',
+                     'example_UiPlugin': ''
                      }
 
-RegisteredPluginsConfiguration = {'equilibriumcharts':[{
-                                      'time_i': 31.880, \
-                                      'time_e': 32.020, \
-                                      'delta_t': 0.02, \
-                                      'shot': 50642, \
-                                      'run': 0, \
-                                      'machine': 'west_equinox', \
-                                      'user': 'imas_private'}],
-                                  'SOLPS_UiPlugin':[{}],
-                                  'example_UiPlugin':[{}]
-                           }
-
-WestRegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                         'ToFuPlugin':'viz_tofu.viz_tofu_plugin'}
-
-WestRegisteredPluginsConfiguration = {'equilibriumcharts':[{
-                                            'time_i': 31.880, \
-                                            'time_e': 32.020, \
-                                            'delta_t': 0.02, \
-                                            'shot': 50642, \
-                                            'run': 0, \
-                                            'machine': 'west_equinox', \
-                                      'user': 'imas_private'}],
-                                      'ToFuPlugin':[{'geom':True},{'data':True},
-                                                    {'geom':True},{'data':True},
-                                                    {'geom':True},{'data':True}]}
+RegisteredPluginsConfiguration = {'SOLPS_UiPlugin':[{'UiFile': 'SOLPSplugin.ui',
+                                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
+                                'targetIDSroot': 'edge_profiles',
+                                'targetOccurrence': 0}],
+                                'example_UiPlugin': [{
+                                'UiFile': 'examplePlugin.ui',
+                                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
+                                'targetIDSroot': 'magnetics',
+                                'targetOccurrence': 0}]}
 
 # The 'overview' key should match the IDS name
 # (for example: for edge_profiles IDS -> 'edge_profiles_overview')
-EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0],
+EntriesPerSubject = {'SOLPS_UiPlugin':    {'edge_profiles_overview': [0],
                                            'overview': [0]},
-                     'ToFuPlugin':        {'interferometer_overview': [0, 1],
-                                           'bolometer_overview': [2, 3],
-                                           'soft_x_rays_overview': [4, 5]},
-                     'SOLPS_UiPlugin':    {'edge_profiles_overview':[0],
-                                           'overview':[0]},
                      'example_UiPlugin':  {'magnetics_overview': [0],
                                            'overview': [0]}
                      }
 
-AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
-              'ToFuPlugin':        [(0, 'tofu - geom...'), (1, 'tofu - data'),
-                                    (2, 'tofu - geom...'), (3, 'tofu - data'),
-                                    (4, 'tofu - geom...'), (5, 'tofu - data')],
-              'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')],
+AllEntries = {'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')], #(config number, description)
               'example_UiPlugin':  [(0, 'Magnetics overview...')]
               }
-              #(config number, description)
+
 
 def getRegisteredPlugins():
-    if 'WEST' in os.environ and os.environ['WEST'] == 1:
-        return WestRegisteredPlugins
-    else:
-        return RegisteredPlugins
+    return RegisteredPlugins
 
-def getRegisteredPluginsConfiguration():
-    if 'WEST' in os.environ and os.environ['WEST'] == 1:
-        return WestRegisteredPluginsConfiguration
-    else:
-        return RegisteredPluginsConfiguration
 
-class VizPlugins():
+class VizPlugins:
     def __init__(self):
         pass
 
+    def isEnabled(self):
+        return False
+
     def getEntriesPerSubject(self):
-        pass
+        raise ValueError('plugin getEntriesPerSubject() method should be implemented!')
 
     def getAllEntries(self):
-        pass
+        entries = []
+        entriesPerSubject = self.getEntriesPerSubject()
+        for subject in entriesPerSubject:
+            entries.append(entriesPerSubject[subject])
 
-    def getSubjects(self, pluginsName):
+    def getSubjects(self):
         subjects = []
-        entriesPerSubject = self.getEntriesPerSubject(pluginsName)
+        entriesPerSubject = self.getEntriesPerSubject()
+        if entriesPerSubject is None:
+            return subjects
         for subject in entriesPerSubject:
             subjects.append(subject)
         return subjects
 
+    def getPluginsConfiguration(self):
+        raise ValueError('no plugin configuration defined. The method getPluginsConfiguration() should be implemented!')
+
     def execute(self):
-        pass
+        raise ValueError('plugin execute() method should be implemented!')
 
     def getMenuItem(self, subject):
         return self.getSubjects()[subject]
@@ -117,24 +81,21 @@ class VizPlugins():
             if 'UiPlugin' in key:
                 from PyQt5 import uic
                 # Get directory where the plugin .ui file is located
-                dir = getRegisteredPlugins()[key]['dir']
+                pluginConfiguration = VizPlugins.getPluginsConfigurationFor(key)[0]
+                dir = pluginConfiguration['dir']
                 # Get ui. file name
-                UiFile = getRegisteredPlugins()[key]['UiFile']
+                UiFile = pluginConfiguration['UiFile']
                 # Append to Python path
                 sys.path.append(dir)
                 # Set MainWindow
                 w = QMainWindow(parent=dataTreeView)
-
-
-                dataSource = dataTreeView.dataSource
                 # Get IDS case object
                 ids = None
-                w.targetOccurrence = \
-                    getRegisteredPlugins()[key]['targetOccurrence']
-                w.targetIDSroot = getRegisteredPlugins()[key]['targetIDSroot']
+                w.targetOccurrence = pluginConfiguration['targetOccurrence']
+                w.targetIDSroot = pluginConfiguration['targetIDSroot']
 
                 # Set an instance of the user interface
-                uiObj = uic.loadUi(dir + UiFile, w)
+                #uiObj = uic.loadUi(dir + UiFile, w)
                 # Add the MainWindow (containing the user interface) to
                 # list of imported objects
                 importedObjectsList.append(w)
@@ -143,7 +104,7 @@ class VizPlugins():
                                               getRegisteredPlugins()[key])
                 importedClass = getattr(mod, key)
                 importedObjectsList.append(importedClass())
-        return (pluginsNames, importedObjectsList)
+        return pluginsNames, importedObjectsList
 
     @staticmethod
     def getPluginsNames():
@@ -153,12 +114,22 @@ class VizPlugins():
         return pluginsNames
 
     @staticmethod
-    def getPluginsConfiguration(pluginsName):
-        return getRegisteredPluginsConfiguration()[pluginsName]
+    def getPluginsConfigurationFor(pluginsName):
+        return RegisteredPluginsConfiguration[pluginsName]
 
     @staticmethod
-    def getEntriesPerSubject(pluginsName):
+    def getEntriesPerSubjectFor(pluginsName):
         return EntriesPerSubject[pluginsName]
+
+    @staticmethod
+    def getSubjectsFor(pluginsName):
+        subjects = []
+        entriesPerSubject = VizPlugins.getEntriesPerSubjectFor(pluginsName)
+        if entriesPerSubject is None:
+            return subjects
+        for subject in entriesPerSubject:
+            subjects.append(subject)
+        return subjects
 
     @staticmethod
     def getAllEntries(pluginsName):

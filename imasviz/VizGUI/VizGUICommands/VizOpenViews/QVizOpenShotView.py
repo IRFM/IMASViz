@@ -37,7 +37,6 @@ class QVizOpenShotView:
                                                     imasDbName=imasDbName,
                                                     dataSourceName=dataSourceName)
 
-        # api = Viz_API()
         dtv = self.api.CreateDataTree(dataSource)
-        self.api.ShowDataTree(dtv)
 
+        self.api.ShowDataTree(dtv)

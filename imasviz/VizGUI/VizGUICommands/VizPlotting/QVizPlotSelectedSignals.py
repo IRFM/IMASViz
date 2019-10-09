@@ -21,7 +21,7 @@
 #****************************************************
 
 import xml.etree.ElementTree as ET
-
+import logging
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
@@ -36,14 +36,12 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         self.plotConfig = None
         self.configFile = configFile
         self.all_DTV = all_DTV
-        if self.configFile != None:
+        if self.configFile is not None:
             self.plotConfig = ET.parse(self.configFile)
         # DTV
         self.dataTreeView = dataTreeView
         # Viz_API
         self.api = self.dataTreeView.imas_viz_api
-
-        self.log = self.dataTreeView.log
 
     def execute(self):
         if self.raiseErrorIfNoSelectedArrays():
@@ -53,41 +51,16 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         self.plot1DSelectedSignals(self.figureKey, self.update,
                                    all_DTV=self.all_DTV)
 
-        # # Check the plot dimension
-        # for key in self.dataTreeView.selectedSignalsDict:
-        #     signalDict = self.dataTreeView.selectedSignalsDict[key]
-        #     plotDimension = self.getDimension(signalDict)
-
-        #     if plotDimension == "1D":
-        #         # In case of 1D plots
-        #         self.plot1DSelectedSignals(self.figureKey, self.update,
-        #                                    all_DTV = self.all_DTV)
-        #     elif plotDimension == "2D" or plotDimension == "3D":
-        #         # In case of 2D or 3D plots
-        #         raise ValueError("2D/3D plots are not currently supported.")
-
     def raiseErrorIfNoSelectedArrays(self):
         return True
 
-    def getDimension(self, signalDict):
-        # Finding the plot dimension
-        data_type = signalDict['data_type']
-
+    def getDimension(self, treeNode):
         plotDimension = None
-        if data_type == 'FLT_1D' or data_type == 'INT_1D':
+        if treeNode.is1DAndDynamic() or treeNode.is0DAndDynamic():
             plotDimension = "1D"
-        elif data_type == 'FLT_2D' or data_type == 'INT_2D':
-            self.log.warning('2D plots are not currently supported.')
-            return False
-            plotDimension = "2D"
-        elif data_type == 'FLT_3D' or data_type == 'INT_3D':
-            self.log.warning('3D plots are not currently supported.')
-            return False
-            plotDimension = "3D"
         else:
-            self.log.warning('Plots dimension larger than 3D are currently not '
-                             'supported.')
-            self.log.warning('Data of unsupported data type passed. Aborting!')
+            logging.warning('Plots dimension larger than 1D are currently not supported.')
+            logging.warning('Data of unsupported data type passed. Aborting!')
             return False
         return plotDimension
 
@@ -137,7 +110,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                     signalNodeData = vizTreeNode.getInfoDict()
 
                     # Check dimension
-                    plotDimension = self.getDimension(vizTreeNode.getInfoDict())
+                    plotDimension = self.getDimension(vizTreeNode)
 
                     # Cancel plotting procedure if there is something wrong with
                     # the dimension
@@ -149,7 +122,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                     self.api.addNodeToFigure(figureKey, key, tup)
 
                     # Get signal properties and values
-                    s = QVizPlotSignal.getSignal(dtv, signalNodeData, vizTreeNode)
+                    s = QVizPlotSignal.getSignal(dtv, vizTreeNode)
                     # Get array of time values
                     t = QVizPlotSignal.getTime(s)
                     # Get array of y-axis values
@@ -194,10 +167,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             plotWidget.show()
 
         except ValueError as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
         except Exception as e:
-            self.dataTreeView.log.error(str(e))
+            logging.error(str(e))
 
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys():

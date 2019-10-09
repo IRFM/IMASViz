@@ -31,7 +31,7 @@ dataSourceFactory = QVizDataSourceFactory()
 # Load IMAS database
 dataSource = dataSourceFactory.create(
                                  dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                 shotNumber=52702,
+                                 shotNumber=54178,
                                  runNumber=0,
                                  userName='imas_public',
                                  imasDbName='west')

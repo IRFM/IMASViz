@@ -11,7 +11,7 @@
 #     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
 #*******************************************************************************
 
-import time
+import time, logging
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from PyQt5.QtGui import QTextDocument
@@ -29,7 +29,6 @@ class QVizSavePlotConfig():
         self.gWin = gWin
         self.dataTreeView = gWin.parent.dataTreeView
         self.nodeData = nodeData
-        self.log = self.dataTreeView.log  # QTextEdit widget
 
     def execute(self):
         # Set default name of the configuration file
@@ -254,7 +253,7 @@ class QVizSavePlotConfig():
             sa(penEl, 'miterLimit', pen.miterLimit())
         else:
             # Print warning to DTV log
-            self.log.warning('savePenAttributes: Pen variable is not properly '
+            logging.warning('savePenAttributes: Pen variable is not properly '
                              'defined.')
 
     def saveAxisAttributes(self, panelElement, axisType, plotItem):
@@ -319,7 +318,7 @@ class QVizSavePlotConfig():
 
         else:
             # Print warning to DTV log
-            self.log.warning('saveAxisAttributes: AxisItem variable is not '
+            logging.warning('saveAxisAttributes: AxisItem variable is not '
                              'properly defined.')
 
     def printCode(self, text, level):
