@@ -16,12 +16,13 @@ import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
     QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem, \
-    QApplication
+    QApplication, QPen, QPainter, QGraphicsGridLayout, QGraphicsWidget, QGraphicsScene, QGraphicsView
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols, \
     GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
+from pyqtgraph.graphicsItems.LegendItem import ItemSample
 
 
 class QVizPlotConfigUI(QDialog):
@@ -41,6 +42,8 @@ class QVizPlotConfigUI(QDialog):
 
         # Set main layout
         self.setMainLayout()
+
+        self.wd = None
 
     def setTabWidget(self):
         """Set TabWidget and its tabbed widgets.
@@ -156,7 +159,7 @@ class TabColorAndLineProperties(QWidget):
 
         # Set header
         # - Set list of header items
-        listHeaderLabels = ['#',
+        listHeaderLabels = ['Line',
                             'Legend Label',
                             'Bold',
                             'Italic',
@@ -175,8 +178,30 @@ class TabColorAndLineProperties(QWidget):
         i = 0 # layout line
         for pdItem in self.listPlotDataItems:
             j = 0 # layout column
-            # Add ID label
-            scrollLayout.addWidget(QLabel(str(i)), i + 1, j, 1, 1)
+
+            # Add line marker from the legend to the plot configuration to
+            # provide better way of indicating which plot is being customized
+            # TODO: create a routine for that
+            self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+            self.wd = QWidget(self)
+            # self.wd.setMaximumSize(5,5)
+            self.wd.scene = QGraphicsScene()
+
+            # - Set scene size
+            self.wd.scene.setSceneRect(0,0,0,0)
+            self.wd.view = QGraphicsView(self.wd)
+            # 'sample' is the line marker shown in the plot legend
+            # Qt objects can't exist on two different locations, they also can't
+            # be copied. Due to that a new sample object must be created and the
+            # properties of the original sample passed to the new one
+            sample_original = self.legendItem.layout.itemAt(i,0)
+            sample_new = ItemSample(sample_original.item)
+            self.wd.scene.addItem(sample_new)
+            self.wd.view.setScene(self.wd.scene)
+            self.wd.view.setMaximumSize(25,25)
+
+            # - Add sample marker to layout
+            scrollLayout.addWidget(self.wd.view, i +1, j, 1, 1)
             j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring legend label
@@ -536,6 +561,7 @@ class TabColorAndLineProperties(QWidget):
         legendLabelItem = legendItem.items[legendItemID][1]
         # Set style
         legendLabelStyle = {'italic': False}
+
 
         # Setting text style
         # Note: setAttr('bold', False) and setProperty('bold', False) have no
