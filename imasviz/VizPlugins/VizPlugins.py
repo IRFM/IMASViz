@@ -95,7 +95,7 @@ class VizPlugins:
                 w.targetIDSroot = pluginConfiguration['targetIDSroot']
 
                 # Set an instance of the user interface
-                #uiObj = uic.loadUi(dir + UiFile, w)
+                uiObj = uic.loadUi(dir + UiFile, w)
                 # Add the MainWindow (containing the user interface) to
                 # list of imported objects
                 importedObjectsList.append(w)
