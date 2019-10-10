@@ -345,8 +345,7 @@ class QVizNodeDocumentationWidget(QWidget):
 
             if item.isDynamicData():
                 # - Set node contents
-                # TODO: improve and avoid try/except
-                expression = 'dataTreeView.dataSource.ids[0].' + str(item.getPath())
+                expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
                 expression = expression.replace('/', '.')
                 expression = expression.replace('(', '[')
                 expression = expression.replace(')', ']')
