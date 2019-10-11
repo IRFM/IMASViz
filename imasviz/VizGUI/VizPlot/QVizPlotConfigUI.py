@@ -40,10 +40,11 @@ class QVizPlotConfigUI(QDialog):
         # Set viewBox variable
         self.viewBox = viewBox
 
+        # Get legend item. Contains legend labels, graphics etc.
+        self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+
         # Set main layout
         self.setMainLayout()
-
-        self.wd = None
 
     def setTabWidget(self):
         """Set TabWidget and its tabbed widgets.
@@ -99,6 +100,37 @@ class QVizPlotConfigUI(QDialog):
         # Set dialog layout
         self.setLayout(layout)
 
+class SampleCopyFromLegend(QWidget):
+    """ Create a widget containing the legend label marker ("sample").
+    'sample' is the line marker shown in the plot legend
+    Qt objects can't exist on two different locations, they also can't
+    be copied. Due to that a new sample object must be created and the
+    properties of the original sample passed to the new one
+    """
+
+    def __init__(self, legendItem, itemAtID, parent=None):
+        super(SampleCopyFromLegend, self).__init__(parent)
+
+        self.legendItem = legendItem
+        self.itemAtID = itemAtID
+        self.setCopy()
+
+    def setCopy(self):
+        # Set graphics scene
+        self.scene = QGraphicsScene()
+        # Set scene size
+        self.scene.setSceneRect(0,0,0,0)
+        # Set view
+        self.view = QGraphicsView(self)
+
+        sample_original = self.legendItem.layout.itemAt(self.itemAtID,0)
+        sample_new = ItemSample(sample_original.item)
+        self.scene.addItem(sample_new)
+        self.view.setScene(self.scene)
+        self.view.setMaximumSize(25,25)
+
+    def getCopy(self):
+        return self
 
 class TabColorAndLineProperties(QWidget):
     """Widget allowing plot color and line customization.
@@ -115,6 +147,8 @@ class TabColorAndLineProperties(QWidget):
         self.parent = parent
         # Set viewBox variable
         self.viewBox = self.parent.viewBox
+
+        self.legendItem = self.parent.legendItem
 
         # List of plotDataItems within viewBox
         self.listPlotDataItems = self.viewBox.addedItems
@@ -180,28 +214,14 @@ class TabColorAndLineProperties(QWidget):
             j = 0 # layout column
 
             # Add line marker from the legend to the plot configuration to
-            # provide better way of indicating which plot is being customized
-            # TODO: create a routine for that
-            self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
-            self.wd = QWidget(self)
-            # self.wd.setMaximumSize(5,5)
-            self.wd.scene = QGraphicsScene()
-
-            # - Set scene size
-            self.wd.scene.setSceneRect(0,0,0,0)
-            self.wd.view = QGraphicsView(self.wd)
-            # 'sample' is the line marker shown in the plot legend
-            # Qt objects can't exist on two different locations, they also can't
-            # be copied. Due to that a new sample object must be created and the
-            # properties of the original sample passed to the new one
-            sample_original = self.legendItem.layout.itemAt(i,0)
-            sample_new = ItemSample(sample_original.item)
-            self.wd.scene.addItem(sample_new)
-            self.wd.view.setScene(self.wd.scene)
-            self.wd.view.setMaximumSize(25,25)
+            # provide better way of identifying the plot to customize
+            self.newSampleWidget = SampleCopyFromLegend(parent=self,
+                                                        legendItem=self.legendItem,
+                                                        itemAtID=i).getCopy()
 
             # - Add sample marker to layout
-            scrollLayout.addWidget(self.wd.view, i +1, j, 1, 1)
+            # scrollLayout.addWidget(self.wd.view, i +1, j, 1, 1)
+            scrollLayout.addWidget(self.newSampleWidget, i +1, j, 1, 1)
             j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring legend label
@@ -432,20 +452,16 @@ class TabColorAndLineProperties(QWidget):
 
         # Update plotWidget legend
         # Note: the changes are instant (no apply required)
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[lineEdit.itemID][1]
+        legendLabelItem = self.legendItem.items[lineEdit.itemID][1]
         # - Update label text
         legendLabelItem.setText(newLabel)
 
     @pyqtSlot(int)
     def setLegendBold(self, legendItemID):
 
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[legendItemID][1]
+        legendLabelItem = self.legendItem.items[legendItemID][1]
 
         key = 'bold'
         if key in legendLabelItem.opts:
@@ -468,10 +484,8 @@ class TabColorAndLineProperties(QWidget):
                                          from a list of legend items.
         """
 
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[legendItemID][1]
+        legendLabelItem = self.legendItem.items[legendItemID][1]
         # Set style
         legendLabelStyle = {'bold': True}
         # legendLabelStyle = {'color': '#000', 'size': '12pt', 'bold': True, 'italic': False}
@@ -492,10 +506,8 @@ class TabColorAndLineProperties(QWidget):
                                          from a list of legend items.
         """
 
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[legendItemID][1]
+        legendLabelItem = self.legendItem.items[legendItemID][1]
         # Set style
         legendLabelStyle = {'bold': False}
 
@@ -507,10 +519,8 @@ class TabColorAndLineProperties(QWidget):
     @pyqtSlot(int)
     def setLegendItalic(self, legendItemID):
 
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[legendItemID][1]
+        legendLabelItem = self.legendItem.items[legendItemID][1]
 
         key = 'italic'
         if key in legendLabelItem.opts:
@@ -533,10 +543,8 @@ class TabColorAndLineProperties(QWidget):
                                          from a list of legend items.
         """
 
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[legendItemID][1]
+        legendLabelItem = self.legendItem.items[legendItemID][1]
         # Set style
         legendLabelStyle = {'italic': True}
         # legendLabelStyle = {'color': '#000', 'size': '12pt', 'bold': True, 'italic': False}
@@ -555,10 +563,8 @@ class TabColorAndLineProperties(QWidget):
                                          from a list of legend items.
         """
 
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
         # - Get legend labelItem
-        legendLabelItem = legendItem.items[legendItemID][1]
+        legendLabelItem = self.legendItem.items[legendItemID][1]
         # Set style
         legendLabelStyle = {'italic': False}
 
