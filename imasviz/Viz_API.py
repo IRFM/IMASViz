@@ -237,8 +237,10 @@ class Viz_API:
     #Load IDS data for a given data tree frame and a given occurrence
     def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
                     threadingEvent=None):
-        #dataTreeFrame.dataTreeView.setIDSNameSelected(IDSName)
-        QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName, occurrence, threadingEvent).execute()
+        if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
+            QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName, occurrence, threadingEvent).execute()
+        else:
+            QVizLoadSelectedData(dataTreeFrame, IDSName, occurrence, threadingEvent).execute()
 
 
     def SelectSignals(self, dataTreeWindow, pathsMap):
@@ -295,3 +297,22 @@ class Viz_API:
         """
         # Get full data of the node (given 'path' is one of them)
         QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem.infoDict).execute()
+
+    def IDSDataAlreadyFetched(self, dataTreeView, IDSName, occurrence):
+        key = IDSName + "/" + str(occurrence)
+        if key in dataTreeView.ids_roots_occurrence:
+            return True
+        else:
+            return False
+
+    def GetDataSource(self, dataTreeFrame):
+        if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
+            return dataTreeFrame.parent.dataSource
+        else:
+            return dataTreeFrame.dataSource
+
+    def GetIMASDataEntry(self, dataTreeFrame, occurrence):
+        if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
+            return self.GetDataSource(dataTreeFrame.parent).ids[occurrence]
+        else:
+            return self.GetDataSource(dataTreeFrame).ids[occurrence]

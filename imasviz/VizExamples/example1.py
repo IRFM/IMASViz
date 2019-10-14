@@ -33,8 +33,8 @@ dataSource = dataSourceFactory.create(
                                  dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                  shotNumber=54178,
                                  runNumber=0,
-                                 userName='imas_public',
-                                 imasDbName='west')
+                                 userName='fleuryl',
+                                 imasDbName='test')
 
 # Database on the GateWay HPC (comment the above dataSource code and uncomment
 # the one below)

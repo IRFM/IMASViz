@@ -27,31 +27,25 @@ class QVizHandleShiftAndRightClick:
     def __init__(self, dataTreeView):
         self.dataTreeView = dataTreeView
 
-    def execute(self, QVizTreeNode):
+    def execute(self, treeNode):
         """Execute on the event
         """
 
-        # Get selected item/subject data dict
-        dataDict = QVizTreeNode.getInfoDict()
-        # Set default variables"""
         idsName = None
         isSignal = 0
 
-        if dataDict is not None:
-            # If the item/subject is available...
-            # Set 'isSignal'. IDSs return value 0 while FLT_1D arrays return
-            # value 1
-            if 'isSignal' not in dataDict:
-                return
-            isSignal = dataDict['isSignal']
+        if treeNode.isDynamicData() is not None:
+            isSignal = treeNode.isDynamicData()
+        else:
+            return
 
-        if dataDict != None and 'IDSName' in dataDict:
+        if treeNode.getIDSName() is not None:
             # If the item/subject is IDS get the IDS name"""
-            idsName = dataDict['IDSName']
+            idsName = treeNode.getIDSName()
 
         # Set plugins handler. Pass the dataTreeView and item/subject to the
         # QVizPluginsHandler
-        pluginsHandler = QVizPluginsHandler(self.dataTreeView, dataDict)
+        pluginsHandler = QVizPluginsHandler(self.dataTreeView, treeNode)
 
         if idsName is not None and isSignal == 0:
             # If the item/subject is IDS...
@@ -60,7 +54,8 @@ class QVizHandleShiftAndRightClick:
         elif idsName is not None and isSignal == 1:
             # Else if the item/subject is a FLT_1D array
             # FLT_1D array -> isSignal == 1)...
-            showPopUp = pluginsHandler.showPopUpMenu(['signal'])
+            subjectsList = ['FLT_2D', 'FLT_1D', 'signal']
+            showPopUp = pluginsHandler.showPopUpMenu(subjectsList)
             # Note: the pluginHandler.showPopUpMenu argument must match
             # the one returned by the 'getEntriesPerSubject' function, defined in
             # the main plugin .py source file, in this case 'signal'

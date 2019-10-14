@@ -5,11 +5,8 @@ class ECEOverviewPlugin(VizPlugins):
     def __init__(self):
         VizPlugins.__init__(self)
 
-    def execute(self, app, pluginsConfig):
+    def execute(self, vizAPI):
         print ('ECE overview to be executed with config -->')
-        print (pluginsConfig)
-        print (pluginsConfig['imasviz_view'])
-        app.MainLoop()
 
     def getEntriesPerSubject(self):
         return {'overview':[0], 'ece_overview':[0]}

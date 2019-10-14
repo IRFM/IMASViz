@@ -62,9 +62,9 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
     def get1DArrayData(self):
         signal = None
         signalDataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-        if self.treeNode.is1DAndDynamic()and self.treeNode.isDataAvailable():
+        if self.treeNode.is1DAndDynamic()and self.treeNode.hasAvailableData():
             signal = signalDataAccess.GetSignal(self.treeNode)
-        elif self.treeNode.is0DAndDynamic()and self.treeNode.isDataAvailable():
+        elif self.treeNode.is0DAndDynamic()and self.treeNode.hasAvailableData():
             signal = signalDataAccess.Get0DSignalVsTime(self.treeNode)
         return signal
 
@@ -76,7 +76,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
                 t = QVizPreviewPlotSignal.getTime(self.signal)
                 v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
                 if (len(t[0]) != len(v[0])):
-                    raise ValueError("1D data can not be previewed, x and y shapes are different.")
+                    raise ValueError("Data can not be previewed, x and y shapes are different.")
                 self.plot1DSignal(shotNumber = self.dataTreeView.shotNumber,
                                   t = t, v = v, title = self.title,
                                   label = self.label, xlabel = self.xlabel)

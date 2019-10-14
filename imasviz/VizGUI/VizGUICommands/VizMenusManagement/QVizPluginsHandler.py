@@ -14,12 +14,12 @@ class MenuIDS:
 
 class QVizPluginsHandler:
 
-    def __init__(self, dataTreeView, dataDict):
+    def __init__(self, dataTreeView, selectedTreeNode):
         self.dataTreeView = dataTreeView
-        self.infoDict = dataDict    # Passed item/subject
+        self.selectedTreeNode = selectedTreeNode    # Passed item/subject
         self.menuIDS = MenuIDS()
         self.pluginsObjects = VizPlugins.getPluginsObjects(
-            dataTreeView=self.dataTreeView)
+            dataTreeView=self.dataTreeView, selectedTreeNode=self.selectedTreeNode)
 
     def showPopUpMenu(self, subjectsList = None):
         self.dataTreeView.popupmenu = QMenu()
@@ -27,7 +27,7 @@ class QVizPluginsHandler:
         addedPluginsEntries = {}
 
         pluginsNames = self.pluginsObjects[0]
-        pluginsObjects = self.pluginsObjects[1]
+        pluginsObjects = self.pluginsObjects[1] #tuple: Plugins names, VizPlugins instances
 
         for p in pluginsNames:
             addedPluginsEntries[p] = []  # each plugins entry should appear only once in the popup menu
@@ -116,11 +116,9 @@ class QVizPluginsHandler:
 
         pluginsCommandDescription = allEntries[entry][1]
 
-        pluginsConfiguration = pluginsConfigurationsList[allEntries[entry][0]]
-        pluginsConfiguration['imasviz_view'] = self.dataTreeView
-        # Set ArraySize Plugin 'node_attributes' option
-        # (defined in the plugin definition .py file
-        pluginsConfiguration['node_attributes'] = self.infoDict
+        #pluginsConfiguration = pluginsConfigurationsList[allEntries[entry][0]]
+        #pluginsConfiguration['imasviz_view'] = self.dataTreeView
+        #pluginsConfiguration['node_attributes'] = self.selectedTreeNode.getNodeData()
         # Run the plugins
         if type(pluginsObject) == QMainWindow:
             # If pluginsObject is QMainWindow type (indicating that the
@@ -158,8 +156,7 @@ class QVizPluginsHandler:
             pluginsObject.show()
         elif 'execute' in dir(pluginsObject):
             logging.info('Executing plugin...')
-            pluginsObject.execute(pluginsConfiguration,
-                                  dataTreeView=self.dataTreeView)
+            pluginsObject.execute(self.dataTreeView.imas_viz_api)
         else:
             print('No proper instance of user interface or execute routine '
                   'provided by the plugin!')

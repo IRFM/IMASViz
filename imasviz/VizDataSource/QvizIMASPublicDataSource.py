@@ -1,6 +1,7 @@
 import imas
 
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGeneratedClassFactory
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
 class QVizIMASPublicDataSource(QVizIMASDataSource):
@@ -40,5 +41,8 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
     def getShortLabel(self):
         return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
-    def containsData(self, IDSName):
-        return True
+    def containsData(self, IDSRootNode):
+        IDSRootNode.setAvailableIDSData(0, True)
+        # Set tree item text color
+        IDSRootNode.setForeground(0, GlobalColors.BLACK)
+        return

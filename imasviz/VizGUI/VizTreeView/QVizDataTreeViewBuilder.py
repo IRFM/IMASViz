@@ -57,7 +57,7 @@ class QVizDataTreeViewBuilder:
         """
 
         itemDataDict = {}
-        itemDataDict['availableIDSData'] = 0
+        #itemDataDict['availableIDSData/' + str(occurrence)] = 0
         itemDataDict['IDSName'] = idsName
         itemDataDict['occurrence'] = occurrence
         itemDataDict['isIDSRoot'] = 0
@@ -106,7 +106,7 @@ class QVizDataTreeViewBuilder:
                                           path)
 
             item_color = dataTreeView.dataSource.colorOf(viewerNode)
-            itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)
+            viewerNode.setAvailableData(item_color == GlobalColors.BLUE)
             viewerNode.setForeground(0, item_color) # - Set tree item text color
 
         else:

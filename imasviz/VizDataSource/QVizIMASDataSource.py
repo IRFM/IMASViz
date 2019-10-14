@@ -4,6 +4,7 @@ import traceback, sys
 from PyQt5.QtWidgets import QTreeWidgetItem
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 class QVizIMASDataSource:
@@ -60,21 +61,42 @@ class QVizIMASDataSource:
     def exists(self, IDSName):
         return True
 
-    def containsData(self, IDSName):
-        imas_entry = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-        try:
-            imas_major_version = os.environ['IMAS_MAJOR_VERSION']
-            imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
-            ids_properties = eval("imas_entry." + IDSName + ".partialGet('ids_properties')")
-            imas_entry.close()
-            ht = ids_properties.homogeneous_time
-            if ht != 0 and ht != 1 and ht != 2:
-                return False
-        except:
-            #traceback.print_exc(file=sys.stdout)
-            return False
+    def getImasEntry(self):
+        return  imas.ids(self.shotNumber, self.runNumber, 0, 0)
 
-        return True
+    def open(self, imas_entry):
+        imas_major_version = os.environ['IMAS_MAJOR_VERSION']
+        imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
+
+    def close(self, imas_entry):
+        imas_entry.close()
+
+    def containsData(self, IDSRootNode, imas_entry):
+        containsData = False
+        try:
+            IDSRootNode.setForeground(0, GlobalColors.BLACK)  # Set tree item text color
+            logging.info("Searching available data in all occurrences of " + IDSRootNode.getIDSName() + "IDS...")
+            for occurrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+                IDSRootNode.setAvailableIDSData(occurrence, False)
+                #logging.info("Searching if available data in occurrence " + str(
+                #    occurrence) + " of " + IDSRootNode.getIDSName() + "IDS...")
+                logging.info("Searching for occurrence: " + str(occurrence) + "...")
+                try:
+                    ids_properties = eval("imas_entry." + IDSRootNode.getIDSName() + ".partialGet('ids_properties', occurrence)")
+                    ht = ids_properties.homogeneous_time
+                    if ht == 0 or ht == 1 or ht == 2:
+                        containsData = True
+                        logging.info("Found data for occurrence " + str(occurrence) + " of "+ IDSRootNode.getIDSName() + " IDS...")
+                        IDSRootNode.setAvailableIDSData(occurrence, True)
+                        # Set tree item text color
+                        IDSRootNode.setForeground(0, GlobalColors.BLUE)
+                except:
+                    pass
+            logging.info("Data search ended.")
+        except:
+            pass
+        #IDSRootNode.setAvailableData(containsData)
+        return containsData
 
     # Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
@@ -145,10 +167,10 @@ class QVizIMASDataSource:
             return GlobalColors.LIGHT_GREY
 
     # Name of the data under the selected node
-    def dataNameInPopUpMenu(self, dataDict):
-        if 'dataName' in dataDict:
-            return dataDict['dataName']
-        return None
+    # def dataNameInPopUpMenu(self, dataDict):
+    #     if 'dataName' in dataDict:
+    #         return dataDict['dataName']
+    #     return None
 
     def treeDisplayedNodeName(self, dataElement):
         """The displayed name of the node in DTV.

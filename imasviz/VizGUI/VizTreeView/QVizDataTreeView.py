@@ -105,7 +105,6 @@ class QVizDataTreeView(QTreeWidget):
 
         self.dataSource = dataSource
         self.idsNamesList = []
-        self.idsAlreadyFetched = {}
         self.selectedItem = None
         self.shotNumber = dataSource.shotNumber
         self.runNumber = dataSource.runNumber
@@ -143,7 +142,7 @@ class QVizDataTreeView(QTreeWidget):
         # Set dummy for node documentation widget
         self.ndw = None
 
-        # contains root nodes for each IDS occurrence
+        # contains root nodes for each IDS occurrence, key = IDSName + '/' + occurrence,value = ids_root_occurrence
         self.ids_roots_occurrence = {}
 
         # key=occurrence, value=IDS name
@@ -154,6 +153,8 @@ class QVizDataTreeView(QTreeWidget):
         """
         idsNode = None
         xmlTree = ET.parse(IDSDefFile)
+        imas_entry = self.dataSource.getImasEntry()
+        self.dataSource.open(imas_entry)
 
         for child in xmlTree.getroot():
             if (child.tag == 'IDS'):
@@ -163,7 +164,6 @@ class QVizDataTreeView(QTreeWidget):
                 """Get IDS documentation"""
                 idsDocumentation = child.get('documentation')
                 self.idsNamesList.append(idsName)
-                self.idsAlreadyFetched[idsName] = 0
 
                 """Set array holding IDS properties"""
 
@@ -171,20 +171,13 @@ class QVizDataTreeView(QTreeWidget):
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)
 
-                if self.dataSource.containsData(idsName):
-                    # - If there is any data available from the IDS, change set
-                    # its dictionary 'availableIDSData' value from 0 to 1 and
-                    # color its item text (IDS name) to blue
-                    IDSRootNode.setAvailableIDSData(1)
-                    # Set tree item text color
-                    IDSRootNode.setForeground(0, GlobalColors.BLUE)
-                else:
-                    IDSRootNode.setAvailableIDSData(0)
-                    # Set tree item text color
-                    IDSRootNode.setForeground(0, GlobalColors.BLACK)
+                self.dataSource.containsData(IDSRootNode, imas_entry)
+                    #IDSRootNode.setForeground(0, GlobalColors.BLUE)
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
+
+        self.dataSource.close(imas_entry)
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
@@ -251,7 +244,7 @@ class QVizDataTreeView(QTreeWidget):
             logging.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.isDataAvailable():
+        if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.hasAvailableData():
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel
@@ -335,7 +328,6 @@ class QVizDataTreeView(QTreeWidget):
         """ Update the tree view with the data.
         """
         global cv
-        self.idsAlreadyFetched[idsName] = 1
         if idsData is not None:
 
             #self.buildTreeView(self.IDSRoots[idsName], occurrence, idsData)
@@ -394,7 +386,6 @@ class QVizDataTreeView(QTreeWidget):
         itemDataDict['isSelected'] = 0
         itemDataDict['Tag'] = idsName
         itemDataDict['Path'] = itemDataDict['Tag']
-        itemDataDict['availableIDSData'] = 0
         itemDataDict['documentation'] = idsDocumentation
         return QVizTreeNode(DTVRoot, [idsName], itemDataDict)
 
@@ -433,12 +424,17 @@ class QVizDataTreeView(QTreeWidget):
         # even if non-IDS root is selected
         item = self.selectedItems()[0]
 
-        # Continue, if the QTreeWidgetItem is IDS root
-        if 'isIDSRoot' not in item.infoDict or item.infoDict['isIDSRoot'] != 1:
+        # Continue only if the QTreeWidgetItem is the IDS root
+        if not item.isIDSRoot():
             return
 
         # Set default occurrence
         occ = 0
+
+        if not item.hasIDSAvailableData(occurrence=occ):
+            return
+
+
         # Get root IDS name
         IDSName = item.getIDSName()
         # Set class object

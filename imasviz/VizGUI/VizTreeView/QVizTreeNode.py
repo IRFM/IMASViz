@@ -214,8 +214,18 @@ class QVizTreeNode(QTreeWidgetItem):
     def isDynamicData(self):
         return self.infoDict.get('isSignal')
 
-    def isDataAvailable(self):
-        return self.infoDict.get('availableData')
+    def hasAvailableData(self):
+        if self.isIDSRoot():
+            for occurrrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+                if self.hasIDSAvailableData(occurrrence):
+                    return True
+            return False
+        return self.infoDict.get('availableData') #node is not a root IDS node
+
+    def hasIDSAvailableData(self, occurrence):
+        if not self.isIDSRoot():
+            raise ValueError('Implementation error: method hasIDSAvailableData(occurrence) should be called for IDS root nodes only.')
+        return self.infoDict.get('availableIDSData/' + str(occurrence))
 
     def getDataType(self):
         return self.infoDict.get('data_type')
@@ -244,8 +254,11 @@ class QVizTreeNode(QTreeWidgetItem):
     def setOccurrence(self, occurrence):
         self.infoDict['occurrence'] = occurrence
 
-    def setAvailableIDSData(self, value):
-        self.infoDict['availableIDSData'] = value
+    def setAvailableIDSData(self, occurrence, value):
+        self.infoDict['availableIDSData/' + str(occurrence)] = value
+
+    def setAvailableData(self, value): #value is True of False
+        self.infoDict['availableData'] = value
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \

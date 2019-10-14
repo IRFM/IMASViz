@@ -4,8 +4,9 @@ import os, sys
 from PyQt5.QtWidgets import QMainWindow
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
+                     #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      'SOLPS_UiPlugin': '',
+                     'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin',
                      'example_UiPlugin': ''
                      }
 
@@ -38,7 +39,15 @@ def getRegisteredPlugins():
 
 class VizPlugins:
     def __init__(self):
+        self.selectedTreeNode = None
+        self.dataTreeView = None
         pass
+
+    def setSelectedTreeNode(self, selectedTreeNode):
+        self.selectedTreeNode = selectedTreeNode
+
+    def setDataTreeView(self, dataTreeView):
+        self.dataTreeView = dataTreeView
 
     def isEnabled(self):
         return False
@@ -64,14 +73,14 @@ class VizPlugins:
     def getPluginsConfiguration(self):
         raise ValueError('no plugin configuration defined. The method getPluginsConfiguration() should be implemented!')
 
-    def execute(self):
+    def execute(self, vizAPI):
         raise ValueError('plugin execute() method should be implemented!')
 
     def getMenuItem(self, subject):
         return self.getSubjects()[subject]
 
     @staticmethod
-    def getPluginsObjects(dataTreeView=None):
+    def getPluginsObjects(dataTreeView=None, selectedTreeNode=None):
         pluginsNames = []
         importedObjectsList = []
         for key in getRegisteredPlugins():
@@ -103,7 +112,10 @@ class VizPlugins:
                 mod = importlib.import_module('imasviz.VizPlugins.' +
                                               getRegisteredPlugins()[key])
                 importedClass = getattr(mod, key)
-                importedObjectsList.append(importedClass())
+                vizPluginObject = importedClass()
+                vizPluginObject.setSelectedTreeNode(selectedTreeNode=selectedTreeNode)
+                vizPluginObject.setDataTreeView(dataTreeView=dataTreeView)
+                importedObjectsList.append(vizPluginObject)
         return pluginsNames, importedObjectsList
 
     @staticmethod

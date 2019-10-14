@@ -59,7 +59,7 @@ class QVizSignalHandling(QObject):
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
         self.treeNode = self.dataTreeView.selectedItem
 
-    def showPopUpMenu(self, signalNodeName):
+    def showPopUpMenu(self, signalNode):
         """Display the popup menu for plotting data.
 
         Arguments:
@@ -71,7 +71,7 @@ class QVizSignalHandling(QObject):
         #       it once and then only enable/disable menu items on right-click
 
         # Name of the node selection
-        self.signalNodeName = signalNodeName
+        self.signalNodeName = signalNode.getDataName()
 
         # Do not proceed with building the context menu if the selected node is
         # not signal node

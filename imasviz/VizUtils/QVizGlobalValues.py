@@ -20,6 +20,9 @@ class QVizGlobalValues:
     if "IMAS_VIZ_VERSION" in os.environ:
         IMAS_VIZ_VERSION = os.environ["IMAS_VIZ_VERSION"]
 
+    # Default maximum number of IDS occurences
+    MAX_NUMBER_OF_IDS_OCCURRENCES = 5
+
     indices = {'1': 'i', '2': 'j', '3': 'k', '4': 'l', '5': 'q', '6': 'r', '7': 't'}
     max_indices = {'1': 'N', '2': 'M', '3': 'K', '4': 'L', '5': 'Q', '6': 'R', '7': 'T'}
 

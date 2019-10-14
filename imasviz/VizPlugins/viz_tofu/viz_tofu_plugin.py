@@ -32,21 +32,22 @@ class ToFuPlugin(VizPlugins):
         self.lidsok_overview = ['%s_overview'%ids
                                 for ids in self.lidsok]
 
-    def execute(self, pluginsConfiguration, dataTreeView):
+    def execute(self, vizAPI):
 
-        view = pluginsConfiguration.get('imasviz_view')
-        node_attributes = pluginsConfiguration.get('node_attributes')
+        view = self.dataTreeView
+        vizNode = self.selectedTreeNode
+        pluginsConfiguration = self.getPluginsConfiguration()
 
         dids = {'shot':view.dataSource.shotNumber,
                 'user':view.dataSource.userName,
                 'tokamak':view.dataSource.machineName,
                 'run':view.dataSource.runNumber}
-        ids = node_attributes.get('IDSName')
+        ids = vizNode.getIDSName()
 
         try:
             print ('ToFuPlugin to be executed...')
             if ids not in self.lidsok:
-                msg = "Required ids not handled by tofu yet:\n"
+                msg = "Requested ids not handled by tofu yet:\n"
                 msg += "    - ids requested: %s\n"%ids
                 msg += "    - ids avail.: %s"%str(self.lidsok)
                 warnings.warn(msg)
@@ -79,8 +80,7 @@ class ToFuPlugin(VizPlugins):
 
 
     def getEntriesPerSubject(self):
-        a = {ids_over: [0, 1] for ids_over in self.lidsok_overview}
-        return a
+        return {ids_over: [0, 1] for ids_over in self.lidsok_overview}
 
     def getAllEntries(self):
         #(config number, description)

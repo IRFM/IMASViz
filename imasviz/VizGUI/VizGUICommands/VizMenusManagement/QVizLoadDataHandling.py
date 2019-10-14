@@ -24,10 +24,9 @@ from functools import partial
 from PyQt5.QtCore import QObject
 from PyQt5.QtWidgets import QMenu
 
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
-# Default maximum number of IDS occurences
-MAX_NUMBER_OF_IDS_OCCURENCES = 10
 
 class QVizLoadDataHandling(QObject):
     """Setting the popup menu: Load the contents of the selected IDS.
@@ -40,7 +39,7 @@ class QVizLoadDataHandling(QObject):
         """
         super(QVizLoadDataHandling, self).__init__()
 
-    def showPopUpMenu(self, IDSName, dataTreeView):
+    def showPopUpMenu(self, rootNode, dataTreeView):
         """Show the pop up menu for loading IDS.
 
         Arguments:
@@ -66,8 +65,9 @@ class QVizLoadDataHandling(QObject):
 
         subMenu = None
         dataTreeView.popupmenu = None
+        IDSName = rootNode.getIDSName()
 
-        for i in range(0, MAX_NUMBER_OF_IDS_OCCURENCES):
+        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
 
             if dataTreeView.popupmenu is None:
                 dataTreeView.popupmenu = QMenu()
@@ -75,13 +75,14 @@ class QVizLoadDataHandling(QObject):
                 dataTreeView.popupmenu.addMenu(subMenu)
             # - Set new submenu action and its label
             if not self.occurrenceAlreadyLoaded(dataTreeView, IDSName, i):
-                action_GET_IDS_OCC_DATA = \
-                    subMenu.addAction('Occurrence ' + str(i))
-                # - Connect action to function using partial
-                #   Note: PyQt5 lambda method is not a good way to pass the
-                #         function arguments. The use of partial is better
-                #         and more bulletproof
-                action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData, dataTreeView, IDSName, i))
+                if rootNode.hasIDSAvailableData(i):
+                    action_GET_IDS_OCC_DATA = \
+                        subMenu.addAction('Occurrence ' + str(i))
+                    # - Connect action to function using partial
+                    #   Note: PyQt5 lambda method is not a good way to pass the
+                    #         function arguments. The use of partial is better
+                    #         and more bulletproof
+                    action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData, dataTreeView, IDSName, i, True))
         # Map the menu (in order to show it)
 
         if subMenu is not None:

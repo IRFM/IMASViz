@@ -54,16 +54,17 @@ fontsize_requested = 9   # Font size for axis labels and subfigure titles
 fontsize_req_ticks = 9   # Font size for tick labels
 fontsize_title     = 11  # Font size for title
 
-def DataGen(dictDataSource, dataTreeView):
+def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
     # For test:
     #shot = 50355
     #run = 0
     #machine = 'west'
     #user = getpass.getuser()
-    if dataTreeView == None:
-        dataTreeView = dictDataSource['imasviz_view']
-    dataSource = dataTreeView.dataSource
+
+    #dataSource = dataTreeView.dataSource
+
+    dataSource = vizAPI.GetDataSource(dataTreeView)
     shot = dataSource.shotNumber
     run = dataSource.runNumber
     machine = dataSource.imasDbName
@@ -77,23 +78,21 @@ def DataGen(dictDataSource, dataTreeView):
 
     # Open shot and run of machine
     occurrence = 0 # default occurrence
-    try:
-        idd = dataSource.ids[occurrence]
-    except:
-        idd = None
-    if idd is None:
-        print('Loading equilibrium IDS...')
-        dataSource.load(dataTreeView, IDSName='equilibrium', occurrence=0, asynch=False)
-        idd = dataSource.ids[occurrence]
 
-    # Get wall geometry
-    if not dataTreeView.idsAlreadyFetched["wall"]:
+    if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'equilibrium', occurrence):
+        print('Loading equilibrium IDS...')
+        vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
+
+    # Get wall geometry if not yet loaded
+    if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
         print('Loading wall IDS...')
-        dataSource.load(dataTreeView, IDSName='wall', occurrence=0, asynch=False)
+        vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
+
+    idd = vizAPI.GetIMASDataEntry(dataTreeView, occurrence)
 
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)
-    if (lenArrTimes != len(idd.equilibrium.time_slice)):
+    if lenArrTimes != len(idd.equilibrium.time_slice):
         sys.exit('ERROR: length time and time_slice differ')
 
     timeEquiIDS = np.zeros(lenArrTimes)
@@ -281,7 +280,7 @@ class PlotFrame(QMainWindow):
 
     title = 'Equilibrium charts'
 
-    def __init__(self, dictDataSource, parent=None, title=title):
+    def __init__(self, vizTreeNode, vizAPI, parent=None, title=title):
 
         super(PlotFrame, self).__init__(parent)
 
@@ -293,14 +292,10 @@ class PlotFrame(QMainWindow):
         self.ZNodes,        self.triKnots,          self.levels1_requested, \
         self.rho_tor_label, self.prof_1d,           self.boundPlasma, \
         self.magAxis,       self.wall,              self.b0, \
-        self.r0,            self.xPoint = DataGen(dictDataSource,
+        self.r0,            self.xPoint = DataGen(vizTreeNode, vizAPI,
                                                   dataTreeView=parent)
         # Set main widget
         self.mainWidget = QtGui.QWidget(self)
-
-       #print('In init PlotFrame id(self.Psi_val) =',    id(self.Psi_val))
-       #print('In init PlotFrame type(self.Psi_val) =',  type(self.Psi_val))
-       #print('In init PlotFrame type(self.triKnots) =', type(self.triKnots))
 
         self.dataTimes = [round(0.5*(self.timeEquiIDS[0]+self.timeEquiIDS[-1]), 1)]
         self.dataTimes_old = self.dataTimes
@@ -1055,11 +1050,9 @@ class equilibriumcharts(VizPlugins):
     def isEnabled(self):
         return True
 
-    def execute(self, dictDataSource, dataTreeView):
+    def execute(self, vizAPI):
 
-        self.dataTreeView = dataTreeView
-
-        self.frame = PlotFrame(dictDataSource, parent=self.dataTreeView)
+        self.frame = PlotFrame(self.selectedTreeNode, vizAPI, parent=self.dataTreeView)
         self.frame.show()
 
     def getEntriesPerSubject(self):
