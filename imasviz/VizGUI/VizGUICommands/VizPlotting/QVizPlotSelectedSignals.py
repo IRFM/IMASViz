@@ -64,16 +64,6 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             return False
         return plotDimension
 
-    def getPlotWidget(self, figureKey=0):
-        api = self.dataTreeView.imas_viz_api
-        if figureKey in api.figureframes:
-            plotWidget = api.figureframes[figureKey]
-        else:
-            figureKey = api.GetNextKeyForFigurePlots()
-            plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey)
-            api.figureframes[figureKey] = plotWidget
-        return plotWidget
-
     def plot1DSelectedSignals(self, figureKey=0, update=0, all_DTV=True):
         """Plot the set of 1D signals selected by the user as a function of time.
 
@@ -86,7 +76,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             self.num_view = len(self.api.DTVlist)
 
             # Get plot widget
-            plotWidget = self.getPlotWidget(figureKey)
+            api = self.dataTreeView.imas_viz_api
+            plotWidget = api.GetPlotWidget(figureKey)
 
             i = 0
             # Create a list of DTVs to specify either single DTV or a list of

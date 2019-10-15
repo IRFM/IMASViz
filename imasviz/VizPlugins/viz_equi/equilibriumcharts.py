@@ -31,7 +31,7 @@ from matplotlib.backends.backend_qt5agg import \
 import matplotlib.ticker as tick
 import numpy as np
 import os
-import sys
+import sys, logging
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
@@ -55,14 +55,6 @@ fontsize_req_ticks = 9   # Font size for tick labels
 fontsize_title     = 11  # Font size for title
 
 def DataGen(vizTreeNode, vizAPI, dataTreeView):
-
-    # For test:
-    #shot = 50355
-    #run = 0
-    #machine = 'west'
-    #user = getpass.getuser()
-
-    #dataSource = dataTreeView.dataSource
 
     dataSource = vizAPI.GetDataSource(dataTreeView)
     shot = dataSource.shotNumber
@@ -93,7 +85,8 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)
     if lenArrTimes != len(idd.equilibrium.time_slice):
-        sys.exit('ERROR: length time and time_slice differ')
+        logging.error('ERROR: length time and time_slice differ')
+        return
 
     timeEquiIDS = np.zeros(lenArrTimes)
     timeEquiIDS = idd.equilibrium.time

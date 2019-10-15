@@ -75,7 +75,7 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.addTimeSlider = addTimeSlider
         self.addCoordinateSlider = addCoordinateSlider
 
-    def execute(self, signalHandling):
+    def execute(self, plotWidget):
         try:
             if len(self.signal) == 2:
                 t = QVizPlotSignal.getTime(self.signal)
@@ -87,8 +87,6 @@ class QVizPlotSignal(QVizAbstractCommand):
                 if len(t[0]) != len(v[0]):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
 
-                # Get widget linked to this figure
-                plotWidget = self.getPlotWidget(signalHandling, self.figureKey)
                 self.plot1DSignal(self.dataTreeView.shotNumber, t, v, plotWidget,
                                   self.figureKey, self.title, self.label,
                                   self.xlabel, self.update)
@@ -96,19 +94,6 @@ class QVizPlotSignal(QVizAbstractCommand):
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
             logging.error(str(e))
-
-    def getPlotWidget(self, signalHandling, figureKey=0):
-        api = self.dataTreeView.imas_viz_api
-        if figureKey in api.figureframes:
-            plotWidget = api.figureframes[figureKey]
-        else:
-            figureKey = api.GetNextKeyForFigurePlots()
-            plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey,
-                                        addTimeSlider=self.addTimeSlider,
-                                        addCoordinateSlider=self.addCoordinateSlider,
-                                        signalHandling=signalHandling)
-            api.figureframes[figureKey] = plotWidget
-        return plotWidget
 
     @staticmethod
     def getTime(oneDimensionSignal):

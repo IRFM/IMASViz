@@ -14,13 +14,14 @@
 import os
 import sys
 from functools import partial
-from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle
+from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
 
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
 
 from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
-    QPushButton, QVBoxLayout, QComboBox
+    QPushButton, QVBoxLayout, QComboBox, QPlainTextEdit, QGridLayout
+from PyQt5.QtCore import QSize, pyqtSlot, Qt
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
@@ -36,7 +37,7 @@ class GUIFrame(QTabWidget):
 
         self.openShotView = QVizOpenShotView()
 
-        self.setGeometry(300, 300, 600, 200)
+        #self.setGeometry(300, 300, 300, 200)
         self.tab1 = QWidget()
         self.tab2 = QWidget()
 
@@ -51,6 +52,18 @@ class GUIFrame(QTabWidget):
 
         self.contextMenu = None
 
+    def logPanel(self):
+        #LOG WIDGET
+        self.logWidget = QPlainTextEdit(parent=self)
+        #self.logWidget.resize(QSize(500, 300))
+        self.logWidget.setReadOnly(True)
+        logging.getLogger().setLevel(logging.INFO)
+        handler = Logger(self)
+        logging.getLogger().addHandler(handler)
+        handler.new_record.connect(self.logWidget.appendHtml)
+        layout = QVBoxLayout()
+        layout.addWidget(self.logWidget)
+        return layout
 
     def tabOne(self):
         layout = QVBoxLayout()
@@ -327,6 +340,40 @@ class VizMainWindow(QMainWindow):
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
         self.setCentralWidget(ex)
+        self.logPanel()
+        #self.
+
+    def logPanel(self):
+        # #LOG WIDGET
+        # self.logWidget = QPlainTextEdit(parent=self)
+        # self.logWidget.resize(QSize(500, 200))
+        # self.logWidget.setReadOnly(True)
+        # logging.getLogger().setLevel(logging.INFO)
+        # handler = Logger(self)
+        # logging.getLogger().addHandler(handler)
+        # handler.new_record.connect(self.logWidget.appendHtml)
+        # layout = QVBoxLayout()
+        # layout.addWidget(self.logWidget)
+        # return layout
+        self.logWidget = QPlainTextEdit(parent=self)
+        self.logWidget.setReadOnly(True)
+        self.dockWidget_log = QDockWidget("Log", self)
+        self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
+        self.dockWidget_log.setObjectName("DockWidget_LOG")
+        self.dockWidgetContents_log = QWidget()
+        self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
+        self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
+        #- Set dockwidget size
+        #self.dockWidget_log.resize(QSize(, ref_height / 4))
+        self.gridLayout_log.setObjectName("GridLayout_LOG")
+        self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
+        self.dockWidget_log.setWidget(self.dockWidgetContents_log)
+
+        self.addDockWidget(Qt.DockWidgetArea(8), self.dockWidget_log)
+        logging.getLogger().setLevel(logging.INFO)
+        handler = Logger(self)
+        logging.getLogger().addHandler(handler)
+        handler.new_record.connect(self.logWidget.appendHtml)
 
     def closeEvent(self, event):
         """Modify close event to request confirmation trough dialog. If
@@ -341,12 +388,47 @@ class VizMainWindow(QMainWindow):
         else:
             event.ignore()
 
+from PyQt5.QtCore import pyqtSignal, QObject
+import logging
+
+class Logger(QObject, logging.Handler):
+    """ Logger for handling passing the information and error messages to logWidget.
+    """
+    new_record = pyqtSignal(object)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        super(logging.Handler).__init__()
+        formatter = Formatter('%(asctime)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
+        self.setFormatter(formatter)
+
+    def emit(self, record):
+        msg = self.format(record)
+
+        if 'ERROR' in msg:
+            msg = "<font color='red'>" + msg + "</font>"
+        elif 'INFO' in msg:
+            msg = "<font color='black'>" + msg + "</font>"
+
+        self.new_record.emit(msg)
+
+
+class Formatter(logging.Formatter):
+    def formatException(self, ei):
+        result = super(Formatter, self).formatException(ei)
+        return result
+
+    def format(self, record):
+        s = super(Formatter, self).format(record)
+        if record.exc_text:
+            s = s.replace('\n', '')
+        return s
 
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     window = VizMainWindow(None);
-    window.setGeometry(400, 400, 600, 300)
+    window.setGeometry(400, 400, 600, 500)
     window.show()
     sys.exit(app.exec_())
 

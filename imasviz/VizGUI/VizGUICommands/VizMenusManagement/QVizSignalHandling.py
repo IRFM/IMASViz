@@ -30,6 +30,7 @@ from PyQt5.QtGui import QIcon
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import GlobalIcons
 
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView
@@ -646,12 +647,13 @@ class QVizSignalHandling(QObject):
                         self.treeNode.infoDict['i']))
                 addTimeSlider = True
 
+            plotWidget = self.getPlotWidget(self.currentFigureKey)
             # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, self.nodeData, signal=None,
                                figureKey=self.currentFigureKey, label=label,
                                xlabel=xlabel, addTimeSlider=addTimeSlider)
             # Plot signal data to plot widget
-            p.execute(self)
+            p.execute(plotWidget)
 
         except ValueError as e:
             logging.error(str(e))
@@ -765,15 +767,29 @@ class QVizSignalHandling(QObject):
             # Get figure key (e.g. 'Figure:0' string)
             figureKey = self.imas_viz_api. \
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+            # Get widget linked to this figure
+            plotWidget = self.getPlotWidget(self.figureKey)
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                                label=label,
                                title=title,
                                nodeData=self.nodeData,
                                figureKey=figureKey,
-                               update=0).execute(self)
+                               update=0).execute(plotWidget)
         except ValueError as e:
             logging.error(str(e))
 
+    def getPlotWidget(self, figureKey=0):
+        api = self.dataTreeView.imas_viz_api
+        if figureKey in api.figureframes:
+            plotWidget = api.figureframes[figureKey]
+        else:
+            figureKey = api.GetNextKeyForFigurePlots()
+            plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey,
+                                        addTimeSlider=self.addTimeSlider,
+                                        addCoordinateSlider=self.addCoordinateSlider,
+                                        signalHandling=self)
+            api.figureframes[figureKey] = plotWidget
+        return plotWidget
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -930,6 +946,7 @@ class QVizSignalHandling(QObject):
             label = label + '[' + str(index) + ']'
             self.treeNode = treeNode
             self.timeSlider = False
+            plotWidget = self.getPlotWidget(self.currentFigureKey)
             p = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=self.nodeData,
                            signal=signal,
@@ -939,7 +956,7 @@ class QVizSignalHandling(QObject):
                            xlabel="time[s]",
                            update=0,
                            addCoordinateSlider=True)
-            p.execute(self)
+            p.execute(plotWidget)
         except ValueError as e:
             logging.error(str(e))
 
@@ -956,7 +973,7 @@ class QVizSignalHandling(QObject):
             # Get label and title (dummy = obsolete xlabel)
             label = self.dataTreeView.dataSource.getShortLabel() + ":" + self.treeNode.getPath()
             label, title = self.treeNode.correctLabelForTimeSlices(label, '')
-
+            plotWidget = self.getPlotWidget(self.currentFigureKey)
             p = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=self.nodeData,
                            signal=signal,
@@ -966,7 +983,7 @@ class QVizSignalHandling(QObject):
                            xlabel="time[s]",
                            update=0,
                            addCoordinateSlider=False)
-            p.execute(self)
+            p.execute(plotWidget)
         except ValueError as e:
             logging.error(str(e))
 
@@ -1001,7 +1018,7 @@ class QVizSignalHandling(QObject):
 
             label = label + '[' + str(index) + ']'
             xlabel = xlabel + '[' + str(index) + ']'
-
+            plotWidget = self.getPlotWidget(currentFigureKey)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=treeNode.getInfoDict(),
@@ -1012,7 +1029,7 @@ class QVizSignalHandling(QObject):
                            xlabel="time[s]",
                            update=1,
                            addCoordinateSlider=True,
-                           vizTreeNode=treeNode).execute(self)
+                           vizTreeNode=treeNode).execute(plotWidget)
         except ValueError as e:
             logging.error(str(e))
 
@@ -1047,7 +1064,7 @@ class QVizSignalHandling(QObject):
             label = label.replace(idsName + '/time_slice(0)', idsName + '/time_slice(' + str(time_index) + ')')
             xlabel = xlabel.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(' + str(time_index) + ')')
             label = label.replace(idsName + '/profiles_1d(0)', idsName + '/profiles_1d(' + str(time_index) + ')')
-
+            plotWidget = self.getPlotWidget(currentFigureKey)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            nodeData=treeNode.getInfoDict(),
@@ -1057,6 +1074,6 @@ class QVizSignalHandling(QObject):
                            xlabel=xlabel,
                            update=1,
                            addTimeSlider=True,
-                           vizTreeNode=treeNode).execute(self)
+                           vizTreeNode=treeNode).execute(plotWidget)
         except ValueError as e:
             logging.error(str(e))

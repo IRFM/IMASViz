@@ -7,15 +7,13 @@ from PyQt5.QtWidgets import QApplication
 
 # Common
 import matplotlib.pyplot as plt
-#plt.switch_backend('Qt5Agg')
 
 # IMAS
 from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # tofu
 import sys
-sys.path.insert(0,'/Home/LF218007/tofu/')
-#print(sys.path)
+sys.path.insert(0, '/Home/LF218007/tofu/')
 import tofu as tf
 sys.path.pop(0)
 print('load ok')
@@ -45,11 +43,9 @@ class ToFuPlugin(VizPlugins):
         ids = vizNode.getIDSName()
 
         try:
-            print ('ToFuPlugin to be executed...')
+            print('ToFuPlugin to be executed...')
             if ids not in self.lidsok:
-                msg = "Requested ids not handled by tofu yet:\n"
-                msg += "    - ids requested: %s\n"%ids
-                msg += "    - ids avail.: %s"%str(self.lidsok)
+                msg = ids + " IDS not supported by tofu plugin\n"
                 warnings.warn(msg)
                 return None
 

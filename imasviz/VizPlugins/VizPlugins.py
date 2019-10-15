@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QMainWindow
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      'SOLPS_UiPlugin': '',
-                     'TFOverviewPlugin':'viz_tests.TF_OverviewPlugin',
+                     'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                      'example_UiPlugin': ''
                      }
 

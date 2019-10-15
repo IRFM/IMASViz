@@ -702,26 +702,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         # self.dockWidget_ndw.resize(QSize(ref_width / 2, ref_height / 10))
         self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
 
-        # LOG WIDGET
-        self.logWidget = QPlainTextEdit(parent=self)
-        self.logWidget.setReadOnly(True)
-        self.dockWidget_log = QDockWidget("Log", self)
-        self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
-        self.dockWidget_log.setObjectName("DockWidget_LOG")
-        self.dockWidgetContents_log = QWidget()
-        self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
-        self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
-        # - Set dockwidget size
-        # self.dockWidget_log.resize(QSize(ref_width / 2, ref_height / 4))
-        self.gridLayout_log.setObjectName("GridLayout_LOG")
-        self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
-        self.dockWidget_log.setWidget(self.dockWidgetContents_log)
-        self.addDockWidget(Qt.DockWidgetArea(8), self.dockWidget_log)
-        logging.getLogger().setLevel(logging.INFO)
-        handler = Logger(self)
-        logging.getLogger().addHandler(handler)
-        handler.new_record.connect(self.logWidget.appendHtml)
-
         # Set first docked widget minimum width
         self.dockWidget_ppw.setMinimumWidth(400)
         # Determine how much of vertical space the docked widgets should take
@@ -729,9 +709,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         #       the central widget takes ~90% of horizontal space (no 'resize'
         #       solves that ...)
         self.resizeDocks([self.dockWidget_ppw,
-                          self.dockWidget_ndw,
-                          self.dockWidget_log],
-                         [50, 25, 25], Qt.Vertical)
+                          self.dockWidget_ndw],
+                         [50, 50], Qt.Vertical)
 
     @pyqtSlot(QMainWindow)
     def onShowConfigurations(self, parent):
@@ -859,40 +838,3 @@ class QVizDataTreeViewFrame(QMainWindow):
 
     # TODO:
     # def onCloseAndReopenDatabase()
-
-
-
-from PyQt5.QtCore import pyqtSignal, QObject
-
-class Logger(QObject, logging.Handler):
-    """ Logger for handling passing the information and error messages to logWidget.
-    """
-    new_record = pyqtSignal(object)
-
-    def __init__(self, logWidget):
-        super().__init__(logWidget)
-        super(logging.Handler).__init__()
-        formatter = Formatter('%(asctime)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
-        self.setFormatter(formatter)
-
-    def emit(self, record):
-        msg = self.format(record)
-
-        if 'ERROR' in msg:
-            msg = "<font color='red'>" + msg + "</font>"
-        elif 'INFO' in msg:
-            msg = "<font color='black'>" + msg + "</font>"
-
-        self.new_record.emit(msg)
-
-
-class Formatter(logging.Formatter):
-    def formatException(self, ei):
-        result = super(Formatter, self).formatException(ei)
-        return result
-
-    def format(self, record):
-        s = super(Formatter, self).format(record)
-        if record.exc_text:
-            s = s.replace('\n', '')
-        return s

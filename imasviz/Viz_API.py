@@ -14,7 +14,7 @@
 import os
 
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
@@ -25,6 +25,7 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
+from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 class Viz_API:
 
@@ -316,3 +317,30 @@ class Viz_API:
             return self.GetDataSource(dataTreeFrame.parent).ids[occurrence]
         else:
             return self.GetDataSource(dataTreeFrame).ids[occurrence]
+
+    def CreatePlotWidget(self):
+        figureKey = self.GetNextKeyForFigurePlots()
+        plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey)
+        self.figureframes[figureKey] = plotWidget
+        return figureKey, plotWidget
+
+    def GetPlotWidget(self, figureKey=0):
+        if figureKey in self.figureframes:
+            plotWidget = self.figureframes[figureKey]
+        else:
+            plotWidget = self.CreatePlotWidget()
+        return plotWidget
+
+    def GetSignal(dataTreeView, vizTreeNode):
+        try:
+            signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
+            # treeNode = dataTreeView.selectedItem
+            if vizTreeNode.is1DAndDynamic():
+                signal = signalDataAccess.GetSignal(vizTreeNode)
+            elif vizTreeNode.is0DAndDynamic():
+                signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
+            else:
+                raise ValueError('Unexpected data type')
+            return signal
+        except:
+            raise

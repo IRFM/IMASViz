@@ -7,12 +7,9 @@ class TFOverviewPlugin(VizPlugins):
 
     def execute(self, vizAPI):
 
-        #view = pluginsConfiguration.get('imasviz_view')
-        #node_attributes = pluginsConfiguration.get('node_attributes')
-
         try:
-            print ('TF plugin to be executed...')
-            print(self.selectedTreeNode)
+            print('TF plugin to be executed...')
+            #print(self.selectedTreeNode)
 
             #figure.show()
         except :
