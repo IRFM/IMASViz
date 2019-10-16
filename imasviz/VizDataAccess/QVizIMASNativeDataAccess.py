@@ -16,6 +16,7 @@ class QVizIMASNativeDataAccess:
     def GetSignal(self, treeNode):
         return self.GetSignalAt(treeNode, treeNode.timeValue())
 
+
     def GetSignalAt(self, treeNode, itimeValue):
 
         try:
@@ -55,6 +56,7 @@ class QVizIMASNativeDataAccess:
             print(sys.exc_info()[0])
             traceback.print_exc(file=sys.stdout)
             raise
+
 
     #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
     def GetSignalVsTime(self, treeNode, index):
@@ -122,8 +124,3 @@ class QVizIMASNativeDataAccess:
         except:
             # return -1
             raise
-
-    #def GetTime(self, selectedNodeData, treeNode):
-    #    ids = self.dataSource.ids[selectedNodeData['occurrence']]
-    #    time = QVizGlobalOperations.getCoordinate1D_array(ids, selectedNodeData, treeNode.evaluateCoordinate1())
-    #    return time

@@ -18,6 +18,7 @@
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignal import QVizSelectSignal
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 
 class QVizSelectSignals(QVizAbstractCommand):
@@ -28,10 +29,11 @@ class QVizSelectSignals(QVizAbstractCommand):
         """
         Arguments:
             dataTreeView (QTreeWidget) : QTreeWidget object (DTV tree widget).
-            pathsMap     (dict)       : A list if signal paths (e.g.
-                                         ['magnetics/flux_loop(0)/flux/data'])
+            pathsMap     (dict)       : A map of signal paths (e.g.
+                                         ['magnetics/flux_loop(0)/flux/data', occurrence])
         """
         QVizAbstractCommand.__init__(self, dataTreeView)
+        pathsMap['paths'] = QVizGlobalOperations.makeIMASPaths(pathsMap['paths'])
         self.pathsMap = pathsMap
 
     def execute(self):
@@ -60,19 +62,22 @@ class QVizSelectSignals(QVizAbstractCommand):
             occurrencesList = self.pathsMap.get('occurrences')
             # In case occurrences were not given, set and use default occurrence 0
             occurrence = None
-            if occurrencesList == None:
+            if occurrencesList is None:
                 occurrence = 0
 
             #if any(sigName == s for s in pathsList):
             for i in range(0, len(pathsList)):
 
                 # If default occurrence was not set, use the occurrences list
-                if occurrence == None:
+                if occurrence is None:
                     occurrence = int(occurrencesList[i])
                 # Use the first occurrence if only one was given (assuming all
                 # signals correspond to the same occurrence)
                 elif len(occurrencesList) == 1:
                     occurrence = int(occurrencesList[0])
+
+                elif len(occurrencesList) != len(pathsList):
+                    raise ValueError('The number of specified occurrences differ from the number of specified paths.')
 
                 s = pathsList[i]
                 if occurrence != signal.getOccurrence():

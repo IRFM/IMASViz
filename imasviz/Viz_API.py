@@ -328,8 +328,8 @@ class Viz_API:
         if figureKey in self.figureframes:
             plotWidget = self.figureframes[figureKey]
         else:
-            plotWidget = self.CreatePlotWidget()
-        return plotWidget
+            figureKey, plotWidget = self.CreatePlotWidget()
+        return figureKey, plotWidget
 
     def GetSignal(dataTreeView, vizTreeNode):
         try:

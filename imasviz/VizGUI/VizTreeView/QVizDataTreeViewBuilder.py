@@ -76,7 +76,6 @@ class QVizDataTreeViewBuilder:
                 name = dataElementName.text
 
         viewerNode = None
-        isSignal = 0
         isArray = 0
         index = -1
 
@@ -94,7 +93,7 @@ class QVizDataTreeViewBuilder:
 
         if dataElement.get('index') is None:
 
-            itemDataDict, extra_attributes, isSignal = \
+            itemDataDict, extra_attributes = \
                 self.buildNamedDataElement(name,
                                            dataElement,
                                            itemDataDict,
@@ -123,7 +122,7 @@ class QVizDataTreeViewBuilder:
                 parentNode = self.arrayParentNodes[arrayParentPath]
 
 
-            itemDataDict, extra_attributes, isSignal = \
+            itemDataDict, extra_attributes = \
             self.buildNamedDataElement(name,
                                        dataElement,
                                        itemDataDict,
@@ -138,7 +137,7 @@ class QVizDataTreeViewBuilder:
 
         self.setPath(viewerNode, path)
 
-        if isSignal == 1:
+        if viewerNode.isDynamicData():
             self.signalsList.append(viewerNode)
 
         return viewerNode
@@ -370,7 +369,8 @@ class QVizDataTreeViewBuilder:
                         itemDataDict[key_max_name] = dataElement.get(key_max_name)
 
             itemDataDict['isSignal'] = isSignal
-        return itemDataDict, extra_attributes, isSignal
+
+        return itemDataDict, extra_attributes
 
     def endBuildView(self, idsName, occurrence, dataTreeView):
         ids_root_node = self.getIDSRootNode()

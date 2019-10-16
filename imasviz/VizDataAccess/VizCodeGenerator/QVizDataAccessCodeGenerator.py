@@ -359,10 +359,8 @@ class QVizDataAccessCodeGenerator:
                 for c in range(1,10):
                     coordinateName = "coordinate" + str(c)
                     coordinateValue = ids_child_element.get(coordinateName)
-                    if coordinateValue != None:
-                        coordinate = coordinateValue.replace("(", "[")
-                        coordinate = coordinate.replace(")", "]")
-                        coordinate = coordinate.replace("/", ".")
+                    if coordinateValue is not None:
+                        coordinate = QVizGlobalOperations.makeIMASPaths(coordinateValue)
                         coordinate = self.replaceIndices(coordinate)
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
@@ -471,20 +469,16 @@ class QVizDataAccessCodeGenerator:
                 for c in range(1,10):
                     coordinateName = "coordinate" + str(c)
                     coordinateValue = ids_child_element.get(coordinateName)
-                    if coordinateValue != None:
-                        coordinate = coordinateValue.replace("(", "[")
-                        coordinate = coordinate.replace(")", "]")
-                        coordinate = coordinate.replace("/", ".")
+                    if coordinateValue is not None:
+                        coordinate = QVizGlobalOperations.makeIMASPaths(coordinateValue)
                         coordinate = self.replaceIndices(coordinate)
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
 
                     coordinateSameAsName = "coordinate" + str(c) + "_same_as"
                     coordinateSameAsValue = ids_child_element.get(coordinateSameAsName)
-                    if coordinateSameAsValue != None:
-                        coordinate_same_as = coordinateSameAsValue.replace("(", "[")
-                        coordinate_same_as = coordinate_same_as.replace(")", "]")
-                        coordinate_same_as = coordinate_same_as.replace("/", ".")
+                    if coordinateSameAsValue is not None:
+                        coordinate_same_as = QVizGlobalOperations.makeIMASPaths(coordinateSameAsValue)
                         coordinate_same_as = self.replaceIndices(coordinate_same_as)
                         code = "node.set(" + "'" + coordinateSameAsName + "'" + ", '" + coordinate_same_as + "')"  # example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)

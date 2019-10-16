@@ -205,9 +205,7 @@ class QVizPlotSignal(QVizAbstractCommand):
     @staticmethod
     def getSignal(dataTreeView, vizTreeNode):
         try:
-
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
-            # treeNode = dataTreeView.selectedItem
             if vizTreeNode.is1DAndDynamic():
                 signal = signalDataAccess.GetSignal(vizTreeNode)
             elif vizTreeNode.is0DAndDynamic():

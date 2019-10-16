@@ -77,7 +77,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
             # Get plot widget
             api = self.dataTreeView.imas_viz_api
-            plotWidget = api.GetPlotWidget(figureKey)
+            figureKey, plotWidget = api.GetPlotWidget(figureKey)
 
             i = 0
             # Create a list of DTVs to specify either single DTV or a list of

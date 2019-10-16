@@ -172,7 +172,6 @@ class QVizDataTreeView(QTreeWidget):
                                                      DTVRoot=self.DTVRoot)
 
                 self.dataSource.containsData(IDSRootNode, imas_entry)
-                    #IDSRootNode.setForeground(0, GlobalColors.BLUE)
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode

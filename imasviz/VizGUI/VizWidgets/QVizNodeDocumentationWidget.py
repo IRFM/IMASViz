@@ -17,6 +17,7 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QWidget, QLabel, QVBoxLayout, QScrollArea
 from PyQt5.QtWidgets import QFormLayout
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors, GlobalFonts
@@ -346,9 +347,7 @@ class QVizNodeDocumentationWidget(QWidget):
             if item.isDynamicData():
                 # - Set node contents
                 expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
-                expression = expression.replace('/', '.')
-                expression = expression.replace('(', '[')
-                expression = expression.replace(')', ']')
+                expression = QVizGlobalOperations.makePythonPaths(expression)
                 # Get the array of values
                 node_array_contents = eval(expression)
 

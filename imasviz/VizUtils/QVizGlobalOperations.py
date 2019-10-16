@@ -308,3 +308,25 @@ class QVizGlobalOperations:
         b = n - (n // ncols) * ncols
         p = (a, b)
         return p
+
+    @staticmethod
+    def makeIMASPaths(paths):
+        i = 0
+        for path in paths:
+            path = path.replace('[', '(')
+            path = path.replace(']', ')')
+            path = path.replace('.', '/')
+            paths[i] = path
+            i += 1
+        return paths
+
+    @staticmethod
+    def makePythonPaths(paths):
+        i = 0
+        for path in paths:
+            path = path.replace('(', '[')
+            path = path.replace(')', ']')
+            path = path.replace('/', '.')
+            paths[i] = path
+            i += 1
+        return paths
