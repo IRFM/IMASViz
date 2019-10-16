@@ -5,11 +5,116 @@ Release notes
 =============
 
 -------------
-Version 2.0.0
+Version 2.2.6
 -------------
 
 Released:
 
+<to be released>
+
+Changes:
+
+- IMAS-2640: Introduced IMASViz variant of Matplotlib exporter (overwrite the
+  faulty pyqtgraph default Matplotlib exporter).
+- Add Makefile for generating the IDSDef_Parser.py files instead of keeping them
+  in the project GIT repository.
+- Improve logging messages.
+- IMAS-2629: Enabled creating plots for 0D signals.
+- IMAS-2651: Improved the time required to build the tree view.
+- IMAS-2641: Added display of sized for 2D signals.
+- IMAS-2630: Fixed wrong units.
+- Plot Configuration UI improvements:
+
+  - Overall UI improvement
+  - Replaced plot line number (marked with #) with colored plot marker.
+
+-------------
+Version 2.2.5
+-------------
+
+Released:
+3.9.2019
+
+Changes:
+
+- Add support for IMAS versions 3.24.0
+- Patches for the generation of IDSDef_XMLParser.py files.
+- **Documentation Widget** fix related to 'Contents' component.
+- Optimization of the display of the node/signal contents in the
+  **Documentation Widget**.
+- Fixed bug when clicking twice on the root node resulted in a crash
+- Additional checks while plotting added (disabled mixing plots of quantities
+  with different units).
+- Added a new command for displaying current selection as IMAS paths.
+- Added time unit label for the time slider value in plots as a function of
+  coordinate1.
+
+-------------
+Version 2.2.4
+-------------
+
+Released:
+1.8.2019
+
+Changes:
+
+- Minor code improvements and fixes.
+
+-------------
+Version 2.2.3
+-------------
+
+Released:
+30.7.2019
+
+Changes:
+
+- Improve customization of legend labels in the plot configuration UI.
+- IMAS-2475: Fixed display of multi-line strings (e.g. ids_properties.comment).
+
+-------------
+Version 2.2.2
+-------------
+
+Released:
+5.7.2019
+
+Changes:
+
+- Add support for IMAS versions 3.23.3
+- Improved data handling and checks for the signal paths and occurrences.
+
+----------------------
+Versions 2.1.0 - 2.2.1
+----------------------
+
+Released:
+2.7.2019
+
+Changes:
+
+- Add support for IMAS versions 3.22.0, 3.23.1, 3.23.2
+- Improvements for the features:
+  - Export IDS,
+  - 1D plotting,
+  - UDA,
+  - plot legend labels (in case when using UDA)
+- Introduce development of standalone UI plugins (using QtDesigner) in a way
+  that they can be also embedded within IMASViz (HowTo documentation included)
+- Addition of SOLPS plugin (suitable for reading Edge Profiles IDSs written by
+  SOLPS-ITER)
+- Patch for handling Core Profiles IDS profiled_1d array
+- Work done tickets:
+
+  - IMAS-2387: Changed string on IMASviz display from 'IMAS database name' to
+    'TOKAMAK'.
+  - IMAS-2404: Highlight/Enable only populated IDSs in the IMAS tree.
+
+-------------
+Version 2.0.0
+-------------
+
+Released:
 4.2.2019
 
 Changes:
@@ -19,10 +124,8 @@ Changes:
 - Basic plot feature performance improved greatly.
   Quick comparison for plotting 17 plots to a single panel using default
   plotting options:
-
-   - wxPython IMASViz: ~13s
-   - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
-
+  - wxPython IMASViz: ~13s
+  - PyQt5 IMASViz:  less than 1s (more than **13x speed improvement**!)
 - Improved tree view build performance (wxPython IMASViz was practically
   unable to build tree view for arrays containing 1500+ time slices)
 - Superior plot export possibilities
@@ -34,7 +137,7 @@ Changes:
 - Introduce first GUI icons
 - MultiPlot feature relabeled to TablePlotView
 - SubPlot feature relabeled to StackedPlotView
-- Add support for IMAS versions 3.20.0, 3.21.0 and 3.21.1
+- Add support for IMAS versions 3.19.0, 3.20.0, 3.21.0 and 3.21.1
 - Included **documentation + manual** (~60 pages in PDF) in a form of
   reStructuredText source files for document generation (single source can be
   generated into multiple formats e.g. PDF, HMTL...)
@@ -82,7 +185,6 @@ Version 1.2
 -----------
 
 Released:
-
 24.8.2018
 
 Changes:
@@ -90,14 +192,13 @@ Changes:
 - New functionality: selection command of nodes belonging to same parent AOS
   (Array of Structures)
 - MultiPlot and SubPlot design improvements
-- Adding support for IMAS versions 3.19.1
+- Adding support for IMAS versions 3.19.0
 
 -----------
 Version 1.1
 -----------
 
 Released:
-
 8.6.2018
 
 Changes (since March 2017):
