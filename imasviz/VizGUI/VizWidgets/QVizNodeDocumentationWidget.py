@@ -347,7 +347,7 @@ class QVizNodeDocumentationWidget(QWidget):
             if item.isDynamicData():
                 # - Set node contents
                 expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
-                expression = QVizGlobalOperations.makePythonPaths(expression)
+                expression = QVizGlobalOperations.makePythonPath(expression)
                 # Get the array of values
                 node_array_contents = eval(expression)
 

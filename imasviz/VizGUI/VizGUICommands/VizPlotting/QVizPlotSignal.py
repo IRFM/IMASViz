@@ -33,8 +33,8 @@ class QVizPlotSignal(QVizAbstractCommand):
     """Handling plot execution.
     """
     def __init__(self, dataTreeView, nodeData=None, signal=None,
-                 figureKey=None, title='', label=None, xlabel=None,
-                 update=0, vizTreeNode=None, addTimeSlider=False, addCoordinateSlider=False):
+                 title='', label=None, xlabel=None,
+                 update=0, vizTreeNode=None):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -61,21 +61,13 @@ class QVizPlotSignal(QVizAbstractCommand):
         else:
             self.signal = signal
 
-        # Set widget window title by getting the next figure number
-        if figureKey is None:
-            self.figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForFigurePlots()
-        else:
-            self.figureKey = figureKey
-
         self.title = title
         self.label = label
         self.xlabel = xlabel
         self.update = update
         self.plotFrame = None
-        self.addTimeSlider = addTimeSlider
-        self.addCoordinateSlider = addCoordinateSlider
 
-    def execute(self, plotWidget):
+    def execute(self, plotWidget, figureKey=0):
         try:
             if len(self.signal) == 2:
                 t = QVizPlotSignal.getTime(self.signal)
@@ -88,7 +80,7 @@ class QVizPlotSignal(QVizAbstractCommand):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
 
                 self.plot1DSignal(self.dataTreeView.shotNumber, t, v, plotWidget,
-                                  self.figureKey, self.title, self.label,
+                                  figureKey, self.title, self.label,
                                   self.xlabel, self.update)
             else:
                 raise ValueError("only 1D plots are currently supported.")
@@ -150,7 +142,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             label, xlabel, ylabel, title = \
                 self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
                                  shotNumber=shotNumber, label=label,
-                                 xlabel=xlabel, title=self.figureKey)
+                                 xlabel=xlabel, title=figureKey)
 
             # A new plot is added to the current plot(s)
             if update == 1:

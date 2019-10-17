@@ -44,7 +44,7 @@ class QVizTreeNode(QTreeWidgetItem):
         for key in QVizGlobalValues.indices:
             if i == int(self.treeNodeExtraAttributes.itime_index):
                 return QVizGlobalValues.indices[key]
-            i = i + 1
+            i += 1
 
     def replaceBrackets(self, toReplace): #replace '[' by '(' and ']' by ')'
         c = toReplace.replace("[", "(")
@@ -56,11 +56,23 @@ class QVizTreeNode(QTreeWidgetItem):
             coordinate1 = coordinate1.replace("[itime]", "[" + self.timeValue() + "]")
         return coordinate1
 
+    def evaluateDataPath(self, itime_value):
+        parametrizedPath = self.getParametrizedPath()
+        if parametrizedPath is None:
+            return self.getDataName()
+        evaluatedPath = parametrizedPath
+        if itime_value is not None:
+            evaluatedPath = evaluatedPath.replace('[itime]', '[' + str(itime_value) + ']')
+        for key in self.treeNodeExtraAttributes.parameters_values:
+            v = self.treeNodeExtraAttributes.parameters_values[key]
+            evaluatedPath = evaluatedPath.replace('[' + key + ']', '[' + v + ']')
+        return evaluatedPath
+
     def evaluateCoordinate1At(self, itimeValue):
-        coordinate1 = self.evaluateCoordinate1VsTime()
+        coordinate1 = QVizGlobalOperations.makePythonPath(self.evaluateCoordinate1VsTime())
         if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.coordinate1):
             coordinate1 = coordinate1.replace("[itime]", "[" + str(itimeValue) + "]")
-        if coordinate1 == None:
+        if coordinate1 is None:
             coordinate1 = self.treeNodeExtraAttributes.coordinate1
         return coordinate1
 
@@ -103,10 +115,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
 
     def coordinate1Label(self, idsName, index, ids):
-        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
-            self.treeNodeExtraAttributes.coordinate1 == "1...N":
+        if self.treeNodeExtraAttributes.coordinate1 == "1..N" \
+                or self.treeNodeExtraAttributes.coordinate1 == "1...N":
             return "[" + str(index) + "]"
-            #return None
         to_eval = "ids." + idsName + \
                   "." + self.evaluateCoordinate1() + "[" + str(index) + "]"
         coordinate1_value = eval(to_eval)
@@ -120,33 +131,47 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def coordinate1Length(self, selectedNodeData, ids):
 
-        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
-            self.treeNodeExtraAttributes.coordinate1 == "1...N":
+        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or\
+                        self.treeNodeExtraAttributes.coordinate1 == "1...N":
             r = np.array([eval('ids.' + selectedNodeData['dataName'])])
             return len(r[0])
-        # Set python expression to get lenght of the array
+        # Set python expression to get length of the array
         to_evaluate = 'ids.' + selectedNodeData['IDSName'] + '.' + \
                        self.evaluateCoordinate1()
         len_to_evaluate = eval('len(' + to_evaluate + ')')
         return len_to_evaluate
 
     def timeMaxValue(self):
-        if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.aos):
-            return self.treeNodeExtraAttributes.aos_indices_max_values[self.index_name_of_itime()]
+        if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.parametrizedPath):
+            return self.treeNodeExtraAttributes.parameters_max_values[self.index_name_of_itime()]
 
     def timeValue(self):
-        if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.aos):
-            return self.treeNodeExtraAttributes.aos_indices_values[self.index_name_of_itime()]
+        if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.parametrizedPath):
+            return self.treeNodeExtraAttributes.parameters_values[self.index_name_of_itime()]
 
     def getDataPathVsTime(self, path):
         return self.evaluatePath(path)
 
+    def getItimeIndex(self):
+        i = self.treeNodeExtraAttributes.itime_index
+        if i is not None:
+            return int(i)
+        return -1
+
+    def aosParentsCount(self):
+        apc = self.treeNodeExtraAttributes.aos_parents_count
+        if apc is None:
+            return 0
+        else:
+            return int(apc)
+
     def evaluatePath(self, path):
         aos_valued = None
+        path = QVizGlobalOperations.makePythonPath(path)
         path = self.patchIndices(path) #replace [i1] by [i], [i2] by [j] and so on
         for i in range(0, self.treeNodeExtraAttributes.aos_parents_count): #loop on all AOSs which contain this path
             index_name = QVizGlobalValues.indices[str(i + 1)]
-            index_value = self.treeNodeExtraAttributes.aos_indices_values[index_name] #AOS index value for this node
+            index_value = self.treeNodeExtraAttributes.parameters_values[index_name] #AOS index value for this node
             s = "[" + index_name + "]"
             aos_valued = path.replace(s, "[" + index_value + "]")
             path = aos_valued
@@ -178,7 +203,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def getDataVsTime(self):
         data_list = []
-        aos_vs_itime = self.getDataPathVsTime(self.treeNodeExtraAttributes.aos)
+        aos_vs_itime = self.getDataPathVsTime(self.treeNodeExtraAttributes.parametrizedPath)
         #print "QVizTreeNode : time max value = " + self.timeMaxValue()
         for itime in range(0, int(self.timeMaxValue())):
             data_path = self.getDataPath(aos_vs_itime, itime)
@@ -187,6 +212,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def getNodeData(self):
         return self.infoDict
+
+    def getParametrizedPath(self):
+        return self.treeNodeExtraAttributes.parametrizedPath
 
     def getOccurrence(self):
         return self.infoDict.get('occurrence')

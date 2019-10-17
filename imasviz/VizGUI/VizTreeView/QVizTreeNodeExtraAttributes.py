@@ -4,18 +4,18 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 class QVizTreeNodeExtraAttributes:
 
     def __init__(self, *args, **kwargs):
-        self.aos = None
+        self.parametrizedPath = None
         self.itime_index = None  # string
         self.aos_parents_count = None  # sring
-        self.aos_indices_values = {}  # key = index name ('i', 'j', ...)
-        self.aos_indices_max_values = {}
+        self.parameters_values = {}  # key = index name ('i', 'j', ...)
+        self.parameters_max_values = {}
         self.coordinate1 = None
 
-    def add_aos_value(self, aos_indice_name, value):
-        self.aos_indices_values[aos_indice_name] = value
+    def addParameterValue(self, aos_indice_name, value):
+        self.parameters_values[aos_indice_name] = value
 
-    def add_aos_max_value(self, aos_indice_name, value):
-        self.aos_indices_max_values[aos_indice_name] = value
+    def addMaxParameterValue(self, aos_indice_name, value):
+        self.parameters_max_values[aos_indice_name] = value
 
     def isCoordinateTimeDependent(self, coordinate):
         if '/time' in coordinate or '.time' in coordinate or coordinate == 'time':
@@ -28,4 +28,4 @@ class QVizTreeNodeExtraAttributes:
         return False
 
     def time_dependent_aos(self):
-        return self.time_dependent(self.aos)
+        return self.time_dependent(self.parametrizedPath)

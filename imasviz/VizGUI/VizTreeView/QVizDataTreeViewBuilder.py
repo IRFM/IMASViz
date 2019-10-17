@@ -57,7 +57,6 @@ class QVizDataTreeViewBuilder:
         """
 
         itemDataDict = {}
-        #itemDataDict['availableIDSData/' + str(occurrence)] = 0
         itemDataDict['IDSName'] = idsName
         itemDataDict['occurrence'] = occurrence
         itemDataDict['isIDSRoot'] = 0
@@ -326,10 +325,10 @@ class QVizDataTreeViewBuilder:
             if coordinate1 is not None:
                 coordinate1 = coordinate1.replace("/", ".") #PATCH
 
-            if dataElement.get('aos') is not None: #only for native data
+            if dataElement.get('parametrizedPath') is not None: #only for native data
 
                 itemDataDict['itime_index'] = dataElement.get('itime_index')
-                extra_attributes.aos = dataElement.get('aos').replace("self.", "")
+                extra_attributes.parametrizedPath = dataElement.get('parametrizedPath').replace("self.", "")
                 extra_attributes.coordinate1 = coordinate1
                 extra_attributes.itime_index = dataElement.get('itime_index')
                 extra_attributes.aos_parents_count = int(dataElement.get('aos_parents_count'))
@@ -340,13 +339,13 @@ class QVizDataTreeViewBuilder:
                     itemDataDict['coordinate1_time_dependent'] = 0
 
 
-                for i in range(0, extra_attributes.aos_parents_count ):
-                    aos_index_name = QVizGlobalValues.indices[str(i + 1)]
-                    aos_index_value = dataElement.get(aos_index_name)
-                    extra_attributes.add_aos_value(aos_index_name, aos_index_value)
-                    aos_max_index_name = QVizGlobalValues.max_indices[str(i + 1)]
-                    aos_index_max_value = dataElement.get(aos_max_index_name)
-                    extra_attributes.add_aos_max_value(aos_index_name, aos_index_max_value)
+                for i in range(0, extra_attributes.aos_parents_count):
+                    parameterName = QVizGlobalValues.indices[str(i + 1)]
+                    parameterValue = dataElement.get(parameterName)
+                    extra_attributes.addParameterValue(parameterName, parameterValue)
+                    maxParameterName = QVizGlobalValues.max_indices[str(i + 1)]
+                    maxParameterValue = dataElement.get(maxParameterName)
+                    extra_attributes.addMaxParameterValue(parameterName, maxParameterValue)
 
             if data_type is not None:
                 if data_type.startswith("FLT_") or data_type.startswith("flt_") or \
@@ -360,7 +359,7 @@ class QVizDataTreeViewBuilder:
                        itemDataDict['coordinate1'] = coordinate1
 
                     itemDataDict['path_doc'] = dataElement.get('path_doc')
-                    itemDataDict['aos'] = dataElement.get('aos')
+                    itemDataDict['parametrizedPath'] = dataElement.get('parametrizedPath')
                     itemDataDict['aos_parents_count'] = dataElement.get('aos_parents_count')
                     for i in range(0, len(QVizGlobalValues.indices)):
                         key_name = QVizGlobalValues.indices[str(i + 1)]

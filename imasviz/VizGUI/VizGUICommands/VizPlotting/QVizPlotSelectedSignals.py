@@ -105,7 +105,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
                     # Cancel plotting procedure if there is something wrong with
                     # the dimension
-                    if plotDimension == False:
+                    if not plotDimension:
                         return
 
                     key = dtv.dataSource.dataKey(vizTreeNode.getInfoDict())

@@ -5,6 +5,7 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 import traceback, logging, os, sys
 import numpy as np
+from PyQt5.QtWidgets import QInputDialog
 
 class CompareFLT1DPlugin(VizPlugins):
     def __init__(self):
@@ -14,6 +15,15 @@ class CompareFLT1DPlugin(VizPlugins):
 
         try:
             print('CompareFLT1DPlugin to be executed...')
+
+
+            shotNumber, ok = QInputDialog.getInt(self, "Shot number", "enter a shot number")
+            if not ok:
+                return
+
+            dataSource = self.dataTreeView.dataSource
+
+
             figureKey, plotWidget = vizAPI.CreatePlotWidget()
             node = self.selectedTreeNode
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
@@ -41,7 +51,7 @@ class CompareFLT1DPlugin(VizPlugins):
 
             # Set the list of node paths that are to be selected
             paths = []
-            paths.append(QVizGlobalOperations.makeIMASPaths(self.selectedTreeNode.getDataName()))
+            paths.append(QVizGlobalOperations.makeIMASPath(self.selectedTreeNode.getDataName()))
 
             # Change it to dictionary with paths an occurrences (!)
             paths = {'paths': paths,
@@ -72,14 +82,3 @@ class CompareFLT1DPlugin(VizPlugins):
 
     def isEnabled(self):
         return True
-
-    # def GetSignalToCompare(self, treeNode, ids):
-    #     try:
-    #         signalPath = 'ids.' + treeNode.getDataName()
-    #         rval = eval(signalPath)
-    #         r = np.array([rval])
-    #         return r
-    #     except:
-    #         print(sys.exc_info()[0])
-    #         traceback.print_exc(file=sys.stdout)
-    #         raise

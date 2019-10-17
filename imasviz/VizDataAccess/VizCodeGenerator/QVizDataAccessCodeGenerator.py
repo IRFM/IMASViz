@@ -310,10 +310,10 @@ class QVizDataAccessCodeGenerator:
                 itimeIndex = self.search_itime_index(path_doc)
                 code = "node.set(" + "'itime_index', '" + str(itimeIndex) + "')"
                 self.printCode(code, level)
-                aos = child.text
+                parametrizedPath = child.text
                 if itimeIndex != -1:
-                    aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
-                code = "node.set(" + "'aos', '" + aos + "')"
+                    parametrizedPath = parametrizedPath.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+                code = "node.set(" + "'parametrizedPath', '" + parametrizedPath + "')"
                 self.printCode(code, level)
 
                 for i in range(0, level - 1):
@@ -360,7 +360,7 @@ class QVizDataAccessCodeGenerator:
                     coordinateName = "coordinate" + str(c)
                     coordinateValue = ids_child_element.get(coordinateName)
                     if coordinateValue is not None:
-                        coordinate = QVizGlobalOperations.makeIMASPaths(coordinateValue)
+                        coordinate = QVizGlobalOperations.makeIMASPath(coordinateValue)
                         coordinate = self.replaceIndices(coordinate)
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
@@ -424,12 +424,12 @@ class QVizDataAccessCodeGenerator:
                 code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
                 self.printCode(code, level)
 
-                aos = child.text
+                parametrizedPath = child.text
 
                 if itimeIndex != -1:
-                    aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+                    parametrizedPath = parametrizedPath.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
-                code = "node.set(" + "'aos', '" + aos + "')"
+                code = "node.set(" + "'parametrizedPath', '" + parametrizedPath + "')"
                 self.printCode(code, level)
 
                 value = self.replaceIndices(ids_child_element.text)
@@ -470,7 +470,7 @@ class QVizDataAccessCodeGenerator:
                     coordinateName = "coordinate" + str(c)
                     coordinateValue = ids_child_element.get(coordinateName)
                     if coordinateValue is not None:
-                        coordinate = QVizGlobalOperations.makeIMASPaths(coordinateValue)
+                        coordinate = QVizGlobalOperations.makeIMASPath(coordinateValue)
                         coordinate = self.replaceIndices(coordinate)
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
@@ -478,7 +478,7 @@ class QVizDataAccessCodeGenerator:
                     coordinateSameAsName = "coordinate" + str(c) + "_same_as"
                     coordinateSameAsValue = ids_child_element.get(coordinateSameAsName)
                     if coordinateSameAsValue is not None:
-                        coordinate_same_as = QVizGlobalOperations.makeIMASPaths(coordinateSameAsValue)
+                        coordinate_same_as = QVizGlobalOperations.makeIMASPath(coordinateSameAsValue)
                         coordinate_same_as = self.replaceIndices(coordinate_same_as)
                         code = "node.set(" + "'" + coordinateSameAsName + "'" + ", '" + coordinate_same_as + "')"  # example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
@@ -524,14 +524,6 @@ class QVizDataAccessCodeGenerator:
                 code = "nameNode.set('data_type', 'STR_0D')"
                 self.printCode(code, level)
 
-                # code = "aos = ET.SubElement(node, 'aos')"
-                # self.printCode(code, level)
-                # code = "aos.text = " + "'" + ids_child_element.text + "'"
-                # self.printCode(code, level)
-                # code = "node.set(" + "'aos', '" + ids_child_element.text + "')"
-                # self.printCode(code, level)
-
-
                 for i in range(0, level - 1):
                     var_name = QVizGlobalValues.indices[str(i + 1)]
                     var_name_max = QVizGlobalValues.max_indices[str(i + 1)]
@@ -547,13 +539,12 @@ class QVizDataAccessCodeGenerator:
                 code = "node.set(" + "'" + "aos_parents_count" + "'" + ", str(" + str(level - 1) + "))"
                 self.printCode(code, level)
 
-                aos = child.text
+                parametrizedPath = child.text
 
                 if itimeIndex != -1:
-                    aos = aos.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
+                    parametrizedPath = parametrizedPath.replace("[" + QVizGlobalValues.indices[str(itimeIndex + 1)] + "]", "[itime]")
 
-                code = "node.set(" + "'aos', '" + aos + "')"
-                #code = "node.set(" + "'aos_type', '" + child.get('type') + "')"
+                code = "node.set(" + "'parametrizedPath', '" + parametrizedPath + "')"
                 self.printCode(code, level)
 
                 value = self.replaceIndices(ids_child_element.text)

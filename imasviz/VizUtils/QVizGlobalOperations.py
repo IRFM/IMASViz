@@ -313,20 +313,28 @@ class QVizGlobalOperations:
     def makeIMASPaths(paths):
         i = 0
         for path in paths:
-            path = path.replace('[', '(')
-            path = path.replace(']', ')')
-            path = path.replace('.', '/')
-            paths[i] = path
+            paths[i] = QVizGlobalOperations.makeIMASPath(path)
             i += 1
         return paths
+
+    @staticmethod
+    def makeIMASPath(path):
+        path = path.replace('[', '(')
+        path = path.replace(']', ')')
+        path = path.replace('.', '/')
+        return path
 
     @staticmethod
     def makePythonPaths(paths):
         i = 0
         for path in paths:
-            path = path.replace('(', '[')
-            path = path.replace(')', ']')
-            path = path.replace('/', '.')
-            paths[i] = path
+            paths[i] = QVizGlobalOperations.makePythonPath(path)
             i += 1
         return paths
+
+    def makePythonPath(path):
+        path = path.replace('(', '[')
+        path = path.replace(')', ']')
+        path = path.replace('/', '.')
+        path = path.replace('(:)', '')
+        return path

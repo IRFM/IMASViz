@@ -62,7 +62,7 @@ class QVizIMASDataSource:
         return True
 
     def getImasEntry(self):
-        return  imas.ids(self.shotNumber, self.runNumber, 0, 0)
+        return imas.ids(self.shotNumber, self.runNumber, 0, 0)
 
     def open(self, imas_entry):
         imas_major_version = os.environ['IMAS_MAJOR_VERSION']
