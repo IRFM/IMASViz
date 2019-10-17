@@ -193,7 +193,7 @@ class QVizDataAccessCodeGenerator:
                 time_slices = "-1"
                 if ids_child_element.get('type') is not None and ids_child_element.get('type') == 'dynamic':
                     time_slices = "1"
-                    self.printCode("if " + m + " > 1:", level)
+                    self.printCode("if " + m + " > 0:", level)
                     parameter = m + ' = 1 #only one time slice is kept for the tree' + '\n'
                     self.printCode(parameter, level + 1)
 
