@@ -15,11 +15,14 @@
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
-    QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem
+    QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem, \
+    QApplication, QPen, QPainter, QGraphicsGridLayout, QGraphicsWidget, QGraphicsScene, QGraphicsView
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
-from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols
+from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols, \
+    GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
+from pyqtgraph.graphicsItems.LegendItem import ItemSample
 
 
 class QVizPlotConfigUI(QDialog):
@@ -37,6 +40,9 @@ class QVizPlotConfigUI(QDialog):
         # Set viewBox variable
         self.viewBox = viewBox
 
+        # Get legend item. Contains legend labels, graphics etc.
+        self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+
         # Set main layout
         self.setMainLayout()
 
@@ -48,14 +54,15 @@ class QVizPlotConfigUI(QDialog):
         tabWidget = QTabWidget(self)
         # Add tabs
         # - Color and line properties
-        self.tab1 = TabColorAndLineProperties(parent=self)
-        tabWidget.addTab(self.tab1,
-                         "Color and Line Properties")
+        self.tabLP = TabLineProperties(parent=self)
+        tabWidget.addTab(self.tabLP, "Line Properties")
+
+        self.tabTP = TabTextProperties(parent=self)
+        tabWidget.addTab(self.tabTP, "Text properties")
 
         # - Plot design properties
-        self.tab2 = TabPlotDesignProperties(parent=self)
-        tabWidget.addTab(self.tab2,
-                         "Plot Design Properties")
+        self.tabPDP = TabPlotDesignProperties(parent=self)
+        tabWidget.addTab(self.tabPDP, "Plot Design Properties")
         return tabWidget
 
     def setButtons(self):
@@ -94,22 +101,55 @@ class QVizPlotConfigUI(QDialog):
         # Set dialog layout
         self.setLayout(layout)
 
+class SampleCopyFromLegend(QWidget):
+    """ Create a widget containing the legend label marker ("sample").
+    'sample' is the line marker shown in the plot legend
+    Qt objects can't exist on two different locations, they also can't
+    be copied. Due to that a new sample object must be created and the
+    properties of the original sample passed to the new one
+    """
 
-class TabColorAndLineProperties(QWidget):
+    def __init__(self, legendItem, itemAtID, parent=None):
+        super(SampleCopyFromLegend, self).__init__(parent)
+
+        self.legendItem = legendItem
+        self.itemAtID = itemAtID
+        self.setCopy()
+
+    def setCopy(self):
+        # Set graphics scene
+        self.scene = QGraphicsScene()
+        # Set scene size
+        self.scene.setSceneRect(0,0,0,0)
+        # Set view
+        self.view = QGraphicsView(self)
+
+        sample_original = self.legendItem.layout.itemAt(self.itemAtID,0)
+        sample_new = ItemSample(sample_original.item)
+        self.scene.addItem(sample_new)
+        self.view.setScene(self.scene)
+        self.view.setMaximumSize(25,25)
+
+    def getCopy(self):
+        return self
+
+class TabLineProperties(QWidget):
     """Widget allowing plot color and line customization.
     """
 
     def __init__(self, parent=None, size=(500, 400)):
-        super(TabColorAndLineProperties, self).__init__(parent)
+        super(TabLineProperties, self).__init__(parent)
 
         # Widget settings
-        self.setObjectName("TabColorAndLineProperties")
+        self.setObjectName("TabLineProperties")
         self.setWindowTitle("Color and Line Properties")
         # self.resize(size[0], size[1])
 
         self.parent = parent
         # Set viewBox variable
         self.viewBox = self.parent.viewBox
+
+        self.legendItem = self.parent.legendItem
 
         # List of plotDataItems within viewBox
         self.listPlotDataItems = self.viewBox.addedItems
@@ -154,8 +194,7 @@ class TabColorAndLineProperties(QWidget):
 
         # Set header
         # - Set list of header items
-        listHeaderLabels = ['#',
-                            'Label',
+        listHeaderLabels = ['Line',
                             'Color',
                             'Style',
                             'Thickness',
@@ -168,31 +207,27 @@ class TabColorAndLineProperties(QWidget):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
         # Add options for each plotDataItem
-        i = 0
+        i = 0 # layout line
         for pdItem in self.listPlotDataItems:
-            # Add ID label
-            scrollLayout.addWidget(QLabel(str(i)), i + 1, 0, 1, 1)
+            j = 0 # layout column
 
-            # ------------------------------------------------------------------
-            # Configuring legend label
-            # - Add editable text box containing item label (string)
-            labelEdit = QLineEdit(pdItem.opts['name'])
-            # - Add item ID to labelEdit
-            labelEdit.itemID = i
-            # - Add labelEdit to layout
-            scrollLayout.addWidget(labelEdit, i + 1, 1, 1, 1)
-            # - Add action triggered by modification of the text box
-            labelEdit.textChanged.connect(partial(
-                self.updatePDItemLabel,
-                pdItem=pdItem,
-                lineEdit=labelEdit))
+            # Add line marker from the legend to the plot configuration to
+            # provide better way of identifying the plot to customize
+            newSampleWidget = SampleCopyFromLegend(parent=self,
+                                                   legendItem=self.legendItem,
+                                                   itemAtID=i).getCopy()
+
+            # - Add sample marker to layout
+            scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
+            j += 1 # go to next column
+
             # ------------------------------------------------------------------
             # Configuring plot pen color
             penColorButton = pg.ColorButton()
             # - Set current plot pen color (takes QColor)
             penColorButton.setColor(pdItem.opts['pen'].color())
             # - Add penColorButton to layout
-            scrollLayout.addWidget(penColorButton, i + 1, 2, 1, 1)
+            scrollLayout.addWidget(penColorButton, i + 1, j, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -206,6 +241,7 @@ class TabColorAndLineProperties(QWidget):
             #     self.updatePDItemColor,
             #     pdItem=pdItem,
             #     colorButton=penColorButton))
+            j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen style
             styleComboBox = QComboBox()
@@ -224,7 +260,8 @@ class TabColorAndLineProperties(QWidget):
                 comboBox=styleComboBox))
 
             # - Add comboBox to layout
-            scrollLayout.addWidget(styleComboBox, i + 1, 3, 1, 1)
+            scrollLayout.addWidget(styleComboBox, i + 1, j, 1, 1)
+            j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen width
             widthSpinBox = QDoubleSpinBox(value=pdItem.opts['pen'].width(),
@@ -232,13 +269,14 @@ class TabColorAndLineProperties(QWidget):
                                           minimum=0.0,
                                           singleStep=0.5)
             # - Add spinBox to layout
-            scrollLayout.addWidget(widthSpinBox, i + 1, 4, 1, 1)
+            scrollLayout.addWidget(widthSpinBox, i + 1, j, 1, 1)
 
             # - Update plot pen width/thickness on value change
             widthSpinBox.valueChanged.connect(partial(
                 self.updatePDItemWidth,
                 pdItem=pdItem,
                 spinBox=widthSpinBox))
+            j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol type
             symbolComboBox = QComboBox()
@@ -264,7 +302,8 @@ class TabColorAndLineProperties(QWidget):
                 comboBox=symbolComboBox))
 
             # - Add comboBox to layout
-            scrollLayout.addWidget(symbolComboBox, i + 1, 5, 1, 1)
+            scrollLayout.addWidget(symbolComboBox, i + 1, j, 1, 1)
+            j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol size. Take current symbol size as a value
             symbolSizeSpinBox = QDoubleSpinBox(value=pdItem.opts['symbolSize'],
@@ -272,20 +311,21 @@ class TabColorAndLineProperties(QWidget):
                                                minimum=0.0,
                                                singleStep=0.5)
             # - Add spinBox to layout
-            scrollLayout.addWidget(symbolSizeSpinBox, i + 1, 6, 1, 1)
+            scrollLayout.addWidget(symbolSizeSpinBox, i + 1, j, 1, 1)
 
             # - Update plot pen width/thickness on value change
             symbolSizeSpinBox.valueChanged.connect(partial(
                 self.updatePDItemSymbolSize,
                 pdItem=pdItem,
                 spinBox=symbolSizeSpinBox))
+            j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol fill color
             symbolColorButton = pg.ColorButton()
             # - Set current symbol fill color (takes QColor)
             symbolColorButton.setColor(pdItem.opts['symbolBrush'])
             # - Add symbolColorButton to layout
-            scrollLayout.addWidget(symbolColorButton, i + 1, 7, 1, 1)
+            scrollLayout.addWidget(symbolColorButton, i + 1, j, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -299,14 +339,14 @@ class TabColorAndLineProperties(QWidget):
             #     self.updatePDItemSymbolColor,
             #     pdItem=pdItem,
             #     colorButton=symbolColorButton))
-
+            j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol outline color
             symbolOColorButton = pg.ColorButton()
             # - Set current symbol outline color (takes QColor)
             symbolOColorButton.setColor(pdItem.opts['symbolPen'])
             # - Add symbolOColorButton to layout
-            scrollLayout.addWidget(symbolOColorButton, i + 1, 8, 1, 1)
+            scrollLayout.addWidget(symbolOColorButton, i + 1, j, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -348,31 +388,6 @@ class TabColorAndLineProperties(QWidget):
         scrollArea.setWidget(scrollContent)
 
         return scrollArea
-
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QLineEdit)
-    def updatePDItemLabel(self, pdItem, lineEdit):
-        """Update plotDataItem label and plotWidget legend.
-        Note: instant update (no apply required).
-
-        Arguments:
-            pdItem   (pg.plotDataItem) : PlotDataItem to update.
-            lineEdit (QLineEdit)       : QLineEdit where the changes to the
-                                         text occur.
-        """
-
-        # Set new label
-        newLabel = lineEdit.text()
-        # Update the plotDataItem name variable
-        pdItem.opts['name'] = newLabel
-
-        # Update plotWidget legend
-        # Note: the changes are instant (no apply required)
-        # - Get legendItem
-        legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
-        # - Get legend labelItem
-        legendLabelItem = legendItem.items[lineEdit.itemID][1]
-        # - Update label text
-        legendLabelItem.setText(newLabel)
 
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
     def updatePDItemColor(self, pdItem, colorButton):
@@ -473,6 +488,284 @@ class TabColorAndLineProperties(QWidget):
         # Change symbol outline color
         pdItem.opts['symbolPen'] = colorButton.color().getRgb()
         pdItem.updateItems()
+
+
+class TabTextProperties(QWidget):
+    """Widget allowing plot color and line customization.
+    """
+
+    def __init__(self, parent=None, size=(500, 400)):
+        super(TabTextProperties, self).__init__(parent)
+
+        # Widget settings
+        self.setObjectName("TabTextProperties")
+        self.setWindowTitle("Text Properties")
+        # self.resize(size[0], size[1])
+
+        self.parent = parent
+        # Set viewBox variable
+        self.viewBox = self.parent.viewBox
+
+        self.legendItem = self.parent.legendItem
+
+        # List of plotDataItems within viewBox
+        self.listPlotDataItems = self.viewBox.addedItems
+
+        # Set up the QWidget contents
+        self.setContents()
+
+    def setContents(self):
+        """ Set widget contents.
+        """
+        # Set layout
+        self.gridLayout = QGridLayout(self)
+        self.gridLayout.setObjectName("gridLayout")
+
+        # Set scroll area containing a list of plotDataItems and their
+        # customization options
+        self.plotListOptions = self.setPlotPropertiesList()
+        self.gridLayout.addWidget(self.plotListOptions, 0, 0, 1, 1)
+
+        # Set layout marigin (left, top, right, bottom)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.gridLayout)
+
+        # self.gridLayout.update()
+
+    def setPlotPropertiesList(self):
+        """Set scroll area listing plots and their customization options.
+        """
+
+        # Set scrollable area
+        scrollArea = QScrollArea(self)
+        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setEnabled(True)
+        scrollContent = QWidget(scrollArea)
+
+        # Set layout for scrollable area
+        scrollLayout = QGridLayout(scrollContent)
+
+        # Set header
+        # - Set list of header items
+        listHeaderLabels = ['Line',
+                            'Legend Label',
+                            'Bold',
+                            'Italic']
+        # - Set header item for each column (i)
+        for i in range(len(listHeaderLabels)):
+            scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
+
+        # Add options for each plotDataItem
+        i = 0 # layout line
+        for pdItem in self.listPlotDataItems:
+            j = 0 # layout column
+
+            # Add line marker from the legend to the plot configuration to
+            # provide better way of identifying the plot to customize
+            newSampleWidget = SampleCopyFromLegend(parent=self,
+                                                   legendItem=self.legendItem,
+                                                   itemAtID=i).getCopy()
+
+            # - Add sample marker to layout
+            scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
+            j += 1 # go to next column
+            # ------------------------------------------------------------------
+            # Configuring legend label
+            # - Add editable text box containing item label (string)
+            labelEdit = QLineEdit(pdItem.opts['name'])
+            # - Add item ID to labelEdit
+            labelEdit.itemID = i
+            # - Add labelEdit to layout
+            scrollLayout.addWidget(labelEdit, i + 1, j, 1, 1)
+            # - Add action triggered by modification of the text box
+            labelEdit.textChanged.connect(partial(
+                self.updatePDItemLabel,
+                pdItem=pdItem,
+                lineEdit=labelEdit))
+            j += 1 # go to next column
+            # ------------------------------------------------------------------
+            # Configuring legend thickness (boldness)
+            boldButton = QPushButton('', self)
+            # Set icon
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
+            boldButton.setIcon(icon)
+            # - Add boldButton to layout
+            scrollLayout.addWidget(boldButton, i + 1, j, 1, 1)
+            # - Add action triggered by pressing the button
+            boldButton.pressed.connect(partial(
+                self.setLegendBold,
+                legendItemID = i))
+
+            # boldButton.released.connect()
+            j += 1 # go to next column
+            # ------------------------------------------------------------------
+            # Configuring legend italic text style
+            italicButton = QPushButton('', self)
+            # Set icon
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
+            italicButton.setIcon(icon)
+            # - Add italicButton to layout
+            scrollLayout.addWidget(italicButton, i + 1, j, 1, 1)
+            # - Add action triggered by pressing the button
+            italicButton.pressed.connect(partial(
+                self.setLegendItalic,
+                legendItemID = i))
+
+            i += 1
+
+        # Set scrollArea contents margin to keep the contents lined to the top
+        # even if not full scrollArea would be filled
+        topMargin = 270 - (i - 1)*30
+        if topMargin < 0:
+            topMargin = 0
+        scrollLayout.setContentsMargins(0, 0, 0, topMargin)
+        # Add all contents to scrollArea widget
+        scrollContent.setLayout(scrollLayout)
+        scrollArea.setWidget(scrollContent)
+
+        return scrollArea
+
+    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QLineEdit)
+    def updatePDItemLabel(self, pdItem, lineEdit):
+        """Update plotDataItem label and plotWidget legend.
+        Note: instant update (no apply required).
+
+        Arguments:
+            pdItem   (pg.plotDataItem) : PlotDataItem to update.
+            lineEdit (QLineEdit)       : QLineEdit where the changes to the
+                                         text occur.
+        """
+
+        # Set new label
+        newLabel = lineEdit.text()
+        # Update the plotDataItem name variable
+        pdItem.opts['name'] = newLabel
+
+        # Update plotWidget legend
+        # Note: the changes are instant (no apply required)
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[lineEdit.itemID][1]
+        # - Update label text
+        legendLabelItem.setText(newLabel)
+
+    @pyqtSlot(int)
+    def setLegendBold(self, legendItemID):
+
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[legendItemID][1]
+
+        key = 'bold'
+        if key in legendLabelItem.opts:
+            if legendLabelItem.opts['bold'] == True:
+                self.setLegendItemBoldOFF(legendItemID=legendItemID)
+            elif legendLabelItem.opts['bold'] == False:
+                self.setLegendItemBoldON(legendItemID=legendItemID)
+        else:
+            self.setLegendItemBoldON(legendItemID=legendItemID)
+
+
+    @pyqtSlot(int)
+    def setLegendItemBoldON(self, legendItemID):
+        """Set plotDataItem legend label (in plotWidget) to bold.
+        Note: instant update (no apply required).
+
+        Arguments:
+            legendItemID (int)         : ID of corresponding legend item,
+                                         identifying the relevant legend item
+                                         from a list of legend items.
+        """
+
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[legendItemID][1]
+        # Set style
+        legendLabelStyle = {'bold': True}
+        # legendLabelStyle = {'color': '#000', 'size': '12pt', 'bold': True, 'italic': False}
+
+        # Setting text style
+        # Note: setAttr('bold', True) and setProperty('bold', True) have no
+        #       effect.
+        legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
+
+    @pyqtSlot(int)
+    def setLegendItemBoldOFF(self, legendItemID):
+        """Set plotDataItem legend label (in plotWidget) to flat (not bold).
+        Note: instant update (no apply required).
+
+        Arguments:
+            legendItemID (int)         : ID of corresponding legend item,
+                                         identifying the relevant legend item
+                                         from a list of legend items.
+        """
+
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[legendItemID][1]
+        # Set style
+        legendLabelStyle = {'bold': False}
+
+        # Setting text style
+        # Note: setAttr('bold', False) and setProperty('bold', False) have no
+        #       effect.
+        legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
+
+    @pyqtSlot(int)
+    def setLegendItalic(self, legendItemID):
+
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[legendItemID][1]
+
+        key = 'italic'
+        if key in legendLabelItem.opts:
+            if legendLabelItem.opts['italic'] == True:
+                self.setLegendItemItalicOFF(legendItemID=legendItemID)
+            elif legendLabelItem.opts['italic'] == False:
+                self.setLegendItemItalicON(legendItemID=legendItemID)
+        else:
+            self.setLegendItemItalicON(legendItemID=legendItemID)
+
+
+    @pyqtSlot(int)
+    def setLegendItemItalicON(self, legendItemID):
+        """Set plotDataItem legend label (in plotWidget) to italic.
+        Note: instant update (no apply required).
+
+        Arguments:
+            legendItemID (int)         : ID of corresponding legend item,
+                                         identifying the relevant legend item
+                                         from a list of legend items.
+        """
+
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[legendItemID][1]
+        # Set style
+        legendLabelStyle = {'italic': True}
+        # legendLabelStyle = {'color': '#000', 'size': '12pt', 'bold': True, 'italic': False}
+
+        # Setting text style
+        legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
+
+    @pyqtSlot(int)
+    def setLegendItemItalicOFF(self, legendItemID):
+        """Set plotDataItem legend label (in plotWidget) to "not italic".
+        Note: instant update (no apply required).
+
+        Arguments:
+            legendItemID (int)         : ID of corresponding legend item,
+                                         identifying the relevant legend item
+                                         from a list of legend items.
+        """
+
+        # - Get legend labelItem
+        legendLabelItem = self.legendItem.items[legendItemID][1]
+        # Set style
+        legendLabelStyle = {'italic': False}
+
+
+        # Setting text style
+        # Note: setAttr('bold', False) and setProperty('bold', False) have no
+        #       effect.
+        legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
 
 class TabPlotDesignProperties(QWidget):
     """Widget allowing plot color and line customization.

@@ -91,7 +91,6 @@ class QVizSelectSignals(QVizAbstractCommand):
         Note: It requires open IDS root tree item in order to have the required
         signalsList populated.
         """
-        print("*pathsList: \n", self.pathsMap)
 
         # Get paths list from dictionary
         pathsList = self.pathsMap.get('paths')
