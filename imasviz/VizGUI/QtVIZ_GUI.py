@@ -125,12 +125,14 @@ class GUIFrame(QTabWidget):
 
         publicDatabases = ['WEST', 'TCV', 'JET', 'AUG', 'MAST']
 
-        if (os.environ.get('UDA_DISABLED') == "1"):
+        if os.environ.get('UDA_DISABLED') == 1:
+            print('UDA will be disabled')
             self.tab2.setDisabled(True)
         else:
-            if ('UDA_HOST' in os.environ) :
+            if 'UDA_HOST' in os.environ:
                 self.tab2.setDisabled(False)
             else:
+                print('UDA will be disabled (no UDA_HOST defined')
                 self.tab2.setDisabled(True)
 
         self.cb = QComboBox()
