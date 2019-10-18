@@ -802,11 +802,11 @@ class QVizSignalHandling(QObject):
             for si in selectedNodeDataList:
                 if 'coordinate1' in s and 'coordinate1' in si and s['coordinate1'] != si['coordinate1']:
                     return False
-                if s['units'] != si['units']:
+                if s.get('units') != si.get('units'):
                     return False
         elif self.treeNode.is0DAndDynamic():
             for si in selectedNodeDataList:
-                if s['units'] != si['units']:
+                if s.get('units') != si.get('units'):
                     return False
         return True
 

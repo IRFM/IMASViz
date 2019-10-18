@@ -193,17 +193,11 @@ class QVizDataAccessCodeGenerator:
                 time_slices = "-1"
                 if ids_child_element.get('type') is not None and ids_child_element.get('type') == 'dynamic':
                     time_slices = "1"
-                    m = "1"
+                    self.printCode("if " + m + " > 0:", level)
+                    parameter = m + ' = 1 #only one time slice is kept for the tree' + '\n'
+                    self.printCode(parameter, level + 1)
 
                 self.printCode('while ' + s + ' < ' + m + ':' + '\n', level)
-
-                code = "if " + m + " > 1000:"
-                self.printCode(code, level + 1)
-
-                code = "if " + s + " > 0:"
-                self.printCode(code, level + 2)
-                code = "break"
-                self.printCode(code, level + 3)
 
                 code = "current_parent_" + str(level) + "= parent"  #keep in memory the parent of the current level
                 self.printCode(code, level + 1)
@@ -597,17 +591,18 @@ class QVizDataAccessCodeGenerator:
 
         itime_index = -1
         try:
-            path_doc.index("(itime)")
+            itime_index = path_doc.index("(itime)")
         except:
             return itime_index #'itime' not found
 
+        s = path_doc[0:itime_index]
         itime_position = 0
         p_index = -1
 
         for c in range(1, 10):
             p = '(i' + str(c) + ')'
             try:
-                p_index = path_doc.index(p)
+                p_index = s.index(p)
                 itime_position += 1
             except:
                 return itime_position
