@@ -186,6 +186,9 @@ class QVizDataAccessCodeGenerator:
 
                 parameter = m + ' = ' + code_parameter + '\n'
                 self.printCode(parameter, level)
+                maxLimit = m + '_sup'
+                parameter = maxLimit + ' = ' + m + '\n'
+                self.printCode(parameter, level)
                 self.printCode(s + '= 0', level)
 
                 dim = m
@@ -194,10 +197,10 @@ class QVizDataAccessCodeGenerator:
                 if ids_child_element.get('type') is not None and ids_child_element.get('type') == 'dynamic':
                     time_slices = "1"
                     self.printCode("if " + m + " > 0:", level)
-                    parameter = m + ' = 1 #only one time slice is kept for the tree' + '\n'
+                    parameter = maxLimit + ' = 1 #only one time slice is kept for the tree' + '\n'
                     self.printCode(parameter, level + 1)
 
-                self.printCode('while ' + s + ' < ' + m + ':' + '\n', level)
+                self.printCode('while ' + s + ' < ' + maxLimit + ':' + '\n', level)
 
                 code = "current_parent_" + str(level) + "= parent"  #keep in memory the parent of the current level
                 self.printCode(code, level + 1)
