@@ -40,8 +40,15 @@ class QVizPlotConfigUI(QDialog):
         # Set viewBox variable
         self.viewBox = viewBox
 
-        # Get legend item. Contains legend labels, graphics etc.
-        self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
+        # In TablePlotView the legend is not used.
+        if ("TablePlotView" in str(self.viewBox.qWidgetParent.objectName())):
+            self.legendItem = None
+        elif ("StackedPlotView" in str(self.viewBox.qWidgetParent.objectName())):
+            # Get legend item. Contains legend labels, graphics etc.
+            self.legendItem = self.viewBox.qWidgetParent.pg.legend
+        else:
+            # Get legend item. Contains legend labels, graphics etc.
+            self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
 
         # Set main layout
         self.setMainLayout()
@@ -57,8 +64,11 @@ class QVizPlotConfigUI(QDialog):
         self.tabLP = TabLineProperties(parent=self)
         tabWidget.addTab(self.tabLP, "Line Properties")
 
-        self.tabTP = TabTextProperties(parent=self)
-        tabWidget.addTab(self.tabTP, "Text properties")
+        # Disabling tab for customizing text properties in case legendItem is
+        # not set (as many text customization refers to legend)
+        if self.legendItem != None:
+            self.tabTP = TabTextProperties(parent=self)
+            tabWidget.addTab(self.tabTP, "Text properties")
 
         # - Plot design properties
         self.tabPDP = TabPlotDesignProperties(parent=self)
@@ -211,15 +221,16 @@ class TabLineProperties(QWidget):
         for pdItem in self.listPlotDataItems:
             j = 0 # layout column
 
-            # Add line marker from the legend to the plot configuration to
-            # provide better way of identifying the plot to customize
-            newSampleWidget = SampleCopyFromLegend(parent=self,
-                                                   legendItem=self.legendItem,
-                                                   itemAtID=i).getCopy()
+            if self.legendItem != None:
+                # Add line marker from the legend to the plot configuration to
+                # provide better way of identifying the plot to customize
+                newSampleWidget = SampleCopyFromLegend(parent=self,
+                                                       legendItem=self.legendItem,
+                                                       itemAtID=i).getCopy()
 
-            # - Add sample marker to layout
-            scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
-            j += 1 # go to next column
+                # - Add sample marker to layout
+                scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
+                j += 1 # go to next column
 
             # ------------------------------------------------------------------
             # Configuring plot pen color
@@ -562,15 +573,16 @@ class TabTextProperties(QWidget):
         for pdItem in self.listPlotDataItems:
             j = 0 # layout column
 
-            # Add line marker from the legend to the plot configuration to
-            # provide better way of identifying the plot to customize
-            newSampleWidget = SampleCopyFromLegend(parent=self,
-                                                   legendItem=self.legendItem,
-                                                   itemAtID=i).getCopy()
+            if self.legendItem != None:
+                # Add line marker from the legend to the plot configuration to
+                # provide better way of identifying the plot to customize
+                newSampleWidget = SampleCopyFromLegend(parent=self,
+                                                       legendItem=self.legendItem,
+                                                       itemAtID=i).getCopy()
 
-            # - Add sample marker to layout
-            scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
-            j += 1 # go to next column
+                # - Add sample marker to layout
+                scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
+                j += 1 # go to next column
             # ------------------------------------------------------------------
             # Configuring legend label
             # - Add editable text box containing item label (string)

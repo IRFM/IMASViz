@@ -252,14 +252,14 @@ class QVizStackedPlotView(pg.GraphicsWindow):
             p.setContentsMargins(0, 0, 0, self.bPlotMargin)
 
             p.setMinimumHeight(100)
-            self.p0 = p
+            self.pg = p
         elif n == (self.parent.getNumSignals(all_DTV=False) - 1):
             # Rules for last plot
             # - Remove axis values
             p.getAxis('bottom').setStyle(showValues=True)
             # - Set X and Y-axis link to first plot
-            p.setXLink(self.p0)
-            p.setYLink(self.p0)
+            p.setXLink(self.pg)
+            p.setYLink(self.pg)
             p.setMinimumHeight(100)
 
         else:
@@ -267,8 +267,8 @@ class QVizStackedPlotView(pg.GraphicsWindow):
             # - Remove axis values
             p.getAxis('bottom').setStyle(showValues=False)
             # - Set X and Y-axis link to first plot
-            p.setXLink(self.p0)
-            p.setYLink(self.p0)
+            p.setXLink(self.pg)
+            p.setYLink(self.pg)
             # - Set bottom margin
             p.setContentsMargins(0, 0, 0, self.bPlotMargin)
 
