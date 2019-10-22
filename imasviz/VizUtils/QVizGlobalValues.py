@@ -14,6 +14,50 @@ class Imas_Viz_Options:
     HIDE_EMPTY_SIGNALS = False
     HIDE_OBSOLESCENT_NODES = False
 
+class GlobalColors:
+    """Global colors
+    """
+    from PyQt5.QtGui import QBrush, QColor
+
+    BLUE = QBrush(QColor('#0000ff'))
+    RED = QBrush(QColor('#ff0000'))
+    BLACK = QBrush(QColor('#000000'))
+    CYAN = QBrush(QColor('#00ffff'))
+    LIGHT_CYAN = QBrush(QColor('#cce5ff'))
+    LIGHT_GREY = QBrush(QColor('#d3d3d3'))
+    BLUE_HEX = QBrush(QColor('#0000ff'))
+    RED_HEX = QBrush(QColor('#ff0000'))
+    GREEN_HEX = QBrush(QColor('#008000'))
+    YELLOW_HEX = QBrush(QColor('#FFFF00'))
+    ORANGE_HEX = QBrush(QColor('#FFA500'))
+    PURPLE_HEX = QBrush(QColor('#800080'))
+    BLACK_HEX = QBrush(QColor('#000000'))
+    CYAN_HEX = QBrush(QColor('#00ffff'))
+    LIGHT_CYAN_HEX = QBrush(QColor('#cce5ff'))
+    LIGHT_GREY_HEX = QBrush(QColor('#d3d3d3'))
+    LIME_HEX = QBrush(QColor('#00FF00'))
+    MAGENTA_HEX = QBrush(QColor('#FF00FF'))
+    SILVER_HEX = QBrush(QColor('#C0C0C0'))
+    GRAY_HEX = QBrush(QColor('#808080'))
+    MAROON_HEX = QBrush(QColor('#800000'))
+    OLIVE_HEX = QBrush(QColor('#808000'))
+    TEAL_HEX = QBrush(QColor('#008080'))
+    NAVY_HEX = QBrush(QColor('#000080'))
+
+    def getAvailableColorForNodes(index):
+        availableColors = []
+        availableColors.append(GlobalColors.BLUE)
+        availableColors.append(GlobalColors.CYAN)
+        availableColors.append(GlobalColors.OLIVE_HEX)
+        availableColors.append(GlobalColors.ORANGE_HEX)
+        availableColors.append(GlobalColors.TEAL_HEX)
+        availableColors.append(GlobalColors.MAGENTA_HEX)
+        availableColors.append(GlobalColors.GRAY_HEX)
+        availableColors.append(GlobalColors.RED)
+        return availableColors[index]
+
+
+
 class QVizGlobalValues:
 
     IMAS_VIZ_VERSION = ''
@@ -82,6 +126,21 @@ class QVizGlobalValues:
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
 
+    from PyQt5.QtGui import QBrush, QColor
+    ColorOfNodesContainingData = GlobalColors.BLUE
+    SelectionColor = GlobalColors.RED
+    option1 = "Color_of_data_nodes_containing_data="
+    option2 = "Nodes_selection_color="
+    with open(os.environ['VIZ_HOME'] + '/config/preferences') as f:
+        for line in f:
+            if line.startswith(option1):
+                color_str = line[len(option1):]
+                ColorOfNodesContainingData = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
+            elif line.startswith(option2):
+                color_str = line[len(option2):]
+                SelectionColor = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
+
+
 class GlobalIDs:
     """Global frame, panels etc. IDs.
     """
@@ -135,37 +194,6 @@ class GlobalIDs:
 
     # PyQt5
     RESULT_EVENT = 9999
-
-class GlobalColors:
-    """Global colors
-    """
-    from PyQt5.QtGui import QBrush, QColor
-
-    BLUE = QBrush(QColor('#0000ff'))
-    RED = QBrush(QColor('#ff0000'))
-    BLACK = QBrush(QColor('#000000'))
-    CYAN = QBrush(QColor('#00ffff'))
-    LIGHT_CYAN = QBrush(QColor('#cce5ff'))
-    LIGHT_GREY = QBrush(QColor('#d3d3d3'))
-
-    BLUE_HEX = '#0000ff'
-    RED_HEX = '#ff0000'
-    GREEN_HEX = '#008000'
-    YELLOW_HEX = '#FFFF00'
-    ORANGE_HEX = '#FFA500'
-    PURPLE_HEX = '#800080'
-    BLACK_HEX = '#000000'
-    CYAN_HEX = '#00ffff'
-    LIGHT_CYAN_HEX = '#cce5ff'
-    LIGHT_GREY_HEX = '#d3d3d3'
-    LIME_HEX = '#00FF00'
-    MAGENTA_HEX = '#FF00FF'
-    SILVER_HEX = '#C0C0C0'
-    GRAY_HEX = '#808080'
-    MAROON_HEX = '#800000'
-    OLIVE_HEX = '#808000'
-    TEAL_HEX = '#008080'
-    NAVY_HEX = '#000080'
 
 def getRGBColorList():
     """Get RGB color list for plot lines using hex colors defined in
@@ -242,7 +270,7 @@ class GlobalPgSymbols:
                     'Pentagon'       : 'p',
                     'Hexagon'        : 'h',
                     'Star'           : 'star'}
-class GlobalIcons():
+class GlobalIcons:
     """Global IMASViz icons.
     """
 
@@ -314,3 +342,4 @@ class GlobalIcons():
             QStyleID    (int)          : QStyle icon ID.
         """
         return QtGui.QIcon(application.style().standardIcon(QStyleID))
+

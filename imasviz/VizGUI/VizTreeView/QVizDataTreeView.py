@@ -177,7 +177,7 @@ class QVizDataTreeView(QTreeWidget):
                     # color its item text (IDS name) to blue
                     IDSRootNode.setAvailableIDSData(1)
                     # Set tree item text color
-                    IDSRootNode.setForeground(0, GlobalColors.BLUE)
+                    IDSRootNode.setForeground(0, QVizGlobalValues.ColorOfNodesContainingData)
                 else:
                     IDSRootNode.setAvailableIDSData(0)
                     # Set tree item text color

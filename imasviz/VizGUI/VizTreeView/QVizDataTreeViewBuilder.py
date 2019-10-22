@@ -106,7 +106,7 @@ class QVizDataTreeViewBuilder:
                                           path)
 
             item_color = dataTreeView.dataSource.colorOf(viewerNode)
-            itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)
+            itemDataDict['availableData'] = (item_color == QVizGlobalValues.ColorOfNodesContainingData)
             viewerNode.setForeground(0, item_color) # - Set tree item text color
 
         else:
@@ -133,7 +133,7 @@ class QVizDataTreeViewBuilder:
             viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict,
                                           extra_attributes, path)
             item_color = dataTreeView.dataSource.colorOf(viewerNode)
-            itemDataDict['availableData'] = (item_color == GlobalColors.BLUE)
+            itemDataDict['availableData'] = (item_color == QVizGlobalValues.ColorOfNodesContainingData)
             viewerNode.setForeground(0, item_color)  # - Set tree item text color
 
         self.setPath(viewerNode, path)

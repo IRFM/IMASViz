@@ -7,13 +7,21 @@ visualizing static and dynamic IMAS data, stored within IMAS
 
 ## Installing IMASViz from source
 
-IMASViz does not require full instalation. It does however require the
+IMASViz does not require a full installation. It does however require the
 generated IDSDef parser Python files
-(generated to
-$VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
+(generated to $VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
 This can be simply done by running make command from the $VIZ_HOME.
 
         make
+
+## Configuring UDA
+
+1. The IMAS access layer used by IMASViz should support UDA for accessing remote UDA servers.
+
+2. The file 'UDA_machines' located in directory $VIZ_HOME/config lists all tokamaks with remote UDA servers which
+can be accessed from the current machine where IMASViz is installed.
+Please refers to the documentation for the required prerequisites for accessing a particular remote UDA server.
+
 
 ## Running IMASViz from source
 
@@ -56,11 +64,13 @@ commands in the terminal:
 
     cd viz
     # bash
-    export VIZ_PRODUCTION=0
+    export VIZ_PRODUCTION=1
     export VIZ_HOME=$PWD
+    export UDA_DISABLED=1 #disable UDA
     # csh
-    setenv VIZ_PRODUCTION 0
+    setenv VIZ_PRODUCTION 1
     setenv VIZ_HOME $PWD
+    setenv UDA_DISABLED 1 #disable UDA
 
 Then proceed with the next instructions.
 

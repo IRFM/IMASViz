@@ -1,0 +1,10 @@
+#BLUE --> 1
+#CYAN --> 2
+#OLIVE_HEX --> 3
+#ORANGE_HEX --> 4
+#MAGENTA_HEX --> 5
+#GRAY_HEX --> 6
+#RED --> 7
+#
+Color_of_data_nodes_containing_data=1
+Nodes_selection_color=7

@@ -69,7 +69,7 @@ class ToreSupraDataSource:
 
     #Define the color of a node which contains a signal
     def colorOf(self, signalNode, obsolescent=None):
-        return GlobalColors.BLUE
+        return QVizGlobalValues.SelectionColor
 
     #This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):

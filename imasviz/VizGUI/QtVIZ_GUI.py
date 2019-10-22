@@ -13,6 +13,7 @@
 
 import os
 import sys
+import logging
 from functools import partial
 from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle
 
@@ -99,7 +100,7 @@ class GUIFrame(QTabWidget):
                 raise ValueError(str(e))
 
         except ValueError as e:
-            QVizGlobalOperations.message(self, str(e), 'IMASViz error')
+            QVizGlobalOperations.message(self, str(e), 'Error')
 
     def CheckInputsFromTab1(self):
         """Display warning message if the required parameter was not specified"""
@@ -123,7 +124,16 @@ class GUIFrame(QTabWidget):
         self.runNumber2 = QLineEdit(default_run)
         vboxlayout.addRow('Run number', self.runNumber2)
 
-        publicDatabases = ['WEST', 'TCV', 'JET', 'AUG', 'MAST']
+        publicDatabases = []
+
+        file = open(os.environ['VIZ_HOME'] + '/config/UDA_machines')
+        if file is not None:
+            UDAmachines = file.readline()
+            file.close()
+            publicDatabases = UDAmachines.split()
+        else:
+            logging.warning("Missing UDA_machines file in /config directory. UDA will be disabled!")
+            os.environ.get['UDA_DISABLED'] = 1
 
         if os.environ.get('UDA_DISABLED') == 1:
             print('UDA will be disabled')
@@ -161,7 +171,7 @@ class GUIFrame(QTabWidget):
                                             shotNumber=self.shotNumber2.text(),
                                             UDAMachineName=self.cb.currentText())
         except ValueError as e:
-            QVizGlobalOperations.message(self, str(e), 'Error opening file')
+            QVizGlobalOperations.message(self, str(e), 'Error')
 
     def CheckInputsFromTab2(self):
         machineName = \
@@ -233,8 +243,7 @@ class GUIFrame(QTabWidget):
                 dataSource = dtv.dataTreeView.dataSource
                 shotNumber = dataSource.shotNumber
                 runNumber = dataSource.runNumber
-                actionLabel = "Shot:" + str(shotNumber) + " Run:" + str(runNumber) + " DB:" + dataSource.imasDbName \
-                              + " User:" + dataSource.userName
+                actionLabel = dataSource.getLongLabel()
                 action_showHide_view = QAction(actionLabel, self)
                 action_showHide_view.triggered.connect(
                     partial(self.showHideView, i))
@@ -295,32 +304,6 @@ class GUIFrame(QTabWidget):
             if dtv.isVisible():
                 dtv.hide()
             self.openShotView.api.removeDTVFrame(dtv)
-
-    # def menuShowWindows(self):
-    #
-    #     menu = QMenu('Window', self.contextMenu)
-    #     menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
-    #
-    #     frameIndex = 0
-    #     for frame in self.openShotView.api.DTVframeList:
-    #         # Add menu item to add plot to specific existing figure
-    #         # Check for figures that share the same coordinates
-    #         # Set action
-    #         shotNumber = frame.dataTreeView.shotNumber
-    #         runNumber = frame.dataTreeView.runNumber
-    #         actionName = str(shotNumber) + "-" + str(runNumber)
-    #         action_ShowFrame = QAction(actionName, self)
-    #         action_ShowFrame.triggered.connect(
-    #             partial(self.showDTV, frameIndex))
-    #         # Add to submenu
-    #         menu.addAction(action_ShowFrame)
-    #         frameIndex += 1
-    #
-    #     return menu
-    #
-    # def showDTV(self, frameIndex):
-    #     imas_viz_api = self.openShotView.api
-    #     imas_viz_api.ShowDataTree(imas_viz_api.DTVframeList[frameIndex])
 
 class VizMainWindow(QMainWindow):
     def __init__(self, parent):

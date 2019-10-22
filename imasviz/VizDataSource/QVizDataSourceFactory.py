@@ -20,9 +20,29 @@ class QVizDataSourceFactory:
                imasDbName = None, dataSourceName = QVizGlobalValues.IMAS_NATIVE,
                machineName = None):
 
+        #Check UDA prerequisites
+
+        #Check if UDA log directory exists and create it otherwise
+        UDALogDir = os.environ['HOME'] + '/logs/uda'
+        if not os.path.exists(UDALogDir):
+            os.makedirs(UDALogDir)
+
+        if machineName == 'TCV' or machineName == 'AUG':
+            exp2imasFile = os.environ['HOME'] + '/.exp2imas'
+            if not os.path.exists(exp2imasFile):
+                raise ValueError('Access to ' + machineName + ' requires a file named ''.exp2imas''  located in '
+                                                              'your home directory containing one line:'
+                                 + machineName + ' username password')
+
+        if machineName == 'WEST':
+            west_tunnel_file = os.environ['HOME'] + '/.west_tunnel'
+            if not os.path.exists(west_tunnel_file):
+                raise ValueError('Access to ' + machineName + ' requires a file named ''.west_tunnel''  located in '
+                                                              'your home directory containing one line:'
+                                 + machineName + ' username password')
+
         if dataSourceName is None or dataSourceName == '':
-            raise ValueError(
-                "A datasource name is required for creating a datasource")
+            raise ValueError("A datasource name is required for creating a datasource")
 
         if dataSourceName == QVizGlobalValues.IMAS_NATIVE:
             dataSource = QVizIMASDataSource(dataSourceName, userName, imasDbName,
@@ -45,7 +65,7 @@ class QVizDataSourceFactory:
                 if machineName == 'WEST': #WORK AROUND of IMAS-2701 issue
                     os.environ['UDA_PLUGIN'] = 'west_tunnel'
                 else:
-                    os.environ['UDA_PLUGIN'] = ''
+                    os.environ['UDA_PLUGIN'] = 'IMAS_MAPPING'
                 dataSource = QVizIMASPublicDataSource(dataSourceName, machineName,
                                                       shotNumber, runNumber)
                 return dataSource
