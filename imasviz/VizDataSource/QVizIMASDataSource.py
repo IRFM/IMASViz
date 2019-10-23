@@ -3,8 +3,7 @@ import imas
 import traceback, sys
 from PyQt5.QtWidgets import QTreeWidgetItem
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 class QVizIMASDataSource:
@@ -118,7 +117,7 @@ class QVizIMASDataSource:
                     return GlobalColors.LIGHT_GREY
             else:
                 if obsolescent is None or obsolescent is False:
-                    return GlobalColors.BLUE  # non empty (signals) arrays appear in blue
+                    return QVizGlobalValues.ColorOfNodesContainingData  # non empty (signals) arrays appear in blue
                 elif obsolescent is True:
                     return GlobalColors.CYAN
 
@@ -144,7 +143,7 @@ class QVizIMASDataSource:
                     return GlobalColors.LIGHT_GREY
             else:
                 if obsolescent is None or obsolescent is False:
-                    return GlobalColors.BLUE  # non empty (signals) arrays appear in blue
+                    return QVizGlobalValues.ColorOfNodesContainingData  # non empty (signals) arrays appear in blue
                 elif obsolescent is True:
                     return GlobalColors.CYAN
 
@@ -157,7 +156,7 @@ class QVizIMASDataSource:
                     return GlobalColors.LIGHT_GREY
             else:
                 if obsolescent is None or obsolescent is False:
-                    return GlobalColors.BLUE  # non empty (signals) arrays appear in blue
+                    return QVizGlobalValues.ColorOfNodesContainingData  # non empty (signals) arrays appear in blue
                 elif obsolescent is True:
                     return GlobalColors.CYAN
 
@@ -185,6 +184,9 @@ class QVizIMASDataSource:
 
     def getShortLabel(self):
         return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+
+    def getLongLabel(self):
+        return "User:" + self.userName + " Tokamak:" + self.imasDbName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
 
     def exportToLocal(self, dataTreeView, exported_ids):

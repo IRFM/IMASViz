@@ -61,6 +61,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     run = dataSource.runNumber
     machine = dataSource.imasDbName
     user = dataSource.userName
+    status = 0
 
     print('shot    =', shot)
     print('run     =', run)
@@ -75,12 +76,44 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         print('Loading equilibrium IDS...')
         vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
 
-    # Get wall geometry if not yet loaded
+    logging.info("Here are the requirements for the ''Equilibrium'' plugin:"
+                 "non empty equilibrium IDS with time slices,"
+                 "non empty GGD (equilibrium.time_slice[:].ggd),"
+                 "non empty IDS Wall.")
+
+
+    ht = idd.equilibrium.ids_properties.homogeneous_time
+    if ht != 0 and ht != 1 and ht != 2:
+        logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS is empty.')
+        status = -1
+
+    elif len(idd.equilibrium.time_slice) == 0:
+        logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS has no time slices.')
+        status = -1
+
+    elif len(idd.equilibrium.time_slice[0].ggd) == 0:
+        logging.error('Unable to start the Equilibrium plugin; GGD is empty.')
+        status = -1
+
+    # Get wall geometry
     if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
         print('Loading wall IDS...')
         vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
 
     idd = vizAPI.GetIMASDataEntry(dataTreeView, occurrence)
+
+    ht = idd.wall.ids_properties.homogeneous_time
+    if ht != 0 and ht != 1 and ht != 2:
+        logging.error('Unable to start the Equilibrium plugin; ''Wall'' IDS is empty.')
+        status = -1
+
+    if status == -1:
+        return shot, run, machine, user, \
+                   None, None, \
+                   None, None, None, None, None, None, None, \
+                   None, None, None, None, None, \
+                   None, None, \
+                   None, None, None, None, None, None, -1
 
     # Array with all times requested
     lenArrTimes = len(idd.equilibrium.time)
@@ -265,7 +298,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
            Ip, q95, q_axis, li_3, w_mhd, mag_ax_R, mag_ax_Z, \
            Psi_val, RNodes, ZNodes, triKnots, levels1_requested, \
            rho_tor_label, prof_1d, \
-           boundPlasma, magAxis, wall, b0, r0, xPoint
+           boundPlasma, magAxis, wall, b0, r0, xPoint, status
 
 class PlotFrame(QMainWindow):
     """ The main frame of the application
@@ -285,8 +318,12 @@ class PlotFrame(QMainWindow):
         self.ZNodes,        self.triKnots,          self.levels1_requested, \
         self.rho_tor_label, self.prof_1d,           self.boundPlasma, \
         self.magAxis,       self.wall,              self.b0, \
-        self.r0,            self.xPoint = DataGen(vizTreeNode, vizAPI,
+        self.r0,            self.xPoint, status = DataGen(vizTreeNode, vizAPI,
                                                   dataTreeView=parent)
+
+        if status == -1:
+            return
+
         # Set main widget
         self.mainWidget = QtGui.QWidget(self)
 

@@ -39,7 +39,10 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
         return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
 
     def getShortLabel(self):
-        return self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+        return "UDA: " + self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+
+    def getLongLabel(self):
+        return "(UDA) Tokamak:" + self.machineName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
     def containsData(self, IDSRootNode):
         IDSRootNode.setAvailableIDSData(0, True)

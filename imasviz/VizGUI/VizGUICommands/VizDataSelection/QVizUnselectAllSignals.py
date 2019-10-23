@@ -14,7 +14,7 @@
 #****************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues
 
 
 class QVizUnselectAllSignals(QVizAbstractCommand):
@@ -53,7 +53,7 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
                         # Set the signal isSelected attribute/status
                         signalItemVIZData['isSelected'] = 0
                         # Set the QTreeWidgetItem foreground color to blue
-                        vizTreeNode.setForeground(0, GlobalColors.BLUE)
+                        vizTreeNode.setForeground(0, QVizGlobalValues.ColorOfNodesContainingData)
                         key = dtv.dataSource.dataKey(signalItemVIZData)
                         keysToRemove.append(key)
                         break
