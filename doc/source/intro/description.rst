@@ -28,15 +28,15 @@ While submitting the ticket please use the options listed below
 
 Developers:
 
-  - **Ludovic Fleury** (CEA Cadarache, Research Institute for Magnetics fusion,
-    e-mail: Ludovic.FLEURY@cea.fr)
+  - **Ludovic Fleury** (CEA Cadarache, Research Institute for Magnetics Fusion,
+    e-mail: ludovic.fleury@cea.fr)
   - **Dejan Penko** (University of Ljubljana, Mech.Eng., LECAD Lab,
     e-mail: dejan.penko@lecad.fs.uni-lj.si)
 
 .. Plugin developers
 
-..   - ‘Equilibrium plugin’: Jorge Morales (CEA Cadarache, Research Institute for Magnetics fusion)
-..   - ‘Tofu plugin’: Didier Vezinet (CEA Cadarache, Research Institute for Magnetics fusion)
+..   - ‘Equilibrium plugin’: Jorge Morales (CEA Cadarache, Research Institute for Magnetics Fusion)
+..   - ‘Tofu plugin’: Didier Vezinet (CEA Cadarache, Research Institute for Magnetics Fusion)
 
 The tool uses the following Python packages:
 
@@ -92,7 +92,7 @@ The tool uses the following Python packages:
 .. sudo apt-get install latexmk texlive texlive-science texlive-formats-extra
 
 IMASViz tool is available on **ITER git repository** (access permission is
-required) under project **Visualization/VIZ**, branch **viz2.0_develop**.
+required) under project **Visualization/VIZ**, branch **develop**.
 
 Direct link to the **IMASViz** git.iter repository:
 `IMASViz <https://git.iter.org/projects/VIS/repos/viz/browse>`_.
