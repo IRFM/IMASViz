@@ -1,3 +1,4 @@
+import os
 from imasviz.VizDataSource.QVizToreSupraDataSource import ToreSupraDataSource
 from imasviz.VizDataSource.QvizIMASPublicDataSource import QVizIMASPublicDataSource
 
@@ -19,7 +20,7 @@ class QVizDataSourceFactory:
                imasDbName = None, dataSourceName = QVizGlobalValues.IMAS_NATIVE,
                machineName = None):
 
-        if dataSourceName == None or dataSourceName == '':
+        if dataSourceName is None or dataSourceName == '':
             raise ValueError(
                 "A datasource name is required for creating a datasource")
 
@@ -36,11 +37,15 @@ class QVizDataSourceFactory:
 
         else: # UDA datasource
 
-            if machineName == None or machineName == '':
+            if machineName is None or machineName == '':
                 raise ValueError("A machine name is required for UDA datasource")
 
             elif machineName in QVizGlobalValues.ExternalSources:
                 #print "Creating QVizIMASPublicDataSource..."
+                if machineName == 'WEST': #WORK AROUND of IMAS-2701 issue
+                    os.environ['UDA_PLUGIN'] = 'west_tunnel'
+                else:
+                    os.environ['UDA_PLUGIN'] = ''
                 dataSource = QVizIMASPublicDataSource(dataSourceName, machineName,
                                                       shotNumber, runNumber)
                 return dataSource

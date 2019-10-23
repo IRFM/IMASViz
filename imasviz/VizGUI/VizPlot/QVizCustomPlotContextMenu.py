@@ -13,15 +13,17 @@
 
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QAction, QMenu
+from PyQt5.QtGui import QAction, QMenu, QTreeWidgetItem, QMainWindow
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
+
+from pyqtgraph.exporters.Matplotlib import Exporter
+from imasviz.VizGUI.VizExporters.QVizMatplotlibExporter \
+    import QVizMatplotlibExporter
 
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
     """
-    # signalShowT0 = pyqtSignal()
-    # signalShowS0 = pyqtSignal()
 
     def __init__(self, qWidgetParent, parent=None):
         """Constructor of the QVizCustomPlotContextMenu
@@ -48,6 +50,10 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # Menu update property
         self.menuUpdate = True
 
+        # Modify list of available exporters (in order to remove the problematic
+        # Matplotlib exporter and replace it with ours)
+        self.updateExportersList()
+
     def getMenu(self, event=None):
         """Modify the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
         routine.
@@ -68,17 +74,6 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
 
             # Add custom contents to menu
             self.addCustomToMenu()
-
-            # self.showT0 = QAction('ActionTemplate1', self.menu)
-            # self.showT0.triggered.connect(self.emitShowT0)
-            # self.showT0.setCheckable(True)
-            # self.showT0.setEnabled(True)
-            # self.menu.addAction(self.showT0)
-            # self.showS0 = QAction('ActionTemplate2', self.menu)
-            # self.showS0.setCheckable(True)
-            # self.showS0.triggered.connect(self.emitShowS0)
-            # self.showS0.setEnabled(True)
-            # self.menu.addAction(self.showS0)
 
             # Set menu update to false
             self.menuUpdate = False
@@ -101,16 +96,6 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionConfigurePlot)
 
-    # def emitShowT0(self):
-    #     """Emit signalShowT0
-    #     """
-    #     self.signalShowT0.emit()
-
-    # def emitShowS0(self):
-    #     """Emit signalShowS0
-    #     """
-    #     self.signalShowS0.emit()
-
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
         """
@@ -126,3 +111,19 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         """
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
+
+    def updateExportersList(self):
+        """Update/Modify list of available exporters (in order to remove the
+        problematic Matplotlib exporter and replace it with ours).
+        """
+        # Remove the pyqtgrapth Matplotlib Window and add our Matplotlib Window
+        # v2 to the same place on the list (initially it is on the end of the
+        # list)
+        for exporter in Exporter.Exporters:
+            if exporter.Name == 'Matplotlib Window':
+                i = Exporter.Exporters.index(exporter)
+                del Exporter.Exporters[i]
+            if exporter.Name == 'Matplotlib Window (v2)':
+                i = Exporter.Exporters.index(exporter)
+                Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
+

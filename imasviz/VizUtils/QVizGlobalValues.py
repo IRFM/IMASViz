@@ -298,6 +298,15 @@ class GlobalIcons():
         elif label == 'new':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
                                '/resources/VizIcons/new.ico')
+        elif label == 'bold':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/resources/VizIcons/textIcons/bold.ico')
+        elif label == 'italic':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/resources/VizIcons/textIcons/italic.ico')
+        elif label == 'underlined':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/resources/VizIcons/textIcons/underlined.ico')
 
     def getStandardQIcon(application, QStyleID):
         """Get standard QIcon by QStyle ID. Application must already run if the

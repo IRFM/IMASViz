@@ -160,5 +160,3 @@ class QVizPluginsHandler:
         else:
             print('No proper instance of user interface or execute routine '
                   'provided by the plugin!')
-
-
