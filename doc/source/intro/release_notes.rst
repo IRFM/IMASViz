@@ -4,13 +4,21 @@
 Release notes
 =============
 
+Equilibrium plugin prints now some prerequisites in the log
+Equilibrium plugin raises an error if some prerequisites are not satisfied
+Fixing IMASViz menu items of shot views management when using UDA
+Check prerequisites for using UDA according to the remote server name to connect
+UDA: removing MAST from available remote machines (default)
+Available UDA remote servers can now be configured from a configuration file
+User preferences available now for colors of nodes containing data and for data selection
+Code refactoring around IMAS path handling
+Update of the README file
+
 -------------
 Version 2.3.0
 -------------
 
-Released:
-
-<to be released>
+Released on Gateway
 
 Changes:
 
@@ -20,8 +28,8 @@ Changes:
   in the project GIT repository.
 - Improve logging messages.
 - IMAS-2629: Enabled creating plots for 0D signals.
-- IMAS-2651: Improved the time required to build the tree view.
-- IMAS-2641: Added display of sized for 2D signals.
+- IMAS-2651: Improvement of the time required to build the tree view.
+- IMAS-2641: Added display of size for 2D signals.
 - IMAS-2630: Fixed wrong units.
 - Plot Configuration UI improvements:
 

@@ -88,7 +88,7 @@ class QVizIMASDataSource:
                         logging.info("Found data for occurrence " + str(occurrence) + " of "+ IDSRootNode.getIDSName() + " IDS...")
                         IDSRootNode.setAvailableIDSData(occurrence, True)
                         # Set tree item text color
-                        IDSRootNode.setForeground(0, GlobalColors.BLUE)
+                        IDSRootNode.setForeground(0, QVizGlobalValues.ColorOfNodesContainingData)
                 except:
                     pass
             logging.info("Data search ended.")
