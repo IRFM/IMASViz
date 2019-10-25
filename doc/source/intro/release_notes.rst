@@ -4,15 +4,22 @@
 Release notes
 =============
 
-Equilibrium plugin prints now some prerequisites in the log
-Equilibrium plugin raises an error if some prerequisites are not satisfied
-Fixing IMASViz menu items of shot views management when using UDA
-Check prerequisites for using UDA according to the remote server name to connect
-UDA: removing MAST from available remote machines (default)
-Available UDA remote servers can now be configured from a configuration file
-User preferences available now for colors of nodes containing data and for data selection
-Code refactoring around IMAS path handling
-Update of the README file
+-------------
+Version 2.3.1
+-------------
+
+Not yet released
+
+- Equilibrium plugin displays prints now requirements in the log
+- Equilibrium plugin raises an error if requirements are not satisfied
+- Fixing IMASViz menu items of shot views management when using UDA
+- Check prerequisites for using UDA
+- UDA: removing MAST from available remote machines
+- Available UDA remote servers can now be configured from a configuration file
+- User preferences available now for colors of nodes containing data and for data selection
+- Fixing bug preventing time arrays to be previewed or plotted
+- Code refactoring around IMAS path handling
+- Update of the README file
 
 -------------
 Version 2.3.0
