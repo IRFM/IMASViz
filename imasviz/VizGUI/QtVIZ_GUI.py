@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLin
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
 
 
 import matplotlib
@@ -330,6 +330,7 @@ class VizMainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
+    QVizPreferences().build()
     window = VizMainWindow(None);
     window.setGeometry(400, 400, 600, 300)
     window.show()

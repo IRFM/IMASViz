@@ -17,7 +17,7 @@ from threading import Thread, Condition
 from PyQt5.QtWidgets import QTreeWidgetItem, QTextEdit
 from PyQt5.QtCore import QSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalColors, QVizPreferences
 from imasviz.VizGUI.VizTreeView.QVizTreeNodeExtraAttributes import QVizTreeNodeExtraAttributes
 
 class QVizDataTreeViewBuilder:
@@ -105,9 +105,9 @@ class QVizDataTreeViewBuilder:
                                           parentNode, itemDataDict, extra_attributes,
                                           path)
 
-            item_color = dataTreeView.dataSource.colorOf(viewerNode)
-            itemDataDict['availableData'] = (item_color == QVizGlobalValues.ColorOfNodesContainingData)
-            viewerNode.setForeground(0, item_color) # - Set tree item text color
+            imas_entry = dataTreeView.dataSource.ids[viewerNode.getOccurrence()]
+            viewerNode.updateStyle(imas_entry)
+
 
         else:
             itemNodeName = "Array of " + dataElement.tag + ' with ' + \
@@ -118,6 +118,7 @@ class QVizDataTreeViewBuilder:
                 parentItemDataDict['Path'] = arrayParentPath
                 # Add tree item
                 parentNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
+                parentNode.setStyleForAOSContainingData()
                 self.arrayParentNodes[arrayParentPath] = parentNode
             else:
                 parentNode = self.arrayParentNodes[arrayParentPath]
@@ -132,9 +133,11 @@ class QVizDataTreeViewBuilder:
 
             viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict,
                                           extra_attributes, path)
-            item_color = dataTreeView.dataSource.colorOf(viewerNode)
-            itemDataDict['availableData'] = (item_color == QVizGlobalValues.ColorOfNodesContainingData)
-            viewerNode.setForeground(0, item_color)  # - Set tree item text color
+            # item_color = dataTreeView.dataSource.colorOf(viewerNode)
+            # itemDataDict['availableData'] = (item_color == QVizPreferences.ColorOfNodesContainingData)
+            # viewerNode.setForeground(0, item_color)  # - Set tree item text color
+            imas_entry = dataTreeView.dataSource.ids[viewerNode.getOccurrence()]  # @UnusedVariable
+
 
         self.setPath(viewerNode, path)
 
@@ -158,7 +161,9 @@ class QVizDataTreeViewBuilder:
             if dataElement.get('ggd_warning') is not None:
                 self.ggd_warning = 1
 
-            return QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
+            node = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
+            node.setStyleForElementAOS()
+            return node
 
         if dataElement.get('data_type') in ['FLT_0D', 'STR_0D','INT_0D', 'xs:integer']:
             maxLineLengthSizeForString = 40

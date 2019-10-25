@@ -1,8 +1,8 @@
 import numpy as np
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, QVizPreferences, GlobalColors
 from imasviz.VizGUI.VizTreeView.QVizTreeNodeExtraAttributes import QVizTreeNodeExtraAttributes
-
+from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QTreeWidgetItem
 
 
@@ -249,11 +249,11 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \
-               self.getDataType() == 'flt_0D_type' or self.getDataType() == 'int_0D_type'
+               self.getDataType() == 'flt_0d_type' or self.getDataType() == 'int_0d_type'
 
     def is1D(self):
         return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
-               self.getDataType() == 'flt_1D_type' or self.getDataType() == 'int_1D_type'
+               self.getDataType() == 'flt_1d_type' or self.getDataType() == 'int_1d_type'
 
 
     def is0DAndDynamic(self):
@@ -265,5 +265,100 @@ class QVizTreeNode(QTreeWidgetItem):
     def is2DOrLarger(self):
         if not self.is0D() and not self.is1D() and self.isDynamicData():
             return True
+
+    def updateIDSNode(self, containsData):
+        if containsData:
+            self.setAvailableIDSData(1)
+            # Set tree item style when node contains data
+            self.setStyleForIDS(True)
+        else:
+            self.setAvailableIDSData(0)
+            # Set tree item text color
+            self.setStyleForIDS(False)
+
+    def setStyleForIDS(self, containsData):
+        if containsData:
+            self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
+            self.setFontBold()
+        else:
+            self.setForeground(0, GlobalColors.BLACK)
+
+    def setStyleWhenContainingData(self):
+        self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
+        self.setFontBold()
+
+    def setStyleForWhenNotContainingData(self):
+        self.setForeground(0, GlobalColors.BLACK)
+
+    def setStyleForAOSContainingData(self):
+        self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
+
+    def setStyleForElementAOS(self):
+        self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
+
+    def setStyleForAOSNotContainingData(self):
+        self.setForeground(0, GlobalColors.BLACK)
+
+    def setStyleWhenSelected(self):
+        self.setForeground(0, QVizPreferences.SelectionColor)
+
+    def setFontBold(self):
+        font = QFont()
+        font.setBold(True)
+        self.setFont(0, font)
+
+    # Define the color of a node which contains a signal
+    def updateStyle(self, imas_entry):
+
+        if self.is1DAndDynamic():
+
+            # And error occurs for non-homogeneous cases (time array is
+            # different or empty). This is 'solved' with the below fix using
+            # 'e' variable
+            e = eval('imas_entry.' + self.getDataName())
+            if e is None or e.all() is None:
+                self.infoDict['availableData'] = 0
+                self.setStyleForWhenNotContainingData()
+
+            elif len(eval('imas_entry.' + self.getDataName())) == 0:  # empty (signals) arrays appear in black
+                self.infoDict['availableData'] = 0
+                self.setStyleForWhenNotContainingData()
+            else:
+                self.infoDict['availableData'] = 1
+                self.setStyleWhenContainingData()
+
+        elif self.is0DAndDynamic():
+            # And error occurs for non-homogeneous cases (time array is
+            # different or empty). This is 'solved' with the below fix using
+            # 'e' variable
+            e = eval('imas_entry.' + self.getDataName())
+
+            emptyField = False
+            if self.getDataType() == 'FLT_0D' or self.getDataType() == 'flt_0d_type':
+                if e == -9.0E40:
+                    emptyField = True
+
+            elif self.getDataType() == 'INT_0D' or self.getDataType() == 'int_0d_type':
+                if e == -999999999:
+                    emptyField = True
+
+            if emptyField:  # empty (signals) arrays appear in black
+                self.infoDict['availableData'] = 0
+                self.setStyleForWhenNotContainingData()
+            else:
+                self.infoDict['availableData'] = 1
+                self.setStyleWhenContainingData()
+
+        elif self.is2DOrLarger():
+            e = eval('imas_entry.' + self.getDataName())
+            if e.shape[0] == 0:
+                self.infoDict['availableData'] = 0
+                self.setStyleForWhenNotContainingData()
+            else:
+                self.infoDict['availableData'] = 1
+                self.setStyleWhenContainingData()
+        else:
+            self.setForeground(0, GlobalColors.BLACK)
+
 
 

@@ -14,7 +14,7 @@
 #****************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues, QVizPreferences
 
 
 class QVizSelectOrUnselectSignal(QVizAbstractCommand):
@@ -30,7 +30,7 @@ class QVizSelectOrUnselectSignal(QVizAbstractCommand):
         if isSelected == 1:
             # If the node is unselected, the text color is blue
             # Set the item color
-            self.dataTreeView.selectedItem.setForeground(0, QVizGlobalValues.ColorOfNodesContainingData)
+            self.dataTreeView.selectedItem.setStyleWhenContainingData()
             # Delete the signal from the list of selected signals
             del self.dataTreeView.selectedSignalsDict[key]
             # Set the node selection status
@@ -40,7 +40,7 @@ class QVizSelectOrUnselectSignal(QVizAbstractCommand):
             self.nodeData['isSelected'] = 1
             # If the node is selected, the text color is red
             # Set the item color
-            self.dataTreeView.selectedItem.setForeground(0, QVizGlobalValues.SelectionColor)
+            self.dataTreeView.selectedItem.setStyleWhenSelected()
             # Give the order of user selection
             index = len(self.dataTreeView.selectedSignalsDict) - 1
             # Add a data dictionary of signal parameters to array of

@@ -3,7 +3,7 @@ import imas
 import traceback, sys
 from PyQt5.QtWidgets import QTreeWidgetItem
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues, QVizPreferences
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 class QVizIMASDataSource:
@@ -75,74 +75,6 @@ class QVizIMASDataSource:
             return False
 
         return True
-
-    # Define the color of a node which contains a signal
-    def colorOf(self, signalNode, obsolescent=None):
-        ids = self.ids[signalNode.getOccurrence()] #@UnusedVariable
-        if signalNode.is1DAndDynamic():
-
-            # And error occurs for non-homogeneous cases (time array is
-            # different or empty). This is 'solved' with the below fix using
-            # 'e' variable
-            e = eval('ids.' + signalNode.getDataName())
-            if e is None or e.all() is None:
-                return GlobalColors.BLACK
-
-            # if len(eval(signalNode['dataName'])) == 0: #empty (signals) arrays appear in black
-            if len(eval('ids.' + signalNode.getDataName())) == 0: #empty (signals) arrays appear in black
-                if obsolescent is None or obsolescent is False:
-                    return GlobalColors.BLACK
-                elif obsolescent is True:
-                    return GlobalColors.LIGHT_GREY
-            else:
-                if obsolescent is None or obsolescent is False:
-                    return QVizGlobalValues.ColorOfNodesContainingData  # non empty (signals) arrays appear in blue
-                elif obsolescent is True:
-                    return GlobalColors.CYAN
-
-        elif signalNode.is0DAndDynamic():
-            # And error occurs for non-homogeneous cases (time array is
-            # different or empty). This is 'solved' with the below fix using
-            # 'e' variable
-            e = eval('ids.' + signalNode.getDataName())
-
-            emptyField = False
-            if signalNode.getDataType() == 'FLT_0D' or signalNode.getDataType() == 'flt_0d_type':
-                if e == -9.0E40:
-                    emptyField = True
-
-            elif signalNode.getDataType() == 'INT_0D' or signalNode.getDataType() == 'int_0d_type':
-                if e == -999999999:
-                    emptyField = True
-
-            if emptyField:  # empty (signals) arrays appear in black
-                if obsolescent is None or obsolescent is False:
-                    return GlobalColors.BLACK
-                elif obsolescent is True:
-                    return GlobalColors.LIGHT_GREY
-            else:
-                if obsolescent is None or obsolescent is False:
-                    return QVizGlobalValues.ColorOfNodesContainingData  # non empty (signals) arrays appear in blue
-                elif obsolescent is True:
-                    return GlobalColors.CYAN
-
-        elif signalNode.is2DOrLarger():
-            e = eval('ids.' + signalNode.getDataName())
-            if e.shape[0] == 0:
-                if obsolescent is None or obsolescent is False:
-                    return GlobalColors.BLACK
-                elif obsolescent is True:
-                    return GlobalColors.LIGHT_GREY
-            else:
-                if obsolescent is None or obsolescent is False:
-                    return QVizGlobalValues.ColorOfNodesContainingData  # non empty (signals) arrays appear in blue
-                elif obsolescent is True:
-                    return GlobalColors.CYAN
-
-        if obsolescent is None or obsolescent is False:
-            return GlobalColors.BLACK
-        elif obsolescent is True:
-            return GlobalColors.LIGHT_GREY
 
     # Name of the data under the selected node
     def dataNameInPopUpMenu(self, dataDict):

@@ -59,7 +59,7 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget \
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors, QVizPreferences
 from imasviz.VizUtils.QVizWindowUtils import getWindowSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
@@ -171,17 +171,7 @@ class QVizDataTreeView(QTreeWidget):
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)
 
-                if self.dataSource.containsData(idsName):
-                    # - If there is any data available from the IDS, change set
-                    # its dictionary 'availableIDSData' value from 0 to 1 and
-                    # color its item text (IDS name) to blue
-                    IDSRootNode.setAvailableIDSData(1)
-                    # Set tree item text color
-                    IDSRootNode.setForeground(0, QVizGlobalValues.ColorOfNodesContainingData)
-                else:
-                    IDSRootNode.setAvailableIDSData(0)
-                    # Set tree item text color
-                    IDSRootNode.setForeground(0, GlobalColors.BLACK)
+                IDSRootNode.updateIDSNode(self.dataSource.containsData(idsName))
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode

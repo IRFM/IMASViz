@@ -41,9 +41,9 @@ class QVizPlotConfigUI(QDialog):
         self.viewBox = viewBox
 
         # In TablePlotView the legend is not used.
-        if ("TablePlotView" in str(self.viewBox.qWidgetParent.objectName())):
+        if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = None
-        elif ("StackedPlotView" in str(self.viewBox.qWidgetParent.objectName())):
+        elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.qWidgetParent.pg.legend
         else:
@@ -608,7 +608,7 @@ class TabTextProperties(QWidget):
             # - Add action triggered by pressing the button
             boldButton.pressed.connect(partial(
                 self.setLegendBold,
-                legendItemID = i))
+                legendItemID=i))
 
             # boldButton.released.connect()
             j += 1 # go to next column
@@ -623,7 +623,7 @@ class TabTextProperties(QWidget):
             # - Add action triggered by pressing the button
             italicButton.pressed.connect(partial(
                 self.setLegendItalic,
-                legendItemID = i))
+                legendItemID=i))
 
             i += 1
 
@@ -736,6 +736,11 @@ class TabTextProperties(QWidget):
         else:
             self.setLegendItemItalicON(legendItemID=legendItemID)
 
+    @pyqtSlot(int)
+    def setHideLegend(self, legendItemID):
+
+        pass
+
 
     @pyqtSlot(int)
     def setLegendItemItalicON(self, legendItemID):
@@ -800,6 +805,7 @@ class TabPlotDesignProperties(QWidget):
 
         # Set up the QWidget contents
         self.setContents()
+
 
     def setContents(self):
         """ Set widget contents.
@@ -903,6 +909,10 @@ class TabPlotDesignProperties(QWidget):
         for i in range(len(listHeaderLabels)):
             gridLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
+        # Configuring legend Hide/Show button
+        hideButton = QPushButton('Hide/Show', self)
+        hideButton.pressed.connect(self.hideShowLegend)
+
         # Add widgets to layout
         gridLayout.addWidget(self.marginSpinBox_left, 1, 1, 1, 1)
         gridLayout.addWidget(self.marginSpinBox_top, 1, 2, 1, 1)
@@ -910,6 +920,8 @@ class TabPlotDesignProperties(QWidget):
         gridLayout.addWidget(self.marginSpinBox_bottom, 1, 4, 1, 1)
         gridLayout.addWidget(margins2previous_button, 1, 5, 1, 1)
         gridLayout.addWidget(margins2default_button, 1, 6, 1, 1)
+
+        gridLayout.addWidget(hideButton, 2, 1, 1, 1)
 
         return marginWidget
 
@@ -958,3 +970,19 @@ class TabPlotDesignProperties(QWidget):
         self.marginSpinBox_top.setValue(v2)
         self.marginSpinBox_right.setValue(v3)
         self.marginSpinBox_bottom.setValue(v4)
+
+    def hideShowLegend(self):
+        if self.parent.legendItem is not None:
+            self.parent.legendItem.scene().removeItem(self.parent.legendItem)
+            self.parent.legendItem = None
+        else:
+            pwg = None
+            if "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
+                pwg = self.viewBox.qWidgetParent.pg
+            else:
+                pwg = self.viewBox.qWidgetParent.pgPlotWidget
+            l = pwg.addLegend()
+            self.parent.legendItem = l
+            plots = pwg.getPlotItem().listDataItems()
+            for p in plots:
+                l.addItem(p, p.name())

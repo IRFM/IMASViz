@@ -53,7 +53,7 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
                         # Set the signal isSelected attribute/status
                         signalItemVIZData['isSelected'] = 0
                         # Set the QTreeWidgetItem foreground color to blue
-                        vizTreeNode.setForeground(0, QVizGlobalValues.ColorOfNodesContainingData)
+                        vizTreeNode.setStyleWhenContainingData()
                         key = dtv.dataSource.dataKey(signalItemVIZData)
                         keysToRemove.append(key)
                         break
