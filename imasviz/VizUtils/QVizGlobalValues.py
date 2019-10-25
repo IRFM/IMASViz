@@ -1,6 +1,7 @@
 
 import os
 import sys
+import logging
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 
@@ -25,37 +26,63 @@ class GlobalColors:
     CYAN = QBrush(QColor('#00ffff'))
     LIGHT_CYAN = QBrush(QColor('#cce5ff'))
     LIGHT_GREY = QBrush(QColor('#d3d3d3'))
-    BLUE_HEX = QBrush(QColor('#0000ff'))
-    RED_HEX = QBrush(QColor('#ff0000'))
-    GREEN_HEX = QBrush(QColor('#008000'))
-    YELLOW_HEX = QBrush(QColor('#FFFF00'))
-    ORANGE_HEX = QBrush(QColor('#FFA500'))
-    PURPLE_HEX = QBrush(QColor('#800080'))
-    BLACK_HEX = QBrush(QColor('#000000'))
-    CYAN_HEX = QBrush(QColor('#00ffff'))
-    LIGHT_CYAN_HEX = QBrush(QColor('#cce5ff'))
-    LIGHT_GREY_HEX = QBrush(QColor('#d3d3d3'))
-    LIME_HEX = QBrush(QColor('#00FF00'))
-    MAGENTA_HEX = QBrush(QColor('#FF00FF'))
-    SILVER_HEX = QBrush(QColor('#C0C0C0'))
-    GRAY_HEX = QBrush(QColor('#808080'))
-    MAROON_HEX = QBrush(QColor('#800000'))
-    OLIVE_HEX = QBrush(QColor('#808000'))
-    TEAL_HEX = QBrush(QColor('#008080'))
-    NAVY_HEX = QBrush(QColor('#000080'))
+
+    BLUE_HEX = '#0000ff'
+    RED_HEX = '#ff0000'
+    GREEN_HEX = '#008000'
+    YELLOW_HEX = '#FFFF00'
+    ORANGE_HEX = '#FFA500'
+    PURPLE_HEX = '#800080'
+    BLACK_HEX = '#000000'
+    CYAN_HEX = '#00ffff'
+    LIGHT_CYAN_HEX = '#cce5ff'
+    LIGHT_GREY_HEX = '#d3d3d3'
+    LIME_HEX = '#00FF00'
+    MAGENTA_HEX = '#FF00FF'
+    SILVER_HEX = '#C0C0C0'
+    GRAY_HEX = '#808080'
+    MAROON_HEX = '#800000'
+    OLIVE_HEX = '#808000'
+    TEAL_HEX = '#008080'
+    NAVY_HEX = '#000080'
+
 
     def getAvailableColorForNodes(index):
         availableColors = []
         availableColors.append(GlobalColors.BLUE)
-        availableColors.append(GlobalColors.CYAN)
-        availableColors.append(GlobalColors.OLIVE_HEX)
-        availableColors.append(GlobalColors.ORANGE_HEX)
-        availableColors.append(GlobalColors.TEAL_HEX)
-        availableColors.append(GlobalColors.MAGENTA_HEX)
-        availableColors.append(GlobalColors.GRAY_HEX)
         availableColors.append(GlobalColors.RED)
+        availableColors.append(GlobalColors.BLACK)
+        availableColors.append(GlobalColors.CYAN)
+        availableColors.append(GlobalColors.LIGHT_CYAN)
+        availableColors.append(GlobalColors.LIGHT_GREY)
         return availableColors[index]
 
+class QVizPreferences:
+
+    userPreferencesInitialized = False
+    SelectionColor = None
+    ColorOfNodesContainingData = None
+
+    def build(self):
+        if not QVizPreferences.userPreferencesInitialized:
+            from PyQt5.QtGui import QBrush, QColor
+            QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
+            QVizPreferences.SelectionColor = GlobalColors.RED
+            option1 = "Color_of_data_nodes_containing_data="
+            option2 = "Nodes_selection_color="
+            userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
+            if os.path.exists(userPreferencesFile):
+                logging.info("No user preferences file found.")
+                with open(userPreferencesFile) as f:
+                    for line in f:
+                        if line.startswith(option1):
+                            color_str = line[len(option1):]
+                            QVizPreferences.ColorOfNodesContainingData = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
+                        elif line.startswith(option2):
+                            color_str = line[len(option2):]
+                            QVizPreferences.SelectionColor = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
+
+                userPreferencesInitialized = True
 
 
 class QVizGlobalValues:
@@ -129,19 +156,6 @@ class QVizGlobalValues:
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
 
-    from PyQt5.QtGui import QBrush, QColor
-    ColorOfNodesContainingData = GlobalColors.BLUE
-    SelectionColor = GlobalColors.RED
-    option1 = "Color_of_data_nodes_containing_data="
-    option2 = "Nodes_selection_color="
-    with open(os.environ['VIZ_HOME'] + '/config/preferences') as f:
-        for line in f:
-            if line.startswith(option1):
-                color_str = line[len(option1):]
-                ColorOfNodesContainingData = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
-            elif line.startswith(option2):
-                color_str = line[len(option2):]
-                SelectionColor = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
 
 
 class GlobalIDs:

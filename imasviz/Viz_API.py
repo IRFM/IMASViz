@@ -21,7 +21,7 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVi
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
@@ -41,6 +41,8 @@ class Viz_API:
         # PyQt5 DTV lists
         self.DTVframeList = []
         self.DTVlist = []
+
+        QVizPreferences().build()
 
     def GetDTVFrames(self):
         return self.DTVframeList

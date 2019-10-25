@@ -56,7 +56,6 @@ class QVizPlotWidget(QWidget):
         self.RGBlist = getRGBColorList()
 
 
-
     def plot(self, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
@@ -97,10 +96,12 @@ class QVizPlotWidget(QWidget):
 
         # Plot and plot settings
         # - Add plot
-        self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
+        p = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
+
         # Set only when adding the first plot. All additionally added plots
         # should correspond to the same xlabel, ylabel and grid and thus
         # should NOT change it.
+
         if len(self.getPlotList()) == 1:
             # - Set x-axis label
             self.pgPlotWidget.setLabel('left', ylabel, units='')
@@ -123,6 +124,17 @@ class QVizPlotWidget(QWidget):
         """
         return self.pgPlotWidget.getPlotItem().listDataItems()
 
+
+    def hideLegend(self):
+        legend = self.pgPlotWidget.getPlotItem().legend
+        legend.scene().removeItem(legend)
+
+    def showLegend(self):
+        l = self.pgPlotWidget.addLegend()
+        plots = self.getPlotList()
+        for p in plots:
+            l.addItem(p, p.name())
+
     def setContents(self):
         """Setup QVizPlotWidget contents.
         """
@@ -134,7 +146,7 @@ class QVizPlotWidget(QWidget):
                                           viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("plotWidget")
         # Add legend (must be called before adding plot!!!)
-        self.pgPlotWidget.addLegend()
+        #self.legend = self.pgPlotWidget.addLegend()
 
         # Set menu bar
         # Note: hidden until it contains some useful features
@@ -180,6 +192,9 @@ class QVizPlotWidget(QWidget):
             # Add time label
             #if self.addTimeSlider is True:
             self.gridLayout.addWidget(self.timeFieldLabel, 6, 0, 1, 10)
+
+        #Add a legend
+        self.pgPlotWidget.getPlotItem().addLegend()
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self)

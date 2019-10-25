@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 import os
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizPreferences
 #from MDSplus import Connection
 from threading import Thread, RLock
 import traceback
@@ -67,9 +67,6 @@ class ToreSupraDataSource:
             doc_display = "documentation= " + itemDataDict['documentation']
             viewerTree.AppendItem(viewerNode, doc_display, -1, -1, wxTreeItemData)
 
-    #Define the color of a node which contains a signal
-    def colorOf(self, signalNode, obsolescent=None):
-        return QVizGlobalValues.SelectionColor
 
     #This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):

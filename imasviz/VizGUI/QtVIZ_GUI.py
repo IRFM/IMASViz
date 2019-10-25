@@ -26,7 +26,7 @@ from PyQt5.QtCore import QSize, pyqtSlot, Qt
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
 
 
 import matplotlib
@@ -412,6 +412,7 @@ class Formatter(logging.Formatter):
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
+    QVizPreferences().build()
     window = VizMainWindow(None);
     window.setGeometry(400, 400, 600, 500)
     window.show()

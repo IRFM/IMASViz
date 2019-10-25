@@ -59,7 +59,7 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget \
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors, QVizPreferences
 from imasviz.VizUtils.QVizWindowUtils import getWindowSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
@@ -171,7 +171,7 @@ class QVizDataTreeView(QTreeWidget):
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)
 
-                self.dataSource.containsData(IDSRootNode, imas_entry)
+                IDSRootNode.updateIDSNode(self.dataSource.containsData(idsName))
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode

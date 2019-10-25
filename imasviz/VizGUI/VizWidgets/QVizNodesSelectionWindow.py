@@ -59,17 +59,20 @@ class QVizNodesSelectionWindow(QDialog):
         title = 'Selected paths'
         table = QTableWidget()
         table.setRowCount(len(selectedSignalsDict))
-        table.setColumnCount(2)
-        tableHeader = ["IMAS Path", "IDS Occurrence"]
+        table.setColumnCount(3)
+        tableHeader = ["IMAS Path", "IDS Occurrence", "IDS"]
         table.setHorizontalHeaderLabels(tableHeader)
+        table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
         table.setColumnWidth(1, 500)
-        table.setColumnWidth(2, 100)
+        table.setColumnWidth(2, 10)
+        table.setColumnWidth(3, 50)
         row = 0
         for key in selectedSignalsDict:
             v = selectedSignalsDict[key]
             vizTreeNode = v['QTreeWidgetItem']
             table.setItem(row, 0, QTableWidgetItem(vizTreeNode.getPath()))
             table.setItem(row, 1, QTableWidgetItem(str(vizTreeNode.getOccurrence())))
+            table.setItem(row, 2, QTableWidgetItem(vizTreeNode.getIDSName()))
             row += 1
 
         self.setObjectName('Current selected paths')

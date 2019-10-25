@@ -14,7 +14,7 @@
 #****************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues, QVizPreferences
 
 
 class QVizSelectSignal(QVizAbstractCommand):
@@ -43,7 +43,7 @@ class QVizSelectSignal(QVizAbstractCommand):
         # Set variable representing the currently tagged selected item in DTV
         selectedItem = self.dataTreeView.selectedItem
         # Set the tree item text color
-        selectedItem.setForeground(0, QVizGlobalValues.SelectionColor)
+        selectedItem.setStyleWhenSelected()
         # Give the order of user selection
         index = len(self.dataTreeView.selectedSignalsDict) - 1
         # Add a data dictionary of signal parameters to array of
