@@ -24,14 +24,25 @@ modules:
 
     module load cineca
     module load imasenv   # or any other specific imasenv module version
-    module load imas-viz/2.0.0
+    module load imas-viz/v2
 
-    # The next few modules should be loaded together with imas-viz/2.0.0
+    # The next few modules should be loaded together with imasenv module
     # Listing them all here in case of module related issues.
     # module load itm-gcc/6.1.0
     # module unload itm-python/2.7
     # module load itm-python/3.6
     # module load itm-qt/5.8.0
+
+.. code-block:: console
+
+    # Listing all available imas-viz modules can be done by running
+    module av imas-viz
+
+.. code-block:: console
+
+    # With the imas-viz module loaded (version 2.3.0 or never)
+    # the documentation can be accessed by running
+    biz-doc
 
 .. Warning::
    **IMPORTANT!** IMAS databases (IDSs) were written using specific version of
@@ -137,7 +148,7 @@ To obtain the IMASViz code source the next two steps are required:
 
       git fetch # optional
       git branch -r # optional
-      git checkout viz2.0_develop
+      git checkout develop
 
 Setting the environment
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -232,7 +243,7 @@ and run
     # for PDF documentation
     module load texlive
     make pdflatex
-    xdg-open build/latex/IMASViz.pdf
+    firefox build/latex/IMASViz.pdf
     # for HTML documentation
     make html
     firefox build/html/index.html

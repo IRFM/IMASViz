@@ -8,7 +8,9 @@ Release notes
 Version 2.3.1
 -------------
 
-Not yet released
+Released: To be released
+
+Changes:
 
 - Equilibrium plugin displays prints now requirements in the log
 - Equilibrium plugin raises an error if requirements are not satisfied
@@ -24,7 +26,7 @@ Not yet released
 Version 2.3.0
 -------------
 
-Released: at Gateway
+Released: 18.10.2019
 
 Changes:
 
