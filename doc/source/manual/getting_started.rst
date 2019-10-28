@@ -8,14 +8,18 @@ to run the IMASViz tool and how to run the application itself.
 
 .. _running_on_gateway_as_a_module:
 
-Running IMASViz as a module on The GateWay
-------------------------------------------
+Running IMASViz as a module
+---------------------------
 
-The procedure below describes how to use IMASViz if it is available as a
-module on the HPC cluster.
+The procedure below describes how to load and run IMASViz which is available
+as a module on the GateWay and ITER HPC cluster.
+
+
+On the GateWay HPC
+~~~~~~~~~~~~~~~~~~
 
 Setting the Environment
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^
 
 In a new terminal, execute the following command in order to load the required
 modules:
@@ -52,7 +56,7 @@ modules:
    cannot work properly if this "IMAS version mismatch" is too great (!).
 
 Running IMASViz
-~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^
 
 With the environment set, run the IMASviz by simply typing the following
 command:
@@ -66,7 +70,6 @@ The main GUI window of IMAS_VIZ should display, as shown in the figure below:
 .. image:: images/startup_window_default.png
    :align: center
    :scale: 80%
-
 
 The description of the above input parameters is as follows:
 
@@ -83,16 +86,16 @@ The description of the above input parameters is as follows:
 | Run number         | Pulse run number                                          |
 +--------------------+-----------------------------------------------------------+
 
-Available benchmark IMAS databases
-----------------------------------
+Available testing IMAS databases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-On the GateWay HPC there are a few **benchmark IMAS IDS cases** available. These
+On the GateWay HPC there are a few **testing IMAS IDS cases** available. These
 databases are the main source of data used for IMASViz testing purposes and
 were also included in writing the this documentation. Users can freely use them
 for examples and practice purposes.
 
 .. Note:: There IMAS IDS cases are confirmed to work with IMAS versions
-          **3.19.1** - **3.20.0**.
+          **3.23.2** - **3.24.0**.
 
 +-----------------------------------------------------+
 | **Available IMAS IDS Case Parameters**              |
@@ -107,6 +110,96 @@ for examples and practice purposes.
 +--------------------+----------+----------+----------+
 | Run number         | 0        | 0        | 0        |
 +--------------------+----------+----------+----------+
+
+On ITER HPC
+~~~~~~~~~~~
+
+Setting the Environment
+^^^^^^^^^^^^^^^^^^^^^^^
+
+In a new terminal, execute the following command in order to load the required
+modules:
+
+.. code-block:: console
+
+    module load
+    module load IMAS   # or any other specific IMAS module version
+    module load Viz
+
+    # The next few modules should be loaded together with imasenv module
+    # Listing them all here in case of module related issues.
+    # Qt5/5.10.1-intel-2018a
+    # PyQt5/5.9.2-intel-2018a-Python-3.6.4
+    # PyQtGraph/0.10.0-intel-2018a-Python-3.6.4
+
+.. code-block:: console
+
+    # Listing all available Viz modules can be done by running
+    module av Viz
+
+.. Warning::
+   **IMPORTANT!** IMAS databases (IDSs) were written using specific version of
+   IMAS. In order to open these IDSs the **same IMAS module version** should
+   be used due to possible IDS database structure changes through different
+   versions. Any tools or utilities that work with IDSs, including ``IMASViz``,
+   cannot work properly if this "IMAS version mismatch" is too great (!).
+
+Running IMASViz
+^^^^^^^^^^^^^^^
+
+With the environment set, run the IMASViz by simply typing the following
+command:
+
+.. code-block:: console
+
+    viz
+
+The main GUI window of IMAS_VIZ should display, as shown in the figure below:
+
+.. image:: images/startup_window_default.png
+   :align: center
+   :scale: 80%
+
+The description of the above input parameters is as follows:
+
++--------------------+-----------------------------------------------------------+
+| **GUI Fields**     | **Description**                                           |
++====================+===========================================================+
+| User name          | Creator/owner of the IMAS IDSs database                   |
++--------------------+-----------------------------------------------------------+
+| IMAS database name | IMAS database label, usually device/machine name of the   |
+|                    | IMAS IDS database (i. e. iter, aug, west...)              |
++--------------------+-----------------------------------------------------------+
+| Shot number        | Pulse shot number                                         |
++--------------------+-----------------------------------------------------------+
+| Run number         | Pulse run number                                          |
++--------------------+-----------------------------------------------------------+
+
+Available testing IMAS databases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the ITER HPC there are a few **testing IMAS IDS cases** available. These
+databases are the main source of data used for IMASViz testing purposes and
+were also included in writing the this documentation. Users can freely use them
+for examples and practice purposes.
+
+.. Note:: There IMAS IDS cases are confirmed to work with IMAS versions
+          **3.23.2** - **3.24.0**
+
++------------------------------------------+
+| **Available IMAS IDS Case Parameters**   |
++--------------------+----------+----------+
+| Parameters         | Case 1   | Case 2   |
++====================+==========+==========+
+| User name          | penkod   | penkod   |
++--------------------+----------+----------+
+| IMAS database name | viztest  | viztest  |
++--------------------+----------+----------+
+| Shot number        | 52344    | 52682    |
++--------------------+----------+----------+
+| Run number         | 0        | 0        |
++--------------------+----------+----------+
+
 
 .. _running_from_source:
 

@@ -115,16 +115,10 @@ Prerequisites:
 
         pip3 install sphinx_rtd_theme
 
-Then navigate to
+Then in $VIZ_HOME directory run
 
-    cd $VIZ_HOME/doc
-
-and run
-
-    # for PDF documentation
-    module load texlive
-    make pdflatex
-    xdg-open build/latex/IMASViz.pdf
-    # for HTML documentation
-    make html
-    firefox build/html/index.html
+    make doc
+    # to open PDF documentation
+    xdg-open doc/build/latex/IMASViz.pdf
+    # to open HTML documentation
+    firefox doc/build/html/index.html
