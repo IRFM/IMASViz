@@ -4,10 +4,13 @@
 Description
 ===========
 
-**IMASViz** is a visualization tool developed to be used within
-**Integrated Modelling Analysis Suite** (**IMAS)**
-for the purposes of visualizing static and dynamic IMAS data, stored
-within IMAS **Interface Data Structures** (**IDSs**).
+**IMASViz** is a post-processing tool for visualization and data analysis of
+the static and dynamic data, stored within
+**Integrated Modelling Analysis Suite** (**IMAS**) database pulse files e.g.
+**Interface Data Structures** (**IDSs**). To perform those features it provides
+a convenient Graphical User Interface (GUI) that allows easier and more
+straightforward handling of the available signals. The main IMASViz features
+are done through plotting the data, representing it in a form of plots/graphs.
 While the tool itself is already available for use it is still under active
 development, and various features, GUI improvements etc. are still being
 implemented.

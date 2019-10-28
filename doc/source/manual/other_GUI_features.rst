@@ -105,3 +105,52 @@ The export status gets displayed in the tree view log widget.
    :scale: 75%
 
    :guilabel:`Export to IDS` finish message.
+
+Export plot
+-----------
+
+This feature allows the user to export:
+
+- plot to image,
+- plot to .SVG format,
+- plot to matplotlib window, and
+- plot data to CSV or HDF5 format.
+
+This feature is accessible by right-clicking anywhere inside the plot window
+and by selecting :guilabel:`Export...` option in the shown popup menu.
+
+.. figure:: images/ExportFeature_1.png
+   :align: center
+   :width: 25%
+
+   Selections of the :guilabel:`Export` feature in the popup menu.
+
+A dialog window will be shown, displaying the possible export options.
+Some the export options allow also setting basic parameters such as image
+size etc.
+
+.. figure:: images/ExportFeature_2.png
+   :align: center
+   :width: 35%
+
+   :guilabel:`Export` feature dialog window.
+
+Hide/Show/Delete DTV
+--------------------
+
+This feature allows the user to either hide, show or delete existing
+**Data Tree Views** (DTVs).
+
+This feature is available from the starting dialog window (the one where the
+database parameters **user**/**database**/**shot**/**run** are being set) by
+right clicking anywhere inside the window. A popup menu will be shown displaying
+those available options.
+
+.. figure:: images/ShowHideDeleteDTV_1.png
+   :align: center
+   :scale: 90%
+
+   :guilabel:`Show/Hide/Delete DTV` popup menu.
+
+
+

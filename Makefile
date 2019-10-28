@@ -3,6 +3,10 @@ VIZ_HOME = ${PWD}
 VIZ_PRODUCTION = "1"
 HOSTNAME = $(shell hostname)
 
+.PHONY: doc default
+
+all: default doc
+
 default:
 	# Generate IDSDef_XMLParser_Generated_<IMAS_VERSION>.py files
 	mkdir -p ${VIZ_HOME}/imasviz/VizDataAccess/VizGeneratedCode
@@ -10,3 +14,13 @@ default:
 	export VIZ_PRODUCTION=${VIZ_PRODUCTION}; \
 	export HOSTNAME=${HOSTNAME}; \
 	python3 ${VIZ_HOME}/imasviz/VizDataAccess/VizCodeGenerator/QVizDataAccessCodeGenerator.py
+
+doc:
+	# Generate PDF and HTML documentation
+	cd ${VIZ_HOME}/doc; \
+	make html; \
+	make latexpdf
+
+clean:
+	rm -rf ${VIZ_HOME}/imasviz/VizDataAccess/VizGeneratedCode
+	rm -rf ${VIZ_HOME}/doc/build
