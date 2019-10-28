@@ -68,8 +68,8 @@ class QVizPreferences:
             from PyQt5.QtGui import QBrush, QColor
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
             QVizPreferences.SelectionColor = GlobalColors.RED
-            option1 = "Color_of_data_nodes_containing_data="
-            option2 = "Nodes_selection_color="
+            option1 = "Colour_of_data_nodes_containing_data="
+            option2 = "Nodes_selection_colour="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 logging.info("No user preferences file found.")
