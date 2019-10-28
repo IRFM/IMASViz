@@ -17,7 +17,7 @@
 #    def getSignal
 #
 # ****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # ****************************************************
 
 import sys, logging
@@ -140,7 +140,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # Set plot options
             label, xlabel, ylabel, title = \
-                self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
+                self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=figureKey)
 
@@ -207,56 +207,3 @@ class QVizPlotSignal(QVizAbstractCommand):
             return signal
         except:
             raise
-
-    @staticmethod
-    def plotOptions(dataTreeView, signalNode, shotNumber=None, title='',
-                    label=None, xlabel=None):
-        """Set plot options.
-
-        Arguments:
-            dataTreeView (QTreeWidget) : QVizDataTreeView object.
-            signalNode       : QVizTreeNode object.
-            shotnumber (int) : IDS database parameter - shot number of the case.
-            title      (str) : Plot title.
-            label      (str) : Label describing IMAS database (device, shot) and
-                               path to signal/node in IDS database structure.
-            xlabel     (str) : Plot X-axis label.
-        """
-        if label is None:
-            label = dataTreeView.dataSource.getShortLabel() + ':' + signalNode.getPath()
-
-        if signalNode.is0DAndDynamic():
-            label, title = signalNode.correctLabelForTimeSlices(label, title)
-
-        elif signalNode.is1DAndDynamic():
-            # Setting/Checking the X-axis label
-            if xlabel is None:
-                # If xlabel is not yet set
-                if 'coordinate1' in signalNode.getInfoDict():
-                    xlabel = QVizGlobalOperations.replaceBrackets(
-                        signalNode.getInfoDict()['coordinate1'])
-                if xlabel != None and xlabel.endswith("time"):
-                    xlabel +=  "[s]"
-            elif 'time[s]' in xlabel:
-                # If 'Time[s]' is present in xlabel, do not modify it
-                pass
-            elif '1.' not in xlabel and '.N' not in xlabel:
-                # If '1...N' or '1..N' (or other similar variant)  is not present
-                # in xlabel:
-                # - Replace dots '.' by slashes '/'
-                xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
-                # - If IDS name is not present (at the front) of the xlabel string,
-                #   then add it
-                if signalNode.getIDSName() not in xlabel:
-                    xlabel = signalNode.getIDSName() + "/" + xlabel
-
-        if xlabel is None:
-            xlabel = "time[s]"
-
-        ylabel = signalNode.getName()
-
-        if 'units' in signalNode.getInfoDict():
-            units = signalNode.getInfoDict()['units']
-            ylabel += '[' + units + ']'
-
-        return label, xlabel, ylabel, title

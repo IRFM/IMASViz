@@ -37,6 +37,10 @@ class QVizOpenShotView:
                                                     imasDbName=imasDbName,
                                                     dataSourceName=dataSourceName)
 
-        dtv = self.api.CreateDataTree(dataSource)
+        dtv = None
+        if self.api.isDataSourceAlreadyOpened(dataSource):
+            dtv = self.api.GetDTVFor(dataSource.getKey())
+        else:
+            dtv = self.api.CreateDataTree(dataSource)
 
         self.api.ShowDataTree(dtv)

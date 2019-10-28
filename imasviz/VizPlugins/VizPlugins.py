@@ -7,6 +7,7 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      'SOLPS_UiPlugin': '',
                      'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
+                     'viz_1D_overtime_plugin':'viz_1D_overtime.viz_1D_overtime_plugin',
                      'example_UiPlugin': ''
                      }
 
@@ -38,10 +39,13 @@ def getRegisteredPlugins():
 
 
 class VizPlugins:
-    def __init__(self):
-        self.selectedTreeNode = None
-        self.dataTreeView = None
-        pass
+    def __init__(self, *args, **kwargs):
+        if len(args) == 2:
+            self.selectedTreeNode = args[0]
+            self.dataTreeView = args[1]
+        else:
+            self.selectedTreeNode = None
+            self.dataTreeView = None
 
     def setSelectedTreeNode(self, selectedTreeNode):
         self.selectedTreeNode = selectedTreeNode

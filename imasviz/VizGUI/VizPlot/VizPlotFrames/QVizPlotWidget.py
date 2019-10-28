@@ -8,7 +8,7 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #*******************************************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #*******************************************************************************
 
 import pyqtgraph as pg
@@ -96,7 +96,7 @@ class QVizPlotWidget(QWidget):
 
         # Plot and plot settings
         # - Add plot
-        p = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
+        self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
         # Set only when adding the first plot. All additionally added plots
         # should correspond to the same xlabel, ylabel and grid and thus
@@ -187,7 +187,6 @@ class QVizPlotWidget(QWidget):
             # Add time slider index label and value indicator
             self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
             self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
-
 
             # Add time label
             #if self.addTimeSlider is True:

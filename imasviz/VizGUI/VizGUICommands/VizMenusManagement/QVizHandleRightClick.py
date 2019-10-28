@@ -17,11 +17,13 @@
 #    - class HandleRightClickAndShiftDown definition
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #****************************************************
 
+from PyQt5.QtWidgets import QMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 
 
@@ -35,19 +37,30 @@ class QVizHandleRightClick:
         """
         Arguments:
             node (QVizTreeNode) : Item (node) from in the QTreeWidget.
-            dataTreeView : DataTreeView object to which the node belongs.
+            dataTreeView (QVizDataTreeView) : DataTreeView object to which the node belongs.
         """
-        showPopUp = 0
+        if dataTreeView.popupmenu is None:
+            dataTreeView.popupmenu = QMenu()
+        else:
+            dataTreeView.popupmenu.clear()
+
+        showMenu = False
 
         # If the node is a signal and occurrence contains data, call showPopUpMenu function for plotting data
-        #IDSRootNode = dataTreeView.IDSRoots[node.getIDSName()]
         if node.isDynamicData() and node.hasAvailableData():
-            showPopUpMenu = QVizSignalHandling(dataTreeView=dataTreeView)
-            showPopUp = showPopUpMenu.showPopUpMenu(node)
+            handling = QVizSignalHandling(dataTreeView=dataTreeView)
+            dataTreeView.popupmenu = handling.buildContextMenu(node)
+            showMenu = True
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if node.isIDSRoot()and node.hasAvailableData():
-                showPopUpMenu = QVizLoadDataHandling()
-                showPopUp = showPopUpMenu.showPopUpMenu(node, dataTreeView)
+                subMenu = QMenu('Get ' + node.getIDSName() + ' data for occurrence')
+                dataTreeView.popupmenu.addMenu(subMenu)
+                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
+                sub_menu = QMenu('Plugins')
+                dataTreeView.popupmenu.addMenu(sub_menu)
+                QVizPluginsPopUpMenu().upateMenu(node, dataTreeView, sub_menu)
+                showMenu = True
 
-        return showPopUp
+        if showMenu:
+            dataTreeView.popupmenu.exec_(dataTreeView.viewport().mapToGlobal(dataTreeView.pos))

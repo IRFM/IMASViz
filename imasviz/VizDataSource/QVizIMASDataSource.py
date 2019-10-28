@@ -42,6 +42,7 @@ class QVizIMASDataSource:
         ids = imas.ids(shotNumber, runNumber, 0, 0)
         try:
             ids.open_env(userName, imasDbName, imas_major_version)
+            ids.close()
         except Exception:
             raise ValueError("Can not open shot " + str(shotNumber) +
                              "  from data base " + imasDbName + " of user " + userName + ".")
@@ -49,44 +50,55 @@ class QVizIMASDataSource:
     @staticmethod
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
-        if machineName in ('WEST',):
-            ids.open_public(machineName)
-        else:
-            ids.create_public(machineName)
+        #if machineName in ('WEST',):
+        ids.open_public(machineName)
+        #else:
+        #    ids.create_public(machineName)
         if (ids.expIdx == -1):
             raise ValueError("Can not open shot " + str(shotNumber) + "  from " + machineName)
+        else:
+            ids.close()
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName):
         return True
 
-    def containsData(self, IDSName):
-        imas_entry = imas.ids(self.shotNumber, self.runNumber, 0, 0)
-        try:
-            imas_major_version = os.environ['IMAS_MAJOR_VERSION']
-            imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
-            ids_properties = eval("imas_entry." + IDSName + ".partialGet('ids_properties')")
-            imas_entry.close()
-            ht = ids_properties.homogeneous_time
-            if ht != 0 and ht != 1 and ht != 2:
-                return False
-        except:
-            #traceback.print_exc(file=sys.stdout)
-            return False
+    def createImasDataEntry(self):
+        return imas.ids(self.shotNumber, self.runNumber, 0, 0)
 
-        return True
+    def open(self, imas_entry):
+        imas_major_version = os.environ['IMAS_MAJOR_VERSION']
+        imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
 
-    # Name of the data under the selected node
-    def dataNameInPopUpMenu(self, dataDict):
-        if 'dataName' in dataDict:
-            return dataDict['dataName']
-        return None
+    def close(self, imas_entry):
+        imas_entry.close()
 
-    def treeDisplayedNodeName(self, dataElement):
-        """The displayed name of the node in DTV.
-        """
-        # name = str(dataElement.find('name').text) # Full path
-        return dataElement.attrib['name']
+    def getImasEntry(self, occurrence):
+        return self.ids[occurrence]
+
+    def containsData(self, node, imas_entry):
+        ret = False
+        logging.info("Searching available data in all occurrences of " + node.getIDSName() + "IDS...")
+        for occurrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+            logging.info("Searching for occurrence: " + str(occurrence) + "...")
+            node.setAvailableIDSData(occurrence, 0)
+            try:
+                ids_properties = eval("imas_entry." + node.getIDSName() + ".partialGet('ids_properties', occurrence)")
+                ht = ids_properties.homogeneous_time
+                if ht == 0 or ht == 1 or ht == 2:
+                    logging.info(
+                        "Found data for occurrence " + str(occurrence) + " of " + node.getIDSName() + " IDS...")
+                    node.setHomogeneousTime(ht)
+                    node.setAvailableIDSData(occurrence, 1)
+                    ret = True
+                elif occurrence == 0:
+                    break  # we decide to break the loop as soon as occurrence 0 is empty
+
+            except:
+                pass
+        logging.info("Data search ended.")
+        return ret
+
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, nodeData):
@@ -99,6 +111,8 @@ class QVizIMASDataSource:
     def getLongLabel(self):
         return "User:" + self.userName + " Tokamak:" + self.imasDbName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
+    def getKey(self):
+        return self.getLongLabel()
 
     def exportToLocal(self, dataTreeView, exported_ids):
         """Export specified IDS to a new separate IDS.

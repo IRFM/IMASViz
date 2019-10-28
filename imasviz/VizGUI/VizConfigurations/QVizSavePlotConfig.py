@@ -8,7 +8,7 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #*******************************************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #*******************************************************************************
 
 import time, logging

@@ -9,7 +9,7 @@
 #
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, D. Penko
+#     Copyright(c) 2016- L. Fleury, D. Penko
 #****************************************************
 
 from PyQt5.QtWidgets import QApplication

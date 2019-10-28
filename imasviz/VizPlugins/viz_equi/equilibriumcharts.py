@@ -81,7 +81,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
                  "non empty GGD (equilibrium.time_slice[:].ggd),"
                  "non empty IDS Wall.")
 
-
+    idd = dataSource.getImasEntry(occurrence)
     ht = idd.equilibrium.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
         logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS is empty.')

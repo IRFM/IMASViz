@@ -9,7 +9,7 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #****************************************************
 
 import pyqtgraph as pg
@@ -973,16 +973,20 @@ class TabPlotDesignProperties(QWidget):
 
     def hideShowLegend(self):
         if self.parent.legendItem is not None:
-            self.parent.legendItem.scene().removeItem(self.parent.legendItem)
+            if self.parent.legendItem.scene() is not None:
+                self.parent.legendItem.scene().removeItem(self.parent.legendItem)
             self.parent.legendItem = None
         else:
             pwg = None
             if "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
                 pwg = self.viewBox.qWidgetParent.pg
+                plots = pg.listDataItems()
             else:
                 pwg = self.viewBox.qWidgetParent.pgPlotWidget
+                plots = pwg.getPlotItem().listDataItems()
+
             l = pwg.addLegend()
             self.parent.legendItem = l
-            plots = pwg.getPlotItem().listDataItems()
+
             for p in plots:
                 l.addItem(p, p.name())

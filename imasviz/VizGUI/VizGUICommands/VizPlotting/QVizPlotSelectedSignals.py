@@ -17,7 +17,7 @@
 #    def getSignal
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #****************************************************
 
 import xml.etree.ElementTree as ET
@@ -124,7 +124,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
                     # Set plot labels and title
                     label, xlabel, ylabel, title = \
-                        QVizPlotSignal.plotOptions(dtv, vizTreeNode, vizTreeNode.getShotNumber())
+                        vizTreeNode.plotOptions(dtv, vizTreeNode.getShotNumber())
 
                     if i == 0 and update == 0:
                         # Adding the first plot (first selected signal)

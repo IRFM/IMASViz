@@ -21,8 +21,8 @@ class QVizPluginsHandler:
         self.pluginsObjects = VizPlugins.getPluginsObjects(
             dataTreeView=self.dataTreeView, selectedTreeNode=self.selectedTreeNode)
 
-    def showPopUpMenu(self, subjectsList = None):
-        self.dataTreeView.popupmenu = QMenu()
+    def updateMenu(self, menu, subjectsList = None):
+
 
         addedPluginsEntries = {}
 
@@ -84,14 +84,8 @@ class QVizPluginsHandler:
             action_onPluginHandler = QAction(icon_onPluginHandler,
                                              pluginsCommandDescription , self.dataTreeView)
             action_onPluginHandler.triggered.connect(partial(self.popUpMenuHandler, i))
-            # Add to submenu
-            self.dataTreeView.popupmenu.addAction(action_onPluginHandler)
+            menu.addAction(action_onPluginHandler)
 
-        # Map the menu (in order to show it)
-        self.dataTreeView.popupmenu.exec_(
-                self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
-
-        return 1
 
     @pyqtSlot(int)
     def popUpMenuHandler(self, itemId):
@@ -116,9 +110,6 @@ class QVizPluginsHandler:
 
         pluginsCommandDescription = allEntries[entry][1]
 
-        #pluginsConfiguration = pluginsConfigurationsList[allEntries[entry][0]]
-        #pluginsConfiguration['imasviz_view'] = self.dataTreeView
-        #pluginsConfiguration['node_attributes'] = self.selectedTreeNode.getNodeData()
         # Run the plugins
         if type(pluginsObject) == QMainWindow:
             # If pluginsObject is QMainWindow type (indicating that the

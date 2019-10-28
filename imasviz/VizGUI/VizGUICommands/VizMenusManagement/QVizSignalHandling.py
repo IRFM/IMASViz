@@ -41,6 +41,7 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal i
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 
 class QVizSignalHandling(QObject):
@@ -60,36 +61,11 @@ class QVizSignalHandling(QObject):
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
         self.treeNode = self.dataTreeView.selectedItem
 
-    def showPopUpMenu(self, signalNode):
-        """Display the popup menu for plotting data.
-
-        Arguments:
-            signalNodeName (str) : Name of the signal node (tree item).
-                               (example: ids.magnetics.flux_loop[0].flux.data)
-        """
-
-        # TODO: popup menu gets build every time on right-click. Maybe create
-        #       it once and then only enable/disable menu items on right-click
-
-        # Name of the node selection
-        self.signalNodeName = signalNode.getDataName()
-
-        # Do not proceed with building the context menu if the selected node is
-        # not signal node
-        if self.signalNodeName is None:
-            return 0
-
-        # Set new popup menu
-        self.dataTreeView.popupmenu = self.buildContextMenu()
-
-        # Map the menu (in order to show it)
-        self.dataTreeView.popupmenu.exec_(
-            self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
-        return 1
-
-    def buildContextMenu(self):
+    def buildContextMenu(self, signalNode):
         """Build context menu.
         """
+
+        self.signalNodeName = signalNode.getDataName()
 
         # Get total count of figures, tablePlotViews, stackedPlotViews etc.
         numFig = self.imas_viz_api.GetFigurePlotsCount()
@@ -131,9 +107,8 @@ class QVizSignalHandling(QObject):
 
         # - Add menu for handling show/hide if figures, TablePlotViews and
         #   StackedPlotViews.
-        menu_showHide, menu_delete = self.menusShowHideAndDelete(numFig, numTPV, numSPV)
-        self.contextMenu.addMenu(menu_showHide)
-        self.contextMenu.addMenu(menu_delete)
+        self.menusShowHideAndDelete(numFig, numTPV, numSPV, self.contextMenu)
+        self.menusPlugins()
 
         # TODO:
         """
@@ -143,6 +118,13 @@ class QVizSignalHandling(QObject):
         - 'Open subplots manager'
         """
         return self.contextMenu
+
+    def menusPlugins(self):
+        # Create the sub menu for plugins
+        self.pluginsPopUpMenu = QVizPluginsPopUpMenu()
+        sub_menu = self.contextMenu.addMenu('Plugins')
+        self.pluginsPopUpMenu.upateMenu(self.treeNode, self.dataTreeView, sub_menu)
+
 
     def actionPlotAsFunctionOfTime(self):
         # Add action to plot the signal data as a function of time
@@ -430,20 +412,20 @@ class QVizSignalHandling(QObject):
 
         return menu
 
-    def menusShowHideAndDelete(self, numFig, numTPV, numSPV):
+    def menusShowHideAndDelete(self, numFig, numTPV, numSPV, menu):
         """Set two menus: first  for handling show/hide and second for deleting
         of existing figures, TablePlotViews and StackedPlotViews.
         """
 
         # Create and add empty menu to handle show/hide status of plot views and
         # figures
-        menu_showHide = QMenu('Show/Hide', self.contextMenu)
+        menu_showHide = QMenu('Show/Hide', menu)
         menu_showHide.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'showHide'))
 
         menu_showHide.setDisabled(True)
         # Create and add empty menu to handle deletion of plot views and
         # figures
-        menu_delete = QMenu('Delete', self.contextMenu)
+        menu_delete = QMenu('Delete', menu)
         menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication, QStyle.SP_DialogDiscardButton))
         menu_delete.setDisabled(True)
 
@@ -585,7 +567,8 @@ class QVizSignalHandling(QObject):
             # Add to submenu
             subMenu_deleteSPV.addAction(action_deleteAllSPV)
 
-        return menu_showHide, menu_delete
+        menu.addMenu(menu_showHide)
+        menu.addMenu(menu_delete)
 
     def updateNodeData(self):
         """ Update tree node/item data.
@@ -626,7 +609,7 @@ class QVizSignalHandling(QObject):
 
             # If signal node is a part of time_slice array of structures
             # (e.g. 'equilibrium.time_slice[0].profiles_1d.psi')
-            if self.treeNode != None and \
+            if self.treeNode is not None and \
                 self.treeNode.treeNodeExtraAttributes.time_dependent_aos():
                 aos_vs_itime = self.treeNode.getDataPathVsTime(
                     self.treeNode.treeNodeExtraAttributes.parametrizedPath)

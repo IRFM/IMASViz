@@ -362,11 +362,11 @@ class QVizDataAccessCodeGenerator:
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
 
-                if coordinate !=  "1...N" and coordinate.endswith(".time"):
-                    self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
-                    coordinateName = "coordinate1"
-                    coordinate = "time"
-                    self.printCode("node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')", level + 1)
+                    if coordinate !=  "1...N" and coordinate.endswith("/time"):
+                        self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
+                        coordinateName = "coordinate1"
+                        coordinate = idsName + ".time"
+                        self.printCode("node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')", level + 1)
 
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
@@ -602,7 +602,6 @@ if __name__ == "__main__":
     imas_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
                      "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0", "3.23.1", "3.23.2", "3.23.3", "3.24.0"]
-
     for v in imas_versions:
         dag = QVizDataAccessCodeGenerator(v)
     print("End of code generation")

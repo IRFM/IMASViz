@@ -8,7 +8,7 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #****************************************************
 
 import numpy as np
@@ -53,7 +53,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeLabelTitle.setWordWrap(True)
         self.lNodeLabelTitle.setMinimumHeight(25)
         self.lNodeLabelTitle.setMinimumWidth(340)
-        self.lNodeLabelTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeLabelTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeLabelTitle.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -64,7 +64,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeLabelText.setWordWrap(True)
         self.lNodeLabelText.setMinimumHeight(25)
         self.lNodeLabelText.setMinimumWidth(340)
-        self.lNodeLabelText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeLabelText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeLabelText.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -75,7 +75,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeDocTitle.setWordWrap(True)
         self.lNodeDocTitle.setMinimumHeight(25)
         self.lNodeDocTitle.setMinimumWidth(340)
-        self.lNodeDocTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeDocTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeDocTitle.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -86,7 +86,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeDocText.setWordWrap(True)
         self.lNodeDocText.setMinimumHeight(25)
         self.lNodeDocText.setMinimumWidth(340)
-        self.lNodeDocText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeDocText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeDocText.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -97,7 +97,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArraySizeTitle.setWordWrap(True)
         self.lNodeArraySizeTitle.setMinimumHeight(25)
         self.lNodeArraySizeTitle.setMinimumWidth(340)
-        self.lNodeArraySizeTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeArraySizeTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArraySizeTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -109,7 +109,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArraySizeText.setWordWrap(True)
         self.lNodeArraySizeText.setMinimumHeight(25)
         self.lNodeArraySizeText.setMinimumWidth(340)
-        self.lNodeArraySizeText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeArraySizeText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArraySizeText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -123,7 +123,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayMinTitle.setWordWrap(True)
         self.lNodeArrayMinTitle.setMinimumHeight(25)
         self.lNodeArrayMinTitle.setMinimumWidth(340)
-        self.lNodeArrayMinTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeArrayMinTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayMinTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -135,7 +135,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayMinText.setWordWrap(True)
         self.lNodeArrayMinText.setMinimumHeight(25)
         self.lNodeArrayMinText.setMinimumWidth(340)
-        self.lNodeArrayMinText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeArrayMinText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayMinText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -147,7 +147,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayMaxTitle.setWordWrap(True)
         self.lNodeArrayMaxTitle.setMinimumHeight(25)
         self.lNodeArrayMaxTitle.setMinimumWidth(340)
-        self.lNodeArrayMaxTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeArrayMaxTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayMaxTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -159,7 +159,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayMaxText.setWordWrap(True)
         self.lNodeArrayMaxText.setMinimumHeight(25)
         self.lNodeArrayMaxText.setMinimumWidth(340)
-        self.lNodeArrayMaxText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeArrayMaxText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayMaxText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -171,7 +171,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayZerosTitle.setWordWrap(True)
         self.lNodeArrayZerosTitle.setMinimumHeight(25)
         self.lNodeArrayZerosTitle.setMinimumWidth(340)
-        self.lNodeArrayZerosTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeArrayZerosTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayZerosTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -183,7 +183,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayZerosText.setWordWrap(True)
         self.lNodeArrayZerosText.setMinimumHeight(25)
         self.lNodeArrayZerosText.setMinimumWidth(340)
-        self.lNodeArrayZerosText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeArrayZerosText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayZerosText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -195,7 +195,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayNansTitle.setWordWrap(True)
         self.lNodeArrayNansTitle.setMinimumHeight(25)
         self.lNodeArrayNansTitle.setMinimumWidth(340)
-        self.lNodeArrayNansTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeArrayNansTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayNansTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -207,7 +207,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayNansText.setWordWrap(True)
         self.lNodeArrayNansText.setMinimumHeight(25)
         self.lNodeArrayNansText.setMinimumWidth(340)
-        self.lNodeArrayNansText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeArrayNansText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayNansText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -219,7 +219,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayInfsTitle.setWordWrap(True)
         self.lNodeArrayInfsTitle.setMinimumHeight(25)
         self.lNodeArrayInfsTitle.setMinimumWidth(340)
-        self.lNodeArrayInfsTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeArrayInfsTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayInfsTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -231,7 +231,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayInfsText.setWordWrap(True)
         self.lNodeArrayInfsText.setMinimumHeight(25)
         self.lNodeArrayInfsText.setMinimumWidth(340)
-        self.lNodeArrayInfsText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeArrayInfsText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeArrayInfsText.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -244,7 +244,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeContentsTitle.setWordWrap(True)
         self.lNodeContentsTitle.setMinimumHeight(25)
         self.lNodeContentsTitle.setMinimumWidth(340)
-        self.lNodeContentsTitle.setFont(GlobalFonts.TITLE_BIG)
+        self.lNodeContentsTitle.setFont(GlobalFonts.TITLE_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeContentsTitle.setTextInteractionFlags(
             Qt.TextSelectableByMouse)
@@ -256,7 +256,7 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeContentsText.setWordWrap(True)
         self.lNodeContentsText.setMinimumHeight(25)
         self.lNodeContentsText.setMinimumWidth(340)
-        self.lNodeContentsText.setFont(GlobalFonts.TEXT_BIG)
+        self.lNodeContentsText.setFont(GlobalFonts.TEXT_MEDIUM)
         # Set label text as selectable by mouse
         self.lNodeContentsText.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
@@ -354,7 +354,7 @@ class QVizNodeDocumentationWidget(QWidget):
                 if item.is1D():
                     self.lNodeArraySizeTitle.setText('Array size: ')
                     # Get string version of the array of values
-                    n = 1000
+                    n = 200
                     try:
                         node_contents_dict['minimum'] = str(min(node_array_contents))
                         node_contents_dict['maximum'] = str(max(node_array_contents))

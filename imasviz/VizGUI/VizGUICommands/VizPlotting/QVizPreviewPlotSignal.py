@@ -18,7 +18,7 @@
 #    def getSignal
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #****************************************************
 
 import sys, logging
@@ -29,6 +29,7 @@ from PyQt5.QtWidgets import QWidget
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 
 
 class QVizPreviewPlotSignal(QVizAbstractCommand):
@@ -137,7 +138,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
             # Set plot options
             label, xlabel, ylabel, title = \
-                self.plotOptions(self.dataTreeView, self.dataTreeView.selectedItem,
+                self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,
                                  shotNumber=shotNumber, label=label,
                                  xlabel=xlabel, title=title)
             # Get plottable data
@@ -151,43 +152,3 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         except:
             traceback.print_exc(file=sys.stdout)
             raise
-
-    @staticmethod
-    def plotOptions(dataTreeView, signalNode, shotNumber=None, title='',
-                    label=None, xlabel=None):
-        """Set plot options.
-
-        Arguments:
-            dataTreeView (QTreeWidget) : QVizDataTreeView object.
-            signalNodeData   : Tree signal/item/node data.
-            shotnumber (int) : IDS database parameter - shot number of the case.
-            title      (str) : Plot title.
-            label      (str) : Label describing IMAS database (device, shot) and
-                               path to signal/node in IDS database structure.
-            xlabel     (str) : Plot X-axis label.
-        """
-
-        #t = dataTreeView.getNodeAttributes(signalNodeData['dataName'])
-
-        if label is None:
-            label = signalNode.getPath()
-
-        if xlabel is None:
-            if 'coordinate1' in signalNode.getInfoDict():
-                xlabel = \
-                    QVizGlobalOperations.replaceBrackets(signalNode.getInfoDict()['coordinate1'])
-            if xlabel != None and xlabel.endswith("time"):
-                xlabel += "[s]"
-
-        ylabel = signalNode.getName()
-
-        if 'units' in signalNode.getInfoDict():
-            units = signalNode.getInfoDict()['units']
-            ylabel += '[' + units + ']'
-
-        label = dataTreeView.dataSource.getShortLabel() + ':' + label
-
-        if xlabel is None:
-            xlabel = "time[s]"
-
-        return label, xlabel, ylabel, title

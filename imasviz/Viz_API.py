@@ -8,14 +8,14 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #****************************************************
 
 import os
 
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
-from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
+from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame, QVizDataTreeView
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
@@ -30,13 +30,10 @@ from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 class Viz_API:
 
     def __init__(self):
+
         self.figToNodes= {} #key = figure, values = list of selectedData
         #figureframes contains all plotting frames
         self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
-
-        # wxPython DTV lists
-        self.wxDTVframeList = []
-        self.wxDTVlist = []
 
         # PyQt5 DTV lists
         self.DTVframeList = []
@@ -46,6 +43,25 @@ class Viz_API:
 
     def GetDTVFrames(self):
         return self.DTVframeList
+
+    def GetDataSources(self):
+        dataSourcesList = []
+        for dtv in self.DTVlist:
+            dataSourcesList.append(dtv.dataSource)
+        return dataSourcesList
+
+    def isDataSourceAlreadyOpened(self, dataSource):
+        dataSourcesList = self.GetDataSources()
+        for ds in dataSourcesList:
+            if dataSource.getKey() == ds.getKey():
+                return True
+        return False
+
+    def GetDTVFor(self, dataSourceKey):
+        for dtv in self.DTVlist:
+            if dataSourceKey == dtv.dataSource.getKey():
+                return dtv
+        return None
 
     def removeDTVFrame(self, frame):
         self.DTVframeList.remove(frame)
@@ -92,8 +108,13 @@ class Viz_API:
 
 
     # Show the IDS data tree frame
-    def ShowDataTree(self, dataTreeFrame):
-        dataTreeFrame.show()
+    def ShowDataTree(self, dataTreeView):
+        if isinstance(dataTreeView, QVizDataTreeViewFrame):
+            dataTreeView.show()
+        elif isinstance(dataTreeView, QVizDataTreeView):
+            dataTreeView.parent.show()
+        else:
+            raise ValueError('Wrong argument type arg for ShowDataTree(arg).')
 
     def ShowNodesSelection(self, selectedSignalsDict):
         from imasviz.VizGUI.VizWidgets.QVizNodesSelectionWindow import QVizNodesSelectionWindow

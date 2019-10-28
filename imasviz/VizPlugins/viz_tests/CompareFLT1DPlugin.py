@@ -5,7 +5,7 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 import traceback, logging, os, sys
 import numpy as np
-from PyQt5.QtWidgets import QInputDialog
+from PyQt5.QtWidgets import QInputDialog, QLineEdit
 
 class CompareFLT1DPlugin(VizPlugins):
     def __init__(self):
@@ -15,22 +15,34 @@ class CompareFLT1DPlugin(VizPlugins):
 
         try:
             print('CompareFLT1DPlugin to be executed...')
+            logging.info('Comparing current node to sibling node from another shot...')
+            logging.info('Data :' + self.selectedTreeNode.getDataName())
 
-
-            shotNumber, ok = QInputDialog.getInt(self, "Shot number", "enter a shot number")
+            shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number")
             if not ok:
                 return
+            else:
+                runNumber, ok = QInputDialog.getInt(None, "Run number", "enter the run number of shot " + str(shotNumber))
+                if not ok:
+                    return
+                else:
+                    userName, ok = QInputDialog.getText(None, 'User name', "enter user name", QLineEdit.Normal, "")
+                    if not ok:
+                        return
+                    else:
+                        tokamak, ok = QInputDialog.getText(None, 'Tokamak', "enter tokamak", QLineEdit.Normal, "")
+                        if not ok:
+                            return
 
             dataSource = self.dataTreeView.dataSource
 
-
+            logging.info('Plotting data from current node...')
             figureKey, plotWidget = vizAPI.CreatePlotWidget()
             node = self.selectedTreeNode
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            label=None,
                            title=None,
                            nodeData=node.getNodeData(),
-                           figureKey=figureKey,
                            update=0)
 
             ps.execute(plotWidget)
@@ -38,13 +50,16 @@ class CompareFLT1DPlugin(VizPlugins):
             # Set data source retriever/factory
             dataSourceFactory = QVizDataSourceFactory()
 
+
             # Load IMAS database
             dataSource = dataSourceFactory.create(
                 dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                shotNumber=54178,
-                runNumber=0,
-                userName='fleuryl',
-                imasDbName='test')
+                shotNumber=shotNumber,
+                runNumber=runNumber,
+                userName=userName,
+                imasDbName=tokamak)
+
+            logging.info('Creating datasource:' + dataSource.getLongLabel())
 
             # Build the data tree view frame
             f = vizAPI.CreateDataTree(dataSource)
@@ -60,12 +75,11 @@ class CompareFLT1DPlugin(VizPlugins):
             # Select signal nodes corresponding to the paths in paths list
             vizAPI.SelectSignals(f, paths)
 
-            # Plot signal nodes
+            # Plot signal nodes on the same figure
             # Note: Data tree view does not need to be shown in order for this routine to
             #       work
             vizAPI.PlotSelectedSignals(f, figureKey=figureKey, update=1)
 
-            #plotWidget.show()
         except :
             traceback.print_exc()
             logging.error(traceback.format_exc())

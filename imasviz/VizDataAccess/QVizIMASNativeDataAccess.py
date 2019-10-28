@@ -27,9 +27,7 @@ class QVizIMASNativeDataAccess:
             t = None
             signalPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
             rval = eval(signalPath)
-
             r = np.array([rval])
-
             coordinate1 = treeNode.evaluateCoordinate1At(itimeValue)
 
             if treeNode.isCoordinate1_time_dependent(): #coordinate1 is a function of time

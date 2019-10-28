@@ -57,7 +57,7 @@ class QVizTreeNode(QTreeWidgetItem):
         return coordinate1
 
     def evaluateDataPath(self, itime_value):
-        parametrizedPath = self.getParametrizedPath()
+        parametrizedPath = self.getParametrizedDataPath()
         if parametrizedPath is None:
             return self.getDataName()
         evaluatedPath = parametrizedPath
@@ -127,6 +127,7 @@ class QVizTreeNode(QTreeWidgetItem):
         return label
 
     def evaluateCoordinate1VsTime(self):#the result can eventually depend on [itime]
+        #print(self.treeNodeExtraAttributes.coordinate1)
         return self.evaluatePath(self.treeNodeExtraAttributes.coordinate1)
 
     def coordinate1Length(self, selectedNodeData, ids):
@@ -166,7 +167,7 @@ class QVizTreeNode(QTreeWidgetItem):
             return int(apc)
 
     def evaluatePath(self, path):
-        aos_valued = None
+        aos_valued = path
         path = QVizGlobalOperations.makePythonPath(path)
         path = self.patchIndices(path) #replace [i1] by [i], [i2] by [j] and so on
         for i in range(0, self.treeNodeExtraAttributes.aos_parents_count): #loop on all AOSs which contain this path
@@ -215,6 +216,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def getParametrizedPath(self):
         return self.treeNodeExtraAttributes.parametrizedPath
+
+    def getParametrizedDataPath(self):
+        return self.treeNodeExtraAttributes.parametrizedPath + "." + self.getName()
 
     def getOccurrence(self):
         return self.infoDict.get('occurrence')
@@ -270,6 +274,26 @@ class QVizTreeNode(QTreeWidgetItem):
     def getShotNumber(self):
         return self.infoDict.get('shotNumber')
 
+    def getCoordinate1(self):
+        return self.infoDict.get('coordinate1')
+
+    def getParametrizedCoordinate(self, index):
+        searchedCoordinate = 'coordinate' + str(index)
+        c = self.infoDict.get(searchedCoordinate)
+        if c is not None:
+            return QVizGlobalOperations.makePythonPath(c)
+        else:
+            raise ValueError('Undefined coordinate: ' +  searchedCoordinate)
+
+    def hasHomogeneousTime(self):
+        return self.infoDict.get('homogeneous_time') == 1
+
+    def getHomogeneousTime(self):
+        return self.infoDict.get('homogeneous_time')
+
+    def setHomogeneousTime(self, value):
+        self.infoDict['homogeneous_time'] = value
+
     def setPath(self, path):
         self.infoDict['Path'] = path
 
@@ -296,6 +320,11 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
                self.getDataType() == 'flt_1d_type' or self.getDataType() == 'int_1d_type'
 
+    def is0DAndNumeric(self):
+        return self.is0D() and self.getDataType() != 'STR_0D'
+
+    def is1DAndNumeric(self):
+        return self.is1D() and self.getDataType() != 'STR_1D'
 
     def is0DAndDynamic(self):
         return self.is0D() and self.isDynamicData()
@@ -309,11 +338,11 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def updateIDSNode(self, containsData):
         if containsData:
-            self.setAvailableIDSData(1)
+            #self.setAvailableIDSData(self.getOccurrence(), 1)
             # Set tree item style when node contains data
             self.setStyleForIDS(True)
         else:
-            self.setAvailableIDSData(0)
+            #self.setAvailableIDSData(self.getOccurrence(), 0)
             # Set tree item text color
             self.setStyleForIDS(False)
 
@@ -326,7 +355,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleWhenContainingData(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-        self.setFontBold()
+        self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
+        if self.isDynamicData(): #set dynamic data to bold (0D and 1D nodes)
+            self.setFontBold()
 
     def setStyleForWhenNotContainingData(self):
         self.setForeground(0, GlobalColors.BLACK)
@@ -336,6 +367,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleForElementAOS(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
+        self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
 
     def setStyleForAOSNotContainingData(self):
         self.setForeground(0, GlobalColors.BLACK)
@@ -351,7 +383,7 @@ class QVizTreeNode(QTreeWidgetItem):
     # Define the color of a node which contains a signal
     def updateStyle(self, imas_entry):
 
-        if self.is1DAndDynamic():
+        if self.is1D():
 
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
@@ -368,10 +400,14 @@ class QVizTreeNode(QTreeWidgetItem):
                 self.infoDict['availableData'] = 1
                 self.setStyleWhenContainingData()
 
-        elif self.is0DAndDynamic():
+        elif self.is0D():
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
+            if self.getDataName() is None:
+                self.setStyleForWhenNotContainingData()
+                return
+
             e = eval('imas_entry.' + self.getDataName())
 
             emptyField = False
@@ -383,12 +419,17 @@ class QVizTreeNode(QTreeWidgetItem):
                 if e == -999999999:
                     emptyField = True
 
+            elif self.getDataType() == 'STR_0D':
+                if e == '':
+                    emptyField = True
+
             if emptyField:  # empty (signals) arrays appear in black
                 self.infoDict['availableData'] = 0
                 self.setStyleForWhenNotContainingData()
             else:
                 self.infoDict['availableData'] = 1
                 self.setStyleWhenContainingData()
+
 
         elif self.is2DOrLarger():
             e = eval('imas_entry.' + self.getDataName())
@@ -398,8 +439,61 @@ class QVizTreeNode(QTreeWidgetItem):
             else:
                 self.infoDict['availableData'] = 1
                 self.setStyleWhenContainingData()
+
+            self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
         else:
             self.setForeground(0, GlobalColors.BLACK)
 
 
+    def plotOptions(self, dataTreeView, shotNumber=None, title='',
+                    label=None, xlabel=None):
+        """Set plot options.
 
+        Arguments:
+            dataTreeView (QTreeWidget) : QVizDataTreeView object.
+            shotnumber (int) : IDS database parameter - shot number of the case.
+            title      (str) : Plot title.
+            label      (str) : Label describing IMAS database (device, shot) and
+                               path to signal/node in IDS database structure.
+            xlabel     (str) : Plot X-axis label.
+        """
+        if label is None:
+            label = dataTreeView.dataSource.getShortLabel() + ':' + self.getPath()
+
+        if self.is0DAndDynamic():
+            label, title = self.correctLabelForTimeSlices(label, title)
+
+        elif self.is1DAndDynamic():
+            # Setting/Checking the X-axis label
+            if xlabel is None:
+                # If xlabel is not yet set
+                if self.getCoordinate1() is not None:
+                    xlabel = QVizGlobalOperations.replaceBrackets(
+                        self.getInfoDict()['coordinate1'])
+                    if xlabel == self.getIDSName()+ '.time':
+                        xlabel = 'time' #simplify the notation on x axis
+
+                if xlabel is not None and xlabel.endswith("time"):
+                    xlabel += "[s]"
+            elif 'time[s]' in xlabel:
+                # If 'Time[s]' is present in xlabel, do not modify it
+                pass
+            elif '1.' not in xlabel and '.N' not in xlabel:
+                # If '1...N' or '1..N' (or other similar variant)  is not present
+                # in xlabel:
+                # - Replace dots '.' by slashes '/'
+                xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
+                # - If IDS name is not present (at the front) of the xlabel string,
+                #   then add it
+                if self.getIDSName() not in xlabel:
+                    xlabel = self.getIDSName() + "/" + xlabel
+
+        if xlabel is None:
+            xlabel = "time[s]"
+
+        ylabel = self.getName()
+
+        if self.getUnits() is not None:
+            ylabel += '[' + self.getUnits() + ']'
+
+        return label, xlabel, ylabel, title

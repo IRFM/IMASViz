@@ -11,7 +11,7 @@
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
 #*******************************************************************************
-#     Copyright(c) 2016- F.Ludovic, L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 #*******************************************************************************
 
 import pyqtgraph as pg
@@ -135,8 +135,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
 
                 # Set plot options
                 label, xlabel, ylabel, title = \
-                    QVizPlotSignal.plotOptions(dataTreeView=dtv,
-                                               signalNode=signalNode,
+                    signalNode.plotOptions(dataTreeView=dtv,
                                                shotNumber=shotNumber,
                                                title=self.figureKey,
                                                label=label)

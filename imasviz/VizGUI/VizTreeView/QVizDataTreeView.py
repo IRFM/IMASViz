@@ -25,7 +25,7 @@
 #    - class TextCtrlLogger definition
 #
 #****************************************************
-#     Copyright(c) 2016- F.Ludovic,L.xinyi, D. Penko
+#     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
 #****************************************************
 
 import os, logging
@@ -34,13 +34,12 @@ import numpy as np
 import threading
 from threading import Thread, Condition
 from functools import partial
-
 from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QTextEdit, QPlainTextEdit
 from PyQt5.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
-
+from imasviz.VizUtils.QVizLogger import QVizLogger
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
@@ -126,7 +125,7 @@ class QVizDataTreeView(QTreeWidget):
         # List of all nodes which contain a signal (all FLT_1D nodes etc.)
         self.signalsList = []
 
-        # Parent of this tree, this is the wxDataTreeViewFrame
+        # Parent of this tree, this is the QVizDataTreeViewFrame
         self.parent = parent
 
         # Keep a reference to shared data (frames, figures, ...)
@@ -148,12 +147,14 @@ class QVizDataTreeView(QTreeWidget):
         # key=occurrence, value=IDS name
         self.IDSNameSelected = {}
 
+        self.popupmenu = None
+
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from CPODef.xml or IDSDef.xml file.
         """
         idsNode = None
         xmlTree = ET.parse(IDSDefFile)
-        imas_entry = self.dataSource.getImasEntry()
+        imas_entry = self.dataSource.createImasDataEntry()
         self.dataSource.open(imas_entry)
 
         for child in xmlTree.getroot():
@@ -170,8 +171,8 @@ class QVizDataTreeView(QTreeWidget):
                 IDSRootNode = self.createIDSRootNode(idsName=idsName,
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)
-
-                IDSRootNode.updateIDSNode(self.dataSource.containsData(idsName))
+                IDSContainsData = self.dataSource.containsData(IDSRootNode, imas_entry)
+                IDSRootNode.updateIDSNode(IDSContainsData)
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
@@ -271,8 +272,7 @@ class QVizDataTreeView(QTreeWidget):
                 self.pos = event.pos()
 
                 # Set and show the popup menu
-                handleShiftAndRightClick = QVizHandleShiftAndRightClick(self)
-                showPopUp = handleShiftAndRightClick.execute(treeNode)
+                QVizHandleShiftAndRightClick(self).execute(treeNode)
 
             return
 
@@ -289,38 +289,17 @@ class QVizDataTreeView(QTreeWidget):
             self.pos = event.pos()
 
             # Set and show the popup
-            handleRightClick = QVizHandleRightClick()
-            showPopUp = handleRightClick.execute(treeNode, self)
-
-    # def keyPressEvent(self, QKeyEvent):
-    #     """ Execute action on specific keyboard key press.
-    #     """
-    #     print("QKeyEvent: ", QKeyEvent.key())
-    #     if QKeyEvent.key() == Qt.Key_0:
-    #         print("Key 0 pressed")
-
-
-    # def mousePressEvent(self, QMouseEvent):
-    #     """Execute action on specific mouse button press.
-    #     Warning: It overwrites/clashes with the contextMenuEvent!!
-    #     """
-    #     print("QMouseEvent: ", QMouseEvent)
-
-    #     if QMouseEvent == Qt.MiddleButton:
-    #         print("mouse right click")
+            QVizHandleRightClick().execute(treeNode, self)
 
 
     def updateView(self, idsName, occurrence, idsData=None):
         """ Update QVizDataTreeViewFrame.
-
         Arguments:
             idsName        (str) : Name of the IDS e.g. 'magnetics'.
             occurrence     (int) : IDS occurrence number (0-9).
             idsData        (obj) : Object (element) holding IDS data.
         """
-        # t4 = time.time()
-        if idsData is not None:
-            self.update_view(idsName, occurrence, idsData)
+        self.update_view(idsName, occurrence, idsData)
 
 
     def update_view(self, idsName, occurrence, idsData):
@@ -328,8 +307,6 @@ class QVizDataTreeView(QTreeWidget):
         """
         global cv
         if idsData is not None:
-
-            #self.buildTreeView(self.IDSRoots[idsName], occurrence, idsData)
             self.IDSRoots[idsName].setOccurrence(occurrence)
             nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.ids)
             thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData))
@@ -357,14 +334,15 @@ class QVizDataTreeView(QTreeWidget):
                      + " of " + idsName
                      + " IDS ended successfully, building "
                      + " view...")
-        DTVRoot = None
+        #DTVRoot = None
         idsDocumentation = self.IDSRoots[idsName].getDocumentation()
-        ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, DTVRoot)
+        root_node_ori = self.IDSRoots[idsName]
+        ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getNodeData())
 
         for child in idsData:
-            self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence)
+            self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence, ids_root_occ)
 
         t2 = time.time()
         logging.info("Building tree view took " + str(t2 - t1) + ' seconds.')
@@ -376,8 +354,11 @@ class QVizDataTreeView(QTreeWidget):
         cv.notify()
         cv.release()
 
-    def createIDSRootNode(self, idsName, idsDocumentation, DTVRoot):
-        itemDataDict = {}
+    def createIDSRootNode(self, idsName, idsDocumentation, DTVRoot, root_node_ori=None):
+        if root_node_ori is not None:
+            itemDataDict = root_node_ori.getNodeData()
+        else:
+            itemDataDict = {}
         itemDataDict['IDSName'] = idsName
         itemDataDict['isIDSRoot'] = 1
         itemDataDict['dataName'] = idsName
@@ -389,7 +370,7 @@ class QVizDataTreeView(QTreeWidget):
         return QVizTreeNode(DTVRoot, [idsName], itemDataDict)
 
     def addChildren(self, nodeBuilder, element, parent,
-                    idsName, occurrence):
+                    idsName, occurrence, ids_root_occ):
         """ To parent item, add all children IDS nodes as a tree view items.
 
         Arguments:
@@ -401,11 +382,11 @@ class QVizDataTreeView(QTreeWidget):
             idsName     (str)             : Name of the IDS e.g. 'magnetics'.
         """
         element_node = nodeBuilder.addNewNode(idsName, element, parent,
-                                              occurrence, self)
+                                              occurrence, self, ids_root_occ)
         if element_node is not None:
             for child in element:
                 self.addChildren(nodeBuilder, child, element_node, idsName,
-                                 occurrence)
+                                 occurrence, ids_root_occ)
 
     def OnExpandItem(self, event):
         return
@@ -607,8 +588,21 @@ class QVizDataTreeViewFrame(QMainWindow):
         nodeSelection.aboutToShow.connect(partial(self.updateMenuNodeSelection,
             menu=nodeSelection))
 
+        vizFiguresManagement = menuBar.addMenu('Plot windows')
+        vizFiguresManagement.aboutToShow.connect(partial(self.updateMenuNodePlotWindows,
+                                                  vizFiguresManagement))
+
         # Set menu bar
         self.setMenuBar(menuBar)
+
+
+    def updateMenuNodePlotWindows(self, vizFiguresManagement):
+        QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self.dataTreeView)
+        numFig = self.dataTreeView.imas_viz_api.GetFigurePlotsCount()
+        numTPV = self.dataTreeView.imas_viz_api.GetTablePlotViewsCount()
+        numSPV = self.dataTreeView.imas_viz_api.GetStackedPlotViewsCount()
+        vizFiguresManagement.clear()
+        QVizSignalHandlingObj.menusShowHideAndDelete(numFig, numTPV, numSPV, vizFiguresManagement)
 
     def updateMenuNodeSelection(self, menu):
         """Update menu handling node selection.
@@ -650,8 +644,7 @@ class QVizDataTreeViewFrame(QMainWindow):
             # TODO: Create a set of actions that can be used by multiple
             #       menus, buttons etc. instead of 'borrowing' them from
             #       QVizSignalHandling
-            menu.addMenu(QVizSignalHandling(self.dataTreeView). \
-                menuPlotSelectedSignalNodes(parentMenu=menu))
+            menu.addMenu(QVizSignalHandling(self.dataTreeView).menuPlotSelectedSignalNodes(parentMenu=menu))
         else:
             pass
 
@@ -681,8 +674,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_ppw.addWidget(self.previewPlotWidget, 0, 0, 1, 1)
         self.dockWidget_ppw.setWidget(self.dockWidgetContents_ppw)
         # - Set dockwidget size
-        # self.dockWidget_ppw.setMinimumSize(QSize(ref_width / 2, ref_height / 2))
-        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ppw)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockWidget_ppw)
 
         # NODE DOCUMENTATION WIDGET (NDW)
         # - Set the widget with default text
@@ -697,9 +689,22 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_ndw.setObjectName("GridLayout_NDW")
         self.gridLayout_ndw.addWidget(self.nodeDocumentationWidget, 0, 0, 1, 1)
         self.dockWidget_ndw.setWidget(self.dockWidgetContents_ndw)
-        # - Set dockwidget size
-        # self.dockWidget_ndw.resize(QSize(ref_width / 2, ref_height / 10))
-        self.addDockWidget(Qt.DockWidgetArea(2), self.dockWidget_ndw)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.dockWidget_ndw)
+
+        # LOG WIDGET
+        self.logWidget = QPlainTextEdit(parent=self)
+        self.logWidget.setReadOnly(True)
+        self.dockWidget_log = QDockWidget("Log", self)
+        self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
+        self.dockWidget_log.setObjectName("DockWidget_LOG")
+        self.dockWidgetContents_log = QWidget()
+        self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
+        self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
+        self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
+        self.dockWidget_log.setWidget(self.dockWidgetContents_log)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget_log)
+        handler = QVizLogger.getHandler()
+        handler.new_record.connect(self.logWidget.appendHtml)
 
         # Set first docked widget minimum width
         self.dockWidget_ppw.setMinimumWidth(400)
@@ -708,8 +713,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         #       the central widget takes ~90% of horizontal space (no 'resize'
         #       solves that ...)
         self.resizeDocks([self.dockWidget_ppw,
-                          self.dockWidget_ndw],
-                         [50, 50], Qt.Vertical)
+                          self.dockWidget_ndw,
+                          self.dockWidget_log],
+                         [50, 50, 25], Qt.Vertical)
 
     @pyqtSlot(QMainWindow)
     def onShowConfigurations(self, parent):
