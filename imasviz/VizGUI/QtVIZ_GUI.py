@@ -15,12 +15,12 @@ import os
 import sys
 import logging
 from functools import partial
-from imasviz.VizUtils.QVizLogger import QVizLogger
 from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
 
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
 
+from imasviz.VizUtils.QVizLogger import QVizLogger
 from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
     QPushButton, QVBoxLayout, QComboBox, QPlainTextEdit, QGridLayout
 from PyQt5.QtCore import QSize, pyqtSlot, Qt
