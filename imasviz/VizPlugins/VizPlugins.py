@@ -7,7 +7,7 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      'SOLPS_UiPlugin': '',
                      'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
-                     'viz_1D_overtime_plugin':'viz_1D_overtime.viz_1D_overtime_plugin',
+                     #'viz_1D_overtime_plugin':'viz_1D_overtime.viz_1D_overtime_plugin',
                      'example_UiPlugin': ''
                      }
 
