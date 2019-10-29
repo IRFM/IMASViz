@@ -4,6 +4,22 @@
 Release notes
 =============
 
+
+-------------
+Version 2.3.2
+-------------
+
+Not yet released
+
+- Improvement of plugins interface making plugins integration much easier
+- Code refactoring
+- Still improvement on nodes colours management according to their state and their types
+- Check that a shot view is opened only once
+- Menu added in menu bar of shots views for plots windows management
+- The list of plugins can be now displayed from right-click menu (more convenient)
+- Reducing font size of documentation widget to display more text
+- Adding log widget on the main panel - The logging mechanism is the same that shots views, uses the same logging handler (singleton)
+
 -------------
 Version 2.3.1
 -------------
