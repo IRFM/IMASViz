@@ -5,5 +5,5 @@
 #LIGHT_CYAN --> 5
 #LIGHT_GREY --> 6
 
-Color_of_data_nodes_containing_data=1
-Nodes_selection_color=2
+Colour_of_data_nodes_containing_data=1
+Nodes_selection_colour=2
