@@ -27,6 +27,7 @@ class QVizOpenShotView:
                 os.environ[vname] = mds
 
         if UDAMachineName is not None: # UDA
+            QVizIMASDataSource.try_to_open_uda_datasource(UDAMachineName, int(shotNumber), int(runNumber))
             dataSource = QVizDataSourceFactory().createUDADatasource(UDAMachineName=UDAMachineName,
                                                         shotNumber=shotNumber,
                                                         runNumber=runNumber)

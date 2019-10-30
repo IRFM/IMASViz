@@ -72,14 +72,14 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     # Open shot and run of machine
     occurrence = 0 # default occurrence
 
-    if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'equilibrium', occurrence):
-        print('Loading equilibrium IDS...')
-        vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
-
     logging.info("Here are the requirements for the ''Equilibrium'' plugin:"
                  "non empty equilibrium IDS with time slices,"
                  "non empty GGD (equilibrium.time_slice[:].ggd),"
                  "non empty IDS Wall.")
+
+    if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'equilibrium', occurrence):
+        logging.info('Loading equilibrium IDS...')
+        vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
 
     idd = dataSource.getImasEntry(occurrence)
     ht = idd.equilibrium.ids_properties.homogeneous_time
@@ -97,8 +97,9 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
     # Get wall geometry
     if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
-        print('Loading wall IDS...')
+        logging.info('Loading wall IDS...')
         vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
+
 
     idd = vizAPI.GetIMASDataEntry(dataTreeView, occurrence)
 
@@ -120,6 +121,8 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     if lenArrTimes != len(idd.equilibrium.time_slice):
         logging.error('ERROR: length time and time_slice differ')
         return
+
+    logging.info('Equilibrium plugin: preparing data...')
 
     timeEquiIDS = np.zeros(lenArrTimes)
     timeEquiIDS = idd.equilibrium.time
@@ -292,6 +295,8 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         # Print time of the loop
         #print('Time loop', timeit, '=', datetime.now() - startTime)
         #print('In DataDen id(Psi_val) =', id(Psi_val))
+    logging.info('Equilibrium plugin: data ready.')
+
 
     return shot, run, machine, user, \
            timeEquiIDS, lenArrTimes, \

@@ -2,6 +2,7 @@ import imas
 
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGeneratedClassFactory
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors
+import logging
 
 
 class QVizIMASPublicDataSource(QVizIMASDataSource):
@@ -44,8 +45,10 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
     def getLongLabel(self):
         return "(UDA) Tokamak:" + self.machineName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
-    def containsData(self, IDSRootNode):
-        IDSRootNode.setAvailableIDSData(0, True)
-        # Set tree item text color
-        IDSRootNode.setForeground(0, GlobalColors.BLACK)
-        return
+    def open(self, imas_entry):
+        imas_entry.open_public(self.machineName)
+
+
+    def containsData(self, node, imas_entry):
+        node.setAvailableIDSData(0, True)
+        return True

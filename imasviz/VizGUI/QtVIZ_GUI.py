@@ -109,11 +109,11 @@ class GUIFrame(QTabWidget):
                                                               shotNumber=str(val))
 
 
-            except ValueError as e:
+            except Exception as e:
                 raise ValueError(str(e))
 
         except ValueError as e:
-            QVizGlobalOperations.message(self, str(e), 'Error')
+            logging.error(str(e))
 
     def CheckInputsFromTab1(self):
         """Display warning message if the required parameter was not specified"""
@@ -175,16 +175,20 @@ class GUIFrame(QTabWidget):
 
     def OpenDataSourceFromTab2(self, evt):
         try:
-            self.CheckInputsFromTab2()
-            self.mainMenuController.openShotView.Open(evt,
-                                                      dataSourceName=QVizGlobalValues.IMAS_UDA,
-                                                      imasDbName='',
-                                                      userName='',
-                                                      runNumber=self.runNumber2.text(),
-                                                      shotNumber=self.shotNumber2.text(),
-                                                      UDAMachineName=self.cb.currentText())
+            try:
+                self.CheckInputsFromTab2()
+                self.mainMenuController.openShotView.Open(evt,
+                                                          dataSourceName=QVizGlobalValues.IMAS_UDA,
+                                                          imasDbName='',
+                                                          userName='',
+                                                          runNumber=self.runNumber2.text(),
+                                                          shotNumber=self.shotNumber2.text(),
+                                                          UDAMachineName=self.cb.currentText())
+            except Exception as e:
+                raise ValueError(str(e))
+
         except ValueError as e:
-            QVizGlobalOperations.message(self, str(e), 'Error')
+            logging.error('Unable to open UDA data source, the reason is: ' + str(e))
 
     def CheckInputsFromTab2(self):
         machineName = \
