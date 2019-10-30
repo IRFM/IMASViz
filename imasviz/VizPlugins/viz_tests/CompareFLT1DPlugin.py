@@ -18,21 +18,9 @@ class CompareFLT1DPlugin(VizPlugins):
             logging.info('Comparing current node to sibling node from another shot...')
             logging.info('Data :' + self.selectedTreeNode.getDataName())
 
-            shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number")
+            ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
             if not ok:
                 return
-            else:
-                runNumber, ok = QInputDialog.getInt(None, "Run number", "enter the run number of shot " + str(shotNumber))
-                if not ok:
-                    return
-                else:
-                    userName, ok = QInputDialog.getText(None, 'User name', "enter user name", QLineEdit.Normal, "")
-                    if not ok:
-                        return
-                    else:
-                        tokamak, ok = QInputDialog.getText(None, 'Tokamak', "enter tokamak", QLineEdit.Normal, "")
-                        if not ok:
-                            return
 
             dataSource = self.dataTreeView.dataSource
 

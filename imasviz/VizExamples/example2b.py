@@ -9,58 +9,66 @@ import sys
 # PyQt library imports
 from PyQt5.QtWidgets import QApplication
 # IMASViz source imports
-from imasviz.util.GlobalOperations import GlobalOperations
 from imasviz.Viz_API import Viz_API
-from imasviz.VizDataSource import DataSourceFactory
+from imasviz.VizDataSource import QVizDataSourceFactory
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings
 app = QApplication(sys.argv)
 
 # Check if necessary system variables are set
-GlobalOperations.checkEnvSettings()
+QVizGlobalOperations.checkEnvSettings()
 
 # Set Application Program Interface
 api = Viz_API()
 
 # Set data source retriever/factory
-dataSourceFactory = DataSourceFactory()
+dataSourceFactory = QVizDataSourceFactory()
 
 # Set and empty list for listing data tree view frames
 f = []
 # Set list of shots
-n_shot = [52702, 52703]
+#n_shot = [52702, 52703]
 
-for i in range(0, 2):
-    # Load IMAS databases
+ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
+if not ok:
+    print("User input has failed on first shot. Example2b not executed.")
+else:
     dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                          shotNumber=n_shot[i],
-                                          runNumber=0,
-                                          userName='imas_public',
-                                          imasDbName='west')
+                                          shotNumber=shotNumber,
+                                          runNumber=runNumber,
+                                          userName=userName,
+                                          imasDbName=tokamak)
+
     # Append data tree view frame to list
     f.append(api.CreateDataTree(dataSource))
 
-# Set the list of node paths (for both databases) that are to be selected
-paths1 = []
-for i in range(1, 3):
-    paths1.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
-paths2 = []
-for i in range(1, 3):
-    paths2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
+    ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
 
-# Select signal nodes corresponding to the paths in paths list
-api.SelectSignals(f[0], paths1)
-api.SelectSignals(f[1], paths2)
-# Plot signal nodes
-# Note: Data tree view does not need to be shown in order for this routine to
-#       work
-api.PlotSelectedSignalsFrom(f)
+    if not ok:
+        print("User input has failed on second shot. Example2b not executed.")
+    else:
+        # Set the list of node paths (for both databases) that are to be selected
+        paths1 = []
+        for i in range(1, 3):
+            paths1.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
+        paths2 = []
+        for i in range(1, 3):
+            paths2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
-# Show the data tree view window
-f[0].show()
-f[1].show()
+        # Select signal nodes corresponding to the paths in paths list
+        api.SelectSignals(f[0], paths1)
+        api.SelectSignals(f[1], paths2)
+        # Plot signal nodes
+        # Note: Data tree view does not need to be shown in order for this routine to
+        #       work
+        api.PlotSelectedSignalsFrom(f)
 
-# Keep the application running
-app.exec()
+        # Show the data tree view window
+        f[0].show()
+        f[1].show()
+
+        # Keep the application running
+        app.exec()

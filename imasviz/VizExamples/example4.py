@@ -13,6 +13,7 @@ from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings
@@ -30,43 +31,45 @@ dataSourceFactory = QVizDataSourceFactory()
 # Set user (get current user)
 userName = os.environ['USER']
 
-# Load IMAS database
-dataSource = dataSourceFactory.create(
-                                    dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                    shotNumber=52344,
-                                    runNumber=0,
-                                    userName='imas_public',
-                                    imasDbName='west')
+ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
 
-# Database on the GateWay HPC (comment the above dataSource code and uncomment
-# the one below)
-# dataSource = dataSourceFactory.create(shotNumber=52344,
-#                                       runNumber=0,
-#                                       userName='g2penkod',
-#                                       imasDbName='viztest')
+if not ok:
+    print("User input has failed. Example3 not executed.")
+else:
 
-# Build the data tree view frame
-f = api.CreateDataTree(dataSource)
+    # Load IMAS database
+    dataSource = dataSourceFactory.create(
+        dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+        shotNumber=shotNumber,
+        runNumber=runNumber,
+        userName=userName,
+        imasDbName=tokamak)
 
-# Set configuration file
-configFilePath = os.environ['HOME'] + "/.imasviz/configuration_name.pcfg"
+    # Build the data tree view frame
+    f = api.CreateDataTree(dataSource)
 
-# Extract signal paths from the config file and add them to a list of
-# paths
-pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
-    configFile=configFilePath)
+    # Set configuration file
+    configFilePath, ok = QInputDialog.getText(None, 'Plot config. file', "enter the full path of your configuration file (.pcfg file)", QLineEdit.Normal, "")
 
-# First unselect all signals (optional)
-# QVizUnselectAllSignals(dataTreeView=f.dataTreeView).execute()
+    if not ok:
+        print("User input has failed. Example4 not executed.")
+    else:
+        # Extract signal paths from the config file and add them to a list of
+        # paths
+        pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
+            configFile=configFilePath)
 
-# Select the signals, defined by a path in a list of paths, in the
-# given Data Tree View (DTV) window
-QVizSelectSignals(dataTreeView=f.dataTreeView,
-                  pathsMap=pathsMap).execute()
+        # First unselect all signals (optional)
+        # QVizUnselectAllSignals(dataTreeView=f.dataTreeView).execute()
 
-# Plot the set of the signal nodes selected using plot configuration file to
-# a new Table Plot View and apply plot configurations (colors, line width etc.)
-api.ApplyTablePlotViewConfiguration(f, configFilePath=configFilePath)
+        # Select the signals, defined by a path in a list of paths, in the
+        # given Data Tree View (DTV) window
+        QVizSelectSignals(dataTreeView=f.dataTreeView,
+                          pathsMap=pathsMap).execute()
 
-# Keep the application running
-app.exec()
+        # Plot the set of the signal nodes selected using plot configuration file to
+        # a new Table Plot View and apply plot configurations (colors, line width etc.)
+        api.ApplyTablePlotViewConfiguration(f, configFilePath=configFilePath)
+
+        # Keep the application running
+        app.exec()

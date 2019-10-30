@@ -3,7 +3,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
-from PyQt5.QtWidgets import QMessageBox, QInputDialog
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
@@ -338,3 +338,26 @@ class QVizGlobalOperations:
         path = path.replace('/', '.')
         path = path.replace('(:)', '')
         return path
+
+    @staticmethod
+    def askForShot():
+        shotNumber = None
+        runNumber = None
+        userName = None
+        tokamak = None
+        shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number")
+        if not ok:
+            return (ok, shotNumber, runNumber, userName, tokamak)
+        else:
+            runNumber, ok = QInputDialog.getInt(None, "Run number", "enter the run number of shot " + str(shotNumber))
+            if not ok:
+                return (ok, shotNumber, runNumber, userName, tokamak)
+            else:
+                userName, ok = QInputDialog.getText(None, 'User name', "enter user name", QLineEdit.Normal, "")
+                if not ok:
+                    return (ok, shotNumber, runNumber, userName, tokamak)
+                else:
+                    tokamak, ok = QInputDialog.getText(None, 'Tokamak', "enter tokamak", QLineEdit.Normal, "")
+                    if not ok:
+                        return (ok, shotNumber, runNumber, userName, tokamak)
+        return (ok, shotNumber, runNumber, userName, tokamak)

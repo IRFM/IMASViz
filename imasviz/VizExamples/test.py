@@ -6,7 +6,7 @@ located on the GateWay HPC.
 
 # A module providing a number of functions and variables that can be used to
 # manipulate different parts of the Python runtime environment.
-import sys
+import sys, os
 # PyQt library imports
 from PyQt5.QtWidgets import QApplication
 # IMASViz source imports
@@ -14,6 +14,7 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings
@@ -28,46 +29,35 @@ api = Viz_API()
 # Set data source retriever/factory
 dataSourceFactory = QVizDataSourceFactory()
 
-# Load IMAS database
-dataSource = dataSourceFactory.create(
-                                 dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                 shotNumber=54178,
-                                 runNumber=0,
-                                 userName='fleuryl',
-                                 imasDbName='test')
 
-# Database on the GateWay HPC (comment the above dataSource code and uncomment
-# the one below)
-# dataSource = dataSourceFactory.create(shotNumber=52344,
-#                                       runNumber=0,
-#                                       userName='g2penkod',
-#                                       imasDbName='viztest')
+shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number for tokamak='test', run=0 ")
 
+if not ok:
+    print("User input has failed. Test not executed.")
+else:
 
-# Build the data tree view frame
-f = api.CreateDataTree(dataSource)
+    # Load IMAS database
+    dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+                                          shotNumber=shotNumber,
+                                          runNumber=0,
+                                          userName=os.environ['USER'],
+                                          imasDbName='test')
 
-# Set the list of node paths that are to be selected
-paths = []
-for i in range(0,6):
-    paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
+    # Build the data tree view frame
+    f = api.CreateDataTree(dataSource)
 
-# Change it to dictionary with paths an occurrences (!)
-paths = {'paths' : paths,
-         'occurrences' : [0]}
+    # Set the list of node paths that are to be selected
+    paths = []
+    for i in range(0,6):
+        paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
-# Optional: Option with single path in dictionary
-# paths = {'paths' : 'magnetics/flux_loop(1)/flux/data'}
-# or
-# paths = {'paths' : ['magnetics/flux_loop(1)/flux/data']}
+    # Change it to dictionary with paths an occurrences (!)
+    paths = {'paths' : paths,
+             'occurrences' : [0]}
 
-# Select signal nodes corresponding to the paths in paths list
-api.SelectSignals(f, paths)
+    # Select signal nodes corresponding to the paths in paths list
+    api.SelectSignals(f, paths)
 
-# Plot signal nodes
-# Note: Data tree view does not need to be shown in order for this routine to
-#       work
-#api.PlotSelectedSignals(f)
-f.show()
-# Keep the application running
-app.exec()
+    f.show()
+    # Keep the application running
+    app.exec()
