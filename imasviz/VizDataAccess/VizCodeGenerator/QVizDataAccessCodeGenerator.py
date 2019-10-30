@@ -362,12 +362,6 @@ class QVizDataAccessCodeGenerator:
                         code = "node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')" #example: coordinateName='coordinate1', coordinate='flux_loop[i1].flux.time'
                         self.printCode(code, level)
 
-                    if coordinate !=  "1...N" and coordinate.endswith("/time"):
-                        self.printCode("if self.ids." + idsName + ".ids_properties.homogeneous_time==1:", level)
-                        coordinateName = "coordinate1"
-                        coordinate = idsName + ".time"
-                        self.printCode("node.set(" + "'" + coordinateName + "'" + ", '" + coordinate + "')", level + 1)
-
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
 

@@ -469,9 +469,11 @@ class QVizTreeNode(QTreeWidgetItem):
                 # If xlabel is not yet set
                 if self.getCoordinate1() is not None:
                     xlabel = QVizGlobalOperations.replaceBrackets(
-                        self.getInfoDict()['coordinate1'])
-                    if xlabel == self.getIDSName()+ '.time':
-                        xlabel = 'time' #simplify the notation on x axis
+                        self.getCoordinate1())
+                    #if xlabel == self.getIDSName()+ '.time':
+                    #    xlabel = 'time' #simplify the notation on x axis
+                    if self.hasHomogeneousTime():
+                        xlabel = 'time'
 
                 if xlabel is not None and xlabel.endswith("time"):
                     xlabel += "[s]"
