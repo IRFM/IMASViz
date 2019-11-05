@@ -92,13 +92,10 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         """
         plotWidget = \
             self.dataTreeView.parent.findChild(QWidget, 'QVizPreviewPlotWidget')
-        if plotWidget == None:
+        if plotWidget is None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
             logging.error(str(error))
-        # self.plotWidget = \
-        #     IMASVIZ_PreviewPlotFrame(None, size=(600, 500), title='Plot Preview',
-        #                      signalHandling=self.signalHandling)
         return plotWidget
 
     @staticmethod

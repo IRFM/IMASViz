@@ -28,13 +28,15 @@ from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+#import pyqtgraph
+#from pyqtgraph.graphicsItems.PlotDataItem import PlotDataItem
 
 class QVizPlotSignal(QVizAbstractCommand):
     """Handling plot execution.
     """
     def __init__(self, dataTreeView, nodeData=None, signal=None,
                  title='', label=None, xlabel=None,
-                 update=0, vizTreeNode=None):
+                 vizTreeNode=None):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -64,24 +66,38 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.title = title
         self.label = label
         self.xlabel = xlabel
-        self.update = update
         self.plotFrame = None
 
-    def execute(self, plotWidget, figureKey=0):
+    def execute(self, plotWidget, figureKey=0, update=0, dataset_to_update=0):
         try:
+
+            if plotWidget.addCoordinateSlider:
+                index = plotWidget.sliderGroup.currentIndex
+                dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+                self.signal = dataAccess.GetSignalVsTime(self.treeNode, index)
+            elif plotWidget.addTimeSlider:
+                index = plotWidget.sliderGroup.currentIndex
+                dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+                # Get signal node
+                self.signal = dataAccess.GetSignalAt(self.treeNode, index, plotWidget)
+
             if len(self.signal) == 2:
+
                 t = QVizPlotSignal.getTime(self.signal)
                 v = QVizPlotSignal.get1DSignalValue(self.signal)
+
                 if t is None or t[0] is None:
                     raise ValueError("Time values are not defined.")
+
                 if v is None or v[0] is None:
                     raise ValueError("Array values are not defined.")
+
                 if len(t[0]) != len(v[0]):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
 
-                self.plot1DSignal(self.dataTreeView.shotNumber, t, v, plotWidget,
-                                  figureKey, self.title, self.label,
-                                  self.xlabel, self.update)
+                self.__plot1DSignal(self.dataTreeView.shotNumber, t, v, plotWidget,
+                                    figureKey, self.title, self.label,
+                                    self.xlabel, update, dataset_to_update)
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
@@ -99,8 +115,8 @@ class QVizPlotSignal(QVizAbstractCommand):
         return oneDimensionSignal[1]
 
 
-    def plot1DSignal(self, shotNumber, t, v, plotWidget, figureKey=0, title='', label=None,
-                     xlabel=None, update=0):
+    def __plot1DSignal(self, shotNumber, t, v, plotWidget, figureKey=0, title='', label=None,
+                       xlabel=None, update=0, dataset_to_update=0):
         """Plot a 1D signal as a function of time.
 
         Arguments:
@@ -139,16 +155,17 @@ class QVizPlotSignal(QVizAbstractCommand):
             nbRows = v.shape[0]
 
             # Set plot options
+            time_index = 0
+            if plotWidget.addCoordinateSlider or plotWidget.addTimeSlider:
+                time_index = plotWidget.sliderGroup.currentIndex
             label, xlabel, ylabel, title = \
                 self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,
                                  shotNumber=shotNumber, label=label,
-                                 xlabel=xlabel, title=figureKey)
+                                 xlabel=xlabel, title=figureKey, time_index=time_index)
 
-            # A new plot is added to the current plot(s)
             if update == 1:
-                # logging.info('Updating/Overwriting existing plot.')
 
-                # Update/Overwrite existing plot
+                # Updating/Overwriting existing plot
                 for i in range(0, nbRows):
                     # y-axis values
                     u = v[i]
@@ -160,15 +177,19 @@ class QVizPlotSignal(QVizAbstractCommand):
                     pgPlotItem = plotWidget.pgPlotWidget.plotItem
                     pgCentralWidget = plotWidget.pgPlotWidget.centralWidget
                     # Update x and y values
-                    pgPlotItem.items[0].setData(x=ti, y=u)
+                    # if len(pgPlotItem.items) == 0:
+                    #     item = PlotDataItem()
+                    #     pgPlotItem.addItem(item)
+
+                    pgPlotItem.items[dataset_to_update].setData(x=ti, y=u)
                     # Update x-axis label
                     x_axis = pgPlotItem.getAxis('bottom')
                     x_axis.setLabel(xlabel, "")
                     # Update legend
-                    pgCentralWidget.legend.items[0][1].setText(label)
+                    pgCentralWidget.legend.items[dataset_to_update][1].setText(label)
 
             else:
-                # Create new plot
+                # Creation of a new plot
                 for i in range(0, nbRows):
                     # y-axis values
                     u = v[i]
@@ -178,11 +199,11 @@ class QVizPlotSignal(QVizAbstractCommand):
                     if i == 0:
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
-                        plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
-                                        ylabel=ylabel)
+                        plotWidget.plot(vizTreeNode=self.treeNode,x=ti, y=u, label=label, xlabel=xlabel,
+                                        ylabel=ylabel, update=update)
                     else:
                         # Add plot
-                        plotWidget.plot(x=ti, y=u, label=label)
+                        plotWidget.plot(vizTreeNode=self.treeNode,x=ti, y=u, label=label, update=update)
 
             # Show the widget window
             plotWidget.show()

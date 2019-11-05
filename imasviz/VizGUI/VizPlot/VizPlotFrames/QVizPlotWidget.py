@@ -55,9 +55,11 @@ class QVizPlotWidget(QWidget):
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
 
+        self.vizTreeNodesList = []
 
-    def plot(self, x=None, y=None, title='', label='', xlabel='', ylabel='',
-             pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
+
+    def plot(self, vizTreeNode=None, x=None, y=None, title='', label='', xlabel='', ylabel='',
+             pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
         """Add plot.
 
         Arguments:
@@ -73,7 +75,8 @@ class QVizPlotWidget(QWidget):
         """
         # Set pen (line design). Color and style are chosen depending on the
         # number of already present plots
-        if self.RGBlist != None:
+
+        if self.RGBlist is not None:
             # Get number of already present plots
             num_plots = len(self.getPlotList())
             # Number of available colors
@@ -110,6 +113,8 @@ class QVizPlotWidget(QWidget):
             # - Enable grid
             self.pgPlotWidget.showGrid(x=True, y=True)
 
+        if vizTreeNode is not None:
+            self.vizTreeNodesList.append(vizTreeNode)
         return self
 
     def getPlotItem(self):
@@ -125,16 +130,6 @@ class QVizPlotWidget(QWidget):
         return self.pgPlotWidget.getPlotItem().listDataItems()
 
 
-    def hideLegend(self):
-        legend = self.pgPlotWidget.getPlotItem().legend
-        legend.scene().removeItem(legend)
-
-    def showLegend(self):
-        l = self.pgPlotWidget.addLegend()
-        plots = self.getPlotList()
-        for p in plots:
-            l.addItem(p, p.name())
-
     def setContents(self):
         """Setup QVizPlotWidget contents.
         """
@@ -145,16 +140,6 @@ class QVizPlotWidget(QWidget):
         self.pgPlotWidget = pg.PlotWidget(self,
                                           viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("plotWidget")
-        # Add legend (must be called before adding plot!!!)
-        #self.legend = self.pgPlotWidget.addLegend()
-
-        # Set menu bar
-        # Note: hidden until it contains some useful features
-        # Note: when enable, be careful with the plot configuration margins
-        #       customization (there will be no empty space between menu
-        # bar and plot display)
-        # menuBar = self.menuBar()
-        # self.gridLayout.setMenuBar(menuBar)
 
         # Set checkbox for toggling mouse
         checkBox = self.checkBox()
@@ -167,7 +152,7 @@ class QVizPlotWidget(QWidget):
         self.gridLayout.addWidget(checkBox, 1, 0, 1, 1)
 
         # If the plottable array needs a slider for the X axis (time or coordinate)
-        if self.addTimeSlider is True or self.addCoordinateSlider is True:
+        if self.addTimeSlider or self.addCoordinateSlider:
 
             # Add slider time or corrdiante1D and its corresponding widgets
             self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self, signalHandling=self.signalHandling)
@@ -189,7 +174,6 @@ class QVizPlotWidget(QWidget):
             self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
             # Add time label
-            #if self.addTimeSlider is True:
             self.gridLayout.addWidget(self.timeFieldLabel, 6, 0, 1, 10)
 
         #Add a legend
@@ -390,10 +374,6 @@ class sliderGroup():
                 self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]) + " [s]")
             else:
                 self.timeFieldLabel.setText("Undefined IDS global time.")
-        #else:
-        #    self.timeFieldLabel.setText("Coordinate1 index: " + str(self.slider.value()))
-            #self.timeFieldLabel.setText("Coordinate1: " + str(self.active_treeNode.evaluateCoordinate1At(self.slider.value()))
-            #                            + " [" + str(self.active_treeNode.getUnits()) + "]")
 
         # Don't plot when the slider is being dragged by mouse. Plot on slider
         # release. This is important to still plot on value change by
@@ -418,36 +398,28 @@ class sliderGroup():
         self.sliderPress = True
 
     def executePlot(self):
-        """Execute replotting using different time slice data.
+        """Execute replotting using different data time slice.
         """
-
-        time_index = self.slider.value()
-
-        old_path = self.active_treeNode.getPath()
-        new_path = old_path.replace('(' + str(self.currentIndex) + ')', '(' + str(time_index) + ')')
-
-        self.currentIndex = time_index
-
-        # Search through the whole list of signals (all FLT_1D nodes etc.)
-        for node in self.signalHandling.dataTreeView.signalsList:
-            if new_path == node.getPath():
-                # Update object referring to the previous QVizTreeNode
-                self.active_treeNode = node
+        self.currentIndex = self.slider.value()
 
         #Get title of the current QVizPlotWidget
         currentFigureKey = self.parent.windowTitle()
 
-        # TODO: add actions when self.signalHanlding.timeSLider == True / False.
-        # TODO: set better indicators than True/False to better describe what
-        #       happens
-        if self.isTimeSlider:
-            self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(
-                time_index=time_index,
-                currentFigureKey=currentFigureKey,
-                treeNode=self.active_treeNode)
-        else:
-            self.signalHandling.plotSelectedSignalVsTimeAtCoordinate1D(
-                index=time_index,
-                currentFigureKey=currentFigureKey,
-                treeNode=self.active_treeNode)
+        i = 0
+        for node in self.parent.vizTreeNodesList:
 
+            self.active_treeNode = node
+
+            if self.isTimeSlider:
+
+                self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(
+                    time_index=self.currentIndex,
+                    currentFigureKey=currentFigureKey,
+                    treeNode=self.active_treeNode, update=1, dataset_to_update=i)
+            else:
+                self.signalHandling.plotSelectedSignalVsTimeAtCoordinate1D(
+                    index=self.currentIndex,
+                    currentFigureKey=currentFigureKey,
+                    treeNode=self.active_treeNode, update=1, dataset_to_update=i)
+
+            i += 1

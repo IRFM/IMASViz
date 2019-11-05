@@ -13,17 +13,29 @@ class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self, treeNode):
-        return self.GetSignalAt(treeNode, treeNode.timeValue())
+    def GetSignal(self, treeNode, plotWidget=None):
+        return self.GetSignalAt(treeNode, treeNode.timeValue(), plotWidget)
 
 
-    def GetSignalAt(self, treeNode, itimeValue):
+    def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
+        if treeNode.is1DAndDynamic():
+            return self.GetSignal1DAt(treeNode, itimeValue)
+        elif treeNode.is0DAndDynamic():
+            xData = None
+            if plotWidget is not None:
+                pgPlotItem = plotWidget.pgPlotWidget.plotItem
+                if pgPlotItem is not None:
+                    xData = pgPlotItem.dataItems[0].xData
+            return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
+
+
+    def GetSignal1DAt(self, treeNode, itimeValue):
 
         try:
             if treeNode.getNodeData() is None:
                 return
 
-            imas_entry = self.dataSource.ids[treeNode.getOccurrence()] #TODO replace ids by imas_entry (confusing!)
+            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
             t = None
             signalPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
             rval = eval(signalPath)
@@ -53,16 +65,12 @@ class QVizIMASNativeDataAccess:
             raise
 
 
-    #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
+    #this function is used for plotting 1D dynamic arrays whose values are defined in time slices (dynamic AOSs)
     def GetSignalVsTime(self, treeNode, index):
+        if treeNode.is0DAndDynamic():
+            return self.Get0DSignalVsTime(treeNode)
         # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataVsTime()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        # - Add missing part to the end (the name of the array ('phi',
-        #   'psi' etc.) is missing
-        # TODO: fix 'getDataVsTime' to get full required path
-        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
-        data_path_list = [x + missing_path_part for x in data_path_list]
-
+        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
         ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)
@@ -71,6 +79,7 @@ class QVizIMASNativeDataAccess:
 
         for i in range(0, time_slices_count):
             # Get values of the array at index
+            print('ids.' + data_path_list[i] + '[' + str(index) + ']')
             value_at_index = eval('ids.' + data_path_list[i] + '[' + str(index) + ']')
             v.append(value_at_index)
 
@@ -78,16 +87,25 @@ class QVizIMASNativeDataAccess:
         tarray = np.array([time])
         return tarray, rarray
 
-    #this function is used for plotting dynamic arrays whose values are defined in time slices (dynamic AOSs)
+    def Get0DSignalVsOtherCoordinate(self, treeNode, itimeValue, xData):
+        data_path_list = []
+        aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
+        imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+        data_path = aos_vs_itime.replace("[itime]", "[" + str(itimeValue) + "]")
+        print(data_path)
+        value = eval('imas_entry.' + data_path)
+        for i in range(0,len(xData)): #constant 1D array
+            data_path_list.append(value)
+
+        rarray = np.array([np.array(data_path_list)])
+        tarray = np.array([np.array(xData)])
+        return tarray, rarray
+
+
+    #this function is used for plotting 0D dynamic arrays whose values are defined in time slices (dynamic AOSs)
     def Get0DSignalVsTime(self, treeNode):
-
         # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataVsTime()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        # - Add missing part to the end (the name of the array ('phi',
-        #   'psi' etc.) is missing
-        missing_path_part = '.' + treeNode.getPath().split('/')[-1]
-        data_path_list = [x + missing_path_part for x in data_path_list]
-
+        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
         ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)
@@ -101,6 +119,8 @@ class QVizIMASNativeDataAccess:
         rarray = np.array([np.array(v)])
         tarray = np.array([time])
         return tarray, rarray
+
+
 
     def GetShapeofSignal(self, selectedNodeData, shotNumber):
         try:

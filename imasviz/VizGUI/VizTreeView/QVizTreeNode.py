@@ -39,6 +39,11 @@ class QVizTreeNode(QTreeWidgetItem):
     def isCoordinate1_time_dependent(self):
         return self.infoDict["coordinate1_time_dependent"] == 1
 
+    def itime_dependent(self, path):
+        if 'itime' in path:
+            return True
+        return False
+
     def index_name_of_itime(self):
         i = 0
         for key in QVizGlobalValues.indices:
@@ -76,30 +81,45 @@ class QVizTreeNode(QTreeWidgetItem):
             coordinate1 = self.treeNodeExtraAttributes.coordinate1
         return coordinate1
 
-    def coordinate1LabelAndTitleForTimeSlices(self, dtv, node, index):
+
+    def coordinate1Labels1(self, dtv, node, index): #index is the coordinate value given by the slider
         # Get time index
-        itime_index = node.getNodeData()['itime_index']
-        # Get IDS name
-        idsName = node.getIDSName()
+        itime_index = node.getItimeIndex()
+        title = ''
+        xlabel = ''
+        if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
+                        self.treeNodeExtraAttributes.coordinate1 == "1...N":
+            title = "coordinate1 = " + str(index)
+        else:
+            xlabel = str(node.getIDSName() + "." + self.evaluateCoordinate1())
+            tokens_list = xlabel.split(".")
+            coord1 = tokens_list[-1]
+            title = coord1 + "[" + str(itime_index) + "]=" + xlabel
+            # Set and format label
+        xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
+        label = dtv.dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
+        xlabel = xlabel + '(' + str(index) + ')'
+        xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
+        label = label.replace('[itime]', '[:]')
+        label = label + '(' + str(index) + ')'
+        label = QVizGlobalOperations.makeIMASPath(label)
+        return label, title, xlabel
+
+    def coordinate1LabelAndTitleForTimeSlices(self, dtv, index): #index is the coordinate value given by the slider
         title = ''
         xlabel= ''
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
-            self.treeNodeExtraAttributes.coordinate1 == "1...N":
+                        self.treeNodeExtraAttributes.coordinate1 == "1...N":
             title = "coordinate1 = " + str(index)
         else:
-            xlabel = str("ids." + idsName + "." + self.evaluateCoordinate1())
-            tokens_list = xlabel.split(".")
-            coord1 = tokens_list[-1]
-            title = coord1 + "[" + itime_index + "]=" + xlabel
+            if self.is1DAndDynamic():
+                xlabel = self.getIDSName() + "." + self.evaluateCoordinate1VsTime()
+                xlabel = xlabel.replace('itime', str(index))
         # Set and format label
-
-        label = dtv.dataSource.getShortLabel() + ":" + self.getPath()
-
-        # Set and format xlabel
-        xlabel = xlabel.replace('ids.','')
-        xlabel = QVizGlobalOperations.replaceBrackets(xlabel)
-        xlabel = QVizGlobalOperations.replaceDotsBySlashes(xlabel)
-
+        label = dtv.dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
+        label = label.replace('itime', str(index))
+        xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
+        label = QVizGlobalOperations.makeIMASPath(label)
         return label, title, xlabel
 
     def correctLabelForTimeSlices(self, label, title):
@@ -107,10 +127,6 @@ class QVizTreeNode(QTreeWidgetItem):
             label = label.replace('ids.', '')
             label = QVizGlobalOperations.replaceBrackets(label)
             label = QVizGlobalOperations.replaceDotsBySlashes(label)
-        if label is not None:
-            label = label.replace('time_slice(0)', 'time_slice(:)')
-        if title is not None:
-            title = title.replace('time_slice(0)', 'time_slice(:)')
         return label, title
 
 
@@ -127,7 +143,6 @@ class QVizTreeNode(QTreeWidgetItem):
         return label
 
     def evaluateCoordinate1VsTime(self):#the result can eventually depend on [itime]
-        #print(self.treeNodeExtraAttributes.coordinate1)
         return self.evaluatePath(self.treeNodeExtraAttributes.coordinate1)
 
     def coordinate1Length(self, selectedNodeData, ids):
@@ -150,8 +165,6 @@ class QVizTreeNode(QTreeWidgetItem):
         if self.treeNodeExtraAttributes.time_dependent(self.treeNodeExtraAttributes.parametrizedPath):
             return self.treeNodeExtraAttributes.parameters_values[self.index_name_of_itime()]
 
-    def getDataPathVsTime(self, path):
-        return self.evaluatePath(path)
 
     def getItimeIndex(self):
         i = self.treeNodeExtraAttributes.itime_index
@@ -188,26 +201,12 @@ class QVizTreeNode(QTreeWidgetItem):
         value = value.replace("[i7]", "[t]")
         return value
 
-    def getDataPath(self, data_path_vs_time, itime_value):
-        s = "[itime]"
-        replacement = "[" + str(itime_value) + "]"
-        return data_path_vs_time.replace(s, replacement)
-
-    def containedInDynamicAOS(self):
-        if self.getPathDoc() is None:
-            return -1
-        try:
-            self.getPathDoc().index("itime")
-        except:
-            return -1  # 'itime' not found
-        return 1
-
-    def getDataVsTime(self):
+    def getDataTimeSlices(self): #return a list of full data path for all time slices
         data_list = []
-        aos_vs_itime = self.getDataPathVsTime(self.treeNodeExtraAttributes.parametrizedPath)
+        aos_vs_itime = self.evaluatePath(self.getParametrizedDataPath())
         #print "QVizTreeNode : time max value = " + self.timeMaxValue()
         for itime in range(0, int(self.timeMaxValue())):
-            data_path = self.getDataPath(aos_vs_itime, itime)
+            data_path = aos_vs_itime.replace("[itime]", "[" + str(itime) + "]")
             data_list.append(data_path)
         return data_list
 
@@ -215,9 +214,11 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.infoDict
 
     def getParametrizedPath(self):
+        # e.g of a parametrized path: 'magnetics.flux_loop[i].position[j]'
         return self.treeNodeExtraAttributes.parametrizedPath
 
     def getParametrizedDataPath(self):
+        #e.g of a parametrized path: 'magnetics.flux_loop[i].position[j].r'
         return self.treeNodeExtraAttributes.parametrizedPath + "." + self.getName()
 
     def getOccurrence(self):
@@ -338,11 +339,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def updateIDSNode(self, containsData):
         if containsData:
-            #self.setAvailableIDSData(self.getOccurrence(), 1)
             # Set tree item style when node contains data
             self.setStyleForIDS(True)
         else:
-            #self.setAvailableIDSData(self.getOccurrence(), 0)
             # Set tree item text color
             self.setStyleForIDS(False)
 
@@ -390,14 +389,13 @@ class QVizTreeNode(QTreeWidgetItem):
             # 'e' variable
             e = eval('imas_entry.' + self.getDataName())
             if e is None or e.all() is None:
-                self.infoDict['availableData'] = 0
+                self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
-
             elif len(eval('imas_entry.' + self.getDataName())) == 0:  # empty (signals) arrays appear in black
-                self.infoDict['availableData'] = 0
+                self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             else:
-                self.infoDict['availableData'] = 1
+                self.setAvailableData(1)
                 self.setStyleWhenContainingData()
 
         elif self.is0D():
@@ -424,20 +422,20 @@ class QVizTreeNode(QTreeWidgetItem):
                     emptyField = True
 
             if emptyField:  # empty (signals) arrays appear in black
-                self.infoDict['availableData'] = 0
+                self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             else:
-                self.infoDict['availableData'] = 1
+                self.setAvailableData(1)
                 self.setStyleWhenContainingData()
 
 
         elif self.is2DOrLarger():
             e = eval('imas_entry.' + self.getDataName())
             if e.shape[0] == 0:
-                self.infoDict['availableData'] = 0
+                self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             else:
-                self.infoDict['availableData'] = 1
+                self.setAvailableData(1)
                 self.setStyleWhenContainingData()
 
             self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
@@ -446,7 +444,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
 
     def plotOptions(self, dataTreeView, shotNumber=None, title='',
-                    label=None, xlabel=None):
+                    label=None, xlabel=None, time_index=0):
         """Set plot options.
 
         Arguments:
@@ -457,22 +455,31 @@ class QVizTreeNode(QTreeWidgetItem):
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
         """
-        if label is None:
-            label = dataTreeView.dataSource.getShortLabel() + ':' + self.getPath()
 
+
+
+        #if self.is0DAndDynamic():
+            # if label is None:
+            #     label = dataTreeView.dataSource.getShortLabel() + ':' + self.getPath()
+            # label, title = self.correctLabelForTimeSlices(label, title)
         if self.is0DAndDynamic():
-            label, title = self.correctLabelForTimeSlices(label, title)
-
+            label, title, xlabel = self.coordinate1LabelAndTitleForTimeSlices(
+                dtv=dataTreeView,
+                index=time_index)
         elif self.is1DAndDynamic():
+            if self.itime_dependent(self.treeNodeExtraAttributes.coordinate1):
+                label, title, xlabel = self.coordinate1LabelAndTitleForTimeSlices(
+                    dtv=dataTreeView,
+                    index=time_index)
+
+        if self.is1DAndDynamic():
             # Setting/Checking the X-axis label
             if xlabel is None:
                 # If xlabel is not yet set
                 if self.getCoordinate1() is not None:
                     xlabel = QVizGlobalOperations.replaceBrackets(
                         self.getCoordinate1())
-                    #if xlabel == self.getIDSName()+ '.time':
-                    #    xlabel = 'time' #simplify the notation on x axis
-                    if self.hasHomogeneousTime():
+                    if self.isCoordinate1_time_dependent() and self.hasHomogeneousTime():
                         xlabel = 'time'
 
                 if xlabel is not None and xlabel.endswith("time"):

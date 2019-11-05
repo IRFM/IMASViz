@@ -137,7 +137,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                             # x-axis values
                             ti = t[0]
                             # Create plot
-                            plotWidget.plot(x=ti, y=u, title='', xlabel=xlabel,
+                            plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, title='', xlabel=xlabel,
                                             ylabel=ylabel, label=label)
                     else:
                         # Appending plot (the remaining selected signals)
@@ -152,7 +152,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                             # Note: do not pass again title, xlabel and ylabel
                             #       arguments if those attributes from the first
                             #       plot are to be kept.
-                            plotWidget.plot(x=ti, y=u, label=label)
+                            plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, label=label)
                     i += 1
             # Show the plotWidget, holding the plot
             plotWidget.show()

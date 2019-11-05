@@ -30,10 +30,9 @@ class CompareFLT1DPlugin(VizPlugins):
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            label=None,
                            title=None,
-                           nodeData=node.getNodeData(),
-                           update=0)
+                           nodeData=node.getNodeData())
 
-            ps.execute(plotWidget)
+            ps.execute(plotWidget, update=0)
 
             # Set data source retriever/factory
             dataSourceFactory = QVizDataSourceFactory()
