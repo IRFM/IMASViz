@@ -63,7 +63,7 @@ class QVizTreeNode(QTreeWidgetItem):
                 if firstNode.is0DAndDynamic():
                     return True
                 elif firstNode.is1DAndDynamic():
-                    if self.isCoordinate1_time_dependent():
+                    if firstNode.isCoordinate1_time_dependent():
                         return True
                     else:
                         return False

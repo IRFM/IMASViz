@@ -202,7 +202,7 @@ class QVizSignalHandling(QObject):
 
             # Add menu item to add plot to specific existing figure
             # Check for figures that share the same coordinates
-            if self.nodeDataShareSameCoordinates(figureKey, self.nodeData):
+            if self.nodeDataShareSameCoordinates(figureKey, self.treeNode):
                 # Set action
                 action_addSignalPlotToFig = QAction(figureKey, self)
                 action_addSignalPlotToFig.triggered.connect(
@@ -237,7 +237,7 @@ class QVizSignalHandling(QObject):
 
             # Add menu item to add plot to specific existing figure
             # Check for figures that share the same coordinates
-            if self.nodeDataShareSameCoordinates(figureKey, self.nodeData):
+            if self.nodeDataShareSameCoordinates(figureKey, self.treeNode):
                 # Set action
                 action_addSignalPlotToFig = QAction(figureKey, self)
                 action_addSignalPlotToFig.triggered.connect(
@@ -779,16 +779,19 @@ class QVizSignalHandling(QObject):
             logging.error(str(e))
 
 
-    def nodeDataShareSameCoordinatesAs(self, selectedNodeDataList, currentNodeData):
+    def nodeDataShareSameCoordinatesAs(self, selectedNodeDataList, vizTreeNode, figureKey=None):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates and other conditions for a meaningful plot.
         """
-        s = currentNodeData
+        s = vizTreeNode.getNodeData()
         if self.treeNode.is1DAndDynamic():
             for si in selectedNodeDataList:
                 if not si.get('data_type').endswith('_0D'): #TODO use clone of tree nodes in order to use VizTreeNode type instead of dict
-                    if s.get('coordinate1') != si.get('coordinate1'):
-                        return False
+                    if figureKey is not None:
+                        figureKey, plotWidget = self.getPlotWidget(figureKey)
+                        if plotWidget is not None and not vizTreeNode.hasTimeXaxis(plotWidget):
+                            if s.get('coordinate1') != si.get('coordinate1'):
+                                return False
                 if s.get('units') != si.get('units'):
                     return False
         elif self.treeNode.is0DAndDynamic():
@@ -797,19 +800,19 @@ class QVizSignalHandling(QObject):
                     return False
         return True
 
-    def nodeDataShareSameCoordinates(self, figureKey, currentNodeData):
+    def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
         figureDataList = self.imas_viz_api.figToNodes[figureKey]
         figureNodeDataList = []
         for k in figureDataList:
             v = figureDataList[k]
             figureNodeDataList.append(v[1])  # v[0] = shot number, v[1] = node data
-        return self.nodeDataShareSameCoordinatesAs(figureNodeDataList, currentNodeData)
+        return self.nodeDataShareSameCoordinatesAs(figureNodeDataList, vizTreeNode, figureKey)
 
     def currentSelectionShareSameCoordinates(self, figureKey):
         for k in self.dataTreeView.selectedSignalsDict:
             signal = self.dataTreeView.selectedSignalsDict[k]
             vizTreeNode = signal['QTreeWidgetItem']
-            if not self.nodeDataShareSameCoordinates(figureKey, vizTreeNode.getNodeData()):  # s[1] refers to node data
+            if not self.nodeDataShareSameCoordinates(figureKey, vizTreeNode):  # s[1] refers to node data
                 return False
         return True
 
@@ -818,20 +821,20 @@ class QVizSignalHandling(QObject):
         share the same coordinates.
         """
         selectedNodeDataList = []
+        selectedNodesList = []
         for k in signalsList:
             signal = signalsList[k]
             vizTreeNode = signal['QTreeWidgetItem']
-            selectedNodeDataList.append(vizTreeNode.getNodeData())  # v[0] = shot number,
-            # v[1] = node data
+            selectedNodeDataList.append(vizTreeNode.getNodeData())
+            selectedNodesList.append(vizTreeNode)
+        return self.shareSameCoordinates2(selectedNodeDataList, selectedNodesList)
 
-        return self.shareSameCoordinates2(selectedNodeDataList)
 
-
-    def shareSameCoordinates2(self, selectedNodeDataList):
+    def shareSameCoordinates2(self, selectedNodeDataList, selectedNodesList):
         """Check if data share the same coordinates.
         """
-        for si in selectedNodeDataList:
-            if not self.nodeDataShareSameCoordinatesAs(selectedNodeDataList, si):
+        for node in selectedNodesList:
+            if not self.nodeDataShareSameCoordinatesAs(selectedNodeDataList, node):
                 return False
         return True
 
