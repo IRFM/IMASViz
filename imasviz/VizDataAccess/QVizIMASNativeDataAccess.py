@@ -111,7 +111,6 @@ class QVizIMASNativeDataAccess:
 
         for i in range(0, time_slices_count):
             # Get values of the array at index
-            print('ids.' + data_path_list[i] + '[' + str(index) + ']')
             value_at_index = eval('ids.' + data_path_list[i] + '[' + str(index) + ']')
             v.append(value_at_index)
 
@@ -124,11 +123,9 @@ class QVizIMASNativeDataAccess:
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
         imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
         data_path = aos_vs_itime.replace("[itime]", "[" + str(itimeValue) + "]")
-        print(data_path)
         value = eval('imas_entry.' + data_path)
-        for i in range(0,len(xData)): #constant 1D array
+        for i in range(0, len(xData)): #constant 1D array
             data_path_list.append(value)
-
         rarray = np.array([np.array(data_path_list)])
         tarray = np.array([np.array(xData)])
         return tarray, rarray
