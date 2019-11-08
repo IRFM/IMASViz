@@ -53,7 +53,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         # Set widget window title
         self.title = 'Preview Plot'
 
-        if label == None:
+        if label is None:
             self.label = self.nodeData['Path']
         else:
             self.label = label
@@ -64,9 +64,9 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         signal = None
         signalDataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
         if self.treeNode.is1DAndDynamic()and self.treeNode.hasAvailableData():
-            signal = signalDataAccess.GetSignal(self.treeNode)
+            signal = signalDataAccess.GetSignal(self.treeNode) #plot as a function of coordinate1
         elif self.treeNode.is0DAndDynamic()and self.treeNode.hasAvailableData():
-            signal = signalDataAccess.Get0DSignalVsTime(self.treeNode)
+            signal = signalDataAccess.GetSignal(self.treeNode, as_function_of_time=True) #plot as a function of time
         return signal
 
     def execute(self):
@@ -76,11 +76,11 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             if len(self.signal) == 2:
                 t = QVizPreviewPlotSignal.getTime(self.signal)
                 v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
-                if (len(t[0]) != len(v[0])):
+                if len(t[0]) != len(v[0]):
                     raise ValueError("Data can not be previewed, x and y shapes are different.")
-                self.plot1DSignal(shotNumber = self.dataTreeView.shotNumber,
-                                  t = t, v = v, title = self.title,
-                                  label = self.label, xlabel = self.xlabel)
+                self.plot1DSignal(shotNumber=self.dataTreeView.shotNumber,
+                                  t=t, v=v, title=self.title,
+                                  label=self.label, xlabel=self.xlabel)
             else:
                 raise ValueError("Warning! Only 1D plots are currently supported.")
         except ValueError as e:
@@ -137,7 +137,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             label, xlabel, ylabel, title = \
                 self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,
                                  shotNumber=shotNumber, label=label,
-                                 xlabel=xlabel, title=title)
+                                 xlabel=xlabel, title=title, plotWidget=self.plotWidget)
             # Get plottable data
             u = v[0]    # first (should be the only) array of physical
                         # quantity values

@@ -34,13 +34,12 @@ from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 class QVizPlotSignal(QVizAbstractCommand):
     """Handling plot execution.
     """
-    def __init__(self, dataTreeView, nodeData=None, signal=None,
+    def __init__(self, dataTreeView, signal=None,
                  title='', label=None, xlabel=None,
                  vizTreeNode=None):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
-            nodeData      (dict) : QVizTreeNode data dictionary.
             signal       (tuple) : Tuple holding plotting values.
             figureKey      (str) : Plot window label that also indicates type
                                    of the requested plot view type.
@@ -50,19 +49,9 @@ class QVizPlotSignal(QVizAbstractCommand):
             update            () :
 
         """
-        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
+        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode.getNodeData())
 
-        if nodeData is None or vizTreeNode is None:
-            self.updateNodeData()
-        else:
-            self.nodeData = nodeData
-            self.treeNode = vizTreeNode
-
-        if signal is None:
-            self.signal = self.getSignal(dataTreeView=self.dataTreeView, vizTreeNode=self.treeNode)
-        else:
-            self.signal = signal
-
+        self.treeNode = vizTreeNode
         self.title = title
         self.label = label
         self.xlabel = xlabel
@@ -70,16 +59,8 @@ class QVizPlotSignal(QVizAbstractCommand):
 
     def execute(self, plotWidget, figureKey=0, update=0, dataset_to_update=0):
         try:
-
-            if plotWidget.addCoordinateSlider:
-                index = plotWidget.sliderGroup.currentIndex
-                dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-                self.signal = dataAccess.GetSignalVsTime(self.treeNode, index)
-            elif plotWidget.addTimeSlider:
-                index = plotWidget.sliderGroup.currentIndex
-                dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-                # Get signal node
-                self.signal = dataAccess.GetSignalAt(self.treeNode, index, plotWidget)
+            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
+            self.signal = dataAccess.GetSignal(self.treeNode, plotWidget=plotWidget)
 
             if len(self.signal) == 2:
 
@@ -135,7 +116,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
         try:
             # Update node data
-            self.updateNodeData()
+            #self.updateNodeData()
 
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
@@ -146,7 +127,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
 
             key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
-            tup = (self.dataTreeView.dataSource.shotNumber, self.nodeData)
+            tup = (self.dataTreeView.dataSource.shotNumber, self.treeNode.getInfoDict())
             api.addNodeToFigure(figureKey, key, tup)
 
             # Shape of the signal
@@ -156,12 +137,20 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # Set plot options
             time_index = 0
-            if plotWidget.addCoordinateSlider or plotWidget.addTimeSlider:
+            if plotWidget.addTimeSlider:
                 time_index = plotWidget.sliderGroup.currentIndex
+
+            coordinate_index = 0
+            if plotWidget.addCoordinateSlider:
+                coordinate_index = plotWidget.sliderGroup.currentIndex
+
             label, xlabel, ylabel, title = \
-                self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,
+                self.treeNode.plotOptions(self.dataTreeView,
                                  shotNumber=shotNumber, label=label,
-                                 xlabel=xlabel, title=figureKey, time_index=time_index)
+                                 xlabel=xlabel, title=figureKey,
+                                          time_index=time_index,
+                                          coordinate_index=coordinate_index,
+                                          plotWidget=plotWidget)
 
             if update == 1:
 
@@ -184,7 +173,8 @@ class QVizPlotSignal(QVizAbstractCommand):
                     pgPlotItem.items[dataset_to_update].setData(x=ti, y=u)
                     # Update x-axis label
                     x_axis = pgPlotItem.getAxis('bottom')
-                    x_axis.setLabel(xlabel, "")
+                    if xlabel is not None:
+                        x_axis.setLabel(xlabel, "")
                     # Update legend
                     pgCentralWidget.legend.items[dataset_to_update][1].setText(label)
 
@@ -215,12 +205,14 @@ class QVizPlotSignal(QVizAbstractCommand):
     def onHide(self, api, figureKey):
         self.dataTreeView.imas_viz_api.figureframes[figureKey].hide()
 
+    # This method gives a preferential way to plot data: as function
+    # of time for 0D node and as function of coordinate1 for 1D nodes
     @staticmethod
-    def getSignal(dataTreeView, vizTreeNode):
+    def getSignal(dataTreeView, vizTreeNode, plotWidget=None):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             if vizTreeNode.is1DAndDynamic():
-                signal = signalDataAccess.GetSignal(vizTreeNode)
+                signal = signalDataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget)
             elif vizTreeNode.is0DAndDynamic():
                 signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
             else:

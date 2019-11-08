@@ -113,7 +113,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                     self.api.addNodeToFigure(figureKey, key, tup)
 
                     # Get signal properties and values
-                    s = QVizPlotSignal.getSignal(dtv, vizTreeNode)
+                    s = QVizPlotSignal.getSignal(dtv, vizTreeNode, plotWidget=plotWidget)
                     # Get array of time values
                     t = QVizPlotSignal.getTime(s)
                     # Get array of y-axis values
@@ -124,7 +124,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
                     # Set plot labels and title
                     label, xlabel, ylabel, title = \
-                        vizTreeNode.plotOptions(dtv, vizTreeNode.getShotNumber())
+                        vizTreeNode.plotOptions(dtv, vizTreeNode.getShotNumber(),plotWidget=plotWidget)
 
                     if i == 0 and update == 0:
                         # Adding the first plot (first selected signal)

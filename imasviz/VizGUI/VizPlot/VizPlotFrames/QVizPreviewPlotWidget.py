@@ -40,6 +40,11 @@ class QVizPreviewPlotWidget(QWidget):
         # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
         self.setContents()
 
+        self.vizTreeNodesList = []
+
+        self.addTimeSlider = False
+        self.addCoordinateSlider = False
+
     def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
@@ -141,6 +146,4 @@ class QVizPreviewPlotWidget(QWidget):
             enabled = False
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
-
-
 

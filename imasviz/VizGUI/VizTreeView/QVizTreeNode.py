@@ -39,10 +39,47 @@ class QVizTreeNode(QTreeWidgetItem):
     def isCoordinate1_time_dependent(self):
         return self.infoDict["coordinate1_time_dependent"] == 1
 
-    def itime_dependent(self, path):
-        if 'itime' in path:
-            return True
-        return False
+    # def itime_dependent(self, path):
+    #     if 'itime' in path:
+    #         return True
+    #     return False
+
+    def hasTimeXaxis(self, plotWidget):
+        if plotWidget is not None:
+            if plotWidget.addTimeSlider:
+                return False
+            elif plotWidget.addCoordinateSlider:
+                return True
+            elif plotWidget is not None and len(plotWidget.vizTreeNodesList) == 0:
+                if self.is1DAndDynamic():
+                    if self.isCoordinate1_time_dependent():
+                        return True
+                    else:
+                        return False
+                elif self.is0DAndDynamic():
+                    return True
+            elif plotWidget is not None and len(plotWidget.vizTreeNodesList) > 0:
+                firstNode = plotWidget.vizTreeNodesList[0]
+                if firstNode.is0DAndDynamic():
+                    return True
+                elif firstNode.is1DAndDynamic():
+                    if self.isCoordinate1_time_dependent():
+                        return True
+                    else:
+                        return False
+                else:
+                    raise ValueError('Unable to define a time axis')
+        else:
+            if self.is1DAndDynamic():
+                if self.isCoordinate1_time_dependent():
+                    return True
+                else:
+                    return False
+            elif self.is0DAndDynamic():
+                return True
+            else:
+                raise ValueError('Unable to define a time axis')
+
 
     def index_name_of_itime(self):
         i = 0
@@ -82,16 +119,16 @@ class QVizTreeNode(QTreeWidgetItem):
         return coordinate1
 
 
-    def coordinate1Labels1(self, dtv, node, index): #index is the coordinate value given by the slider
+    def coordinate1Labels1(self, dtv, index): #index is the coordinate value given by the slider
         # Get time index
-        itime_index = node.getItimeIndex()
+        itime_index = self.getItimeIndex()
         title = ''
         xlabel = ''
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
                         self.treeNodeExtraAttributes.coordinate1 == "1...N":
             title = "coordinate1 = " + str(index)
         else:
-            xlabel = str(node.getIDSName() + "." + self.evaluateCoordinate1())
+            xlabel = str(self.getIDSName() + "." + self.evaluateCoordinate1())
             tokens_list = xlabel.split(".")
             coord1 = tokens_list[-1]
             title = coord1 + "[" + str(itime_index) + "]=" + xlabel
@@ -105,29 +142,43 @@ class QVizTreeNode(QTreeWidgetItem):
         label = QVizGlobalOperations.makeIMASPath(label)
         return label, title, xlabel
 
-    def coordinate1LabelAndTitleForTimeSlices(self, dtv, index): #index is the coordinate value given by the slider
-        title = ''
-        xlabel= ''
+    def labelsFor0DData(self, dtv, plotWidget, time_index=None):
+        label = None
+        xlabel = None
+        label = dtv.dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
+        if self.hasTimeXaxis(plotWidget):
+            label = label.replace('itime', str(':'))
+            xlabel = 'time[s]'
+        else:
+            label = label.replace('itime', str(time_index))
+        label = QVizGlobalOperations.makeIMASPath(label)
+        return label, xlabel
+
+    def labelsFor1DData(self, dtv, plotWidget, time_index=None, coordinate_index=0):
+        label = None
+        xlabel = None
+
+        label = dtv.dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
+
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
                         self.treeNodeExtraAttributes.coordinate1 == "1...N":
-            title = "coordinate1 = " + str(index)
+            xlabel = "1..N"
         else:
-            if self.is1DAndDynamic():
-                xlabel = self.getIDSName() + "." + self.evaluateCoordinate1VsTime()
-                xlabel = xlabel.replace('itime', str(index))
-        # Set and format label
-        label = dtv.dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
-        label = label.replace('itime', str(index))
-        xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
-        label = QVizGlobalOperations.makeIMASPath(label)
-        return label, title, xlabel
+            xlabel = self.getIDSName() + "." + self.evaluateCoordinate1VsTime()
+            if self.hasTimeXaxis(plotWidget):
+                if self.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                    label = label.replace('itime', str(':')) + '[' + str(coordinate_index) + ']'
+                else:
+                    label = label.replace('itime', str(':'))
+                xlabel = 'time[s]'
+                #xlabel = xlabel.replace('itime', str(':'))
+            else:
+                label = label.replace('itime', str(time_index))
+                xlabel = xlabel.replace('itime', str(time_index))
+                xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
 
-    def correctLabelForTimeSlices(self, label, title):
-        if label is not None:
-            label = label.replace('ids.', '')
-            label = QVizGlobalOperations.replaceBrackets(label)
-            label = QVizGlobalOperations.replaceDotsBySlashes(label)
-        return label, title
+        label = QVizGlobalOperations.makeIMASPath(label)
+        return label, xlabel
 
 
     def coordinate1Label(self, idsName, index, ids):
@@ -444,7 +495,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
 
     def plotOptions(self, dataTreeView, shotNumber=None, title='',
-                    label=None, xlabel=None, time_index=0):
+                    label=None, xlabel=None, time_index=0, coordinate_index=0, plotWidget=None):
         """Set plot options.
 
         Arguments:
@@ -456,21 +507,11 @@ class QVizTreeNode(QTreeWidgetItem):
             xlabel     (str) : Plot X-axis label.
         """
 
-
-
-        #if self.is0DAndDynamic():
-            # if label is None:
-            #     label = dataTreeView.dataSource.getShortLabel() + ':' + self.getPath()
-            # label, title = self.correctLabelForTimeSlices(label, title)
         if self.is0DAndDynamic():
-            label, title, xlabel = self.coordinate1LabelAndTitleForTimeSlices(
-                dtv=dataTreeView,
-                index=time_index)
+            label, xlabel = self.labelsFor0DData(dataTreeView, plotWidget, time_index)
+
         elif self.is1DAndDynamic():
-            if self.itime_dependent(self.treeNodeExtraAttributes.coordinate1):
-                label, title, xlabel = self.coordinate1LabelAndTitleForTimeSlices(
-                    dtv=dataTreeView,
-                    index=time_index)
+            label, xlabel = self.labelsFor1DData(dataTreeView, plotWidget, time_index, coordinate_index)
 
         if self.is1DAndDynamic():
             # Setting/Checking the X-axis label
@@ -488,17 +529,11 @@ class QVizTreeNode(QTreeWidgetItem):
                 # If 'Time[s]' is present in xlabel, do not modify it
                 pass
             elif '1.' not in xlabel and '.N' not in xlabel:
-                # If '1...N' or '1..N' (or other similar variant)  is not present
-                # in xlabel:
-                # - Replace dots '.' by slashes '/'
                 xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
                 # - If IDS name is not present (at the front) of the xlabel string,
                 #   then add it
                 if self.getIDSName() not in xlabel:
                     xlabel = self.getIDSName() + "/" + xlabel
-
-        if xlabel is None:
-            xlabel = "time[s]"
 
         ylabel = self.getName()
 

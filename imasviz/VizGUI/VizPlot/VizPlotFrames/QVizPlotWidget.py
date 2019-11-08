@@ -57,7 +57,6 @@ class QVizPlotWidget(QWidget):
 
         self.vizTreeNodesList = []
 
-
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
         """Add plot.

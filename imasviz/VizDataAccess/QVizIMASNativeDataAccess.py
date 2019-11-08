@@ -13,8 +13,40 @@ class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self, treeNode, plotWidget=None):
-        return self.GetSignalAt(treeNode, treeNode.timeValue(), plotWidget)
+    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None):
+
+        time_index = treeNode.timeValue()
+        index = 0
+
+        if as_function_of_time is None:
+            as_function_of_time = treeNode.hasTimeXaxis(plotWidget)
+
+        if plotWidget is not None and plotWidget.addTimeSlider:
+            time_index = plotWidget.sliderGroup.currentIndex
+
+        if plotWidget is not None and plotWidget.addCoordinateSlider:
+            index = plotWidget.sliderGroup.currentIndex
+
+        if as_function_of_time:
+            if treeNode.is0DAndDynamic():
+                return self.GetSignalVsTime(treeNode, index)
+            elif treeNode.is1DAndDynamic():
+                if treeNode.isCoordinate1_time_dependent():
+                    return self.GetSignalAt(treeNode, time_index, plotWidget)
+                elif treeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                    return self.GetSignalVsTime(treeNode, index)
+                else:
+                    raise ValueError('Unable to get the signal along time dimension for node: ' + treeNode.getPath())
+        else:
+            if treeNode.is0DAndDynamic():
+                return self.GetSignalAt(treeNode, time_index, plotWidget)
+            elif treeNode.is1DAndDynamic():
+                if not treeNode.isCoordinate1_time_dependent():
+                    return self.GetSignalAt(treeNode, time_index, plotWidget)
+                elif treeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                    return self.GetSignalAt(treeNode, time_index, plotWidget)
+                else:
+                    raise ValueError('Unable to get the signal along space dimension for node: ' + treeNode.getPath())
 
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
@@ -24,7 +56,7 @@ class QVizIMASNativeDataAccess:
             xData = None
             if plotWidget is not None:
                 pgPlotItem = plotWidget.pgPlotWidget.plotItem
-                if pgPlotItem is not None:
+                if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
             return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
 

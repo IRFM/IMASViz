@@ -27,5 +27,5 @@ class QVizTreeNodeExtraAttributes:
             return True
         return False
 
-    def time_dependent_aos(self):
+    def embedded_in_time_dependent_aos(self):
         return self.time_dependent(self.parametrizedPath)

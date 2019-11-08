@@ -22,6 +22,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
+from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 class QVizStackedPlotView(pg.GraphicsWindow):
     """StackedPlotView pg.GraphicsWindow containing the plots in a stacked layout.
@@ -112,7 +113,10 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                 self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
+                #s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
+                signalDataAccess = QVizDataAccessFactory(dtv.dataSource).create()
+                s = signalDataAccess.GetSignal(signalNode, as_function_of_time=True)
+
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
                 # Get array of y-axis values
@@ -133,9 +137,6 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                     signalNode.plotOptions(dataTreeView=dtv,
                                                shotNumber=shotNumber,
                                                title=self.figureKey)
-                # Remodify label (to include '\n' for easier alignment handling)
-                # label=dtv.dataSource.getShortLabel() + ":\n" \
-                #     + signalNodeData['Path']
 
                 # Add plot
                 for i in range(0, nbRows):

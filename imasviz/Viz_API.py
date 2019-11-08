@@ -354,16 +354,9 @@ class Viz_API:
             figureKey, plotWidget = self.CreatePlotWidget()
         return figureKey, plotWidget
 
-    def GetSignal(dataTreeView, vizTreeNode):
+    def GetSignal(dataTreeView, vizTreeNode, as_function_of_time=False, coordinate1Index=0, plotWidget=None):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
-            # treeNode = dataTreeView.selectedItem
-            if vizTreeNode.is1DAndDynamic():
-                signal = signalDataAccess.GetSignal(vizTreeNode)
-            elif vizTreeNode.is0DAndDynamic():
-                signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
-            else:
-                raise ValueError('Unexpected data type')
-            return signal
+            return  signalDataAccess.GetSignalAt(vizTreeNode, plotWidget, as_function_of_time, coordinate1Index)
         except:
             raise

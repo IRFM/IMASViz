@@ -30,7 +30,7 @@ class CompareFLT1DPlugin(VizPlugins):
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            label=None,
                            title=None,
-                           nodeData=node.getNodeData())
+                           vizTreeNode=node)
 
             ps.execute(plotWidget, update=0)
 
