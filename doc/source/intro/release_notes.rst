@@ -8,7 +8,7 @@ Release notes
 Version 2.3.3
 -------------
 
-Released on GW as RC version (22.11.2019)
+Released on GW as RC version (08.11.2019)
 
 - Adding logic for plotting 1D and 0D data as function of time or coordinate1D
 - Adding support to DD3.25.0
