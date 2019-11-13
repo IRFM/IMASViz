@@ -4,6 +4,17 @@
 Release notes
 =============
 
+-------------
+Version 2.3.3
+-------------
+
+Released on GW as RC version (22.11.2019)
+
+- Adding logic for plotting 1D and 0D data as function of time or coordinate1D
+- Adding support to DD3.25.0
+- Fixing bugs related to overlapped plots with available slider on time or coordinate1
+- Removing unwanted print command to console output
+- Fixing minor issue when checking if data plots are compatibles
 
 -------------
 Version 2.3.2
