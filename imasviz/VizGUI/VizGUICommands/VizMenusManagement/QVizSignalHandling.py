@@ -950,7 +950,7 @@ class QVizSignalHandling(QObject):
                 dtv=self.dataTreeView, index=index)
 
             else:
-                logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1.")
+                logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on X dimension.")
                 return
 
             currentFigureKey, plotWidget = self.getPlotWidget(currentFigureKey, addCoordinateSlider=True)

@@ -25,6 +25,7 @@ import logging
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
+from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 
 class QVizPlotSelectedSignals(QVizAbstractCommand):
@@ -113,7 +114,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                     self.api.addNodeToFigure(figureKey, key, tup)
 
                     # Get signal properties and values
-                    s = QVizPlotSignal.getSignal(dtv, vizTreeNode, plotWidget=plotWidget)
+                    dataAccess = QVizDataAccessFactory(dtv.dataSource).create()
+                    s = dataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget)
                     # Get array of time values
                     t = QVizPlotSignal.getTime(s)
                     # Get array of y-axis values

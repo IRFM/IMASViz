@@ -121,7 +121,7 @@ class QVizIMASNativeDataAccess:
         return tarray, rarray
 
     def Get0DSignalVsOtherCoordinate(self, treeNode, itimeValue, xData):
-        logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1.")
+        logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on X dimension.")
         data_path_list = []
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
         imas_entry = self.dataSource.ids[treeNode.getOccurrence()]

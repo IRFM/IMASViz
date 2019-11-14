@@ -487,7 +487,8 @@ class QVizTreeNode(QTreeWidgetItem):
 
             self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
         else:
-            self.setForeground(0, GlobalColors.BLACK)
+            #self.setForeground(0, GlobalColors.BLACK)
+            self.parent().setForeground(0, self.foreground(0))
 
 
     def plotOptions(self, dataTreeView, shotNumber=None, title='',

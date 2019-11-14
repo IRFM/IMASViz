@@ -5,6 +5,16 @@ Release notes
 =============
 
 -------------
+Version 2.3.4
+-------------
+
+Not released
+
+- Converting exception to warning when 0D data under dynamic AOS are plotted along a coordinate1 dimension
+- Setting warning message in red in the log output
+- Removing old code in comments
+
+-------------
 Version 2.3.3
 -------------
 
