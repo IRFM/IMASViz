@@ -16,6 +16,7 @@
 #*******************************************************************************
 
 import pyqtgraph as pg
+from pyqtgraph.graphicsItems.ViewBox.ViewBox import ViewBox
 from PyQt5 import QtCore, QtGui, QtWidgets
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
@@ -44,6 +45,10 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         self.plotConfig = parent.getPlotConfig()  # dictionary
         self.imas_viz_api = parent.getIMASVizAPI()
         self.figureKey = parent.getFigureKey()
+
+        self.vizTreeNodesList = []
+        self.addTimeSlider = False
+        self.addCoordinateSlider = False
 
         # Set base dimension parameter for setting plot size
         self.plotBaseDim = 100
@@ -107,15 +112,15 @@ class QVizStackedPlotView(pg.GraphicsWindow):
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
+                self.vizTreeNodesList.append(signalNode)
 
                 key = dtv.dataSource.dataKey(signalNode.getNodeData())
                 tup = (dtv.dataSource.shotNumber, signalNode.getNodeData())
                 self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                #s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
                 signalDataAccess = QVizDataAccessFactory(dtv.dataSource).create()
-                s = signalDataAccess.GetSignal(signalNode, as_function_of_time=True)
+                s = signalDataAccess.GetSignal(signalNode, plotWidget=self)
 
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
@@ -136,7 +141,8 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
                                                shotNumber=shotNumber,
-                                               title=self.figureKey)
+                                               title=self.figureKey,
+                                               plotWidget=self)
 
                 # Add plot
                 for i in range(0, nbRows):
@@ -218,6 +224,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         # Enable legend (Note: must be done before plotting!)
         p.addLegend()
+        #p.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
         p.plot(x=x,
                y=y,
                name=label,
