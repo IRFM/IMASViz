@@ -1,6 +1,7 @@
 
 import sys
 import traceback
+import logging
 import numpy as np
 import re
 from PyQt5.QtWidgets import QApplication
@@ -58,7 +59,8 @@ class QVizIMASNativeDataAccess:
                 pgPlotItem = plotWidget.pgPlotWidget.plotItem
                 if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
-            return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
+                    return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
+            raise ValueError("Data node '" + treeNode.getName() + "' has no explicit dependency on current X axis.")
 
 
     def GetSignal1DAt(self, treeNode, itimeValue):
@@ -119,6 +121,7 @@ class QVizIMASNativeDataAccess:
         return tarray, rarray
 
     def Get0DSignalVsOtherCoordinate(self, treeNode, itimeValue, xData):
+        logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1.")
         data_path_list = []
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
         imas_entry = self.dataSource.ids[treeNode.getOccurrence()]

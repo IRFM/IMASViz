@@ -943,20 +943,15 @@ class QVizSignalHandling(QObject):
                                       replace the current plot in figure window.
         """
         try:
-            # dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            # signal = dataAccess.GetSignalVsTime(treeNode,index)
 
             # Get label, title and xlabel
             if treeNode.is1DAndDynamic():
                 label, title, xlabel = treeNode.coordinate1Labels1(
                 dtv=self.dataTreeView, index=index)
 
-            # elif treeNode.is0DAndDynamic():
-            #     label = self.dataTreeView.dataSource.getShortLabel() + ":" + treeNode.getPath()
-            #     label, title = treeNode.correctLabelForTimeSlices(label, '')
-
             else:
-                raise ValueError('Unexpected node data dimension!')
+                logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1.")
+                return
 
             currentFigureKey, plotWidget = self.getPlotWidget(currentFigureKey, addCoordinateSlider=True)
             # Update/Overwrite plot
@@ -988,13 +983,6 @@ class QVizSignalHandling(QObject):
                                       replace the current plot in figure window.
         """
         try:
-
-            #label = None
-            #xlabel = None
-            # Get label and xlabel (title in this form is not needed)
-            # label, title, xlabel = treeNode.coordinate1LabelAndTitleForTimeSlices(
-            #                     dtv=self.dataTreeView,
-            #                     index=time_index)
 
             currentFigureKey, plotWidget = self.getPlotWidget(figureKey=currentFigureKey, addTimeSlider=True)
             # Update/Overwrite plot

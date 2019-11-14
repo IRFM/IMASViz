@@ -16,7 +16,7 @@ class QVizLogger(QObject, logging.Handler):
     def emit(self, record):
         msg = self.format(record)
 
-        if 'ERROR' in msg:
+        if 'ERROR' in msg or 'WARNING' in msg:
             msg = "<font color='red'>" + msg + "</font>"
         elif 'INFO' in msg:
             msg = "<font color='black'>" + msg + "</font>"

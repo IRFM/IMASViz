@@ -39,10 +39,6 @@ class QVizTreeNode(QTreeWidgetItem):
     def isCoordinate1_time_dependent(self):
         return self.infoDict["coordinate1_time_dependent"] == 1
 
-    # def itime_dependent(self, path):
-    #     if 'itime' in path:
-    #         return True
-    #     return False
 
     def hasTimeXaxis(self, plotWidget):
         if plotWidget is not None:
