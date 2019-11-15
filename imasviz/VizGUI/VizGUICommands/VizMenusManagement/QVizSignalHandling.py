@@ -949,8 +949,12 @@ class QVizSignalHandling(QObject):
                 label, title, xlabel = treeNode.coordinate1Labels1(
                 dtv=self.dataTreeView, index=index)
 
+            elif treeNode.is0DAndDynamic():
+                logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1 dimension.")
+                return
+
             else:
-                logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on X dimension.")
+                logging.error("Unexpected node data dimension.")
                 return
 
             currentFigureKey, plotWidget = self.getPlotWidget(currentFigureKey, addCoordinateSlider=True)
