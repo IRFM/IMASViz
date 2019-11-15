@@ -198,7 +198,7 @@ class QVizSignalHandling(QObject):
             # Get figure number out from the figureKey string
             # (e.g. 'Figure:0' -> 0)
             # id_Fig = int(figureKey.split(':')[1])
-            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
+            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey, FigureTypes.FIGURETYPE)
 
             # Add menu item to add plot to specific existing figure
             # Check for figures that share the same coordinates
@@ -233,7 +233,7 @@ class QVizSignalHandling(QObject):
             # Get figure number out from the figureKey string
             # (e.g. 'Figure:0' -> 0)
             # id_Fig = int(figureKey.split(':')[1])
-            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
+            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey, FigureTypes.FIGURETYPE)
 
             # Add menu item to add plot to specific existing figure
             # Check for figures that share the same coordinates
@@ -337,7 +337,7 @@ class QVizSignalHandling(QObject):
                 # Get figure number id out from the figureKey string
                 # (e.g. 'Figure:0' -> 0)
                 # id_Fig = int(figureKey.split(':')[1])
-                id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
+                id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey, FigureTypes.FIGURETYPE)
                 # Add menu item to add plot to specific figure
                 subMenu_figure_existing = subMenu_figure.addMenu(figureKey)
                 # Add menu item to plot selected signals to existing
@@ -451,7 +451,7 @@ class QVizSignalHandling(QObject):
                 # Get figure number out from the figureKey string
                 # (e.g. 'Figure:0' -> 0)
                 # id_Fig = int(figureKey.split(':')[1])
-                id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey)
+                id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey, FigureTypes.FIGURETYPE)
 
                 # --------------------------------------------------------------
                 # Add menu item to show/hide existing figure
@@ -495,7 +495,7 @@ class QVizSignalHandling(QObject):
                 figureType=FigureTypes.TABLEPLOTTYPE):
                 # Get figure id number out from the figureKey string
                 # (e.g. 'Figure:0' -> 0)
-                id_TPV = self.imas_viz_api.getFigureKeyNum(figureKey)
+                id_TPV = self.imas_viz_api.getFigureKeyNum(figureKey, FigureTypes.TABLEPLOTTYPE)
 
                 # --------------------------------------------------------------
                 # Add menu item to show/hide existing figure
@@ -539,7 +539,7 @@ class QVizSignalHandling(QObject):
                 figureType=FigureTypes.STACKEDPLOTTYPE):
                 # Get figure id number out from the figureKey string
                 # (e.g. 'Figure:0' -> 0)
-                id_SPV = self.imas_viz_api.getFigureKeyNum(figureKey)
+                id_SPV = self.imas_viz_api.getFigureKeyNum(figureKey, FigureTypes.STACKEDPLOTTYPE)
 
                 # --------------------------------------------------------------
                 # Add menu item to show/hide existing figure
@@ -616,7 +616,6 @@ class QVizSignalHandling(QObject):
                 self.treeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
                 aos_vs_itime = self.treeNode.evaluatePath(
                     self.treeNode.treeNodeExtraAttributes.parametrizedPath)
-                #label = self.treeNode.getPath()
                 xlabel = QVizGlobalOperations.replaceBrackets(
                     self.treeNode.evaluateCoordinate1At(
                         self.treeNode.infoDict['i']))
