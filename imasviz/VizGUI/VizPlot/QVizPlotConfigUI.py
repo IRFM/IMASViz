@@ -981,6 +981,8 @@ class TabPlotDesignProperties(QWidget):
             if "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
                 pwg = self.viewBox.qWidgetParent.pg
                 plots = pg.listDataItems()
+            elif "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
+                return
             else:
                 pwg = self.viewBox.qWidgetParent.pgPlotWidget
                 plots = pwg.getPlotItem().listDataItems()

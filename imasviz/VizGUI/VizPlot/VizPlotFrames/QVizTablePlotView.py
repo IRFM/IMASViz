@@ -130,18 +130,11 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 #            signals only, hence nbRows == 1 (always)
                 nbRows = v.shape[0]
 
-                # Remodify label (to include '\n' for easier alignment handling)
-                label = dtv.dataSource.getShortLabel() + ":\n" + signalNode.getPath()
-
                 # Set plot options
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
                                                shotNumber=shotNumber,
-                                               title=self.figureKey,
-                                               label=label)
-
-
-
+                                               title=self.figureKey)
 
                 # Add plot
                 for i in range(0, nbRows):
@@ -173,7 +166,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                     tLabel.item.setPlainText(label)
                     # Set title label width
                     # Note: required for alignment to take effect
-                    tLabel.item.setTextWidth(250)
+                    tLabel.item.setTextWidth(300)
                     # Set alignment as text option
                     option = QtGui.QTextOption()
                     option.setAlignment(QtCore.Qt.AlignCenter)
