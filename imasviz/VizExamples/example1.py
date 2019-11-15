@@ -51,7 +51,7 @@ else:
         paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
     # Change it to dictionary with paths an occurrences (!)
-    paths = {'paths' : paths,
+    pathsDict = {'paths' : paths,
              'occurrences' : [0]}
 
     # Optional: Option with single path in dictionary
@@ -60,7 +60,7 @@ else:
     # paths = {'paths' : ['magnetics/flux_loop(1)/flux/data']}
 
     # Select signal nodes corresponding to the paths in paths list
-    api.SelectSignals(f, paths)
+    api.SelectSignals(f, pathsDict)
 
     # Plot signal nodes
     # Note: Data tree view does not need to be shown in order for this routine to

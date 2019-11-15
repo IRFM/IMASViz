@@ -62,12 +62,16 @@ else:
         for i in range(0, 6):
             pathsList2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
 
+        # Define the dictionary holding the list of paths and occurrence value
+        pathsDict1 = {'paths' : pathsList1,
+                      'occurrences' : [0]}
+
+        pathsDict2 = {'paths' : pathsList2,
+                      'occurrences' : [0]}
+
         # Select signal nodes corresponding to the paths in paths list
-        api.SelectSignals(f1, pathsList1)
-        api.SelectSignals(f2, pathsList2)
-        # Might use also
-        # QVizSelectSignals(f1.dataTreeView, pathsList1).execute()
-        # QVizSelectSignals(f2.dataTreeView, pathsList2).execute()
+        api.SelectSignals(f1, pathsDict1)
+        api.SelectSignals(f2, pathsDict2)
 
         # Show the data tree view window
         f1.show()

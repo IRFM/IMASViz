@@ -47,8 +47,12 @@ else:
     for i in range(0, 5):
         pathsList.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
+    # Define the dictionary holding the list of paths and occurrence value
+    pathsDict = {'paths' : pathsList,
+                  'occurrences' : [0]}
+
     # Select signal nodes corresponding to the paths in paths list
-    api.SelectSignals(f, pathsList)
+    api.SelectSignals(f, pathsDict)
 
     # Plot the set of signal nodes selected by the user to a new Table Plot View.
     api.PlotSelectedSignalsInTablePlotViewFrame(f)

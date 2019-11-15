@@ -13,7 +13,7 @@ from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
+from PyQt5.QtWidgets import QFileDialog
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings
@@ -48,8 +48,15 @@ else:
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)
 
-    # Set configuration file
-    configFilePath, ok = QInputDialog.getText(None, 'Plot config. file', "enter the full path of your configuration file (.pcfg file)", QLineEdit.Normal, "")
+    # Set configuration file using file dialog
+    # Note: configuration files are located in $HOME/.imasviz by default
+    options = QFileDialog.Options()
+    options |= QFileDialog.DontUseNativeDialog
+    configFilePath, ok = QFileDialog.getOpenFileName(None,
+                         "Select plot config. file",
+                         os.environ["HOME"]+"/.imasviz/",
+                         "LSP Files (*.lsp*)",
+                         options=options)
 
     if not ok:
         print("User input has failed. Example4 not executed.")
@@ -69,7 +76,9 @@ else:
 
         # Plot the set of the signal nodes selected using plot configuration file to
         # a new Table Plot View and apply plot configurations (colors, line width etc.)
-        api.ApplyTablePlotViewConfiguration(f, configFilePath=configFilePath)
+        api.PlotSelectedSignalsInTablePlotViewFrame(f)
 
+        # Show the DTV window
+        # f.show()
         # Keep the application running
         app.exec()

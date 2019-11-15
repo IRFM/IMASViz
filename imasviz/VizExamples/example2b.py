@@ -10,7 +10,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 # IMASViz source imports
 from imasviz.Viz_API import Viz_API
-from imasviz.VizDataSource import QVizDataSourceFactory
+from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 
@@ -36,14 +36,25 @@ ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
 if not ok:
     print("User input has failed on first shot. Example2b not executed.")
 else:
-    dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+    # Set first data source
+    dataSource1 = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                           shotNumber=shotNumber,
                                           runNumber=runNumber,
                                           userName=userName,
                                           imasDbName=tokamak)
 
     # Append data tree view frame to list
-    f.append(api.CreateDataTree(dataSource))
+    f.append(api.CreateDataTree(dataSource1))
+
+    # set second data source
+    dataSource2 = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+                                          shotNumber=shotNumber,
+                                          runNumber=runNumber,
+                                          userName=userName,
+                                          imasDbName=tokamak)
+
+    # Append data tree view frame to list
+    f.append(api.CreateDataTree(dataSource2))
 
     ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
 
@@ -51,20 +62,32 @@ else:
         print("User input has failed on second shot. Example2b not executed.")
     else:
         # Set the list of node paths (for both databases) that are to be selected
-        paths1 = []
-        for i in range(1, 3):
-            paths1.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
-        paths2 = []
-        for i in range(1, 3):
-            paths2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
+        pathsList1 = []
+        for i in range(0, 3):
+            pathsList1.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
+        pathsList2 = []
+        for i in range(0, 3):
+            pathsList2.append('magnetics/bpol_probe(' + str(i) + ')/field/data')
+
+        # Define the dictionary holding the list of paths and occurrence value
+        pathsDict1 = {'paths' : pathsList1,
+                      'occurrences' : [0]}
+
+        pathsDict2 = {'paths' : pathsList2,
+                      'occurrences' : [0]}
 
         # Select signal nodes corresponding to the paths in paths list
-        api.SelectSignals(f[0], paths1)
-        api.SelectSignals(f[1], paths2)
-        # Plot signal nodes
-        # Note: Data tree view does not need to be shown in order for this routine to
-        #       work
-        api.PlotSelectedSignalsFrom(f)
+        api.SelectSignals(f[0], pathsDict1)
+        api.SelectSignals(f[1], pathsDict2)
+        # Plot signals (e.g. data from nodes)
+        # Note: Data tree view does not need to be shown in order for this
+        #       routine to work
+        api.PlotSelectedSignalsFrom([f[0]]) # Plot signals from first source to
+                                            # first figure
+        api.PlotSelectedSignalsFrom([f[1]]) # Plot signals from first source to
+                                            # second figure
+        api.PlotSelectedSignalsFrom(f) # Plots selected signals from both sources
+                                       # to the same figure
 
         # Show the data tree view window
         f[0].show()
