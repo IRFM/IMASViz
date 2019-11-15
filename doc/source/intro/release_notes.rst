@@ -30,7 +30,9 @@ Released on GW as RC version (08.11.2019)
 Version 2.3.2
 -------------
 
-Not yet released
+Released: To be released
+
+Changes:
 
 - Improvement of plugins interface making plugins integration much easier
 - Code refactoring
