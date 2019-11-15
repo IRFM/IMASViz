@@ -1,3 +1,17 @@
+#  Name   : example4.py
+#
+#           An example of IMASViz script demonstrating how to select signals
+#           from the selected configuration file and plots it to the TablePlot.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
+#****************************************************
+
 #!/usr/bin/python
 
 import os

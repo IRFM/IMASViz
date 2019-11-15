@@ -1,8 +1,18 @@
-#!/usr/bin/python
-"""This example demonstrates the procedure of plotting multiple arrays from
-two IMAS IDS databases to a single plot.
-"""
+#  Name   : example2b.py
+#
+#           An example of IMASViz script demonstrating how to plot multiple
+#           signals (defined by paths) from two different IMAS IDS databases.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
+#****************************************************
 
+#!/usr/bin/python
 # A module providing a number of functions and variables that can be used to
 # manipulate different parts of the Python runtime environment.
 import sys

@@ -1,7 +1,18 @@
+#  Name   : example3.py
+#
+#           An example of IMASViz script demonstrating how to plot multiple
+#           signals (defined by paths) to a single TablePlotView.
+#
+#  Author :
+#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#  E-mail :
+#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#
+#****************************************************
+#     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
+#****************************************************
+
 #!/usr/bin/python
-"""This example demonstrates the procedure of plotting multiple arrays to a
-single Table Plot View.
-"""
 
 # A module providing a number of functions and variables that can be used to
 # manipulate different parts of the Python runtime environment.
