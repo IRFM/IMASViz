@@ -46,10 +46,7 @@ class QVizSelectSignals(QVizAbstractCommand):
 
         # Go through the list of signals and compare their path attribute with
         # the paths from the given list
-        # self.updateNodeData()
         for signal in self.dataTreeView.signalsList:
-            # Get the path attribute of the signal
-            #sigName = signal.getPath()
 
             # When the signal path matches the path from the given list,
             # select the signal
@@ -64,19 +61,23 @@ class QVizSelectSignals(QVizAbstractCommand):
             occurrence = None
             if occurrencesList is None:
                 occurrence = 0
+            elif len(occurrencesList) == 1:
+                occurrence = int(occurrencesList[0])
 
             #if any(sigName == s for s in pathsList):
             for i in range(0, len(pathsList)):
 
-                # If default occurrence was not set, use the occurrences list
-                if occurrence is None:
-                    occurrence = int(occurrencesList[i])
+                # If no  occurrences list is provided, use occurrence 0
+                if occurrencesList is None:
+                    occurrence = 0
                 # Use the first occurrence if only one was given (assuming all
                 # signals correspond to the same occurrence)
                 elif len(occurrencesList) == 1:
                     occurrence = int(occurrencesList[0])
+                else:
+                    occurrence = int(occurrencesList[i])
 
-                elif len(occurrencesList) != len(pathsList):
+                if len(occurrencesList) > 1 and (len(occurrencesList) != len(pathsList)):
                     raise ValueError('The number of specified occurrences differ from the number of specified paths.')
 
                 s = pathsList[i]
@@ -109,8 +110,10 @@ class QVizSelectSignals(QVizAbstractCommand):
         occurrencesList = self.pathsMap.get('occurrences')
         # In case occurrences were not given, set and use default occurrence 0
         occurrence = None
-        if occurrencesList == None:
+        if occurrencesList is None:
             occurrence = 0
+        elif len(occurrencesList) == 1:
+            occurrence = int(occurrencesList[0])
 
         asynch = False  # the command SelectSignals is
         # synchronous so we will wait that
@@ -120,13 +123,15 @@ class QVizSelectSignals(QVizAbstractCommand):
             # Extract the IDS name
             IDSName = pathsList[i].split('/').pop(0)
 
-            # If default occurrence was not set, use the occurrences list
-            if occurrence == None:
-                occurrence = occurrencesList[i]
+            # If no  occurrences list is provided, use occurrence 0
+            if occurrencesList is None:
+                occurrence = 0
             # Use the first occurrence if only one was given (assuming all
             # signals correspond to the same occurrence)
             elif len(occurrencesList) == 1:
                 occurrence = int(occurrencesList[0])
+            else:
+                occurrence = int(occurrencesList[i])
 
             # Load all IDS data which are referenced in the paths
             if self.dataTreeView.isAlreadyFetched(IDSName, occurrence):
