@@ -172,19 +172,7 @@ class Viz_API:
         last figure on the list of existing figures, value 'Figure i+1' is
         returned.)
         """
-
-        if self.GetFigurePlotsCount() == 0:
-            # Figure number when no figures exist/are present
-            numFig_next = 0
-        else:
-            # Get the last figure on the list of figures and get its figure
-            # number
-            # Note: this is used to avoid problems when figures top on list
-            # got deleted.
-            numFig = self.getFigureKeyNum(self.GetFiguresKeys()[-1])
-            numFig_next = numFig + 1
-
-        return FigureTypes.FIGURETYPE + str(numFig_next)
+        return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
 
     def getNextKeyForStackedPlotView(self):
         return FigureTypes.STACKEDPLOTTYPE + str(self.GetStackedPlotViewsCount())
@@ -206,20 +194,19 @@ class Viz_API:
     def GetFigureKey(self, userKey, figureType):
         return figureType + userKey
 
-    def getFigureKeyNum(self, figureKey):
+    def getFigureKeyNum(self, figureKey, figureType):
         """Extract figure number from figureKey (e.g. 'Figure:0' -> 0).
 
         Arguments (str) figureKey: Figure key (label) (e.g. 'Figure:0').
         """
-
-        numFig = int(figureKey.split(':')[1])
+        numFig = int(figureKey[len(figureType):])
         return numFig
 
     def getFigureFrame(self, figureKey):
         if figureKey in self.figureframes:
             return self.figureframes[figureKey]
         else:
-            print ("No frame found with key: " + str(figureKey))
+            print("No frame found with key: " + str(figureKey))
 
     # Plot the set of signals selected by the user
     def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0, all_DTV=False):
