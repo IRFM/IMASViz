@@ -115,9 +115,6 @@ class QVizPlotSignal(QVizAbstractCommand):
         """
 
         try:
-            # Update node data
-            #self.updateNodeData()
-
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
 

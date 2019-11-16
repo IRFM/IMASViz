@@ -16,6 +16,7 @@ from PyQt5.QtCore import Qt, QMetaObject, QRect
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame
 import PyQt5.QtWidgets as QtWidgets
+from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
@@ -237,26 +238,30 @@ class sliderGroup():
 
         # Set labels
         if self.isTimeSlider:
-            self.sliderLabel = self.setLabel(text='Time Slider')
+            self.sliderLabel = self.setLabel(text='Time slider')
+            # Set index label
+            self.indexLabel = self.setLabel(text='Time index Value: ')
         else:
-            self.sliderLabel = self.setLabel(text='Coordinate1 Slider')
+            self.sliderLabel = self.setLabel(text='Coordinate1 slider')
+            # Set index label
+            self.indexLabel = self.setLabel(text='Coordinate1 index Value: ')
 
         # Set slider
         self.slider = self.setSlider()
-
-        # Set index label
-        self.indexLabel = self.setLabel(text='Index Value:')
-
 
         if self.isTimeSlider:
             self.timeFieldLabel = self.setLabel(text='Time:')
             if self.active_treeNode.globalTime is not None:
                 self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
         else:
-            self.timeFieldLabel = self.setLabel(text='')
-        #    self.timeFieldLabel = self.setLabel(text='Coordinate1:')
-        #    self.timeFieldLabel.setText("Coordinate1: " + str(self.active_treeNode.evaluateCoordinate1At(0))
-        #                                + " [" + str(self.active_treeNode.getUnits()) + "]")
+            self.timeFieldLabel = self.setLabel(text='Coordinate1:')
+            if self.active_treeNode.treeNodeExtraAttributes.coordinate1 == "1..N" or \
+                            self.active_treeNode.treeNodeExtraAttributes.coordinate1 == "1...N":
+                s = "1..N"
+            else:
+                s = self.active_treeNode.getIDSName() + "." + self.active_treeNode.evaluateCoordinate1VsTime()
+            s = QVizGlobalOperations.makeIMASPath(s)
+            self.timeFieldLabel.setText("Coordinate1: " + s)
 
 
         # Set slider value indicator
