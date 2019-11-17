@@ -44,47 +44,45 @@ class QVizSelectSignals(QVizAbstractCommand):
         # Check if required IDS root tree items are opened
         self.checkIDSOpen()
 
-        # Go through the list of signals and compare their path attribute with
-        # the paths from the given list
-        for signal in self.dataTreeView.signalsList:
+        pathsList = self.pathsMap.get('paths')
+        # Check pathsList
+        if type(pathsList) is not list:
+            # Convert pathsList to a list of strings
+            pathsList = self.convertPathsLists(pathsList)
+        # Get list of occurrences
+        occurrencesList = self.pathsMap.get('occurrences')
+        # In case occurrences were not given, set and use default occurrence 0
+        occurrence = None
+        if occurrencesList is None:
+            occurrence = 0
+        elif len(occurrencesList) == 1:
+            occurrence = int(occurrencesList[0])
 
-            # When the signal path matches the path from the given list,
-            # select the signal
-            pathsList = self.pathsMap.get('paths')
-            # Check pathsList
-            if type(pathsList) is not list:
-                # Convert pathsList to a list of strings
-                pathsList = self.convertPathsLists(pathsList)
-            # Get list of occurrences
-            occurrencesList = self.pathsMap.get('occurrences')
-            # In case occurrences were not given, set and use default occurrence 0
-            occurrence = None
+        for i in range(0, len(pathsList)):
+
+            # If no  occurrences list is provided, use occurrence 0
             if occurrencesList is None:
                 occurrence = 0
+            # Use the first occurrence if only one was given (assuming all
+            # signals correspond to the same occurrence)
             elif len(occurrencesList) == 1:
                 occurrence = int(occurrencesList[0])
+            else:
+                occurrence = int(occurrencesList[i])
 
-            #if any(sigName == s for s in pathsList):
-            for i in range(0, len(pathsList)):
+            if len(occurrencesList) > 1 and (len(occurrencesList) != len(pathsList)):
+                raise ValueError('The number of specified occurrences differ from the number of specified paths.')
 
-                # If no  occurrences list is provided, use occurrence 0
-                if occurrencesList is None:
-                    occurrence = 0
-                # Use the first occurrence if only one was given (assuming all
-                # signals correspond to the same occurrence)
-                elif len(occurrencesList) == 1:
-                    occurrence = int(occurrencesList[0])
-                else:
-                    occurrence = int(occurrencesList[i])
+            s = pathsList[i]
+            # When the signal path matches the path from the given list,
+            # select the signal
+            # Go through the list of signals and compare their path attribute with
+            # the paths from the given list
+            for signal in self.dataTreeView.signalsList:
 
-                if len(occurrencesList) > 1 and (len(occurrencesList) != len(pathsList)):
-                    raise ValueError('The number of specified occurrences differ from the number of specified paths.')
-
-                s = pathsList[i]
-                if occurrence != signal.getOccurrence():
+                if occurrence != signal.getOccurrence() or s != signal.getPath():
                     continue
-                if s != signal.getPath():
-                    continue
+
                 # Tag the signal as current DTV selected item
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
