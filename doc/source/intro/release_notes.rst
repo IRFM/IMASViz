@@ -5,6 +5,17 @@ Release notes
 =============
 
 -------------
+Version 2.3.5
+-------------
+
+- Fixing issue when mixing 0D and 1D data on stacked plots
+- Automatically adding sliders for plots of multiple data selection
+- Fixing bug which modifies user selection order
+- Improving time/coordinate1 sliders labels
+- Adding occurrence in labels when occurrence > 0
+- Fixing bug when applying selection with occurrence > 0
+
+-------------
 Version 2.3.4
 -------------
 
