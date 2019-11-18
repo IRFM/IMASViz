@@ -130,7 +130,7 @@ class QVizTreeNode(QTreeWidgetItem):
             title = coord1 + "[" + str(itime_index) + "]=" + xlabel
             # Set and format label
         xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
-        label = self.labelForFigure(dtv.dataSource)
+        label = self.setLabelForFigure(dtv.dataSource)
         xlabel = xlabel + '(' + str(index) + ')'
         xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
         label = label.replace('[itime]', '[:]')
@@ -141,7 +141,7 @@ class QVizTreeNode(QTreeWidgetItem):
     def labelsFor0DData(self, dtv, plotWidget, time_index=None):
         label = None
         xlabel = None
-        label = self.labelForFigure(dtv.dataSource)
+        label = self.setLabelForFigure(dtv.dataSource)
         if self.hasTimeXaxis(plotWidget):
             label = label.replace('itime', str(':'))
             xlabel = 'time[s]'
@@ -154,7 +154,7 @@ class QVizTreeNode(QTreeWidgetItem):
         label = None
         xlabel = None
 
-        label = self.labelForFigure(dtv.dataSource)
+        label = self.setLabelForFigure(dtv.dataSource)
 
         if self.treeNodeExtraAttributes.coordinate1 == "1..N" or \
                         self.treeNodeExtraAttributes.coordinate1 == "1...N":
@@ -188,7 +188,7 @@ class QVizTreeNode(QTreeWidgetItem):
         label = coord1 + "=" + str(coordinate1_value)
         return label
 
-    def labelForFigure(self, dataSource):
+    def setLabelForFigure(self, dataSource):
         if self.getOccurrence() == 0:
             return dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
         else:
