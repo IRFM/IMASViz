@@ -662,7 +662,7 @@ class QVizSignalHandling(QObject):
             addTimeSlider = False
             addCoordinateSlider = False
 
-            if vizTreeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+            if vizTreeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos() and vizTreeNode.is1DAndDynamic():
                 addTimeSlider = True
 
             # passing figureKey=None means we want a new plotWidget
