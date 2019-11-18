@@ -620,7 +620,7 @@ class QVizSignalHandling(QObject):
                     self.treeNode.evaluateCoordinate1At(
                         self.treeNode.infoDict['i']))
                 addTimeSlider = True
-
+            #passing figureKey=None means we want a new plotWidget
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addTimeSlider=addTimeSlider)
             # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, label=label, xlabel=xlabel, vizTreeNode=self.treeNode)
@@ -656,13 +656,22 @@ class QVizSignalHandling(QObject):
         # value 'Figure 3' will be returned)
         try:
             figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
+            first_key = list(self.dataTreeView.selectedSignalsDict.keys())[0]
+            v= self.dataTreeView.selectedSignalsDict[first_key]
+            vizTreeNode = v['QTreeWidgetItem']
+            addTimeSlider = False
+            addCoordinateSlider = False
+
+            if vizTreeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                addTimeSlider = True
+
+            # passing figureKey=None means we want a new plotWidget
+            figureKey, plotWidget = self.getPlotWidget(figureKey=None, addTimeSlider=addTimeSlider,
+                                                       addCoordinateSlider=addCoordinateSlider)
             # Plot the selected signals
-            if all_DTV == False:
-                QVizPlotSelectedSignals(self.dataTreeView, figureKey,
-                                        all_DTV=False).execute()
-            else:
-                QVizPlotSelectedSignals(self.dataTreeView, figureKey,
-                                        all_DTV=True).execute()
+            QVizPlotSelectedSignals(self.dataTreeView, figureKey,
+                                        all_DTV=all_DTV).execute(plotWidget)
+
         except ValueError as e:
             logging.error(str(e))
 
@@ -734,11 +743,6 @@ class QVizSignalHandling(QObject):
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
             # Get widget linked to this figure
             figureKey, plotWidget = self.getPlotWidget(figureKey)
-            # dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            # time_index = 0
-            # if plotWidget.addCoordinateSlider or plotWidget.addTimeSlider:
-            #     time_index = plotWidget.sliderGroup.currentIndex
-            # signal = dataAccess.GetSignalAt(self.treeNode, time_index, plotWidget)
 
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                                label=label,
@@ -771,6 +775,9 @@ class QVizSignalHandling(QObject):
         try:
             figureKey = self.imas_viz_api. \
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+
+            # api = self.dataTreeView.imas_viz_api
+            # figureKey, plotWidget = api.GetPlotWidget(figureKey)
 
             QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
                                     all_DTV=all_DTV).execute()

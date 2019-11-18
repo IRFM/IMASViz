@@ -44,12 +44,11 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         # Viz_API
         self.api = self.dataTreeView.imas_viz_api
 
-    def execute(self):
+    def execute(self, plotWidget=None):
         if self.raiseErrorIfNoSelectedArrays():
             if len(self.dataTreeView.selectedSignalsDict) == 0:
                 raise ValueError("No signal selected.")
-
-        self.plot1DSelectedSignals(self.figureKey, self.update,
+        self.plot1DSelectedSignals(plotWidget, self.figureKey, self.update,
                                    all_DTV=self.all_DTV)
 
     def raiseErrorIfNoSelectedArrays(self):
@@ -65,7 +64,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             return False
         return plotDimension
 
-    def plot1DSelectedSignals(self, figureKey=0, update=0, all_DTV=True):
+    def plot1DSelectedSignals(self, plotWidget=None, figureKey=0, update=0, all_DTV=True):
         """Plot the set of 1D signals selected by the user as a function of time.
 
         Arguments
@@ -73,12 +72,13 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             update    (int) :
         """
         try:
+            # Get plot widget if not defined
+            if plotWidget is None:
+                api = self.dataTreeView.imas_viz_api
+                figureKey, plotWidget = api.GetPlotWidget(figureKey)
+
             # Total number of existing DTVs
             self.num_view = len(self.api.DTVlist)
-
-            # Get plot widget
-            api = self.dataTreeView.imas_viz_api
-            figureKey, plotWidget = api.GetPlotWidget(figureKey)
 
             i = 0
             # Create a list of DTVs to specify either single DTV or a list of

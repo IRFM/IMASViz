@@ -209,11 +209,11 @@ class Viz_API:
             print("No frame found with key: " + str(figureKey))
 
     # Plot the set of signals selected by the user
-    def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0, all_DTV=False):
-        if figureKey == None:
+    def PlotSelectedSignals(self, dataTreeFrame, plotWidget=None, figureKey=None, update=0, all_DTV=False):
+        if figureKey is None:
             figureKey = self.GetNextKeyForFigurePlots()
         QVizPlotSelectedSignals(dataTreeFrame.dataTreeView, figureKey=figureKey,
-                                update=update, all_DTV=all_DTV).execute()
+                                update=update, all_DTV=all_DTV).execute(plotWidget)
 
     def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
                                             configFileName = None,
