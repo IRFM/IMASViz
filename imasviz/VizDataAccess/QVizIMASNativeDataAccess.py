@@ -51,12 +51,18 @@ class QVizIMASNativeDataAccess:
 
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView
         if treeNode.is1DAndDynamic():
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
             xData = None
-            if plotWidget is not None:
+            if plotWidget is not None and not isinstance(plotWidget, QVizStackedPlotView):
                 pgPlotItem = plotWidget.pgPlotWidget.plotItem
+                if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
+                    xData = pgPlotItem.dataItems[0].xData
+                    return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
+            elif plotWidget is not None and isinstance(plotWidget, QVizStackedPlotView):
+                pgPlotItem = plotWidget.getCurrentPlotItem()
                 if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
                     return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
