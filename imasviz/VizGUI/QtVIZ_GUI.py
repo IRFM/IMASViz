@@ -16,6 +16,7 @@ import sys
 import logging
 from functools import partial
 from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
+from PyQt5.QtWidgets import QMdiArea, QMdiSubWindow
 
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
@@ -51,7 +52,7 @@ class GUIFrame(QTabWidget):
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
 
-        self.mainMenuController = QVizMainMenuController()
+        self.mainMenuController = QVizMainMenuController(parent)
         self.contextMenu = None
 
     def logPanel(self):
@@ -223,15 +224,15 @@ class GUIFrame(QTabWidget):
         return 1
 
 
-class VizMainWindow(QMainWindow):
+class QVizStartWindow(QMainWindow):
     def __init__(self, parent):
-        super(VizMainWindow, self).__init__(parent)
-        ex = GUIFrame(None)
+        super(QVizStartWindow, self).__init__(parent)
+        ex = GUIFrame(parent)
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
         self.setCentralWidget(ex)
+        # self.setWidget(ex)
         self.logPanel()
-        #self.
 
     def logPanel(self):
         # #LOG WIDGET
@@ -265,13 +266,45 @@ class VizMainWindow(QMainWindow):
         else:
             event.ignore()
 
+class QVizMDI(QMdiArea):
+    """Class for MDI area.
+    """
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("MDI")
+
+class QVizMainWindow(QMainWindow):
+    """ Class for IMASViz main window, which contains MDI and all
+    sub-main windows, widgets etc.
+    """
+    def __init__(self):
+        super(QVizMainWindow, self).__init__()
+
+        # Set MDI (Multiple Document Interface)
+        self.MDI = QVizMDI(self)
+        # Set central widget
+        centralWidget = QWidget(self)
+        # Set start window
+        self.startWindow = QVizStartWindow(self)
+        # Set layout and add start window and MDI to it
+        layout = QGridLayout(centralWidget)
+        layout.addWidget(self.startWindow, 1, 1, 1, 1)
+        layout.addWidget(self.MDI, 1, 2, 1, 1)
+        # Set central widget of the main window
+        self.setCentralWidget(centralWidget)
+
+    def getMDI(self):
+        return self.MDI
+
+    def getStartWindow(self):
+        return self.startWindow
 
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()
-    window = VizMainWindow(None);
-    window.setGeometry(400, 400, 600, 500)
+    window = QVizMainWindow()
     window.show()
     sys.exit(app.exec_())
 

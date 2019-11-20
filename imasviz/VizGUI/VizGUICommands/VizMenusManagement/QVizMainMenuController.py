@@ -13,9 +13,8 @@ from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpen
 
 class QVizMainMenuController:
 
-    def __init__(self):
-        self.openShotView = QVizOpenShotView()
-
+    def __init__(self, parent=None):
+        self.openShotView = QVizOpenShotView(parent.getMDI())
     def updateMenu(self, menu, listenerWidget):
         numWindows = len(self.openShotView.api.GetDTVFrames())
         self.menusShowHideAndDelete(numWindows, menu, listenerWidget)

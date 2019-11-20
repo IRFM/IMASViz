@@ -622,6 +622,7 @@ class QVizSignalHandling(QObject):
                 addTimeSlider = True
             #passing figureKey=None means we want a new plotWidget
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addTimeSlider=addTimeSlider)
+            self.addPlotWidgetToMDI(plotWidget)
             # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, label=label, xlabel=xlabel, vizTreeNode=self.treeNode)
             # Plot signal data to plot widget
@@ -668,6 +669,7 @@ class QVizSignalHandling(QObject):
             # passing figureKey=None means we want a new plotWidget
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addTimeSlider=addTimeSlider,
                                                        addCoordinateSlider=addCoordinateSlider)
+            self.addPlotWidgetToMDI(plotWidget)
             # Plot the selected signals
             QVizPlotSelectedSignals(self.dataTreeView, figureKey,
                                         all_DTV=all_DTV).execute(plotWidget)
@@ -743,7 +745,7 @@ class QVizSignalHandling(QObject):
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
             # Get widget linked to this figure
             figureKey, plotWidget = self.getPlotWidget(figureKey)
-
+            self.addPlotWidgetToMDI(plotWidget)
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                                label=label,
                                title=title,
@@ -751,18 +753,29 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.error(str(e))
 
-    def getPlotWidget(self, figureKey, addTimeSlider=False, addCoordinateSlider=False):
+    def getPlotWidget(self, figureKey, addTimeSlider=False,
+                      addCoordinateSlider=False):
         api = self.dataTreeView.imas_viz_api
         if figureKey in api.figureframes:
             plotWidget = api.figureframes[figureKey]
         else:
             figureKey = api.GetNextKeyForFigurePlots()
+
             plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey,
                                         addTimeSlider=addTimeSlider,
                                         addCoordinateSlider=addCoordinateSlider,
                                         signalHandling=self)
             api.figureframes[figureKey] = plotWidget
         return figureKey, plotWidget
+
+    def addPlotWidgetToMDI(self, plotWidget):
+        """Embeds the plotWidget inside MDI subwindow.
+        """
+        from PyQt5.QtWidgets import QMdiSubWindow
+
+        subWindow = QMdiSubWindow()
+        subWindow.setWidget(plotWidget)
+        self.dataTreeView.parent.parent().mdiArea().addSubWindow(subWindow)
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -908,6 +921,7 @@ class QVizSignalHandling(QObject):
             self.treeNode = treeNode
             self.timeSlider = False
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addCoordinateSlider=True)
+            self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            vizTreeNode=self.treeNode,
                            title=title,
@@ -927,6 +941,7 @@ class QVizSignalHandling(QObject):
             self.treeNode = self.dataTreeView.selectedItem
             dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
             figureKey, plotWidget = self.getPlotWidget(figureKey=None) #None will force a new Figure
+            self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=self.dataTreeView,
                             vizTreeNode=self.treeNode,
                            xlabel="time[s]")
@@ -964,6 +979,7 @@ class QVizSignalHandling(QObject):
                 return
 
             currentFigureKey, plotWidget = self.getPlotWidget(currentFigureKey, addCoordinateSlider=True)
+            self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            title=title,
@@ -995,6 +1011,7 @@ class QVizSignalHandling(QObject):
         try:
 
             currentFigureKey, plotWidget = self.getPlotWidget(figureKey=currentFigureKey, addTimeSlider=True)
+            self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                            vizTreeNode=treeNode).execute(plotWidget,
