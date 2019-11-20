@@ -1,7 +1,7 @@
 #  Name   : QVizStackedPlotView
 #
-#          Provides pg.GraphicWindow that contains multiple plot panels in a
-#          stacked layout.
+#          Provides a QWidget that contains pg.GraphicWindow with multiple plot
+#          views in a stacked layout.
 #          Note: The wxPython predecessor for StackedPlotView are
 #          'IMASVIZSubPlotViewsFrame' and 'IMASVIZ_SubPlotViewManagerBaseFrame.py'
 #          classes.
@@ -17,7 +17,8 @@
 
 import pyqtgraph as pg
 from pyqtgraph.graphicsItems.ViewBox.ViewBox import ViewBox
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import pyqtSlot, Qt
+from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
 from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
@@ -25,33 +26,110 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
-class QVizStackedPlotView(pg.GraphicsWindow):
-    """StackedPlotView pg.GraphicsWindow containing the plots in a stacked layout.
-    """
 
-    def __init__(self, parent, ncols=1):
-        """
-        Arguments:
-            parent (QtWidgets.QMainWindow) : Parent of TablePlotView
-                                             pg.GraphicsWindow.
-            ncols  (int)                   : Number of columns.
-        """
+class QVizStackedPlotView(QWidget):
+
+    def __init__(self, parent: QMainWindow):
+
         super(QVizStackedPlotView, self).__init__(parent=parent)
 
+        # Set parent
         self.parent = parent
-        self.ncols = ncols
-
-        self.dataTreeView = parent.getDTV()
+        # Get parent DTV
+        # self.dataTreeView = parent.getDTV()
+        # Get dictionary associated to plot configuration
         self.plotConfig = parent.getPlotConfig()  # dictionary
+        # Get API
         self.imas_viz_api = parent.getIMASVizAPI()
+        # Get figurekey (label for the SPV window)
         self.figureKey = parent.getFigureKey()
 
-        self.vizTreeNodesList = []
-        self.addTimeSlider = False
-        self.addCoordinateSlider = False
+        # Get the indicator from which DTVs should the signals be read
+        # (single or all)
+        self.all_DTV = parent.getAllDTV()
+
+        # Set graphicsWindow
+        self.graphicsWindow = StackedPlotWindow(self)
+        # Get a list of viewBoxes each plot has its own associated viewbox)
+        self.viewBoxes = self.graphicsWindow.viewBoxList
+        # Set layout
+        gridLayout = QGridLayout()
+        # Add graphicsWindow to layout
+        # Note: position 0, 0, width=1 column, -1 -> stretch through whole row
+        gridLayout.addWidget(self.graphicsWindow, 0, 0, 1, -1)
+
+        # Set checkbox for enabling/disabling dragging all plots together e.g.
+        # moving view in one plot will move also view in all plots
+        self.dragPlotsTogether = QCheckBox()
+        self.dragPlotsTogether.setChecked(True)
+        self.dragPlotsTogether.setText('Drag plots together')
+        # On checkbox stateChanged signal enable/disable dragging plots together
+        self.dragPlotsTogether.stateChanged.connect(self.checkDragPlotTogether)
+        # Add checkbox to layout
+        gridLayout.addWidget(self.dragPlotsTogether, 1, 0, 1, 1)
+        # Set layout
+        self.setLayout(gridLayout)
 
         # Set base dimension parameter for setting plot size
         self.plotBaseDim = 100
+        # Set window size
+        self.setWindowSize()
+
+    def setWindowSize(self):
+        """Set StackedPlotView window size
+        (depending on the number of plots and number of columns).
+        """
+
+        # Set suitable width and height
+        self.okWidth = self.graphicsWindow.centralWidget.cols * (self.plotBaseDim + 10) * 12
+        self.okHeight = len(self.graphicsWindow.centralWidget.rows) * self.plotBaseDim
+        # self.setMinimumSize(self.okWidth, self.okHeight)
+        self.setMinimumSize(300, self.okHeight)
+
+    @pyqtSlot()
+    def checkDragPlotTogether(self):
+        """Check value of dragPlotsTogether checkbox and change blockLink
+        (e.g. axis links between plots -> dragging views together) accordingly.
+        """
+
+        # If checkbox is checked enable the links, otherwise disable them
+        if self.dragPlotsTogether.isChecked():
+            [el.blockLink(False) for el in self.viewBoxes]
+        else:
+            [el.blockLink(True) for el in self.viewBoxes]
+
+class StackedPlotWindow(pg.GraphicsWindow):
+    """View containing the plots in a stacked layout.
+    """
+
+    def __init__(self, parent: QWidget, ncols: int=1):
+        """
+        Arguments:
+            parent : Parent of StackedPlotWindow (QVizStackedPlotView).
+            ncols  : Number of columns.
+        """
+        super(StackedPlotWindow, self).__init__(parent=parent)
+
+        self.parent = parent
+        # Set number of columns (the default is 1)
+        self.ncols = ncols
+
+        # Get parent DTV
+        # self.dataTreeView = parent.getDTV()
+        self.plotConfig = parent.plotConfig  # dictionary
+        # Get API
+        self.imas_viz_api = parent.imas_viz_api
+        # Get figure key / label for the SPV window
+        self.figureKey = parent.figureKey
+
+        # Clear list of tree nodes
+        self.vizTreeNodesList = []
+
+        # Define if time or coordinate slider is required (required by
+        # QVizTreeNode (!))
+        self.addTimeSlider = False
+        self.addCoordinateSlider = False
+
         # Set bottom plot margin to remove unwanted whitespace between plot
         # widgets
         self.bPlotMargin = -15
@@ -59,14 +137,13 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         # Set object name and title if not already set
         self.setObjectName(self.figureKey)
         self.setWindowTitle(self.figureKey)
-        # self.imas_viz_api.figureframes[self.figureKey] = self
 
         # Set number of rows and columns of panels in the StackedPlotView frame
         self.ncols = 1
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
-        self.all_DTV = parent.getAllDTV()
+        self.all_DTV = parent.all_DTV
 
         # Add attribute describing the number of columns
         # (same as self.centralWidget.rows is for number of rows. Initially
@@ -82,9 +159,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         self.setBackground((255, 255, 255))
         self.centralWidget.setSpacing(0)
 
-        self.modifySize()
-
-    def plot1DSelectedSignals(self, update=0, all_DTV=True):
+    def plot1DSelectedSignals(self, update: int=0, all_DTV: bool=True):
         """Plot the set of 1D signals, selected by the user, as a function of
            time to StackedPlotView.
 
@@ -104,7 +179,11 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         # Go through every opened/created DTV found in the list of DTVs, get
         # their selected plot signals and plot every signal to the same
         # StackedPlotView window
-        for dtv in self.parent.MultiPlotView_DTVList:
+
+        # Clear viewBoxList
+        self.viewBoxList = []
+
+        for dtv in self.getDTVList():
             # Get list of selected signals in DTV
             dtv_selectedSignals = dtv.selectedSignalsDict
             # Go through the list of selected signals for every DTV
@@ -112,6 +191,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
+                # Append the node to the list of tree nodes
                 self.vizTreeNodesList.append(signalNode)
 
                 key = dtv.dataSource.dataKey(signalNode.getNodeData())
@@ -187,13 +267,14 @@ class QVizStackedPlotView(pg.GraphicsWindow):
                 # Next plot number
                 n += 1
 
-    def plot(self, n, x, y, label, xlabel, ylabel, title):
+    def plot(self, n: int, x: list, y: list, label: str,
+             xlabel: str, ylabel: str, title: str):
         """Add new plot to StackedPlotView pg.GraphicsWindow.
 
         Arguments:
             n      (int)      : Plot number.
-            x      (1D array) : 1D array of X-axis values.
-            y      (1D array) : 1D array of Y-axis values.
+            x      (1D array) : 1D array of X-axis values (list or numpy array).
+            y      (1D array) : 1D array of Y-axis values (list or numpy array).
             label  (str)      : Plot label.
             xlabel (str)      : Plot X-axis label.
             ylabel (str)      : Plot Y-axis label.
@@ -201,14 +282,14 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         """
 
         # Set pen
-        pen = self.setPen()
+        pen = self.createPen()
 
         # Set first plot
         if n == 0:
             # Rules for first plot
             # - Set  X-Axis label to None
             xlabel = None
-        elif n == (self.parent.getNumSignals(all_DTV=False) - 1):
+        elif n == (self.getNumSignals(all_DTV=False) - 1):
             # Rules for last plot
             # - Set title to None
             title = None
@@ -219,9 +300,15 @@ class QVizStackedPlotView(pg.GraphicsWindow):
             # - Set  X-Axis label to None
             xlabel = None
 
+        # Set viewBox
+        viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
+
         # Set new plot (use IMASViz custom plot context menu)
         p = self.addPlot(title=title,
-                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+                         viewBox=viewBox)
+        # Add viewBox to list of viewBoxes
+        self.viewBoxList.append(viewBox)
+
         # Enable legend (Note: must be done before plotting!)
         p.addLegend()
         #p.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
@@ -260,7 +347,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
 
             p.setMinimumHeight(100)
             self.pg = p
-        elif n == (self.parent.getNumSignals(all_DTV=False) - 1):
+        elif n == (self.getNumSignals(all_DTV=False) - 1):
             # Rules for last plot
             # - Remove axis values
             p.getAxis('bottom').setStyle(showValues=True)
@@ -280,11 +367,13 @@ class QVizStackedPlotView(pg.GraphicsWindow):
             p.setContentsMargins(0, 0, 0, self.bPlotMargin)
 
             p.setMinimumHeight(60)
+
+        # viewBox.blockLink(True)
         # Go to next row
         self.nextRow()
 
     @staticmethod
-    def setPen():
+    def createPen():
         """Set pen (line design) for plot.
         """
         # Set line color
@@ -293,7 +382,7 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         # - Note: self.RGBlist[0] -> blue color
         color = RGBlist[0]
         # Set style
-        style = QtCore.Qt.SolidLine
+        style = Qt.SolidLine
         # Set pen
         pen = pg.mkPen(color=color, width=1, style=style)
 
@@ -310,16 +399,12 @@ class QVizStackedPlotView(pg.GraphicsWindow):
         """
         return self.centralWidget.items
 
-    def modifySize(self):
-        """Modify StackedPlotView view size.
-        (depending on the number of plots and number of columns)
+    def getDTVList(self):
+        """Return list of opened DTVs.
         """
+        return self.parent.parent.MultiPlotView_DTVList
 
-        # Set suitable width and height
-        self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 10) * 12
-        self.okHeight = len(self.centralWidget.rows) * self.plotBaseDim
-        # self.setMinimumSize(self.okWidth, self.okHeight)
-        self.setMinimumSize(300, self.okHeight)
-
-    # TODO
-    # class modifyStackedPlotView
+    def getNumSignals(self, all_DTV=False):
+        """Return total number of all selected signals.
+        """
+        return self.parent.parent.getNumSignals(all_DTV)

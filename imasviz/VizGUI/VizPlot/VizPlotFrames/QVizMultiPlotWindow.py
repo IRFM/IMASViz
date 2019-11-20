@@ -246,8 +246,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.setMenuBar(menuBar)
 
     def getNumSignals(self, all_DTV=True):
-        """Get number of signals intended for the TablePlotView feature
-           from either opened DTVs or from configuration file if it is loaded.
+        """Get number of signals intended for the TablePlotView and
+           StackedPlotView feature from either opened DTVs or from configuration
+           file if it is loaded.
         """
         if self.plotConfig != None:
             # Get number of signals through number of signal paths
