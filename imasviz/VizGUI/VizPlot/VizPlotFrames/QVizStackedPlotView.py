@@ -52,23 +52,25 @@ class QVizStackedPlotView(QWidget):
         self.graphicsWindow = StackedPlotWindow(self)
         # Get a list of viewBoxes each plot has its own associated viewbox)
         self.viewBoxes = self.graphicsWindow.viewBoxList
+        # Get a list of plots
+        self.plotList = self.graphicsWindow.plotList
         # Set layout
         gridLayout = QGridLayout()
         # Add graphicsWindow to layout
         # Note: position 0, 0, width=1 column, -1 -> stretch through whole row
         gridLayout.addWidget(self.graphicsWindow, 0, 0, 1, -1)
 
-        # Set checkbox for enabling/disabling dragging all plots together e.g.
-        # moving view in one plot will move also view in all plots
-        self.dragPlotsTogether = QCheckBox()
-        self.dragPlotsTogether.setChecked(True)
-        self.dragPlotsTogether.setText('Drag plots together')
-        # On checkbox stateChanged signal enable/disable dragging plots together
-        self.dragPlotsTogether.stateChanged.connect(self.checkDragPlotTogether)
-        # Add checkbox to layout
-        gridLayout.addWidget(self.dragPlotsTogether, 1, 0, 1, 1)
         # Set layout
         self.setLayout(gridLayout)
+
+        # Add checkbox for enabling/disabling dragging all plots together e.g.
+        # moving view in one plot will move also view in all plots
+        self.addCheckBoxGroupPanMode()
+
+        self.addCheckBoxDisplayAllXAxis()
+        """Add checkbox for enabling/disabling showing X axis of all plots
+        (intended to be used with group pan mode).
+        """
 
         # Set base dimension parameter for setting plot size
         self.plotBaseDim = 100
@@ -86,17 +88,54 @@ class QVizStackedPlotView(QWidget):
         # self.setMinimumSize(self.okWidth, self.okHeight)
         self.setMinimumSize(300, self.okHeight)
 
+    def addCheckBoxGroupPanMode(self):
+        """Add checkbox for enabling/disabling dragging all plots together e.g.
+        moving view in one plot will move also view in all plots.
+        """
+        self.groupPanMode = QCheckBox()
+        self.groupPanMode.setChecked(True)
+        self.groupPanMode.setText('Group pan mode')
+        # On checkbox stateChanged signal enable/disable dragging plots together
+        self.groupPanMode.stateChanged.connect(self.checkGroupPanMode)
+        # Add checkbox to layout
+        self.layout().addWidget(self.groupPanMode, 1, 0, 1, 1)
+
+    def addCheckBoxDisplayAllXAxis(self):
+        """Add checkbox for enabling/disabling showing X axis of all plots
+        (intended to be used with group pan mode).
+        """
+        self.displayAllXAxis = QCheckBox()
+        self.displayAllXAxis.setChecked(False)
+        self.displayAllXAxis.setText('Display X axis of all plots')
+        # On checkbox stateChanged signal enable/disable dragging plots together
+        self.displayAllXAxis.stateChanged.connect(self.checkDisplayAllXAxis)
+        # Add checkbox to layout
+        self.layout().addWidget(self.displayAllXAxis, 2, 0, 1, 1)
+
+
     @pyqtSlot()
-    def checkDragPlotTogether(self):
-        """Check value of dragPlotsTogether checkbox and change blockLink
+    def checkGroupPanMode(self):
+        """Check value of groupPanMode checkbox and change blockLink
         (e.g. axis links between plots -> dragging views together) accordingly.
         """
 
         # If checkbox is checked enable the links, otherwise disable them
-        if self.dragPlotsTogether.isChecked():
+        if self.groupPanMode.isChecked():
             [el.blockLink(False) for el in self.viewBoxes]
         else:
             [el.blockLink(True) for el in self.viewBoxes]
+
+    @pyqtSlot()
+    def checkDisplayAllXAxis(self):
+        """Check value of groupPanMode checkbox and change display of X axis
+        of all plots accordingly.
+        """
+
+        # If checkbox is checked enable the links, otherwise disable them
+        if self.displayAllXAxis.isChecked():
+            [el.getAxis('bottom').setStyle(showValues=True) for el in self.plotList]
+        else:
+            [el.getAxis('bottom').setStyle(showValues=False) for el in self.plotList]
 
 class StackedPlotWindow(pg.GraphicsWindow):
     """View containing the plots in a stacked layout.
@@ -182,6 +221,9 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
         # Clear viewBoxList
         self.viewBoxList = []
+
+        # Clear plot list
+        self.plotList = []
 
         for dtv in self.getDTVList():
             # Get list of selected signals in DTV
@@ -368,7 +410,9 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
             p.setMinimumHeight(60)
 
-        # viewBox.blockLink(True)
+        # Add plot to a list of plots
+        self.plotList.append(p)
+
         # Go to next row
         self.nextRow()
 
