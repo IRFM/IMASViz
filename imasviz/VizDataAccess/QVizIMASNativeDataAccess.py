@@ -34,7 +34,7 @@ class QVizIMASNativeDataAccess:
             elif treeNode.is1DAndDynamic():
                 if treeNode.isCoordinate1_time_dependent():
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
-                elif treeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                elif treeNode.embedded_in_time_dependent_aos():
                     return self.GetSignalVsTime(treeNode, index)
                 else:
                     raise ValueError('Unable to get the signal along time dimension for node: ' + treeNode.getPath())
@@ -44,7 +44,7 @@ class QVizIMASNativeDataAccess:
             elif treeNode.is1DAndDynamic():
                 if not treeNode.isCoordinate1_time_dependent():
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
-                elif treeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                elif treeNode.embedded_in_time_dependent_aos():
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 else:
                     raise ValueError('Unable to get the signal along space dimension for node: ' + treeNode.getPath())
@@ -86,16 +86,18 @@ class QVizIMASNativeDataAccess:
                 t = QVizGlobalOperations.getCoordinate1D_array(imas_entry, treeNode.getNodeData(), coordinate1)
                 t = np.array([t])
             else:
-                if "1..N" in treeNode.treeNodeExtraAttributes.coordinate1 or "1...N" in treeNode.treeNodeExtraAttributes.coordinate1:
+                if "1..N" in treeNode.coordinate1 or "1...N" in treeNode.coordinate1:
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:
                     path = "imas_entry." + treeNode.getIDSName() + "." + coordinate1
                     e = eval(path)
                     if len(e) == 0:
+                        path1 = treeNode.getIDSName() + "." + coordinate1
                         raise ValueError("Coordinate1 has no values.")
                     if len(e) != len(rval):
-                        raise ValueError("Coordinate1 array has not the same length than the signal you want to plot.")
+                        path1 = treeNode.getIDSName() + "." + coordinate1
+                        raise ValueError("Coordinate1 (" + path1 + ") array has not the same length than the signal you want to plot.")
                     t = np.array([e])
 
             return t, r

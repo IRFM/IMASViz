@@ -130,8 +130,8 @@ class QVizSignalHandling(QObject):
         # Add action to plot the signal data as a function of time
         # TODO: icon
         action_plotAsFunctionOfTime = None
-        if self.treeNode.is1DAndDynamic() and self.treeNode.treeNodeExtraAttributes.time_dependent(
-                        self.treeNode.treeNodeExtraAttributes.parametrizedPath):
+        if self.treeNode.is1DAndDynamic() and self.treeNode.time_dependent(
+                        self.treeNode.parametrizedPath):
             icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
             action_plotAsFunctionOfTime = QAction(icon, 'Plot as function of time', self)
             action_plotAsFunctionOfTime.triggered.connect(self.plotSignalVsTimeCommand)
@@ -613,9 +613,9 @@ class QVizSignalHandling(QObject):
             # If signal node is a part of time_slice array of structures
             # (e.g. 'equilibrium.time_slice[0].profiles_1d.psi')
             if self.treeNode is not None and \
-                self.treeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos():
+                self.treeNode.embedded_in_time_dependent_aos():
                 aos_vs_itime = self.treeNode.evaluatePath(
-                    self.treeNode.treeNodeExtraAttributes.parametrizedPath)
+                    self.treeNode.parametrizedPath)
                 xlabel = QVizGlobalOperations.replaceBrackets(
                     self.treeNode.evaluateCoordinate1At(
                         self.treeNode.infoDict['i']))
@@ -662,7 +662,7 @@ class QVizSignalHandling(QObject):
             addTimeSlider = False
             addCoordinateSlider = False
 
-            if vizTreeNode.treeNodeExtraAttributes.embedded_in_time_dependent_aos() and vizTreeNode.is1DAndDynamic():
+            if vizTreeNode.embedded_in_time_dependent_aos() and vizTreeNode.is1DAndDynamic():
                 addTimeSlider = True
 
             # passing figureKey=None means we want a new plotWidget

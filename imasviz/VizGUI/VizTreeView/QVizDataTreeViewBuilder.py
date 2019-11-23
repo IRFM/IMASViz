@@ -18,7 +18,6 @@ from PyQt5.QtWidgets import QTreeWidgetItem, QTextEdit
 from PyQt5.QtCore import QSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalColors, QVizPreferences
-from imasviz.VizGUI.VizTreeView.QVizTreeNodeExtraAttributes import QVizTreeNodeExtraAttributes
 
 class QVizDataTreeViewBuilder:
     def __init__(self, ids):
@@ -295,7 +294,7 @@ class QVizDataTreeViewBuilder:
             idsName      (str)         : Name of the IDS e.g. 'magnetics'.
         """
 
-        extra_attributes = QVizTreeNodeExtraAttributes()
+        extra_attributes = QVizTreeNode()
         isSignal = 0
 
         data_type = dataElement.get('data_type')

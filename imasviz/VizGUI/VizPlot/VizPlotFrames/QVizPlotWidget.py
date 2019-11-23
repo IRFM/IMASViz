@@ -255,8 +255,8 @@ class sliderGroup():
                 self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
         else:
             self.timeFieldLabel = self.setLabel(text='Coordinate1:')
-            if self.active_treeNode.treeNodeExtraAttributes.coordinate1 == "1..N" or \
-                            self.active_treeNode.treeNodeExtraAttributes.coordinate1 == "1...N":
+            if self.active_treeNode.coordinate1 == "1..N" or \
+                            self.active_treeNode.coordinate1 == "1...N":
                 s = "1..N"
             else:
                 s = self.active_treeNode.getIDSName() + "." + self.active_treeNode.evaluateCoordinate1VsTime()
@@ -289,7 +289,6 @@ class sliderGroup():
 
         # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
         self.active_treeNode = self.signalHandling.dataTreeView.selectedItem
-        # self.currentIndex = self.active_treeNode.treeNodeExtraAttributes.itime_index
         self.currentIndex = self.active_treeNode.infoDict['i']
 
         if self.isTimeSlider:
