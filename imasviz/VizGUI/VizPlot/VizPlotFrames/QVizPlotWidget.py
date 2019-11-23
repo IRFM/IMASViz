@@ -259,7 +259,7 @@ class sliderGroup():
                             self.active_treeNode.coordinate1 == "1...N":
                 s = "1..N"
             else:
-                s = self.active_treeNode.getIDSName() + "." + self.active_treeNode.evaluateCoordinate1VsTime()
+                s = self.active_treeNode.getIDSName() + "." + self.active_treeNode.evaluateCoordinateVsTime(coordinateNumber=1)
             s = QVizGlobalOperations.makeIMASPath(s)
             self.timeFieldLabel.setText("Coordinate1: " + s)
 
@@ -301,12 +301,12 @@ class sliderGroup():
             # Set index slider using time as index
             nodeData = self.active_treeNode.getInfoDict()
             # Set IDS source database
-            ids = self.signalHandling.dataTreeView.dataSource.ids[self.active_treeNode.getOccurrence()]
+            imas_data_entry = self.signalHandling.dataTreeView.dataSource.ids[self.active_treeNode.getOccurrence()]
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
-            maxValue = self.active_treeNode.coordinate1Length(nodeData, ids) - 1
-
+            maxValue = self.active_treeNode.coordinateLength(
+                coordinateNumber=1, selectedNodeData=nodeData, imas_data_entry=imas_data_entry) - 1
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value

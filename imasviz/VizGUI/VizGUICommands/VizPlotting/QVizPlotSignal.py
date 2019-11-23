@@ -49,7 +49,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             update            () :
 
         """
-        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode.getNodeData())
+        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode.getData())
 
         self.treeNode = vizTreeNode
         self.title = title

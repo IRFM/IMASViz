@@ -20,7 +20,7 @@ class viz_1D_overtime_plugin(VizPlugins):
 
             logging.info('Data :' + self.selectedTreeNode.getDataName())
             logging.info('Data param. :' + self.selectedTreeNode.getParametrizedDataPath())
-            logging.info('coordinate1 :' + self.selectedTreeNode.getParametrizedCoordinate(1))
+            logging.info('coordinate1 :' + self.selectedTreeNode.getParametrizedCoordinate(coordinateNumber=1))
 
             ## Create window with ImageView widget
             # win = QtGui.QMainWindow()

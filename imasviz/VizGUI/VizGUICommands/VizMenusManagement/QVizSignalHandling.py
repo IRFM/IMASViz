@@ -617,8 +617,7 @@ class QVizSignalHandling(QObject):
                 aos_vs_itime = self.treeNode.evaluatePath(
                     self.treeNode.parametrizedPath)
                 xlabel = QVizGlobalOperations.replaceBrackets(
-                    self.treeNode.evaluateCoordinate1At(
-                        self.treeNode.infoDict['i']))
+                    self.treeNode.evaluateCoordinateAt(coordinateNumber=1, itimeValue=self.treeNode.infoDict['i']))
                 addTimeSlider = True
             #passing figureKey=None means we want a new plotWidget
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addTimeSlider=addTimeSlider)
@@ -789,7 +788,7 @@ class QVizSignalHandling(QObject):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates and other conditions for a meaningful plot.
         """
-        s = vizTreeNode.getNodeData()
+        s = vizTreeNode.getData()
         if self.treeNode.is1DAndDynamic():
             for si in selectedNodeDataList:
                 if not si.get('data_type').endswith('_0D'): #TODO use clone of tree nodes in order to use VizTreeNode type instead of dict
@@ -831,7 +830,7 @@ class QVizSignalHandling(QObject):
         for k in signalsList:
             signal = signalsList[k]
             vizTreeNode = signal['QTreeWidgetItem']
-            selectedNodeDataList.append(vizTreeNode.getNodeData())
+            selectedNodeDataList.append(vizTreeNode.getData())
             selectedNodesList.append(vizTreeNode)
         return self.shareSameCoordinates2(selectedNodeDataList, selectedNodesList)
 
@@ -904,7 +903,7 @@ class QVizSignalHandling(QObject):
             index = treeNode.infoDict['i']
             # Get label and title
             label, title, dummy = \
-                treeNode.coordinate1Labels1(dtv=self.dataTreeView, index=index)
+                treeNode.coordinateLabels(coordinateNumber=1, dtv=self.dataTreeView, index=index)
             self.treeNode = treeNode
             self.timeSlider = False
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addCoordinateSlider=True)
@@ -952,8 +951,8 @@ class QVizSignalHandling(QObject):
 
             # Get label, title and xlabel
             if treeNode.is1DAndDynamic():
-                label, title, xlabel = treeNode.coordinate1Labels1(
-                dtv=self.dataTreeView, index=index)
+                label, title, xlabel = treeNode.coordinateLabels(
+                    coordinateNumber=1, dtv=self.dataTreeView, index=index)
 
             elif treeNode.is0DAndDynamic():
                 logging.warning("Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1 dimension.")

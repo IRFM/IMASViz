@@ -236,8 +236,8 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 # Append the node to the list of tree nodes
                 self.vizTreeNodesList.append(signalNode)
 
-                key = dtv.dataSource.dataKey(signalNode.getNodeData())
-                tup = (dtv.dataSource.shotNumber, signalNode.getNodeData())
+                key = dtv.dataSource.dataKey(signalNode.getData())
+                tup = (dtv.dataSource.shotNumber, signalNode.getData())
                 self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values

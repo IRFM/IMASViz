@@ -32,7 +32,7 @@ class QVizIMASNativeDataAccess:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalVsTime(treeNode, index)
             elif treeNode.is1DAndDynamic():
-                if treeNode.isCoordinate1_time_dependent():
+                if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 elif treeNode.embedded_in_time_dependent_aos():
                     return self.GetSignalVsTime(treeNode, index)
@@ -42,7 +42,7 @@ class QVizIMASNativeDataAccess:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is1DAndDynamic():
-                if not treeNode.isCoordinate1_time_dependent():
+                if not treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 elif treeNode.embedded_in_time_dependent_aos():
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
@@ -72,7 +72,7 @@ class QVizIMASNativeDataAccess:
     def GetSignal1DAt(self, treeNode, itimeValue):
 
         try:
-            if treeNode.getNodeData() is None:
+            if treeNode.getData() is None:
                 return
 
             imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
@@ -80,13 +80,14 @@ class QVizIMASNativeDataAccess:
             signalPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
             rval = eval(signalPath)
             r = np.array([rval])
-            coordinate1 = treeNode.evaluateCoordinate1At(itimeValue)
+            coordinate1 = treeNode.evaluateCoordinateAt(coordinateNumber=1, itimeValue=itimeValue)
 
-            if treeNode.isCoordinate1_time_dependent(): #coordinate1 is a function of time
-                t = QVizGlobalOperations.getCoordinate1D_array(imas_entry, treeNode.getNodeData(), coordinate1)
+            if treeNode.isCoordinateTimeDependent(coordinateNumber=1): #coordinate1 is a function of time
+                t = QVizGlobalOperations.getCoordinate1D_array(imas_entry, treeNode.getData(), coordinate1)
                 t = np.array([t])
             else:
-                if "1..N" in treeNode.coordinate1 or "1...N" in treeNode.coordinate1:
+                if "1..N" in treeNode.getCoordinate(oordinateNumber=1) or \
+                                "1...N" in treeNode.getCoordinate(oordinateNumber=1):
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:

@@ -229,8 +229,8 @@ class QVizDataTreeViewBuilder:
         for i in range(1,7):
             coordinate = "coordinate" + str(i)
             coordinate_same_as = "coordinate" + str(i) + "_same_as"
-            if itemDataDict.get(coordinate) is not None:
-                coordinate_display = coordinate + "=" + itemDataDict[coordinate]
+            if viewerNode.getCoordinate(coordinateNumber=i) is not None:
+                coordinate_display = coordinate + "=" + viewerNode.getCoordinate(coordinateNumber=i)
                 QVizTreeNode(viewerNode, [coordinate_display])
             if itemDataDict.get(coordinate_same_as) is not None:
                 coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
@@ -313,39 +313,36 @@ class QVizDataTreeViewBuilder:
         if name is not None:
 
             for i in range(1, 7):
-                coordinate = "coordinate" + str(i)
-                if dataElement.get(coordinate) is not None:
-                    itemDataDict[coordinate] = dataElement.get(coordinate)
-                coordinateSameAs = "coordinate" + str(i) + "_same_as"
+                coordinateName = "coordinate" + str(i)
+                coordinateSameAs = coordinateName + "_same_as"
                 if dataElement.get(coordinateSameAs) is not None:
                     itemDataDict[coordinateSameAs] = dataElement.get(coordinateSameAs)
 
-            coordinate1 = dataElement.get('coordinate1')
+                if dataElement.get('parametrizedPath') is not None:
 
-            if coordinate1 is not None:
-                coordinate1 = coordinate1.replace("/", ".") #PATCH
+                    itemDataDict['itime_index'] = dataElement.get('itime_index')
+                    extra_attributes.parametrizedPath = dataElement.get('parametrizedPath').replace("self.", "")
+                    extra_attributes.itime_index = dataElement.get('itime_index')
+                    extra_attributes.aos_parents_count = int(dataElement.get('aos_parents_count'))
 
-            if dataElement.get('parametrizedPath') is not None: #only for native data
+                    coordinate = dataElement.get(coordinateName)
 
-                itemDataDict['itime_index'] = dataElement.get('itime_index')
-                extra_attributes.parametrizedPath = dataElement.get('parametrizedPath').replace("self.", "")
-                extra_attributes.coordinate1 = coordinate1
-                extra_attributes.itime_index = dataElement.get('itime_index')
-                extra_attributes.aos_parents_count = int(dataElement.get('aos_parents_count'))
+                    if coordinate is not None:
+                        coordinate = coordinate.replace("/", ".")  # PATCH
+                        extra_attributes.coordinates.append(coordinate)
+                        #itemDataDict[coordinateName] = coordinate
+                        if coordinate.endswith('/time') or coordinate.endswith('.time') or coordinate == 'time':
+                            extra_attributes.coordinates_explicitly_time_dependent[i] = 1
+                        else:
+                            extra_attributes.coordinates_explicitly_time_dependent[i] = 0
 
-                if coordinate1 is not None and extra_attributes.isCoordinateTimeDependent(coordinate1):
-                    itemDataDict['coordinate1_time_dependent'] = 1
-                else:
-                    itemDataDict['coordinate1_time_dependent'] = 0
-
-
-                for i in range(0, extra_attributes.aos_parents_count):
-                    parameterName = QVizGlobalValues.indices[str(i + 1)]
-                    parameterValue = dataElement.get(parameterName)
-                    extra_attributes.addParameterValue(parameterName, parameterValue)
-                    maxParameterName = QVizGlobalValues.max_indices[str(i + 1)]
-                    maxParameterValue = dataElement.get(maxParameterName)
-                    extra_attributes.addMaxParameterValue(parameterName, maxParameterValue)
+                    for i in range(0, extra_attributes.aos_parents_count):
+                        parameterName = QVizGlobalValues.indices[str(i + 1)]
+                        parameterValue = dataElement.get(parameterName)
+                        extra_attributes.addParameterValue(parameterName, parameterValue)
+                        maxParameterName = QVizGlobalValues.max_indices[str(i + 1)]
+                        maxParameterValue = dataElement.get(maxParameterName)
+                        extra_attributes.addMaxParameterValue(parameterName, maxParameterValue)
 
             if data_type is not None:
                 if data_type.startswith("FLT_") or data_type.startswith("flt_") or \
@@ -353,10 +350,6 @@ class QVizDataTreeViewBuilder:
 
                     if dataElement.get('type') == 'dynamic':
                         isSignal = 1
-
-                    if data_type == 'FLT_1D' or data_type == 'flt_1d_type' or \
-                       data_type == 'INT_1D' or data_type == 'int_1d_type':
-                       itemDataDict['coordinate1'] = coordinate1
 
                     itemDataDict['path_doc'] = dataElement.get('path_doc')
                     itemDataDict['parametrizedPath'] = dataElement.get('parametrizedPath')
