@@ -86,8 +86,8 @@ class QVizIMASNativeDataAccess:
                 t = QVizGlobalOperations.getCoordinate1D_array(imas_entry, treeNode.getData(), coordinate1)
                 t = np.array([t])
             else:
-                if "1..N" in treeNode.getCoordinate(oordinateNumber=1) or \
-                                "1...N" in treeNode.getCoordinate(oordinateNumber=1):
+                if "1..N" in treeNode.getCoordinate(coordinateNumber=1) or \
+                                "1...N" in treeNode.getCoordinate(coordinateNumber=1):
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:

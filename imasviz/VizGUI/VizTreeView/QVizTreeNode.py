@@ -206,13 +206,13 @@ class QVizTreeNode(QTreeWidgetItem):
     def evaluateCoordinateVsTime(self, coordinateNumber):#the result can eventually depend on [itime]
         return self.evaluatePath(self.coordinates[coordinateNumber - 1])
 
-    def coordinateLength(self, coordinateNumber, selectedNodeData, imas_data_entry):
+    def coordinateLength(self, coordinateNumber, imas_data_entry):
         if self.coordinates[coordinateNumber - 1] == "1..N" or\
                         self.coordinates[coordinateNumber - 1] == "1...N":
-            r = np.array([eval('imas_data_entry.' + selectedNodeData['dataName'])])
+            r = np.array([eval('imas_data_entry.' + self.getDataName())])
             return len(r[0])
         # Set python expression to get length of the array
-        to_evaluate = 'imas_data_entry.' + selectedNodeData['IDSName'] + '.' + \
+        to_evaluate = 'imas_data_entry.' + self.getIDSName() + '.' + \
                        self.evaluateCoordinate(coordinateNumber)
         len_to_evaluate = eval('len(' + to_evaluate + ')')
         return len_to_evaluate

@@ -75,7 +75,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             # Get plot widget if not defined
             if plotWidget is None:
                 api = self.dataTreeView.imas_viz_api
-                figureKey, plotWidget = api.GetPlotWidget(figureKey)
+                figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
+                                                          figureKey=figureKey)
 
             # Total number of existing DTVs
             self.num_view = len(self.api.DTVlist)

@@ -26,17 +26,14 @@ class CompareFLT1DPlugin(VizPlugins):
 
             logging.info('Plotting data from current node...')
             figureKey, plotWidget = vizAPI.CreatePlotWidget()
-            node = self.selectedTreeNode
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
-                           label=None,
-                           title=None,
-                           vizTreeNode=node)
+                           vizTreeNode=self.selectedTreeNode)
 
+            #Plot data signal passing plotWidget which is a QWidget referencing a pg.PlotWidget(GraphicsView)
             ps.execute(plotWidget, update=0)
 
             # Set data source retriever/factory
             dataSourceFactory = QVizDataSourceFactory()
-
 
             # Load IMAS database
             dataSource = dataSourceFactory.create(
@@ -55,7 +52,7 @@ class CompareFLT1DPlugin(VizPlugins):
             paths = []
             paths.append(QVizGlobalOperations.makeIMASPath(self.selectedTreeNode.getDataName()))
 
-            # Change it to dictionary with paths an occurrences (!)
+            # Change it to dictionary with paths and occurrences (!)
             paths = {'paths': paths,
                      'occurrences': [self.selectedTreeNode.getOccurrence()]}
 

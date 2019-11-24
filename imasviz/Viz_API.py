@@ -12,6 +12,7 @@
 #****************************************************
 
 import os
+import logging
 
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
@@ -25,6 +26,7 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 class Viz_API:
@@ -34,8 +36,6 @@ class Viz_API:
         self.figToNodes= {} #key = figure, values = list of selectedData
         #figureframes contains all plotting frames
         self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
-
-        # PyQt5 DTV lists
         self.DTVframeList = []
         self.DTVlist = []
 
@@ -233,11 +233,6 @@ class Viz_API:
         QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
             all_DTV=all_DTV,
             configFile=configFilePath)
-        #if figureKey == None:
-        #    figureKey = self.getNextKeyForTablePlotView()
-        #PlotSelectedSignalsWithWxmplot(dataTreeFrame.wxTreeView,
-        #                               figurekey=figureKey, update=update,
-        #                               configFileName=configFileName).execute()
 
     # Load IDSs data for the given data tree frame
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0,
@@ -328,22 +323,153 @@ class Viz_API:
         else:
             return self.GetDataSource(dataTreeFrame).ids[occurrence]
 
-    def CreatePlotWidget(self):
+    def CreatePlotWidget(self, dataTreeView, addTimeSlider=False, addCoordinateSlider=False):
         figureKey = self.GetNextKeyForFigurePlots()
-        plotWidget = QVizPlotWidget(size=(600, 550), title=figureKey)
+        plotWidget = QVizPlotWidget(size=(600, 550),
+                                    title=figureKey,
+                                    dataTreeView=dataTreeView,
+                                    addTimeSlider=addTimeSlider,
+                                    addCoordinateSlider=addCoordinateSlider)
         self.figureframes[figureKey] = plotWidget
         return figureKey, plotWidget
 
-    def GetPlotWidget(self, figureKey=0):
+    def GetPlotWidget(self, dataTreeView, figureKey=0, addTimeSlider=False, addCoordinateSlider=False):
         if figureKey in self.figureframes:
             plotWidget = self.figureframes[figureKey]
         else:
-            figureKey, plotWidget = self.CreatePlotWidget()
+            figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=dataTreeView,
+                                                          addTimeSlider=addTimeSlider,
+                                                          addCoordinateSlider=addCoordinateSlider)
         return figureKey, plotWidget
 
     def GetSignal(dataTreeView, vizTreeNode, as_function_of_time=False, coordinate1Index=0, plotWidget=None):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
-            return  signalDataAccess.GetSignalAt(vizTreeNode, plotWidget, as_function_of_time, coordinate1Index)
+            return signalDataAccess.GetSignalAt(vizTreeNode, plotWidget, as_function_of_time, coordinate1Index)
         except:
             raise
+
+    def plotSignalVsTimeCommand(self, dataTreeView):
+        """Plotting of signal node, found within the 'time_slice[:]' array of
+        structures in IDS. For certain physical quantities (e.g.
+        equilibrium.time_slice[:].profiles_1d.phi) it plots how it changes
+        through time.
+
+        Example:
+        (e=equilibrium)
+        Index i -> x = array time values (e.time). n = len(e.time)
+                   y = array of values ([e.time_slice[0].profiles_1d.phi[i],
+                                         e.time_slice[1].profiles_1d.phi[i],
+                                         ...
+                                         e.time_slice[n].profiles_1d.phi[i])
+        """
+        # Get currently selected QVizTreeNode (QTreeWidgetItem)
+        try:
+            treeNode = dataTreeView.selectedItem
+            # Get signal node index
+            index = treeNode.infoDict['i']
+            # Get label and title
+            label, title, dummy = \
+                treeNode.coordinateLabels(coordinateNumber=1, dtv=dataTreeView, index=index)
+            figureKey, plotWidget = self.getPlotWidget(figureKey=None, addCoordinateSlider=True)
+            p = QVizPlotSignal(dataTreeView=dataTreeView,
+                           vizTreeNode=treeNode,
+                           title=title,
+                           label=label,
+                           xlabel="time[s]")
+            p.execute(plotWidget, figureKey=figureKey, update=0)
+        except ValueError as e:
+            logging.error(str(e))
+
+    def plot0D_DataVsTimeCommand(self, dataTreeView):
+
+        """Plotting of 0D data nodes, found within timed AOS
+        """
+
+        # Get currently selected QVizTreeNode (QTreeWidgetItem)
+        try:
+            treeNode = dataTreeView.selectedItem
+            dataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
+            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None) #None will force a new Figure
+            p = QVizPlotSignal(dataTreeView=dataTreeView,
+                               vizTreeNode=treeNode,
+                               xlabel="time[s]")
+            p.execute(plotWidget, figureKey=figureKey, update=0)
+        except ValueError as e:
+            logging.error(str(e))
+
+    def plotSelectedSignalVsTimeAtCoordinate1D(self, dataTreeView, index, currentFigureKey,
+                                               treeNode, update, dataset_to_update=0):
+        """Overwrite/Update the existing plot (done with
+        'plotSignalVsTimeCommand' routine and currently still shown in
+        the plot window labeled as 'currentFigureKey') using the same
+        physical quantity (found in sibling node of the same structure (AOS))
+        but with different array positional index.
+
+        Arguments:
+            index             (int) : Array positional index.
+            currentFigureKey  (str) : Label of the current/relevant figure
+                                      window.
+            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
+                                      replace the current plot in figure window.
+        """
+        try:
+
+            # Get label, title and xlabel
+            if treeNode.is1DAndDynamic():
+                label, title, xlabel = treeNode.coordinateLabels(
+                    coordinateNumber=1, dtv=dataTreeView, index=index)
+
+            elif treeNode.is0DAndDynamic():
+                logging.warning(
+                    "Data node '" + treeNode.getName() + "' has no explicit dependency on coordinate1 dimension.")
+                return
+
+            else:
+                logging.error("Unexpected node data dimension.")
+                return
+
+
+            currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
+                                                              figureKey=currentFigureKey,
+                                                              addCoordinateSlider=True)
+            # Update/Overwrite plot
+            QVizPlotSignal(dataTreeView=dataTreeView,
+                           title=title,
+                           label=label,
+                           xlabel="time[s]",
+                           vizTreeNode=treeNode).execute(plotWidget,
+                                                         figureKey=currentFigureKey,
+                                                         update=update,
+                                                         dataset_to_update=dataset_to_update)
+        except ValueError as e:
+            logging.error(str(e))
+
+    def plotSelectedSignalVsCoordAtTimeIndex(self, dataTreeView, time_index, currentFigureKey,
+                                             treeNode, update, dataset_to_update=0):
+        """Overwrite/Update the existing plot (done with
+        'plotSignalCommand' routine and currently still shown in
+        the plot window labeled as 'currentFigureKey') but for different time
+        slice. The node must be of the same structure (sibling to the node used
+        for the previous plot and both are located within the 'time_slice[:]'
+        structure').
+
+        Arguments:
+            time_index        (int) : Time slice index.
+            currentFigureKey  (str) : Label of the current/relevant figure
+                                      window.
+            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
+                                      replace the current plot in figure window.
+        """
+        try:
+            currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
+                                                              figureKey=currentFigureKey,
+                                                              addTimeSlider=True)
+            # Update/Overwrite plot
+            QVizPlotSignal(dataTreeView=dataTreeView,
+                           vizTreeNode=treeNode).execute(plotWidget,
+                                                         figureKey=currentFigureKey,
+                                                         update=update,
+                                                         dataset_to_update=dataset_to_update)
+        except ValueError as e:
+            logging.error(str(e))

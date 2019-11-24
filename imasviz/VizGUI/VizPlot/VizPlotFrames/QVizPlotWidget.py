@@ -27,13 +27,13 @@ class QVizPlotWidget(QWidget):
     feature.
     """
 
-    def __init__(self, parent=None, size=(500, 400), title='QVizPlotWidget',
-                 addTimeSlider=False, addCoordinateSlider=False, signalHandling=None):
+    def __init__(self, dataTreeView, parent=None, size=(500, 400), title='QVizPlotWidget',
+                 addTimeSlider=False, addCoordinateSlider=False):
         super(QVizPlotWidget, self).__init__(parent)
 
         self.addTimeSlider = addTimeSlider
         self.addCoordinateSlider = addCoordinateSlider
-        self.signalHandling = signalHandling
+        self.dataTreeView = dataTreeView
 
         # Set default background color: white
         pg.setConfigOption('background', 'w')
@@ -155,7 +155,7 @@ class QVizPlotWidget(QWidget):
         if self.addTimeSlider or self.addCoordinateSlider:
 
             # Add slider time or corrdiante1D and its corresponding widgets
-            self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self, signalHandling=self.signalHandling)
+            self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self, dataTreeView=self.dataTreeView)
             self.sliderGroupDict = self.sliderGroup.execute()
             self.separatorLine = self.sliderGroupDict['separatorLine']
             self.slider = self.sliderGroupDict['slider']
@@ -220,14 +220,14 @@ class sliderGroup():
     slider change).
     """
 
-    def __init__(self, isTimeSlider, signalHandling, parent=None):
+    def __init__(self, isTimeSlider, dataTreeView, parent=None):
         self.parent = parent
         # Set slider press variable as false
         self.sliderPress = False
         self.isTimeSlider = isTimeSlider #otherwise it is a coordinate1D slider
-        if signalHandling is None:
-            raise ValueError('inner sliderGroup class needs a not None signalHandling object to operate')
-        self.signalHandling = signalHandling
+        if dataTreeView is None:
+            raise ValueError('inner sliderGroup class needs a not None dataTreeView object to operate')
+        self.dataTreeView = dataTreeView
 
 
     def execute(self):
@@ -288,7 +288,7 @@ class sliderGroup():
         """
 
         # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
-        self.active_treeNode = self.signalHandling.dataTreeView.selectedItem
+        self.active_treeNode = self.dataTreeView.selectedItem
         self.currentIndex = self.active_treeNode.infoDict['i']
 
         if self.isTimeSlider:
@@ -301,12 +301,12 @@ class sliderGroup():
             # Set index slider using time as index
             nodeData = self.active_treeNode.getInfoDict()
             # Set IDS source database
-            imas_data_entry = self.signalHandling.dataTreeView.dataSource.ids[self.active_treeNode.getOccurrence()]
+            imas_data_entry = self.dataTreeView.dataSource.ids[self.active_treeNode.getOccurrence()]
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
             maxValue = self.active_treeNode.coordinateLength(
-                coordinateNumber=1, selectedNodeData=nodeData, imas_data_entry=imas_data_entry) - 1
+                coordinateNumber=1, imas_data_entry=imas_data_entry) - 1
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
@@ -370,7 +370,7 @@ class sliderGroup():
 
         # Update slider value indicator value
         self.sliderValueIndicator.setText(str(self.slider.value()))
-        treeNode = self.signalHandling.dataTreeView.selectedItem
+        treeNode = self.dataTreeView.selectedItem
 
         if self.isTimeSlider:
             if treeNode.globalTime is not None:
@@ -404,25 +404,28 @@ class sliderGroup():
         """Execute replotting using different data time slice.
         """
         self.currentIndex = self.slider.value()
-
         #Get title of the current QVizPlotWidget
         currentFigureKey = self.parent.windowTitle()
-
         i = 0
+        api = self.dataTreeView.imas_viz_api
         for node in self.parent.vizTreeNodesList:
-
             self.active_treeNode = node
-
             if self.isTimeSlider:
 
-                self.signalHandling.plotSelectedSignalVsCoordAtTimeIndex(
+                api.plotSelectedSignalVsCoordAtTimeIndex(
+                    dataTreeView=self.dataTreeView,
                     time_index=self.currentIndex,
                     currentFigureKey=currentFigureKey,
-                    treeNode=self.active_treeNode, update=1, dataset_to_update=i)
+                    treeNode=self.active_treeNode,
+                    update=1,
+                    dataset_to_update=i)
             else:
-                self.signalHandling.plotSelectedSignalVsTimeAtCoordinate1D(
+                api.plotSelectedSignalVsTimeAtCoordinate1D(
+                    dataTreeView=self.dataTreeView,
                     index=self.currentIndex,
                     currentFigureKey=currentFigureKey,
-                    treeNode=self.active_treeNode, update=1, dataset_to_update=i)
+                    treeNode=self.active_treeNode,
+                    update=1,
+                    dataset_to_update=i)
 
             i += 1
