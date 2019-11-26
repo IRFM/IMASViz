@@ -294,10 +294,14 @@ class QVizMainWindow(QMainWindow):
         centralWidget = QWidget(self)
         # Set start window
         self.startWindow = QVizStartWindow(self)
+
         # Set layout and add start window and MDI to it
         layout = QGridLayout(centralWidget)
-        layout.addWidget(self.startWindow, 1, 1, 1, 1)
-        layout.addWidget(self.MDI, 1, 2, 1, 1)
+        layout.setColumnStretch(0,1)
+        layout.setColumnStretch(1,7)
+
+        layout.addWidget(self.startWindow, 0, 0, 1, 1)
+        layout.addWidget(self.MDI, 0, 1, 1, 1)
         # Set central widget of the main window
         self.setCentralWidget(centralWidget)
 
