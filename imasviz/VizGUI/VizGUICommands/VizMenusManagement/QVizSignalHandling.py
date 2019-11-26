@@ -50,7 +50,7 @@ class QVizSignalHandling(QObject):
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
         """
-        super(QVizSignalHandling, self).__init__()
+        super(QVizSignalHandling, self).__init__(parent=dataTreeView)
         self.dataTreeView = dataTreeView
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.plotFrame = None
@@ -775,7 +775,8 @@ class QVizSignalHandling(QObject):
 
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)
-        self.dataTreeView.parent.parent().mdiArea().addSubWindow(subWindow)
+
+        self.getMDI().addSubWindow(subWindow)
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -1020,3 +1021,7 @@ class QVizSignalHandling(QObject):
                                                          dataset_to_update=dataset_to_update)
         except ValueError as e:
             logging.error(str(e))
+
+    def getMDI(self):
+        return self.parent().getMDI()
+

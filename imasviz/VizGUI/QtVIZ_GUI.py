@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLin
 from PyQt5.QtCore import QSize, pyqtSlot, Qt
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
-from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
+# from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController import QVizMainMenuController
 
@@ -223,6 +223,9 @@ class GUIFrame(QTabWidget):
         self.contextMenu.exec_(self.mapToGlobal(self.pos))
         return 1
 
+    def getMDI(self):
+        return self.parent.getMDI()
+
 
 class QVizStartWindow(QMainWindow):
     def __init__(self, parent):
@@ -266,6 +269,9 @@ class QVizStartWindow(QMainWindow):
         else:
             event.ignore()
 
+    def getMDI(self):
+        return self.parent.getMDI()
+
 class QVizMDI(QMdiArea):
     """Class for MDI area.
     """
@@ -273,6 +279,7 @@ class QVizMDI(QMdiArea):
     def __init__(self, parent):
         super().__init__(parent)
         self.setWindowTitle("MDI")
+        self.setObjectName("MDI")
 
 class QVizMainWindow(QMainWindow):
     """ Class for IMASViz main window, which contains MDI and all

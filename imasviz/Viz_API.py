@@ -26,10 +26,13 @@ from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QV
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
+from PyQt5.QtWidgets import QMdiSubWindow
 
 class Viz_API:
 
-    def __init__(self):
+    def __init__(self, parent):
+
+        self.parent = parent
 
         self.figToNodes= {} #key = figure, values = list of selectedData
         #figureframes contains all plotting frames
@@ -110,8 +113,16 @@ class Viz_API:
     # Show the IDS data tree frame
     def ShowDataTree(self, dataTreeView):
         if isinstance(dataTreeView, QVizDataTreeViewFrame):
+            subWindow = QMdiSubWindow()
+            subWindow.setWidget(dataTreeView)
+
+            self.getMDI().addSubWindow(subWindow)
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
+            subWindow = QMdiSubWindow()
+            subWindow.setWidget(dataTreeView)
+
+            self.getMDI().addSubWindow(subWindow)
             dataTreeView.parent.show()
         else:
             raise ValueError('Wrong argument type arg for ShowDataTree(arg).')
@@ -248,6 +259,7 @@ class Viz_API:
     #Load IDS data for a given data tree frame and a given occurrence
     def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
                     threadingEvent=None):
+
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName, occurrence, threadingEvent).execute()
         else:
@@ -347,3 +359,6 @@ class Viz_API:
             return  signalDataAccess.GetSignalAt(vizTreeNode, plotWidget, as_function_of_time, coordinate1Index)
         except:
             raise
+
+    def getMDI(self):
+        return self.parent

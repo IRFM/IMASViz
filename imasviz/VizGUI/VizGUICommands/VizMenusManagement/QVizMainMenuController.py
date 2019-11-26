@@ -106,3 +106,6 @@ class QVizMainMenuController:
             if dtv.isVisible():
                 dtv.hide()
             self.openShotView.api.removeDTVFrame(dtv)
+
+    def getMDI(self):
+        return self.parent.getMDI()
