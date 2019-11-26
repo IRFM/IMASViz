@@ -775,6 +775,7 @@ class QVizSignalHandling(QObject):
 
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)
+        subWindow.resize(plotWidget.width(), plotWidget.height())
 
         self.getMDI().addSubWindow(subWindow)
 

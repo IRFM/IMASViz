@@ -57,7 +57,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # self.imas_viz_api.figureframes[self.figureKey] = self
 
         # Set number of rows and columns of panels in the TablePlotView frame
-        self.ncols = int(self.screenWidth * 0.9 / self.plotBaseDim)  # round down
+        self.ncols = int(self.screenWidth * 0.7 / self.plotBaseDim)  # round down
 
         # Get the indicator from which DTVs should the signals be read
         # (single or all)
@@ -166,7 +166,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                     tLabel.item.setPlainText(label)
                     # Set title label width
                     # Note: required for alignment to take effect
-                    tLabel.item.setTextWidth(300)
+                    tLabel.item.setTextWidth(self.plotBaseDim)
                     # Set alignment as text option
                     option = QtGui.QTextOption()
                     option.setAlignment(QtCore.Qt.AlignCenter)
@@ -260,7 +260,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
         """
 
         # Set suitable width and height
-        self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 10)
+        self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 50)
         self.okHeight = len(self.centralWidget.rows) * self.plotBaseDim
         self.setMinimumSize(self.okWidth, self.okHeight)
 

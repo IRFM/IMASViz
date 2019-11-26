@@ -118,10 +118,11 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # If MDI is present, add the MultiplotWindow to to MDI.
         if self.parent().getMDI() != None:
             subWindow = QMdiSubWindow()
+            subWindow.resize(self.width(), self.height())
             subWindow.setWidget(self)
             self.getMDI().addSubWindow(subWindow)
         # Show the MultiPlot window (either on desktop or in MDI if it was
-        # passes there as a subwindow)
+        # passed there as a subwindow)
         self.show()
 
     def checkFigureKey(self, figureKey):
