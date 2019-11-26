@@ -1023,5 +1023,7 @@ class QVizSignalHandling(QObject):
             logging.error(str(e))
 
     def getMDI(self):
-        return self.parent().getMDI()
+        if self.parent().getMDI() != None:
+            return self.parent().getMDI()
+        return None
 

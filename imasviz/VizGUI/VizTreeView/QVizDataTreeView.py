@@ -426,6 +426,11 @@ class QVizDataTreeView(QTreeWidget):
             # Load the IDS Root occurrence
             ldh_obj.loadSelectedData(self, IDSName, occ, True)
 
+    def getMDI(self):
+        if self.parent.getMDI() != None:
+            return self.parent.getMDI()
+        return None
+
 
 class QVizDataTreeViewFrame(QMainWindow):
     """ Set QMainWindow to contain the QTreeWidget.
@@ -840,6 +845,12 @@ class QVizDataTreeViewFrame(QMainWindow):
         layout.addWidget(cancelButton,  r, 0, 1, 2)
 
         dialog.show()
+
+    def getMDI(self):
+        if self.parent() != None:
+            if self.parent().mdiArea() != None:
+                return self.parent().mdiArea()
+        return None
 
     # TODO:
     # def onCloseAndReopenDatabase()

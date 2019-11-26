@@ -30,7 +30,7 @@ from PyQt5.QtWidgets import QMdiSubWindow
 
 class Viz_API:
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
 
         self.parent = parent
 
@@ -113,10 +113,13 @@ class Viz_API:
     # Show the IDS data tree frame
     def ShowDataTree(self, dataTreeView):
         if isinstance(dataTreeView, QVizDataTreeViewFrame):
-            subWindow = QMdiSubWindow()
-            subWindow.setWidget(dataTreeView)
 
-            self.getMDI().addSubWindow(subWindow)
+            # If MDI is present, add the DTV to it as a subwindow
+            if self.getMDI() != None:
+                subWindow = QMdiSubWindow()
+                subWindow.setWidget(dataTreeView)
+
+                self.getMDI().addSubWindow(subWindow)
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
             subWindow = QMdiSubWindow()
@@ -361,4 +364,6 @@ class Viz_API:
             raise
 
     def getMDI(self):
-        return self.parent
+        if self.parent != None:
+            return self.parent
+        return None

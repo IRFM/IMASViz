@@ -302,7 +302,9 @@ class QVizMainWindow(QMainWindow):
         self.setCentralWidget(centralWidget)
 
     def getMDI(self):
-        return self.MDI
+        if self.MDI != None:
+            return self.MDI
+        return None
 
     def getStartWindow(self):
         return self.startWindow
