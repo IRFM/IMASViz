@@ -122,10 +122,6 @@ class Viz_API:
                 self.getMDI().addSubWindow(subWindow)
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
-            subWindow = QMdiSubWindow()
-            subWindow.setWidget(dataTreeView)
-
-            self.getMDI().addSubWindow(subWindow)
             dataTreeView.parent.show()
         else:
             raise ValueError('Wrong argument type arg for ShowDataTree(arg).')
