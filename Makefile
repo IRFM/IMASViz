@@ -1,7 +1,7 @@
-VIZ_HOME = ${PWD}
+VIZ_HOME ?= ${PWD}
 # VIZ_PRODUCTION = "0" # For development and testing purposes
-VIZ_PRODUCTION = "1"
-HOSTNAME = $(shell hostname)
+VIZ_PRODUCTION ?= "1"
+HOSTNAME ?= $(shell hostname)
 
 .PHONY: doc default
 
