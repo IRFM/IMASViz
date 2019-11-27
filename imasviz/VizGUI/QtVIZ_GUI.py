@@ -304,6 +304,8 @@ class QVizMainWindow(QMainWindow):
         layout.addWidget(self.MDI, 0, 1, 1, 1)
         # Set central widget of the main window
         self.setCentralWidget(centralWidget)
+        # Resize to full screen
+        self.showMaximized()
 
     def getMDI(self):
         if self.MDI != None:

@@ -81,10 +81,20 @@ class QVizMainMenuController:
             index : DTV index in the openedDTVs list
         """
         dtv = self.openShotView.api.GetDTVFrames()[index]
-        if dtv.isVisible():
-            dtv.hide()
+
+        # Check if DTV is shown in MDI (DTV is then embedded to subwindow and
+        # subwindow to MDI window) and show/hide accordingly
+        print(dtv)
+        if dtv.getMDI() != None:
+            if dtv.isVisible():
+                dtv.parent().hide()
+            else:
+                dtv.parent().show()
         else:
-            dtv.show()
+            if dtv.isVisible():
+                dtv.window().hide()
+            else:
+                dtv.window().show()
 
     def deleteView(self, index):
         """Remove a DTV.
