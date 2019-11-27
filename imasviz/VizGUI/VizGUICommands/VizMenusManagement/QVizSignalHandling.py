@@ -745,7 +745,6 @@ class QVizSignalHandling(QObject):
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
             # Get widget linked to this figure
             figureKey, plotWidget = self.getPlotWidget(figureKey)
-            self.addPlotWidgetToMDI(plotWidget)
             QVizPlotSignal(dataTreeView=self.dataTreeView,
                                label=label,
                                title=title,
@@ -980,7 +979,8 @@ class QVizSignalHandling(QObject):
                 logging.error("Unexpected node data dimension.")
                 return
 
-            currentFigureKey, plotWidget = self.getPlotWidget(currentFigureKey, addCoordinateSlider=True)
+            currentFigureKey, plotWidget = \
+                self.getPlotWidget(currentFigureKey, addCoordinateSlider=True)
             self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=self.dataTreeView,

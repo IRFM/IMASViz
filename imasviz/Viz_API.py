@@ -162,10 +162,18 @@ class Viz_API:
             figureKey (str) : Figure plotwidget window label (e.g. 'Figure:0).
         """
         frame = self.figureframes[figureKey]
-        if frame.isVisible():
-            frame.hide()
+        if frame.window().objectName() == "IMASViz root window":
+            # Hide/Show MDI subwindow
+            if frame.parent().isVisible():
+                # frame.parent() is QMdiSubWindow
+                frame.parent().hide()
+            else:
+                frame.parent().show()
         else:
-            frame.show()
+            if frame.isVisible():
+                frame.hide()
+            else:
+                frame.show()
 
     # Return the next figure number available for plotting
     def GetFigurePlotsCount(self):
@@ -200,7 +208,12 @@ class Viz_API:
 
     def DeleteFigure(self, figureKey):
         if figureKey in self.figureframes:
-            self.figureframes[figureKey].close()
+            frame = self.figureframes[figureKey]
+            if frame.window().objectName() == "IMASViz root window":
+                frame.parent().hide()
+                frame.parent().deleteLater()
+            else:
+                frame.close()
             del self.figureframes[figureKey]
         if figureKey in self.figToNodes:
             del self.figToNodes[figureKey]

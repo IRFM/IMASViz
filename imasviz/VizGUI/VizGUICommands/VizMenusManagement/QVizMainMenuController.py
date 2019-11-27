@@ -84,7 +84,8 @@ class QVizMainMenuController:
 
         if dtv.window().objectName() == "IMASViz root window":
             # Hide/Show MDI subwindow
-            if dtv.isVisible():
+            if dtv.parent().isVisible():
+                # dtv.parent() is QMdiSubWindow
                 dtv.parent().hide()
             else:
                 dtv.parent().show()
@@ -101,8 +102,21 @@ class QVizMainMenuController:
             index : DTV index in the openedDTVs list
         """
         dtv = self.openShotView.api.GetDTVFrames()[index]
-        if dtv.isVisible():
-            dtv.hide()
+
+        if dtv.window().objectName() == "IMASViz root window":
+            # Delete MDI subwindow
+            if dtv.parent().isVisible():
+                # dtv.parent() is QMdiSubWindow
+                dtv.parent().hide()
+                # TODO: results in a bug when trying to run the delete DTV
+                # feature the second time
+                # dtv.parent().deleteLater()
+        else:
+            # Delete DTVframe window (e.g. when running examples)
+            if dtv.isVisible():
+                dtv.hide()
+                # dtv.deleteLater()
+
         self.openShotView.api.removeDTVFrame(dtv)
 
     def deleteAllViews(self, index):
@@ -112,8 +126,14 @@ class QVizMainMenuController:
         """
         for i in range(0, len(self.openShotView.api.GetDTVFrames())):
             dtv = self.openShotView.api.GetDTVFrames()[index]
-            if dtv.isVisible():
-                dtv.hide()
+            if dtv.window().objectName() == "IMASViz root window":
+                if dtv.window().isVisible():
+                    dtv.parent().hide()
+                    # dtv.parent().deleteLater()
+            else:
+                if dtv.isVisible():
+                    dtv.hide()
+                    # dtv.deleteLater()
             self.openShotView.api.removeDTVFrame(dtv)
 
     def getMDI(self):
