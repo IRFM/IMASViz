@@ -473,8 +473,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         return self.figureKey
 
     def getMDI(self):
-        if self.dataTreeView.getMDI() != None:
-            return self.dataTreeView.getMDI()
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
         return None
 
     # TODO

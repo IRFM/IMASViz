@@ -82,15 +82,14 @@ class QVizMainMenuController:
         """
         dtv = self.openShotView.api.GetDTVFrames()[index]
 
-        # Check if DTV is shown in MDI (DTV is then embedded to subwindow and
-        # subwindow to MDI window) and show/hide accordingly
-        print(dtv)
-        if dtv.getMDI() != None:
+        if dtv.window().objectName() == "IMASViz root window":
+            # Hide/Show MDI subwindow
             if dtv.isVisible():
                 dtv.parent().hide()
             else:
                 dtv.parent().show()
         else:
+            # Hide/Show DTVframe window (e.g. when running examples)
             if dtv.isVisible():
                 dtv.window().hide()
             else:

@@ -224,15 +224,17 @@ class GUIFrame(QTabWidget):
         return 1
 
     def getMDI(self):
-        return self.parent.getMDI()
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
 
 class QVizStartWindow(QMainWindow):
     def __init__(self, parent):
         super(QVizStartWindow, self).__init__(parent)
         ex = GUIFrame(parent)
-        title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
-        self.setWindowTitle(title)
         self.setCentralWidget(ex)
         # self.setWidget(ex)
         self.logPanel()
@@ -270,7 +272,11 @@ class QVizStartWindow(QMainWindow):
             event.ignore()
 
     def getMDI(self):
-        return self.parent.getMDI()
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
 class QVizMDI(QMdiArea):
     """Class for MDI area.
@@ -287,6 +293,12 @@ class QVizMainWindow(QMainWindow):
     """
     def __init__(self):
         super(QVizMainWindow, self).__init__()
+
+        # Set title
+        title = "IMASVIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
+        self.setWindowTitle(title)
+        # Set name of this main window as the root
+        self.setObjectName("IMASViz root window")
 
         # Set MDI (Multiple Document Interface)
         self.MDI = QVizMDI(self)

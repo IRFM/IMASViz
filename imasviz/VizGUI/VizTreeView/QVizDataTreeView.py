@@ -427,8 +427,10 @@ class QVizDataTreeView(QTreeWidget):
             ldh_obj.loadSelectedData(self, IDSName, occ, True)
 
     def getMDI(self):
-        if self.parent.getMDI() != None:
-            return self.parent.getMDI()
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
         return None
 
 
@@ -847,9 +849,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         dialog.show()
 
     def getMDI(self):
-        if self.parent() != None:
-            if self.parent().mdiArea() != None:
-                return self.parent().mdiArea()
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
         return None
 
     # TODO:
