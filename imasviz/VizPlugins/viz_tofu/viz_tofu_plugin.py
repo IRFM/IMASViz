@@ -13,12 +13,7 @@ from imasviz.VizPlugins.VizPlugins import VizPlugins
 
 # tofu
 import sys
-sys.path.insert(0, '/Home/LF218007/tofu/')
 import tofu as tf
-sys.path.pop(0)
-print('load ok')
-print(tf.__version__)
-
 
 class ToFuPlugin(VizPlugins):
     def __init__(self):
