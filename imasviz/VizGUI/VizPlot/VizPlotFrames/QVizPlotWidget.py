@@ -401,7 +401,7 @@ class sliderGroup():
         self.sliderPress = True
 
     def executePlot(self):
-        """Execute replotting using different data time slice.
+        """Execute replotting according to slider values.
         """
         self.currentIndex = self.slider.value()
         #Get title of the current QVizPlotWidget
@@ -412,7 +412,7 @@ class sliderGroup():
             self.active_treeNode = node
             if self.isTimeSlider:
 
-                api.plotSelectedSignalVsCoordAtTimeIndex(
+                api.plotVsCoordinate1AtGivenTime(
                     dataTreeView=self.dataTreeView,
                     time_index=self.currentIndex,
                     currentFigureKey=currentFigureKey,
@@ -420,9 +420,9 @@ class sliderGroup():
                     update=1,
                     dataset_to_update=i)
             else:
-                api.plotSelectedSignalVsTimeAtCoordinate1D(
+                api.plotVsTimeAtGivenCoordinate1(
                     dataTreeView=self.dataTreeView,
-                    index=self.currentIndex,
+                    coordinateIndex=self.currentIndex,
                     currentFigureKey=currentFigureKey,
                     treeNode=self.active_treeNode,
                     update=1,

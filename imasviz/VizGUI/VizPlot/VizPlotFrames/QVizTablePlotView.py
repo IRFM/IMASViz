@@ -107,11 +107,10 @@ class QVizTablePlotView(pg.GraphicsWindow):
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
-                signalNodeData = signalNode.infoDict
 
-                key = dtv.dataSource.dataKey(signalNodeData)
-                tup = (dtv.dataSource.shotNumber, signalNodeData)
-                self.imas_viz_api.addNodeToFigure(self.figureKey, key, tup)
+                key = dtv.dataSource.dataKey(signalNode)
+                tup = (dtv.dataSource.shotNumber, signalNode)
+                self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
                 s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)

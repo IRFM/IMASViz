@@ -29,11 +29,11 @@ class QVizDisplayCurrentSelection(QVizAbstractCommand):
         dataTreeView (QTreeWidget) : Corresponding DataTreeView.
     """
 
-    def __init__(self, dataTreeView, nodeData=None):
+    def __init__(self, dataTreeView, treeNode=None):
         """Set self.nodeData = nodeData etc. with the use of the
            QVizAbstractCommand
         """
-        QVizAbstractCommand.__init__(self, nodeData)
+        QVizAbstractCommand.__init__(self, treeNode)
         self.dataTreeView = dataTreeView
 
     def execute(self):

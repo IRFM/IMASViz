@@ -308,7 +308,7 @@ class PlotConfigurationListsTab(QWidget):
                 '/' + selectedItem.text()
 
             # Get next figurekey (label) for the TablePlotView
-            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
+            figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForTablePlotView()
             # Set up and show the TablePlotView using the config file
             QVizMultiPlotWindow(self.dataTreeView,
                                 figureKey=figureKey,

@@ -56,8 +56,7 @@ class QVizSignalHandling(QObject):
         self.plotFrame = None
         self.currentFigureKey = None
         # Get signal node (tree item) data
-        self.nodeData = None
-        if self.dataTreeView.selectedItem != None:
+        if self.dataTreeView.selectedItem is not None:
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
         self.treeNode = self.dataTreeView.selectedItem
 
@@ -577,20 +576,12 @@ class QVizSignalHandling(QObject):
         menu.addMenu(menu_showHide)
         menu.addMenu(menu_delete)
 
-    def updateNodeData(self):
-        """ Update tree node/item data.
-            TODO: use the global routine 'updateNodeData' defined in
-                  QVizAbstractCommand instead.
-        """
-        self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
-        self.treeNode = self.dataTreeView.selectedItem
-
     def selectSignal(self):
-        QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
+        QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
 
     @pyqtSlot()
     def selectOrUnselectSignal(self):
-        QVizSelectOrUnselectSignal(self.dataTreeView, self.nodeData).execute()
+        QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
 
     @pyqtSlot(bool)
     def onUnselectSignals(self, all_DTV=False):
@@ -599,7 +590,7 @@ class QVizSignalHandling(QObject):
 
     @pyqtSlot()
     def selectAllSignalsFromSameAOS(self):
-        QVizSelectSignalsGroup(self.dataTreeView, self.nodeData).execute()
+        QVizSelectSignalsGroup(self.dataTreeView, self.treeNode).execute()
 
     @pyqtSlot()
     def plotSignalCommand(self):
@@ -642,7 +633,7 @@ class QVizSignalHandling(QObject):
         try:
             # Get the signal data for preview plot update
             p = QVizPreviewPlotSignal(dataTreeView=self.dataTreeView,
-                                      nodeData=self.nodeData,
+                                      treeNode=self.treeNode,
                                       signalHandling=self)
             # Plot signal data to preview plot widget
             p.execute()
@@ -694,7 +685,7 @@ class QVizSignalHandling(QObject):
         """
         # Get next figure key/label
         try:
-            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForTablePlotView()
+            figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForTablePlotView()
             # Note: figureKey that includes 'TablePlotView' is expected
             if not all_DTV:
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
@@ -722,7 +713,7 @@ class QVizSignalHandling(QObject):
         """
         try:
             # Get next figure key/label
-            figureKey = self.dataTreeView.imas_viz_api.getNextKeyForStackedPlotView()
+            figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForStackedPlotView()
             # Note: figureKey that includes 'StackedPlotView' is expected
             if all_DTV != True:
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView, figureKey=figureKey,
@@ -782,36 +773,35 @@ class QVizSignalHandling(QObject):
             logging.error(str(e))
 
 
-    def nodeDataShareSameCoordinatesAs(self, selectedNodeDataList, vizTreeNode, figureKey=None):
+    def nodeDataShareSameCoordinatesAs(self, selectedNodeList, vizTreeNode, figureKey=None):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates and other conditions for a meaningful plot.
         """
-        s = vizTreeNode.getData()
-        if self.treeNode.is1DAndDynamic():
-            for si in selectedNodeDataList:
-                if not si.get('data_type').endswith('_0D'): #TODO use clone of tree nodes in order to use VizTreeNode type instead of dict
+        if vizTreeNode.is1DAndDynamic():
+            for si in selectedNodeList:
+                if not si.is0DAndNumeric():
                     if figureKey is not None:
                         api = self.dataTreeView.imas_viz_api
                         figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=figureKey)
                         if plotWidget is not None and not vizTreeNode.hasTimeXaxis(plotWidget):
-                            if s.get('coordinate1') != si.get('coordinate1'):
+                            if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
                                 return False
-                if s.get('units') != si.get('units'):
+                if vizTreeNode.getUnits() != si.getUnits():
                     return False
-        elif self.treeNode.is0DAndDynamic():
-            for si in selectedNodeDataList:
-                if s.get('units') != si.get('units'):
+        elif vizTreeNode.is0DAndDynamic():
+            for si in selectedNodeList:
+                if vizTreeNode.getUnits() != si.getUnits():
                     return False
         return True
 
     def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
         figureDataList = self.imas_viz_api.figToNodes[figureKey]
-        figureNodeDataList = []
+        figureNodesList = []
         for k in figureDataList:
             v = figureDataList[k]
-            figureNodeDataList.append(v[1])  # v[0] = shot number, v[1] = node data
-        return self.nodeDataShareSameCoordinatesAs(figureNodeDataList, vizTreeNode, figureKey)
+            figureNodesList.append(v[1])  # v[0] = shot number, v[1] = vizNode
+        return self.nodeDataShareSameCoordinatesAs(figureNodesList, vizTreeNode, figureKey)
 
     def currentSelectionShareSameCoordinates(self, figureKey):
         for k in self.dataTreeView.selectedSignalsDict:
@@ -825,21 +815,19 @@ class QVizSignalHandling(QObject):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates.
         """
-        selectedNodeDataList = []
         selectedNodesList = []
         for k in signalsList:
             signal = signalsList[k]
             vizTreeNode = signal['QTreeWidgetItem']
-            selectedNodeDataList.append(vizTreeNode.getData())
             selectedNodesList.append(vizTreeNode)
-        return self.shareSameCoordinates2(selectedNodeDataList, selectedNodesList)
+        return self.shareSameCoordinates2(selectedNodesList)
 
 
-    def shareSameCoordinates2(self, selectedNodeDataList, selectedNodesList):
+    def shareSameCoordinates2(self, selectedNodesList):
         """Check if data share the same coordinates.
         """
         for node in selectedNodesList:
-            if not self.nodeDataShareSameCoordinatesAs(selectedNodeDataList, node):
+            if not self.nodeDataShareSameCoordinatesAs(selectedNodesList, node):
                 return False
         return True
 

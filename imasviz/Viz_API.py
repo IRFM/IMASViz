@@ -15,17 +15,15 @@ import os
 import logging
 
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizGlobalValues import FigureTypes, QVizGlobalValues, QVizPreferences
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame, QVizDataTreeView
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizUtils.QVizGlobalValues import FigureTypes
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
-    import QVizSignalHandling
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
@@ -33,7 +31,7 @@ class Viz_API:
 
     def __init__(self):
 
-        self.figToNodes= {} #key = figure, values = list of selectedData
+        self.figToNodes= {} #key = figure, values = list of selected nodes
         #figureframes contains all plotting frames
         self.figureframes = {} #key = FigureType + FigureKey, example: FigureType="Figure:", FigureKey="1"
         self.DTVframeList = []
@@ -63,11 +61,11 @@ class Viz_API:
                 return dtv
         return None
 
-    def removeDTVFrame(self, frame):
+    def RemoveDTVFrame(self, frame):
         self.DTVframeList.remove(frame)
         self.DTVlist.remove(frame.dataTreeView)
 
-    def addNodeToFigure(self, figureKey, key, tup):
+    def AddNodeToFigure(self, figureKey, key, tup):
         if figureKey not in self.figToNodes:
             self.figToNodes[figureKey] = {}
         dic = self.figToNodes[figureKey]
@@ -121,7 +119,7 @@ class Viz_API:
         self.nsw = QVizNodesSelectionWindow(selectedSignalsDict)
         self.nsw.show()
 
-    def getSelectedSignalsDict(self, dataTreeFrame):
+    def GetSelectedSignalsDict(self, dataTreeFrame):
         """Returns the list of signals (nodes) dictionaries
         selected by the user or from script commands (from a single opened
         data tree view (DTVs)).
@@ -131,7 +129,7 @@ class Viz_API:
         """
         return dataTreeFrame.dataTreeView.selectedSignalsDict
 
-    def getSelectedSignalsDict_AllDTVs(self):
+    def GetSelectedSignalsDictFromAllDTVs(self):
         """Returns the signals (nodes) selected by the user of from script
            commands (from all opened data tree views (DTVs))
         """
@@ -164,7 +162,7 @@ class Viz_API:
     def GetStackedPlotViewsCount(self):
         return len(self.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE))
 
-    def getNextKeyForTablePlotView(self):
+    def GetNextKeyForTablePlotView(self):
         return FigureTypes.TABLEPLOTTYPE + str(self.GetTablePlotViewsCount())
 
     def GetNextKeyForFigurePlots(self):
@@ -174,7 +172,7 @@ class Viz_API:
         """
         return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
 
-    def getNextKeyForStackedPlotView(self):
+    def GetNextKeyForStackedPlotView(self):
         return FigureTypes.STACKEDPLOTTYPE + str(self.GetStackedPlotViewsCount())
 
     def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
@@ -302,7 +300,7 @@ class Viz_API:
                                       'magnetics/flux_loop(0)/flux/data'
         """
         # Get full data of the node (given 'path' is one of them)
-        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem.infoDict).execute()
+        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem).execute()
 
     def IDSDataAlreadyFetched(self, dataTreeView, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
@@ -385,11 +383,9 @@ class Viz_API:
 
         """Plotting of 0D data nodes, found within timed AOS
         """
-
-        # Get currently selected QVizTreeNode (QTreeWidgetItem)
         try:
+            # Get currently selected QVizTreeNode (QTreeWidgetItem)
             treeNode = dataTreeView.selectedItem
-            dataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None) #None will force a new Figure
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
@@ -398,8 +394,8 @@ class Viz_API:
         except ValueError as e:
             logging.error(str(e))
 
-    def plotSelectedSignalVsTimeAtCoordinate1D(self, dataTreeView, index, currentFigureKey,
-                                               treeNode, update, dataset_to_update=0):
+    def plotVsTimeAtGivenCoordinate1(self, dataTreeView, coordinateIndex, currentFigureKey,
+                                     treeNode, update, dataset_to_update=0):
         """Overwrite/Update the existing plot (done with
         'plotSignalVsTimeCommand' routine and currently still shown in
         the plot window labeled as 'currentFigureKey') using the same
@@ -407,7 +403,7 @@ class Viz_API:
         but with different array positional index.
 
         Arguments:
-            index             (int) : Array positional index.
+            coordinateIndex             (int) : Array positional index.
             currentFigureKey  (str) : Label of the current/relevant figure
                                       window.
             treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
@@ -418,7 +414,7 @@ class Viz_API:
             # Get label, title and xlabel
             if treeNode.is1DAndDynamic():
                 label, title, xlabel = treeNode.coordinateLabels(
-                    coordinateNumber=1, dtv=dataTreeView, index=index)
+                    coordinateNumber=1, dtv=dataTreeView, index=coordinateIndex)
 
             elif treeNode.is0DAndDynamic():
                 logging.warning(
@@ -426,7 +422,7 @@ class Viz_API:
                 return
 
             else:
-                logging.error("Unexpected node data dimension.")
+                logging.error("plotVsTimeAtGivenCoordinate1() supports only nodes with dimension <= 1D.")
                 return
 
 
@@ -438,15 +434,15 @@ class Viz_API:
                            title=title,
                            label=label,
                            xlabel="time[s]",
-                           vizTreeNode=treeNode).execute(plotWidget,
+                           vizTreeNode=treeNode).execute(plotWidget=plotWidget,
                                                          figureKey=currentFigureKey,
                                                          update=update,
                                                          dataset_to_update=dataset_to_update)
         except ValueError as e:
             logging.error(str(e))
 
-    def plotSelectedSignalVsCoordAtTimeIndex(self, dataTreeView, time_index, currentFigureKey,
-                                             treeNode, update, dataset_to_update=0):
+    def plotVsCoordinate1AtGivenTime(self, dataTreeView, time_index, currentFigureKey,
+                                     treeNode, update, dataset_to_update=0):
         """Overwrite/Update the existing plot (done with
         'plotSignalCommand' routine and currently still shown in
         the plot window labeled as 'currentFigureKey') but for different time
@@ -467,7 +463,7 @@ class Viz_API:
                                                               addTimeSlider=True)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=dataTreeView,
-                           vizTreeNode=treeNode).execute(plotWidget,
+                           vizTreeNode=treeNode).execute(plotWidget=plotWidget,
                                                          figureKey=currentFigureKey,
                                                          update=update,
                                                          dataset_to_update=dataset_to_update)

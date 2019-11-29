@@ -49,7 +49,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             update            () :
 
         """
-        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode.getData())
+        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode)
 
         self.treeNode = vizTreeNode
         self.title = title
@@ -123,9 +123,9 @@ class QVizPlotSignal(QVizAbstractCommand):
             # Get signal time
             self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
 
-            key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
-            tup = (self.dataTreeView.dataSource.shotNumber, self.treeNode.getInfoDict())
-            api.addNodeToFigure(figureKey, key, tup)
+            key = self.dataTreeView.dataSource.dataKey(self.treeNode)
+            tup = (self.dataTreeView.dataSource.shotNumber, self.treeNode)
+            api.AddNodeToFigure(figureKey, key, tup)
 
             # Shape of the signal
             # TODO/Note: as it seems the QVizPlotSignal is used for single

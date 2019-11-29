@@ -49,12 +49,12 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
                 for s in dtv.signalsList:
                     # If the itemVIZData matches, add the signal key to the list
                     # of keys for removal
-                    if signalItemVIZData == s.getInfoDict():
+                    if signalItemVIZData == s.getData():
                         # Set the signal isSelected attribute/status
                         signalItemVIZData['isSelected'] = 0
                         # Set the QTreeWidgetItem foreground color to blue
                         vizTreeNode.setStyleWhenContainingData()
-                        key = dtv.dataSource.dataKey(signalItemVIZData)
+                        key = dtv.dataSource.dataKey(vizTreeNode)
                         keysToRemove.append(key)
                         break
             # Go through the list of selected signals and delete all of them from

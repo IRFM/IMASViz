@@ -17,7 +17,7 @@ class QVizIMASNativeDataAccess:
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None):
 
         time_index = treeNode.timeValue()
-        index = 0
+        coordinateIndex = 0
 
         if as_function_of_time is None:
             as_function_of_time = treeNode.hasTimeXaxis(plotWidget)
@@ -26,18 +26,18 @@ class QVizIMASNativeDataAccess:
             time_index = plotWidget.sliderGroup.currentIndex
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
-            index = plotWidget.sliderGroup.currentIndex
+            coordinateIndex = plotWidget.sliderGroup.currentIndex
 
         if as_function_of_time:
             if treeNode.is0DAndDynamic():
-                return self.GetSignalVsTime(treeNode, index)
+                return self.GetSignalVsTime(treeNode, coordinateIndex)
             elif treeNode.is1DAndDynamic():
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 elif treeNode.embedded_in_time_dependent_aos():
-                    return self.GetSignalVsTime(treeNode, index)
+                    return self.GetSignalVsTime(treeNode, coordinateIndex)
                 else:
-                    raise ValueError('Unable to get the signal along time dimension for node: ' + treeNode.getPath())
+                    raise ValueError('Unable to get time dependent signal for node: ' + treeNode.getPath())
         else:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
@@ -47,7 +47,7 @@ class QVizIMASNativeDataAccess:
                 elif treeNode.embedded_in_time_dependent_aos():
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 else:
-                    raise ValueError('Unable to get the signal along space dimension for node: ' + treeNode.getPath())
+                    raise ValueError('Unable to get time independent signal for node: ' + treeNode.getPath())
 
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):

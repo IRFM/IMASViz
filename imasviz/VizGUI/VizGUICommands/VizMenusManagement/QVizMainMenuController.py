@@ -95,7 +95,7 @@ class QVizMainMenuController:
         dtv = self.openShotView.api.GetDTVFrames()[index]
         if dtv.isVisible():
             dtv.hide()
-        self.openShotView.api.removeDTVFrame(dtv)
+        self.openShotView.api.RemoveDTVFrame(dtv)
 
     def deleteAllViews(self, index):
         """Remove a DTV.
@@ -106,4 +106,4 @@ class QVizMainMenuController:
             dtv = self.openShotView.api.GetDTVFrames()[index]
             if dtv.isVisible():
                 dtv.hide()
-            self.openShotView.api.removeDTVFrame(dtv)
+            self.openShotView.api.RemoveDTVFrame(dtv)
