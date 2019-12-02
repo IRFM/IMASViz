@@ -426,6 +426,13 @@ class QVizDataTreeView(QTreeWidget):
             # Load the IDS Root occurrence
             ldh_obj.loadSelectedData(self, IDSName, occ, True)
 
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
+
 
 class QVizDataTreeViewFrame(QMainWindow):
     """ Set QMainWindow to contain the QTreeWidget.
@@ -840,6 +847,13 @@ class QVizDataTreeViewFrame(QMainWindow):
         layout.addWidget(cancelButton,  r, 0, 1, 2)
 
         dialog.show()
+
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
     # TODO:
     # def onCloseAndReopenDatabase()

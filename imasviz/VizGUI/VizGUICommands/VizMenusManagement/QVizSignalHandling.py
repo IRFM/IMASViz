@@ -50,7 +50,7 @@ class QVizSignalHandling(QObject):
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
         """
-        super(QVizSignalHandling, self).__init__()
+        super(QVizSignalHandling, self).__init__(parent=dataTreeView)
         self.dataTreeView = dataTreeView
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.plotFrame = None
@@ -619,6 +619,7 @@ class QVizSignalHandling(QObject):
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=None,
                                                       addTimeSlider=addTimeSlider)
+			self.addPlotWidgetToMDI(plotWidget)
             # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, label=label, xlabel=xlabel, vizTreeNode=self.treeNode)
             # Plot signal data to plot widget
@@ -667,6 +668,7 @@ class QVizSignalHandling(QObject):
                                                       figureKey=None,
                                                       addTimeSlider=addTimeSlider,
                                                        addCoordinateSlider=addCoordinateSlider)
+            self.addPlotWidgetToMDI(plotWidget)
             # Plot the selected signals
             QVizPlotSelectedSignals(self.dataTreeView, figureKey,
                                         all_DTV=all_DTV).execute(plotWidget)
@@ -752,6 +754,18 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.error(str(e))
 
+
+    def addPlotWidgetToMDI(self, plotWidget):
+        """Embeds the plotWidget inside MDI subwindow.
+        """
+        from PyQt5.QtWidgets import QMdiSubWindow
+
+        subWindow = QMdiSubWindow()
+        subWindow.setWidget(plotWidget)
+        subWindow.resize(plotWidget.width(), plotWidget.height())
+
+        self.getMDI().addSubWindow(subWindow)
+        
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
         """Add/Plot selected signals to existing figure.
@@ -869,3 +883,8 @@ class QVizSignalHandling(QObject):
             self.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
             logging.error(str(e))
+
+    def getMDI(self):
+        if self.parent().getMDI() != None:
+            return self.parent().getMDI()
+        return None

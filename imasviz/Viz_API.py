@@ -26,10 +26,13 @@ from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QV
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
+from PyQt5.QtWidgets import QMdiSubWindow
 
 class Viz_API:
 
-    def __init__(self):
+    def __init__(self, parent=None):
+
+        self.parent = parent
 
         self.figToNodes= {} #key = figure, values = list of selected nodes
         #figureframes contains all plotting frames
@@ -123,6 +126,13 @@ class Viz_API:
     # NOTE: a QVizDataTreeView accepts QVizDataTreeViewFrame as a parent object
     def ShowDataTree(self, dataTreeView):
         if isinstance(dataTreeView, QVizDataTreeViewFrame):
+
+            # If MDI is present, add the DTV to it as a subwindow
+            if self.getMDI() != None:
+                subWindow = QMdiSubWindow()
+                subWindow.setWidget(dataTreeView)
+
+                self.getMDI().addSubWindow(subWindow)
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
             dataTreeView.parent.show()
@@ -170,10 +180,20 @@ class Viz_API:
             figureKey (str) : Figure plotwidget window label (e.g. 'Figure:0).
         """
         frame = self.figureframes[figureKey]
-        if frame.isVisible():
-            frame.hide()
+        if frame.window().objectName() == "IMASViz root window":
+            # Hide/Show MDI subwindow
+            if frame.parent().isVisible():
+                frame.parent().hide() # frame.parent() is QMdiSubWindow
+            else:
+                # To show the figure, closed with X button, then both MDI
+                # subwindow AND the embedded plot frame must be shown
+                frame.parent().show()
+                frame.show()
         else:
-            frame.show()
+            if frame.isVisible():
+                frame.hide()
+            else:
+                frame.show()
 
     def GetFigurePlotsCount(self):
         """Return the next figure number available for plotting.
@@ -224,7 +244,12 @@ class Viz_API:
             figureKey (str) : Figure plotwidget window label (e.g. 'Figure:0).
                 """
         if figureKey in self.figureframes:
-            self.figureframes[figureKey].close()
+            frame = self.figureframes[figureKey]
+            if frame.window().objectName() == "IMASViz root window":
+                frame.parent().hide()
+                frame.parent().deleteLater()
+            else:
+                frame.close()
             del self.figureframes[figureKey]
         if figureKey in self.figToNodes:
             del self.figToNodes[figureKey]
@@ -287,6 +312,7 @@ class Viz_API:
     #Load IDS data for a given data tree frame and a given occurrence
     def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
                     threadingEvent=None):
+
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName, occurrence, threadingEvent).execute()
         else:
@@ -416,6 +442,7 @@ class Viz_API:
             label, title, dummy = \
                 treeNode.coordinateLabels(coordinateNumber=1, dtv=dataTreeView, index=index)
             figureKey, plotWidget = self.getPlotWidget(figureKey=None, addCoordinateSlider=True)
+			self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                            vizTreeNode=treeNode,
                            title=title,
@@ -433,6 +460,7 @@ class Viz_API:
             # Get currently selected QVizTreeNode (QTreeWidgetItem)
             treeNode = dataTreeView.selectedItem
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None) #None will force a new Figure
+			self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
                                xlabel="time[s]")
@@ -475,6 +503,7 @@ class Viz_API:
             currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                               figureKey=currentFigureKey,
                                                               addCoordinateSlider=True)
+			self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=dataTreeView,
                            title=title,
@@ -507,6 +536,7 @@ class Viz_API:
             currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                               figureKey=currentFigureKey,
                                                               addTimeSlider=True)
+			self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=dataTreeView,
                            vizTreeNode=treeNode).execute(plotWidget=plotWidget,
@@ -515,3 +545,8 @@ class Viz_API:
                                                          dataset_to_update=dataset_to_update)
         except ValueError as e:
             logging.error(str(e))
+
+    def getMDI(self):
+        if self.parent != None:
+            return self.parent
+        return None

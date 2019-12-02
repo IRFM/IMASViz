@@ -17,6 +17,7 @@ from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
 import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMdiSubWindow
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
@@ -114,7 +115,16 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # Connect custom UI elements
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        # Show TablePlotView window
+        # If the root window exists, it is assumed that the mandatory MDI
+        # exists too. Add the MultiplotWindow to to MDI.
+        if self.dataTreeView.window().objectName() == "IMASViz root window":
+            subWindow = QMdiSubWindow()
+            subWindow.resize(self.width(), self.height())
+            subWindow.setWidget(self)
+            self.dataTreeView.getMDI().addSubWindow(subWindow)
+
+        # Show the MultiPlot window (either on desktop or in MDI if it was
+        # passed there as a subwindow)
         self.show()
 
     def checkFigureKey(self, figureKey):
@@ -463,6 +473,13 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
     def getFigureKey(self):
         return self.figureKey
+
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
     # TODO
     # def setPlotConfigAttribute
