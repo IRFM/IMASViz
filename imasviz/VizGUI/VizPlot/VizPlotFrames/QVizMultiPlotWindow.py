@@ -115,12 +115,14 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # Connect custom UI elements
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        # If MDI is present, add the MultiplotWindow to to MDI.
-        if self.parent().getMDI() != None:
+        # If the root window exists, it is assumed that the mandatory MDI
+        # exists too. Add the MultiplotWindow to to MDI.
+        if self.dataTreeView.window().objectName() == "IMASViz root window":
             subWindow = QMdiSubWindow()
             subWindow.resize(self.width(), self.height())
             subWindow.setWidget(self)
-            self.getMDI().addSubWindow(subWindow)
+            self.dataTreeView.getMDI().addSubWindow(subWindow)
+
         # Show the MultiPlot window (either on desktop or in MDI if it was
         # passed there as a subwindow)
         self.show()

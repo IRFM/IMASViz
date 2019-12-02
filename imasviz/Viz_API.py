@@ -161,10 +161,12 @@ class Viz_API:
         if frame.window().objectName() == "IMASViz root window":
             # Hide/Show MDI subwindow
             if frame.parent().isVisible():
-                # frame.parent() is QMdiSubWindow
-                frame.parent().hide()
+                frame.parent().hide() # frame.parent() is QMdiSubWindow
             else:
+                # To show the figure, closed with X button, then both MDI
+                # subwindow AND the embedded plot frame must be shown
                 frame.parent().show()
+                frame.show()
         else:
             if frame.isVisible():
                 frame.hide()
