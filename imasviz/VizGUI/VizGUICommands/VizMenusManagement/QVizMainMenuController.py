@@ -88,6 +88,9 @@ class QVizMainMenuController:
                 # dtv.parent() is QMdiSubWindow
                 dtv.parent().hide()
             else:
+                # To show the DTV frame, closed with X button, then both MDI
+                # subwindow AND the embedded frame must be shown
+                dtv.show()
                 dtv.parent().show()
         else:
             # Hide/Show DTVframe window (e.g. when running examples)
