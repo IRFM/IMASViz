@@ -42,61 +42,78 @@ class Viz_API:
 
         QVizPreferences().build()
 
-    # Return the list of frames currently opened (QVizDataTreeViewFrame type object)
-    # There is one frame for one shot
     def GetDTVFrames(self):
+        """
+        Returns the list of shot views frames currently opened.
+        There is only one frame for a given shot.
+        """
         return self.DTVframeList
 
-    # Return the list of datasource currently opened (QVizIMASDataSource type)
-    # A data source is associated to one shot
     def GetDataSources(self):
+        """
+        Returns the list of data sources currently opened
+        A data source is associated to one shot.
+        :return: a list of data sources (QVizIMASDataSource objects)
+        """
         dataSourcesList = []
         for dtv in self.DTVlist:
             dataSourcesList.append(dtv.dataSource)
         return dataSourcesList
 
-    # Indicates if this data source object 'datasource' has been already created
     def isDataSourceAlreadyOpened(self, dataSource):
+        """
+        Returns True if this data source has been already created
+        :param dataSource: a QVizIMASDataSource object
+        :return: True or False
+        """
         dataSourcesList = self.GetDataSources()
         for ds in dataSourcesList:
             if dataSource.getKey() == ds.getKey():
                 return True
         return False
 
-    # Return the frame (of type QVizDataTreeViewFrame) for the given data source key
     def GetDTVFor(self, dataSourceKey):
+        """
+        Returns the shot view frame for the given data source key
+        :param dataSourceKey: (str) the key of a data source (returned by QVizIMASDataSource.dataKey())
+        :return: a QVizDataTreeViewFrame object
+        """
         for dtv in self.DTVlist:
             if dataSourceKey == dtv.dataSource.getKey():
                 return dtv
         return None
 
-    # Return the shot view frame (QVizDataTreeViewFrame) from the list of opened frames
     def RemoveDTVFrame(self, frame):
+        """
+        Removes the shot view frame from the list of opened frames
+        :param frame: a QVizDataTreeViewFrame object
+        """
         self.DTVframeList.remove(frame)
         self.DTVlist.remove(frame.dataTreeView)
 
-    # Add an entry to the figToNodes[figureKey] dictionary where:
-    # key   = dtv.dataSource.dataKey(vizTreeNode)      --> String
-    # value = (dtv.dataSource.shotNumber, vizTreeNode) --> Tuple
     def AddNodeToFigure(self, figureKey, key, tup):
+        """
+        Adds an entry to the figToNodes[figureKey] dictionary
+        :param figureKey: (str) figure key
+        :param key: (str) dtv.dataSource.dataKey(vizTreeNode)
+        :param tup: (tuple) (dtv.dataSource.shotNumber, vizTreeNode)
+        """
         if figureKey not in self.figToNodes:
             self.figToNodes[figureKey] = {}
         dic = self.figToNodes[figureKey]
         dic[key] = tup
 
-
-    # Return the path to the configuration file with name 'configurationName'
     def GetPlotConfigurationPath(self, configurationName):
-        """Get path to plot configuration file (.pcfg extension).
+        """
+        Get the path to plot configuration file (.pcfg extension).
         """
         return os.environ['HOME'] + "/.imasviz/" + configurationName + ".pcfg"
 
-    # Creates the (QVizDataTreeViewFrame) frame for the specified data source
     def CreateDataTree(self, dataSource):
-        """Create a IDS data tree from a data source.
-        Arguments:
-            dataSource (QVizIMASDataSource) : IDS data source from
-                                          QVizDataSourceFactory.
+        """
+        Returns the shot view frame for the specified data source
+        :param dataSource: a QVizIMASDataSource object
+        :return: a QVizDataTreeViewFrame object
         """
         if QVizGlobalValues.TESTING:
             IMAS_VERSION = QVizGlobalValues.TESTING_IMAS_VERSION
@@ -120,11 +137,12 @@ class Viz_API:
 
         return frame
 
-
-    # Displays the specified data tree frame
-    # dataTreeView can be a QVizDataTreeView object or a QVizDataTreeViewFrame object
-    # NOTE: a QVizDataTreeView accepts QVizDataTreeViewFrame as a parent object
     def ShowDataTree(self, dataTreeView):
+        """
+        Displays the specified data tree frame
+        NOTE: a QVizDataTreeView accepts QVizDataTreeViewFrame as a parent object
+        :param dataTreeView: a QVizDataTreeView or a QVizDataTreeViewFrame object
+        """
         if isinstance(dataTreeView, QVizDataTreeViewFrame):
 
             # If MDI is present, add the DTV to it as a subwindow
@@ -139,33 +157,35 @@ class Viz_API:
         else:
             raise ValueError('Wrong argument type arg for ShowDataTree(arg).')
 
-    # Displays a frame showing a list of all selected nodes from the dataTreeView object
-    # DTV can be a QVizDataTreeView object or a QVizDataTreeViewFrame object
-    # NOTE: a QVizDataTreeView accepts QVizDataTreeViewFrame as a parent object
     def ShowNodesSelection(self, DTV):
+        """
+        Displays a window showing a list of all selected nodes from the dataTreeView object
+        NOTE: a QVizDataTreeView accepts QVizDataTreeViewFrame as a parent object
+        :param DTV: a QVizDataTreeView or a QVizDataTreeViewFrame object
+        """
         from imasviz.VizGUI.VizWidgets.QVizNodesSelectionWindow import QVizNodesSelectionWindow
+        dataTreeView = DTV
         if isinstance(DTV, QVizDataTreeViewFrame):
             dataTreeView = DTV.dataTreeView
         self.nsw = QVizNodesSelectionWindow(dataTreeView)
         self.nsw.show()
 
     def GetSelectedSignalsDict(self, DTV):
-        """Returns the list of signals (nodes) dictionaries
-        selected by the user or from script commands (from a single opened
-        data tree view (DTVs)).
-
-        Arguments:
-            DTV: QVizDataTreeViewFrame or QVizDataTreeView object
         """
+        Returns the list of signals (nodes) dictionaries selected by GUI or script commands.
+        :param DTV: a QVizDataTreeViewFrame or QVizDataTreeView object
+        :return: a list of signals (nodes) dictionaries
+        """
+        dataTreeView = DTV
         if isinstance(DTV, QVizDataTreeViewFrame):
             dataTreeView = DTV.dataTreeView
-        else:
-            dataTreeView = DTV
         return dataTreeView.selectedSignalsDict
 
     def GetSelectedSignalsDictFromAllDTVs(self):
-        """Returns the signals (nodes) selected by the user of from script
-           commands (from all opened data tree views (DTVs))
+        """
+        Returns the list of signals (nodes) dictionaries selected by GUI or script commands
+        from all opened shot views (DTVs)
+        :return: a list of signals (nodes) dictionaries
         """
         allSelectedSignals = {}
         for i in range(len(self.DTVframeList)):
@@ -174,10 +194,9 @@ class Viz_API:
         return allSelectedSignals
 
     def ShowHideFigure(self, figureKey):
-        """Hide/show a figure.
-
-        Arguments:
-            figureKey (str) : Figure plotwidget window label (e.g. 'Figure:0).
+        """
+        SHows/Hides a figure
+        :param figureKey: (str) a figure key (e.g. 'Figure:0).
         """
         frame = self.figureframes[figureKey]
         if frame.window().objectName() == "IMASViz root window":
@@ -196,42 +215,58 @@ class Viz_API:
                 frame.show()
 
     def GetFigurePlotsCount(self):
-        """Return the next figure number available for plotting.
+        """
+        Returns the next figure number available for plotting.
+        :return: (int) the number of the next figure
         """
         return len(self.GetFiguresKeys())
 
     def GetTablePlotViewsCount(self):
-        """Return the next table plot number available for plotting.
+        """
+        Returns the next table plot number available for plotting.
+        :return: (int) the number of the next table plot
         """
         return len(self.GetFiguresKeys(FigureTypes.TABLEPLOTTYPE))
 
     def GetStackedPlotViewsCount(self):
-        """Return the next stacked plot number available for plotting.
+        """
+        Returns the next table plot number available for plotting.
+        :return: (int) the number of the next table plot
         """
         return len(self.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE))
 
     def GetNextKeyForTablePlotView(self):
-        """Returns string label for the next table plot (e.c. if 'TablePlot i' is the
-                last table plot on the list of existing table plots, value 'TablePlot i+1' is
-                returned.)
-                """
+        """
+        Returns the key of the next table plot (e.g. if 'TablePlot i' is the
+        latest table plot on the list of existing table plots, value 'TablePlot i+1' is
+        returned.)
+        :return: (str) the key of the next table plot
+        """
         return FigureTypes.TABLEPLOTTYPE + str(self.GetTablePlotViewsCount())
 
     def GetNextKeyForFigurePlots(self):
-        """Returns string label for the next figure (e.c. if 'Figure i' is the
-        last figure on the list of existing figures, value 'Figure i+1' is
-        returned.)
         """
+        Returns the key of the next figure plot (e.g. if 'Figure i' is the
+        latest figure on the list of existing figures, value 'Figure i+1' is
+        returned.)
+        :return: (str) the key of the next figure (plot)
+                """
         return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
 
     def GetNextKeyForStackedPlotView(self):
-        """Returns string label for the next stacked plot (e.c. if 'StackedPlot i' is the
-                        last table plot on the list of existing stacked plots, value 'StackedPlot i+1' is
-                        returned.)
-                        """
+        """
+        Returns the key of the next stacked plot (e.g. if 'StackedPlot i' is the
+        latest stacked plot on the list of existing stacked plots, value 'StackedPlot i+1' is
+        returned.)
+        :return: (str) the key of the next stacked plot
+        """
         return FigureTypes.STACKEDPLOTTYPE + str(self.GetStackedPlotViewsCount())
 
     def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
+        """
+        Returns the list of all figure keys
+        :return: (list) a list of figure keys
+        """
         figureKeys = []
         for key in self.figureframes.keys():
             if key.startswith(figureType):
@@ -239,10 +274,10 @@ class Viz_API:
         return sorted(figureKeys)
 
     def DeleteFigure(self, figureKey):
-        """Delete the figure
-        Arguments:
-            figureKey (str) : Figure plotwidget window label (e.g. 'Figure:0).
-                """
+        """
+        Deletes the specified figure
+        :param figureKey: a figure key (e.g. 'Figure:0)
+        """
         if figureKey in self.figureframes:
             frame = self.figureframes[figureKey]
             if frame.window().objectName() == "IMASViz root window":
@@ -255,91 +290,108 @@ class Viz_API:
             del self.figToNodes[figureKey]
 
     def GetFigureKey(self, userKey, figureType=FigureTypes.FIGURETYPE):
-        """Get the figure key
-                Arguments:
-                    userKey (str) : figure number
-                    figureType : FigureTypes.FIGURETYPE
-                        """
+        """
+        Get the figure key
+        :param userKey: (str) figure number
+        :param figureType: FigureTypes.FIGURETYPE
+        :return: (str) a figure key
+        """
         return figureType + userKey
 
     def getFigureKeyNum(self, figureKey, figureType):
-        """Extract figure number from figureKey (e.g. 'Figure:0' -> 0).
-        Arguments :
-        figureKey (str) : Figure key (label) (e.g. 'Figure:0').
-        figureType (str) : FigureTypes.FIGURETYPE or FigureTypes.TABLEPLOTTYPE or FigureTypes.STACKEDPLOTTYPE
+        """
+        Extract figure number from a figure key (e.g. 'Figure:0' -> 0).
+        :param figureKey: a figure key (e.g. 'Figure:0')
+        :param figureType: FigureTypes.FIGURETYPE or FigureTypes.STACKEDPLOTTYPE or FigureTypes.TABLEPLOTTYPE
+        :return: (str) a figure key
         """
         numFig = int(figureKey[len(figureType):])
         return numFig
 
-    def getFigureFrame(self, figureKey):
-        if figureKey in self.figureframes:
-            return self.figureframes[figureKey]
-        else:
-            print("No frame found with key: " + str(figureKey))
+    # def getFigureFrame(self, figureKey):
+    #     if figureKey in self.figureframes:
+    #         return self.figureframes[figureKey]
+    #     else:
+    #         print("No frame found with key: " + str(figureKey))
 
-    # Plot the set of signals selected by the user
     def PlotSelectedSignals(self, dataTreeFrame, plotWidget=None, figureKey=None, update=0, all_DTV=False):
+        """
+        Plots the current selected set of signals on a figure
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param plotWidget: a plot widget
+        :param figureKey: a figure key. If None, a new figure is created.
+        :param update: if 1, the current plot is updated otherwise a new plot is created
+        :param all_DTV: if True, all current selected set of signals on all shot views are plotted
+        """
         if figureKey is None:
             figureKey = self.GetNextKeyForFigurePlots()
         QVizPlotSelectedSignals(dataTreeFrame.dataTreeView, figureKey=figureKey,
                                 update=update, all_DTV=all_DTV).execute(plotWidget)
 
-    def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
-                                            configFileName = None,
-                                            update=0,
-                                            all_DTV=False):
-        """ Plot the set of signal nodes selected by the user to a new Table
-        Plot View.
+    def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame, all_DTV=False):
+        """
+        Plots the current selected set of signals of this shot view on a new table plot
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param all_DTV: if True, all current selected set of signals on all shot views are plotted
         """
         QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(all_DTV)
 
     # Plot the set of signals selected by the user
-    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath,
-                                    figureKey=None, update=0, all_DTV=False):
-        """ Plot the set of signal nodes selected by the user to a new Table
-        Plot View and apply configuration.
+    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath, all_DTV=False):
+        """
+        Selects a set of signals using the selection file and plots of this shot view on a new table plot
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param configFilePath: the path to a data selection file
+        :param all_DTV: if True, all current selected set of signals on all shot views are plotted
         """
         QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
             all_DTV=all_DTV,
             configFile=configFilePath)
 
-    # Load IDSs data for the given data tree frame
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0,
                             threadingEvent=None):
+        """
+        Load multiple IDSs data for a given data tree frame and a given occurrence
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param IDSNamesList: list of the names of the IDSs
+        :param occurrence: (int) occurrence to be loaded (will be the same for all IDSs)
+        :param threadingEvent: if True, data are loaded from a new Thread
+        """
         for IDSName in IDSNamesList:
             self.LoadIDSData(dataTreeFrame, IDSName, occurrence, threadingEvent)
 
-    #Load IDS data for a given data tree frame and a given occurrence
+
     def LoadIDSData(self, dataTreeFrame, IDSName, occurrence=0,
                     threadingEvent=None):
-
+        """
+        Load IDS data for a given data tree frame and a given occurrence
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param IDSName: the name of the IDS
+        :param occurrence: (int) occurrence of the IDS
+        :param threadingEvent: if True, data are loaded from a new Thread
+        """
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName, occurrence, threadingEvent).execute()
         else:
             QVizLoadSelectedData(dataTreeFrame, IDSName, occurrence, threadingEvent).execute()
 
 
-    def SelectSignals(self, dataTreeWindow, pathsMap):
-        """Select signals from a list of IMAS paths for the given tree view
-        QMainWindow.
-
-        Arguments:
-            dataTreeWindow (QMainWindow) : DTV QMainWindow object (containing
-                                           DTV - QTreeWidget).
-            pathsMap       (dict)       : pathsMap['paths'] : a list if signal paths (e.g.
+    def SelectSignals(self, DTV, pathsMap):
+        """
+        Select signals nodes from a list of IMAS paths for the given shot view.
+        :param DTV: a QVizDataTreeViewFrame object
+        :param pathsMap: (dict) pathsMap['paths'] : a list of signal paths (e.g.
                                            ['magnetics/flux_loop(0)/flux/data'])
                                            pathsMap['occurrences'] : a list of occurrences
         """
-        QVizSelectSignals(dataTreeWindow.dataTreeView, pathsMap).execute()
+        QVizSelectSignals(DTV.dataTreeView, pathsMap).execute()
 
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None, all_DTV=False):
-        """Plot select signals from multiple data tree frames (different shots)
-        on a single plot window.
-
-        Arguments:
-            dataTreeFramesList (Array) : A list of DTV frames (QMainWindow
-                                         objects)
-            figurekey          (string) : Figure key/label.
+        """
+        Plots current selected signal
+        :param dataTreeFramesList:  A list of DTV frames
+        :param figureKey: a figure key. If None, a new figure is created.
+        :param all_DTV: if True, all current selected set of signals on all shot views are plotted
         """
         i = 0
         update = 0
@@ -352,26 +404,26 @@ class Viz_API:
                                 update=update, all_DTV=all_DTV).execute()
             i += 1
 
-    # Unselect all previously selected signals for the given data tree frame
-    def UnSelectAllSignals(self, dataTreeFrame):
-        QVizUnselectAllSignals(dataTreeFrame.dataTreeView).execute()
-
+    def UnSelectAllSignals(self, dataTreeFrame, all_DTV=False):
+        """
+        Unselects all previously selected signals for the given shot view
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param all_DTV: if True, all selected signals from all shot views are unselected
+        """
+        QVizUnselectAllSignals(dataTreeFrame.dataTreeView, all_DTV=all_DTV).execute()
 
     def SelectSignalsGroup(self, dataTreeFrame, occurrence, onePathInTheGroup):
-        """Select a group of all signals - siblings of the node containing the
-        'onePathInTheGroup' path data.
-
-        Arguments:
-            dataTreeFrame     (obj) : wxDataTreeViewFrame object.
-            occurrence        (int) : IDS occurrence number (0-9).
-            onePathInTheGroup (str) : An IDS path to one of the node
+        """
+        Selects nodes for this shot view
+        :param dataTreeFrame: a QVizDataTreeViewFrame object
+        :param occurrence: the occurrence of an IDS
+        :param onePathInTheGroup: An IDS path to one of the node
                                       (signals), containing a data array
                                       (e.g. FLT_1D), of which all siblings
-                                      are to be selected.
+                                      in the AOS are to be selected.
                                       Example:
                                       'magnetics/flux_loop(0)/flux/data'
         """
-        # Get full data of the node (given 'path' is one of them)
         QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,  dataTreeFrame.dataTreeView.selectedItem).execute()
 
     def IDSDataAlreadyFetched(self, dataTreeView, IDSName, occurrence):
@@ -547,6 +599,16 @@ class Viz_API:
             logging.error(str(e))
 
     def getMDI(self):
-        if self.parent != None:
+        if self.parent is not None:
             return self.parent
         return None
+
+    def addPlotWidgetToMDI(self, plotWidget):
+        """Embeds the plotWidget inside MDI subwindow.
+        """
+        from PyQt5.QtWidgets import QMdiSubWindow
+
+        subWindow = QMdiSubWindow()
+        subWindow.setWidget(plotWidget)
+        subWindow.resize(plotWidget.width(), plotWidget.height())
+        self.getMDI().addSubWindow(subWindow)

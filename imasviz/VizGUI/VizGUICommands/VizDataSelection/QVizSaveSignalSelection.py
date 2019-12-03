@@ -28,7 +28,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
         """Set self.nodeData = nodeData etc. with the use of the
            QVizAbstractCommand
         """
-        QVizAbstractCommand.__init__(self, treeNode)
+        QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
         self.dataTreeView = dataTreeView
 
