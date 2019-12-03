@@ -619,7 +619,7 @@ class QVizSignalHandling(QObject):
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=None,
                                                       addTimeSlider=addTimeSlider)
-			self.addPlotWidgetToMDI(plotWidget)
+            self.addPlotWidgetToMDI(plotWidget)
             # Get the signal data for plot widget
             p = QVizPlotSignal(self.dataTreeView, label=label, xlabel=xlabel, vizTreeNode=self.treeNode)
             # Plot signal data to plot widget
