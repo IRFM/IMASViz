@@ -5,6 +5,18 @@ Release notes
 =============
 
 -------------
+Version 2.3.6
+-------------
+
+- Code refactoring: renaming functions and other improvements
+- Tofu plugin: fixing import
+- Adding MDI feature for windows management
+- Adding comments to VIZ_API
+- Prevent to overlap data with different time vectors when using the time slider
+- Prevent to overlap data with different coordinates when using the coord. slider
+- Bugs fixes
+
+-------------
 Version 2.3.5
 -------------
 
