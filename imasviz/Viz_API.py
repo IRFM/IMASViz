@@ -493,7 +493,7 @@ class Viz_API:
             # Get label and title
             label, title, dummy = \
                 treeNode.coordinateLabels(coordinateNumber=1, dtv=dataTreeView, index=index)
-            figureKey, plotWidget = self.getPlotWidget(figureKey=None, addCoordinateSlider=True)
+            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None, addCoordinateSlider=True)
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                            vizTreeNode=treeNode,
@@ -555,7 +555,12 @@ class Viz_API:
             currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                               figureKey=currentFigureKey,
                                                               addCoordinateSlider=True)
-            self.addPlotWidgetToMDI(plotWidget)
+
+            # Add plot window to subwindow and to MDI only if the plotWidget
+            # with the given figurekey does not exist yet
+            if currentFigureKey not in self.figureframes:
+                self.addPlotWidgetToMDI(plotWidget)
+
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=dataTreeView,
                            title=title,
@@ -588,7 +593,11 @@ class Viz_API:
             currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                               figureKey=currentFigureKey,
                                                               addTimeSlider=True)
-            self.addPlotWidgetToMDI(plotWidget)
+            api = dataTreeView.imas_viz_api
+            # Add plot window to subwindow and to MDI only if the plotWidget
+            # with the given figurekey does not exist yet
+            if currentFigureKey not in self.figureframes:
+                self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=dataTreeView,
                            vizTreeNode=treeNode).execute(plotWidget=plotWidget,

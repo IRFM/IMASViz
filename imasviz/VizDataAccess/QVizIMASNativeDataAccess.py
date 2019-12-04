@@ -4,6 +4,7 @@ import traceback
 import logging
 import numpy as np
 import re
+
 from PyQt5.QtWidgets import QApplication
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
@@ -23,10 +24,10 @@ class QVizIMASNativeDataAccess:
             as_function_of_time = treeNode.hasTimeXaxis(plotWidget)
 
         if plotWidget is not None and plotWidget.addTimeSlider:
-            time_index = plotWidget.sliderGroup.currentIndex
+            time_index = plotWidget.sliderGroup.slider.value()
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
-            coordinateIndex = plotWidget.sliderGroup.currentIndex
+            coordinateIndex = plotWidget.sliderGroup.slider.value()
 
         if as_function_of_time:
             if treeNode.is0DAndDynamic():
@@ -51,17 +52,17 @@ class QVizIMASNativeDataAccess:
 
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
-        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView, StackedPlotWindow
         if treeNode.is1DAndDynamic():
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
             xData = None
-            if plotWidget is not None and not isinstance(plotWidget, QVizStackedPlotView):
+            if plotWidget is not None and not isinstance(plotWidget, StackedPlotWindow):
                 pgPlotItem = plotWidget.pgPlotWidget.plotItem
                 if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
                     return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
-            elif plotWidget is not None and isinstance(plotWidget, QVizStackedPlotView):
+            elif plotWidget is not None and isinstance(plotWidget, StackedPlotWindow):
                 pgPlotItem = plotWidget.getCurrentPlotItem()
                 if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
@@ -110,19 +111,38 @@ class QVizIMASNativeDataAccess:
 
     #this function is used for plotting 1D dynamic arrays whose values are defined in time slices (dynamic AOSs)
     def GetSignalVsTime(self, treeNode, index):
+        # Set global time
+        time = treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataSource)
+        treeNode.globalTime = time
+
         if treeNode.is0DAndDynamic():
             return self.Get0DSignalVsTime(treeNode)
         # Get list of paths of arrays through time slices
         data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        ids = self.dataSource.ids[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         #print "time_slices_count " + str(time_slices_count)
         v = []
-        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, treeNode.getInfoDict())
-
+        imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
         for i in range(0, time_slices_count):
             # Get values of the array at index
-            value_at_index = eval('ids.' + data_path_list[i] + '[' + str(index) + ']')
+            value_at_index = eval('imas_entry.' + data_path_list[i] + '[' + str(index) + ']')
+            v.append(value_at_index)
+
+        rarray = np.array([np.array(v)])
+        tarray = np.array([time])
+        return tarray, rarray
+
+    # this function is used for plotting 0D dynamic arrays whose values are defined in time slices (dynamic AOSs)
+    def Get0DSignalVsTime(self, treeNode):
+        # Get list of paths of arrays through time slices
+        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
+        ids = self.dataSource.ids[treeNode.getOccurrence()]
+        time_slices_count = len(data_path_list)
+        # print "time_slices_count " + str(time_slices_count)
+        v = []
+        time = treeNode.globalTime
+        for i in range(0, time_slices_count):  # Get values of the 0D scalar at each time slice
+            value_at_index = eval('ids.' + data_path_list[i])
             v.append(value_at_index)
 
         rarray = np.array([np.array(v)])
@@ -141,27 +161,6 @@ class QVizIMASNativeDataAccess:
         rarray = np.array([np.array(data_path_list)])
         tarray = np.array([np.array(xData)])
         return tarray, rarray
-
-
-    #this function is used for plotting 0D dynamic arrays whose values are defined in time slices (dynamic AOSs)
-    def Get0DSignalVsTime(self, treeNode):
-        # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        ids = self.dataSource.ids[treeNode.getOccurrence()]
-        time_slices_count = len(data_path_list)
-        #print "time_slices_count " + str(time_slices_count)
-        v = []
-        time = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, treeNode.getInfoDict())
-
-        for i in range(0, time_slices_count):# Get values of the 0D scalar at each time slice
-            value_at_index = eval('ids.' + data_path_list[i])
-            v.append(value_at_index)
-
-        rarray = np.array([np.array(v)])
-        tarray = np.array([time])
-        return tarray, rarray
-
-
 
     def GetShapeofSignal(self, selectedNodeData, shotNumber):
         try:

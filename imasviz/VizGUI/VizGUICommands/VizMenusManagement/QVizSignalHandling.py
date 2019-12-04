@@ -778,9 +778,6 @@ class QVizSignalHandling(QObject):
             figureKey = self.imas_viz_api. \
                 GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
 
-            # api = self.dataTreeView.imas_viz_api
-            # figureKey, plotWidget = api.GetPlotWidget(figureKey)
-
             QVizPlotSelectedSignals(self.dataTreeView, figureKey, update=0,
                                     all_DTV=all_DTV).execute()
         except ValueError as e:

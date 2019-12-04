@@ -12,6 +12,8 @@
 #*******************************************************************************
 
 import pyqtgraph as pg
+import numpy as np
+import logging
 from PyQt5.QtCore import Qt, QMetaObject, QRect
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame
@@ -99,6 +101,16 @@ class QVizPlotWidget(QWidget):
 
         # Plot and plot settings
         # - Add plot
+
+        # if vizTreeNode.globalTime is None and self.addTimeSlider:
+        #     self.sliderGroup.slider.setEnabled(False)
+
+        if not self.plotsHaveSameTimeBasis(vizTreeNode):
+            return
+
+        if not self.plotsHaveSameCoordinate1(vizTreeNode):
+            return
+
         self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
         # Set only when adding the first plot. All additionally added plots
@@ -115,6 +127,7 @@ class QVizPlotWidget(QWidget):
 
         if vizTreeNode is not None:
             self.vizTreeNodesList.append(vizTreeNode)
+
         return self
 
     def getPlotItem(self):
@@ -129,6 +142,77 @@ class QVizPlotWidget(QWidget):
         """
         return self.pgPlotWidget.getPlotItem().listDataItems()
 
+    def getPlotsData(self, plotIndex):
+        """
+        Returns a tuple (x,y) for the given plot index
+        :param plotIndex: the index of a plot contained in this plot Widget
+        :return: a tuple (x,y)
+        """
+        listDataItems = self.getPlotList()
+        if listDataItems is not None and len(listDataItems) > plotIndex:
+            return listDataItems[plotIndex].getData()
+        return None
+
+    def getGlobalTimeVectors(self):
+        timeVectors = []
+        for node in self.vizTreeNodesList:
+            timeVectors.append(node.globalTime)
+        return timeVectors
+
+    def getCoordinate1Values(self):
+        coordinate1Vectors = []
+        for node in self.vizTreeNodesList:
+            if node.is1DAndDynamic():
+                coordinate1Vectors.append(node.coordinateValues(coordinateNumber=1, dataTreeView=self.dataTreeView))
+        return coordinate1Vectors
+
+    def plotsHaveSameTimeBasis(self, vizTreeNode):
+        if self.addTimeSlider:
+            timeVectors = self.getGlobalTimeVectors()
+            if len(timeVectors) == 0:  # Happens when the first plot is added
+                return True
+            if vizTreeNode.globalTime is None:
+                vizTreeNode.globalTime = \
+                    vizTreeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
+            if vizTreeNode.globalTime is None:
+                logging.error("Could not add plot for: " + vizTreeNode.getPath() +
+                              ". No global time vector found for the IDS which contains this node.")
+                return False
+            timeVectors.append(vizTreeNode.globalTime)
+            sameGlobalTime = True
+            for i in range(1, len(timeVectors)):
+                if not np.array_equal(timeVectors[i - 1], timeVectors[i]):
+                    sameGlobalTime = False
+                    break
+            if not sameGlobalTime:
+                logging.error("Could not add plot for: " + vizTreeNode.getPath() +
+                              ". Existing plot(s) has/have not the same time vector.")
+                return False
+            else:
+                return True
+        return True
+
+    def plotsHaveSameCoordinate1(self, vizTreeNode):
+        if self.addCoordinateSlider:
+            if vizTreeNode.is0DAndDynamic():  # we ignore 0D data, they have no coordinate1, so they remain constant
+                                              # when sliding along coordinate1
+                return True
+            coordinate1Vectors = self.getCoordinate1Values()
+            if len(coordinate1Vectors) == 0:  # Happens when the first plot is added
+                return True
+                coordinate1Vectors.append(vizTreeNode.getCoordinate1Values())
+            sameCoordinate1 = True
+            for i in range(1, len(coordinate1Vectors)):
+                if not np.array_equal(coordinate1Vectors[i - 1], coordinate1Vectors[i]):
+                    sameCoordinate1 = False
+                    break
+            if not sameCoordinate1:
+                logging.error("Could not add plot for: " + vizTreeNode.getPath() +
+                              ". Existing plot(s) has/have not the same coordinate1 values.")
+                return False
+            else:
+                return True
+        return True
 
     def setContents(self):
         """Setup QVizPlotWidget contents.
@@ -160,7 +244,7 @@ class QVizPlotWidget(QWidget):
             self.separatorLine = self.sliderGroupDict['separatorLine']
             self.slider = self.sliderGroupDict['slider']
             self.sliderLabel = self.sliderGroupDict['sliderLabel']
-            self.timeFieldLabel = self.sliderGroupDict['timeFieldLabel']
+            self.sliderFieldLabel = self.sliderGroupDict['sliderFieldLabel']
             self.indexLabel = self.sliderGroupDict['indexLabel']
             self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
 
@@ -173,8 +257,10 @@ class QVizPlotWidget(QWidget):
             self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
             self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
+            self.sliderGroup.updateValues(self.sliderGroup.slider.value())  # update values of current time/coordinate1 changed by the slider
+
             # Add time label
-            self.gridLayout.addWidget(self.timeFieldLabel, 6, 0, 1, 10)
+            self.gridLayout.addWidget(self.sliderFieldLabel, 6, 0, 1, 10)
 
         #Add a legend
         self.pgPlotWidget.getPlotItem().addLegend()
@@ -240,32 +326,18 @@ class sliderGroup():
         if self.isTimeSlider:
             self.sliderLabel = self.setLabel(text='Time slider')
             # Set index label
-            self.indexLabel = self.setLabel(text='Time index Value: ')
+            self.indexLabel = self.setLabel(text='Index Value: ')
         else:
             self.sliderLabel = self.setLabel(text='Coordinate1 slider')
             # Set index label
-            self.indexLabel = self.setLabel(text='Coordinate1 index Value: ')
+            self.indexLabel = self.setLabel(text='Index Value: ')
 
         # Set slider
         self.slider = self.setSlider()
 
-        if self.isTimeSlider:
-            self.timeFieldLabel = self.setLabel(text='Time:')
-            if self.active_treeNode.globalTime is not None:
-                self.timeFieldLabel.setText("Time: " + str(self.active_treeNode.globalTime[0]) + " [s]")
-        else:
-            self.timeFieldLabel = self.setLabel(text='Coordinate1:')
-            if self.active_treeNode.coordinate1 == "1..N" or \
-                            self.active_treeNode.coordinate1 == "1...N":
-                s = "1..N"
-            else:
-                s = self.active_treeNode.getIDSName() + "." + self.active_treeNode.evaluateCoordinateVsTime(coordinateNumber=1)
-            s = QVizGlobalOperations.makeIMASPath(s)
-            self.timeFieldLabel.setText("Coordinate1: " + s)
+        self.sliderValueIndicator = self.setSliderValueIndicator()  # Set slider value indicator
 
-
-        # Set slider value indicator
-        self.sliderValueIndicator = self.setSliderValueIndicator()
+        self.sliderFieldLabel = self.setSliderFieldLabel('')
 
         # Connect on signals
         self.slider.valueChanged.connect(self.onSliderChange)
@@ -277,11 +349,36 @@ class sliderGroup():
             { 'separatorLine'        : self.separatorLine,
               'slider'               : self.slider,
               'sliderLabel'          : self.sliderLabel,
-              'timeFieldLabel'       : self.timeFieldLabel,
+              'sliderFieldLabel'     : self.sliderFieldLabel,
               'indexLabel'           : self.indexLabel,
               'sliderValueIndicator' : self.sliderValueIndicator}
 
         return self.timeSliderGroup
+
+    def updateValues(self, indexValue):
+        #print(indexValue)
+        if self.isTimeSlider:
+            self.sliderFieldLabel = self.setLabel(text='Time:')
+            if self.active_treeNode.globalTime is None:
+                self.active_treeNode.globalTime = \
+                    self.active_treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
+            if self.active_treeNode.globalTime is not None:
+                self.parent.sliderFieldLabel.setText("Time: " +
+                                              str(self.active_treeNode.globalTime[indexValue]) + " [s]")
+            else:
+                self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
+        else:
+            self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
+            if self.active_treeNode.getCoordinate(coordinateNumber=1) == "1..N" or \
+                            self.active_treeNode.getCoordinate(coordinateNumber=1) == "1...N":
+                s = "1..N"
+            else:
+                s = self.active_treeNode.getIDSName() + "." + \
+                    self.active_treeNode.evaluateCoordinateVsTime(coordinateNumber=1)
+            s = QVizGlobalOperations.makeIMASPath(s)
+            value = self.active_treeNode.coordinateValues(coordinateNumber=1,
+                                                          dataTreeView=self.dataTreeView)[indexValue]
+            self.parent.sliderFieldLabel.setText("Coordinate1: " + s + " (Value = " + str(value) + ")")
 
     def setSlider(self):
         """Set slider.
@@ -289,7 +386,7 @@ class sliderGroup():
 
         # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
         self.active_treeNode = self.dataTreeView.selectedItem
-        self.currentIndex = self.active_treeNode.infoDict['i']
+        #self.currentIndex = self.active_treeNode.infoDict['i']
 
         if self.isTimeSlider:
             # Set index slider using coordinates as index (e.g. psi)
@@ -299,20 +396,19 @@ class sliderGroup():
             maxValue = int(self.active_treeNode.timeMaxValue()) - 1
         else:
             # Set index slider using time as index
-            nodeData = self.active_treeNode.getInfoDict()
-            # Set IDS source database
-            imas_data_entry = self.dataTreeView.dataSource.ids[self.active_treeNode.getOccurrence()]
+            nodeData = self.active_treeNode.getData()
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
             maxValue = self.active_treeNode.coordinateLength(
-                coordinateNumber=1, imas_data_entry=imas_data_entry) - 1
+                coordinateNumber=1, dataTreeView=self.dataTreeView) - 1
 
         slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
         slider.setMinimum(minValue)
         slider.setMaximum(maxValue)
-        slider.setValue(int(self.currentIndex))
+        #slider.setValue(int(self.currentIndex))
+        slider.setValue(0)
 
         return slider
 
@@ -340,18 +436,18 @@ class sliderGroup():
 
         return sliderLabel
 
-    def setTimeFieldLabel(self, text=''):
+    def setSliderFieldLabel(self, text=''):
         """Set label with given text.
         """
 
-        timeFieldLabel = QLabel()
-        timeFieldLabel.setText(text)
-        timeFieldLabel.setAlignment(Qt.AlignLeft)
-        timeFieldLabel.setWordWrap(True)
-        timeFieldLabel.setFixedHeight(25)
-        timeFieldLabel.setFont(GlobalFonts.TEXT_MEDIUM)
+        sliderFieldLabel = QLabel()
+        sliderFieldLabel.setText(text)
+        sliderFieldLabel.setAlignment(Qt.AlignLeft)
+        sliderFieldLabel.setWordWrap(True)
+        sliderFieldLabel.setFixedHeight(25)
+        sliderFieldLabel.setFont(GlobalFonts.TEXT_MEDIUM)
 
-        return timeFieldLabel
+        return sliderFieldLabel
 
     def setSliderValueIndicator(self):
         """Set widget displaying current slider value.
@@ -372,16 +468,10 @@ class sliderGroup():
         self.sliderValueIndicator.setText(str(self.slider.value()))
         treeNode = self.dataTreeView.selectedItem
 
-        if self.isTimeSlider:
-            if treeNode.globalTime is not None:
-                self.timeFieldLabel.setText("Time: " + str(treeNode.globalTime[self.slider.value()]) + " [s]")
-            else:
-                self.timeFieldLabel.setText("Undefined IDS global time.")
-
         # Don't plot when the slider is being dragged by mouse. Plot on slider
         # release. This is important to still plot on value change by
         # keyboard arrow keys
-        if self.sliderPress == False:
+        if not self.sliderPress:
             self.executePlot()
 
 
@@ -401,11 +491,10 @@ class sliderGroup():
         self.sliderPress = True
 
     def executePlot(self):
-        """Execute replotting according to slider values.
+        """Replots according to slider values.
         """
-        self.currentIndex = self.slider.value()
-        #Get title of the current QVizPlotWidget
-        currentFigureKey = self.parent.windowTitle()
+        currentIndex = self.slider.value()
+        currentFigureKey = self.parent.windowTitle() #Get title of the current QVizPlotWidget
         i = 0
         api = self.dataTreeView.imas_viz_api
         for node in self.parent.vizTreeNodesList:
@@ -414,7 +503,7 @@ class sliderGroup():
 
                 api.plotVsCoordinate1AtGivenTime(
                     dataTreeView=self.dataTreeView,
-                    time_index=self.currentIndex,
+                    time_index=currentIndex,
                     currentFigureKey=currentFigureKey,
                     treeNode=self.active_treeNode,
                     update=1,
@@ -422,10 +511,12 @@ class sliderGroup():
             else:
                 api.plotVsTimeAtGivenCoordinate1(
                     dataTreeView=self.dataTreeView,
-                    coordinateIndex=self.currentIndex,
+                    coordinateIndex=currentIndex,
                     currentFigureKey=currentFigureKey,
                     treeNode=self.active_treeNode,
                     update=1,
                     dataset_to_update=i)
 
             i += 1
+
+        self.updateValues(self.slider.value())

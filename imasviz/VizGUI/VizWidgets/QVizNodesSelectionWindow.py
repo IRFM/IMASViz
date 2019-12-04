@@ -50,13 +50,12 @@ class QVizNodesSelectionWindow(QDialog):
         self.create(dataTreeView)
 
     def create(self,dataTreeView):
-
-        self.dataTreeView = dataTreeView
-
-        selectedSignalsDict = self.dataTreeView.selectedSignalsDict
         """Create window displaying current selected paths.
         """
-        title = 'Selected paths'
+        self.dataTreeView = dataTreeView
+        selectedSignalsDict = self.dataTreeView.selectedSignalsDict
+        title = 'Selected paths: (' + self.dataTreeView.dataSource.getName() + ")"
+        self.setWindowTitle(title)
         table = QTableWidget()
         table.setRowCount(len(selectedSignalsDict))
         table.setColumnCount(3)

@@ -206,7 +206,9 @@ class QVizTreeNode(QTreeWidgetItem):
     def evaluateCoordinateVsTime(self, coordinateNumber):#the result can eventually depend on [itime]
         return self.evaluatePath(self.coordinates[coordinateNumber - 1])
 
-    def coordinateLength(self, coordinateNumber, imas_data_entry):
+    def coordinateLength(self, coordinateNumber, dataTreeView):
+        # Set IDS source database
+        imas_data_entry = dataTreeView.dataSource.ids[self.getOccurrence()]
         if self.coordinates[coordinateNumber - 1] == "1..N" or\
                         self.coordinates[coordinateNumber - 1] == "1...N":
             r = np.array([eval('imas_data_entry.' + self.getDataName())])
@@ -216,6 +218,27 @@ class QVizTreeNode(QTreeWidgetItem):
                        self.evaluateCoordinate(coordinateNumber)
         len_to_evaluate = eval('len(' + to_evaluate + ')')
         return len_to_evaluate
+
+    def coordinateValues(self, coordinateNumber, dataTreeView):
+        # Set IDS source database
+        imas_data_entry = dataTreeView.dataSource.ids[self.getOccurrence()]
+        if self.coordinates[coordinateNumber - 1] == "1..N" or\
+                        self.coordinates[coordinateNumber - 1] == "1...N":
+            r = np.array([eval('imas_data_entry.' + self.getDataName())])
+            return r[0]
+        # Set python expression to get length of the array
+        to_evaluate = 'imas_data_entry.' + self.getIDSName() + '.' + \
+                       self.evaluateCoordinate(coordinateNumber)
+        return eval(to_evaluate)
+
+    def getGlobalTimeForArraysInDynamicAOS(self, dataSource):
+        imas_entry = dataSource.ids[self.getOccurrence()]
+        t = None
+        try:
+            t = eval("imas_entry." + self.getIDSName() + ".time")
+            return t
+        except ValueError:
+            return None
 
     def timeMaxValue(self):
         if self.time_dependent(self.parametrizedPath):
