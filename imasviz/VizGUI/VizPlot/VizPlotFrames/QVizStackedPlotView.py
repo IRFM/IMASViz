@@ -135,6 +135,7 @@ class QVizStackedPlotView(QWidget):
         if self.displayAllXAxis.isChecked():
             [el.getAxis('bottom').setStyle(showValues=True) for el in self.plotList]
         else:
+            # Set false for all plots except for the last/bottom one
             [el.getAxis('bottom').setStyle(showValues=False) for el in self.plotList[:-1]]
 
 class StackedPlotWindow(pg.GraphicsWindow):
