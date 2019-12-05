@@ -140,6 +140,9 @@ class QVizIMASNativeDataAccess:
         time_slices_count = len(data_path_list)
         # print "time_slices_count " + str(time_slices_count)
         v = []
+        if treeNode.globalTime is None:
+            treeNode.globalTime = \
+                treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataSource)
         time = treeNode.globalTime
         for i in range(0, time_slices_count):  # Get values of the 0D scalar at each time slice
             value_at_index = eval('ids.' + data_path_list[i])

@@ -33,6 +33,8 @@ class QVizPlotWidget(QWidget):
                  addTimeSlider=False, addCoordinateSlider=False):
         super(QVizPlotWidget, self).__init__(parent)
 
+        self.vizTreeNodesList = []
+
         self.addTimeSlider = addTimeSlider
         self.addCoordinateSlider = addCoordinateSlider
         self.dataTreeView = dataTreeView
@@ -57,8 +59,6 @@ class QVizPlotWidget(QWidget):
 
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
-
-        self.vizTreeNodesList = []
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
@@ -368,17 +368,21 @@ class sliderGroup():
             else:
                 self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
         else:
-            self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
-            if self.active_treeNode.getCoordinate(coordinateNumber=1) == "1..N" or \
-                            self.active_treeNode.getCoordinate(coordinateNumber=1) == "1...N":
-                s = "1..N"
-            else:
-                s = self.active_treeNode.getIDSName() + "." + \
-                    self.active_treeNode.evaluateCoordinateVsTime(coordinateNumber=1)
-            s = QVizGlobalOperations.makeIMASPath(s)
-            value = self.active_treeNode.coordinateValues(coordinateNumber=1,
-                                                          dataTreeView=self.dataTreeView)[indexValue]
-            self.parent.sliderFieldLabel.setText("Coordinate1: " + s + " (Value = " + str(value) + ")")
+            node = self.active_treeNode
+            if len(self.parent.vizTreeNodesList) > 0:
+                node = self.parent.vizTreeNodesList[0]
+            if node.is1DAndDynamic():
+                self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
+                if node.getCoordinate(coordinateNumber=1) == "1..N" or \
+                                node.getCoordinate(coordinateNumber=1) == "1...N":
+                    s = "1..N"
+                else:
+                    s = node.getIDSName() + "." + \
+                        node.evaluateCoordinateVsTime(coordinateNumber=1)
+                s = QVizGlobalOperations.makeIMASPath(s)
+                value = node.coordinateValues(coordinateNumber=1,
+                                                              dataTreeView=self.dataTreeView)[indexValue]
+                self.parent.sliderFieldLabel.setText("Coordinate1: " + s + " (Value = " + str(value) + ")")
 
     def setSlider(self):
         """Set slider.
