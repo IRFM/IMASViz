@@ -8,8 +8,8 @@ from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 
 class QVizOpenShotView:
-    def __init__(self):
-        self.api = Viz_API()
+    def __init__(self, parent=None):
+        self.api = Viz_API(parent)
 
     def Open(self, evt, dataSourceName, imasDbName, userName, shotNumber, runNumber, UDAMachineName=None):
 

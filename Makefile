@@ -17,6 +17,7 @@ default:
 
 doc:
 	# Generate PDF and HTML documentation
+	# on the Gateway first loading the "texlive" is required
 	cd ${VIZ_HOME}/doc; \
 	make html; \
 	make latexpdf

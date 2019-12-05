@@ -22,17 +22,15 @@ from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractComman
 class QVizSelectSignalsGroup(QVizAbstractCommand):
     """Select a group of all signals - siblings of the node.
     """
-    def __init__(self, dataTreeView, nodeData = None):
+    def __init__(self, dataTreeView, treeNode = None):
         """
         Arguments:
             dataTreeView (QTreeWidget) : QTreeWidget object (DTV tree widget).
             nodeData     (array)       : Array of node data.
         """
-        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
+        QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
     def execute(self):
-        #self.updateNodeData()
-
         # Get the name of the clicked-on signal
         startSigName = self.nodeData['Path']
 
@@ -53,4 +51,4 @@ class QVizSelectSignalsGroup(QVizAbstractCommand):
                 self.dataTreeView.selectedItem = signal
                 # Select the tree item corresponding to the signal
                 QVizSelectSignal(dataTreeView=self.dataTreeView,
-                                 nodeData=signal.getInfoDict()).execute()
+                                 treeNode=signal).execute()

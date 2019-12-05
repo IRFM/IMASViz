@@ -69,8 +69,8 @@ class ToreSupraDataSource:
 
 
     #This defines the unique key attached to each data which can be plotted
-    def dataKey(self, nodeData):
-        return self.name + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+    def dataKey(self, vizTreeNode):
+        return self.name + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + vizTreeNode.getPath()
 
     def getShortLabel(self):
         return self.name + ":" + str(self.shotNumber) + ":" + str(self.runNumber)

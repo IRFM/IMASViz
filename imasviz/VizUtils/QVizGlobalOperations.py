@@ -51,15 +51,6 @@ class QVizGlobalOperations:
             return None
 
     @staticmethod
-    def getGlobalTimeForArraysInDynamicAOS(ids, selectedNodeData):
-        t = None
-        try:
-            t = np.array(eval("ids." + selectedNodeData['IDSName'] + ".time"))
-            return t
-        except ValueError:
-            return None
-
-    @staticmethod
     def message(parent=None, message='', title=''):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Critical)

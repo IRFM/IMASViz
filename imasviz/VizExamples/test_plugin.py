@@ -38,7 +38,7 @@ api = Viz_API()
 # Set data source retriever/factory
 dataSourceFactory = QVizDataSourceFactory()
 
-shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number for tokamak='test', run=0 ")
+ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
 
 if not ok:
     print("User input has failed. Test not executed.")
@@ -47,17 +47,19 @@ else:
     # Load IMAS database
     dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                           shotNumber=shotNumber,
-                                          runNumber=0,
-                                          userName=os.environ['USER'],
-                                          imasDbName='test')
+                                          runNumber=runNumber,
+                                          userName=userName,
+                                          imasDbName=tokamak)
 
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)
 
     # Set the list of node paths that are to be selected
     paths = []
-    for i in range(0,1):
-        paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
+    paths.append('equilibrium.time_slice[0].profiles_1d.j_tor')
+    # paths = []
+    # for i in range(0,1):
+    #     paths.append('magnetics/flux_loop(' + str(i) + ')/flux/data')
 
     # Change it to dictionary with paths an occurrences (!)
     paths = {'paths' : paths,

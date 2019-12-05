@@ -31,12 +31,11 @@ class QVizSelectSignal(QVizAbstractCommand):
                                          item in the DTV, will be used
                                          (self.dataTreeView.selectedItem).
     """
-    def __init__(self, dataTreeView, nodeData = None):
-        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
+    def __init__(self, dataTreeView, treeNode = None):
+        QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
     def execute(self):
-        self.updateNodeData()
-        key = self.dataTreeView.dataSource.dataKey(self.nodeData)
+        key = self.dataTreeView.dataSource.dataKey(self.treeNode)
         # Set the node selection status
         self.nodeData['isSelected'] = 1
 

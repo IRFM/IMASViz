@@ -36,8 +36,8 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
             self.generatedDataTree.run()  # This will call the get() operation for fetching IMAS data
 
     # This defines the unique key attached to each data which can be plotted
-    def dataKey(self, nodeData):
-        return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + nodeData['Path']
+    def dataKey(self, vizTreeNode):
+        return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + vizTreeNode.getPath()
 
     def getShortLabel(self):
         return "UDA: " + self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)

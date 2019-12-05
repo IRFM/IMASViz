@@ -17,6 +17,7 @@ from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
 import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QMdiSubWindow
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils.QVizGlobalValues import FigureTypes
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
@@ -42,9 +43,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
                                The argument can be given in next forms:
                                1.) Specifying full figureKey
                                - 'TablePlotView:0' (can be obtained using
-                               VIZ_API.getNextKeyForTablePlotView())
+                               VIZ_API.GetNextKeyForTablePlotView())
                                - 'StackedPlotView:0' (can be obtained using
-                               VIZ_API.getNextKeyForStackedPlotView())
+                               VIZ_API.GetNextKeyForStackedPlotView())
                                2.) Specifying only view type and the full key
                                will be obtained by itself:
                                - 'TablePlotView'
@@ -114,7 +115,16 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # Connect custom UI elements
         QtCore.QMetaObject.connectSlotsByName(self)
 
-        # Show TablePlotView window
+        # If the root window exists, it is assumed that the mandatory MDI
+        # exists too. Add the MultiplotWindow to to MDI.
+        if self.dataTreeView.window().objectName() == "IMASViz root window":
+            subWindow = QMdiSubWindow()
+            subWindow.resize(self.width(), self.height())
+            subWindow.setWidget(self)
+            self.dataTreeView.getMDI().addSubWindow(subWindow)
+
+        # Show the MultiPlot window (either on desktop or in MDI if it was
+        # passed there as a subwindow)
         self.show()
 
     def checkFigureKey(self, figureKey):
@@ -135,9 +145,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # If not, get the proper full figureKey
         if figureKey[-1].isdigit() == False:
             if 'TablePlotView' in figureKey:
-                figureKey = self.imas_viz_api.getNextKeyForTablePlotView()
+                figureKey = self.imas_viz_api.GetNextKeyForTablePlotView()
             elif 'StackedPlotView' in figureKey:
-                figureKey = self.imas_viz_api.getNextKeyForStackedPlotView()
+                figureKey = self.imas_viz_api.GetNextKeyForStackedPlotView()
 
         return figureKey
 
@@ -260,10 +270,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
             # not used)
             if all_DTV == True:
                 nSignals = \
-                    len(self.imas_viz_api.getSelectedSignalsDict_AllDTVs())
+                    len(self.imas_viz_api.GetSelectedSignalsDictFromAllDTVs())
             elif all_DTV == False:
                 nSignals = \
-                    len(self.imas_viz_api.getSelectedSignalsDict(self.dataTreeView.parent))
+                    len(self.imas_viz_api.GetSelectedSignalsDict(self.dataTreeView.parent))
 
         return nSignals
 
@@ -463,6 +473,13 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
     def getFigureKey(self):
         return self.figureKey
+
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
     # TODO
     # def setPlotConfigAttribute

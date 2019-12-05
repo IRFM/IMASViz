@@ -50,10 +50,7 @@ class QVizIMASDataSource:
     @staticmethod
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
-        #if machineName in ('WEST',):
         ids.open_public(machineName)
-        #else:
-        #    ids.create_public(machineName)
         if (ids.expIdx == -1):
             raise ValueError("Can not open shot " + str(shotNumber) + "  from " + machineName)
         else:
@@ -101,9 +98,9 @@ class QVizIMASDataSource:
 
 
     # This defines the unique key attached to each data which can be plotted
-    def dataKey(self, nodeData):
+    def dataKey(self, vizTreeNode):
         return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" \
-               + str(self.runNumber) + '::' + nodeData['Path'] + '::' + str(nodeData['occurrence'])
+               + str(self.runNumber) + '::' + vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
 
     def getShortLabel(self):
         return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
@@ -113,6 +110,9 @@ class QVizIMASDataSource:
 
     def getKey(self):
         return self.getLongLabel()
+
+    def getName(self):
+        return self.getShortLabel()
 
     def exportToLocal(self, dataTreeView, exported_ids):
         """Export specified IDS to a new separate IDS.

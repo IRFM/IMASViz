@@ -29,12 +29,11 @@ class QVizDisplayCurrentSelection(QVizAbstractCommand):
         dataTreeView (QTreeWidget) : Corresponding DataTreeView.
     """
 
-    def __init__(self, dataTreeView, nodeData=None):
+    def __init__(self, dataTreeView, treeNode=None):
         """Set self.nodeData = nodeData etc. with the use of the
            QVizAbstractCommand
         """
-        QVizAbstractCommand.__init__(self, nodeData)
-        self.dataTreeView = dataTreeView
+        QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
     def execute(self):
         # Get list of signals, selected in the DataTreeView (dataTreeView)

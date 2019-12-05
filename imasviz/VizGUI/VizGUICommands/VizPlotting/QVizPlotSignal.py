@@ -49,7 +49,7 @@ class QVizPlotSignal(QVizAbstractCommand):
             update            () :
 
         """
-        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode.getNodeData())
+        QVizAbstractCommand.__init__(self, dataTreeView, vizTreeNode)
 
         self.treeNode = vizTreeNode
         self.title = title
@@ -120,12 +120,12 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             ids = self.dataTreeView.dataSource.ids[self.treeNode.getOccurrence()]
 
-            # Get signal time
-            self.treeNode.globalTime = QVizGlobalOperations.getGlobalTimeForArraysInDynamicAOS(ids, self.treeNode.getInfoDict())
+            # Get time
+            self.treeNode.globalTime = self.treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
 
-            key = self.dataTreeView.dataSource.dataKey(self.treeNode.getInfoDict())
-            tup = (self.dataTreeView.dataSource.shotNumber, self.treeNode.getInfoDict())
-            api.addNodeToFigure(figureKey, key, tup)
+            key = self.dataTreeView.dataSource.dataKey(self.treeNode)
+            tup = (self.dataTreeView.dataSource.shotNumber, self.treeNode)
+            api.AddNodeToFigure(figureKey, key, tup)
 
             # Shape of the signal
             # TODO/Note: as it seems the QVizPlotSignal is used for single
@@ -135,11 +135,11 @@ class QVizPlotSignal(QVizAbstractCommand):
             # Set plot options
             time_index = 0
             if plotWidget.addTimeSlider:
-                time_index = plotWidget.sliderGroup.currentIndex
+                time_index = plotWidget.sliderGroup.slider.value()
 
             coordinate_index = 0
             if plotWidget.addCoordinateSlider:
-                coordinate_index = plotWidget.sliderGroup.currentIndex
+                coordinate_index = plotWidget.sliderGroup.slider.value()
 
             label, xlabel, ylabel, title = \
                 self.treeNode.plotOptions(self.dataTreeView,

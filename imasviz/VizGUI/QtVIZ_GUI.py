@@ -16,6 +16,7 @@ import sys
 import logging
 from functools import partial
 from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
+from PyQt5.QtWidgets import QMdiArea, QMdiSubWindow
 
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
@@ -26,7 +27,7 @@ from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLin
 from PyQt5.QtCore import QSize, pyqtSlot, Qt
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
-from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
+# from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController import QVizMainMenuController
 
@@ -51,7 +52,7 @@ class GUIFrame(QTabWidget):
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
 
-        self.mainMenuController = QVizMainMenuController()
+        self.mainMenuController = QVizMainMenuController(parent)
         self.contextMenu = None
 
     def logPanel(self):
@@ -222,16 +223,21 @@ class GUIFrame(QTabWidget):
         self.contextMenu.exec_(self.mapToGlobal(self.pos))
         return 1
 
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
-class VizMainWindow(QMainWindow):
+
+class QVizStartWindow(QMainWindow):
     def __init__(self, parent):
-        super(VizMainWindow, self).__init__(parent)
-        ex = GUIFrame(None)
-        title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
-        self.setWindowTitle(title)
+        super(QVizStartWindow, self).__init__(parent)
+        ex = GUIFrame(parent)
         self.setCentralWidget(ex)
+        # self.setWidget(ex)
         self.logPanel()
-        #self.
 
     def logPanel(self):
         # #LOG WIDGET
@@ -265,13 +271,67 @@ class VizMainWindow(QMainWindow):
         else:
             event.ignore()
 
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
+
+class QVizMDI(QMdiArea):
+    """Class for MDI area.
+    """
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setWindowTitle("MDI")
+        self.setObjectName("MDI")
+
+class QVizMainWindow(QMainWindow):
+    """ Class for IMASViz main window, which contains MDI and all
+    sub-main windows, widgets etc.
+    """
+    def __init__(self):
+        super(QVizMainWindow, self).__init__()
+
+        # Set title
+        title = "IMASVIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
+        self.setWindowTitle(title)
+        # Set name of this main window as the root
+        self.setObjectName("IMASViz root window")
+
+        # Set MDI (Multiple Document Interface)
+        self.MDI = QVizMDI(self)
+        # Set central widget
+        centralWidget = QWidget(self)
+        # Set start window
+        self.startWindow = QVizStartWindow(self)
+
+        # Set layout and add start window and MDI to it
+        layout = QGridLayout(centralWidget)
+        layout.setColumnStretch(0,1)
+        layout.setColumnStretch(1,7)
+
+        layout.addWidget(self.startWindow, 0, 0, 1, 1)
+        layout.addWidget(self.MDI, 0, 1, 1, 1)
+        # Set central widget of the main window
+        self.setCentralWidget(centralWidget)
+        # Resize to full screen
+        self.showMaximized()
+
+    def getMDI(self):
+        if self.MDI != None:
+            return self.MDI
+        return None
+
+    def getStartWindow(self):
+        return self.startWindow
 
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()
-    window = VizMainWindow(None);
-    window.setGeometry(400, 400, 600, 500)
+    window = QVizMainWindow()
     window.show()
     sys.exit(app.exec_())
 

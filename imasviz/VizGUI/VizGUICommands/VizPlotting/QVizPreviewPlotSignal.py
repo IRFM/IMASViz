@@ -34,14 +34,12 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSig
 
 class QVizPreviewPlotSignal(QVizAbstractCommand):
 
-    def __init__(self, dataTreeView, nodeData = None, signal = None,
+    def __init__(self, dataTreeView, treeNode = None, signal = None,
                  title = '', label = None, xlabel = None, signalHandling = None):
 
         self.exists = None
 
-        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
-
-        self.updateNodeData()
+        QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
         self.signalHandling = signalHandling
 

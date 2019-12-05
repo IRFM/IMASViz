@@ -339,7 +339,7 @@ class QVizDataTreeView(QTreeWidget):
         root_node_ori = self.IDSRoots[idsName]
         ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
-        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getNodeData())
+        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getData())
 
         for child in idsData:
             self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence, ids_root_occ)
@@ -356,7 +356,7 @@ class QVizDataTreeView(QTreeWidget):
 
     def createIDSRootNode(self, idsName, idsDocumentation, DTVRoot, root_node_ori=None):
         if root_node_ori is not None:
-            itemDataDict = root_node_ori.getNodeData()
+            itemDataDict = root_node_ori.getData()
         else:
             itemDataDict = {}
         itemDataDict['IDSName'] = idsName
@@ -425,6 +425,13 @@ class QVizDataTreeView(QTreeWidget):
         if not ldh_obj.occurrenceAlreadyLoaded(self, IDSName=IDSName, occurrence=occ):
             # Load the IDS Root occurrence
             ldh_obj.loadSelectedData(self, IDSName, occ, True)
+
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
 
 class QVizDataTreeViewFrame(QMainWindow):
@@ -840,6 +847,13 @@ class QVizDataTreeViewFrame(QMainWindow):
         layout.addWidget(cancelButton,  r, 0, 1, 2)
 
         dialog.show()
+
+    def getMDI(self):
+        """ Get MDI area through the root IMASViz main window.
+        """
+        if self.window().objectName() == "IMASViz root window":
+            return self.window().getMDI()
+        return None
 
     # TODO:
     # def onCloseAndReopenDatabase()

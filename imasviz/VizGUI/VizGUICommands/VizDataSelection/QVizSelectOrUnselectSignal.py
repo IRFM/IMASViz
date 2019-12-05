@@ -18,13 +18,12 @@ from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues, QV
 
 
 class QVizSelectOrUnselectSignal(QVizAbstractCommand):
-    def __init__(self, dataTreeView, nodeData = None):
-        QVizAbstractCommand.__init__(self, dataTreeView, nodeData)
+    def __init__(self, dataTreeView, treeNode = None):
+        QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
     def execute(self):
-        self.updateNodeData()
         isSelected = self.nodeData['isSelected']
-        key = self.dataTreeView.dataSource.dataKey(self.nodeData)
+        key = self.dataTreeView.dataSource.dataKey(self.treeNode)
         # If the signal is selected (isSelected == 1), unselect it (red -> blue)
         # Else if the signal is unselected (isSelected == 0), select it (blue -> red)
         if isSelected == 1:
