@@ -17,6 +17,7 @@ class SOLPSplugin(QPyDesignerCustomWidgetPlugin):
     def __init__(self, parent=None):
         super(SOLPSplugin, self).__init__(parent)
 
+
     def createWidget(self, parent):
         return SOLPSwidget(parent=parent, ids=None)
 

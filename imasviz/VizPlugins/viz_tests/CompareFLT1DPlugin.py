@@ -11,7 +11,7 @@ class CompareFLT1DPlugin(VizPlugins):
     def __init__(self):
         VizPlugins.__init__(self)
 
-    def execute(self, vizAPI):
+    def execute(self, vizAPI, pluginEntry):
 
         try:
             print('CompareFLT1DPlugin to be executed...')
@@ -25,7 +25,7 @@ class CompareFLT1DPlugin(VizPlugins):
             dataSource = self.dataTreeView.dataSource
 
             logging.info('Plotting data from current node...')
-            figureKey, plotWidget = vizAPI.CreatePlotWidget()
+            figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView)
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
                            vizTreeNode=self.selectedTreeNode)
 
@@ -69,14 +69,14 @@ class CompareFLT1DPlugin(VizPlugins):
             logging.error(traceback.format_exc())
 
 
-    def getEntriesPerSubject(self):
-        return {'FLT_1D':[0]}
+    def getEntries(self):
+        if self.selectedTreeNode.is1DAndDynamic():
+            return [0]
+        else:
+            return []
 
     def getAllEntries(self):
         return [(0, 'Compare to shot...')]
-
-    def getPluginsConfiguration(self):
-        return [{}]
 
     def isEnabled(self):
         return True

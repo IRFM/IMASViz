@@ -1031,18 +1031,6 @@ class PlotFrame(QMainWindow):
         #       wxPython version) this routine was not used
         file_choices = "PNG (*.png)|*.png"
 
-        # dlg = wx.FileDialog(self, \
-        #                     message="Save plot as...", \
-        #                     defaultDir=os.getcwd(), \
-        #                     defaultFile="plot.png", \
-        #                     wildcard=file_choices, \
-        #                     style=wx.FD_SAVE)
-        #
-        # if (dlg.ShowModal() == wx.ID_OK):
-        #     path = dlg.GetPath()
-        #     self.canvas.print_figure(path, dpi=self.dpi)
-        #     self.flash_status_message("Saved to %s" % path)
-
     def on_exit(self, event=None):
         self.redraw_timer.stop()
         self.close()
@@ -1085,23 +1073,26 @@ class equilibriumcharts(VizPlugins):
     def isEnabled(self):
         return True
 
-    def execute(self, vizAPI):
+    def execute(self, vizAPI, pluginEntry):
 
         self.frame = PlotFrame(self.selectedTreeNode, vizAPI, parent=self.dataTreeView)
         self.frame.show()
 
-    def getEntriesPerSubject(self):
-        return {'equilibrium_overview': [0], 'overview': [0]}
+    def getEntries(self):
+        if self.selectedTreeNode.getIDSName() == "equilibrium":
+            return [0]
+        else:
+            return []
 
-    def getPluginsConfiguration(self):
-        return [{
-                                            'time_i': 31.880, \
-                                            'time_e': 32.020, \
-                                            'delta_t': 0.02, \
-                                            'shot': 50642, \
-                                            'run': 0, \
-                                            'machine': 'west_equinox', \
-                                            'user': 'imas_private'}]
+    # def getPluginsConfiguration(self):
+    #     return [{
+    #                                         'time_i': 31.880, \
+    #                                         'time_e': 32.020, \
+    #                                         'delta_t': 0.02, \
+    #                                         'shot': 50642, \
+    #                                         'run': 0, \
+    #                                         'machine': 'west_equinox', \
+    #                                         'user': 'imas_private'}]
 
     def getAllEntries(self):
         return [(0, 'Equilibrium overview...')]

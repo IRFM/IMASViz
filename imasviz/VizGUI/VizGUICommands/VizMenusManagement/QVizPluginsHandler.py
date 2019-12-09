@@ -15,14 +15,11 @@ class MenuIDS:
 class QVizPluginsHandler:
 
     def __init__(self, dataTreeView, selectedTreeNode):
-        self.dataTreeView = dataTreeView
-        self.selectedTreeNode = selectedTreeNode    # Passed item/subject
         self.menuIDS = MenuIDS()
         self.pluginsObjects = VizPlugins.getPluginsObjects(
-            dataTreeView=self.dataTreeView, selectedTreeNode=self.selectedTreeNode)
+            dataTreeView=dataTreeView, selectedTreeNode=selectedTreeNode)
 
-    def updateMenu(self, menu, subjectsList = None):
-
+    def updateMenu(self, menu, dataTreeView, selectedTreeNode):
 
         addedPluginsEntries = {}
 
@@ -32,36 +29,30 @@ class QVizPluginsHandler:
         for p in pluginsNames:
             addedPluginsEntries[p] = []  # each plugins entry should appear only once in the popup menu
 
-        for subject in subjectsList:
+        for i in range(0, len(pluginsNames)):
+            pluginsName = pluginsNames[i]
+            pluginsObject = pluginsObjects[i]
 
-            for i in range(0, len(pluginsNames)):
-                pluginsName = pluginsNames[i]
-                pluginsObject = pluginsObjects[i]
+            if isinstance(pluginsObject, VizPlugins):
+                if not pluginsObject.isEnabled():
+                    continue
+            entriesList = [] #list of entry index (ex: [0,1])
+            if isinstance(pluginsObject, VizPlugins):
+                entriesList = pluginsObject.getEntries()
+            else:
+                entriesList = VizPlugins.getEntriesFor(pluginsName, selectedTreeNode)
 
-                if isinstance(pluginsObject, VizPlugins):
-                    if not pluginsObject.isEnabled():
-                        continue
-
-                if isinstance(pluginsObject, VizPlugins):
-                    subjects = pluginsObject.getSubjects()
-                else:
-                    subjects = VizPlugins.getSubjectsFor(pluginsName)
-                subjects.sort()
-                for subjectKey in subjects:
-                    if subject == subjectKey:
-                        if isinstance(pluginsObject, VizPlugins):
-                            entriesPerSubject = pluginsObject.getEntriesPerSubject()
-                        else:
-                            entriesPerSubject = VizPlugins.getEntriesPerSubjectFor(pluginsName)
-                        entriesList = entriesPerSubject[subject] #list of entry index (ex: [0,1])
-                        for entry in entriesList:
-                            if entry not in addedPluginsEntries[pluginsName]:
-                                # TODO: properly set ID
-                                new_id = 9999
-                                tuple = (pluginsName, new_id, entry,
-                                         pluginsObject)
-                                self.menuIDS.PLUGINS_MENU_IDS.append(tuple)
-                                addedPluginsEntries[pluginsName].append(entry) #plugins entry should appear only once in the popup menu
+            if entriesList is None or len(entriesList) == 0:
+                continue
+                
+            for entry in entriesList:
+                if entry not in addedPluginsEntries[pluginsName]:
+                    # TODO: properly set ID
+                    new_id = 9999
+                    tuple = (pluginsName, new_id, entry,
+                             pluginsObject)
+                    self.menuIDS.PLUGINS_MENU_IDS.append(tuple)
+                    addedPluginsEntries[pluginsName].append(entry) #plugins entry should appear only once in the popup menu
 
         #print self.menuIDS.PLUGINS_MENU_IDS
         for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
@@ -82,33 +73,19 @@ class QVizPluginsHandler:
             icon_onPluginHandler = GlobalIcons.getCustomQIcon(QApplication,
                                                               'new')
             action_onPluginHandler = QAction(icon_onPluginHandler,
-                                             pluginsCommandDescription , self.dataTreeView)
-            action_onPluginHandler.triggered.connect(partial(self.popUpMenuHandler, i))
+                                             pluginsCommandDescription , dataTreeView)
+            action_onPluginHandler.triggered.connect(partial(self.popUpMenuHandler, i, dataTreeView))
             menu.addAction(action_onPluginHandler)
 
 
     @pyqtSlot(int)
-    def popUpMenuHandler(self, itemId):
+    def popUpMenuHandler(self, itemId, dataTreeView):
         m = self.menuIDS.PLUGINS_MENU_IDS[itemId]
         menuID = m[1]
         # if event.GetId() == menuID:
         pluginsName = m[0]
         entry = m[2]
         pluginsObject = m[3]
-
-        allEntries = None
-        pluginsConfigurationsList = None
-
-        if isinstance(pluginsObject, VizPlugins):
-            allEntries = pluginsObject.getAllEntries()
-            pluginsConfigurationsList = pluginsObject.getPluginsConfiguration()
-
-        else:
-            allEntries = VizPlugins.getAllEntries(pluginsName)
-            pluginsConfigurationsList = VizPlugins.getPluginsConfigurationFor(
-                pluginsName)
-
-        pluginsCommandDescription = allEntries[entry][1]
 
         # Run the plugins
         if type(pluginsObject) == QMainWindow:
@@ -122,7 +99,7 @@ class QVizPluginsHandler:
 
             # Get IDS object from IMASViz DTV
             # - Get data source
-            dataSource = self.dataTreeView.dataSource
+            dataSource = dataTreeView.dataSource
             # - get IDS object
             try:
                 ids = dataSource.ids[pluginsObject.targetOccurrence]
@@ -132,7 +109,7 @@ class QVizPluginsHandler:
                 # -Get IDS object for target IDS root and target occurrence
                 # Note: This will also populate and update the IDS tree view
                 #       structure
-                dataSource.load(self.dataTreeView,
+                dataSource.load(dataTreeView,
                                 IDSName=pluginsObject.targetIDSroot,
                                 occurrence=pluginsObject.targetOccurrence,
                                 asynch=False)
@@ -142,12 +119,10 @@ class QVizPluginsHandler:
             # Set IDS object for the main Qt designer widget
             qdw.setIDS(ids)
 
-
             # Show the plugin user interface
             pluginsObject.show()
         elif 'execute' in dir(pluginsObject):
-            logging.info('Executing plugin...')
-            pluginsObject.execute(self.dataTreeView.imas_viz_api)
+            logging.info('Executing plugin: ' + pluginsName)
+            pluginsObject.execute(dataTreeView.imas_viz_api, entry)
         else:
-            print('No proper instance of user interface or execute routine '
-                  'provided by the plugin!')
+            print("Unable to execute plugin: " + pluginsName + ". Bad implementation provided by the plugin!")

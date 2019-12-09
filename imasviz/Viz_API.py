@@ -464,10 +464,15 @@ class Viz_API:
                                                           addCoordinateSlider=addCoordinateSlider)
         return figureKey, plotWidget
 
-    def GetSignal(dataTreeView, vizTreeNode, as_function_of_time=False, coordinate1Index=0, plotWidget=None):
+
+    def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=False,
+                  coordinate1_index=0, time_index=None, plotWidget=None):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
-            return signalDataAccess.GetSignalAt(vizTreeNode, plotWidget, as_function_of_time, coordinate1Index)
+            return signalDataAccess.GetSignal(treeNode=vizTreeNode, plotWidget=plotWidget,
+                                              as_function_of_time=as_function_of_time,
+                                              coordinate_index=coordinate1_index,
+                                              time_index=time_index)
         except:
             raise
 
@@ -621,3 +626,17 @@ class Viz_API:
         subWindow.setWidget(plotWidget)
         subWindow.resize(plotWidget.width(), plotWidget.height())
         self.getMDI().addSubWindow(subWindow)
+
+    def loadRequiredIDSs(self, dataTreeView, vizTreeNode, namesOfRequiredIDSs, occurrence = 0):
+        idssByNames = {}  # key = IDS name, value = IDS object
+
+        for idsName in namesOfRequiredIDSs:
+            if not self.IDSDataAlreadyFetched(dataTreeView=dataTreeView,
+                                            IDSName=idsName,
+                                            occurrence=occurrence):
+                self.LoadIDSData(dataTreeView, idsName, occurrence)
+
+            idd = dataTreeView.dataSource.getImasEntry(occurrence)
+            idssByNames[idsName] = eval("idd." + idsName)
+
+        return idssByNames

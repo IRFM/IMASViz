@@ -47,6 +47,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
     def execute(self, plotWidget=None):
         if self.raiseErrorIfNoSelectedArrays():
             if len(self.dataTreeView.selectedSignalsDict) == 0:
+                #Removes the current figure
+                self.api.DeleteFigure(figureKey=self.figureKey)
                 raise ValueError("No signal selected.")
         self.plot1DSelectedSignals(plotWidget, self.figureKey, self.update,
                                    all_DTV=self.all_DTV)

@@ -25,41 +25,49 @@ class ToFuPlugin(VizPlugins):
         self.lidsok_overview = ['%s_overview'%ids
                                 for ids in self.lidsok]
 
-    def execute(self, vizAPI):
+    def execute(self, vizAPI, pluginEntry):
 
         view = self.dataTreeView
         vizNode = self.selectedTreeNode
-        pluginsConfiguration = self.getPluginsConfiguration()
+        dataSource = vizAPI.GetDataSource(view)
 
-        dids = {'shot':view.dataSource.shotNumber,
-                'user':view.dataSource.userName,
-                'tokamak':view.dataSource.machineName,
-                'run':view.dataSource.runNumber}
+        dargs = {'shot':dataSource.shotNumber,
+                'user':dataSource.userName,
+                'tokamak':dataSource.machineName,
+                'run':dataSource.runNumber}
         ids = vizNode.getIDSName()
+
+        if ids not in self.lidsok:
+            msg = ids + " IDS not supported by tofu plugin\n"
+            warnings.warn(msg)
+            return None
+
+        """
+        idssByNames (dict) # key = IDS name, value = IDS object
+        """
+        # idssByNames = vizAPI.loadRequiredIDSs(view, vizNode, [vizNode.getIDSName(), 'wall'])
+        # dids = {key: {'ids': val, 'isget':True} for key, val in idssByNames.items()}
 
         try:
             print('ToFuPlugin to be executed...')
-            if ids not in self.lidsok:
-                msg = ids + " IDS not supported by tofu plugin\n"
-                warnings.warn(msg)
-                return None
 
             plt.ioff()
             figure = None
 
             # load config
             lids = list(set(['wall', ids]))
-            multi = tf.imas2tofu.MultiIDSLoader(ids=lids, **dids)
+            multi = tf.imas2tofu.MultiIDSLoader(ids=lids, **dargs)
+            # multi = tf.imas2tofu.MultiIDSLoader(dids=dids, **dargs)
             if ids == 'wall':
                 obj = multi.to_Config(plot=False)
                 lax = obj.plot(draw=True)
                 figure = lax[0].get_figure()
             else:
-                if pluginsConfiguration.get('geom'):
+                if pluginEntry == 0:
                     obj = multi.to_Cam(ids=ids, plot=False)
                     lax = obj.plot(draw=True)
                     figure = lax[0].get_figure()
-                elif pluginsConfiguration.get('data'):
+                elif pluginEntry == 1:
                     obj = multi.to_Data(ids=ids, indch_auto=True,
                                         plot=False)
                     kh = obj.plot(draw=True)
@@ -70,17 +78,16 @@ class ToFuPlugin(VizPlugins):
             logging.error(traceback.format_exc())
 
 
-    def getEntriesPerSubject(self):
-        return {ids_over: [0, 1] for ids_over in self.lidsok_overview}
+    def getEntries(self):
+        if self.selectedTreeNode.getIDSName() in self.lidsok:
+            return [0, 1]
+        else:
+            return []
 
     def getAllEntries(self):
-        #(config number, description)
-        return [(0, 'tofu - geom...'), (1, 'tofu - data')]
-
-    def getPluginsConfiguration(self):
-        return [{'geom': True}, {'data': True}]
+        return [(0, 'tofu - geom...'), (1, 'tofu - data')] #(config number, description)
 
     def isEnabled(self):
-        if 'WEST' in os.environ:
+        if tf.__version__ >= '1.4.2':
             return True
         return False

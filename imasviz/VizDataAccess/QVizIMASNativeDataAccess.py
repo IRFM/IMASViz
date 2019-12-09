@@ -15,10 +15,10 @@ class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None):
+    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None, coordinate_index=0, time_index=None):
 
-        time_index = treeNode.timeValue()
-        coordinateIndex = 0
+        if time_index is None:
+            time_index = treeNode.timeValue()
 
         if as_function_of_time is None:
             as_function_of_time = treeNode.hasTimeXaxis(plotWidget)
@@ -27,16 +27,16 @@ class QVizIMASNativeDataAccess:
             time_index = plotWidget.sliderGroup.slider.value()
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
-            coordinateIndex = plotWidget.sliderGroup.slider.value()
+            coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if as_function_of_time:
             if treeNode.is0DAndDynamic():
-                return self.GetSignalVsTime(treeNode, coordinateIndex)
+                return self.GetSignalVsTime(treeNode, coordinate_index)
             elif treeNode.is1DAndDynamic():
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 elif treeNode.embedded_in_time_dependent_aos():
-                    return self.GetSignalVsTime(treeNode, coordinateIndex)
+                    return self.GetSignalVsTime(treeNode, coordinate_index)
                 else:
                     raise ValueError('Unable to get time dependent signal for node: ' + treeNode.getPath())
         else:

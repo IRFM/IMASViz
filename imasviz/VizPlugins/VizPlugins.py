@@ -4,34 +4,12 @@ import os, sys
 from PyQt5.QtWidgets import QMainWindow
 
 RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
+                     'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      'SOLPS_UiPlugin': '',
                      'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
-                     #'viz_1D_overtime_plugin':'viz_1D_overtime.viz_1D_overtime_plugin',
+                     'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                      'example_UiPlugin': ''
                      }
-
-RegisteredPluginsConfiguration = {'SOLPS_UiPlugin':[{'UiFile': 'SOLPSplugin.ui',
-                                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
-                                'targetIDSroot': 'edge_profiles',
-                                'targetOccurrence': 0}],
-                                'example_UiPlugin': [{
-                                'UiFile': 'examplePlugin.ui',
-                                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
-                                'targetIDSroot': 'magnetics',
-                                'targetOccurrence': 0}]}
-
-# The 'overview' key should match the IDS name
-# (for example: for edge_profiles IDS -> 'edge_profiles_overview')
-EntriesPerSubject = {'SOLPS_UiPlugin':    {'edge_profiles_overview': [0],
-                                           'overview': [0]},
-                     'example_UiPlugin':  {'magnetics_overview': [0],
-                                           'overview': [0]}
-                     }
-
-AllEntries = {'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')], #(config number, description)
-              'example_UiPlugin':  [(0, 'Magnetics overview...')]
-              }
 
 
 def getRegisteredPlugins():
@@ -56,28 +34,13 @@ class VizPlugins:
     def isEnabled(self):
         return False
 
-    def getEntriesPerSubject(self):
-        raise ValueError('plugin getEntriesPerSubject() method should be implemented!')
+    def getEntries(self):
+        raise ValueError('plugin getEntries() method should be implemented!')
 
     def getAllEntries(self):
-        entries = []
-        entriesPerSubject = self.getEntriesPerSubject()
-        for subject in entriesPerSubject:
-            entries.append(entriesPerSubject[subject])
+        raise ValueError('plugin getAllEntries() method should be implemented!')
 
-    def getSubjects(self):
-        subjects = []
-        entriesPerSubject = self.getEntriesPerSubject()
-        if entriesPerSubject is None:
-            return subjects
-        for subject in entriesPerSubject:
-            subjects.append(subject)
-        return subjects
-
-    def getPluginsConfiguration(self):
-        raise ValueError('no plugin configuration defined. The method getPluginsConfiguration() should be implemented!')
-
-    def execute(self, vizAPI):
+    def execute(self, vizAPI, pluginEntry=None):
         raise ValueError('plugin execute() method should be implemented!')
 
     def getMenuItem(self, subject):
@@ -131,22 +94,30 @@ class VizPlugins:
 
     @staticmethod
     def getPluginsConfigurationFor(pluginsName):
+        RegisteredPluginsConfiguration = {'SOLPS_UiPlugin': [{'UiFile': 'SOLPSplugin.ui',
+                                                              'dir': os.environ[
+                                                                         'VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
+                                                              'targetIDSroot': 'edge_profiles',
+                                                              'targetOccurrence': 0}],
+                                          'example_UiPlugin': [{
+                                              'UiFile': 'examplePlugin.ui',
+                                              'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
+                                              'targetIDSroot': 'magnetics',
+                                              'targetOccurrence': 0}]}
         return RegisteredPluginsConfiguration[pluginsName]
 
     @staticmethod
-    def getEntriesPerSubjectFor(pluginsName):
-        return EntriesPerSubject[pluginsName]
-
-    @staticmethod
-    def getSubjectsFor(pluginsName):
-        subjects = []
-        entriesPerSubject = VizPlugins.getEntriesPerSubjectFor(pluginsName)
-        if entriesPerSubject is None:
-            return subjects
-        for subject in entriesPerSubject:
-            subjects.append(subject)
-        return subjects
+    def getEntriesFor(pluginsName, vizTreeNode):
+        if pluginsName == "SOLPS_UiPlugin" and vizTreeNode.getIDSName() == "edge_profiles":
+            return [0]
+        elif pluginsName == "example_UiPlugin" and vizTreeNode.getIDSName() == "magnetics":
+            return [0]
+        else:
+            return []
 
     @staticmethod
     def getAllEntries(pluginsName):
+        AllEntries = {'SOLPS_UiPlugin': [(0, 'SOLPS overview...')],  # (config number, description)
+                      'example_UiPlugin': [(0, 'Magnetics overview...')]
+                      }
         return AllEntries[pluginsName]

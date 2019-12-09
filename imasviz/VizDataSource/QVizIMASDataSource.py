@@ -71,7 +71,7 @@ class QVizIMASDataSource:
         imas_entry.close()
 
     def getImasEntry(self, occurrence):
-        return self.ids[occurrence]
+        return self.ids.get(occurrence)
 
     def containsData(self, node, imas_entry):
         ret = False

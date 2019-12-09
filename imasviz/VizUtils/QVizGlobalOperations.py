@@ -70,12 +70,6 @@ class QVizGlobalOperations:
         return text, ok
 
     @staticmethod
-    def showMessage(parent=None, message=''):
-        dlg = wx.MessageDialog(parent, message, style=wx.OK)
-        dlg.ShowModal()
-        dlg.Destroy()
-
-    @staticmethod
     def YesNo(parent=None, question=None, caption='Confirm suppression'):
         w = QMessageBox()
         result = QMessageBox.question(w, caption, question, QMessageBox.Yes | QMessageBox.No,
