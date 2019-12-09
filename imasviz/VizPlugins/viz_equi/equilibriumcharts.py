@@ -42,7 +42,7 @@ from PyQt5 import QtCore
 # Local python modules
 import imas
 
-from imasviz.VizPlugins.VizPlugins import VizPlugins
+from imasviz.VizPlugins.VizPlugin import VizPlugin
 
 # Project python modules
 from imasviz.VizPlugins.viz_equi.ids_read_multiprocess import \
@@ -1065,7 +1065,7 @@ class PlotFrame(QMainWindow):
     def on_flash_status_off(self, event=None):
         self.statusBar.SetStatusText('')
 
-class equilibriumcharts(VizPlugins):
+class equilibriumcharts(VizPlugin):
 
     def __init__(self):
         pass

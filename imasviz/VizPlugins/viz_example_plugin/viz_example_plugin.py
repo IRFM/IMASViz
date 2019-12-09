@@ -1,4 +1,4 @@
-from imasviz.VizPlugins.VizPlugins import VizPlugins
+from imasviz.VizPlugins.VizPlugin import VizPlugin
 
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
@@ -9,9 +9,9 @@ import os
 import sys
 
 
-class viz_example_plugin(VizPlugins):  # The plugin should inherit from VizPlugin
+class viz_example_plugin(VizPlugin):  # The plugin should inherit from VizPlugin
     def __init__(self, *args, **kwargs):
-        VizPlugins.__init__(self, *args, **kwargs)
+        VizPlugin.__init__(self, *args, **kwargs)
 
     def execute(self, vizAPI, pluginEntry):
 

@@ -104,7 +104,7 @@ electron density, ion temperature etc.) stored within
    The **SOLPS overview plugin** can be run also in a standalone mode
    (outside IMASViz) either from widget source code or from plugin .ui source.
    The necessary sources can be found in directory
-   ``$VIZ_HOME/imasviz/VizPlugins/viz_solps``. There, to run standalone widget
+   ``$VIZ_HOME/imasviz/VizPlugin/viz_solps``. There, to run standalone widget
    run command ``python3 SOLPSwidget.py`` in terminal. To run standalone plugin
    (the same one as used in IMASViz) run command
    ``python3 run_plugin_ui_standalone.py``.

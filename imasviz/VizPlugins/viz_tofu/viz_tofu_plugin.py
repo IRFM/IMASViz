@@ -9,15 +9,15 @@ from PyQt5.QtWidgets import QApplication
 import matplotlib.pyplot as plt
 
 # IMAS
-from imasviz.VizPlugins.VizPlugins import VizPlugins
+from imasviz.VizPlugins.VizPlugin import VizPlugin
 
 # tofu
 import sys
 import tofu as tf
 
-class ToFuPlugin(VizPlugins):
+class ToFuPlugin(VizPlugin):
     def __init__(self):
-        VizPlugins.__init__(self)
+        VizPlugin.__init__(self)
         self.lidsok = ['wall', 'bolometer', 'interferometer',
                   'bremsstrahlung_visible', 'soft_x_rays',
                   'ece', 'polarimeter',

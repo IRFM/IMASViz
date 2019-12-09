@@ -4,7 +4,7 @@ import importlib, logging
 from functools import partial
 from PyQt5.QtCore import QObject, pyqtSlot
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
-from imasviz.VizPlugins.VizPlugins import VizPlugins
+from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow, QWidget
 
@@ -16,7 +16,7 @@ class QVizPluginsHandler:
 
     def __init__(self, dataTreeView, selectedTreeNode):
         self.menuIDS = MenuIDS()
-        self.pluginsObjects = VizPlugins.getPluginsObjects(
+        self.pluginsObjects = VizPlugin.getPluginsObjects(
             dataTreeView=dataTreeView, selectedTreeNode=selectedTreeNode)
 
     def updateMenu(self, menu, dataTreeView, selectedTreeNode):
@@ -24,7 +24,7 @@ class QVizPluginsHandler:
         addedPluginsEntries = {}
 
         pluginsNames = self.pluginsObjects[0]
-        pluginsObjects = self.pluginsObjects[1] #tuple: Plugins names, VizPlugins instances
+        pluginsObjects = self.pluginsObjects[1] #tuple: Plugins names, VizPlugin instances
 
         for p in pluginsNames:
             addedPluginsEntries[p] = []  # each plugins entry should appear only once in the popup menu
@@ -33,14 +33,14 @@ class QVizPluginsHandler:
             pluginsName = pluginsNames[i]
             pluginsObject = pluginsObjects[i]
 
-            if isinstance(pluginsObject, VizPlugins):
+            if isinstance(pluginsObject, VizPlugin):
                 if not pluginsObject.isEnabled():
                     continue
             entriesList = [] #list of entry index (ex: [0,1])
-            if isinstance(pluginsObject, VizPlugins):
+            if isinstance(pluginsObject, VizPlugin):
                 entriesList = pluginsObject.getEntries()
             else:
-                entriesList = VizPlugins.getEntriesFor(pluginsName, selectedTreeNode)
+                entriesList = VizPlugin.getEntriesFor(pluginsName, selectedTreeNode)
 
             if entriesList is None or len(entriesList) == 0:
                 continue
@@ -62,10 +62,10 @@ class QVizPluginsHandler:
             entry = m[2]
             pluginsObject = m[3]
             allEntries = []
-            if isinstance(pluginsObject, VizPlugins):
+            if isinstance(pluginsObject, VizPlugin):
                 allEntries = pluginsObject.getAllEntries()
             else:
-                allEntries = VizPlugins.getAllEntries(pluginsName)
+                allEntries = VizPlugin.getAllEntries(pluginsName)
 
             pluginsCommandDescription = allEntries[entry][1]
 

@@ -16,7 +16,7 @@ def getRegisteredPlugins():
     return RegisteredPlugins
 
 
-class VizPlugins:
+class VizPlugin:
     def __init__(self, *args, **kwargs):
         if len(args) == 2:
             self.selectedTreeNode = args[0]
@@ -57,7 +57,7 @@ class VizPlugins:
             if 'UiPlugin' in key:
                 from PyQt5 import uic
                 # Get directory where the plugin .ui file is located
-                pluginConfiguration = VizPlugins.getPluginsConfigurationFor(key)[0]
+                pluginConfiguration = VizPlugin.getPluginsConfigurationFor(key)[0]
                 dir = pluginConfiguration['dir']
                 # Get ui. file name
                 UiFile = pluginConfiguration['UiFile']
@@ -76,7 +76,7 @@ class VizPlugins:
                 # list of imported objects
                 importedObjectsList.append(w)
             else:
-                mod = importlib.import_module('imasviz.VizPlugins.' +
+                mod = importlib.import_module('imasviz.VizPlugin.' +
                                               getRegisteredPlugins()[key])
                 importedClass = getattr(mod, key)
                 vizPluginObject = importedClass()
@@ -96,12 +96,12 @@ class VizPlugins:
     def getPluginsConfigurationFor(pluginsName):
         RegisteredPluginsConfiguration = {'SOLPS_UiPlugin': [{'UiFile': 'SOLPSplugin.ui',
                                                               'dir': os.environ[
-                                                                         'VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
+                                                                         'VIZ_HOME'] + '/imasviz/VizPlugin/viz_solps/',
                                                               'targetIDSroot': 'edge_profiles',
                                                               'targetOccurrence': 0}],
                                           'example_UiPlugin': [{
                                               'UiFile': 'examplePlugin.ui',
-                                              'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
+                                              'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugin/viz_example/',
                                               'targetIDSroot': 'magnetics',
                                               'targetOccurrence': 0}]}
         return RegisteredPluginsConfiguration[pluginsName]
