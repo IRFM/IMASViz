@@ -76,7 +76,7 @@ class VizPlugin:
                 # list of imported objects
                 importedObjectsList.append(w)
             else:
-                mod = importlib.import_module('imasviz.VizPlugin.' +
+                mod = importlib.import_module('imasviz.VizPlugins.' +
                                               getRegisteredPlugins()[key])
                 importedClass = getattr(mod, key)
                 vizPluginObject = importedClass()
@@ -96,12 +96,12 @@ class VizPlugin:
     def getPluginsConfigurationFor(pluginsName):
         RegisteredPluginsConfiguration = {'SOLPS_UiPlugin': [{'UiFile': 'SOLPSplugin.ui',
                                                               'dir': os.environ[
-                                                                         'VIZ_HOME'] + '/imasviz/VizPlugin/viz_solps/',
+                                                                         'VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
                                                               'targetIDSroot': 'edge_profiles',
                                                               'targetOccurrence': 0}],
                                           'example_UiPlugin': [{
                                               'UiFile': 'examplePlugin.ui',
-                                              'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugin/viz_example/',
+                                              'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
                                               'targetIDSroot': 'magnetics',
                                               'targetOccurrence': 0}]}
         return RegisteredPluginsConfiguration[pluginsName]

@@ -69,8 +69,31 @@ class QVizTreeNode(QTreeWidgetItem):
     def embedded_in_time_dependent_aos(self):
         return self.time_dependent(self.parametrizedPath)
 
+    def asFunctionOfTime(self, plotWidget, strategy=None):
+        as_function_of_time = False
+        if strategy is None:
+            return self.hasTimeXaxis(plotWidget=plotWidget)
+        if strategy == "DEFAULT":
+            if self.is0DAndDynamic():
+                as_function_of_time = True
+            elif self.is1DAndDynamic():
+                as_function_of_time = False
+        elif strategy == "TIME":
+            if self.is0DAndDynamic():
+                as_function_of_time = True
+            elif self.is1DAndDynamic():
+                if self.embedded_in_time_dependent_aos():
+                    as_function_of_time = True
+                else:
+                    as_function_of_time = False
+        elif strategy == "COORDINATE1":
+            if self.is0DAndDynamic():
+                as_function_of_time = True
+            elif self.is1DAndDynamic():
+                as_function_of_time = False
+        return as_function_of_time
 
-    def hasTimeXaxis(self, plotWidget):
+    def hasTimeXaxis(self, plotWidget=None):
         if plotWidget is not None:
             if plotWidget.addTimeSlider:
                 return False
@@ -91,7 +114,11 @@ class QVizTreeNode(QTreeWidgetItem):
                     raise ValueError('Unable to define a time axis')
         else:
             if self.is1DAndDynamic():
-                return self.isCoordinateTimeDependent(coordinateNumber=1)
+                if self.embedded_in_time_dependent_aos():  # 1D Node in dynamic AOS has a time axis
+                    return True
+                else:
+                    return self.isCoordinateTimeDependent(coordinateNumber=1) # 1D node not embedded in dynamic AOS
+                                          #has a time axis only if coordinate1 depends on time
             elif self.is0DAndDynamic():
                 return True
             else:
@@ -105,17 +132,13 @@ class QVizTreeNode(QTreeWidgetItem):
                 return QVizGlobalValues.indices[key]
             i += 1
 
-    def replaceBrackets(self, toReplace): #replace '[' by '(' and ']' by ')'
-        c = toReplace.replace("[", "(")
-        return c.replace("]", ")")
-
     def evaluateCoordinate(self, coordinateNumber):
         coordinate = self.evaluateCoordinateVsTime(coordinateNumber)
         if self.time_dependent(self.coordinates[coordinateNumber - 1]):
             coordinate = coordinate.replace("[itime]", "[" + self.timeValue() + "]")
         return coordinate
 
-    def evaluateDataPath(self, itime_value):
+    def evaluateDataPath(self, itime_value=None):
         parametrizedPath = self.getParametrizedDataPath()
         if parametrizedPath is None:
             return self.getDataName()
@@ -160,19 +183,22 @@ class QVizTreeNode(QTreeWidgetItem):
 
         return label, title, xlabel
 
-    def itimeEvaluatedLabels(self, dtv, plotWidget, time_index=None):
+    def itimeEvaluatedLabels(self, dtv, plotWidget, time_index=None, strategy=None):
         label = None
-        xlabel = None
+        xlabel = 'time[s]'
         label = self.setLabelForFigure(dtv.dataSource)
-        if self.hasTimeXaxis(plotWidget):
+        if self.asFunctionOfTime(plotWidget, strategy=strategy):
             label = label.replace('itime', str(':'))
-            xlabel = 'time[s]'
         else:
             label = label.replace('itime', str(time_index))
         label = QVizGlobalOperations.makeIMASPath(label)
         return label, xlabel
 
-    def itimeAndCoordinateAxisEvaluatedLabels(self, coordinateNumber, dtv, plotWidget, time_index=None, coordinate_index=0):
+    def itimeAndCoordinateAxisEvaluatedLabels(self, coordinateNumber, dtv,
+                                              plotWidget,
+                                              time_index=None,
+                                              coordinate_index=0,
+                                              strategy=None):
 
         label = None
         xlabel = None
@@ -182,7 +208,7 @@ class QVizTreeNode(QTreeWidgetItem):
             xlabel = "1..N"
         else:
             xlabel = self.getIDSName() + "." + self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
-            if self.hasTimeXaxis(plotWidget):
+            if self.asFunctionOfTime(plotWidget, strategy=strategy):
                 if self.embedded_in_time_dependent_aos():
                     label = label.replace('itime', str(':')) + '[' + str(coordinate_index) + ']'
                 else:
@@ -220,13 +246,14 @@ class QVizTreeNode(QTreeWidgetItem):
         return len_to_evaluate
 
     def coordinateValues(self, coordinateNumber, dataTreeView):
-        # Set IDS source database
+        if len(self.coordinates) < coordinateNumber:
+            return None
+        # Set IDS data entry
         imas_data_entry = dataTreeView.dataSource.ids[self.getOccurrence()]
         if self.coordinates[coordinateNumber - 1] == "1..N" or\
                         self.coordinates[coordinateNumber - 1] == "1...N":
             r = np.array([eval('imas_data_entry.' + self.getDataName())])
             return r[0]
-        # Set python expression to get length of the array
         to_evaluate = 'imas_data_entry.' + self.getIDSName() + '.' + \
                        self.evaluateCoordinate(coordinateNumber)
         return eval(to_evaluate)
@@ -369,7 +396,7 @@ class QVizTreeNode(QTreeWidgetItem):
         if c is not None:
             return QVizGlobalOperations.makePythonPath(c)
         else:
-            raise ValueError('Undefined ' +  searchedCoordinate)
+            raise ValueError('Undefined ' +  searchedCoordinate + ".")
 
     def hasHomogeneousTime(self):
         return self.infoDict.get('homogeneous_time') == 1
@@ -529,13 +556,12 @@ class QVizTreeNode(QTreeWidgetItem):
             self.parent().setForeground(0, self.foreground(0))
 
 
-    def plotOptions(self, dataTreeView, shotNumber=None, title='',
-                    label=None, xlabel=None, time_index=0, coordinate_index=0, plotWidget=None):
+    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None,
+                    time_index=0, coordinate_index=0, plotWidget=None, strategy=None):
         """Set plot options.
 
         Arguments:
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
-            shotnumber (int) : IDS database parameter - shot number of the case.
             title      (str) : Plot title.
             label      (str) : Label describing IMAS database (device, shot) and
                                path to signal/node in IDS database structure.
@@ -543,10 +569,14 @@ class QVizTreeNode(QTreeWidgetItem):
         """
 
         if self.is0DAndDynamic():
-            label, xlabel = self.itimeEvaluatedLabels(dataTreeView, plotWidget, time_index)
+            label, xlabel = self.itimeEvaluatedLabels(dataTreeView, plotWidget, time_index, strategy=strategy)
 
         elif self.is1DAndDynamic():
-            label, xlabel = self.itimeAndCoordinateAxisEvaluatedLabels(1, dataTreeView, plotWidget, time_index, coordinate_index)
+            label, xlabel = self.itimeAndCoordinateAxisEvaluatedLabels(1, dataTreeView,
+                                                                       plotWidget,
+                                                                       time_index,
+                                                                       coordinate_index,
+                                                                       strategy=strategy)
 
         if self.is1DAndDynamic():
             # Setting/Checking the X-axis label

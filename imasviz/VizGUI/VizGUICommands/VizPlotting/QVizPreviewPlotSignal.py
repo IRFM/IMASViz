@@ -59,13 +59,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         self.xlabel = xlabel
 
     def get1DArrayData(self):
-        signal = None
-        signalDataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-        if self.treeNode.is1DAndDynamic()and self.treeNode.hasAvailableData():
-            signal = signalDataAccess.GetSignal(self.treeNode) #plot as a function of coordinate1
-        elif self.treeNode.is0DAndDynamic()and self.treeNode.hasAvailableData():
-            signal = signalDataAccess.GetSignal(self.treeNode, as_function_of_time=True) #plot as a function of time
-        return signal
+        return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode, strategy="DEFAULT")
 
     def execute(self):
         if self.signal is None:
@@ -133,8 +127,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
             # Set plot options
             label, xlabel, ylabel, title = \
-                self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,
-                                 shotNumber=shotNumber, label=label,
+                self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,label=label,
                                  xlabel=xlabel, title=title, plotWidget=self.plotWidget)
             # Get plottable data
             u = v[0]    # first (should be the only) array of physical

@@ -15,13 +15,14 @@ class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
         self.dataSource = dataSource
 
-    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None, coordinate_index=0, time_index=None):
+    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
+                  coordinate_index=0, time_index=None, strategy=None):
+
+        if as_function_of_time is None:
+            as_function_of_time = treeNode.asFunctionOfTime(plotWidget=plotWidget,strategy=strategy)
 
         if time_index is None:
             time_index = treeNode.timeValue()
-
-        if as_function_of_time is None:
-            as_function_of_time = treeNode.hasTimeXaxis(plotWidget)
 
         if plotWidget is not None and plotWidget.addTimeSlider:
             time_index = plotWidget.sliderGroup.slider.value()
@@ -43,27 +44,24 @@ class QVizIMASNativeDataAccess:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is1DAndDynamic():
-                if not treeNode.isCoordinateTimeDependent(coordinateNumber=1):
-                    return self.GetSignalAt(treeNode, time_index, plotWidget)
-                elif treeNode.embedded_in_time_dependent_aos():
-                    return self.GetSignalAt(treeNode, time_index, plotWidget)
-                else:
-                    raise ValueError('Unable to get time independent signal for node: ' + treeNode.getPath())
+                return self.GetSignalAt(treeNode, time_index, plotWidget)
 
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView, StackedPlotWindow
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
         if treeNode.is1DAndDynamic():
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
             xData = None
-            if plotWidget is not None and not isinstance(plotWidget, StackedPlotWindow):
-                pgPlotItem = plotWidget.pgPlotWidget.plotItem
+            if plotWidget is not None and isinstance(plotWidget, StackedPlotWindow) \
+                    or isinstance(plotWidget, QVizTablePlotView) :
+                pgPlotItem = plotWidget.getCurrentPlotItem()
                 if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
                     return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
-            elif plotWidget is not None and isinstance(plotWidget, StackedPlotWindow):
-                pgPlotItem = plotWidget.getCurrentPlotItem()
+            elif plotWidget is not None and not isinstance(plotWidget, StackedPlotWindow):
+                pgPlotItem = plotWidget.pgPlotWidget.plotItem
                 if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
                     xData = pgPlotItem.dataItems[0].xData
                     return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)

@@ -1,3 +1,6 @@
+#!/usr/bin/python
+"""This test file executes the plugin 'viz_example_plugin' for testing
+"""
 import sys, logging, os
 # PyQt library imports
 from PyQt5.QtWidgets import QApplication

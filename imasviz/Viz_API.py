@@ -465,14 +465,14 @@ class Viz_API:
         return figureKey, plotWidget
 
 
-    def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=False,
-                  coordinate1_index=0, time_index=None, plotWidget=None):
+    def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
+                  coordinate1_index=0, time_index=None, plotWidget=None, strategy=None):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             return signalDataAccess.GetSignal(treeNode=vizTreeNode, plotWidget=plotWidget,
                                               as_function_of_time=as_function_of_time,
                                               coordinate_index=coordinate1_index,
-                                              time_index=time_index)
+                                              time_index=time_index, strategy=strategy)
         except:
             raise
 

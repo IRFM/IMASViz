@@ -162,7 +162,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
         # Get figure key / label for the SPV window
         self.figureKey = parent.figureKey
 
-        # Clear list of tree nodes
+        # List of tree nodes contained in this plot
         self.vizTreeNodesList = []
 
         # Define if time or coordinate slider is required (required by
@@ -234,6 +234,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
+
                 # Append the node to the list of tree nodes
                 self.vizTreeNodesList.append(signalNode)
 
@@ -243,7 +244,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
                 # Get signal properties and values
                 signalDataAccess = QVizDataAccessFactory(dtv.dataSource).create()
-                s = signalDataAccess.GetSignal(signalNode, plotWidget=self)
+                s = signalDataAccess.GetSignal(signalNode, plotWidget=self, strategy="TIME")
 
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
@@ -251,9 +252,6 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 v = QVizPlotSignal.get1DSignalValue(s)
                 # TODO (idea): create global getSignal(), getTime(),
                 # get1DSignalValue to be used by all plot frame routines
-
-                # Get IDS case shot number
-                shotNumber = dtv_selectedSignals[signalKey]['shotNumber']
 
                 # Get number of rows of the y-axis array of values
                 # TODO/Note: as it seems the QVizPlotSignal is used for single
@@ -263,9 +261,9 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 # Set plot options
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
-                                               shotNumber=shotNumber,
                                                title=self.figureKey,
-                                               plotWidget=self)
+                                               plotWidget=self,
+                                               strategy="TIME")
 
                 # Add plot
                 for i in range(0, nbRows):

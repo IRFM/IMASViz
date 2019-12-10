@@ -28,7 +28,7 @@ from PyQt5.QtCore import QObject, pyqtSlot
 from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication, QStyle
 from PyQt5.QtGui import QIcon
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import GlobalIcons
+from imasviz.VizUtils.QVizGlobalValues import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
@@ -789,20 +789,19 @@ class QVizSignalHandling(QObject):
         share the same coordinates and other conditions for a meaningful plot.
         """
         if vizTreeNode.is1DAndDynamic():
-            for si in selectedNodeList:
-                if not si.is0DAndNumeric():
-                    if figureKey is not None:
-                        api = self.dataTreeView.imas_viz_api
-                        figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
+            api = self.dataTreeView.imas_viz_api
+            figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=figureKey)
-                        if plotWidget is not None and not vizTreeNode.hasTimeXaxis(plotWidget):
-                            if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
-                                return False
-                if vizTreeNode.getUnits() != si.getUnits():
+            for si in selectedNodeList:
+                if figureKey is not None:
+                    if plotWidget is not None and not vizTreeNode.hasTimeXaxis(plotWidget):
+                        if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
+                            return False
+                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
                     return False
         elif vizTreeNode.is0DAndDynamic():
             for si in selectedNodeList:
-                if vizTreeNode.getUnits() != si.getUnits():
+                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
                     return False
         return True
 

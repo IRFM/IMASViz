@@ -46,6 +46,14 @@ class QVizTablePlotView(pg.GraphicsWindow):
         self.imas_viz_api = parent.getIMASVizAPI()
         self.figureKey = parent.getFigureKey()
 
+        # List of tree nodes contained in this plot
+        self.vizTreeNodesList = []
+
+        # Define if time or coordinate slider is required (required by
+        # QVizTreeNode (!))
+        self.addTimeSlider = False
+        self.addCoordinateSlider = False
+
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
         # Set base dimension parameter for setting plot size
@@ -108,21 +116,31 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
 
+                # Append the node to the list of tree nodes
+                self.vizTreeNodesList.append(signalNode)
+
                 key = dtv.dataSource.dataKey(signalNode)
                 tup = (dtv.dataSource.shotNumber, signalNode)
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
-                # Get array of time values
-                t = QVizPlotSignal.getTime(s)
-                # Get array of y-axis values
-                v = QVizPlotSignal.get1DSignalValue(s)
+                # s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
+                # # Get array of time values
+                # t = QVizPlotSignal.getTime(s)
+                # # Get array of y-axis values
+                # v = QVizPlotSignal.get1DSignalValue(s)
                 # TODO (idea): create global getSignal(), getTime(),
                 # get1DSignalValue to be used by all plot frame routines
 
-                # Get IDS case shot number
-                shotNumber = dtv_selectedSignals[signalKey]['shotNumber']
+                s= self.imas_viz_api.GetSignal(dataTreeView=self.dataTreeView,
+                                            vizTreeNode=signalNode,
+                                            plotWidget=self,
+                                            strategy="DEFAULT")
+
+                t = QVizPlotSignal.getTime(s)
+                
+                # Get array of y-axis values
+                v = QVizPlotSignal.get1DSignalValue(s)
 
                 # Get number of rows of the y-axis array of values
                 # TODO/Note: as it seems the QVizPlotSignal is used for single
@@ -132,8 +150,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 # Set plot options
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
-                                               shotNumber=shotNumber,
-                                               title=self.figureKey)
+                                           title=self.figureKey,
+                                           plotWidget=self,
+                                           strategy="DEFAULT")
 
                 # Add plot
                 for i in range(0, nbRows):
@@ -175,7 +194,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                     plotItemKey = (currentPlotItem.row, currentPlotItem.column)
 
                     # If configuration is present
-                    if self.plotConfig != None:
+                    if self.plotConfig is not None:
                         self.parent.applyPlotConfigurationAfterPlotting(currentPlotItem)
 
                 # Next plot number
@@ -245,7 +264,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
     def getCurrentPlotItem(self):
         """Get the current (last) plot item, created by gw.plot().
         """
-        return list(self.centralWidget.items.keys())[-1]
+        if len(self.centralWidget.items.keys()) > 0:
+            return list(self.centralWidget.items.keys())[-1]
+        return None
 
     def getPlotItemsDict(self):
         """Return dictionary of GraphicWindow plot items

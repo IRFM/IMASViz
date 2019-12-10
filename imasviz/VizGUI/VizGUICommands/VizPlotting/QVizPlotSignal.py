@@ -143,7 +143,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             label, xlabel, ylabel, title = \
                 self.treeNode.plotOptions(self.dataTreeView,
-                                 shotNumber=shotNumber, label=label,
+                                 label=label,
                                  xlabel=xlabel, title=figureKey,
                                           time_index=time_index,
                                           coordinate_index=coordinate_index,
@@ -205,11 +205,11 @@ class QVizPlotSignal(QVizAbstractCommand):
     # This method gives a preferential way to plot data: as function
     # of time for 0D node and as function of coordinate1 for 1D nodes
     @staticmethod
-    def getSignal(dataTreeView, vizTreeNode, plotWidget=None):
+    def getSignal(dataTreeView, vizTreeNode, plotWidget=None, as_function_of_time=False):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             if vizTreeNode.is1DAndDynamic():
-                signal = signalDataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget)
+                signal = signalDataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget, as_function_of_time=as_function_of_time)
             elif vizTreeNode.is0DAndDynamic():
                 signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
             else:
