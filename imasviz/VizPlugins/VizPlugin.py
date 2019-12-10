@@ -8,7 +8,8 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      'SOLPS_UiPlugin': '',
                      'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                      'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
-                     'example_UiPlugin': ''
+                     'example_UiPlugin': '',
+                     'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample'
                      }
 
 

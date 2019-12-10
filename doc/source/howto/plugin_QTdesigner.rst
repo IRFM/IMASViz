@@ -42,7 +42,7 @@ In this HOWTO section it will be described how to:
 
 For the purposes of this HowTo section, a widget source code for the
 **Magnetics IDS overview Plugin** was developed and it is available in the
-IMASViz source code (VizPlugin/viz_example). As it is mainly intended only
+IMASViz source code (VizPlugins/viz_example). As it is mainly intended only
 as an example of a plugin (including an example of the widget source code), it
 is referred to mainly as an **Example Plugin** (same goes for source files -
 exampleWidget.py and exampleplugin.py, introduced later in this howTo section).
@@ -134,7 +134,7 @@ information about the code itself:
 - authors name and
 - authors contact (e-mail is most convenient).
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 1
    :lines: 1-16
@@ -161,7 +161,7 @@ The ones required in this case are:
 
 - The common system, OS and logging modules:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 18
    :lines: 18-23
@@ -169,7 +169,7 @@ The ones required in this case are:
 
 - PyQt5 modules:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 24
    :lines: 24-26
@@ -177,7 +177,7 @@ The ones required in this case are:
 
 - Matplotlib modules and setting matplotlib to use the Qt rendering:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 27
    :lines: 27-32
@@ -186,7 +186,7 @@ The ones required in this case are:
 
 - IMAS modules:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 33
    :lines: 33-34
@@ -210,7 +210,7 @@ inheriting from the PyQt5 **QWidget** class. In this case, the class is named
 This class will later fully define the QWidget (contents, design, functions
 related to the widget and more).
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 36
    :lines: 36-39
@@ -221,7 +221,7 @@ related to the widget and more).
 
 Here also a new PyQt signal is set, which will be needed later in code.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 41
    :lines: 41-42
@@ -253,7 +253,7 @@ arguments:
 
 Both arguments are set as **None** (default values).
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 44
    :lines: 44-57
@@ -261,7 +261,7 @@ Both arguments are set as **None** (default values).
 
 And the :guilabel:`ids` object is set with:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 65
    :lines: 65-67
@@ -285,7 +285,7 @@ In the constructor we define a dictionary labeled as :guilabel:`self.idsParamete
 which should contain all IDS parameters for IDS (will be used later to open the
 needed IDS):
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 69
    :lines: 69-83
@@ -298,7 +298,7 @@ example ``ssh user@host`` etc.).
 
 In this case we define a function named :guilabel:`checkDisplay()`:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 188
    :lines: 188-193
@@ -306,7 +306,7 @@ In this case we define a function named :guilabel:`checkDisplay()`:
 
 and execute it in the constructor:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 61
    :lines: 61-63
@@ -319,7 +319,7 @@ matplotlib navigation toolbar):
    The **PlotCanvas** class definition and the definition of its routines
    will be done in the following sections.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 85
    :lines: 85-93
@@ -338,7 +338,7 @@ performance when being executed as slots in PyQt5 applications.
 The :guilabel:`get` routines are simple functions which return one variable
 value.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 146
    :lines: 146-186
@@ -352,7 +352,7 @@ The first "bundle" of functions deals with IDSs:
 1. :guilabel:`openIDS`: for opening the IDS (using the IDS case parameters,
 defined with the :guilabel:`self.idsParameters` dictionary),
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 125
    :lines: 125-136
@@ -363,7 +363,7 @@ defined with the :guilabel:`self.idsParameters` dictionary),
 called/executed, this signal will get emmited. Later in the plugin this signal
 will be used to initiate the execution of certain functions on signal-emit.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 138
    :lines: 138-141
@@ -372,7 +372,7 @@ will be used to initiate the execution of certain functions on signal-emit.
 3. :guilabel:`getIDS`: for getting/returning the IDS object
 (:guilabel:`self.ids`).
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 143
    :lines: 143-144
@@ -388,7 +388,7 @@ section. The functions needed are:
 - :guilabel:`plotBPolAoS`: for plotting all **poloidal field probe** signal
   arrays values
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 95
    :lines: 95-123
@@ -411,7 +411,7 @@ is named :guilabel:`PlotCanvas`.
 This class will later fully define the matplotlib plot frame (canvas) and
 functions related to it.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 195
    :lines: 195-198
@@ -430,7 +430,7 @@ In this case the constructor takes 4 additional arguments:
 The :guilabel:`parent` argument is set as **None**, :guilabel:`width` to **5**,
 :guilabel:`height` to **5** and :guilabel:`dpi` to **100** (default values).
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 200
    :lines: 200-207
@@ -442,7 +442,7 @@ Next, a figure object :guilabel:`fig` is set:
    **Figure** routine is taken from the import statement (see
    :ref:`plugins_qtdesigner_import_statement`).
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 109
    :lines: 109-210
@@ -452,7 +452,7 @@ Next, the (by class) inherited :guilabel:`FigureCanvas` constructor is executed.
 The :guilabel:`fig` object is passed to it as an argument. This way the
 **figure** is embedded within the **matplotlib canvas**.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 211
    :lines: 211-212
@@ -460,7 +460,7 @@ The :guilabel:`fig` object is passed to it as an argument. This way the
 
 Next, the **parent** of the :guilabel:`FigureCanvas` is set:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 213
    :lines: 213-214
@@ -468,7 +468,7 @@ Next, the **parent** of the :guilabel:`FigureCanvas` is set:
 
 Lastly, the :guilabel:`FigureCanvas` **size policy** is set.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 215
    :lines: 215-218
@@ -476,7 +476,7 @@ Lastly, the :guilabel:`FigureCanvas` **size policy** is set.
 
 The whole :guilabel:`PlotCanvas` constructor code:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 200
    :lines: 200-218
@@ -500,7 +500,7 @@ The function :guilabel:`plotFluxAoS` requires only one argument: the IDS object.
 The function must also set the provided :guilabel:`ids` object to
 :guilabel:`self.ids` object.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 220
    :lines: 220-233
@@ -508,7 +508,7 @@ The function must also set the provided :guilabel:`ids` object to
 
 Next, figure subplot must be set:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 234
    :lines: 234-235
@@ -519,7 +519,7 @@ array. The time values will correspond to plot X-axis, thus, for easier
 representation, a new array :guilabel:`x` can be defined and the same values
 assigned to it.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 236
    :lines: 236-238
@@ -531,7 +531,7 @@ the previously set time values (X-axis) a new plot can be added to the
 matplotlib figure. Because of the loop, this gets repeated until no more AoS
 arrays are left.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 239
    :lines: 239-247
@@ -545,7 +545,7 @@ Next, few additional modifications are required:
 - enabling legend, and
 - drawing the plot.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 248
    :lines: 248-256
@@ -553,7 +553,7 @@ Next, few additional modifications are required:
 
 Final :guilabel:`plotFluxAoS` code:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 220
    :lines: 220-256
@@ -564,7 +564,7 @@ to :guilabel:`plotFluxAoS` code.
 
 Final :guilabel:`plotBPolAoS`:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 258
    :lines: 258-293
@@ -583,7 +583,7 @@ This part of the code contains setting the :guilabel:`QApplication`,
 reading the IDS (parameters are set in the :guilabel:`exampleWidget`
 constructor) and executing the plotting procedures.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :lineno-start: 295
    :lines: 295-317
@@ -619,7 +619,7 @@ The code can now be run from the terminal with the next command:
 
 Full final code of the example PyQt5 widget
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleWidget.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleWidget.py
    :language: python
    :linenos:
 
@@ -639,7 +639,7 @@ used and slightly modified as required..
 
 The whole code is shown below.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :linenos:
 
@@ -649,7 +649,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 1. Import statement:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 13
    :lines: 13
@@ -657,7 +657,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 2. Class label:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 15
    :lines: 15
@@ -665,7 +665,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 3. Class constructor:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 18
    :lines: 18-19
@@ -678,7 +678,7 @@ new widget, in order to properly refer to the widget source code - in this case
    If widget constructor requires arguments they must be included here! In this
    case :guilabel:`parent` and :guilabel:`ids`.
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 21
    :lines: 21-22
@@ -687,7 +687,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 5. Name:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 24
    :lines: 24-25
@@ -696,7 +696,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 6. Group:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 27
    :lines: 27-28
@@ -705,7 +705,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 7. Tool tip:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 33
    :lines: 33-34
@@ -714,7 +714,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 8. XML attribute definition:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 42
    :lines: 42-43
@@ -723,7 +723,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 9. Include file:
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 45
    :lines: 45-46
@@ -732,7 +732,7 @@ new widget, in order to properly refer to the widget source code - in this case
 
 10. Icon - pixmap (optional):
 
-.. literalinclude:: ../../../imasviz/VizPlugin/viz_example/exampleplugin.py
+.. literalinclude:: ../../../imasviz/VizPlugins/viz_example/exampleplugin.py
    :language: python
    :lineno-start: 48
    :lines: 48-72
@@ -757,9 +757,9 @@ in this case
 .. code-block:: console
 
     # Bash shell
-    export PYQTDESIGNERPATH=$VIZ_HOME/imasviz/VizPlugin/viz_example:${PYQTDESIGNERPATH}
+    export PYQTDESIGNERPATH=$VIZ_HOME/imasviz/VizPlugins/viz_example:${PYQTDESIGNERPATH}
     # C-shell
-    setenv PYQTDESIGNERPATH $VIZ_HOME/imasviz/VizPlugin/viz_example:${PYQTDESIGNERPATH}
+    setenv PYQTDESIGNERPATH $VIZ_HOME/imasviz/VizPlugins/viz_example:${PYQTDESIGNERPATH}
 
 
 With this step completed the PyQt5 widget, now Qt Designer plugin, is ready to
@@ -790,18 +790,32 @@ procedure.
   Final design of the example plugin, indented for plotting all slices of
   **flux loop** and **poloidal field** data found in **magnetics IDS**.
 
-Qt designer is (usually) run with
+Before continuing, the environment must be set properly.
+On the **GateWay**, a few modules are required to be loaded first and the
+**LD_LIBRARY_PATH** environment variable must be extended:
 
 .. code-block:: console
 
-    designer-qt5
+    # On the GateWay
+    module load itm-python3.6
+    module load itm-qt/5.8.0
+    setenv LD_LIBRARY_PATH ${ITM_PYTHON_PREFIX}/lib:${LD_LIBRARY_PATH}
+
+The Qt designer can be then run by executing the next command in the terminal:
+
+.. code-block:: console
+
+    # On the GateWay
+    designer
+
+A startup window will appear, as shown in the figure below.
 
 .. Warning::
    Qt version of used PyQt5 (compiled with Qt) and Qt designer **must match**!
    Qt designer with Qt version X will not be able to find a plugin which
    source (widget code) was written using PyQt5 compiled with Qt version Y!
-
-A startup window will appear, as shown in the figure below.
+   The environment-setting instructions above were tested on the **GateWay**
+   in the time of writing this HowTo section.
 
 GUI design procedure
 ^^^^^^^^^^^^^^^^^^^^
@@ -1182,7 +1196,7 @@ opening and setting the IDS is not necessary (required when running the plugin
 as a standalone application as shown in :ref:`exampleWidget_running_ui`).
 
 To run the plugin from IMASViz it must be first added (registered) in IMASViz
-``$VIZ_HOME/imasviz/VizPlugin/VizPlugin.py` source file. This is done through
+``$VIZ_HOME/imasviz/VizPlugins/VizPlugins.py`` source file. This is done through
 the next few steps:
 
 1. Add plugin to a list of registered plugins
@@ -1212,13 +1226,13 @@ below, where:
                         'SOLPS_UiPlugin': {
                             'UiFile': 'SOLPSplugin.ui',
                             'dir': os.environ['VIZ_HOME'] +
-                                   '/imasviz/VizPlugin/viz_solps/',
+                                   '/imasviz/VizPlugins/viz_solps/',
                             'targetIDSroot' : 'edge_profiles',
                             'targetOccurrence' : 0},
                         'example_UiPlugin': {
                             'UiFile': 'examplePlugin.ui',
                             'dir': os.environ['VIZ_HOME'] +
-                                   '/imasviz/VizPlugin/viz_example/',
+                                   '/imasviz/VizPlugins/viz_example/',
                             'targetIDSroot': 'magnetics',
                             'targetOccurrence': 0}
                         }
