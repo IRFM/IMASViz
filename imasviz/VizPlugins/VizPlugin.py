@@ -10,7 +10,7 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                      'example_UiPlugin': '',
                      'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample',
-                     'ETSplugin' : 'viz_ETS.ETSplugin'
+                     'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
                      }
 
 
