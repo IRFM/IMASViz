@@ -13,6 +13,7 @@
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_ETS.ETSplugin import ETSplugin
 import logging, os, sys
+from PyQt5.QtWidgets import QMdiSubWindow
 
 class ETSpluginIMASViz(VizPlugin):
 
@@ -49,8 +50,15 @@ class ETSpluginIMASViz(VizPlugin):
         self.IDS_parameters["user"] = user
         self.IDS_parameters["device"] = device
 
-        ets = ETSplugin(self.IDS_parameters, self.ids)
-        ets.plot()
+        self.ets = ETSplugin(self.IDS_parameters, self.ids)
+        if self.dataTreeView.window().objectName() == "IMASViz root window":
+
+            subwindow = QMdiSubWindow()
+            subwindow.setWidget(self.ets)
+            subwindow.resize(400,400)
+            self.dataTreeView.window().getMDI().addSubWindow(self.ets)
+
+        self.ets.plot()
 
     def getEntries(self):
         if self.selectedTreeNode.getIDSName() == "core_profiles":
