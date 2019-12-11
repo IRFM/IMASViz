@@ -13,8 +13,15 @@
 #     Copyright(c) 2019- D. Penko, J. Ferreira
 
 import logging, os, sys
-import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Qt5Agg')
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import \
+    FigureCanvasQTAgg as FigCanvas
+from matplotlib.backends.backend_qt5agg import \
+    NavigationToolbar2QT as NavigationToolbar
 import imas
+from PyQt5.QtWidgets import QWidget, QTabWidget, QApplication, QMainWindow, QVBoxLayout
 
 def checkArguments():
     """ Check arguments when running plugin from the terminal (standalone).
@@ -54,7 +61,7 @@ def checkArguments():
 
     return IDS_parameters
 
-class ETSplugin():
+class ETSplugin(QMainWindow):
     def __init__(self, IDS_parameters, ids=None):
         """
         Arguments:
@@ -62,8 +69,15 @@ class ETSplugin():
                                           (shot, run, user, device)
             ids            (obj)        : IDS object
         """
+        super(QMainWindow, self).__init__()
         self.ids = ids
         self.IDS_parameters = IDS_parameters
+        self.tabWidget = QTabWidget(parent=self)
+        self.tab1 = QWidget(self)
+        self.tab1.setLayout(QVBoxLayout())
+        self.tabWidget.addTab(self.tab1, "Tab 1")
+
+        self.setCentralWidget(self.tabWidget)
 
     def setIDS(self):
         try:
@@ -95,51 +109,62 @@ class ETSplugin():
         print('Device =', self.IDS_parameters["device"])
         # print('ts =', ts)
 
+
+        # Create the matplotlib Figure and FigCanvas objects.
+        # 100 dots-per-inch
+        self.dpi = 100
+        self.fig = Figure(dpi=self.dpi)
+        self.canvas = FigCanvas(self.fig)
+        self.tab1.layout().addWidget(self.canvas)
+
+        self.fig.subplots_adjust(left=0.08, right=0.99, bottom=0.1, top=0.9, \
+                                 wspace=0.3, hspace=0.0)
+
+        self.fig.suptitle('ETS plugin')
+        grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
+        self.ax1 = self.fig.add_subplot(grid_subp[0, 0])
+
         # Extrat and plot data
         cp = self.ids.core_profiles.profiles_1d[0]
 
-        plt.figure()
-        plt.subplot(2,2,1)
-        plt.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.electrons.temperature, label='el')
+        self.ax1.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.electrons.temperature, label='el')
         for i in range(len(cp.ion)):
             if cp.ion[i].multiple_states_flag == 0 :
-                plt.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.ion[i].temperature, label='ion %d'%(i+1))
-        plt.title('temperature')
-        plt.ylabel('[keV]')
-        plt.legend()
+                self.ax1.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.ion[i].temperature, label='ion %d'%(i+1))
+        self.ax1.set(title='Temperature', ylabel='[keV]')
+        self.ax1.legend()
 
-        plt.subplot(2,2,2)
-        plt.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.electrons.density_thermal, label='el')
+        self.ax2 = self.fig.add_subplot(grid_subp[0, 1])
+        self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.electrons.density_thermal, label='el')
         for i in range(len(cp.ion)):
             if cp.ion[i].multiple_states_flag == 0 :
-                plt.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.ion[i].density_thermal, label='ion %d'%(i+1))
-        plt.title('density')
-        plt.ylabel('[10^19 m-3]')
-        plt.legend()
+                self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.ion[i].density_thermal, label='ion %d'%(i+1))
+        self.ax2.set(title='Density', ylabel='[10^19 m-3]')
+        self.ax2.legend()
 
-        plt.subplot(2,2,3)
-        plt.plot(cp.grid.rho_tor_norm, 1.0e-6*cp.j_total, label='j_tor')
-        plt.title('current')
-        plt.ylabel('[MA m-2]')
-        plt.xlabel('rhon')
-        plt.legend()
+        self.ax3 = self.fig.add_subplot(grid_subp[1, 0])
+        self.ax3.plot(cp.grid.rho_tor_norm, 1.0e-6*cp.j_total, label='j_tor')
+        self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
+        self.ax3.legend()
 
-        plt.subplot(2,2,4)
-        plt.plot(cp.grid.rho_tor_norm, cp.q, label='q')
-        plt.xlabel('rhon')
-        plt.twinx()
-        plt.plot(cp.grid.rho_tor_norm, cp.magnetic_shear, color='C1', label='shear')
-        plt.title('safety factor / shear')
-        plt.ylabel('[-]')
-        plt.legend()
+        self.ax4 = self.fig.add_subplot(grid_subp[1, 1])
+        self.ax4.plot(cp.grid.rho_tor_norm, cp.q, label='q')
+        # self.ax4.twinx()
+        self.ax4.plot(cp.grid.rho_tor_norm, cp.magnetic_shear, color='C1', label='shear')
+        self.ax4.set(title='safety factor / shear', xlabel='rhon', ylabel='[-]')
+        self.ax4.legend()
 
-        plt.show()
+        self.show()
 
 if  __name__ == "__main__":
     # Set mandatory arguments
     IDS_parameters = checkArguments()
 
+    app = QApplication(sys.argv)
+
     ets = ETSplugin(IDS_parameters)
     ets.setIDS()
     ets.getCoreProfiles()
     ets.plot()
+
+    sys.exit(app.exec_())
