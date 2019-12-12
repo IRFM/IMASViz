@@ -222,14 +222,6 @@ class QVizDataTreeView(QTreeWidget):
             column (int)             : Item column.
         """
 
-        # Check if item has the necessary attributes. If not -> return
-        if item.getDataName() is not None:
-            pass
-        elif item.getDocumentation() is not None:
-            pass
-        else:
-            return
-
         # Set selected QTreeWidgetItem on left click
         # (marked with blue fill color in DTV)
         self.setSelectedItem(item=item, mouseButton="LEFT")
