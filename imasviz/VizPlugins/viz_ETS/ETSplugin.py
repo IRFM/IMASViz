@@ -21,7 +21,8 @@ from matplotlib.backends.backend_qt5agg import \
 from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 import imas
-from PyQt5.QtWidgets import QWidget, QTabWidget, QApplication, QMainWindow, QVBoxLayout, QSlider
+from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
+    QGridLayout, QSlider, QLabel)
 from PyQt5.QtCore import Qt
 
 def checkArguments():
@@ -102,7 +103,7 @@ class ETSplugin(QMainWindow):
     def setTab1(self):
 
         self.tab1 = QWidget(self)
-        self.tab1.setLayout(QVBoxLayout())
+        self.tab1.setLayout(QGridLayout())
         self.tabWidget.addTab(self.tab1, "Core Profiles")
 
         # Create the matplotlib Figure and FigCanvas objects.
@@ -111,7 +112,7 @@ class ETSplugin(QMainWindow):
         self.fig = Figure(dpi=self.dpi)
         self.canvas = FigCanvas(self.fig)
         # Add canvas to tab widget
-        self.tab1.layout().addWidget(self.canvas)
+        self.tab1.layout().addWidget(self.canvas, 0, 0, 1, 10)
 
         self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.35)
@@ -121,7 +122,10 @@ class ETSplugin(QMainWindow):
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
 
         self.setSlider()
-        self.tab1.layout().addWidget(self.slider_time)
+        self.tab1.layout().addWidget(self.slider_time, 1, 0, 1, 8)
+
+        self.timeLabel = QLabel("Time slice: " + str(self.slider_time.value()))
+        self.tab1.layout().addWidget(self.timeLabel, 1, 9, 1, 10)
 
     def checkIDS(self):
         if self.ids == None:
@@ -196,6 +200,7 @@ class ETSplugin(QMainWindow):
     def plotUpdate(self):
 
         sliderValue = int(round(self.slider_time.value()))
+        self.timeLabel.setText("Time slice: " + str(sliderValue))
         # print("Slider value: ", sliderValue)
         cp = self.ids.core_profiles.profiles_1d[sliderValue]
 
@@ -208,20 +213,33 @@ class ETSplugin(QMainWindow):
         for i in range(len(cp.ion)):
             if cp.ion[i].multiple_states_flag == 0 :
                 self.ax1.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.ion[i].temperature, label='ion %d'%(i+1))
+        self.ax1.set(title='Temperature', ylabel='[keV]')
+        self.ax1.legend()
 
         self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.electrons.density_thermal, label='el')
         for i in range(len(cp.ion)):
             if cp.ion[i].multiple_states_flag == 0 :
                 self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.ion[i].density_thermal, label='ion %d'%(i+1))
+        self.ax2.set(title='Density', ylabel='[10^19 m-3]')
+        self.ax2.legend()
 
         self.ax3.plot(cp.grid.rho_tor_norm, 1.0e-6*cp.j_total, label='j_tor')
+        self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
+        self.ax3.legend()
 
         pl4 = self.ax4.plot(cp.grid.rho_tor_norm, cp.q, label='q')
         pl5 = self.ax5.plot(cp.grid.rho_tor_norm, cp.magnetic_shear, color='C1', label='shear')
+        # Combine legend of the both plots into a single legend box
+        pl = pl4+pl5
+        labs = [l.get_label() for l in pl]
+        leg5 = self.ax5.legend(pl, labs, loc=0)
+        leg5.set_draggable(True)
 
         # Update the figure display
         self.canvas.draw()
         self.canvas.flush_events()
+
+
 
 if  __name__ == "__main__":
     # Set mandatory arguments
