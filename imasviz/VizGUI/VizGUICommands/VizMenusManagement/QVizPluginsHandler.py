@@ -1,6 +1,6 @@
 
 import importlib, logging
-
+import traceback
 from functools import partial
 from PyQt5.QtCore import QObject, pyqtSlot
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
@@ -122,7 +122,11 @@ class QVizPluginsHandler:
             # Show the plugin user interface
             pluginsObject.show()
         elif 'execute' in dir(pluginsObject):
-            logging.info('Executing plugin: ' + pluginsName)
-            pluginsObject.execute(dataTreeView.imas_viz_api, entry)
+            try:
+                logging.info('Executing plugin: ' + pluginsName)
+                pluginsObject.execute(dataTreeView.imas_viz_api, entry)
+            except:
+                traceback.print_exc()
+                logging.error(traceback.format_exc())
         else:
             print("Unable to execute plugin: " + pluginsName + ". Bad implementation provided by the plugin!")
