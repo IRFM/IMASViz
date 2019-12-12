@@ -14,6 +14,7 @@ from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_ETS.ETSplugin import ETSplugin
 import logging, os, sys
 from PyQt5.QtWidgets import QMdiSubWindow
+import traceback
 
 class ETSpluginIMASViz(VizPlugin):
 
@@ -58,7 +59,11 @@ class ETSpluginIMASViz(VizPlugin):
             subwindow.resize(400,400)
             self.dataTreeView.window().getMDI().addSubWindow(self.ets)
 
-        self.ets.plot()
+        try:
+            self.ets.plotTab1()
+        except :
+            traceback.print_exc()
+            logging.error(traceback.format_exc())
 
     def getEntries(self):
         if self.selectedTreeNode.getIDSName() == "core_profiles":
