@@ -21,7 +21,8 @@ from matplotlib.backends.backend_qt5agg import \
 from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 import imas
-from PyQt5.QtWidgets import QWidget, QTabWidget, QApplication, QMainWindow, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QTabWidget, QApplication, QMainWindow, QVBoxLayout, QSlider
+from PyQt5.QtCore import Qt
 
 def checkArguments():
     """ Check arguments when running plugin from the terminal (standalone).
@@ -73,9 +74,11 @@ class ETSplugin(QMainWindow):
         self.ids = ids
         self.IDS_parameters = IDS_parameters
         self.tabWidget = QTabWidget(parent=self)
-        self.tab1 = QWidget(self)
-        self.tab1.setLayout(QVBoxLayout())
-        self.tabWidget.addTab(self.tab1, "Tab 1")
+        if ids == None:
+            self.setIDS()
+
+        self.checkIDS()
+        self.setTab1()
 
         self.setCentralWidget(self.tabWidget)
 
@@ -87,6 +90,7 @@ class ETSplugin(QMainWindow):
             self.ids = None
             print("Error when trying to get() the IDS. Data for given IDS " \
                   "parameters either doesn't exist or is corrupted.")
+        self.getCoreProfiles()
 
     def getCoreProfiles(self):
         if self.ids != None:
@@ -95,8 +99,31 @@ class ETSplugin(QMainWindow):
             # ts = 2.0
             # self.ids.core_profiles.getSlice(ts, imas.imasdef.CLOSEST_SAMPLE)
 
-    def plot(self):
+    def setTab1(self):
 
+        self.tab1 = QWidget(self)
+        self.tab1.setLayout(QVBoxLayout())
+        self.tabWidget.addTab(self.tab1, "Core Profiles")
+
+        # Create the matplotlib Figure and FigCanvas objects.
+        # 100 dots-per-inch
+        self.dpi = 100
+        self.fig = Figure(dpi=self.dpi)
+        self.canvas = FigCanvas(self.fig)
+        # Add canvas to tab widget
+        self.tab1.layout().addWidget(self.canvas)
+
+        self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9, \
+                                 wspace=0.3, hspace=0.35)
+
+        self.fig.suptitle('ETS plugin')
+        self.grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
+        self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
+
+        self.setSlider()
+        self.tab1.layout().addWidget(self.slider_time)
+
+    def checkIDS(self):
         if self.ids == None:
             print("IDS object is None!")
             return
@@ -109,52 +136,92 @@ class ETSplugin(QMainWindow):
         print('Device =', self.IDS_parameters["device"])
         # print('ts =', ts)
 
+        print("Number of time slices: ", len(self.ids.core_profiles.time))
+        print("Number of profiles_1d slices: ", len(self.ids.core_profiles.profiles_1d))
 
-        # Create the matplotlib Figure and FigCanvas objects.
-        # 100 dots-per-inch
-        self.dpi = 100
-        self.fig = Figure(dpi=self.dpi)
-        self.canvas = FigCanvas(self.fig)
-        self.tab1.layout().addWidget(self.canvas)
+    def setSlider(self):
+        # Set time slider
+        self.slider_time = QSlider(Qt.Horizontal, self.tab1)
+        self.slider_time.setValue(0)
+        self.slider_time.setMinimum(0)
+        self.slider_time.setMaximum(len(self.ids.core_profiles.time)-1)
+        # self.slider_time.adjustSize()
+        # self.slider_time.setMinimumWidth(600)
 
-        self.fig.subplots_adjust(left=0.08, right=0.99, bottom=0.1, top=0.9, \
-                                 wspace=0.3, hspace=0.0)
+        # Set slider event handling
+        self.slider_time.valueChanged.connect(self.on_slider)
+        # self.slider_time.sliderMoved.connect(self.on_slider_track)
+        # self.slider_time.sliderReleased.connect(self.on_slider_time)
 
-        self.fig.suptitle('ETS plugin')
-        grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
-        self.ax1 = self.fig.add_subplot(grid_subp[0, 0])
+    def on_slider(self, event=None):
+        self.plotUpdate()
 
-        # Extrat and plot data
-        cp = self.ids.core_profiles.profiles_1d[0]
+    def plotTab1(self):
 
+        self.cp = self.ids.core_profiles.profiles_1d[0]
+
+        self.ax1.plot(self.cp.grid.rho_tor_norm, 1.0e-3*self.cp.electrons.temperature, label='el')
+        for i in range(len(self.cp.ion)):
+            if self.cp.ion[i].multiple_states_flag == 0 :
+                self.ax1.plot(self.cp.grid.rho_tor_norm, 1.0e-3*self.cp.ion[i].temperature, label='ion %d'%(i+1))
+        self.ax1.set(title='Temperature', ylabel='[keV]')
+        self.ax1.legend()
+
+        self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
+        self.ax2.plot(self.cp.grid.rho_tor_norm, 1.0e-19*self.cp.electrons.density_thermal, label='el')
+        for i in range(len(self.cp.ion)):
+            if self.cp.ion[i].multiple_states_flag == 0 :
+                self.ax2.plot(self.cp.grid.rho_tor_norm, 1.0e-19*self.cp.ion[i].density_thermal, label='ion %d'%(i+1))
+        self.ax2.set(title='Density', ylabel='[10^19 m-3]')
+        self.ax2.legend()
+
+        self.ax3 = self.fig.add_subplot(self.grid_subp[1, 0])
+        self.ax3.plot(self.cp.grid.rho_tor_norm, 1.0e-6*self.cp.j_total, label='j_tor')
+        self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
+        self.ax3.legend()
+
+        self.ax4 = self.fig.add_subplot(self.grid_subp[1, 1])
+        pl4 = self.ax4.plot(self.cp.grid.rho_tor_norm, self.cp.q, label='q')
+        self.ax5 = self.ax4.twinx()
+        pl5 = self.ax5.plot(self.cp.grid.rho_tor_norm, self.cp.magnetic_shear, color='C1', label='shear')
+        self.ax4.set(title='safety factor / shear', xlabel='rhon', ylabel='[-]')
+        # Combine legend of the both plots into a single legend box
+        pl = pl4+pl5
+        labs = [l.get_label() for l in pl]
+        leg5 = self.ax5.legend(pl, labs, loc=0)
+        leg5.set_draggable(True)
+
+        self.show()
+
+    def plotUpdate(self):
+
+        sliderValue = int(round(self.slider_time.value()))
+        # print("Slider value: ", sliderValue)
+        cp = self.ids.core_profiles.profiles_1d[sliderValue]
+
+        self.ax1.cla()
+        self.ax2.cla()
+        self.ax3.cla()
+        self.ax4.cla()
+        self.ax5.cla()
         self.ax1.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.electrons.temperature, label='el')
         for i in range(len(cp.ion)):
             if cp.ion[i].multiple_states_flag == 0 :
                 self.ax1.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.ion[i].temperature, label='ion %d'%(i+1))
-        self.ax1.set(title='Temperature', ylabel='[keV]')
-        self.ax1.legend()
 
-        self.ax2 = self.fig.add_subplot(grid_subp[0, 1])
         self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.electrons.density_thermal, label='el')
         for i in range(len(cp.ion)):
             if cp.ion[i].multiple_states_flag == 0 :
                 self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.ion[i].density_thermal, label='ion %d'%(i+1))
-        self.ax2.set(title='Density', ylabel='[10^19 m-3]')
-        self.ax2.legend()
 
-        self.ax3 = self.fig.add_subplot(grid_subp[1, 0])
         self.ax3.plot(cp.grid.rho_tor_norm, 1.0e-6*cp.j_total, label='j_tor')
-        self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
-        self.ax3.legend()
 
-        self.ax4 = self.fig.add_subplot(grid_subp[1, 1])
-        self.ax4.plot(cp.grid.rho_tor_norm, cp.q, label='q')
-        # self.ax4.twinx()
-        self.ax4.plot(cp.grid.rho_tor_norm, cp.magnetic_shear, color='C1', label='shear')
-        self.ax4.set(title='safety factor / shear', xlabel='rhon', ylabel='[-]')
-        self.ax4.legend()
+        pl4 = self.ax4.plot(cp.grid.rho_tor_norm, cp.q, label='q')
+        pl5 = self.ax5.plot(cp.grid.rho_tor_norm, cp.magnetic_shear, color='C1', label='shear')
 
-        self.show()
+        # Update the figure display
+        self.canvas.draw()
+        self.canvas.flush_events()
 
 if  __name__ == "__main__":
     # Set mandatory arguments
@@ -163,8 +230,6 @@ if  __name__ == "__main__":
     app = QApplication(sys.argv)
 
     ets = ETSplugin(IDS_parameters)
-    ets.setIDS()
-    ets.getCoreProfiles()
-    ets.plot()
+    ets.plotTab1()
 
     sys.exit(app.exec_())
