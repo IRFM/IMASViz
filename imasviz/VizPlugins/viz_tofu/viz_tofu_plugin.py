@@ -13,7 +13,12 @@ from imasviz.VizPlugins.VizPlugin import VizPlugin
 
 # tofu
 import sys
-import tofu as tf
+
+try:
+    import tofu as tf
+except:
+    logging.error("Tofu plugin: unable to import tofu package. Please load the "
+                  "tofu module if available or use a python distribution providing tofu libraries.")
 
 class ToFuPlugin(VizPlugin):
     def __init__(self):
