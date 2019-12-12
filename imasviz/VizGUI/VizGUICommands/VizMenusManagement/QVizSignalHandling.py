@@ -807,7 +807,9 @@ class QVizSignalHandling(QObject):
         return True
 
     def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
-        figureDataList = self.imas_viz_api.figToNodes[figureKey]
+        figureDataList = self.imas_viz_api.figToNodes.get(figureKey)
+        if figureDataList is None:
+            return False
         figureNodesList = []
         for k in figureDataList:
             v = figureDataList[k]
