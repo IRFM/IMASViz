@@ -96,7 +96,7 @@ class ETSplugin(QMainWindow):
         # Set time slider
         self.slider_time = self.setTimeSlider()
         self.mainWidget.layout().addWidget(self.slider_time, 0, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.tabWidget, 1, 0, 1, 2)
+        self.mainWidget.layout().addWidget(self.tabWidget, 1, 0, 1, 3)
 
         # Set tab
         self.tabCoreProfiles = tabCoreProfiles(parent=self)

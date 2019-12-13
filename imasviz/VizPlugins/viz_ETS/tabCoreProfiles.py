@@ -32,8 +32,10 @@ class tabCoreProfiles(QWidget):
         self.dpi = 100
         self.fig = Figure(dpi=self.dpi)
         self.canvas = FigCanvas(self.fig)
+        self.toolbar = NavigationToolbar(self.canvas, self)
         # Add canvas to tab widget
-        self.layout().addWidget(self.canvas, 0, 0, 1, 10)
+        self.layout().addWidget(self.canvas, 0, 0, 2, 10)
+        self.layout().addWidget(self.toolbar, 1, 0, 1, 10)
 
         self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.35)
@@ -52,6 +54,7 @@ class tabCoreProfiles(QWidget):
                 self.ax1.plot(self.cp.grid.rho_tor_norm, 1.0e-3*self.cp.ion[i].temperature, label='ion %d'%(i+1))
         self.ax1.set(title='Temperature', ylabel='[keV]')
         self.ax1.legend()
+        self.ax1.grid()
 
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax2.plot(self.cp.grid.rho_tor_norm, 1.0e-19*self.cp.electrons.density_thermal, label='el')
@@ -60,11 +63,13 @@ class tabCoreProfiles(QWidget):
                 self.ax2.plot(self.cp.grid.rho_tor_norm, 1.0e-19*self.cp.ion[i].density_thermal, label='ion %d'%(i+1))
         self.ax2.set(title='Density', ylabel='[10^19 m-3]')
         self.ax2.legend()
+        self.ax2.grid()
 
         self.ax3 = self.fig.add_subplot(self.grid_subp[1, 0])
         self.ax3.plot(self.cp.grid.rho_tor_norm, 1.0e-6*self.cp.j_total, label='j_tor')
         self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
         self.ax3.legend()
+        self.ax3.grid()
 
         self.ax4 = self.fig.add_subplot(self.grid_subp[1, 1])
         pl4 = self.ax4.plot(self.cp.grid.rho_tor_norm, self.cp.q, label='q')
@@ -76,6 +81,8 @@ class tabCoreProfiles(QWidget):
         labs = [l.get_label() for l in pl]
         leg5 = self.ax5.legend(pl, labs, loc=0)
         leg5.set_draggable(True)
+        self.ax4.grid()
+        self.ax5.grid()
 
         self.show()
 
@@ -98,6 +105,7 @@ class tabCoreProfiles(QWidget):
                 self.ax1.plot(cp.grid.rho_tor_norm, 1.0e-3*cp.ion[i].temperature, label='ion %d'%(i+1))
         self.ax1.set(title='Temperature', ylabel='[keV]')
         self.ax1.legend()
+        self.ax1.grid()
 
         self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.electrons.density_thermal, label='el')
         for i in range(len(cp.ion)):
@@ -105,10 +113,12 @@ class tabCoreProfiles(QWidget):
                 self.ax2.plot(cp.grid.rho_tor_norm, 1.0e-19*cp.ion[i].density_thermal, label='ion %d'%(i+1))
         self.ax2.set(title='Density', ylabel='[10^19 m-3]')
         self.ax2.legend()
+        self.ax2.grid()
 
         self.ax3.plot(cp.grid.rho_tor_norm, 1.0e-6*cp.j_total, label='j_tor')
         self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
         self.ax3.legend()
+        self.ax3.grid()
 
         pl4 = self.ax4.plot(cp.grid.rho_tor_norm, cp.q, label='q')
         pl5 = self.ax5.plot(cp.grid.rho_tor_norm, cp.magnetic_shear, color='C1', label='shear')
@@ -117,6 +127,8 @@ class tabCoreProfiles(QWidget):
         labs = [l.get_label() for l in pl]
         leg5 = self.ax5.legend(pl, labs, loc=0)
         leg5.set_draggable(True)
+        self.ax4.grid()
+        self.ax5.grid()
 
         # Update the figure display
         self.canvas.draw()
