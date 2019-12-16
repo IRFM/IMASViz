@@ -57,7 +57,11 @@ class QVizDataAccessCodeGenerator:
                 self.printCode("self.idsName = IDSName", 1)
                 self.printCode("self.view.IDSNameSelected[occurrence] = IDSName", 1)
                 self.printCode("self.asynch = asynch", 1)
+                self.printCode("self.progressBar = None", 1)
                 self.printCode('', -1)
+
+                self.printCode('def setProgressBar(self, progressBar):', 0)
+                self.printCode("self.progressBar = progressBar", 1)
 
                 self.printCode('def run(self):', 0)
                 self.printCode("idsData = None", 1)
@@ -97,6 +101,7 @@ class QVizDataAccessCodeGenerator:
             self.printCode('parent = ET.Element(' + "'" + ids.text + "'" + ')', 1)
             self.generateCodeForIDS(None, ids, 1, {}, [], '', 0, name_att)
             self.generateParentsCode(1, ids.text)
+            self.printCode("self.progressBar.hide()", 1)
             self.printCode("return parent", 1)
             self.printCode('',-1)
             i+=1
