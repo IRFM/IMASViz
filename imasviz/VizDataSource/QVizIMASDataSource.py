@@ -1,7 +1,7 @@
 import os, logging
 import imas
 import traceback, sys
-from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QTreeWidgetItem, QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues, QVizPreferences
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
@@ -19,7 +19,17 @@ class QVizIMASDataSource:
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, asynch=True):
-        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName, occurrence, asynch).create()
+
+        self.progressBar = QProgressBar()
+        self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
+
+        self.progressBar.setMaximum(0)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setGeometry(100,150,500,25)
+        self.progressBar.show()
+
+        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName,
+                                                           occurrence, asynch).create(self.progressBar)
         if self.generatedDataTree == None:
             raise ValueError("Code generation issue detected !!")
 
@@ -31,6 +41,8 @@ class QVizIMASDataSource:
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
         self.generatedDataTree.ids = self.ids[occurrence]
+
+
 
         if asynch:
             self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data

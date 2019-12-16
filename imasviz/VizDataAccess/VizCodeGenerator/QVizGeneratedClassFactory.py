@@ -12,7 +12,7 @@ class QVizGeneratedClassFactory:
         self.asynch = asynch
 
 
-    def create(self):
+    def create(self, progressBar=None):
         generatedDataTree = None
 
         imas__dd_version = os.environ['IMAS_VERSION']
@@ -279,5 +279,7 @@ class QVizGeneratedClassFactory:
                                                                   asynch=self.asynch)
         else:
             raise ValueError("IMAS dictionary version not supported:" + imas__dd_version)
+
+        generatedDataTree.setProgressBar(progressBar)
 
         return generatedDataTree
