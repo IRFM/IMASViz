@@ -91,9 +91,9 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS has no time slices.')
         status = -1
 
-    elif len(idd.equilibrium.time_slice[0].ggd) == 0:
-        logging.error('Unable to start the Equilibrium plugin; GGD is empty.')
-        status = -1
+    # elif len(idd.equilibrium.time_slice[0].ggd) == 0:
+    #     logging.info('Unable to start the Equilibrium plugin; GGD is empty.')
+    #     status = -1
 
     # Get wall geometry
     if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
@@ -138,60 +138,93 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     w_mhd    = np.zeros(lenArrTimes)
     mag_ax_R = np.zeros(lenArrTimes)
     mag_ax_Z = np.zeros(lenArrTimes)
+    NbrPoints = 0
+    triKnots = []
 
     equi_tSlice = idd.equilibrium.time_slice[0]
-    equi_space  = idd.equilibrium.time_slice[0].ggd[0]
 
-    if len(equi_space.grid.space) != 0:
-        NbrPoints   = len(equi_space.grid.space[0].objects_per_dimension[0].object)
-        print('NbrPoints (number of grid points) =', NbrPoints)
-        # Declaration of arrays 2d plots
-        RNodes   = np.zeros(NbrPoints)
-        ZNodes   = np.zeros(NbrPoints)
+    num_ggd_slices = len(idd.equilibrium.time_slice[0].ggd)
+    num_grids_ggd_slices = len(idd.equilibrium.grids_ggd)
+    num_grid_slices = 0
 
-        for i in range(NbrPoints):
-            RNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
-                        object[i].geometry[0]
-            ZNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
-                        object[i].geometry[1]
+    if num_grids_ggd_slices > 0:
+        num_grid_slices = len(idd.equilibrium.grids_ggd[0].grid)
 
-        Ntri = len(equi_space.grid.space[0].objects_per_dimension[2].object)
-        triKnots = np.zeros((Ntri, 3))
-        print('Ntri (number of grid triangles) =', Ntri)
-        # Read triangle knots indices
-        for i in range(0,Ntri):
-            triKnots[i,0] = equi_space.grid.space[0].objects_per_dimension[2]. \
-                            object[i].nodes[0]
-            triKnots[i,1] = equi_space.grid.space[0].objects_per_dimension[2]. \
-                            object[i].nodes[1]
-            triKnots[i,2] = equi_space.grid.space[0].objects_per_dimension[2]. \
-                            object[i].nodes[2]
+    print(f"Number of GGD slices: {num_ggd_slices}")
+    if num_ggd_slices > 0:
+        print("Searching for grid in ggd node")
+        equi_space  = idd.equilibrium.time_slice[0].ggd[0]
 
-    elif len(idd.equilibrium.grids_ggd) != 0:
-        equi_grid = idd.equilibrium.grids_ggd[0].grid[0]
-        NbrPoints = len(equi_grid.space[0].objects_per_dimension[0].object)
-        print('NbrPoints (number of grid points) =', NbrPoints)
-        # Declaration of arrays 2d plots
-        RNodes = np.zeros(NbrPoints)
-        ZNodes = np.zeros(NbrPoints)
+        if len(equi_space.grid.space) != 0:
+            NbrPoints   = len(equi_space.grid.space[0].objects_per_dimension[0].object)
+            print('NbrPoints (number of grid points) =', NbrPoints)
+            # Declaration of arrays 2d plots
+            RNodes   = np.zeros(NbrPoints)
+            ZNodes   = np.zeros(NbrPoints)
 
-        for i in range(NbrPoints):
-            RNodes[i] = equi_grid.space[0].objects_per_dimension[0]. \
-                object[i].geometry[0]
-            ZNodes[i] = equi_grid.space[0].objects_per_dimension[0]. \
-                object[i].geometry[1]
+            for i in range(NbrPoints):
+                RNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
+                            object[i].geometry[0]
+                ZNodes[i] = equi_space.grid.space[0].objects_per_dimension[0]. \
+                            object[i].geometry[1]
 
-        Ntri = len(equi_grid.space[0].objects_per_dimension[2].object)
-        triKnots = np.zeros((Ntri, 3))
-        print('Ntri (number of grid triangles) =', Ntri)
-        # Read triangle knots indices
-        for i in range(0, Ntri):
-            triKnots[i, 0] = equi_grid.space[0].objects_per_dimension[2]. \
-                object[i].nodes[0]
-            triKnots[i, 1] = equi_grid.space[0].objects_per_dimension[2]. \
-                object[i].nodes[1]
-            triKnots[i, 2] = equi_grid.space[0].objects_per_dimension[2]. \
-                object[i].nodes[2]
+            Ntri = len(equi_space.grid.space[0].objects_per_dimension[2].object)
+            triKnots = np.zeros((Ntri, 3))
+            print('Ntri (number of grid triangles) =', Ntri)
+            # Read triangle knots indices
+            for i in range(0,Ntri):
+                triKnots[i,0] = equi_space.grid.space[0].objects_per_dimension[2]. \
+                                object[i].nodes[0]
+                triKnots[i,1] = equi_space.grid.space[0].objects_per_dimension[2]. \
+                                object[i].nodes[1]
+                triKnots[i,2] = equi_space.grid.space[0].objects_per_dimension[2]. \
+                                object[i].nodes[2]
+
+        elif (num_grids_ggd_slices > 0) and (num_grid_slices > 0):
+            print("Searching for grid in grids_ggd node")
+            equi_grid = idd.equilibrium.grids_ggd[0].grid[0]
+            NbrPoints = len(equi_grid.space[0].objects_per_dimension[0].object)
+            print('NbrPoints (number of grid points) =', NbrPoints)
+            # Declaration of arrays 2d plots
+            RNodes = np.zeros(NbrPoints)
+            ZNodes = np.zeros(NbrPoints)
+
+            for i in range(NbrPoints):
+                RNodes[i] = equi_grid.space[0].objects_per_dimension[0]. \
+                    object[i].geometry[0]
+                ZNodes[i] = equi_grid.space[0].objects_per_dimension[0]. \
+                    object[i].geometry[1]
+
+            Ntri = len(equi_grid.space[0].objects_per_dimension[2].object)
+            triKnots = np.zeros((Ntri, 3))
+            print('Ntri (number of grid triangles) =', Ntri)
+            # Read triangle knots indices
+            for i in range(0, Ntri):
+                triKnots[i, 0] = equi_grid.space[0].objects_per_dimension[2]. \
+                    object[i].nodes[0]
+                triKnots[i, 1] = equi_grid.space[0].objects_per_dimension[2]. \
+                    object[i].nodes[1]
+                triKnots[i, 2] = equi_grid.space[0].objects_per_dimension[2]. \
+                    object[i].nodes[2]
+
+    # If GGD is empty
+    else:
+        print("GGD is empty. Searching for grid in profiles_2d node")
+        print("Number of progiles_2d slices: ", len(idd.equilibrium.time_slice[0].profiles_2d))
+        for j in range(len(idd.equilibrium.time_slice[0].profiles_2d)):
+            if idd.equilibrium.time_slice[0].profiles_2d[j].grid_type.index == 1:
+                print("profiles_2D for grid type index 1 found.")
+                NbrPoints = len(idd.equilibrium.time_slice[0].profiles_2d[j].r)
+                print('NbrPoints (number of grid points) =', NbrPoints)
+                # Declaration of arrays 2d plots
+                RNodes = []
+                ZNodes = []
+
+                for i in range(NbrPoints):
+                    RNodes = idd.equilibrium.time_slice[0].profiles_2d[j].r
+                    ZNodes = idd.equilibrium.time_slice[0].profiles_2d[j].z
+
+                break
 
     unicode_type = np.dtype((np.unicode_, 12))
 
@@ -233,7 +266,6 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         print('It:', timeit, ', time in equilibrium IDS =', timeEquiIDS[timeit])
 
         equi_tSlice = idd.equilibrium.time_slice[timeit]
-        equi_space  = idd.equilibrium.time_slice[timeit].ggd[0]
 
         Ip[timeit]       = 1e-3*equi_tSlice.global_quantities.ip
         q95[timeit]      = equi_tSlice.global_quantities.q_95
@@ -243,14 +275,29 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         mag_ax_R[timeit] = equi_tSlice.global_quantities.magnetic_axis.r
         mag_ax_Z[timeit] = equi_tSlice.global_quantities.magnetic_axis.z
 
-        # Psi and plasma boundary
-        Psi_val[timeit, :] = equi_space.psi[0].values
+        num_ggd_slices = len(idd.equilibrium.time_slice[0].ggd)
+        if num_ggd_slices > 0:
+            print("Getting psi values from GGD")
+            equi_space  = idd.equilibrium.time_slice[timeit].ggd[0]
+            # Psi and plasma boundary
+            Psi_val[timeit, :] = equi_space.psi[0].values
 
-        min_Psi_val[timeit] = np.min(Psi_val[timeit, :])
-        max_Psi_val[timeit] = np.max(Psi_val[timeit, :])
+            min_Psi_val[timeit] = np.min(Psi_val[timeit, :])
+            max_Psi_val[timeit] = np.max(Psi_val[timeit, :])
 
-        levels1_requested[timeit, :] = np.linspace(min_Psi_val[timeit], \
-                                         max_Psi_val[timeit], nbr_levels)
+            levels1_requested[timeit, :] = np.linspace(min_Psi_val[timeit], \
+                                             max_Psi_val[timeit], nbr_levels)
+        # else:
+        #    print("Getting psi values from profiles_2d")
+
+            # psi = idd.equilibrium.time_slice[timeit].profiles_2d[0].psi # 2D array
+            # Psi_val[timeit, :] = np.sqrt( abs( psi[:, - min(psi) ] ))
+
+            # min_Psi_val[timeit] = np.min(Psi_val[timeit, :])
+            # max_Psi_val[timeit] = np.max(Psi_val[timeit, :])
+
+            # levels1_requested[timeit, :] = np.linspace(min_Psi_val[timeit], \
+            #                                  max_Psi_val[timeit], nbr_levels)
 
         print('len equi_tSlice.boundary.outline.r =', len(equi_tSlice.boundary.outline.r))
         boundPlasma[timeit, 0, :] = np.interp(np.linspace(0, 1, 201), \
@@ -263,9 +310,13 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         magAxis[timeit, 0] = equi_tSlice.global_quantities.magnetic_axis.r
         magAxis[timeit, 1] = equi_tSlice.global_quantities.magnetic_axis.z
 
-        if (equi_tSlice.boundary.x_point[0].r != 0):
-            xPoint[timeit, 0] = equi_tSlice.boundary.x_point[0].r
-            xPoint[timeit, 1] = equi_tSlice.boundary.x_point[0].z
+        if (len(equi_tSlice.boundary.x_point) != 0):
+            if (equi_tSlice.boundary.x_point[0].r != 0):
+                xPoint[timeit, 0] = equi_tSlice.boundary.x_point[0].r
+                xPoint[timeit, 1] = equi_tSlice.boundary.x_point[0].z
+            else:
+                xPoint[timeit, 0] = None
+                xPoint[timeit, 1] = None
         else:
             xPoint[timeit, 0] = None
             xPoint[timeit, 1] = None
@@ -555,11 +606,12 @@ class PlotFrame(QMainWindow):
                  color='r', linestyle='--')
             self.axes[it_ax].label_outer()
 
-        self.axes[6].tricontour(self.RNodes, self.ZNodes, self.triKnots, \
-                                self.Psi_val[sliderValue], \
-                                colors='#1f77b4', \
-                                linestyles='solid', linewidths=0.7, \
-                                levels=self.levels1_requested[sliderValue, :])
+        if len(self.triKnots) > 0:
+            self.axes[6].tricontour(self.RNodes, self.ZNodes, self.triKnots, \
+                                    self.Psi_val[sliderValue], \
+                                    colors='#1f77b4', \
+                                    linestyles='solid', linewidths=0.7, \
+                                    levels=self.levels1_requested[sliderValue, :])
         self.plt6a, = self.axes[6].plot(self.boundPlasma[sliderValue, 0, :], \
                                         self.boundPlasma[sliderValue, 1, :], 'r')
         self.plt6b, = self.axes[6].plot(self.magAxis[sliderValue, 0], \
@@ -644,11 +696,12 @@ class PlotFrame(QMainWindow):
         #self.timeText.set_text('Time = ' + str(self.timeEquiIDS[sliderValue]))
 
         self.axes[6].cla()
-        self.axes[6].tricontour(self.RNodes, self.ZNodes, self.triKnots, \
-                                self.Psi_val[sliderValue], \
-                                colors='#1f77b4', \
-                                linestyles='solid', linewidths=0.7, \
-                                levels=self.levels1_requested[sliderValue, :])
+        if len(self.triKnots) > 0:
+            self.axes[6].tricontour(self.RNodes, self.ZNodes, self.triKnots, \
+                                    self.Psi_val[sliderValue], \
+                                    colors='#1f77b4', \
+                                    linestyles='solid', linewidths=0.7, \
+                                    levels=self.levels1_requested[sliderValue, :])
         self.axes[6].plot(self.boundPlasma[sliderValue, 0, :], \
                           self.boundPlasma[sliderValue, 1, :], 'r')
         self.axes[6].plot(self.magAxis[sliderValue, 0], \
@@ -1140,7 +1193,7 @@ if (__name__ == '__main__'):
     # f1.show()
 
     # Get equilibrium data and set plugin frame
-    app.frame = PlotFrame(dataDict, parent=f1.dataTreeView)
+    app.frame = PlotFrame(dataDict, vizAPI=api, parent=f1.dataTreeView)
 
     # Show frame
     app.frame.show()

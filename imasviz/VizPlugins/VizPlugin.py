@@ -9,7 +9,8 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                      'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                      'example_UiPlugin': '',
-                     'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample'
+                     'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample',
+                     'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
                      }
 
 
@@ -95,16 +96,17 @@ class VizPlugin:
 
     @staticmethod
     def getPluginsConfigurationFor(pluginsName):
-        RegisteredPluginsConfiguration = {'SOLPS_UiPlugin': [{'UiFile': 'SOLPSplugin.ui',
-                                                              'dir': os.environ[
-                                                                         'VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
-                                                              'targetIDSroot': 'edge_profiles',
-                                                              'targetOccurrence': 0}],
-                                          'example_UiPlugin': [{
-                                              'UiFile': 'examplePlugin.ui',
-                                              'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
-                                              'targetIDSroot': 'magnetics',
-                                              'targetOccurrence': 0}]}
+        RegisteredPluginsConfiguration = { \
+            'SOLPS_UiPlugin':   [{
+                'UiFile': 'SOLPSplugin.ui',
+                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
+                'targetIDSroot': 'edge_profiles',
+                'targetOccurrence': 0}],
+            'example_UiPlugin': [{
+                'UiFile': 'examplePlugin.ui',
+                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
+                'targetIDSroot': 'magnetics',
+                'targetOccurrence': 0}]}
         return RegisteredPluginsConfiguration[pluginsName]
 
     @staticmethod
