@@ -790,10 +790,10 @@ class QVizSignalHandling(QObject):
         """
         if vizTreeNode.is1DAndDynamic():
             api = self.dataTreeView.imas_viz_api
-            figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                      figureKey=figureKey)
             for si in selectedNodeList:
                 if figureKey is not None:
+                    figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
+                                                              figureKey=figureKey)
                     if plotWidget is not None and not vizTreeNode.hasTimeXaxis(plotWidget):
                         if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
                             return False
