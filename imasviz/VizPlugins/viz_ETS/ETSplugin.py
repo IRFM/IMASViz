@@ -13,6 +13,7 @@
 #     Copyright(c) 2019- D. Penko, J. Ferreira
 
 import logging, os, sys
+from functools import partial
 import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.figure import Figure
@@ -119,22 +120,39 @@ class ETSplugin(QMainWindow):
         # self.slider_time.adjustSize()
         # self.slider_time.setMinimumWidth(600)
         # Set slider event handling
-        slider_time.valueChanged.connect(self.on_slider)
+        slider_time.valueChanged.connect(self.onSliderChange)
 
-        # self.slider_time.sliderMoved.connect(self.on_slider_track)
-        # self.slider_time.sliderReleased.connect(self.on_slider_time)
+        # slider_time.sliderMoved.connect(self.onSliderChange)
+        # slider_time.sliderReleased.connect(self.onSliderChange)
         return slider_time
 
-    def on_slider(self, event=None):
-        self.tabCoreProfiles.plotUpdate()
+    def onSliderChange(self, event=None):
+        # Update spinbox value
+        self.spinBox_time.setValue(self.slider_time.value())
+        # Update plots
+        self.getCurrentTab().plotUpdate(time_value=self.slider_time.value())
+
+    def getCurrentTab(self):
+        # currentIndex=self.tabWidget.currentIndex()
+        currentWidget=self.tabWidget.currentWidget()
+
+        return currentWidget
 
     def setTimeSpinBox(self):
         spinBox_time = QSpinBox(parent=self)
-        spinBox_time.setValue(int(self.slider_time.value()))
+        spinBox_time.setValue(0)
         spinBox_time.setMinimum(0)
         spinBox_time.setMaximum(len(self.ids.core_profiles.time)-1)
 
+        spinBox_time.valueChanged.connect(self.onSpinBoxChange)
+
         return spinBox_time
+
+    def onSpinBoxChange(self, event=None):
+        # Update slider value
+        self.slider_time.setValue(self.spinBox_time.value())
+        # Update plots
+        self.getCurrentTab().plotUpdate(time_value=self.spinBox_time.value())
 
     def setIDS(self):
         try:

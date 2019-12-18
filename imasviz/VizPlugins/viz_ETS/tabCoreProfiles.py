@@ -86,12 +86,9 @@ class tabCoreProfiles(QWidget):
 
         self.show()
 
-    def plotUpdate(self):
+    def plotUpdate(self, time_value):
 
-        sliderValue = int(round(self.parent.slider_time.value()))
-        self.parent.spinBox_time.setValue(int(sliderValue))
-        # print("Slider value: ", sliderValue)
-        cp = self.ids.core_profiles.profiles_1d[sliderValue]
+        cp = self.ids.core_profiles.profiles_1d[time_value]
 
         # Clear all plots
         self.ax1.cla()
