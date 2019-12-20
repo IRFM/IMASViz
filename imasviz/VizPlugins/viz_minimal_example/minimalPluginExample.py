@@ -26,8 +26,12 @@
 #****************************************************
 #     Copyright(c) 2019- D. Penko
 
+# modules for event logging system and for operating system dependent
+# functionality
 import logging, os
+# IMASViz plugin sources
 from imasviz.VizPlugins.VizPlugin import VizPlugin
+# Matplotlib library
 import matplotlib.pyplot as plt
 
 class minimalPluginExample(VizPlugin):
@@ -52,10 +56,11 @@ class minimalPluginExample(VizPlugin):
         """Main plugin function.
         """
 
-        # Get dataSource from the VizAPI (Application Program Interface)
+        # Get dataSource from the VizAPI (IMASViz Application Program Interface)
         # Note: instance of "self.datatreeView" is provided by the VizPlugins
         # through inheritance
         dataSource = vizAPI.GetDataSource(self.dataTreeView)
+        # Get case parameters (shot, run, machine user) from the dataSource
         shot = dataSource.shotNumber
         run = dataSource.runNumber
         machine = dataSource.imasDbName
@@ -68,10 +73,10 @@ class minimalPluginExample(VizPlugin):
             logging.info('Loading magnetics IDS...')
             vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
-        # Get IDS
+        # Get IDS object
         self.ids = dataSource.getImasEntry(occurrence)
 
-        # Displaying basic information
+        # Displaying basic case information
         print('Reading data...')
         print('Shot    =', shot)
         print('Run     =', run)
