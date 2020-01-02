@@ -252,8 +252,7 @@ class QVizTreeNode(QTreeWidgetItem):
         imas_data_entry = dataTreeView.dataSource.ids[self.getOccurrence()]
         if self.coordinates[coordinateNumber - 1] == "1..N" or\
                         self.coordinates[coordinateNumber - 1] == "1...N":
-            r = np.array([eval('imas_data_entry.' + self.getDataName())])
-            return r[0]
+            return np.array(range(len(eval('imas_data_entry.' + self.getDataName()))))
         to_evaluate = 'imas_data_entry.' + self.getIDSName() + '.' + \
                        self.evaluateCoordinate(coordinateNumber)
         return eval(to_evaluate)
@@ -433,6 +432,9 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
                self.getDataType() == 'flt_1d_type' or self.getDataType() == 'int_1d_type'
 
+    def is0DString(self):
+        return self.getDataType() == 'STR_0D'
+
     def is0DAndNumeric(self):
         return self.is0D() and self.getDataType() != 'STR_0D'
 
@@ -572,33 +574,33 @@ class QVizTreeNode(QTreeWidgetItem):
             label, xlabel = self.itimeEvaluatedLabels(dataTreeView, plotWidget, time_index, strategy=strategy)
 
         elif self.is1DAndDynamic():
-            label, xlabel = self.itimeAndCoordinateAxisEvaluatedLabels(1, dataTreeView,
+            label, xlabel2 = self.itimeAndCoordinateAxisEvaluatedLabels(1, dataTreeView,
                                                                        plotWidget,
                                                                        time_index,
                                                                        coordinate_index,
                                                                        strategy=strategy)
-
-        if self.is1DAndDynamic():
-            # Setting/Checking the X-axis label
             if xlabel is None:
-                # If xlabel is not yet set
-                if self.getCoordinate(coordinateNumber=1) is not None:
-                    xlabel = QVizGlobalOperations.replaceBrackets(
-                        self.getCoordinate(coordinateNumber=1))
-                    if self.isCoordinateTimeDependent() and self.hasHomogeneousTime():
-                        xlabel = 'time'
-
-                if xlabel is not None and xlabel.endswith("time"):
-                    xlabel += "[s]"
-            elif 'time[s]' in xlabel:
-                # If 'Time[s]' is present in xlabel, do not modify it
-                pass
-            elif '1.' not in xlabel and '.N' not in xlabel:
-                xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
-                # - If IDS name is not present (at the front) of the xlabel string,
-                #   then add it
-                if self.getIDSName() not in xlabel:
-                    xlabel = self.getIDSName() + "/" + xlabel
+                xlabel = xlabel2
+            # Setting/Checking the X-axis label
+            # if xlabel is None:
+            #     # If xlabel is not yet set
+            #     if self.getCoordinate(coordinateNumber=1) is not None:
+            #         xlabel = QVizGlobalOperations.replaceBrackets(
+            #             self.getCoordinate(coordinateNumber=1))
+            #         if self.isCoordinateTimeDependent() and self.hasHomogeneousTime():
+            #             xlabel = 'time'
+            #
+            #     if xlabel is not None and xlabel.endswith("time"):
+            #         xlabel += "[s]"
+            # elif 'time[s]' in xlabel:
+            #     # If 'Time[s]' is present in xlabel, do not modify it
+            #     pass
+            # elif '1.' not in xlabel and '.N' not in xlabel:
+            #     xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
+            #     # - If IDS name is not present (at the front) of the xlabel string,
+            #     #   then add it
+            #     if self.getIDSName() not in xlabel:
+            #         xlabel = self.getIDSName() + "/" + xlabel
 
         ylabel = self.getName()
 

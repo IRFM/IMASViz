@@ -319,6 +319,19 @@ class QVizMainWindow(QMainWindow):
         # Resize to full screen
         self.showMaximized()
 
+    def closeEvent(self, event):
+        """Modify close event to request confirmation trough dialog. If
+        confirmed, close the application.
+        """
+        # Get Yes/No answer (returns True/False)
+        answer = \
+            QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
+                                       caption='Please confirm')
+        if answer==True:
+            event.accept()
+        else:
+            event.ignore()
+
     def getMDI(self):
         if self.MDI != None:
             return self.MDI
