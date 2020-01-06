@@ -133,7 +133,7 @@ class QVizSelectSignals(QVizAbstractCommand):
 
             # Load all IDS data which are referenced in the paths
             api = self.dataTreeView.imas_viz_api
-            if api.IDSDataAlreadyFetched(self, IDSName, occurrence):
+            if api.IDSDataAlreadyFetched(self.dataTreeView, IDSName, occurrence):
                 continue
 
             # Check/Populate the IDS tree node
