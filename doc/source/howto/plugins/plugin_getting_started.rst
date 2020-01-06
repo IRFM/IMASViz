@@ -1,7 +1,7 @@
 .. _plugin_simple_plot_example:
 
-Developing a simple plugin for plotting data
-============================================
+Developing a simple plugin for plotting data from IDSs
+======================================================
 
 .. note::
     Before proceeding with the plugin development instructions make sure that
@@ -20,19 +20,20 @@ complex plugins with advanced design and functionalities.
 The main basic steps which will be covered in this tutorial are as follows:
 
 1. Adding IMASViz home directory to :envvar:`$PYTHONPATH`
-2. Setting plugin source files
+2. Setting plugin source structure
 3. Writing the code:
 
    a) Import statements
-   b) Class with prescribed name
+   b) Class (prescribed name)
    c) Class inheritance
-   d) Mandatory functions
+   d) Mandatory method functions
 
 4. Registering plugin in IMASViz
 
-Complete code of the simple plugin (named as **simplePlotPluginExample**) is
-available in IMASViz code source in
-:file:`$VIZ_HOME/imasviz/VizPlugins/viz_simple_plot_example`.
+.. note::
+    Complete code of the simple plugin (named as **simplePlotPluginExample**) is
+    available in IMASViz code source in
+    :file:`$VIZ_HOME/imasviz/VizPlugins/viz_simple_plot_example`.
 
 Adding IMASViz sources to $PYTHONPATH
 -------------------------------------
@@ -50,12 +51,12 @@ the next command in the terminal:
 
 .. _plugin_simple_plot_example_setting_dir:
 
-Setting directory for plugin source files
------------------------------------------
+Setting plugin source structure
+-------------------------------
 
 All plugin source files must be stored in a separate directory under
 :file:`$VIZ_HOME/imasviz/VizPlugins/<folder_name>`. The name of the directory
-usually starts with **viz_**.
+should start with "**viz_**".
 
 For the purposes of this tutorial create a new directory with label
 **viz_my_example** to distinguish it from other plugins. The full path is then
@@ -65,7 +66,7 @@ Inside the newly created directory create a new Python script file. In this case
 name it as :file:`myPlugin.py`. The script can be left empty for now.
 
 Python code
------------+
+-----------
 
 This subsection will cover the contents of the plugin main Python script file
 :file:`$VIZ_HOME/imasviz/VizPlugins/viz_my_plugin/myPlugin.py` (previously
@@ -89,8 +90,8 @@ In your :file:`myPlugin.py` file add:
     # Matplotlib library
     import matplotlib.pyplot as plt
 
-Mandatory Python file and class labels
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Prescribed class name
+^^^^^^^^^^^^^^^^^^^^^
 
 The plugins main Python file must contain a class with the same name as the
 name of the Python file. In this case, a class **myPlugin**.
@@ -114,10 +115,10 @@ In your :file:`myPlugin.py` file add:
 
     class myPlugin(VizPlugin):
 
-Mandatory functions
-^^^^^^^^^^^^^^^^^^^
+Mandatory method functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The plugin class must contain 5 mandatory functions (besides constructor):
+The plugin class must contain 5 mandatory method functions (besides constructor):
 
 - **execute(self, vizAPI, pluginEntry)**
 - **getEntries(self)**
@@ -125,8 +126,8 @@ The plugin class must contain 5 mandatory functions (besides constructor):
 - **getAllEntries(self)**
 - **isEnabled(self)**
 
-Constructor (__init__())
-""""""""""""""""""""""""
+Constructor
+"""""""""""
 
 In this case, leave the constructor empty.
 
@@ -175,11 +176,11 @@ In your :file:`myPlugin.py` file add:
 
 **2. Checking if the IDS data was already fetched**
 
-With the use of functions provided by **vizAPI** it can be checked if the
-case (IDS) data was already fetched (loaded in memory) in IMASViz. In case the
-data was not yet fetched it can be done with the use of the **LoadIDSData**
-function (with the use of this function also the IMASViz data tree view browser
-gets updated automatically).
+With the use of functions provided by **vizAPI** we can be check if the
+case (IDS) data was already fetched (loaded in memory) while running IMASViz.
+In case the data was not yet fetched it can be done with the use of the
+**LoadIDSData** function (with the use of this function also the IMASViz data
+tree view browser gets updated automatically).
 
 The IDS object is then obtained with the use of **getImasEntry()** function
 for given occurrence (default occurrence value is 0).
@@ -245,17 +246,17 @@ In your :file:`myPlugin.py` file add:
 getEntries()
 """"""""""""
 
-The :guilabel:`getEntries()` function provides IMASViz the information to which
-IDS the plugin is associated. While in the IMASViz tree view browser, the plugin
-will be then accessible by right-clicking on here defined IDS (the option
-for running this plugin gets shown in the popup menu).
+The :guilabel:`getEntries()` method function provides IMASViz the information to
+which IDS the plugin is associated. While in the IMASViz tree view browser,
+the plugin will be then accessible by right-clicking on here defined IDS
+(the option for running this plugin gets shown in the popup menu).
 
 In this case, as the plugin deals with the data stored in **Magnetics IDS**,
 this option should be set to ``"magnetics"`` as shown in the code part below.
 
 In your :file:`myPlugin.py` file add:
 
-.. code-block::
+.. code-block:: python
 
     def getEntries(self):
         if self.selectedTreeNode.getIDSName() == "magnetics":
@@ -265,13 +266,13 @@ getPluginsConfiguration()
 """""""""""""""""""""""""
 
 
-The :guilabel:`getPluginsConfiguration()` function provides additional
+The :guilabel:`getPluginsConfiguration()` method function provides additional
 configurations to IMASViz. In this case no additional configurations are
 required -> the function returns value **None**.
 
 In your :file:`myPlugin.py` file add:
 
-.. code-block::
+.. code-block:: python
 
     def getPluginsConfiguration(self):
         return None
@@ -279,12 +280,12 @@ In your :file:`myPlugin.py` file add:
 getAllEntries()
 """""""""""""""
 
-The :guilabel:`getAllEntries()` function provides IMASViz 'cosmetic' information
-(e.g. label which should be shown in the popup menu etc.).
+The :guilabel:`getAllEntries()` method function provides IMASViz 'cosmetic'
+information (e.g. label which should be shown in the popup menu etc.).
 
 In your :file:`myPlugin.py` file add:
 
-.. code-block::
+.. code-block:: python
 
     def getAllEntries(self):
         # Set a text which will be displayed in the pop-up menu
@@ -294,23 +295,24 @@ In your :file:`myPlugin.py` file add:
 isEnabled()
 """""""""""
 
-Through the :guilabel:`isEnabled()` function the custom plugin can be either
-**enabled** (returns ``True``) or **disabled** (returns ``False``).
+Through the :guilabel:`isEnabled()` method function the custom plugin can be
+either **enabled** (returns ``True``) or **disabled** (returns ``False``).
 
 In your :file:`myPlugin.py` file add:
 
-.. code-block::
+.. code-block:: python
 
     def isEnabled(self):
         return True
 
-Full code
-^^^^^^^^^
+Full Python code
+^^^^^^^^^^^^^^^^
 
-Below is a full code which is done by following the steps in the previous
-subsections.
+Below is a full code in :file:`myPlugin.py` which is done by following the
+steps in the previous subsections.
 
-.. code-block::
+.. code-block:: python
+    :caption: myPlugin.py
     :linenos:
 
     # modules for event logging system and for operating system dependent
@@ -321,7 +323,7 @@ subsections.
     # Matplotlib library
     import matplotlib.pyplot as plt
 
-    class simplePlotPluginExample(VizPlugin):
+    class myPlugin(VizPlugin):
 
         def __init__(self):
             pass
@@ -410,7 +412,7 @@ corresponding value must match :kbd:`'<plugin_source_path>.<py_file_name.py>'`.
 
 In this case, it should look something like this:
 
-.. code-block::
+.. code-block:: python
     :emphasize-lines: 9
 
     RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
@@ -424,13 +426,44 @@ In this case, it should look something like this:
                          'myPlugin' : 'viz_my_plugin.myPlugin'
                          }
 
-Running the custom plugin in IMASViz
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Executing the custom plugin in IMASViz
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To run the plugin in IMASViz while in IMASViz session with opened IDS database,
 in :guilabel:`tree view browser`:
 
-- right-click on the IDS previously specified in :guilabel:`getEntries()`
-  function. A popup menu including the menu action (with label previously
-  specified in :guilabel:`getAllEntries()`) will be shown.
-- click on the menu action
+- on the IDS previously specified in :guilabel:`getEntries()`
+  method function (**Magnetics IDS**) either:
+
+  - hold shift key + right-click on the tree node. A popup menu including the
+    menu action (with label previously specified in
+    :guilabel:`getAllEntries()`) will be shown, or
+
+   .. figure:: images/IMASViz_simple_plot_example_plugin_menu_1.png
+     :align: center
+     :scale: 90%
+
+     Popup menu on shift + right-click on **Magnetics IDS** showing the
+     available action for executing the plugin.
+
+  - just right-click on the tree node. A popup menu including the
+    :guilabel:`Plugin` selection will be shown. Hovering on this selection will
+    shown the menu action (with label previously specified in
+    :guilabel:`getAllEntries()`).
+
+   .. figure:: images/IMASViz_simple_plot_example_plugin_menu_2.png
+     :align: center
+     :scale: 80%
+
+     Popup menu on right-click on **Magnetics IDS** showing the
+     available action for executing the plugin.
+
+- click on the menu action. The plugin will be executed and the results (plot)
+  will be shown in a matplotlib plot window.
+
+   .. figure:: images/IMASViz_simple_plot_example_plugin_result.png
+     :align: center
+     :scale: 80%
+
+     The result of the simple plot plugin execution: plotted poloidal field
+     probe values (all available signals).
