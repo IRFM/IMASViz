@@ -9,7 +9,7 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                      'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                      'example_UiPlugin': '',
-                     'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample',
+                     'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
                      'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
                      }
 

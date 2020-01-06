@@ -1,13 +1,18 @@
-.. _plugin_minimal_example:
+.. _plugin_simple_plot_example:
 
-Developing a simple plugin for IMASViz
-======================================
+Developing a simple plugin for plotting data
+============================================
+
+.. note::
+    Before proceeding with the plugin development instructions make sure that
+    you have **cloned IMASViz GIT repository** (for more information see section
+    :ref:`running_from_source`)!
 
 This section will cover step by step instructions on how to:
 
- - create a very simple introductory plugin example (~80 lines of code),
+ - write a very simple introductory plugin example (~80 lines of code),
  - how to register the plugin in IMASViz, and
- - how to run the plugin from IMASViz
+ - how to run the plugin in IMASViz.
 
 This simple plugin can be considered also as a starting template for more
 complex plugins with advanced design and functionalities.
@@ -16,21 +21,21 @@ The main basic steps which will be covered in this tutorial are as follows:
 
 1. Adding IMASViz home directory to :envvar:`$PYTHONPATH`
 2. Setting plugin source files
-3. The code:
+3. Writing the code:
 
-   a) Required import statements
-   b) Properly setting file and class labels
+   a) Import statements
+   b) Class with prescribed name
    c) Class inheritance
    d) Mandatory functions
 
 4. Registering plugin in IMASViz
 
-Complete code of the simple plugin (named as **minimalPluginExample**) is
+Complete code of the simple plugin (named as **simplePlotPluginExample**) is
 available in IMASViz code source in
-:file:`$VIZ_HOME/imasviz/VizPlugins/viz_minimal_example.py`.
+:file:`$VIZ_HOME/imasviz/VizPlugins/viz_simple_plot_example`.
 
-Add IMASViz sources to $PYTHONPATH
------------------------------------
+Adding IMASViz sources to $PYTHONPATH
+-------------------------------------
 
 In order to have IMASViz sources at our disposal the ``$VIZ_HOME`` must be added
 to :envvar:`$PYTHONPATH` environment variable. This can be achieved by running
@@ -43,7 +48,7 @@ the next command in the terminal:
     # tcsh
     setenv PYTHONPATH ${VIZ_HOME}:${PYTHONPATH}
 
-.. _plugin_minimal_example_setting_dir:
+.. _plugin_simple_plot_example_setting_dir:
 
 Setting directory for plugin source files
 -----------------------------------------
@@ -59,12 +64,12 @@ For the purposes of this tutorial create a new directory with label
 Inside the newly created directory create a new Python script file. In this case
 name it as :file:`myPlugin.py`. The script can be left empty for now.
 
-The code (Python file contents)
--------------------------------
+Python code
+-----------+
 
 This subsection will cover the contents of the plugin main Python script file
 :file:`$VIZ_HOME/imasviz/VizPlugins/viz_my_plugin/myPlugin.py` (previously
-created in :ref:`plugin_minimal_example_setting_dir`).
+created in :ref:`plugin_simple_plot_example_setting_dir`).
 
 Required import statements
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -316,7 +321,7 @@ subsections.
     # Matplotlib library
     import matplotlib.pyplot as plt
 
-    class minimalPluginExample(VizPlugin):
+    class simplePlotPluginExample(VizPlugin):
 
         def __init__(self):
             pass
@@ -386,7 +391,7 @@ subsections.
 
         def getAllEntries(self):
             # Set a text which will be displayed in the pop-up menu
-            return [(0, 'magnetics overview (minimal plugin example)...')]
+            return [(0, 'Magnetics overview (simple plot plugin example)...')]
 
         def isEnabled(self):
             return True
@@ -414,7 +419,7 @@ In this case, it should look something like this:
                          'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                          'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                          'example_UiPlugin': '',
-                         'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample',
+                         'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
                          'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz',
                          'myPlugin' : 'viz_my_plugin.myPlugin'
                          }

@@ -1,4 +1,4 @@
-#  Name   : minimalPluginExample
+#  Name   : simplePlotPluginExample
 #
 #           A minimal plugin example for running it inside IMASViz that
 #           can serve as a basic template for new plugins.
@@ -13,7 +13,7 @@
 #           The <Plugin main class name> and <plugin_py_file> must be the same!
 #
 #           In this case would be:
-#           'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample'
+#           'simplePlotPluginExample' : 'viz_minimal_example.simplePlotPluginExample'
 #
 #           Use of Python version 3.7 is recommended, as IMASViz does not
 #           support Python2 anymore.
@@ -34,7 +34,7 @@ from imasviz.VizPlugins.VizPlugin import VizPlugin
 # Matplotlib library
 import matplotlib.pyplot as plt
 
-class minimalPluginExample(VizPlugin):
+class simplePlotPluginExample(VizPlugin):
     """A minimal working plugin example for IMASViz.
     There are 5 mandatory functions that every plugin must include (!):
     - execute
@@ -117,7 +117,7 @@ class minimalPluginExample(VizPlugin):
 
     def getAllEntries(self):
         # Set a text which will be displayed in the pop-up menu
-        return [(0, 'magnetics overview (minimal plugin example)...')]
+        return [(0, 'Magnetics overview (simple plot plugin example)...')]
 
     def isEnabled(self):
         return True

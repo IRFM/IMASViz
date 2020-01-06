@@ -19,6 +19,10 @@ Plugins can be used to extend IMASViz in several ways:
  - And more…
 
 This section is intended for developers and it will cover the basics on how to
-create plugins for IMASviz.
+create plugins for IMASViz.
+
+Currently the development and use of non-official plugins is
+available only when using **IMASViz from cloned GIT repository** (see section
+:ref:`running_from_source`).
 
 The source files of all plugins can be found in ``$VIZ_HOME/imasviz/VizPlugins``.
