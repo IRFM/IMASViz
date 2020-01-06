@@ -12,10 +12,11 @@
 #****************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction
+from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, QLabel
 from PyQt5.QtCore import Qt, QMetaObject, QSize
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts
 
 class QVizPreviewPlotWidget(QWidget):
     """PlotWidget containing pyqtgraph PlotWidget. Used for creating preview
@@ -73,10 +74,16 @@ class QVizPreviewPlotWidget(QWidget):
         self.pgPlotWidget.showGrid(x=True, y=True)
         return self
 
-    def clear(self):
+    def clear(self, noPreviewAvailable=False):
         """Clear the widgets plot.
         """
         self.pgPlotWidget.clear()
+        if noPreviewAvailable:
+            self.pgPlotWidget.setVisible(False)
+            self.noPreviewLabel.setVisible(True)
+        else:
+            self.pgPlotWidget.setVisible(True)
+            self.noPreviewLabel.setVisible(False)
 
     def setContents(self):
         """ Set QVizPreviewPlotWidget contents.
@@ -107,7 +114,15 @@ class QVizPreviewPlotWidget(QWidget):
 
         # Add widgets to layout
         self.gridLayout.addWidget(self.pgPlotWidget, 1, 0, 1, 1)
-        # self.gridLayout.addWidget(checkBox, 2, 0, 1, 1)
+
+        self.noPreviewLabel = QLabel()
+        self.noPreviewLabel.setText("No preview available")
+        self.noPreviewLabel.setAlignment(Qt.AlignLeft)
+        self.noPreviewLabel.setWordWrap(True)
+        self.noPreviewLabel.setFixedHeight(25)
+        self.noPreviewLabel.setFont(GlobalFonts.TEXT_MEDIUM)
+        self.noPreviewLabel.setVisible(False)
+        self.gridLayout.addWidget(self.noPreviewLabel, 1, 0, 1, 1)
         self.gridLayout.update()
 
         # Connect custom UI elements

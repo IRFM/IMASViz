@@ -62,9 +62,13 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode, strategy="DEFAULT")
 
     def execute(self):
-        if self.signal is None:
-            return
         try:
+            if not (self.treeNode.is1D()):
+                self.getPlotWidget().clear(noPreviewAvailable=True)
+                return
+            elif self.signal is None:
+                return
+
             if len(self.signal) == 2:
                 t = QVizPreviewPlotSignal.getTime(self.signal)
                 v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
@@ -82,8 +86,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
     def getPlotWidget(self):
         """Find the child widget in DTV main window.
         """
-        plotWidget = \
-            self.dataTreeView.parent.findChild(QWidget, 'QVizPreviewPlotWidget')
+        plotWidget = self.dataTreeView.parent.findChild(QWidget, 'QVizPreviewPlotWidget')
         if plotWidget is None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
