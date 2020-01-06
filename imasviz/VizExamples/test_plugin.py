@@ -51,6 +51,6 @@ api.SelectSignals(f, paths)
 
 # Execution of the 'viz_example_plugin' plugin
 plugin_instance = viz_example_plugin(f.dataTreeView.selectedItem, f.dataTreeView)
-plugin_instance.execute(api, pluginEntry=0)
+plugin_instance.execute(api, pluginEntry=1)
 
 app.exec() # Keep the application running
