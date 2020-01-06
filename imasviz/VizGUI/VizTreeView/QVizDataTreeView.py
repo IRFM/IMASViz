@@ -100,7 +100,7 @@ class QVizDataTreeView(QTreeWidget):
         self.itemClicked.connect(self.onLeftClickItem)
 
         # Set action on double click on item
-        self.itemDoubleClicked.connect(self.getDefaultOccurrence)
+        self.itemDoubleClicked.connect(self.loadDefaultOccurrence)
 
         self.dataSource = dataSource
         self.idsNamesList = []
@@ -204,12 +204,9 @@ class QVizDataTreeView(QTreeWidget):
             elif mouseButton == "RIGHT":
                 self.selectedItem_rightClick = item
 
-    def isAlreadyFetched(self, IDSName, occurrence):
-        # occurrence of IDS with name IDSName already loaded ?
-        key = IDSName + "/" + str(occurrence)
-        if self.ids_roots_occurrence.get(key) is not None:
-            return True
-        return False
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Return:
+            self.loadDefaultOccurrence()
 
     # Note: pyqtSlot needs QObject to work, in this case, self=QTreeWidget
     # (inherited)
@@ -236,7 +233,7 @@ class QVizDataTreeView(QTreeWidget):
             logging.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if (item.is0DAndDynamic() or item.is1DAndDynamic()) and item.hasAvailableData():
+        if item.hasAvailableData() and not item.is0D() and (not item.isIDSRoot()) and item.getName() is not None:
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel
@@ -332,6 +329,7 @@ class QVizDataTreeView(QTreeWidget):
         ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
         ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getData())
+        ids_root_occ.setStyleWhenContainingData()
 
         for child in idsData:
             self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence, ids_root_occ)
@@ -386,37 +384,25 @@ class QVizDataTreeView(QTreeWidget):
     def OnCollapseItem(self, event):
         return
 
-    def getDefaultOccurrence(self):
-        """Get default occurrence (0) while IDS root is selected.
+    def loadDefaultOccurrence(self):
+        """Loads the next available occurrence which contains data.
         """
 
         # Get currently selected QTreeWidgetItem
-        # item = self.selectedItem # For some reason this always returns the
-        # QTreeWidgetItem corresponding to IDS root,
-        # even if non-IDS root is selected
         item = self.selectedItems()[0]
 
         # Continue only if the QTreeWidgetItem is the IDS root
         if not item.isIDSRoot():
             return
 
-        # Set default occurrence
-        occ = 0
+        occ = self.imas_viz_api.GetNextOccurrenceUnloadedWithAvailableData(self, item)
 
-        if not item.hasIDSAvailableData(occurrence=occ):
+        if occ is None:
             return
 
-
-        # Get root IDS name
-        IDSName = item.getIDSName()
         # Set class object
         ldh_obj = QVizLoadDataHandling()
-        # Check if the default occurrence for IDS root was already
-        # loaded. If
-        # not then load it first time.
-        if not ldh_obj.occurrenceAlreadyLoaded(self, IDSName=IDSName, occurrence=occ):
-            # Load the IDS Root occurrence
-            ldh_obj.loadSelectedData(self, IDSName, occ, True)
+        ldh_obj.loadSelectedData(self, item.getIDSName(), occ, True)
 
     def getMDI(self):
         """ Get MDI area through the root IMASViz main window.
