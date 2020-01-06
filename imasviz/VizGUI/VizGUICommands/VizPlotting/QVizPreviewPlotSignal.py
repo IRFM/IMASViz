@@ -63,7 +63,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
     def execute(self):
         try:
-            if not (self.treeNode.is1D()):
+            if not (self.treeNode.is1D() or self.treeNode.is0D()):
                 self.getPlotWidget().clear(noPreviewAvailable=True)
                 return
             elif self.signal is None:
