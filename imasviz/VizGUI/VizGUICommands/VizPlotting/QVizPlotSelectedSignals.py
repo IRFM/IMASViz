@@ -62,7 +62,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             plotDimension = "1D"
         else:
             logging.warning('Plots dimension larger than 1D are currently not supported.')
-            logging.warning('Data of unsupported data type passed. Aborting!')
+            logging.warning('Unsupported data type. Aborting!')
             return False
         return plotDimension
 
@@ -114,8 +114,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                     self.api.AddNodeToFigure(figureKey, key, tup)
 
                     # Get signal properties and values
-                    dataAccess = QVizDataAccessFactory(dtv.dataSource).create()
-                    s = dataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget)
+                    s = self.api.GetSignal(dtv, vizTreeNode, plotWidget=plotWidget)
+
                     # Get array of time values
                     t = QVizPlotSignal.getTime(s)
                     # Get array of y-axis values

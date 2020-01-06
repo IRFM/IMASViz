@@ -432,6 +432,10 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
                self.getDataType() == 'flt_1d_type' or self.getDataType() == 'int_1d_type'
 
+    def is2D(self):
+        return self.getDataType() == 'FLT_2D' or self.getDataType() == 'INT_2D' or \
+               self.getDataType() == 'flt_2d_type' or self.getDataType() == 'int_2d_type'
+
     def is0DString(self):
         return self.getDataType() == 'STR_0D'
 
@@ -446,6 +450,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def is1DAndDynamic(self):
         return self.is1D() and self.isDynamicData()
+
+    def is2DAndDynamic(self):
+        return self.is2D() and self.isDynamicData()
 
     def is2DOrLarger(self):
         if not self.is0D() and not self.is1D() and self.isDynamicData():
@@ -555,7 +562,8 @@ class QVizTreeNode(QTreeWidgetItem):
             self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
         else:
             #self.setForeground(0, GlobalColors.BLACK)
-            self.parent().setForeground(0, self.foreground(0))
+            #self.parent().setForeground(0, self.foreground(0))
+            pass
 
 
     def plotOptions(self, dataTreeView, title='', label=None, xlabel=None,

@@ -433,6 +433,29 @@ class Viz_API:
         else:
             return False
 
+    def GetNextOccurrenceUnloadedWithAvailableData(self, dataTreeView, node):
+        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+            if not self.IDSDataAlreadyFetched(dataTreeView, node.getIDSName(), i):
+                if node.hasIDSAvailableData(i):
+                    return i
+        return None
+
+    def GetAllOccurrencesWithAvailableData(self, node):
+        availableOccurrences = []
+        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+            if node.hasIDSAvailableData(i):
+                availableOccurrences.append(i)
+        return availableOccurrences
+
+    def GetAllOccurrencesUnloadedWithAvailableData(self, dataTreeView, node):
+        availableOccurrences = []
+        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+            if node.hasIDSAvailableData(i) and \
+                    not self.IDSDataAlreadyFetched(dataTreeView, node.getIDSName(), i):
+                availableOccurrences.append(i)
+        return availableOccurrences
+
+
     def GetDataSource(self, dataTreeFrame):
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             return dataTreeFrame.parent.dataSource

@@ -243,8 +243,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                signalDataAccess = QVizDataAccessFactory(dtv.dataSource).create()
-                s = signalDataAccess.GetSignal(signalNode, plotWidget=self, strategy="TIME")
+                s = self.imas_viz_api.GetSignal(dtv, signalNode, strategy="TIME")
 
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)

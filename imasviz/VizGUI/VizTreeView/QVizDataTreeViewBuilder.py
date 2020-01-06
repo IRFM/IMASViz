@@ -1,11 +1,8 @@
 #  Name   :QVizDataTreeViewBuilder
 #
 #          Container to build IDS Tree View structure in PyQt5.
-#          Note: The wxPython predecessor of this Python file is
-#          WxDataTreeViewBuilder.py
-#
 #  Author :
-#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#         Ludovic Fleury, Li Xinyi, Dejan Penko
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
@@ -150,7 +147,7 @@ class QVizDataTreeViewBuilder:
                 self.ggd_warning = 1
 
             node = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-            node.setStyleForElementAOS()
+            #node.setStyleForElementAOS()
             return node
 
         elif dataElement.get('data_type') in ['FLT_0D', 'STR_0D', 'INT_0D', 'xs:integer']:
@@ -295,7 +292,6 @@ class QVizDataTreeViewBuilder:
                     if coordinate is not None:
                         coordinate = coordinate.replace("/", ".")  # PATCH
                         extra_attributes.coordinates.append(coordinate)
-                        #itemDataDict[coordinateName] = coordinate
                         if coordinate.endswith('/time') or coordinate.endswith('.time') or coordinate == 'time':
                             extra_attributes.coordinates_explicitly_time_dependent[i] = 1
                         else:
