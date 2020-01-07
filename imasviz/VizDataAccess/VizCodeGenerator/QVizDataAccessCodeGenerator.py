@@ -265,7 +265,6 @@ class QVizDataAccessCodeGenerator:
 
 
             elif data_type == 'STR_0D' or data_type == 'INT_0D' or data_type == 'FLT_0D':
-                #if level == 1:
                 self.generateParentsCode(level, child.text)
                 ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
                 name_att = ids_child_element.get('name') + '_att_' + str(index)
@@ -273,6 +272,9 @@ class QVizDataAccessCodeGenerator:
                 self.printCode( affect + ids_child_element.text + '\n', level)
                 parentCode = "node = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + "+ '='" "+ str(" + name_att + "))"
                 self.printCode(parentCode, level)
+
+                code = "node.set('content', " + ids_child_element.text + ")"
+                self.printCode(code, level)
 
                 code = "node.set(" + "'data_type', '" + data_type + "')"
                 self.printCode(code, level)
@@ -461,7 +463,6 @@ class QVizDataAccessCodeGenerator:
                 or data_type == 'FLT_5D' or data_type == 'INT_5D' or data_type == 'flt_5d_type' \
                 or data_type == 'FLT_6D' or data_type == 'INT_6D' or data_type == 'flt_6d_type' :
 
-                #if level == 1:
                 self.generateParentsCode(level, child.text)
 
                 ids_child_element.text = "self.ids." + child.text + "." + ids_child_element.get('name')
@@ -628,6 +629,8 @@ if __name__ == "__main__":
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
                      "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
                      "3.23.1", "3.23.2", "3.23.3", "3.24.0", "3.25.0"]
+
+    imas_versions = ["3.24.0", "3.25.0"]
 
     patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",

@@ -379,9 +379,8 @@ class sliderGroup():
                 else:
                     s = node.getIDSName() + "." + \
                         node.evaluateCoordinateVsTime(coordinateNumber=1)
-                s = QVizGlobalOperations.makeIMASPath(s)
-                value = node.coordinateValues(coordinateNumber=1,
-                                                              dataTreeView=self.dataTreeView)[indexValue]
+                    s = QVizGlobalOperations.makePythonPath(s)
+                value = node.coordinateValues(coordinateNumber=1, dataTreeView=self.dataTreeView)[indexValue]
                 self.parent.sliderFieldLabel.setText("Coordinate1: " + s + " (Value = " + str(value) + ")")
 
     def setSlider(self):

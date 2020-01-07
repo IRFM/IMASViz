@@ -53,7 +53,7 @@ class QVizHandleRightClick:
             showMenu = True
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
-            if node.isIDSRoot()and node.hasAvailableData():
+            if node.isIDSRoot() and node.hasAvailableData():
                 subMenu = QMenu('Get ' + node.getIDSName() + ' data for occurrence')
                 dataTreeView.popupmenu.addMenu(subMenu)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)

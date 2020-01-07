@@ -1,4 +1,4 @@
-#  Name   : minimalPluginExample
+#  Name   : simplePlotPluginExample
 #
 #           A minimal plugin example for running it inside IMASViz that
 #           can serve as a basic template for new plugins.
@@ -13,7 +13,7 @@
 #           The <Plugin main class name> and <plugin_py_file> must be the same!
 #
 #           In this case would be:
-#           'minimalPluginExample' : 'viz_minimal_example.minimalPluginExample'
+#           'simplePlotPluginExample' : 'viz_minimal_example.simplePlotPluginExample'
 #
 #           Use of Python version 3.7 is recommended, as IMASViz does not
 #           support Python2 anymore.
@@ -26,11 +26,15 @@
 #****************************************************
 #     Copyright(c) 2019- D. Penko
 
+# modules for event logging system and for operating system dependent
+# functionality
 import logging, os
+# IMASViz plugin sources
 from imasviz.VizPlugins.VizPlugin import VizPlugin
+# Matplotlib library
 import matplotlib.pyplot as plt
 
-class minimalPluginExample(VizPlugin):
+class simplePlotPluginExample(VizPlugin):
     """A minimal working plugin example for IMASViz.
     There are 5 mandatory functions that every plugin must include (!):
     - execute
@@ -52,10 +56,11 @@ class minimalPluginExample(VizPlugin):
         """Main plugin function.
         """
 
-        # Get dataSource from the VizAPI (Application Program Interface)
+        # Get dataSource from the VizAPI (IMASViz Application Program Interface)
         # Note: instance of "self.datatreeView" is provided by the VizPlugins
         # through inheritance
         dataSource = vizAPI.GetDataSource(self.dataTreeView)
+        # Get case parameters (shot, run, machine user) from the dataSource
         shot = dataSource.shotNumber
         run = dataSource.runNumber
         machine = dataSource.imasDbName
@@ -68,10 +73,10 @@ class minimalPluginExample(VizPlugin):
             logging.info('Loading magnetics IDS...')
             vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
-        # Get IDS
+        # Get IDS object
         self.ids = dataSource.getImasEntry(occurrence)
 
-        # Displaying basic information
+        # Displaying basic case information
         print('Reading data...')
         print('Shot    =', shot)
         print('Run     =', run)
@@ -112,7 +117,7 @@ class minimalPluginExample(VizPlugin):
 
     def getAllEntries(self):
         # Set a text which will be displayed in the pop-up menu
-        return [(0, 'magnetics overview (minimal plugin example)...')]
+        return [(0, 'Magnetics overview (simple plot plugin example)...')]
 
     def isEnabled(self):
         return True

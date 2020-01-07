@@ -91,7 +91,7 @@ class QVizSelectSignals(QVizAbstractCommand):
 
     def checkIDSOpen(self):
         """Check if the IDS (or IDSs) root tree item is opened/populated. If
-        it is not, open it.
+        it is not, load it.
         Note: It requires open IDS root tree item in order to have the required
         signalsList populated.
         """
@@ -132,7 +132,8 @@ class QVizSelectSignals(QVizAbstractCommand):
                 occurrence = int(occurrencesList[i])
 
             # Load all IDS data which are referenced in the paths
-            if self.dataTreeView.isAlreadyFetched(IDSName, occurrence):
+            api = self.dataTreeView.imas_viz_api
+            if api.IDSDataAlreadyFetched(self, IDSName, occurrence):
                 continue
 
             # Check/Populate the IDS tree node

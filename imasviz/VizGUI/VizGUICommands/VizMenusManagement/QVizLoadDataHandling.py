@@ -47,29 +47,20 @@ class QVizLoadDataHandling(QObject):
             dataTreeView : current selected view
             subMenu : menu to update
         """
+        api = dataTreeView.imas_viz_api
+        availableOccurrences = api.GetAllOccurrencesUnloadedWithAvailableData(dataTreeView, rootNode)
+        if availableOccurrences is None:
+            return
 
-        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
-
-            # - Set new submenu action and its label
-            if not self.occurrenceAlreadyLoaded(dataTreeView, rootNode.getIDSName(), i):
-                if rootNode.hasIDSAvailableData(i):
-                    action_GET_IDS_OCC_DATA = \
-                        subMenu.addAction('Occurrence ' + str(i))
-                    # - Connect action to function using partial
-                    #   Note: PyQt5 lambda method is not a good way to pass the
-                    #         function arguments. The use of partial is better
-                    #         and more bulletproof
-                    action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData,
+        for i in availableOccurrences:
+            action_GET_IDS_OCC_DATA = \
+                            subMenu.addAction('Occurrence ' + str(i))
+            # - Connect action to function using partial
+            #   Note: PyQt5 lambda method is not a good way to pass the
+            #         function arguments. The use of partial is better
+            #         and more bulletproof
+            action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData,
                                                                       dataTreeView, rootNode.getIDSName(), i, True))
-                else:
-                    break
-
-
-    def occurrenceAlreadyLoaded(self, dataTreeView, IDSName, occurrence):
-        key = IDSName + "/" + str(occurrence)
-        if dataTreeView.ids_roots_occurrence.get(key) is not None:
-            return True
-        return False
 
     def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, threadingEvent=None):
         """Load data of selected IDS and its occurrence.

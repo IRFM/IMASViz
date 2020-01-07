@@ -239,7 +239,7 @@ class QVizNodeDocumentationWidget(QWidget):
 
         # - Set node contents title
         self.lNodeContentsTitle = QLabel()
-        self.lNodeContentsTitle.setText('Contents: ')
+        self.lNodeContentsTitle.setText('Content: ')
         self.lNodeContentsTitle.setAlignment(Qt.AlignLeft)
         self.lNodeContentsTitle.setWordWrap(True)
         self.lNodeContentsTitle.setMinimumHeight(25)
@@ -319,32 +319,33 @@ class QVizNodeDocumentationWidget(QWidget):
         """
 
         # UPDATE NODE DOCUMENTATION WIDGET
+
+        # Hide displayed fields
+        self.hideAllFields()
+
         # - Set node label
-        node_label = "..."  # Assigning default label
+        node_label = None # Assigning default label
         if item.getDataName() is not None:
             node_label = str(item.getDataName())
         elif item.getName() is not None:
             node_label = str(item.getName())
+
+        if node_label is None:
+            return
+
         # - Set node documentation#
         node_doc = str(item.getDocumentation())
 
+
         # Set dictionary for node attributes
-        node_contents_dict = {}
-        node_contents_dict['name'] = node_label
-        node_contents_dict['documentation'] = node_doc
-        node_contents_dict['contents'] = '/'
-        node_contents_dict['size'] = '/'
-        node_contents_dict['minimum'] = '/'
-        node_contents_dict['maximum'] = '/'
-        node_contents_dict['zeros'] = '/'
-        node_contents_dict['nans'] = '/'
-        node_contents_dict['infs'] = '/'
+        node_contents_dict = self.initialize_dict(node_label, node_doc)
 
         node_array_contents = ''
         # Don't obtain contents for full IDS root nodes
         if not item.isIDSRoot():
 
             if item.isDynamicData():
+
                 # - Set node contents
                 expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
                 expression = QVizGlobalOperations.makePythonPath(expression)
@@ -352,6 +353,9 @@ class QVizNodeDocumentationWidget(QWidget):
                 node_array_contents = eval(expression)
 
                 if item.is1D():
+
+                    self.showFieldsForArrays()
+
                     self.lNodeArraySizeTitle.setText('Array size: ')
                     # Get string version of the array of values
                     n = 200
@@ -381,34 +385,162 @@ class QVizNodeDocumentationWidget(QWidget):
                     node_contents_dict['size'] = str(len(node_array_contents))
                     self.lNodeArraySizeText.setText(node_contents_dict['size'])
 
-
-
-                elif item.is0D():
-                    node_contents_dict['contents'] = str(node_array_contents)
-                    self.lNodeArraySizeTitle.setText(item.getDataType() + ' scalar')
-                    self.lNodeArraySizeText.setText('/')
+                # elif item.is0D():
+                #     node_contents_dict['contents'] = str(node_array_contents)
+                #     self.lNodeArraySizeTitle.setText(item.getDataType() + ' scalar')
+                #     self.lNodeArraySizeText.setText('/')
 
                 elif item.is2DOrLarger():
+
+                    self.showFieldsForArrays()
+
                     self.lNodeArraySizeTitle.setText(item.getDataType() + ' array')
                     self.lNodeArraySizeTitle.setText('Array shape: ')
                     self.lNodeArraySizeText.setText(str(node_array_contents.shape))
 
-        self.lNodeLabelText.setText(node_contents_dict['name'])
-        self.lNodeDocText.setText(node_contents_dict['documentation'])
-        self.lNodeContentsText.setText(node_contents_dict['contents'])
+            elif item.is0D():
+                if node_label is not None:
+                    self.showFieldsForScalars()
+                    # - Set node contents
+                    node_contents_dict = {}
+                    node_contents_dict['name'] = node_label
+                    node_contents_dict['documentation'] = node_doc
+                    node_contents_dict['contents'] = item.getData()['0D_content']
+                else:
+                    self.showFieldsForContents()
+                    node_contents_dict = {}
+                    node_contents_dict['name'] = node_label
+                    node_contents_dict['contents'] = item.getData()['0D_content']
+
+            else:
+                self.showMinimalDisplay()
+                node_contents_dict = {}
+                node_contents_dict['name'] = node_label
+                node_contents_dict['documentation'] = node_doc
+
+        else:
+            self.showFieldsForIDSRoot()
+            node_contents_dict = {}
+            node_contents_dict['name'] = node_label
+            node_contents_dict['documentation'] = node_doc
+
+        if 'name' in node_contents_dict:
+            self.lNodeLabelText.setText(node_contents_dict['name'])
+        else:
+            self.lNodeLabelText.setText('')
+
+        if 'documentation' in node_contents_dict:
+            self.lNodeDocText.setText(node_contents_dict['documentation'])
+        else:
+            self.lNodeDocText.setText('')
+
+        if 'contents' in node_contents_dict:
+            self.lNodeContentsText.setText(str(node_contents_dict['contents']))
+        else:
+            self.lNodeContentsText.setText('')
 
         if 'minimum' in node_contents_dict:
-            self.lNodeArrayMinText.setText(node_contents_dict['minimum'])
+            self.lNodeArrayMinText.setText(str(node_contents_dict['minimum']))
+        else:
+            self.lNodeArrayMinText.setText('')
 
         if 'maximum' in node_contents_dict:
-            self.lNodeArrayMaxText.setText(node_contents_dict['maximum'])
+            self.lNodeArrayMaxText.setText(str(node_contents_dict['maximum']))
+        else:
+            self.lNodeArrayMaxText.setText('')
 
         if 'zeros' in node_contents_dict:
-            self.lNodeArrayZerosText.setText(node_contents_dict['zeros'])
+            self.lNodeArrayZerosText.setText(str(node_contents_dict['zeros']))
+        else:
+            self.lNodeArrayZerosText.setText('')
 
         if 'nans' in node_contents_dict:
-            self.lNodeArrayNansText.setText(node_contents_dict['nans'])
+            self.lNodeArrayNansText.setText(str(node_contents_dict['nans']))
+        else:
+            self.lNodeArrayNansText.setText('')
 
         if 'infs' in node_contents_dict:
-            self.lNodeArrayInfsText.setText(node_contents_dict['infs'])
+            self.lNodeArrayInfsText.setText(str(node_contents_dict['infs']))
+        else:
+            self.lNodeArrayInfsText.setText('')
 
+
+    def initialize_dict(self, node_label=None, node_doc=None):
+        node_contents_dict = {}
+        node_contents_dict['name'] = node_label
+        node_contents_dict['documentation'] = node_doc
+        node_contents_dict['contents'] = '/'
+        node_contents_dict['size'] = '/'
+        node_contents_dict['minimum'] = '/'
+        node_contents_dict['maximum'] = '/'
+        node_contents_dict['zeros'] = '/'
+        node_contents_dict['nans'] = '/'
+        node_contents_dict['infs'] = '/'
+        return node_contents_dict
+
+    def hideAllFields(self):
+        self.lNodeLabelTitle.setVisible(False)
+        self.lNodeLabelText.setVisible(False)
+        self.lNodeDocTitle.setVisible(False)
+        self.lNodeDocText.setVisible(False)
+        self.lNodeArraySizeTitle.setVisible(False)
+        self.lNodeArraySizeText.setVisible(False)
+        self.lNodeArrayMinTitle.setVisible(False)
+        self.lNodeArrayMinText.setVisible(False)
+        self.lNodeArrayMaxTitle.setVisible(False)
+        self.lNodeArrayMaxText.setVisible(False)
+        self.lNodeArrayZerosTitle.setVisible(False)
+        self.lNodeArrayZerosText.setVisible(False)
+        self.lNodeArrayNansTitle.setVisible(False)
+        self.lNodeArrayNansText.setVisible(False)
+        self.lNodeArrayInfsTitle.setVisible(False)
+        self.lNodeArrayInfsText.setVisible(False)
+        self.lNodeContentsTitle.setVisible(False)
+        self.lNodeContentsText.setVisible(False)
+
+    def showFieldsForArrays(self):
+        self.showAllFields()
+
+    def showFieldsForIDSRoot(self):
+        self.showMinimalDisplay()
+
+    def showMinimalDisplay(self):
+        self.lNodeLabelTitle.setVisible(True)
+        self.lNodeLabelText.setVisible(True)
+        self.lNodeDocTitle.setVisible(True)
+        self.lNodeDocText.setVisible(True)
+
+    def showFieldsForScalars(self):
+        self.lNodeLabelTitle.setVisible(True)
+        self.lNodeLabelText.setVisible(True)
+        self.lNodeDocTitle.setVisible(True)
+        self.lNodeDocText.setVisible(True)
+        self.lNodeContentsTitle.setVisible(True)
+        self.lNodeContentsText.setVisible(True)
+
+    def showFieldsForContents(self):
+        self.lNodeLabelTitle.setVisible(True)
+        self.lNodeLabelText.setVisible(True)
+        self.lNodeContentsTitle.setVisible(True)
+        self.lNodeContentsText.setVisible(True)
+
+
+    def showAllFields(self):
+        self.lNodeLabelTitle.setVisible(True)
+        self.lNodeLabelText.setVisible(True)
+        self.lNodeDocTitle.setVisible(True)
+        self.lNodeDocText.setVisible(True)
+        self.lNodeArraySizeTitle.setVisible(True)
+        self.lNodeArraySizeText.setVisible(True)
+        self.lNodeArrayMinTitle.setVisible(True)
+        self.lNodeArrayMinText.setVisible(True)
+        self.lNodeArrayMaxTitle.setVisible(True)
+        self.lNodeArrayMaxText.setVisible(True)
+        self.lNodeArrayZerosTitle.setVisible(True)
+        self.lNodeArrayZerosText.setVisible(True)
+        self.lNodeArrayNansTitle.setVisible(True)
+        self.lNodeArrayNansText.setVisible(True)
+        self.lNodeArrayInfsTitle.setVisible(True)
+        self.lNodeArrayInfsText.setVisible(True)
+        self.lNodeContentsTitle.setVisible(True)
+        self.lNodeContentsText.setVisible(True)

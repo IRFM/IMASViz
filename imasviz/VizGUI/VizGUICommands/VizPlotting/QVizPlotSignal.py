@@ -28,8 +28,6 @@ from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-#import pyqtgraph
-#from pyqtgraph.graphicsItems.PlotDataItem import PlotDataItem
 
 class QVizPlotSignal(QVizAbstractCommand):
     """Handling plot execution.
@@ -59,8 +57,8 @@ class QVizPlotSignal(QVizAbstractCommand):
 
     def execute(self, plotWidget, figureKey=0, update=0, dataset_to_update=0):
         try:
-            dataAccess = QVizDataAccessFactory(self.dataTreeView.dataSource).create()
-            self.signal = dataAccess.GetSignal(self.treeNode, plotWidget=plotWidget)
+            api = self.dataTreeView.imas_viz_api
+            self.signal = api.GetSignal(self.dataTreeView, self.treeNode, plotWidget=plotWidget)
 
             if len(self.signal) == 2:
 
@@ -204,16 +202,16 @@ class QVizPlotSignal(QVizAbstractCommand):
 
     # This method gives a preferential way to plot data: as function
     # of time for 0D node and as function of coordinate1 for 1D nodes
-    @staticmethod
-    def getSignal(dataTreeView, vizTreeNode, plotWidget=None, as_function_of_time=False):
-        try:
-            signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
-            if vizTreeNode.is1DAndDynamic():
-                signal = signalDataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget, as_function_of_time=as_function_of_time)
-            elif vizTreeNode.is0DAndDynamic():
-                signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
-            else:
-                raise ValueError('Unexpected data type')
-            return signal
-        except:
-            raise
+    # @staticmethod
+    # def getSignal(dataTreeView, vizTreeNode, plotWidget=None, as_function_of_time=False):
+    #     try:
+    #         signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
+    #         if vizTreeNode.is1DAndDynamic():
+    #             signal = signalDataAccess.GetSignal(vizTreeNode, plotWidget=plotWidget, as_function_of_time=as_function_of_time)
+    #         elif vizTreeNode.is0DAndDynamic():
+    #             signal = signalDataAccess.Get0DSignalVsTime(vizTreeNode)
+    #         else:
+    #             raise ValueError('Unexpected data type')
+    #         return signal
+    #     except:
+    #         raise

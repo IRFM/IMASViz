@@ -1,11 +1,8 @@
 #  Name   :QVizDataTreeViewBuilder
 #
 #          Container to build IDS Tree View structure in PyQt5.
-#          Note: The wxPython predecessor of this Python file is
-#          WxDataTreeViewBuilder.py
-#
 #  Author :
-#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#         Ludovic Fleury, Li Xinyi, Dejan Penko
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
@@ -25,11 +22,7 @@ class QVizDataTreeViewBuilder:
         self.ids = ids
         self.ggd_warning = 0
         self.signalsList = []
-        self.doc_items_tuple_list = []
         self.ids_root_node = None
-
-    def getDoc_items_tuple_list(self):
-        return self.doc_items_tuple_list
 
     def getSignalsList(self):
         return self.signalsList
@@ -154,56 +147,25 @@ class QVizDataTreeViewBuilder:
                 self.ggd_warning = 1
 
             node = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-            node.setStyleForElementAOS()
+            #node.setStyleForElementAOS()
             return node
 
-        if dataElement.get('data_type') in ['FLT_0D', 'STR_0D','INT_0D', 'xs:integer']:
-            maxLineLengthSizeForString = 40
+        elif dataElement.get('data_type') in ['FLT_0D', 'STR_0D', 'INT_0D', 'xs:integer']:
+            itemDataDict['0D_content'] = dataElement.get('content')
             if dataElement.text is not None:
-                s = dataElement.text
-                lines = s.split('\n')
-                if len(lines) > 1 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
-                    itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag, dataElement)
-                    # Add tree item
-                    viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-                    self.doc_items_tuple_list.append((viewerNode, dataElement.text))
+                tag = ''
+                if dataElement.tag is not None:
+                    tag = dataElement.tag
+                itemNodeName = self.addUnitsAndDataTypeToItemNodeName(tag + '=' + dataElement.text, dataElement)
+                viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes) # Add tree item
 
-                else:
-                    itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag + '=' + str(dataElement.text), dataElement)
-                    # Add tree item
-                    viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-            else:
-                if '=' in dataElement.tag:
-                    if dataElement.tag.startswith('comment='):
-                        text = dataElement.tag.split('comment=')
-                    elif dataElement.tag.startswith('description='):
-                        text = dataElement.tag.split('description=')
-                    else:
-                        text = dataElement.tag.split('=')
-                    s = ''
-                    if len(text) > 0:
-                        s = text[1]
-                    lines = s.split('\n')
-                    if len(lines) > 1 or (len(lines) == 1 and len(lines[0]) > maxLineLengthSizeForString):
-                        itemNodeName = self.addUnitsAndDataTypeToItemNodeName(
-                            dataElement.tag.split('=')[0], dataElement)
-                        # Add tree item
-                        viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-                        self.doc_items_tuple_list.append((viewerNode, s))
-                    else:
-                        itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag, dataElement)
-                        # Add tree item
-                        viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-                else:
-                    itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag, dataElement)
-                    # Add tree item
-                    viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-
+            elif dataElement.tag is not None:
+                itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag, dataElement)
+                viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes) # Add tree item
         else:
             if dataElement.text is not None and dataElement.text.strip() != '':
                 itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag + '=' + str(dataElement.text), dataElement)
-                # Add tree item
-                viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
+                viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes) # Add tree item
 
             else:
                 itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag, dataElement)
@@ -245,7 +207,7 @@ class QVizDataTreeViewBuilder:
     def addUnitsAndDataTypeToItemNodeName(self, itemNodeName, dataElement):
         if dataElement.get('units') is not None:
             itemNodeName += " [" + dataElement.get('units') + "]"
-        if dataElement.get('data_type'):
+        if dataElement.get('data_type') is not None:
             itemNodeName += ' ' + '(' + str(dataElement.get('data_type')) + ')'
         return itemNodeName
 
@@ -330,7 +292,6 @@ class QVizDataTreeViewBuilder:
                     if coordinate is not None:
                         coordinate = coordinate.replace("/", ".")  # PATCH
                         extra_attributes.coordinates.append(coordinate)
-                        #itemDataDict[coordinateName] = coordinate
                         if coordinate.endswith('/time') or coordinate.endswith('.time') or coordinate == 'time':
                             extra_attributes.coordinates_explicitly_time_dependent[i] = 1
                         else:
@@ -370,14 +331,7 @@ class QVizDataTreeViewBuilder:
         dataTreeView.signalsList.extend(self.getSignalsList())
         ids_root_node.removeChild(ids_root_occurrence)
 
-        for item in self.getDoc_items_tuple_list():
-            item_0 = QTreeWidgetItem(item[0])
-            q = QTextEdit()
-            q.setMinimumHeight(150)
-            q.setText(item[1])
-            dataTreeView.setItemWidget(item_0, 0, q)
-
-            dataTreeView.IDSRoots[idsName].addChild(ids_root_occurrence)
+        dataTreeView.IDSRoots[idsName].addChild(ids_root_occurrence)
         key = idsName + "/" + str(occurrence)
         dataTreeView.ids_roots_occurrence[key] = ids_root_occurrence
 
