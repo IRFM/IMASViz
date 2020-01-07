@@ -183,45 +183,6 @@ class QVizTreeNode(QTreeWidgetItem):
 
         return label, title, xlabel
 
-    def itimeEvaluatedLabels(self, dtv, plotWidget, time_index=None, strategy=None):
-        label = None
-        xlabel = 'time[s]'
-        label = self.setLabelForFigure(dtv.dataSource)
-        if self.asFunctionOfTime(plotWidget, strategy=strategy):
-            label = label.replace('itime', str(':'))
-        else:
-            label = label.replace('itime', str(time_index))
-        label = QVizGlobalOperations.makeIMASPath(label)
-        return label, xlabel
-
-    def itimeAndCoordinateAxisEvaluatedLabels(self, coordinateNumber, dtv,
-                                              plotWidget,
-                                              time_index=None,
-                                              coordinate_index=0,
-                                              strategy=None):
-
-        label = None
-        xlabel = None
-        label = self.setLabelForFigure(dtv.dataSource)
-        if self.coordinates[coordinateNumber-1] == "1..N" or \
-                        self.coordinates[coordinateNumber-1] == "1...N":
-            xlabel = "1..N"
-        else:
-            xlabel = self.getIDSName() + "." + self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
-            if self.asFunctionOfTime(plotWidget, strategy=strategy):
-                if self.embedded_in_time_dependent_aos():
-                    label = label.replace('itime', str(':')) + '[' + str(coordinate_index) + ']'
-                else:
-                    label = label.replace('itime', str(':'))
-                xlabel = 'time[s]'
-            else:
-                label = label.replace('itime', str(time_index))
-                xlabel = xlabel.replace('itime', str(time_index))
-                xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
-
-        label = QVizGlobalOperations.makeIMASPath(label)
-        return label, xlabel
-
     def setLabelForFigure(self, dataSource):
         if self.getOccurrence() == 0:
             return dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath())
@@ -576,43 +537,53 @@ class QVizTreeNode(QTreeWidgetItem):
             label      (str) : Label describing IMAS database (device, shot) and
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
+            ylabel     (str) : Plot Y-axis label.
         """
-
-        if self.is0DAndDynamic():
-            label, xlabel = self.itimeEvaluatedLabels(dataTreeView, plotWidget, time_index, strategy=strategy)
-
-        elif self.is1DAndDynamic():
-            label, xlabel2 = self.itimeAndCoordinateAxisEvaluatedLabels(1, dataTreeView,
-                                                                       plotWidget,
-                                                                       time_index,
-                                                                       coordinate_index,
-                                                                       strategy=strategy)
-            if xlabel is None:
-                xlabel = xlabel2
-            # Setting/Checking the X-axis label
-            # if xlabel is None:
-            #     # If xlabel is not yet set
-            #     if self.getCoordinate(coordinateNumber=1) is not None:
-            #         xlabel = QVizGlobalOperations.replaceBrackets(
-            #             self.getCoordinate(coordinateNumber=1))
-            #         if self.isCoordinateTimeDependent() and self.hasHomogeneousTime():
-            #             xlabel = 'time'
-            #
-            #     if xlabel is not None and xlabel.endswith("time"):
-            #         xlabel += "[s]"
-            # elif 'time[s]' in xlabel:
-            #     # If 'Time[s]' is present in xlabel, do not modify it
-            #     pass
-            # elif '1.' not in xlabel and '.N' not in xlabel:
-            #     xlabel = QVizGlobalOperations.makeIMASPath(xlabel)
-            #     # - If IDS name is not present (at the front) of the xlabel string,
-            #     #   then add it
-            #     if self.getIDSName() not in xlabel:
-            #         xlabel = self.getIDSName() + "/" + xlabel
 
         ylabel = self.getName()
 
         if self.getUnits() is not None:
             ylabel += '[' + self.getUnits() + ']'
+
+        if self.is0DAndDynamic():
+            label = None
+            xlabel = 'time[s]'
+            label = self.setLabelForFigure(dataTreeView.dataSource)
+            if self.asFunctionOfTime(plotWidget, strategy=strategy):
+                label = label.replace('itime', str(':'))
+            else:
+                label = label.replace('itime', str(time_index))
+            label = QVizGlobalOperations.makeIMASPath(label)
+
+        elif self.is1DAndDynamic():
+            label = None
+            xlabel2 = None
+            coordinateNumber = 1
+            label = self.setLabelForFigure(dataTreeView.dataSource)
+            if self.coordinates[coordinateNumber - 1] == "1..N" or \
+                    self.coordinates[coordinateNumber - 1] == "1...N":
+                xlabel2 = "1..N"
+            else:
+                if self.hasHomogeneousTime():
+                    xlabel = 'time'
+                else:
+                    xlabel = self.getIDSName() + "." + \
+                             self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                if self.asFunctionOfTime(plotWidget, strategy=strategy):
+                    if self.embedded_in_time_dependent_aos():
+                        label = label.replace('itime', str(':')) + '[' + str(coordinate_index) + ']'
+                    else:
+                        label = label.replace('itime', str(':'))
+                else:
+                    label = label.replace('itime', str(time_index))
+                    xlabel = xlabel.replace('itime', str(time_index))
+
+            label = QVizGlobalOperations.makeIMASPath(label)
+
+            if xlabel is None:
+                xlabel = xlabel2
+
+            if xlabel=='time' or xlabel.endswith('.time'):
+                xlabel = xlabel + '[s]'
 
         return label, xlabel, ylabel, title

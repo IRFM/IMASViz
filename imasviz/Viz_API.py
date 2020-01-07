@@ -527,7 +527,7 @@ class Viz_API:
                            vizTreeNode=treeNode,
                            title=title,
                            label=label,
-                           xlabel="time[s]")
+                           xlabel="time")
             p.execute(plotWidget, figureKey=figureKey, update=0)
         except ValueError as e:
             logging.error(str(e))
@@ -543,7 +543,7 @@ class Viz_API:
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
-                               xlabel="time[s]")
+                               xlabel="time")
             p.execute(plotWidget, figureKey=figureKey, update=0)
         except ValueError as e:
             logging.error(str(e))
@@ -593,7 +593,7 @@ class Viz_API:
             QVizPlotSignal(dataTreeView=dataTreeView,
                            title=title,
                            label=label,
-                           xlabel="time[s]",
+                           xlabel="time",
                            vizTreeNode=treeNode).execute(plotWidget=plotWidget,
                                                          figureKey=currentFigureKey,
                                                          update=update,
