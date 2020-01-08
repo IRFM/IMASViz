@@ -107,7 +107,6 @@ class QVizDataTreeViewBuilder:
                 parentItemDataDict['Path'] = arrayParentPath
                 # Add tree item
                 parentNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
-                parentNode.setStyleForAOSContainingData()
                 self.arrayParentNodes[arrayParentPath] = parentNode
             else:
                 parentNode = self.arrayParentNodes[arrayParentPath]

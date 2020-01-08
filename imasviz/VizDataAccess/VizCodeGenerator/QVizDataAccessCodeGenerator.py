@@ -8,17 +8,27 @@ ggd_warning = 0
 
 class QVizDataAccessCodeGenerator:
 
+    GGD_ignore = 0
+
     def __init__(self, imas_dd_version):
         self.imas_dd_version = imas_dd_version
         self.time_step = 10
-        className = "IDSDef_XMLParser_Generated_" + QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+
+        className = None
+
+        if QVizDataAccessCodeGenerator.GGD_ignore == 1:
+            className = "IDSDef_XMLParser_Partial_Generated_" + \
+                        QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+        else:
+            className = "IDSDef_XMLParser_Full_Generated_" + \
+                        QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+
         self.IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
         XMLtreeIDSDef = ET.parse(self.IDSDefFile)
         fileName = className + ".py"
         if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] == None:
             print("VIZ_HOME not defined! Exiting procedure.")
             sys.exit()
-        # os.chdir(os.getcwd() + "/../VizGeneratedCode")
         os.chdir(os.environ['VIZ_HOME'] + "/imasviz/VizDataAccess/VizGeneratedCode")
         self.f = open(fileName, 'w')
         self.generateCode(XMLtreeIDSDef, className)
@@ -81,16 +91,18 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
                     self.printCode("t2 = time.time()", 2)
                     self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')",2)
+
                     #self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
                     self.printCode("t3 = time.time()", 2)
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
-                    self.printCode('if self.asynch==True:', 2)
+                    self.printCode('if self.asynch:', 2)
 
-                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self), self.view.parent.eventResultId))',3)
+                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self), self.view.parent.eventResultId))',3)
                     self.printCode("print ('waiting for view update...')" + '\n', 3)
                     self.printCode('else:', 2)
                     self.printCode('self.view.updateView(self.idsName, self.occurrence, idsData)', 3)
+                    self.printCode("self.progressBar.hide()", 3)
 
                 self.printCode('\n', -1)
 
@@ -101,7 +113,7 @@ class QVizDataAccessCodeGenerator:
             self.printCode('parent = ET.Element(' + "'" + ids.text + "'" + ')', 1)
             self.generateCodeForIDS(None, ids, 1, {}, [], '', 0, name_att)
             self.generateParentsCode(1, ids.text)
-            self.printCode("self.progressBar.hide()", 1)
+            #self.printCode("self.progressBar.hide()", 1)
             self.printCode("return parent", 1)
             self.printCode('',-1)
             i+=1
@@ -175,14 +187,15 @@ class QVizDataAccessCodeGenerator:
 
             elif data_type == 'struct_array':
 
-                if ids_child_element.get('name') == "ggd" or ids_child_element.get('name').startswith("ggd_") \
-                        or ids_child_element.get('name').endswith("_ggd"):
-                    if ggd_warning == 0:
-                        print("WARNING: GGD structures have been ignored")
-                    ggd_warning = 1
-                    code = "parent.set(" + "'ggd_warning', str(" + '1' + "))"
-                    self.printCode(code, level)
-                    continue
+                if QVizDataAccessCodeGenerator.GGD_ignore == 1:
+                    if ids_child_element.get('name') == "ggd" or ids_child_element.get('name').startswith("ggd_") \
+                            or ids_child_element.get('name').endswith("_ggd"):
+                        if ggd_warning == 0:
+                            print("WARNING: GGD structures have been ignored")
+                        ggd_warning = 1
+                        code = "parent.set(" + "'ggd_warning', str(" + '1' + "))"
+                        self.printCode(code, level)
+                        continue
 
                 code = child.text + "." + ids_child_element.get('name') + '(:)'
                 s = QVizGlobalValues.indices[str(level)]
@@ -637,8 +650,16 @@ if __name__ == "__main__":
                      "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
                      "3.23.1", "3.23.2", "3.23.3", "3.24.0"]
 
+    print("Generating full parsers...")
     for v in imas_versions:
+        QVizDataAccessCodeGenerator.GGD_ignore = 0
         dag = QVizDataAccessCodeGenerator(v)
+
+    print("Generating parsers ignoring GGD structures...")
+    for v in imas_versions:
+        QVizDataAccessCodeGenerator.GGD_ignore = 1
+        dag = QVizDataAccessCodeGenerator(v)
+
     print("End of code generation")
-    print("Do not forget to declare new code in the QVizGeneratedClassFactory class")
+    #print("Do not forget to declare new code in the QVizGeneratedClassFactory class")
 

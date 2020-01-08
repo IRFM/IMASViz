@@ -63,6 +63,7 @@ class QVizPreferences:
     SelectionColor = None
     ColorOfNodesContainingData = None
     Allow_data_to_be_plotted_with_different_units = 0
+    Ignore_GGD = 1
 
     def build(self):
         if not QVizPreferences.userPreferencesInitialized:
@@ -72,6 +73,7 @@ class QVizPreferences:
             option1 = "Colour_of_data_nodes_containing_data="
             option2 = "Nodes_selection_colour="
             option3 = "Allow_data_to_be_plotted_with_different_units="
+            option4 = "Ignore_GGD="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 logging.info("No user preferences file found.")
@@ -86,6 +88,9 @@ class QVizPreferences:
                         elif line.startswith(option3):
                             value = line[len(option3):]
                             QVizPreferences.Allow_data_to_be_plotted_with_different_units = int(value)
+                        elif line.startswith(option4):
+                            value = line[len(option4):]
+                            QVizPreferences.Ignore_GGD = int(value)
 
                 userPreferencesInitialized = True
 

@@ -504,7 +504,10 @@ class QVizDataTreeViewFrame(QMainWindow):
             idsName = event.data[0]
             occurrence = event.data[1]
             idsData = event.data[2]
+            progressBar = event.data[3]
+            progressBar.setWindowTitle("Updating view...")
             self.dataTreeView.updateView(idsName, occurrence, idsData)
+            progressBar.hide()
 
 
     def addMenuBar(self):
