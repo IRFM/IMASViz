@@ -1,3 +1,17 @@
+#  Name   : tabCoreProfiles
+#
+#           Core Profiles tab for ETS plugin.
+#
+#  Author :
+#         Dejan Penko
+#         Jorge Ferreira
+#  E-mail :
+#         dejan.penko@lecad.fs.uni-lj.si
+#         jferreira@ipfn.tecnico.ulisboa.pt
+#
+#****************************************************
+#     Copyright(c) 2019- D. Penko, J. Ferreira
+
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSlider, QLabel
 from PyQt5.QtCore import Qt
 import matplotlib
@@ -23,7 +37,6 @@ class tabCoreProfiles(QWidget):
 
     def setTabUI(self):
 
-        # self.tab1 = QWidget(self)
         self.setLayout(QGridLayout())
         self.parent.tabWidget.addTab(self, "Core Profiles")
 
@@ -40,7 +53,7 @@ class tabCoreProfiles(QWidget):
         self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.35)
 
-        self.fig.suptitle('ETS plugin')
+        # self.fig.suptitle('ETS plugin')
         self.grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
 

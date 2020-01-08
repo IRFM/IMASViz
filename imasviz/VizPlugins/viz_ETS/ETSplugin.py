@@ -4,16 +4,17 @@
 #
 #  Author :
 #         Dejan Penko
-#         Jorge Ferreira
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
-#         jferreira@ipfn.tecnico.ulisboa.pt
 #
 #****************************************************
-#     Copyright(c) 2019- D. Penko, J. Ferreira
+#     Copyright(c) 2019- D. Penko
 
+# Standard library imports
 import logging, os, sys
 from functools import partial
+
+# Third party imports
 import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.figure import Figure
@@ -26,7 +27,9 @@ from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
     QGridLayout, QSlider, QLabel, QSpinBox)
 from PyQt5.QtCore import Qt
 
+# IMASViz application imports
 from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
+from imasviz.VizPlugins.viz_ETS.tabETSSummary import tabETSSummary
 
 def checkArguments():
     """ Check arguments when running plugin from the terminal (standalone).
@@ -75,7 +78,7 @@ class ETSplugin(QMainWindow):
             ids            (obj)        : IDS object
         """
         super(QMainWindow, self).__init__()
-        self.setWindowTitle("European Transport Simulator (IMASViz plugin sample)")
+        self.setWindowTitle("European Transport Simulator (IMASViz plugin sample, work in progress)")
         self.ids = ids
         self.IDS_parameters = IDS_parameters
         if ids == None:
@@ -99,8 +102,9 @@ class ETSplugin(QMainWindow):
         self.mainWidget.layout().addWidget(self.slider_time, 0, 0, 1, 1)
         self.mainWidget.layout().addWidget(self.tabWidget, 1, 0, 1, 3)
 
-        # Set tab
+        # Set tabs
         self.tabCoreProfiles = tabCoreProfiles(parent=self)
+        self.tabETSSummary = tabETSSummary(parent=self)
 
         # Set time label
         self.timeLabel = QLabel("Time slice: ")
@@ -195,6 +199,7 @@ if  __name__ == "__main__":
 
     ets = ETSplugin(IDS_parameters)
     ets.tabCoreProfiles.plot()
+    ets.tabETSSummary.plot()
 
     ets.show()
 
