@@ -56,9 +56,10 @@ class tabETSSummary(QWidget):
                                  wspace=0.3, hspace=0.35)
 
         # self.fig.suptitle('ETS plugin')
-        self.grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
+        self.grid_subp    = matplotlib.gridspec.GridSpec(2, 3)
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
+        self.ax3 = self.fig.add_subplot(self.grid_subp[0, 2])
 
     def plot(self):
         """Main plot function.
@@ -82,6 +83,8 @@ class tabETSSummary(QWidget):
         self.plot_te_ti()
         # Re-plot ne/ni (electron/ion density)
         self.plot_ne_ni()
+        # Plot j_total and q (total parallel current density and safety factor)
+        self.plot_jtotal_q()
 
         self.show()
 
@@ -95,6 +98,8 @@ class tabETSSummary(QWidget):
         self.plot_te_ti(clear=True)
         # Re-plot ne/ni (electron/ion density)
         self.plot_ne_ni(clear=True)
+        # Plot j_total and q (total parallel current density and safety factor)
+        self.plot_jtotal_q(clear=True)
 
         # Update the figure display
         self.canvas.draw()
@@ -138,6 +143,8 @@ class tabETSSummary(QWidget):
         leg.set_draggable(True)
 
     def plot_ne_ni(self, clear=False):
+        """Plot electron density (te) and ion density (ti)
+        """
 
         # Clear plot first if specified
         if clear == True:
@@ -160,7 +167,7 @@ class tabETSSummary(QWidget):
                                   linewidth=1.5)
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting temperatures. (%s) ' % err )
+            raise ValueError( 'ERROR occurred when plotting densities. (%s) ' % err )
 
         self.ax2.set(xlabel= "rhotor [m]", ylabel='Density [10^19 m-3]')
         # self.ax2.set_yticks([])
@@ -172,4 +179,45 @@ class tabETSSummary(QWidget):
         leg = self.ax2.legend()
         leg.set_draggable(True)
 
+    def plot_jtotal_q(self, clear=False):
+        """Plot total parallel current density (j_total) and safety factor (q).
+        """
+
+        # Clear plot first if specified
+        if clear == True:
+            self.ax3.cla()
+
+        try:
+            rhotor = self.cp.grid.rho_tor_norm
+            q = self.cp.q
+            j_total = self.cp.j_total
+            pl1 = self.ax3.plot(rhotor, 1.0e-6*abs(j_total),
+                          label = "j_total",
+                          color='b',
+                          linewidth=1.5)
+            self.ax3_2 = self.ax3.twinx()
+            pl2 = self.ax3_2.plot(rhotor, abs(q),
+                          label = "q",
+                          color='r',
+                          linewidth=1.5)
+
+        except Exception as err:
+            raise ValueError( 'ERROR occurred when plotting equilibrium related profiles. (%s) ' % err )
+
+
+        # Combine legend of the both plots into a single legend box
+        pl = pl1 + pl2
+        labs = [l.get_label() for l in pl]
+        leg = self.ax3_2.legend(pl, labs, loc=0)
+        leg.set_draggable(True)
+
+        self.ax3.set(xlabel= "", ylabel='j_total [MA/m2]')
+        self.ax3_2.set(xlabel= "rhotor [m]", ylabel='q [MA/m2]')
+        # self.ax3.set_yticks([])
+        self.ax3.xaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax3.yaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax3.grid()
+        self.ax3_2.grid()
 
