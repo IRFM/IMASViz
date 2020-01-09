@@ -36,6 +36,8 @@ class tabETSSummary(QWidget):
         self.setTabUI()
 
     def setTabUI(self):
+        """Set tab user interface.
+        """
 
         self.setLayout(QGridLayout())
         self.parent.tabWidget.addTab(self, "ETS summary")
@@ -56,8 +58,11 @@ class tabETSSummary(QWidget):
         # self.fig.suptitle('ETS plugin')
         self.grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
+        self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
 
     def plot(self):
+        """Main plot function.
+        """
 
         # Set list of colors for plots
         self.ion_colors = ['DarkBlue','Purple', 'RoyalBlue','Magenta',
@@ -73,25 +78,35 @@ class tabETSSummary(QWidget):
 
         self.cp = self.ids.core_profiles.profiles_1d[0]
 
-        # Plot te (electron temperature) / ti (ion temperature)
+        # Re-plot te/ti (electron/ion temperature)
         self.plot_te_ti()
+        # Re-plot ne/ni (electron/ion density)
+        self.plot_ne_ni()
 
         self.show()
 
     def plotUpdate(self, time_value):
+        """Clear and re-plot.
+        """
 
         cp = self.ids.core_profiles.profiles_1d[time_value]
 
-        # Clear all plots
-        self.ax1.cla()
-        # Re-plot te (electron temperature) / ti (ion temperature)
-        self.plot_te_ti()
+        # Re-plot te/ti (electron/ion temperature)
+        self.plot_te_ti(clear=True)
+        # Re-plot ne/ni (electron/ion density)
+        self.plot_ne_ni(clear=True)
 
         # Update the figure display
         self.canvas.draw()
         self.canvas.flush_events()
 
-    def plot_te_ti(self):
+    def plot_te_ti(self, clear=False):
+        """Plot electron temperature (te) and ion temperature (ti)
+        """
+
+        # Clear plot first if specified
+        if clear == True:
+            self.ax1.cla()
 
         try:
             rhotor = self.cp.grid.rho_tor_norm
@@ -113,9 +128,48 @@ class tabETSSummary(QWidget):
             raise ValueError( 'ERROR occurred when plotting temperatures. (%s) ' % err )
 
         self.ax1.set(xlabel= "rhotor [m]", ylabel='Temperature [keV]')
-        self.ax1.xaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax1.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        # self.ax1.set_yticks([])
+        self.ax1.xaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax1.yaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
         self.ax1.grid()
         leg = self.ax1.legend()
         leg.set_draggable(True)
+
+    def plot_ne_ni(self, clear=False):
+
+        # Clear plot first if specified
+        if clear == True:
+            self.ax2.cla()
+
+        try:
+            rhotor = self.cp.grid.rho_tor_norm
+            ne = self.cp.electrons.density
+            self.ax2.plot(rhotor, 1.0e-19*ne,
+                          label = "Ne",
+                          color='r',
+                          linewidth=1.5)
+            for i in range(len(self.cp.ion)):
+                ni = self.cp.ion[i].density
+                if self.cp.ion[i].multiple_states_flag == 0 :
+                    self.ax2.plot(rhotor,
+                                  1.0e-19*self.cp.ion[i].density,
+                                  label='Ni %d'%(i+1),
+                                  color=self.ion_colors[min(i,len(self.ion_colors)-1)],
+                                  linewidth=1.5)
+
+        except Exception as err:
+            raise ValueError( 'ERROR occurred when plotting temperatures. (%s) ' % err )
+
+        self.ax2.set(xlabel= "rhotor [m]", ylabel='Density [10^19 m-3]')
+        # self.ax2.set_yticks([])
+        self.ax2.xaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax2.yaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax2.grid()
+        leg = self.ax2.legend()
+        leg.set_draggable(True)
+
 
