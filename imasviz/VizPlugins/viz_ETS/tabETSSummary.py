@@ -21,6 +21,8 @@ from matplotlib.backends.backend_qt5agg import \
 from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 
+import pylab
+
 class tabETSSummary(QWidget):
 
     def __init__(self, parent=None):
@@ -61,6 +63,9 @@ class tabETSSummary(QWidget):
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax3 = self.fig.add_subplot(self.grid_subp[0, 2])
         self.ax3_2 = self.ax3.twinx()
+        self.ax4 = self.fig.add_subplot(self.grid_subp[1, 0])
+        self.ax5 = self.fig.add_subplot(self.grid_subp[1, 1])
+        self.ax6 = self.fig.add_subplot(self.grid_subp[1, 2])
 
     def plot(self):
         """Main plot function.
@@ -86,6 +91,8 @@ class tabETSSummary(QWidget):
         self.plot_ne_ni()
         # Plot j_total and q (total parallel current density and safety factor)
         self.plot_jtotal_q()
+        # Plot zeff profile.
+        self.plot_zeff()
 
         self.show()
 
@@ -93,26 +100,27 @@ class tabETSSummary(QWidget):
         """Clear and re-plot.
         """
 
-        cp = self.ids.core_profiles.profiles_1d[time_value]
+        self.cp = self.ids.core_profiles.profiles_1d[time_value]
 
         # Re-plot te/ti (electron/ion temperature)
-        self.plot_te_ti(clear=True)
+        self.plot_te_ti()
         # Re-plot ne/ni (electron/ion density)
-        self.plot_ne_ni(clear=True)
+        self.plot_ne_ni()
         # Plot j_total and q (total parallel current density and safety factor)
-        self.plot_jtotal_q(clear=True)
+        self.plot_jtotal_q()
+        # Plot zeff profile.
+        self.plot_zeff()
 
         # Update the figure display
         self.canvas.draw()
         self.canvas.flush_events()
 
-    def plot_te_ti(self, clear=False):
+    def plot_te_ti(self):
         """Plot electron temperature (te) and ion temperature (ti)
         """
 
-        # Clear plot first if specified
-        if clear == True:
-            self.ax1.cla()
+        # Clear plot first
+        self.ax1.cla()
 
         try:
             rhotor = self.cp.grid.rho_tor_norm
@@ -143,13 +151,12 @@ class tabETSSummary(QWidget):
         leg = self.ax1.legend()
         leg.set_draggable(True)
 
-    def plot_ne_ni(self, clear=False):
+    def plot_ne_ni(self):
         """Plot electron density (te) and ion density (ti)
         """
 
-        # Clear plot first if specified
-        if clear == True:
-            self.ax2.cla()
+        # Clear plot first
+        self.ax2.cla()
 
         try:
             rhotor = self.cp.grid.rho_tor_norm
@@ -180,14 +187,13 @@ class tabETSSummary(QWidget):
         leg = self.ax2.legend()
         leg.set_draggable(True)
 
-    def plot_jtotal_q(self, clear=False):
+    def plot_jtotal_q(self):
         """Plot total parallel current density (j_total) and safety factor (q).
         """
 
-        # Clear plot first if specified
-        if clear == True:
-            self.ax3.cla()
-            self.ax3_2.cla()
+        # Clear plot first
+        self.ax3.cla()
+        self.ax3_2.cla()
 
         try:
             rhotor = self.cp.grid.rho_tor_norm
@@ -214,7 +220,7 @@ class tabETSSummary(QWidget):
         leg = self.ax3_2.legend(pl, labs, loc=0)
         leg.set_draggable(True)
 
-        self.ax3.set(xlabel= "", ylabel='j_total [MA/m2]')
+        self.ax3.set(xlabel= "rhotor [m]", ylabel='j_total [MA/m2]')
         self.ax3_2.set(xlabel= "rhotor [m]", ylabel='q [MA/m2]')
         # self.ax3.set_yticks([])
         self.ax3.xaxis.set_minor_locator(
@@ -226,3 +232,35 @@ class tabETSSummary(QWidget):
         self.ax3.grid(color="Blue")
         self.ax3_2.grid(color="Red")
 
+
+    def plot_zeff(self):
+        """Plot zeff profile.
+        """
+
+        # Clear plot first
+        self.ax4.cla()
+
+        try:
+            rhotor = self.cp.grid.rho_tor_norm
+            zeff = self.cp.zeff
+            self.ax4.set_xlim(0, max(rhotor))
+            self.ax4.set_ylim(1, max(zeff)*1.05)
+            self.ax4.plot(rhotor, zeff,
+                          label = "zeff",
+                          color='b',
+                          linewidth=1.5)
+            self.ax4.tick_params(axis='y', colors='blue')
+
+        except Exception as err:
+            raise ValueError( 'ERROR occurred when plotting Zeff profile. (%s) ' % err )
+
+        self.ax4.set(xlabel= "rhotor [m]", ylabel='Zeff [-]')
+        # self.ax4.set_yticks([])
+        self.ax4.yaxis.set_major_formatter(pylab.NullFormatter())
+        self.ax4.xaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax4.yaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax4.grid()
+        leg = self.ax4.legend()
+        leg.set_draggable(True)
