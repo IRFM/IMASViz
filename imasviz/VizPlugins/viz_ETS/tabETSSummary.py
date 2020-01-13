@@ -60,6 +60,7 @@ class tabETSSummary(QWidget):
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax3 = self.fig.add_subplot(self.grid_subp[0, 2])
+        self.ax3_2 = self.ax3.twinx()
 
     def plot(self):
         """Main plot function.
@@ -186,6 +187,7 @@ class tabETSSummary(QWidget):
         # Clear plot first if specified
         if clear == True:
             self.ax3.cla()
+            self.ax3_2.cla()
 
         try:
             rhotor = self.cp.grid.rho_tor_norm
@@ -195,11 +197,12 @@ class tabETSSummary(QWidget):
                           label = "j_total",
                           color='b',
                           linewidth=1.5)
-            self.ax3_2 = self.ax3.twinx()
+            self.ax3.tick_params(axis='y', colors='blue')
             pl2 = self.ax3_2.plot(rhotor, abs(q),
                           label = "q",
                           color='r',
                           linewidth=1.5)
+            self.ax3_2.tick_params(axis='y', colors='red')
 
         except Exception as err:
             raise ValueError( 'ERROR occurred when plotting equilibrium related profiles. (%s) ' % err )
@@ -218,6 +221,8 @@ class tabETSSummary(QWidget):
             ticker.AutoMinorLocator(self._nminor_interval))
         self.ax3.yaxis.set_minor_locator(
             ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax3.grid()
-        self.ax3_2.grid()
+        self.ax3_2.yaxis.set_minor_locator(
+            ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax3.grid(color="Blue")
+        self.ax3_2.grid(color="Red")
 
