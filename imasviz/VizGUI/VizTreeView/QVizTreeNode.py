@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, QVizPreferences, GlobalColors
 from PyQt5.QtGui import QFont
@@ -69,60 +70,165 @@ class QVizTreeNode(QTreeWidgetItem):
     def embedded_in_time_dependent_aos(self):
         return self.time_dependent(self.parametrizedPath)
 
-    def asFunctionOfTime(self, plotWidget, strategy=None):
-        as_function_of_time = False
-        if strategy is None:
-            return self.hasTimeXaxis(plotWidget=plotWidget)
-        if strategy == "DEFAULT":
-            if self.is0DAndDynamic():
-                as_function_of_time = True
-            elif self.is1DAndDynamic():
-                as_function_of_time = False
-        elif strategy == "TIME":
-            if self.is0DAndDynamic():
-                as_function_of_time = True
-            elif self.is1DAndDynamic():
-                if self.embedded_in_time_dependent_aos():
-                    as_function_of_time = True
-                else:
-                    as_function_of_time = False
-        elif strategy == "COORDINATE1":
-            if self.is0DAndDynamic():
-                as_function_of_time = True
-            elif self.is1DAndDynamic():
-                as_function_of_time = False
-        return as_function_of_time
+    def hasTimeAxis(self):
+        if self.is0DAndDynamic():
+            return True
+        elif self.is1DAndDynamic():
+            if self.embedded_in_time_dependent_aos() or self.isCoordinateTimeDependent(coordinateNumber=1):
+                return True
+        return False
 
-    def hasTimeXaxis(self, plotWidget=None):
-        if plotWidget is not None:
-            if plotWidget.addTimeSlider:
-                return False
-            elif plotWidget.addCoordinateSlider:
-                return True
-            elif plotWidget is not None and len(plotWidget.vizTreeNodesList) == 0:
-                if self.is1DAndDynamic():
-                    return self.isCoordinateTimeDependent(coordinateNumber=1)
-                elif self.is0DAndDynamic():
-                    return True
-            elif plotWidget is not None and len(plotWidget.vizTreeNodesList) > 0:
-                firstNode = plotWidget.vizTreeNodesList[0]
-                if firstNode.is0DAndDynamic():
-                    return True
-                elif firstNode.is1DAndDynamic():
-                    return firstNode.isCoordinateTimeDependent(coordinateNumber=1)
+    def isPlotToPerformAlongTimeAxis(self, plotWidget, strategy=None):
+
+        if strategy is None:
+            if plotWidget is not None:
+                if plotWidget.isPlotAlongTimeAxis() is not None:
+                    return plotWidget.isPlotAlongTimeAxis()
                 else:
-                    raise ValueError('Unable to define a time axis')
-        else:
-            if self.is1DAndDynamic():
-                if self.embedded_in_time_dependent_aos():  # 1D Node in dynamic AOS has a time axis
-                    return True
-                else:
-                    return self.isCoordinateTimeDependent(coordinateNumber=1) # 1D node not embedded in dynamic AOS
-                                          #has a time axis only if coordinate1 depends on time
-            elif self.is0DAndDynamic():
-                return True
+                    if self.is0DAndDynamic():
+                        return True
+                    elif self.is1DAndDynamic():
+                        return False
             else:
-                raise ValueError('Unable to define a time axis')
+                if self.is0DAndDynamic():
+                    return True
+                elif self.is1DAndDynamic():
+                    return False
+
+        if strategy == "TIME":
+            if not self.hasTimeAxis():
+                logging.warn("Node " + self.getName() + " has no time axis. Plotting along coordinate1.")
+            if plotWidget is None:
+                return self.hasTimeAxis()
+            else:
+                if plotWidget.getType() == "STACKED_PLOT" or plotWidget.getType() == "SIMPLE_PLOT":
+                    if plotWidget.isPlotAlongTimeAxis():
+                        return self.hasTimeAxis()
+                    elif plotWidget.isPlotAlongTimeAxis() is None:
+                        return True
+                    else:
+                        return False
+                elif plotWidget.getType() == "TABLE_PLOT" or plotWidget.getType() == "PREVIEW_PLOT":
+                    return self.hasTimeAxis()
+
+        elif strategy == "COORDINATE1" or strategy == "DEFAULT":
+            if plotWidget is None:
+                return False
+            else:
+                if plotWidget.getType() == "STACKED_PLOT":
+                    if plotWidget.isPlotAlongTimeAxis():
+                        if not self.hasTimeAxis():
+                            logging.warn("Coordinate1 of node " + self.getName() + " is not time dependent.")
+                            return False
+                        else:
+                            return True
+
+                elif plotWidget.getType() == "TABLE_PLOT":
+                    if self.is0DAndDynamic():
+                        return True
+                    else:
+                        return False
+
+                elif plotWidget.getType() == "SIMPLE_PLOT":
+                    if plotWidget.isPlotAlongTimeAxis():
+                        return self.hasTimeAxis()
+                    else:
+                        return False
+
+                elif plotWidget.getType() == "PREVIEW_PLOT":
+                    if self.is0DAndDynamic():
+                        return True
+                    else:
+                        return False
+
+
+
+    # def asFunctionOfTime(self, plotWidget, strategy=None):
+    #     as_function_of_time = False
+    #     if strategy is None:
+    #         return self.canBePlottedAlongTimeAxis(plotWidget=plotWidget)
+    #     if strategy == "DEFAULT":
+    #         if self.is0DAndDynamic():
+    #             as_function_of_time = True
+    #         elif self.is1DAndDynamic():
+    #             as_function_of_time = self.isCurrentPlotAlongTimeAxis(plotWidget)
+    #     elif strategy == "TIME":
+    #         if self.is0DAndDynamic():
+    #             as_function_of_time = True
+    #         elif self.is1DAndDynamic():
+    #             as_function_of_time = self.isCurrentPlotAlongTimeAxis(plotWidget)
+    #     elif strategy == "COORDINATE1":
+    #         if self.is0DAndDynamic():
+    #             as_function_of_time = True
+    #         elif self.is1DAndDynamic():
+    #             as_function_of_time = self.isCurrentPlotAlongTimeAxis(plotWidget)
+    #     return as_function_of_time
+
+    # def asFunctionOfTime(self, plotWidget, strategy=None):
+    #     if strategy == "DEFAULT":
+    #         if self.is0DAndDynamic():
+    #             return self.canBePlottedAlongTimeAxis(plotWidget)
+    #     elif strategy == "TIME":
+    #         pass
+    #     elif strategy == "COORDINATE1":
+    #         pass
+
+    # def plotToPerformAlongTimeAxis(self, plotWidget, strategy=None):
+        #isPlotAlongTimeAxis = self.isPlotAlongTimeAxis(plotWidget)
+        # if strategy == "DEFAULT":
+        #     if self.is0DAndDynamic():
+        #         if self.canBePlottedAlongTimeAxis():
+        #             if isPlotAlongTimeAxis is not None:
+        #                 return isPlotAlongTimeAxis
+        #             else:
+        #                 return True
+        #     elif self.is1DAndDynamic():
+
+        #
+        # if strategy == "TIME":
+        #     if self.is0DAndDynamic():
+        #         return self.canBePlottedAlongTimeAxis(plotWidget)
+        #     elif self.is1DAndDynamic():
+        #         return self.canBePlottedAlongTimeAxis(plotWidget) #time axis is preferred if 1D data for this strategy
+        # elif strategy == "COORDINATE1" or strategy == 'DEFAULT':
+        #     if self.is0DAndDynamic():
+        #         return self.canBePlottedAlongTimeAxis(plotWidget)
+        #     elif self.is1DAndDynamic():
+        #         return False  # coordinate1 axis is preferred if 1D data for this strategy
+
+    # def canBePlottedAlongTimeAxis(self, plotWidget):
+    #
+    #     if plotWidget is not None:
+    #         if plotWidget.getType() == QVizGlobalValues.PlotTypes.SIMPLE_PLOT:
+
+
+        # if plotWidget is not None:
+        #     if plotWidget.addTimeSlider:
+        #         return False
+        #     elif plotWidget.addCoordinateSlider:
+        #         return True
+        #     # elif plotWidget is not None and len(plotWidget.vizTreeNodesList) == 0:
+            #     if self.is0DAndDynamic():
+            #         return True
+            #     elif self.is1DAndDynamic():
+            #         return self.isCoordinateTimeDependent(coordinateNumber=1)
+            # elif plotWidget is not None and len(plotWidget.vizTreeNodesList) > 0:
+            #     firstNode = plotWidget.vizTreeNodesList[0]
+            #     if firstNode.is0DAndDynamic():
+            #         return True
+            #     elif firstNode.is1DAndDynamic():
+            #         return firstNode.isCoordinateTimeDependent(coordinateNumber=1)
+            #     else:
+            #         raise ValueError('Unable to plot node ' + self.getName() + ' along time axis')
+        # else:
+        # if self.is0DAndDynamic():
+        #     return True
+        # elif self.is1DAndDynamic():
+        #     if self.embedded_in_time_dependent_aos():  # 1D Node in dynamic AOS has a time axis
+        #         return True
+        #     else:
+        #         return self.isCoordinateTimeDependent(coordinateNumber=1) # 1D node not embedded in dynamic AOS
+        #                               #has a time axis only if coordinate1 depends on time
 
 
     def index_name_of_itime(self):
@@ -547,9 +653,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
         if self.is0DAndDynamic():
             label = None
-            xlabel = 'time[s]'
+            xlabel = 'time'
             label = self.setLabelForFigure(dataTreeView.dataSource)
-            if self.asFunctionOfTime(plotWidget, strategy=strategy):
+            if self.isPlotToPerformAlongTimeAxis(plotWidget, strategy=strategy):
                 label = label.replace('itime', str(':'))
             else:
                 label = label.replace('itime', str(time_index))
@@ -564,26 +670,38 @@ class QVizTreeNode(QTreeWidgetItem):
                     self.coordinates[coordinateNumber - 1] == "1...N":
                 xlabel2 = "1..N"
             else:
-                if self.hasHomogeneousTime():
-                    xlabel = 'time'
-                else:
-                    xlabel = self.getIDSName() + "." + \
-                             self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
-                if self.asFunctionOfTime(plotWidget, strategy=strategy):
+                if self.isPlotToPerformAlongTimeAxis(plotWidget, strategy=strategy):
                     if self.embedded_in_time_dependent_aos():
+                        xlabel2 = 'time'
                         label = label.replace('itime', str(':')) + '[' + str(coordinate_index) + ']'
                     else:
+                        if self.hasHomogeneousTime():
+                            xlabel2 = 'time'
+                        else:
+                            xlabel2 = self.getIDSName() + "." + \
+                                     self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
                         label = label.replace('itime', str(':'))
                 else:
                     label = label.replace('itime', str(time_index))
-                    xlabel = xlabel.replace('itime', str(time_index))
+                    if self.isCoordinateTimeDependent(coordinateNumber=1):
+
+                        if self.hasHomogeneousTime():
+                            xlabel2 = 'time'
+                        else:
+                            xlabel2 = self.getIDSName() + "." + \
+                                      self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                    else:
+                        xlabel2 = self.getIDSName() + "." + \
+                                  self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
 
             label = QVizGlobalOperations.makeIMASPath(label)
 
             if xlabel is None:
                 xlabel = xlabel2
 
-            if xlabel=='time' or xlabel.endswith('.time'):
+        if xlabel == 'time' or xlabel.endswith('.time'):
                 xlabel = xlabel + '[s]'
+
+        xlabel = xlabel.replace('itime', str(time_index))
 
         return label, xlabel, ylabel, title

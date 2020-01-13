@@ -25,6 +25,7 @@ import sys, logging
 import traceback
 
 from PyQt5.QtWidgets import QWidget
+from netaddr import strategy
 
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
@@ -59,7 +60,8 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         self.xlabel = xlabel
 
     def get1DArrayData(self):
-        return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode, strategy="DEFAULT")
+        return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode,
+                                                        strategy="DEFAULT", plotWidget=self.getPlotWidget())
 
     def execute(self):
         try:
@@ -131,7 +133,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             # Set plot options
             label, xlabel, ylabel, title = \
                 self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,label=label,
-                                 xlabel=xlabel, title=title, plotWidget=self.plotWidget)
+                                 xlabel=xlabel, title=title, plotWidget=self.plotWidget, strategy='DEFAULT')
             # Get plottable data
             u = v[0]    # first (should be the only) array of physical
                         # quantity values

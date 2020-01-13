@@ -15,6 +15,12 @@ class Imas_Viz_Options:
     HIDE_EMPTY_SIGNALS = False
     HIDE_OBSOLESCENT_NODES = False
 
+class PlotTypes:
+    STACKED_PLOT = "STACKED_PLOT"
+    TABLE_PLOT = "TABLE_PLOT"
+    SIMPLE_PLOT = "SIMPLE_PLOT"
+    PREVIEW_PLOT = "PREVIEW_PLOT"
+
 class GlobalColors:
     """Global colors
     """
@@ -115,6 +121,7 @@ class QVizGlobalValues:
     JET = "JET"
     AUG = "AUG"
     MAST = "MAST"
+
 
     ExternalSources = (MAST, WEST, TCV, JET, AUG)
 

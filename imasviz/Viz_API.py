@@ -328,16 +328,16 @@ class Viz_API:
         QVizPlotSelectedSignals(dataTreeFrame.dataTreeView, figureKey=figureKey,
                                 update=update, all_DTV=all_DTV).execute(plotWidget)
 
-    def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame, all_DTV=False):
+    def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame, all_DTV=False, strategy='DEFAULT'):
         """
         Plots the current selected set of signals of this shot view on a new table plot
         :param dataTreeFrame: a QVizDataTreeViewFrame object
         :param all_DTV: if True, all current selected set of signals on all shot views are plotted
         """
-        QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(all_DTV)
+        QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(all_DTV, strategy=strategy)
 
     # Plot the set of signals selected by the user
-    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath, all_DTV=False):
+    def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath, all_DTV=False, strategy='DEFAULT'):
         """
         Selects a set of signals using the selection file and plots of this shot view on a new table plot
         :param dataTreeFrame: a QVizDataTreeViewFrame object
@@ -346,7 +346,8 @@ class Viz_API:
         """
         QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
             all_DTV=all_DTV,
-            configFile=configFilePath)
+            configFile=configFilePath,
+            strategy=strategy)
 
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0,
                             threadingEvent=None):
@@ -528,7 +529,7 @@ class Viz_API:
                            title=title,
                            label=label,
                            xlabel="time")
-            p.execute(plotWidget, figureKey=figureKey, update=0)
+            p.execute(plotWidget, figureKey=figureKey, update=0, strategy='TIME')
         except ValueError as e:
             logging.error(str(e))
 
@@ -539,12 +540,12 @@ class Viz_API:
         try:
             # Get currently selected QVizTreeNode (QTreeWidgetItem)
             treeNode = dataTreeView.selectedItem
-            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None) #None will force a new Figure
+            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None, addCoordinateSlider=True) #None will force a new Figure
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
                                xlabel="time")
-            p.execute(plotWidget, figureKey=figureKey, update=0)
+            p.execute(plotWidget, figureKey=figureKey, update=0, strategy='TIME')
         except ValueError as e:
             logging.error(str(e))
 
@@ -597,7 +598,8 @@ class Viz_API:
                            vizTreeNode=treeNode).execute(plotWidget=plotWidget,
                                                          figureKey=currentFigureKey,
                                                          update=update,
-                                                         dataset_to_update=dataset_to_update)
+                                                         dataset_to_update=dataset_to_update,
+                                                         strategy='TIME')
         except ValueError as e:
             logging.error(str(e))
 
@@ -631,7 +633,8 @@ class Viz_API:
                            vizTreeNode=treeNode).execute(plotWidget=plotWidget,
                                                          figureKey=currentFigureKey,
                                                          update=update,
-                                                         dataset_to_update=dataset_to_update)
+                                                         dataset_to_update=dataset_to_update,
+                                                         strategy='COORDINATE1')
         except ValueError as e:
             logging.error(str(e))
 

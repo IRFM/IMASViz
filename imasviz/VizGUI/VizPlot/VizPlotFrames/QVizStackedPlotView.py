@@ -21,7 +21,7 @@ from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, PlotTypes
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
@@ -29,7 +29,7 @@ from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 class QVizStackedPlotView(QWidget):
 
-    def __init__(self, parent: QMainWindow):
+    def __init__(self, parent: QMainWindow, strategy=None):
 
         super(QVizStackedPlotView, self).__init__(parent=parent)
 
@@ -49,7 +49,7 @@ class QVizStackedPlotView(QWidget):
         self.all_DTV = parent.getAllDTV()
 
         # Set graphicsWindow
-        self.graphicsWindow = StackedPlotWindow(self)
+        self.graphicsWindow = StackedPlotWindow(self, strategy=strategy)
         # Get a list of viewBoxes each plot has its own associated viewbox)
         self.viewBoxes = self.graphicsWindow.viewBoxList
         # Get a list of plots
@@ -142,7 +142,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
     """View containing the plots in a stacked layout.
     """
 
-    def __init__(self, parent: QWidget, ncols: int=1):
+    def __init__(self, parent: QWidget, ncols: int=1, strategy=None):
         """
         Arguments:
             parent : Parent of StackedPlotWindow (QVizStackedPlotView).
@@ -153,6 +153,8 @@ class StackedPlotWindow(pg.GraphicsWindow):
         self.parent = parent
         # Set number of columns (the default is 1)
         self.ncols = ncols
+
+        self.strategy = strategy
 
         # Get parent DTV
         # self.dataTreeView = parent.getDTV()
@@ -191,15 +193,22 @@ class StackedPlotWindow(pg.GraphicsWindow):
         self.centralWidget.cols = self.ncols
 
         # Set pg.GraphicsWindow (holding plots)
-        self.plot1DSelectedSignals(all_DTV=self.all_DTV)
+        self.plot1DSelectedSignals(all_DTV=self.all_DTV, strategy=strategy)
 
         # Enable antialiasing for prettier plots
         # pg.setConfigOptions(antialias=True)
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
         self.centralWidget.setSpacing(0)
+        self.plotAlongTimeAxis = None
 
-    def plot1DSelectedSignals(self, update: int=0, all_DTV: bool=True):
+    def getType(self):
+        return PlotTypes.STACKED_PLOT
+
+    def isPlotAlongTimeAxis(self):
+        return self.plotAlongTimeAxis
+
+    def plot1DSelectedSignals(self, update: int=0, all_DTV: bool=True, strategy='TIME'):
         """Plot the set of 1D signals, selected by the user, as a function of
            time to StackedPlotView.
 
@@ -231,6 +240,21 @@ class StackedPlotWindow(pg.GraphicsWindow):
             dtv_selectedSignals = dtv.selectedSignalsDict
             # Go through the list of selected signals for every DTV
             for signalKey in dtv_selectedSignals:
+                # Get node data
+                signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
+                if strategy == 'TIME' and not signalNode.hasTimeAxis():
+                    raise ValueError('Unable to plot node ' + signalNode.getName() + ' which does not depend on time.')
+
+        if strategy == 'TIME':
+            self.plotAlongTimeAxis = True
+        elif strategy == 'COORDINATE1':
+            self.plotAlongTimeAxis = False
+
+        for dtv in self.getDTVList():
+            # Get list of selected signals in DTV
+            dtv_selectedSignals = dtv.selectedSignalsDict
+            # Go through the list of selected signals for every DTV
+            for signalKey in dtv_selectedSignals:
 
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
@@ -243,12 +267,13 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values
-                s = self.imas_viz_api.GetSignal(dtv, signalNode, strategy="TIME")
+                s = self.imas_viz_api.GetSignal(dtv, signalNode, strategy=strategy)
 
                 # Get array of time values
                 t = QVizPlotSignal.getTime(s)
                 # Get array of y-axis values
                 v = QVizPlotSignal.get1DSignalValue(s)
+
                 # TODO (idea): create global getSignal(), getTime(),
                 # get1DSignalValue to be used by all plot frame routines
 
@@ -262,7 +287,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
                     signalNode.plotOptions(dataTreeView=dtv,
                                                title=self.figureKey,
                                                plotWidget=self,
-                                               strategy="TIME")
+                                               strategy=strategy)
 
                 # Add plot
                 for i in range(0, nbRows):

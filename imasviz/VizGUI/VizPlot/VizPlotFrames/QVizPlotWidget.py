@@ -19,7 +19,7 @@ from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame
 import PyQt5.QtWidgets as QtWidgets
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts, PlotTypes
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 
@@ -59,6 +59,19 @@ class QVizPlotWidget(QWidget):
 
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
+
+    def getType(self):
+        return PlotTypes.SIMPLE_PLOT
+
+    def isPlotAlongTimeAxis(self):
+        if len(self.vizTreeNodesList) == 0:
+            return None
+        elif self.addTimeSlider:
+            return False
+        elif self.addCoordinateSlider:
+            return True
+        else:
+            return None
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
@@ -240,7 +253,7 @@ class QVizPlotWidget(QWidget):
 
             # Add slider time or corrdiante1D and its corresponding widgets
             self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self, dataTreeView=self.dataTreeView)
-            self.sliderGroupDict = self.sliderGroup.execute()
+            self.sliderGroupDict = self.sliderGroup.setupSlider()
             self.separatorLine = self.sliderGroupDict['separatorLine']
             self.slider = self.sliderGroupDict['slider']
             self.sliderLabel = self.sliderGroupDict['sliderLabel']
@@ -308,6 +321,10 @@ class sliderGroup():
 
     def __init__(self, isTimeSlider, dataTreeView, parent=None):
         self.parent = parent
+        self.slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
+        self.slider.setMinimum(0)
+        self.slider.setMaximum(0)
+        self.slider.setValue(0)
         # Set slider press variable as false
         self.sliderPress = False
         self.isTimeSlider = isTimeSlider #otherwise it is a coordinate1D slider
@@ -316,7 +333,7 @@ class sliderGroup():
         self.dataTreeView = dataTreeView
 
 
-    def execute(self):
+    def setupSlider(self):
         """Set and return the group of widgets.
         """
 
@@ -333,7 +350,7 @@ class sliderGroup():
             self.indexLabel = self.setLabel(text='Index Value: ')
 
         # Set slider
-        self.slider = self.setSlider()
+        self.setSlider()
 
         self.sliderValueIndicator = self.setSliderValueIndicator()  # Set slider value indicator
 
@@ -357,6 +374,7 @@ class sliderGroup():
 
     def updateValues(self, indexValue):
         #print(indexValue)
+        self.setSlider()
         if self.isTimeSlider:
             self.sliderFieldLabel = self.setLabel(text='Time:')
             if self.active_treeNode.globalTime is None:
@@ -387,33 +405,35 @@ class sliderGroup():
         """Set slider.
         """
 
-        # Get QVizTreeNode (QTreeWidgetItem) selected in the DTV
         self.active_treeNode = self.dataTreeView.selectedItem
-        #self.currentIndex = self.active_treeNode.infoDict['i']
+
+        minValue = self.slider.minimum()
+        maxValue = self.slider.maximum()
 
         if self.isTimeSlider:
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
-            maxValue = int(self.active_treeNode.timeMaxValue()) - 1
+            newMaxValue = int(self.active_treeNode.timeMaxValue()) - 1
+            if newMaxValue < self.slider.maximum() or maxValue == 0:
+                maxValue = newMaxValue
         else:
             # Set index slider using time as index
             nodeData = self.active_treeNode.getData()
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
-            maxValue = self.active_treeNode.coordinateLength(
-                coordinateNumber=1, dataTreeView=self.dataTreeView) - 1
+            if self.active_treeNode.is1DAndDynamic():
+                newMaxValue = self.active_treeNode.coordinateLength(
+                    coordinateNumber=1, dataTreeView=self.dataTreeView) - 1
+                if newMaxValue < self.slider.maximum() or maxValue == 0:
+                    maxValue = newMaxValue
 
-        slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         # Set default value
-        slider.setMinimum(minValue)
-        slider.setMaximum(maxValue)
-        #slider.setValue(int(self.currentIndex))
-        slider.setValue(0)
+        self.slider.setMinimum(minValue)
+        self.slider.setMaximum(maxValue)
 
-        return slider
 
     def setSeparatorLine(self):
         """Set separator line.

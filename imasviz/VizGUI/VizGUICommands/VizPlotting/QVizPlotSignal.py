@@ -55,10 +55,10 @@ class QVizPlotSignal(QVizAbstractCommand):
         self.xlabel = xlabel
         self.plotFrame = None
 
-    def execute(self, plotWidget, figureKey=0, update=0, dataset_to_update=0):
+    def execute(self, plotWidget, figureKey=0, update=0, dataset_to_update=0, strategy=None):
         try:
             api = self.dataTreeView.imas_viz_api
-            self.signal = api.GetSignal(self.dataTreeView, self.treeNode, plotWidget=plotWidget)
+            self.signal = api.GetSignal(self.dataTreeView, self.treeNode, plotWidget=plotWidget, strategy=strategy)
 
             if len(self.signal) == 2:
 
@@ -76,7 +76,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
                 self.__plot1DSignal(self.dataTreeView.shotNumber, t, v, plotWidget,
                                     figureKey, self.title, self.label,
-                                    self.xlabel, update, dataset_to_update)
+                                    self.xlabel, update, dataset_to_update, strategy)
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
@@ -95,7 +95,7 @@ class QVizPlotSignal(QVizAbstractCommand):
 
 
     def __plot1DSignal(self, shotNumber, t, v, plotWidget, figureKey=0, title='', label=None,
-                       xlabel=None, update=0, dataset_to_update=0):
+                       xlabel=None, update=0, dataset_to_update=0, strategy=None):
         """Plot a 1D signal as a function of time.
 
         Arguments:
@@ -132,12 +132,13 @@ class QVizPlotSignal(QVizAbstractCommand):
 
             # Set plot options
             time_index = 0
+            coordinate_index = 0
             if plotWidget.addTimeSlider:
                 time_index = plotWidget.sliderGroup.slider.value()
-
-            coordinate_index = 0
-            if plotWidget.addCoordinateSlider:
+                plotWidget.sliderGroup.setSlider()
+            elif plotWidget.addCoordinateSlider:
                 coordinate_index = plotWidget.sliderGroup.slider.value()
+                plotWidget.sliderGroup.setSlider()
 
             label, xlabel, ylabel, title = \
                 self.treeNode.plotOptions(self.dataTreeView,
@@ -145,7 +146,8 @@ class QVizPlotSignal(QVizAbstractCommand):
                                  xlabel=xlabel, title=figureKey,
                                           time_index=time_index,
                                           coordinate_index=coordinate_index,
-                                          plotWidget=plotWidget)
+                                          plotWidget=plotWidget,
+                                          strategy=strategy)
 
             if update == 1:
 
