@@ -166,14 +166,25 @@ class ETSplugin(QMainWindow):
             self.ids = None
             print("Error when trying to get() the IDS. Data for given IDS " \
                   "parameters either doesn't exist or is corrupted.")
+        # Read data from the required IDSs (get() routine)
         self.getCoreProfiles()
+        self.getCoreTransport()
+        self.getCoreSources()
 
-    def getCoreProfiles(self):
+    def getCoreProfiles(self, ):
         if self.ids != None:
             self.ids.core_profiles.get()
             # Second method of opening slice
             # ts = 2.0
             # self.ids.core_profiles.getSlice(ts, imas.imasdef.CLOSEST_SAMPLE)
+
+    def getCoreTransport(self):
+        if self.ids != None:
+            self.ids.core_transport.get()
+
+    def getCoreSources(self):
+        if self.ids != None:
+            self.ids.core_sources.get()
 
     def checkIDS(self):
         if self.ids == None:

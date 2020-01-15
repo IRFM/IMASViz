@@ -66,6 +66,7 @@ class tabETSSummary(QWidget):
         self.ax4 = self.fig.add_subplot(self.grid_subp[1, 0])
         self.ax5 = self.fig.add_subplot(self.grid_subp[1, 1])
         self.ax6 = self.fig.add_subplot(self.grid_subp[1, 2])
+        self.ax6_2 = self.ax6.twinx()
 
     def plot(self):
         """Main plot function.
@@ -83,7 +84,12 @@ class tabETSSummary(QWidget):
         nslices = len(self.ids.core_profiles.profiles_1d)
         self.nslices2plot = 1
 
-        self.cp = self.ids.core_profiles.profiles_1d[0]
+        # Core profiles
+        self.cp_1d = self.ids.core_profiles.profiles_1d[0]
+        # Core transport
+        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[0]
+        # Core Sources
+        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[0]
 
         # Re-plot te/ti (electron/ion temperature)
         self.plot_te_ti()
@@ -93,6 +99,10 @@ class tabETSSummary(QWidget):
         self.plot_jtotal_q()
         # Plot zeff profile.
         self.plot_zeff()
+        # Plot transport coefficients
+        self.plot_transport_coeff()
+        # Plot sources
+        self.plot_sources()
 
         self.show()
 
@@ -100,7 +110,9 @@ class tabETSSummary(QWidget):
         """Clear and re-plot.
         """
 
-        self.cp = self.ids.core_profiles.profiles_1d[time_value]
+        self.cp_1d = self.ids.core_profiles.profiles_1d[time_value]
+        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[time_value]
+        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[time_value]
 
         # Re-plot te/ti (electron/ion temperature)
         self.plot_te_ti()
@@ -110,6 +122,10 @@ class tabETSSummary(QWidget):
         self.plot_jtotal_q()
         # Plot zeff profile.
         self.plot_zeff()
+        # Plot transport coefficients
+        self.plot_transport_coeff()
+        # Plot sources
+        self.plot_sources()
 
         # Update the figure display
         self.canvas.draw()
@@ -123,17 +139,17 @@ class tabETSSummary(QWidget):
         self.ax1.cla()
 
         try:
-            rhotor = self.cp.grid.rho_tor_norm
-            te = self.cp.electrons.temperature
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            te = self.cp_1d.electrons.temperature
             self.ax1.plot(rhotor, 1.0e-3*te,
                           label = "Te",
                           color='r',
                           linewidth=1.5)
-            for i in range(len(self.cp.ion)):
-                ti = self.cp.ion[i].temperature
-                if self.cp.ion[i].multiple_states_flag == 0 :
+            for i in range(len(self.cp_1d.ion)):
+                ti = self.cp_1d.ion[i].temperature
+                if self.cp_1d.ion[i].multiple_states_flag == 0 :
                     self.ax1.plot(rhotor,
-                                  1.0e-3*self.cp.ion[i].temperature,
+                                  1.0e-3*self.cp_1d.ion[i].temperature,
                                   label='Ti %d'%(i+1),
                                   color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                                   linewidth=1.5)
@@ -159,17 +175,17 @@ class tabETSSummary(QWidget):
         self.ax2.cla()
 
         try:
-            rhotor = self.cp.grid.rho_tor_norm
-            ne = self.cp.electrons.density
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            ne = self.cp_1d.electrons.density
             self.ax2.plot(rhotor, 1.0e-19*ne,
                           label = "Ne",
                           color='r',
                           linewidth=1.5)
-            for i in range(len(self.cp.ion)):
-                ni = self.cp.ion[i].density
-                if self.cp.ion[i].multiple_states_flag == 0 :
+            for i in range(len(self.cp_1d.ion)):
+                ni = self.cp_1d.ion[i].density
+                if self.cp_1d.ion[i].multiple_states_flag == 0 :
                     self.ax2.plot(rhotor,
-                                  1.0e-19*self.cp.ion[i].density,
+                                  1.0e-19*self.cp_1d.ion[i].density,
                                   label='Ni %d'%(i+1),
                                   color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                                   linewidth=1.5)
@@ -196,9 +212,9 @@ class tabETSSummary(QWidget):
         self.ax3_2.cla()
 
         try:
-            rhotor = self.cp.grid.rho_tor_norm
-            q = self.cp.q
-            j_total = self.cp.j_total
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            q = self.cp_1d.q
+            j_total = self.cp_1d.j_total
             pl1 = self.ax3.plot(rhotor, 1.0e-6*abs(j_total),
                           label = "j_total",
                           color='b',
@@ -232,7 +248,6 @@ class tabETSSummary(QWidget):
         self.ax3.grid(color="Blue")
         self.ax3_2.grid(color="Red")
 
-
     def plot_zeff(self):
         """Plot zeff profile.
         """
@@ -241,8 +256,8 @@ class tabETSSummary(QWidget):
         self.ax4.cla()
 
         try:
-            rhotor = self.cp.grid.rho_tor_norm
-            zeff = self.cp.zeff
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            zeff = self.cp_1d.zeff
             self.ax4.set_xlim(0, max(rhotor))
             self.ax4.set_ylim(1, max(zeff)*1.05)
             self.ax4.plot(rhotor, zeff,
@@ -264,3 +279,98 @@ class tabETSSummary(QWidget):
         self.ax4.grid()
         leg = self.ax4.legend()
         leg.set_draggable(True)
+
+    def plot_transport_coeff(self):
+        """Plot Transport Coefficients.
+        """
+
+        # Clear plot
+        self.ax5.cla()
+
+        try:
+            # rhotor = self.cp_1d.grid.rho_tor_norm
+            rhotor = self.ct_1d.grid_d.rho_tor_norm
+            diff_te = self.ct_1d.electrons.energy.d
+            # diff_ti = self.ct_1d.total_ion_energy.d
+            self.ax5.set_xlim(0, max(rhotor))
+            self.ax5.plot(rhotor, diff_te,color='r', linewidth=1.5)
+
+            for i in range(len(self.ct_1d.ion)):
+                diff_ti = self.ct_1d.ion[i].energy.d
+                diff_ni = self.ct_1d.ion[i].particles.d
+
+                self.ax5.plot(rhotor, diff_ti,
+                                color=self.ion_colors[min(i,len(self.ion_colors)-1)],
+                                linewidth=1.5)
+                self.ax5.plot(rhotor, diff_ni,
+                                color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
+                                linewidth=1.5)
+
+        except Exception as err:
+            raise ValueError( 'ERROR occurred when plotting Transport coefficients. (%s) ' % err )
+
+        self.ax5.set_ylabel('diff [m^2/s]')
+        self.ax5.set_xlabel('rhotor [m]')
+        #self.ax5.xaxis.set_major_formatter(pylab.NullFormatter())
+        self.ax5.yaxis.set_major_formatter(pylab.NullFormatter())
+        self.ax5.set_yticks([])
+        self.ax5.grid()
+        self.ax5.xaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax5.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        #self.ax5.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        leg = self.ax5.legend()
+        leg.set_draggable(True)
+
+    def plot_sources(self):
+        """Plot Sources.
+        """
+
+        # Clear plot
+        self.ax6.cla()
+
+        try:
+            rhotor = self.cs_1d.grid.rho_tor_norm
+            sour_te = self.cs_1d.electrons.energy
+            sour_ti_tot = self.cs_1d.total_ion_energy
+            sour_ni0 = self.cs_1d.ion[0].particles
+
+            self.ax6_2.set_ylim(-1,1)
+
+            self.ax6.set_xlim(0, max(rhotor))
+            norm = abs(max(1,max(sour_te),max(sour_ti_tot),-min(sour_te),-min(sour_ti_tot)))
+            pl1 = self.ax6.plot(rhotor, sour_te/norm, color='r', linewidth=1.5)
+            norm1 = abs(max(1,max(sour_ni0),-min(sour_ni0)))
+
+            for i in range(len(self.ct_1d.ion)):
+                sour_ti = self.cs_1d.ion[i].energy
+                sour_ni = self.cs_1d.ion[i].particles
+
+                norm = abs(max(norm,max(sour_ti),-min(sour_ti)))
+                norm1 = abs(max(norm1,max(sour_ni),-min(sour_ni)))
+
+                pl1 = self.ax6.plot(rhotor, sour_ti/norm,
+                                color=self.ion_colors[min(i,len(self.ion_colors)-1)],
+                                linewidth=1.5)
+                pl2 = self.ax6.plot(rhotor, sour_ni/norm1,
+                                color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
+                                linewidth=1.5)
+
+        except Exception as err:
+            raise ValueError( 'ERROR occurred when plotting source related profiles. (%s) ' % err )
+
+        self.ax6_2.axhline(y=0, linewidth=0.3)
+
+        self.ax6.set_ylabel('q [kW.m-3]')
+        self.ax6.set_xlabel('rhotor [m]')
+        self.ax6_2.set_ylabel(" s [m-3 s-1]")
+        self.ax6.grid()
+        self.ax6.xaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax6.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        self.ax6_2.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
+        # Combine legend of the both plots into a single legend box
+        pl = pl1 + pl2
+        labs = [l.get_label() for l in pl]
+        leg = self.ax6_2.legend(pl, labs, loc=0)
+        leg.set_draggable(True)
+
+
