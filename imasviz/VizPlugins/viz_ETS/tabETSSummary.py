@@ -84,12 +84,15 @@ class tabETSSummary(QWidget):
         nslices = len(self.ids.core_profiles.profiles_1d)
         self.nslices2plot = 1
 
+        # Set initial time slice
+        self.it = 0
+
         # Core profiles
-        self.cp_1d = self.ids.core_profiles.profiles_1d[0]
+        self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
         # Core transport
-        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[0]
+        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
         # Core Sources
-        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[0]
+        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
 
         # Re-plot te/ti (electron/ion temperature)
         self.plot_te_ti()
@@ -103,6 +106,9 @@ class tabETSSummary(QWidget):
         self.plot_transport_coeff()
         # Plot sources
         self.plot_sources()
+
+        # Add text beside plots
+        self.add_text()
 
         self.show()
 
@@ -110,9 +116,12 @@ class tabETSSummary(QWidget):
         """Clear and re-plot.
         """
 
-        self.cp_1d = self.ids.core_profiles.profiles_1d[time_value]
-        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[time_value]
-        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[time_value]
+        # Update time value
+        self.it = time_value
+
+        self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
+        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
+        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
 
         # Re-plot te/ti (electron/ion temperature)
         self.plot_te_ti()
@@ -126,6 +135,9 @@ class tabETSSummary(QWidget):
         self.plot_transport_coeff()
         # Plot sources
         self.plot_sources()
+
+        # Add text beside plots
+        self.add_text()
 
         # Update the figure display
         self.canvas.draw()
@@ -300,9 +312,11 @@ class tabETSSummary(QWidget):
                 diff_ni = self.ct_1d.ion[i].particles.d
 
                 self.ax5.plot(rhotor, diff_ti,
+                                label = "diff_ti",
                                 color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                                 linewidth=1.5)
                 self.ax5.plot(rhotor, diff_ni,
+                                label = "diff_ni",
                                 color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
                                 linewidth=1.5)
 
@@ -349,9 +363,11 @@ class tabETSSummary(QWidget):
                 norm1 = abs(max(norm1,max(sour_ni),-min(sour_ni)))
 
                 pl1 = self.ax6.plot(rhotor, sour_ti/norm,
+                                label = "sour_ti/norm",
                                 color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                                 linewidth=1.5)
                 pl2 = self.ax6.plot(rhotor, sour_ni/norm1,
+                                label = "sour_ni/norm",
                                 color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
                                 linewidth=1.5)
 
@@ -373,4 +389,54 @@ class tabETSSummary(QWidget):
         leg = self.ax6_2.legend(pl, labs, loc=0)
         leg.set_draggable(True)
 
+    def add_text(self):
+
+        xtext  = 0.80
+        xtext1 = 0.82
+        xtext2 = 0.83
+        ytext  = 0.87
+        ystep  = 0.03
+
+        # Clear plot text to avoid text stacking one over the previous one
+        for t in self.fig.texts:
+            t.set_text("")
+
+        try:
+            # Get vacuum toroidal field at R0 (R0 = major radius)
+            b0 = self.ids.core_profiles.vacuum_toroidal_field.b0[self.it]
+            # Get total toroidal plasma current
+            ip = self.ids.core_profiles.global_quantities.ip[self.it]
+
+            # Note: In ETSviz the total toroidal plasma current gets read from
+            #       the Equilibrium IDS. Possible IDS equivalent path:
+            # ip = self.equilibrium.time_slice[self.it].global_quantities.ip
+
+            self.fig.text(xtext,ytext,'Main discharge parameters: %f' % float(b0),
+                        color='black',fontsize=11, weight='bold')
+            ytext = ytext - ystep
+            self.fig.text(xtext1,ytext,'BT =  %6.4f [T]' % float(b0),
+                        color='black',fontsize=10, weight='bold')
+            ytext = ytext - ystep
+            self.fig.text(xtext1,ytext,'IP =  %6.4f [MA]' % float(ip/1.e6),
+                        color='black',fontsize=10, weight='bold')
+            ytext = ytext - ystep*2.0
+        except Exception as err:
+            print('ERROR: in Main discharge parameters  (%s)' % err)
+
+        try:
+            # TODO: compositions
+
+            ytext   = ytext - ystep
+            self.fig.text(xtext1,ytext,"electrons", color='r',fontsize=10,
+                            weight='bold')
+            ytext   = ytext - ystep*2.0
+            self.fig.text(xtext,ytext,"particle transport coefficients",
+                            color='g',fontsize=10, weight='bold')
+            ytext   = ytext - ystep*0.75
+            self.fig.text(xtext,ytext,"and sources", color='g',fontsize=10,
+                            weight='bold')
+        except Exception as err:
+            self.printlog( 'ERROR: in Main discharge parameters ions (%s)' % err)
+
+        self.fig.subplots_adjust(left=0.05, right=0.75, bottom=0.1, top=0.9)
 
