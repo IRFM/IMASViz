@@ -115,6 +115,16 @@ class ETSplugin(QMainWindow):
         self.mainWidget.layout().addWidget(self.spinBox_time, 0, 2, 1, 1)
         self.setCentralWidget(self.mainWidget)
 
+        # Resize window
+        height = app.desktop().availableGeometry().height()*0.7
+        width = app.desktop().availableGeometry().width()*0.95
+        self.resize(int(width), int(height))
+
+        # Move window to the center of the screen
+        Ycenter = (app.desktop().availableGeometry().height() - height)*0.5
+        Xcenter = (app.desktop().availableGeometry().width() - width)*0.5
+        self.move(int(Xcenter), int(Ycenter))
+
     def setTimeSlider(self):
         # Set time slider
         slider_time = QSlider(Qt.Horizontal, self)
@@ -160,8 +170,10 @@ class ETSplugin(QMainWindow):
 
     def setIDS(self):
         try:
-            self.ids = imas.ids(self.IDS_parameters["shot"],self.IDS_parameters["run"])
-            self.ids.open_env(self.IDS_parameters["user"], self.IDS_parameters["device"], '3')
+            self.ids = imas.ids(self.IDS_parameters["shot"],
+                                self.IDS_parameters["run"])
+            self.ids.open_env(self.IDS_parameters["user"],
+                              self.IDS_parameters["device"], '3')
         except:
             self.ids = None
             print("Error when trying to get() the IDS. Data for given IDS " \

@@ -390,6 +390,8 @@ class tabETSSummary(QWidget):
         leg.set_draggable(True)
 
     def add_text(self):
+        """Display Main discharge parameters.
+        """
 
         xtext  = 0.80
         xtext1 = 0.82
