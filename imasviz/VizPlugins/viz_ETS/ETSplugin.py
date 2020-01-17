@@ -25,7 +25,7 @@ from matplotlib.backends.backend_qt5agg import \
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
     QGridLayout, QSlider, QLabel, QSpinBox)
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 
 # IMASViz application imports
 from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
@@ -85,6 +85,13 @@ class ETSplugin(QMainWindow):
         # self.log.setLevel(logging.INFO)
         self.log.addHandler(logging.StreamHandler())
 
+        # Get app
+        self.app = QApplication.instance()
+        if self.app is None:
+            # if it does not exist then a QApplication is created
+            self.app = QApplication([])
+
+
         self.setWindowTitle("European Transport Simulator (IMASViz plugin sample, work in progress)")
         self.ids = ids
         self.IDS_parameters = IDS_parameters
@@ -124,15 +131,21 @@ class ETSplugin(QMainWindow):
         self.mainWidget.layout().addWidget(self.spinBox_time, 0, 2, 1, 1)
         self.setCentralWidget(self.mainWidget)
 
-        # Resize window
-        height = app.desktop().availableGeometry().height()*0.7
-        width = app.desktop().availableGeometry().width()*0.95
-        self.resize(int(width), int(height))
+        # Set initial window size
+        self.height = self.app.desktop().availableGeometry().height()*0.7
+        self.width = self.app.desktop().availableGeometry().width()*0.95
 
         # Move window to the center of the screen
-        Ycenter = (app.desktop().availableGeometry().height() - height)*0.5
-        Xcenter = (app.desktop().availableGeometry().width() - width)*0.5
+        Ycenter = (self.app.desktop().availableGeometry().height() - self.height)*0.5
+        Xcenter = (self.app.desktop().availableGeometry().width() - self.width)*0.5
         self.move(int(Xcenter), int(Ycenter))
+
+    def sizeHint(self):
+        """Set initial window size.
+        Note: Qt calls this routine automatically by default when creating this
+              window/widget.
+        """
+        return QSize(self.width,self.height)
 
     def setTimeSlider(self):
         # Set time slider

@@ -42,6 +42,12 @@ class ETSpluginIMASViz(VizPlugin):
         if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_profiles', occurrence):
             logging.info('Loading core_profiles IDS...')
             vizAPI.LoadIDSData(self.dataTreeView, 'core_profiles', occurrence)
+        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_sources', occurrence):
+            logging.info('Loading core_sources IDS...')
+            vizAPI.LoadIDSData(self.dataTreeView, 'core_sources', occurrence)
+        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_transport', occurrence):
+            logging.info('Loading core_transport IDS...')
+            vizAPI.LoadIDSData(self.dataTreeView, 'core_transport', occurrence)
 
         # Get IDS
         self.ids = dataSource.getImasEntry(occurrence)
@@ -56,11 +62,11 @@ class ETSpluginIMASViz(VizPlugin):
 
             subwindow = QMdiSubWindow()
             subwindow.setWidget(self.ets)
-            subwindow.resize(400,400)
             self.dataTreeView.window().getMDI().addSubWindow(self.ets)
 
         try:
             self.ets.tabCoreProfiles.plot()
+            self.ets.tabETSSummary.plot()
             self.ets.show()
         except :
             traceback.print_exc()
