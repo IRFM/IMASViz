@@ -78,6 +78,13 @@ class ETSplugin(QMainWindow):
             ids            (obj)        : IDS object
         """
         super(QMainWindow, self).__init__()
+
+        # Set log parser
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(logging.DEBUG)
+        # self.log.setLevel(logging.INFO)
+        self.log.addHandler(logging.StreamHandler())
+
         self.setWindowTitle("European Transport Simulator (IMASViz plugin sample, work in progress)")
         self.ids = ids
         self.IDS_parameters = IDS_parameters
@@ -88,6 +95,8 @@ class ETSplugin(QMainWindow):
 
         # Set user interface of the main window
         self.setUI()
+    def getLogger(self):
+        return self.log
 
     def setUI(self):
         """Set user interface of the main window

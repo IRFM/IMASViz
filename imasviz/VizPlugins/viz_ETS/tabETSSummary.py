@@ -23,6 +23,16 @@ from matplotlib.backends.backend_qt5agg import \
 
 import pylab
 
+def element(zn, am):
+    import re
+    import numpy as np
+    elStr = ("HHeLiBeBCNOFNeNaMgAlSiPSClArKCaScTiVCrMnFeCoNiCuZnGaGeAsSeBrKrRb"
+             "SrYZrNbMoTcRuRhPdAgCdInSnSbTeIXeCsBaLaCePrNdPmSmEuGdTbDyHoErTmYb"
+             "LuHfTaWReOsIrPtAuHgTlPbBiPoAtRnFrRaAcThPaUNpPuAmCmBkCfEsFmMdNoLr"
+             "RfDbSgBhHsMtDsRgCnNhFlMcLvTsOg")
+    elements = np.array(re .compile ("[A-Z][a-z]*").findall(elStr))
+    return '%i-%s' % (int(am), elements[int(zn)-1])
+
 class tabETSSummary(QWidget):
 
     def __init__(self, parent=None):
@@ -36,6 +46,9 @@ class tabETSSummary(QWidget):
 
         # Set tab user interface
         self.setTabUI()
+
+        # Get log parser
+        self.log = self.parent.getLogger()
 
     def setTabUI(self):
         """Set tab user interface.
@@ -108,7 +121,7 @@ class tabETSSummary(QWidget):
         self.plot_sources()
 
         # Add text beside plots
-        self.add_text()
+        self.main_discharge_parameters()
 
         self.show()
 
@@ -137,7 +150,7 @@ class tabETSSummary(QWidget):
         self.plot_sources()
 
         # Add text beside plots
-        self.add_text()
+        self.main_discharge_parameters()
 
         # Update the figure display
         self.canvas.draw()
@@ -167,7 +180,7 @@ class tabETSSummary(QWidget):
                                   linewidth=1.5)
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting temperatures. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting temperatures. (%s) ' % err )
 
         self.ax1.set(xlabel= "rhotor [m]", ylabel='Temperature [keV]')
         # self.ax1.set_yticks([])
@@ -203,7 +216,7 @@ class tabETSSummary(QWidget):
                                   linewidth=1.5)
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting densities. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting densities. (%s) ' % err )
 
         self.ax2.set(xlabel= "rhotor [m]", ylabel='Density [10^19 m-3]')
         # self.ax2.set_yticks([])
@@ -239,7 +252,7 @@ class tabETSSummary(QWidget):
             self.ax3_2.tick_params(axis='y', colors='red')
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting equilibrium related profiles. (%s) ' % err )
+            self.log.error('ERROR occurred when plotting equilibrium related profiles. (%s) ' % err )
 
 
         # Combine legend of the both plots into a single legend box
@@ -279,7 +292,7 @@ class tabETSSummary(QWidget):
             self.ax4.tick_params(axis='y', colors='blue')
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting Zeff profile. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting Zeff profile. (%s) ' % err )
 
         self.ax4.set(xlabel= "rhotor [m]", ylabel='Zeff [-]')
         # self.ax4.set_yticks([])
@@ -321,7 +334,7 @@ class tabETSSummary(QWidget):
                                 linewidth=1.5)
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting Transport coefficients. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting Transport coefficients. (%s) ' % err )
 
         self.ax5.set_ylabel('diff [m^2/s]')
         self.ax5.set_xlabel('rhotor [m]')
@@ -372,7 +385,7 @@ class tabETSSummary(QWidget):
                                 linewidth=1.5)
 
         except Exception as err:
-            raise ValueError( 'ERROR occurred when plotting source related profiles. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting source related profiles. (%s) ' % err )
 
         self.ax6_2.axhline(y=0, linewidth=0.3)
 
@@ -389,9 +402,11 @@ class tabETSSummary(QWidget):
         leg = self.ax6_2.legend(pl, labs, loc=0)
         leg.set_draggable(True)
 
-    def add_text(self):
+    def main_discharge_parameters(self):
         """Display Main discharge parameters.
         """
+
+        self.log.debug(f"DEBUG: executing main_discharge_parameters()")
 
         xtext  = 0.80
         xtext1 = 0.82
@@ -423,10 +438,58 @@ class tabETSSummary(QWidget):
                         color='black',fontsize=10, weight='bold')
             ytext = ytext - ystep*2.0
         except Exception as err:
-            print('ERROR: in Main discharge parameters  (%s)' % err)
+            self.log.error('ERROR: in Main discharge parameters  (%s)' % err)
 
         try:
-            # TODO: compositions
+            cp_1d = self.ids.core_profiles.profiles_1d[self.it]
+            # Number of ions
+            NION = len(cp_1d.ion)
+
+            for iion in range(NION):
+
+                self.log.debug(f"DEBUG: len(core_profiles[{self.it}].ion[{iion}].element): "
+                    f"{len(cp_1d.ion[iion].element)}")
+                # Atomic mass number
+                amn = cp_1d.ion[iion].element[0].a
+                # Nuclear charge
+                zn = cp_1d.ion[iion].element[0].z_n
+
+                ytext = ytext-ystep
+                self.fig.text(xtext1,ytext,"Ion_%d:" % int(iion+1),
+                            color=self.ion_colors[min(iion,len(self.ion_colors)-1)],
+                            fontsize=11, weight='bold')
+                ytext   = ytext - ystep * 0.8
+                # fig.text(xtext2,ytext,"amn = %d" % int(amn), color='black',
+                #             fontsize=10, weight='bold')
+                # ytext   = ytext - ystep * 0.8
+                # fig.text(xtext2,ytext,"zn    = %d" % int(zn),color='black',
+                            # fontsize=10, weight='bold')
+                self.fig.text(xtext2, ytext, element(zn, amn), color='black',
+                            fontsize=10, weight='bold')
+
+            # Number of impurities
+            # TODO
+            # NIMP = ? # unknown where in IDSs this data resides
+            # for iimp in range(NIMP):
+
+            #     self.log.debug(f"DEBUG: len(core_profiles[{self.it}].ion[{iion}].element): "
+            #         f"{len(cp_1d.ion[iion].element)}")
+            #     nucind  = ? - 1 # unknown where in IDSs this data resides
+            #     # Atomic mass number
+            #     amn = cp_1d.ion[iion].element[0].a
+            #     # Nuclear charge
+            #     zn = cp_1d.ion[iion].element[0].z_n
+            #     ytext   = ytext -ystep
+            #     self.fig.text(xtext1,ytext,"Impurity_%d:" % int(iimp+1),
+            #                     color='black',fontsize=11, weight='bold')
+            #     ytext   = ytext - ystep * 0.8
+            #     # self.fig.text(xtext2,ytext,"amn = %d" % int(amn), color='black',
+            #     #                 fontsize=10, weight='bold')
+            #     # ytext   = ytext - ystep * 0.8
+            #     # self.fig.text(xtext2,ytext,"zn    = %d" % int(zn),color='black',
+            #     #                 fontsize=10, weight='bold')
+            #     self.fig.text(xtext2, ytext, element(zn, amn), color='black',
+            #                     fontsize=10, weight='bold')
 
             ytext   = ytext - ystep
             self.fig.text(xtext1,ytext,"electrons", color='r',fontsize=10,
@@ -438,7 +501,8 @@ class tabETSSummary(QWidget):
             self.fig.text(xtext,ytext,"and sources", color='g',fontsize=10,
                             weight='bold')
         except Exception as err:
-            self.printlog( 'ERROR: in Main discharge parameters ions (%s)' % err)
+            self.log.error('ERROR: in Main discharge parameters ions (%s)' % err,
+                exc_info=True)
 
         self.fig.subplots_adjust(left=0.05, right=0.75, bottom=0.1, top=0.9)
 
