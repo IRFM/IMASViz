@@ -44,11 +44,13 @@ class tabETSSummary(QWidget):
             self.parent.setIDS()
         self.ids  = self.parent.ids
 
-        # Set tab user interface
-        self.setTabUI()
-
         # Get log parser
         self.log = self.parent.getLogger()
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | __init__() | START.")
+
+        # Set tab user interface
+        self.setTabUI()
 
         # Set list of colors for plots
         self.ion_colors = ['DarkBlue','Purple', 'RoyalBlue','Magenta',
@@ -61,9 +63,13 @@ class tabETSSummary(QWidget):
         # Set initial time slice
         self.it = 0
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | __init__() | END.")
+
     def setTabUI(self):
         """Set tab user interface.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | setTabUI() | START.")
 
         self.setLayout(QGridLayout())
         self.parent.tabWidget.addTab(self, "ETS summary")
@@ -92,9 +98,13 @@ class tabETSSummary(QWidget):
         self.ax6 = self.fig.add_subplot(self.grid_subp[1, 2])
         self.ax6_2 = self.ax6.twinx()
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | setTabUI() | END.")
+
     def plot(self):
         """Main plot function.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot() | START.")
 
         nslices = len(self.ids.core_profiles.profiles_1d)
         self.nslices2plot = 1
@@ -124,9 +134,13 @@ class tabETSSummary(QWidget):
 
         self.show()
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot() | END.")
+
     def plotUpdate(self, time_index):
         """Clear and re-plot.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate() | START.")
 
         # Update time value
         self.it = time_index
@@ -155,9 +169,13 @@ class tabETSSummary(QWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate() | END.")
+
     def plot_te_ti(self):
         """Plot electron temperature (te) and ion temperature (ti)
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_te_ti() | START.")
 
         # Clear plot first
         self.ax1.cla()
@@ -191,9 +209,13 @@ class tabETSSummary(QWidget):
         leg = self.ax1.legend()
         leg.set_draggable(True)
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_te_ti() | END.")
+
     def plot_ne_ni(self):
         """Plot electron density (te) and ion density (ti)
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_ne_ni() | START.")
 
         # Clear plot first
         self.ax2.cla()
@@ -227,9 +249,13 @@ class tabETSSummary(QWidget):
         leg = self.ax2.legend()
         leg.set_draggable(True)
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_ne_ni() | END.")
+
     def plot_jtotal_q(self):
         """Plot total parallel current density (j_total) and safety factor (q).
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_jtotal_q() | START.")
 
         # Clear plot first
         self.ax3.cla()
@@ -272,9 +298,13 @@ class tabETSSummary(QWidget):
         self.ax3.grid(color="Blue")
         self.ax3_2.grid(color="Red")
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_jtotal_q() | END.")
+
     def plot_zeff(self):
         """Plot zeff profile.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_zeff() | START.")
 
         # Clear plot first
         self.ax4.cla()
@@ -304,9 +334,13 @@ class tabETSSummary(QWidget):
         leg = self.ax4.legend()
         leg.set_draggable(True)
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_zeff() | END.")
+
     def plot_transport_coeff(self):
         """Plot Transport Coefficients.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_transport_coeff() | START.")
 
         # Clear plot
         self.ax5.cla()
@@ -347,9 +381,13 @@ class tabETSSummary(QWidget):
         leg = self.ax5.legend()
         leg.set_draggable(True)
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_transport_coeff() | END.")
+
     def plot_sources(self):
         """Plot Sources.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_sources() | START.")
 
         # Clear plot
         self.ax6.cla()
@@ -401,11 +439,13 @@ class tabETSSummary(QWidget):
         leg = self.ax6_2.legend(pl, labs, loc=0)
         leg.set_draggable(True)
 
+        self.log.debug(f"DEBUG | {type(self).__name__} | plot_sources() | END.")
+
     def main_discharge_parameters(self):
         """Display Main discharge parameters.
         """
 
-        self.log.debug(f"DEBUG: executing main_discharge_parameters()")
+        self.log.debug(f"DEBUG | {type(self).__name__} | main_discharge_parameters() | START.")
 
         xtext  = 0.80
         xtext1 = 0.82
@@ -504,4 +544,6 @@ class tabETSSummary(QWidget):
                 exc_info=True)
 
         self.fig.subplots_adjust(left=0.05, right=0.75, bottom=0.1, top=0.9)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | main_discharge_parameters() | END.")
 

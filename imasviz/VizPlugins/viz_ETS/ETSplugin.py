@@ -81,8 +81,8 @@ class ETSplugin(QMainWindow):
 
         # Set log parser
         self.log = logging.getLogger(__name__)
-        self.log.setLevel(logging.DEBUG)
-        # self.log.setLevel(logging.INFO)
+        # self.log.setLevel(logging.DEBUG)
+        self.log.setLevel(logging.INFO)
         self.log.addHandler(logging.StreamHandler())
 
         # Set initial time slice
@@ -125,7 +125,7 @@ class ETSplugin(QMainWindow):
         self.tabETSSummary = tabETSSummary(parent=self)
         self.tabCoreProfiles = tabCoreProfiles(parent=self)
 
-        # Set time label
+        # Set time slice label
         self.time_indexLabel = QLabel("Time slice: ")
         # Set spinbox
         self.spinBox_time = self.setTimeSpinBox()
@@ -178,17 +178,24 @@ class ETSplugin(QMainWindow):
     def updatePlotOfCurrentTab(self, time_index=0):
         """Update plot of current tab.
         """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | updatePlotOfCurrentTab() | START.")
+
         cw = self.getCurrentTab()
         cw.plotUpdate(time_index)
 
     def onSliderChange(self, event=None):
-        # Update spinbox value
-        self.spinBox_time.setValue(self.slider_time.value())
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | onSliderChange() | START.")
+        if self.slider_time.value() != self.spinBox_time.value():
+            # Update spinbox value
+            self.spinBox_time.setValue(self.slider_time.value())
         # Update plots
-        self.updatePlotOfCurrentTab(time_index=self.slider_time.value())
         # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
 
     def getCurrentTab(self):
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | getCurrentTab() | START.")
         # currentIndex=self.tabWidget.currentIndex()
         currentWidget=self.tabWidget.currentWidget()
 
@@ -205,12 +212,17 @@ class ETSplugin(QMainWindow):
         return spinBox_time
 
     def onSpinBoxChange(self, event=None):
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | onSpinBoxChange() | START.")
         # Update slider value
         self.slider_time.setValue(self.spinBox_time.value())
         # Update plots
-        self.getCurrentTab().plotUpdate(time_index=self.spinBox_time.value())
+        # self.getCurrentTab().plotUpdate(time_index=self.spinBox_time.value())
+        self.updatePlotOfCurrentTab(time_index=self.slider_time.value())
+        self.time_index = self.slider_time.value()
 
     def setIDS(self):
+        self.log.debug(f"DEBUG | {type(self).__name__} | setIDS() | START.")
         try:
             self.ids = imas.ids(self.IDS_parameters["shot"],
                                 self.IDS_parameters["run"])
