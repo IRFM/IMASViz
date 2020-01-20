@@ -24,7 +24,7 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
-    QGridLayout, QSlider, QLabel, QSpinBox)
+    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox)
 from PyQt5.QtCore import Qt, QSize
 
 # IMASViz application imports
@@ -119,7 +119,7 @@ class ETSplugin(QMainWindow):
         # Set time slider
         self.slider_time = self.setTimeSlider()
         self.mainWidget.layout().addWidget(self.slider_time, 0, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.tabWidget, 1, 0, 1, 3)
+        self.mainWidget.layout().addWidget(self.tabWidget, 2, 0, 1, 3)
 
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
@@ -130,8 +130,15 @@ class ETSplugin(QMainWindow):
         # Set spinbox
         self.spinBox_time = self.setTimeSpinBox()
 
+        # Set check box
+        self.checkBox_instant_label = QLabel("Instant plot update on time index change: ")
+        self.checkBox_instant = QCheckBox(parent=self)
+        self.checkBox_instant.setChecked(False)
+
         self.mainWidget.layout().addWidget(self.time_indexLabel, 0, 1, 1, 1)
         self.mainWidget.layout().addWidget(self.spinBox_time, 0, 2, 1, 1)
+        self.mainWidget.layout().addWidget(self.checkBox_instant_label, 1, 1, 1, 1)
+        self.mainWidget.layout().addWidget(self.checkBox_instant, 1, 2, 1, 1)
         self.setCentralWidget(self.mainWidget)
 
         # Set initial window size
@@ -180,7 +187,7 @@ class ETSplugin(QMainWindow):
         """
 
         self.log.debug(f"DEBUG | {type(self).__name__} | updatePlotOfCurrentTab() | START.")
-
+        time_index = self.time_index
         cw = self.getCurrentTab()
         cw.plotUpdate(time_index)
 
@@ -208,6 +215,8 @@ class ETSplugin(QMainWindow):
         spinBox_time.setMaximum(len(self.ids.core_profiles.time)-1)
 
         spinBox_time.valueChanged.connect(self.onSpinBoxChange)
+        spinBox_time.editingFinished.connect(partial(
+            self.updatePlotOfCurrentTab, time_index=self.time_index))
 
         return spinBox_time
 
@@ -215,11 +224,13 @@ class ETSplugin(QMainWindow):
 
         self.log.debug(f"DEBUG | {type(self).__name__} | onSpinBoxChange() | START.")
         # Update slider value
-        self.slider_time.setValue(self.spinBox_time.value())
-        # Update plots
-        # self.getCurrentTab().plotUpdate(time_index=self.spinBox_time.value())
-        self.updatePlotOfCurrentTab(time_index=self.slider_time.value())
-        self.time_index = self.slider_time.value()
+        self.time_index = self.spinBox_time.value()
+        self.slider_time.setValue(self.time_index)
+
+        if self.checkBox_instant.isChecked():
+            # Update plots
+            # self.getCurrentTab().plotUpdate(time_index=self.spinBox_time.value())
+            self.updatePlotOfCurrentTab(time_index=self.time_index)
 
     def setIDS(self):
         self.log.debug(f"DEBUG | {type(self).__name__} | setIDS() | START.")
