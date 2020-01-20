@@ -85,12 +85,14 @@ class ETSplugin(QMainWindow):
         # self.log.setLevel(logging.INFO)
         self.log.addHandler(logging.StreamHandler())
 
+        # Set initial time slice
+        self.time_index = 0
+
         # Get app
         self.app = QApplication.instance()
         if self.app is None:
             # if it does not exist then a QApplication is created
             self.app = QApplication([])
-
 
         self.setWindowTitle("European Transport Simulator (IMASViz plugin sample, work in progress)")
         self.ids = ids
@@ -102,6 +104,7 @@ class ETSplugin(QMainWindow):
 
         # Set user interface of the main window
         self.setUI()
+
     def getLogger(self):
         return self.log
 
@@ -119,15 +122,15 @@ class ETSplugin(QMainWindow):
         self.mainWidget.layout().addWidget(self.tabWidget, 1, 0, 1, 3)
 
         # Set tabs
-        self.tabCoreProfiles = tabCoreProfiles(parent=self)
         self.tabETSSummary = tabETSSummary(parent=self)
+        self.tabCoreProfiles = tabCoreProfiles(parent=self)
 
         # Set time label
-        self.timeLabel = QLabel("Time slice: ")
+        self.time_indexLabel = QLabel("Time slice: ")
         # Set spinbox
         self.spinBox_time = self.setTimeSpinBox()
 
-        self.mainWidget.layout().addWidget(self.timeLabel, 0, 1, 1, 1)
+        self.mainWidget.layout().addWidget(self.time_indexLabel, 0, 1, 1, 1)
         self.mainWidget.layout().addWidget(self.spinBox_time, 0, 2, 1, 1)
         self.setCentralWidget(self.mainWidget)
 
@@ -140,12 +143,22 @@ class ETSplugin(QMainWindow):
         Xcenter = (self.app.desktop().availableGeometry().width() - self.width)*0.5
         self.move(int(Xcenter), int(Ycenter))
 
+        # On tab change update the tab-containing plots
+        self.tabWidget.currentChanged.connect(partial(
+            self.updatePlotOfCurrentTab, time_index=self.getTimeIndex()))
+
     def sizeHint(self):
         """Set initial window size.
         Note: Qt calls this routine automatically by default when creating this
               window/widget.
         """
         return QSize(self.width,self.height)
+
+    def getTimeIndex(self):
+        return self.time_index
+
+    def setTimeIndex(self, time_index):
+        self.time_index = time_index
 
     def setTimeSlider(self):
         # Set time slider
@@ -162,11 +175,18 @@ class ETSplugin(QMainWindow):
         # slider_time.sliderReleased.connect(self.onSliderChange)
         return slider_time
 
+    def updatePlotOfCurrentTab(self, time_index=0):
+        """Update plot of current tab.
+        """
+        cw = self.getCurrentTab()
+        cw.plotUpdate(time_index)
+
     def onSliderChange(self, event=None):
         # Update spinbox value
         self.spinBox_time.setValue(self.slider_time.value())
         # Update plots
-        self.getCurrentTab().plotUpdate(time_value=self.slider_time.value())
+        self.updatePlotOfCurrentTab(time_index=self.slider_time.value())
+        # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
 
     def getCurrentTab(self):
         # currentIndex=self.tabWidget.currentIndex()
@@ -188,7 +208,7 @@ class ETSplugin(QMainWindow):
         # Update slider value
         self.slider_time.setValue(self.spinBox_time.value())
         # Update plots
-        self.getCurrentTab().plotUpdate(time_value=self.spinBox_time.value())
+        self.getCurrentTab().plotUpdate(time_index=self.spinBox_time.value())
 
     def setIDS(self):
         try:
@@ -243,8 +263,8 @@ if  __name__ == "__main__":
     app = QApplication(sys.argv)
 
     ets = ETSplugin(IDS_parameters)
-    ets.tabCoreProfiles.plot()
     ets.tabETSSummary.plot()
+    # ets.tabCoreProfiles.plot()
 
     ets.show()
 

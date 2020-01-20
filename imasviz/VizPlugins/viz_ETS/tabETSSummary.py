@@ -50,6 +50,17 @@ class tabETSSummary(QWidget):
         # Get log parser
         self.log = self.parent.getLogger()
 
+        # Set list of colors for plots
+        self.ion_colors = ['DarkBlue','Purple', 'RoyalBlue','Magenta',
+                           'Tomato', 'LimeGreen',  'DarkCyan']
+        self.ion_ni_colors = ['DarkGreen','Olive',  'Orange', 'darkgoldenrod',
+                              'peru', 'indianred', 'amber']
+        # Ticker minor interval
+        self._nminor_interval = 4
+
+        # Set initial time slice
+        self.it = 0
+
     def setTabUI(self):
         """Set tab user interface.
         """
@@ -85,20 +96,8 @@ class tabETSSummary(QWidget):
         """Main plot function.
         """
 
-        # Set list of colors for plots
-        self.ion_colors = ['DarkBlue','Purple', 'RoyalBlue','Magenta',
-                           'Tomato', 'LimeGreen',  'DarkCyan']
-        self.ion_ni_colors = ['DarkGreen','Olive',  'Orange', 'darkgoldenrod',
-                              'peru', 'indianred', 'amber']
-
-        # Ticker minor interval
-        self._nminor_interval = 4
-
         nslices = len(self.ids.core_profiles.profiles_1d)
         self.nslices2plot = 1
-
-        # Set initial time slice
-        self.it = 0
 
         # Core profiles
         self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
@@ -125,12 +124,12 @@ class tabETSSummary(QWidget):
 
         self.show()
 
-    def plotUpdate(self, time_value):
+    def plotUpdate(self, time_index):
         """Clear and re-plot.
         """
 
         # Update time value
-        self.it = time_value
+        self.it = time_index
 
         self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
         self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
