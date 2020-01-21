@@ -65,7 +65,6 @@ class ETSpluginIMASViz(VizPlugin):
             self.dataTreeView.window().getMDI().addSubWindow(self.ets)
 
         try:
-            self.ets.tabCoreProfiles.plot()
             self.ets.tabETSSummary.plot()
             self.ets.show()
         except :

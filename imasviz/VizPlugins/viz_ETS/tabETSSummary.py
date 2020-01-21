@@ -137,7 +137,7 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plot() | END.")
 
     def plotUpdate(self, time_index):
-        """Clear and re-plot.
+        """Update plot data (X and Y data) and replot.
         """
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate() | START.")
@@ -149,25 +149,25 @@ class tabETSSummary(QWidget):
         self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
         self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
 
-        # Re-plot te/ti (electron/ion temperature)
-        self.plot_te_ti()
-        # Re-plot ne/ni (electron/ion density)
-        self.plot_ne_ni()
-        # Plot j_total and q (total parallel current density and safety factor)
-        self.plot_jtotal_q()
-        # Plot zeff profile.
-        self.plot_zeff()
-        # Plot transport coefficients
-        self.plot_transport_coeff()
-        # Plot sources
-        self.plot_sources()
+        # Plot update: te/ti (electron/ion temperature)
+        self.plotUpdate_te_ti()
+        # Plot update: ne/ni (electron/ion density)
+        self.plotUpdate_ne_ni()
+        # Plot update: j_total and q (total parallel current density and safety factor)
+        self.plotUpdate_jtotal_q()
+        # Plot update: zeff profile.
+        self.plotUpdate_zeff()
+        # Plot update: transport coefficients
+        self.plotUpdate_transport_coeff()
+        # Plot update: sources
+        self.plotUpdate_sources()
 
         # Add text beside plots
         self.main_discharge_parameters()
 
         # Update the figure display
         self.canvas.draw()
-        self.canvas.flush_events()
+        # self.canvas.flush_events()
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate() | END.")
 
@@ -183,21 +183,25 @@ class tabETSSummary(QWidget):
         try:
             rhotor = self.cp_1d.grid.rho_tor_norm
             te = self.cp_1d.electrons.temperature
-            self.ax1.plot(rhotor, 1.0e-3*te,
-                          label = "Te",
-                          color='r',
-                          linewidth=1.5)
+            self.line_te, = self.ax1.plot(rhotor, 1.0e-3*te,
+                                          label = "Te",
+                                          color='r',
+                                          linewidth=1.5)
+            self.line_ti = [0]*len(self.cp_1d.ion)
             for i in range(len(self.cp_1d.ion)):
                 ti = self.cp_1d.ion[i].temperature
-                if self.cp_1d.ion[i].multiple_states_flag == 0 :
-                    self.ax1.plot(rhotor,
-                                  1.0e-3*self.cp_1d.ion[i].temperature,
-                                  label='Ti %d'%(i+1),
-                                  color=self.ion_colors[min(i,len(self.ion_colors)-1)],
-                                  linewidth=1.5)
+                # Empty array
+                if self.cp_1d.ion[i].multiple_states_flag == 0:
+                    self.line_ti[i], = \
+                        self.ax1.plot(rhotor,
+                                      1.0e-3*self.cp_1d.ion[i].temperature,
+                                      label='Ti %d'%(i+1),
+                                      color=self.ion_colors[min(i,len(self.ion_colors)-1)],
+                                      linewidth=1.5)
 
         except Exception as err:
-            self.log.error( 'ERROR occurred when plotting temperatures. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting temperatures. (%s) ' % err,
+                exc_info=True)
 
         self.ax1.set(xlabel= "rhotor [m]", ylabel='Temperature [keV]')
         # self.ax1.set_yticks([])
@@ -211,6 +215,32 @@ class tabETSSummary(QWidget):
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plot_te_ti() | END.")
 
+    def plotUpdate_te_ti(self):
+        """Update plot: electron temperature (te) and ion temperature (ti)
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_te_ti() | START.")
+
+        try:
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            te = self.cp_1d.electrons.temperature
+
+            self.line_te.set_xdata(rhotor)
+            self.line_te.set_ydata(1.0e-3*te)
+
+            for i in range(len(self.cp_1d.ion)):
+                ti = self.cp_1d.ion[i].temperature
+                if self.cp_1d.ion[i].multiple_states_flag == 0 :
+                    self.line_ti[i].set_xdata(rhotor)
+                    self.line_ti[i].set_ydata(1.0e-3*self.cp_1d.ion[i].temperature)
+                    # self.line_ti[i].set_color(self.ion_colors[min(i,len(self.ion_colors)-1)])
+
+        except Exception as err:
+            self.log.error( 'ERROR occurred when re-plotting temperatures. (%s) ' % err,
+                exc_info=True)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_te_ti() | END.")
+
     def plot_ne_ni(self):
         """Plot electron density (te) and ion density (ti)
         """
@@ -223,21 +253,24 @@ class tabETSSummary(QWidget):
         try:
             rhotor = self.cp_1d.grid.rho_tor_norm
             ne = self.cp_1d.electrons.density
-            self.ax2.plot(rhotor, 1.0e-19*ne,
-                          label = "Ne",
-                          color='r',
-                          linewidth=1.5)
+            self.line_ne, = self.ax2.plot(rhotor, 1.0e-19*ne,
+                                          label = "Ne",
+                                          color='r',
+                                          linewidth=1.5)
+            self.line_ni = [0]*len(self.cp_1d.ion)
             for i in range(len(self.cp_1d.ion)):
                 ni = self.cp_1d.ion[i].density
                 if self.cp_1d.ion[i].multiple_states_flag == 0 :
-                    self.ax2.plot(rhotor,
-                                  1.0e-19*self.cp_1d.ion[i].density,
-                                  label='Ni %d'%(i+1),
-                                  color=self.ion_colors[min(i,len(self.ion_colors)-1)],
-                                  linewidth=1.5)
+                    self.line_ni[i], = \
+                        self.ax2.plot(rhotor,
+                                      1.0e-19*self.cp_1d.ion[i].density,
+                                      label='Ni %d'%(i+1),
+                                      color=self.ion_colors[min(i,len(self.ion_colors)-1)],
+                                      linewidth=1.5)
 
         except Exception as err:
-            self.log.error( 'ERROR occurred when plotting densities. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting densities. (%s) ' % err,
+                exc_info=True)
 
         self.ax2.set(xlabel= "rhotor [m]", ylabel='Density [10^19 m-3]')
         # self.ax2.set_yticks([])
@@ -250,6 +283,30 @@ class tabETSSummary(QWidget):
         leg.set_draggable(True)
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plot_ne_ni() | END.")
+
+    def plotUpdate_ne_ni(self):
+        """Plot update: electron density (te) and ion density (ti)
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_ne_ni() | START.")
+
+        try:
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            ne = self.cp_1d.electrons.density
+            self.line_ne.set_xdata(rhotor)
+            self.line_ne.set_ydata(1.0e-19*ne)
+
+            for i in range(len(self.cp_1d.ion)):
+                ni = self.cp_1d.ion[i].density
+                if self.cp_1d.ion[i].multiple_states_flag == 0 :
+                    self.line_ni[i].set_xdata(rhotor)
+                    self.line_ni[i].set_ydata(1.0e-19*self.cp_1d.ion[i].density)
+
+        except Exception as err:
+            self.log.error( 'ERROR occurred when re-plotting densities. (%s) ' % err,
+                exc_info=True)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_ne_ni() | END.")
 
     def plot_jtotal_q(self):
         """Plot total parallel current density (j_total) and safety factor (q).
@@ -269,15 +326,18 @@ class tabETSSummary(QWidget):
                           label = "j_total",
                           color='b',
                           linewidth=1.5)
+            self.line_jtotal = pl1[0]
             self.ax3.tick_params(axis='y', colors='blue')
             pl2 = self.ax3_2.plot(rhotor, abs(q),
                           label = "q",
                           color='r',
                           linewidth=1.5)
+            self.line_q = pl2[0]
             self.ax3_2.tick_params(axis='y', colors='red')
 
         except Exception as err:
-            self.log.error('ERROR occurred when plotting equilibrium related profiles. (%s) ' % err )
+            self.log.error('ERROR occurred when plotting equilibrium related profiles. (%s) ' % err,
+                exc_info=True)
 
         # Combine legend of the both plots into a single legend box
         pl = pl1 + pl2
@@ -299,6 +359,27 @@ class tabETSSummary(QWidget):
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plot_jtotal_q() | END.")
 
+    def plotUpdate_jtotal_q(self):
+        """Plot update: total parallel current density (j_total) and safety factor (q).
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_jtotal_q() | START.")
+
+        try:
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            q = self.cp_1d.q
+            j_total = self.cp_1d.j_total
+            self.line_jtotal.set_xdata(rhotor)
+            self.line_jtotal.set_ydata(1.0e-6*abs(j_total))
+            self.line_q.set_xdata(rhotor)
+            self.line_q.set_ydata(abs(q))
+
+        except Exception as err:
+            self.log.error('ERROR occurred when plotting equilibrium related profiles. (%s) ' % err,
+                exc_info=True)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_jtotal_q() | END.")
+
     def plot_zeff(self):
         """Plot zeff profile.
         """
@@ -313,14 +394,15 @@ class tabETSSummary(QWidget):
             zeff = self.cp_1d.zeff
             self.ax4.set_xlim(0, max(rhotor))
             self.ax4.set_ylim(1, max(zeff)*1.05)
-            self.ax4.plot(rhotor, zeff,
-                          label = "zeff",
-                          color='b',
-                          linewidth=1.5)
+            self.line_zeff, = self.ax4.plot(rhotor, zeff,
+                                  label = "zeff",
+                                  color='b',
+                                  linewidth=1.5)
             self.ax4.tick_params(axis='y', colors='blue')
 
         except Exception as err:
-            self.log.error( 'ERROR occurred when plotting Zeff profile. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting Zeff profile. (%s) ' % err,
+                exc_info=True)
 
         self.ax4.set(xlabel= "rhotor [m]", ylabel='Zeff [-]')
         # self.ax4.set_yticks([])
@@ -334,6 +416,26 @@ class tabETSSummary(QWidget):
         leg.set_draggable(True)
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plot_zeff() | END.")
+
+    def plotUpdate_zeff(self):
+        """Plot update: zeff profile.
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_zeff() | START.")
+
+        try:
+            rhotor = self.cp_1d.grid.rho_tor_norm
+            zeff = self.cp_1d.zeff
+            self.ax4.set_xlim(0, max(rhotor))
+            self.ax4.set_ylim(1, max(zeff)*1.05)
+            self.line_zeff.set_xdata(rhotor)
+            self.line_zeff.set_ydata(zeff)
+
+        except Exception as err:
+            self.log.error( 'ERROR occurred when plotting Zeff profile. (%s) ' % err,
+                exc_info=True)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_zeff() | END.")
 
     def plot_transport_coeff(self):
         """Plot Transport Coefficients.
@@ -350,23 +452,27 @@ class tabETSSummary(QWidget):
             diff_te = self.ct_1d.electrons.energy.d
             # diff_ti = self.ct_1d.total_ion_energy.d
             self.ax5.set_xlim(0, max(rhotor))
-            self.ax5.plot(rhotor, diff_te,color='r', linewidth=1.5)
+            self.line_diff_te, = self.ax5.plot(rhotor, diff_te,color='r', linewidth=1.5)
+
+            self.line_diff_ti = [0]*len(self.ct_1d.ion)
+            self.line_diff_ni = [0]*len(self.ct_1d.ion)
 
             for i in range(len(self.ct_1d.ion)):
                 diff_ti = self.ct_1d.ion[i].energy.d
                 diff_ni = self.ct_1d.ion[i].particles.d
 
-                self.ax5.plot(rhotor, diff_ti,
-                                label = "diff_ti",
-                                color=self.ion_colors[min(i,len(self.ion_colors)-1)],
-                                linewidth=1.5)
-                self.ax5.plot(rhotor, diff_ni,
-                                label = "diff_ni",
-                                color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
-                                linewidth=1.5)
+                self.line_diff_ti[i], = self.ax5.plot(rhotor, diff_ti,
+                    label = "diff_ti",
+                    color=self.ion_colors[min(i,len(self.ion_colors)-1)],
+                    linewidth=1.5)
+                self.line_diff_ni[i], = self.ax5.plot(rhotor, diff_ni,
+                    label = "diff_ni",
+                    color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
+                    linewidth=1.5)
 
         except Exception as err:
-            self.log.error( 'ERROR occurred when plotting Transport coefficients. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting Transport coefficients. (%s) ' % err,
+                exc_info=True)
 
         self.ax5.set_ylabel('diff [m^2/s]')
         self.ax5.set_xlabel('rhotor [m]')
@@ -381,6 +487,37 @@ class tabETSSummary(QWidget):
         leg.set_draggable(True)
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plot_transport_coeff() | END.")
+
+    def plotUpdate_transport_coeff(self):
+        """Plot Update: Transport Coefficients.
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_transport_coeff() | START.")
+
+        try:
+            # rhotor = self.cp_1d.grid.rho_tor_norm
+            rhotor = self.ct_1d.grid_d.rho_tor_norm
+            diff_te = self.ct_1d.electrons.energy.d
+            # diff_ti = self.ct_1d.total_ion_energy.d
+            self.ax5.set_xlim(0, max(rhotor))
+            self.line_diff_te.set_ydata(rhotor)
+            self.line_diff_te.set_xdata(diff_te)
+
+            for i in range(len(self.ct_1d.ion)):
+                diff_ti = self.ct_1d.ion[i].energy.d
+                diff_ni = self.ct_1d.ion[i].particles.d
+
+                self.line_diff_ti[i].set_xdata(rhotor)
+                self.line_diff_ti[i].set_ydata(diff_ti)
+
+                self.line_diff_ni[i].set_xdata(rhotor)
+                self.line_diff_ni[i].set_ydata(diff_ni)
+
+        except Exception as err:
+            self.log.error( 'ERROR occurred when re-plotting Transport coefficients. (%s) ' % err,
+                exc_info=True)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_transport_coeff() | END.")
 
     def plot_sources(self):
         """Plot Sources.
@@ -401,9 +538,15 @@ class tabETSSummary(QWidget):
 
             self.ax6.set_xlim(0, max(rhotor))
             norm = abs(max(1,max(sour_te),max(sour_ti_tot),-min(sour_te),-min(sour_ti_tot)))
-            pl1 = self.ax6.plot(rhotor, sour_te/norm, color='r', linewidth=1.5)
+            pl1 = self.ax6.plot(rhotor, sour_te/norm,
+                                label = "sour_te/norm",
+                                color='r',
+                                linewidth=1.5)
+            self.line_sour_te = pl1[0]
             norm1 = abs(max(1,max(sour_ni0),-min(sour_ni0)))
 
+            self.line_sour_ti = [0]*len(self.ct_1d.ion)
+            self.line_sour_ni = [0]*len(self.ct_1d.ion)
             for i in range(len(self.ct_1d.ion)):
                 sour_ti = self.cs_1d.ion[i].energy
                 sour_ni = self.cs_1d.ion[i].particles
@@ -411,17 +554,20 @@ class tabETSSummary(QWidget):
                 norm = abs(max(norm,max(sour_ti),-min(sour_ti)))
                 norm1 = abs(max(norm1,max(sour_ni),-min(sour_ni)))
 
-                pl1 = self.ax6.plot(rhotor, sour_ti/norm,
+                pl2 = self.ax6.plot(rhotor, sour_ti/norm,
                                 label = "sour_ti/norm",
                                 color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                                 linewidth=1.5)
-                pl2 = self.ax6.plot(rhotor, sour_ni/norm1,
+                self.line_sour_ti[i] = pl2[0]
+                pl3 = self.ax6.plot(rhotor, sour_ni/norm1,
                                 label = "sour_ni/norm",
                                 color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
                                 linewidth=1.5)
+                self.line_sour_ni[i] = pl3[0]
 
         except Exception as err:
-            self.log.error( 'ERROR occurred when plotting source related profiles. (%s) ' % err )
+            self.log.error( 'ERROR occurred when plotting source related profiles. (%s) ' % err,
+                exc_info=True)
 
         self.ax6_2.axhline(y=0, linewidth=0.3)
 
@@ -433,16 +579,57 @@ class tabETSSummary(QWidget):
         self.ax6.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
         self.ax6_2.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
         # Combine legend of the both plots into a single legend box
-        pl = pl1 + pl2
+        pl = pl1 + pl2 + pl3
         labs = [l.get_label() for l in pl]
         leg = self.ax6_2.legend(pl, labs, loc=0)
         leg.set_draggable(True)
 
         self.log.debug(f"DEBUG | {type(self).__name__} | plot_sources() | END.")
 
+    def plotUpdate_sources(self):
+        """Plot Update: Sources.
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_sources() | START.")
+
+        try:
+            rhotor = self.cs_1d.grid.rho_tor_norm
+            sour_te = self.cs_1d.electrons.energy
+            sour_ti_tot = self.cs_1d.total_ion_energy
+            sour_ni0 = self.cs_1d.ion[0].particles
+
+            self.ax6.set_xlim(0, max(rhotor))
+            norm = abs(max(1,max(sour_te),max(sour_ti_tot),-min(sour_te),-min(sour_ti_tot)))
+            self.line_sour_te.set_xdata(rhotor)
+            self.line_sour_te.set_ydata(sour_te/norm)
+
+            norm1 = abs(max(1,max(sour_ni0),-min(sour_ni0)))
+
+            for i in range(len(self.ct_1d.ion)):
+                sour_ti = self.cs_1d.ion[i].energy
+                sour_ni = self.cs_1d.ion[i].particles
+
+                norm = abs(max(norm,max(sour_ti),-min(sour_ti)))
+                norm1 = abs(max(norm1,max(sour_ni),-min(sour_ni)))
+
+                self.line_sour_ti[i].set_xdata(rhotor)
+                self.line_sour_ti[i].set_ydata(sour_ti/norm)
+
+                self.line_sour_ni[i].set_xdata(rhotor)
+                self.line_sour_ni[i].set_ydata(sour_ti/norm)
+
+        except Exception as err:
+            self.log.error( 'ERROR occurred when re-plotting source related profiles. (%s) ' % err,
+                exc_info=True)
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_sources() | END.")
+
     def main_discharge_parameters(self):
         """Display Main discharge parameters.
         """
+
+        # TODO: separate update routine, to only update text, not creating it
+        #       a new (should improve plot performance)
 
         self.log.debug(f"DEBUG | {type(self).__name__} | main_discharge_parameters() | START.")
 
