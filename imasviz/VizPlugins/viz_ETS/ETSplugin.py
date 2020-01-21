@@ -24,7 +24,7 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
-    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox)
+    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox, QPushButton)
 from PyQt5.QtCore import Qt, QSize
 
 # IMASViz application imports
@@ -119,7 +119,7 @@ class ETSplugin(QMainWindow):
         # Set time slider
         self.slider_time = self.setTimeSlider()
         self.mainWidget.layout().addWidget(self.slider_time, 0, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.tabWidget, 2, 0, 1, 3)
+        self.mainWidget.layout().addWidget(self.tabWidget, 2, 0, 1, 4)
 
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
@@ -130,6 +130,11 @@ class ETSplugin(QMainWindow):
         # Set spinbox
         self.spinBox_time = self.setTimeSpinBox()
 
+        # Set buttons
+        self.plotButton = QPushButton("Plot", parent=self)
+        self.plotButton.clicked.connect(partial(
+            self.updatePlotOfCurrentTab, time_index=self.getTimeIndex()))
+
         # Set check box
         self.checkBox_instant_label = QLabel("Instant plot update on time index change: ")
         self.checkBox_instant = QCheckBox(parent=self)
@@ -137,6 +142,7 @@ class ETSplugin(QMainWindow):
 
         self.mainWidget.layout().addWidget(self.time_indexLabel, 0, 1, 1, 1)
         self.mainWidget.layout().addWidget(self.spinBox_time, 0, 2, 1, 1)
+        self.mainWidget.layout().addWidget(self.plotButton, 0, 3, 1, 1)
         self.mainWidget.layout().addWidget(self.checkBox_instant_label, 1, 1, 1, 1)
         self.mainWidget.layout().addWidget(self.checkBox_instant, 1, 2, 1, 1)
         self.setCentralWidget(self.mainWidget)
@@ -201,6 +207,8 @@ class ETSplugin(QMainWindow):
         # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
 
     def getCurrentTab(self):
+        """Get currently opened tab.
+        """
 
         self.log.debug(f"DEBUG | {type(self).__name__} | getCurrentTab() | START.")
         # currentIndex=self.tabWidget.currentIndex()
@@ -287,7 +295,6 @@ if  __name__ == "__main__":
 
     ets = ETSplugin(IDS_parameters)
     ets.tabETSSummary.plot()
-    # ets.tabCoreProfiles.plot()
 
     ets.show()
 

@@ -279,7 +279,6 @@ class tabETSSummary(QWidget):
         except Exception as err:
             self.log.error('ERROR occurred when plotting equilibrium related profiles. (%s) ' % err )
 
-
         # Combine legend of the both plots into a single legend box
         pl = pl1 + pl2
         labs = [l.get_label() for l in pl]
