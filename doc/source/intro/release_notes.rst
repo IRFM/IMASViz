@@ -5,6 +5,19 @@ Release notes
 =============
 
 -------------
+Version 2.3.7
+-------------
+- Adding strategies for plotting data
+- Adding support for DD3.26.0
+- Fixing regressions
+- Adding all parser versions
+- GGD can now be ignored or not according to user preferences
+- Fixing bugs in xlabels of plots
+- Fixing regression after refactoring
+- Fixing bug on documentation display of 0D nodes
+- Fixing regression for preview plots
+
+-------------
 Version 2.3.6
 -------------
 
