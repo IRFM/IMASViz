@@ -25,7 +25,6 @@ import sys, logging
 import traceback
 
 from PyQt5.QtWidgets import QWidget
-from netaddr import strategy
 
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
