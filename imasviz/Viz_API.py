@@ -314,7 +314,7 @@ class Viz_API:
     #     else:
     #         print("No frame found with key: " + str(figureKey))
 
-    def PlotSelectedSignals(self, dataTreeFrame, plotWidget=None, figureKey=None, update=0, all_DTV=False):
+    def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0, all_DTV=False, strategy="TIME"):
         """
         Plots the current selected set of signals on a figure
         :param dataTreeFrame: a QVizDataTreeViewFrame object
@@ -323,10 +323,13 @@ class Viz_API:
         :param update: if 1, the current plot is updated otherwise a new plot is created
         :param all_DTV: if True, all current selected set of signals on all shot views are plotted
         """
-        if figureKey is None:
-            figureKey = self.GetNextKeyForFigurePlots()
-        QVizPlotSelectedSignals(dataTreeFrame.dataTreeView, figureKey=figureKey,
-                                update=update, all_DTV=all_DTV).execute(plotWidget)
+        # if figureKey is None:
+        #     figureKey = self.GetNextKeyForFigurePlots()
+        QVizPlotSelectedSignals(dataTreeView=dataTreeFrame.dataTreeView,
+                                figureKey=figureKey,
+                                update=update,
+                                all_DTV=all_DTV,
+                                strategy=strategy).execute()
 
     def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame, all_DTV=False, strategy='DEFAULT'):
         """
@@ -394,15 +397,17 @@ class Viz_API:
         :param figureKey: a figure key. If None, a new figure is created.
         :param all_DTV: if True, all current selected set of signals on all shot views are plotted
         """
+        # figureKey, plotWidget = self.GetPlotWidget(dataTreeView=self.dataTreeView,
+        #                                            figureKey=figureKey)
         i = 0
         update = 0
         for f in dataTreeFramesList:
             if i != 0:
                 update = 1
-            if figureKey is None:
-                figureKey = self.GetNextKeyForFigurePlots()
-            QVizPlotSelectedSignals(f.dataTreeView, figureKey=figureKey,
-                                update=update, all_DTV=all_DTV).execute()
+            QVizPlotSelectedSignals(dataTreeView=f.dataTreeView,
+                                    figureKey=figureKey,
+                                    update=update,
+                                    all_DTV=all_DTV).execute()
             i += 1
 
     def UnSelectAllSignals(self, dataTreeFrame, all_DTV=False):
@@ -469,34 +474,45 @@ class Viz_API:
         else:
             return self.GetDataSource(dataTreeFrame).ids[occurrence]
 
-    def CreatePlotWidget(self, dataTreeView, addTimeSlider=False, addCoordinateSlider=False):
+    def CreatePlotWidget(self, dataTreeView, strategy="DEFAULT"):
         figureKey = self.GetNextKeyForFigurePlots()
+
+        addTimeSlider = False
+        addCoordinateSlider = False
+
+        if strategy=="COORDINATE1":
+             addTimeSlider = True
+             addCoordinateSlider = False
+        elif strategy=="TIME":
+             addTimeSlider = False
+             addCoordinateSlider = True
+
         plotWidget = QVizPlotWidget(size=(600, 550),
                                     title=figureKey,
                                     dataTreeView=dataTreeView,
                                     addTimeSlider=addTimeSlider,
                                     addCoordinateSlider=addCoordinateSlider)
+        plotWidget.setStrategy(strategy)
         self.figureframes[figureKey] = plotWidget
         return figureKey, plotWidget
 
-    def GetPlotWidget(self, dataTreeView, figureKey=0, addTimeSlider=False, addCoordinateSlider=False):
+    def GetPlotWidget(self, dataTreeView, figureKey=0, strategy="DEFAULT"):
         if figureKey in self.figureframes:
             plotWidget = self.figureframes[figureKey]
         else:
             figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=dataTreeView,
-                                                          addTimeSlider=addTimeSlider,
-                                                          addCoordinateSlider=addCoordinateSlider)
+                                                          strategy=strategy)
         return figureKey, plotWidget
 
 
     def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
-                  coordinate1_index=0, time_index=None, plotWidget=None, strategy=None):
+                  coordinate1_index=0, time_index=None, plotWidget=None):
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             return signalDataAccess.GetSignal(treeNode=vizTreeNode, plotWidget=plotWidget,
                                               as_function_of_time=as_function_of_time,
                                               coordinate_index=coordinate1_index,
-                                              time_index=time_index, strategy=strategy)
+                                              time_index=time_index)
         except:
             raise
 
@@ -522,14 +538,15 @@ class Viz_API:
             # Get label and title
             label, title, dummy = \
                 treeNode.coordinateLabels(coordinateNumber=1, dtv=dataTreeView, index=index)
-            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None, addCoordinateSlider=True)
+            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None, strategy='TIME')
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                            vizTreeNode=treeNode,
                            title=title,
                            label=label,
-                           xlabel="time")
-            p.execute(plotWidget, figureKey=figureKey, update=0, strategy='TIME')
+                           xlabel="time",
+                           plotWidget=plotWidget)
+            p.execute(figureKey=figureKey, update=0)
         except ValueError as e:
             logging.error(str(e))
 
@@ -540,12 +557,13 @@ class Viz_API:
         try:
             # Get currently selected QVizTreeNode (QTreeWidgetItem)
             treeNode = dataTreeView.selectedItem
-            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None, addCoordinateSlider=True) #None will force a new Figure
+            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView, figureKey=None, strategy='TIME') #None will force a new Figure
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
-                               xlabel="time")
-            p.execute(plotWidget, figureKey=figureKey, update=0, strategy='TIME')
+                               xlabel="time",
+                               plotWidget=plotWidget)
+            p.execute(figureKey=figureKey, update=0)
         except ValueError as e:
             logging.error(str(e))
 
@@ -583,7 +601,7 @@ class Viz_API:
 
             currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                               figureKey=currentFigureKey,
-                                                              addCoordinateSlider=True)
+                                                              strategy='TIME')
 
             # Add plot window to subwindow and to MDI only if the plotWidget
             # with the given figurekey does not exist yet
@@ -595,15 +613,14 @@ class Viz_API:
                            title=title,
                            label=label,
                            xlabel="time",
-                           vizTreeNode=treeNode).execute(plotWidget=plotWidget,
-                                                         figureKey=currentFigureKey,
+                           vizTreeNode=treeNode,
+                           plotWidget=plotWidget).execute(figureKey=currentFigureKey,
                                                          update=update,
-                                                         dataset_to_update=dataset_to_update,
-                                                         strategy='TIME')
+                                                         dataset_to_update=dataset_to_update)
         except ValueError as e:
             logging.error(str(e))
 
-    def plotVsCoordinate1AtGivenTime(self, dataTreeView, time_index, currentFigureKey,
+    def plotVsCoordinate1AtGivenTime(self, dataTreeView, currentFigureKey,
                                      treeNode, update, dataset_to_update=0):
         """Overwrite/Update the existing plot (done with
         'plotSignalCommand' routine and currently still shown in
@@ -613,7 +630,6 @@ class Viz_API:
         structure').
 
         Arguments:
-            time_index        (int) : Time slice index.
             currentFigureKey  (str) : Label of the current/relevant figure
                                       window.
             treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
@@ -622,7 +638,7 @@ class Viz_API:
         try:
             currentFigureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                               figureKey=currentFigureKey,
-                                                              addTimeSlider=True)
+                                                              strategy='COORDINATE1')
             api = dataTreeView.imas_viz_api
             # Add plot window to subwindow and to MDI only if the plotWidget
             # with the given figurekey does not exist yet
@@ -630,11 +646,10 @@ class Viz_API:
                 self.addPlotWidgetToMDI(plotWidget)
             # Update/Overwrite plot
             QVizPlotSignal(dataTreeView=dataTreeView,
-                           vizTreeNode=treeNode).execute(plotWidget=plotWidget,
-                                                         figureKey=currentFigureKey,
+                           vizTreeNode=treeNode,
+                           plotWidget=plotWidget,).execute(figureKey=currentFigureKey,
                                                          update=update,
-                                                         dataset_to_update=dataset_to_update,
-                                                         strategy='COORDINATE1')
+                                                         dataset_to_update=dataset_to_update)
         except ValueError as e:
             logging.error(str(e))
 

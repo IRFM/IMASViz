@@ -61,7 +61,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
     def get1DArrayData(self):
         return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode,
-                                                        strategy="DEFAULT", plotWidget=self.getPlotWidget())
+                                                        plotWidget=self.getPlotWidget())
 
     def execute(self):
         try:
@@ -92,7 +92,6 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         if plotWidget is None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
-            logging.error(str(error))
         return plotWidget
 
     @staticmethod
@@ -133,7 +132,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             # Set plot options
             label, xlabel, ylabel, title = \
                 self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,label=label,
-                                 xlabel=xlabel, title=title, plotWidget=self.plotWidget, strategy='DEFAULT')
+                                 xlabel=xlabel, title=title, plotWidget=self.plotWidget)
             # Get plottable data
             u = v[0]    # first (should be the only) array of physical
                         # quantity values

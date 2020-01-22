@@ -34,7 +34,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     """
 
     def __init__(self, dataTreeView, figureKey, update=0,
-                 configFile=None, all_DTV=False, strategy=None):
+                 configFile=None, all_DTV=False, strategy="DEFAULT"):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.

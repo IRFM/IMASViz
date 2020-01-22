@@ -16,10 +16,10 @@ class QVizIMASNativeDataAccess:
         self.dataSource = dataSource
 
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  coordinate_index=0, time_index=None, strategy=None):
+                  coordinate_index=0, time_index=None):
 
         if as_function_of_time is None:
-            as_function_of_time = treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget,strategy=strategy)
+            as_function_of_time = treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
 
         if time_index is None:
             time_index = treeNode.timeValue()
@@ -66,7 +66,6 @@ class QVizIMASNativeDataAccess:
                         xData = pgPlotItem.dataItems[0].xData
                         return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
             raise ValueError("Data node '" + treeNode.getName() + "' has no explicit dependency on current X axis.")
-
 
     def GetSignal1DAt(self, treeNode, itimeValue):
 

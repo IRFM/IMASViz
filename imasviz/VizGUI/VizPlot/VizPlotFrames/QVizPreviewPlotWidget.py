@@ -46,8 +46,16 @@ class QVizPreviewPlotWidget(QWidget):
         self.addTimeSlider = False
         self.addCoordinateSlider = False
 
+        self.plotStrategy = "DEFAULT"
+
     def getType(self):
         return PlotTypes.PREVIEW_PLOT
+
+    def setStrategy(self, strategy):
+        self.plotStrategy = strategy
+
+    def getStrategy(self):
+        return self.plotStrategy
 
     def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):

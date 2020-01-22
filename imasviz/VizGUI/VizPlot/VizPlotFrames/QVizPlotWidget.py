@@ -60,6 +60,9 @@ class QVizPlotWidget(QWidget):
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
 
+        self.plotStrategy = None
+
+
     def getType(self):
         return PlotTypes.SIMPLE_PLOT
 
@@ -72,6 +75,12 @@ class QVizPlotWidget(QWidget):
             return True
         else:
             return None
+
+    def setStrategy(self, strategy):
+        self.plotStrategy = strategy
+
+    def getStrategy(self):
+        return self.plotStrategy
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
@@ -118,11 +127,11 @@ class QVizPlotWidget(QWidget):
         # if vizTreeNode.globalTime is None and self.addTimeSlider:
         #     self.sliderGroup.slider.setEnabled(False)
 
-        if not self.plotsHaveSameTimeBasis(vizTreeNode):
-            return
+        #if not self.plotsHaveSameTimeBasis(vizTreeNode):
+        #    return
 
-        if not self.plotsHaveSameCoordinate1(vizTreeNode):
-            return
+        # if not self.plotsHaveSameCoordinate1(vizTreeNode):
+        #     return
 
         self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
@@ -178,32 +187,6 @@ class QVizPlotWidget(QWidget):
             if node.is1DAndDynamic():
                 coordinate1Vectors.append(node.coordinateValues(coordinateNumber=1, dataTreeView=self.dataTreeView))
         return coordinate1Vectors
-
-    def plotsHaveSameTimeBasis(self, vizTreeNode):
-        if self.addTimeSlider:
-            timeVectors = self.getGlobalTimeVectors()
-            if len(timeVectors) == 0:  # Happens when the first plot is added
-                return True
-            if vizTreeNode.globalTime is None:
-                vizTreeNode.globalTime = \
-                    vizTreeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
-            if vizTreeNode.globalTime is None:
-                logging.error("Could not add plot for: " + vizTreeNode.getPath() +
-                              ". No global time vector found for the IDS which contains this node.")
-                return False
-            timeVectors.append(vizTreeNode.globalTime)
-            sameGlobalTime = True
-            for i in range(1, len(timeVectors)):
-                if not np.array_equal(timeVectors[i - 1], timeVectors[i]):
-                    sameGlobalTime = False
-                    break
-            if not sameGlobalTime:
-                logging.error("Could not add plot for: " + vizTreeNode.getPath() +
-                              ". Existing plot(s) has/have not the same time vector.")
-                return False
-            else:
-                return True
-        return True
 
     def plotsHaveSameCoordinate1(self, vizTreeNode):
         if self.addCoordinateSlider:
@@ -261,6 +244,8 @@ class QVizPlotWidget(QWidget):
             self.indexLabel = self.sliderGroupDict['indexLabel']
             self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
 
+            self.setSliderComponentsDisabled(True)
+
             self.gridLayout.addWidget(self.separatorLine, 2, 0, 1, 10)
             # Add time slider label
             self.gridLayout.addWidget(self.sliderLabel, 3, 0, 1, 10)
@@ -280,6 +265,14 @@ class QVizPlotWidget(QWidget):
 
         # Connect custom UI elements
         QMetaObject.connectSlotsByName(self)
+
+    def setSliderComponentsDisabled(self, flag):
+        self.separatorLine.setDisabled(flag)
+        self.slider.setDisabled(flag)
+        self.sliderLabel.setDisabled(flag)
+        self.sliderFieldLabel.setDisabled(flag)
+        self.indexLabel.setDisabled(flag)
+        self.sliderValueIndicator.setDisabled(flag)
 
     def menuBar(self):
         """Set menu bar.
@@ -331,6 +324,7 @@ class sliderGroup():
         if dataTreeView is None:
             raise ValueError('inner sliderGroup class needs a not None dataTreeView object to operate')
         self.dataTreeView = dataTreeView
+        self.ignoreEvent = False
 
 
     def setupSlider(self):
@@ -373,8 +367,10 @@ class sliderGroup():
         return self.timeSliderGroup
 
     def updateValues(self, indexValue):
-        #print(indexValue)
-        self.setSlider()
+
+        if not self.slider.isEnabled():
+            return
+
         if self.isTimeSlider:
             self.sliderFieldLabel = self.setLabel(text='Time:')
             if self.active_treeNode.globalTime is None:
@@ -389,7 +385,7 @@ class sliderGroup():
             node = self.active_treeNode
             if len(self.parent.vizTreeNodesList) > 0:
                 node = self.parent.vizTreeNodesList[0]
-            if node.is1DAndDynamic():
+            if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
                 self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
                 if node.getCoordinate(coordinateNumber=1) == "1..N" or \
                                 node.getCoordinate(coordinateNumber=1) == "1...N":
@@ -404,6 +400,7 @@ class sliderGroup():
     def setSlider(self):
         """Set slider.
         """
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 
         self.active_treeNode = self.dataTreeView.selectedItem
 
@@ -411,28 +408,37 @@ class sliderGroup():
         maxValue = self.slider.maximum()
 
         if self.isTimeSlider:
+            # vizApi = self.dataTreeView.imas_viz_api
+            # arrayData = vizApi.GetSignal(self.dataTreeView, self.active_treeNode, plotWidget=self)
+            # xValues = QVizPlotSignal.getXAxisValues(arrayData)
+            #v = QVizPlotSignal.get1DSignalValue(arrayData)
+
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
             minValue = 0
-            # - Get maximum value by getting the length of the array
-            newMaxValue = int(self.active_treeNode.timeMaxValue()) - 1
-            if newMaxValue < self.slider.maximum() or maxValue == 0:
-                maxValue = newMaxValue
+
+            if self.active_treeNode.embedded_in_time_dependent_aos() and \
+                    self.active_treeNode.is1DAndDynamic():
+                # - Get maximum value by getting the length of the array
+                newMaxValue = int(self.active_treeNode.timeMaxValue()) - 1
+                if newMaxValue < self.slider.maximum() or maxValue == 0:
+                    maxValue = newMaxValue
         else:
-            # Set index slider using time as index
-            nodeData = self.active_treeNode.getData()
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
-            if self.active_treeNode.is1DAndDynamic():
+            if self.active_treeNode.embedded_in_time_dependent_aos() and \
+                    self.active_treeNode.is1DAndDynamic():
                 newMaxValue = self.active_treeNode.coordinateLength(
                     coordinateNumber=1, dataTreeView=self.dataTreeView) - 1
                 if newMaxValue < self.slider.maximum() or maxValue == 0:
                     maxValue = newMaxValue
 
         # Set default value
+        self.ignoreEvent = True
         self.slider.setMinimum(minValue)
         self.slider.setMaximum(maxValue)
+        self.ignoreEvent = False
 
 
     def setSeparatorLine(self):
@@ -489,12 +495,11 @@ class sliderGroup():
 
         # Update slider value indicator value
         self.sliderValueIndicator.setText(str(self.slider.value()))
-        treeNode = self.dataTreeView.selectedItem
 
         # Don't plot when the slider is being dragged by mouse. Plot on slider
         # release. This is important to still plot on value change by
         # keyboard arrow keys
-        if not self.sliderPress:
+        if not self.sliderPress and not self.ignoreEvent:
             self.executePlot()
 
 
@@ -526,7 +531,6 @@ class sliderGroup():
 
                 api.plotVsCoordinate1AtGivenTime(
                     dataTreeView=self.dataTreeView,
-                    time_index=currentIndex,
                     currentFigureKey=currentFigureKey,
                     treeNode=self.active_treeNode,
                     update=1,

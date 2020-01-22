@@ -29,7 +29,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, parent, ncols=5, strategy=None):
+    def __init__(self, parent, ncols=5, strategy="DEFAULT"):
         """
         Arguments:
             parent (QtWidgets.QMainWindow) : Parent of TablePlotView
@@ -54,6 +54,8 @@ class QVizTablePlotView(pg.GraphicsWindow):
         self.addTimeSlider = False
         self.addCoordinateSlider = False
 
+        self.plotStrategy = strategy
+
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
         # Set base dimension parameter for setting plot size
@@ -77,7 +79,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
         self.centralWidget.cols = self.ncols
 
         # Set pg.GraphicsWindow (holding plots)
-        self.plot1DSelectedSignals(all_DTV=self.all_DTV, strategy=strategy)
+        self.plot1DSelectedSignals(all_DTV=self.all_DTV)
 
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
@@ -87,11 +89,18 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
+
     def getType(self):
         return PlotTypes.TABLE_PLOT
 
+    def setStrategy(self, strategy):
+        self.plotStrategy = strategy
 
-    def plot1DSelectedSignals(self, update=0, all_DTV=True, strategy='DEFAULT'):
+    def getStrategy(self):
+        return self.plotStrategy
+
+
+    def plot1DSelectedSignals(self, update=0, all_DTV=True) :
         """Plot the set of 1D signals, selected by the user, as a function of
            time to TablePlotView.
 
@@ -129,10 +138,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
 
                 s= self.imas_viz_api.GetSignal(dataTreeView=self.dataTreeView,
                                             vizTreeNode=signalNode,
-                                            plotWidget=self,
-                                            strategy=strategy)
+                                            plotWidget=self)
 
-                t = QVizPlotSignal.getTime(s)
+                t = QVizPlotSignal.getXAxisValues(s)
                 
                 # Get array of y-axis values
                 v = QVizPlotSignal.get1DSignalValue(s)
@@ -146,8 +154,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
                                            title=self.figureKey,
-                                           plotWidget=self,
-                                           strategy=strategy)
+                                           plotWidget=self)
 
                 # Add plot
                 for i in range(0, nbRows):
