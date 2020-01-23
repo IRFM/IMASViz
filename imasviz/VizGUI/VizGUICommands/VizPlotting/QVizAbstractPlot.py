@@ -5,9 +5,5 @@ class QVizAbstractPlot:
         self.plotWidget = plotWidget
 
     def updateSlider(self):
-        if self.plotWidget.addTimeSlider:
-            time_index = self.plotWidget.sliderGroup.slider.value()
-            self.plotWidget.sliderGroup.setSlider()
-        elif self.plotWidget.addCoordinateSlider:
-            coordinate_index = self.plotWidget.sliderGroup.slider.value()
+        if self.plotWidget.addTimeSlider or self.plotWidget.addCoordinateSlider:
             self.plotWidget.sliderGroup.setSlider()

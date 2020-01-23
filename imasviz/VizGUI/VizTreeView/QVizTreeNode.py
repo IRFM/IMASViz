@@ -492,8 +492,7 @@ class QVizTreeNode(QTreeWidgetItem):
             pass
 
 
-    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None,
-                    time_index=0, coordinate_index=0, plotWidget=None):
+    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, plotWidget=None):
         """Set plot options.
 
         Arguments:
@@ -509,6 +508,14 @@ class QVizTreeNode(QTreeWidgetItem):
 
         if self.getUnits() is not None:
             ylabel += '[' + self.getUnits() + ']'
+
+        time_index = 0
+        coordinate_index = 0
+
+        if plotWidget.addTimeSlider:
+            time_index = plotWidget.sliderGroup.slider.value()
+        elif plotWidget.addCoordinateSlider:
+            coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if self.is0DAndDynamic():
             label = None

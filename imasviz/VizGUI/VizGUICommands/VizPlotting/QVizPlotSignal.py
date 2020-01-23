@@ -134,19 +134,13 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
             #            signals only, hence nbRows == 1 (always)
             nbRows = v.shape[0]
 
-            # Set plot options
-            time_index = 0
-            coordinate_index = 0
-
             self.updateSlider()
 
             label, xlabel, ylabel, title = \
                 self.treeNode.plotOptions(self.dataTreeView,
                                  label=label,
                                  xlabel=xlabel, title=figureKey,
-                                          time_index=time_index,
-                                          coordinate_index=coordinate_index,
-                                          plotWidget=self.plotWidget)
+                                 plotWidget=self.plotWidget)
 
             if update == 1:
 
