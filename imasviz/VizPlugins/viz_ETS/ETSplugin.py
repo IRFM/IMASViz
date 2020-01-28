@@ -24,8 +24,9 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
-    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox, QPushButton)
+    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox, QPushButton, QLineEdit)
 from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QDoubleValidator
 
 # IMASViz application imports
 from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
@@ -118,33 +119,63 @@ class ETSplugin(QMainWindow):
 
         # Set time slider
         self.slider_time = self.setTimeSlider()
-        self.mainWidget.layout().addWidget(self.slider_time, 0, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.tabWidget, 2, 0, 1, 4)
+        self.label_slider_tmin = QLabel("t<sub>min</sub>", parent=self)
+        self.label_slider_tmin.setFixedWidth(25)
+        self.label_slider_tmax = QLabel("t<sub>max</sub>", parent=self)
+        self.label_slider_tmax.setFixedWidth(25)
 
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
         self.tabCoreProfiles = tabCoreProfiles(parent=self)
 
-        # Set time slice label
-        self.time_indexLabel = QLabel("Time slice: ")
+        # Set time slice index label
+        self.time_indexLabel = QLabel("Time slice index: ")
+        self.time_indexLabel.setFixedWidth(120)
         # Set spinbox
-        self.spinBox_time = self.setTimeSpinBox()
+        self.spinBox_timeIndex = self.setTimeSpinBox()
+
+        # Set time value label
+        self.label_timeValue = QLabel("Time value: ")
+        # Set time value line edit
+        self.lineEdit_timeValue = self.setTimeValueLineEdit()
 
         # Set buttons
         self.plotButton = QPushButton("Plot", parent=self)
+        self.plotButton.setFixedWidth(120)
         self.plotButton.clicked.connect(partial(
             self.updatePlotOfCurrentTab, time_index=self.getTimeIndex()))
+        self.indexMinus10Button = QPushButton("<<", parent=self)
+        self.indexMinus10Button.setFixedWidth(60)
+        self.indexMinus1Button = QPushButton("<", parent=self)
+        self.indexMinus1Button.setFixedWidth(60)
+        self.indexPlus1Button = QPushButton(">", parent=self)
+        self.indexPlus1Button.setFixedWidth(60)
+        self.indexPlus10Button = QPushButton(">>", parent=self)
+        self.indexPlus10Button.setFixedWidth(60)
 
         # Set check box
         self.checkBox_instant_label = QLabel("Instant plot update on time index change: ")
+        self.checkBox_instant_label.setFixedWidth(285)
         self.checkBox_instant = QCheckBox(parent=self)
         self.checkBox_instant.setChecked(False)
 
-        self.mainWidget.layout().addWidget(self.time_indexLabel, 0, 1, 1, 1)
-        self.mainWidget.layout().addWidget(self.spinBox_time, 0, 2, 1, 1)
-        self.mainWidget.layout().addWidget(self.plotButton, 0, 3, 1, 1)
-        self.mainWidget.layout().addWidget(self.checkBox_instant_label, 1, 1, 1, 1)
-        self.mainWidget.layout().addWidget(self.checkBox_instant, 1, 2, 1, 1)
+        # Position widgets
+        self.mainWidget.layout().addWidget(self.time_indexLabel, 0, 0, 1, 1)
+        self.mainWidget.layout().addWidget(self.spinBox_timeIndex, 0, 1, 1, 1)
+        self.mainWidget.layout().addWidget(self.indexMinus10Button, 0, 2, 1, 1)
+        self.mainWidget.layout().addWidget(self.indexMinus1Button, 0, 3, 1, 1)
+        self.mainWidget.layout().addWidget(self.indexPlus1Button, 0, 4, 1, 1)
+        self.mainWidget.layout().addWidget(self.indexPlus10Button, 0, 5, 1, 1)
+        self.mainWidget.layout().addWidget(self.label_slider_tmin, 0, 6, 1, 1)
+        self.mainWidget.layout().addWidget(self.slider_time, 0, 7, 1, 4)
+        self.mainWidget.layout().addWidget(self.label_slider_tmax, 0, 11, 1, 1)
+        self.mainWidget.layout().addWidget(self.label_timeValue, 1, 0, 1, 1)
+        self.mainWidget.layout().addWidget(self.lineEdit_timeValue, 1, 1, 1, 1)
+        self.mainWidget.layout().addWidget(self.checkBox_instant_label, 1, 6, 1, 2)
+        self.mainWidget.layout().addWidget(self.checkBox_instant, 1, 8, 1, 1)
+        self.mainWidget.layout().addWidget(self.plotButton, 2, 0, 1, 1)
+        self.mainWidget.layout().addWidget(self.tabWidget, 3, 0, 1, 12)
+
         self.setCentralWidget(self.mainWidget)
 
         # Set initial window size
@@ -200,9 +231,9 @@ class ETSplugin(QMainWindow):
     def onSliderChange(self, event=None):
 
         self.log.debug(f"DEBUG | {type(self).__name__} | onSliderChange() | START.")
-        if self.slider_time.value() != self.spinBox_time.value():
+        if self.slider_time.value() != self.spinBox_timeIndex.value():
             # Update spinbox value
-            self.spinBox_time.setValue(self.slider_time.value())
+            self.spinBox_timeIndex.setValue(self.slider_time.value())
         # Update plots
         # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
 
@@ -217,27 +248,36 @@ class ETSplugin(QMainWindow):
         return currentWidget
 
     def setTimeSpinBox(self):
-        spinBox_time = QSpinBox(parent=self)
-        spinBox_time.setValue(0)
-        spinBox_time.setMinimum(0)
-        spinBox_time.setMaximum(len(self.ids.core_profiles.time)-1)
+        spinBox_timeIndex = QSpinBox(parent=self)
+        spinBox_timeIndex.setValue(0)
+        spinBox_timeIndex.setMinimum(0)
+        spinBox_timeIndex.setMaximum(len(self.ids.core_profiles.time)-1)
+        spinBox_timeIndex.setFixedWidth(65)
 
-        spinBox_time.valueChanged.connect(self.onSpinBoxChange)
-        spinBox_time.editingFinished.connect(partial(
+        spinBox_timeIndex.valueChanged.connect(self.onSpinBoxChange)
+        spinBox_timeIndex.editingFinished.connect(partial(
             self.updatePlotOfCurrentTab, time_index=self.time_index))
 
-        return spinBox_time
+        return spinBox_timeIndex
+
+    def setTimeValueLineEdit(self):
+        lineEdit_timeValue = QLineEdit("", parent=self)
+        self.onlyDouble = QDoubleValidator()
+        lineEdit_timeValue.setValidator(self.onlyDouble)
+        lineEdit_timeValue.setFixedWidth(50)
+
+        return lineEdit_timeValue
 
     def onSpinBoxChange(self, event=None):
 
         self.log.debug(f"DEBUG | {type(self).__name__} | onSpinBoxChange() | START.")
         # Update slider value
-        self.time_index = self.spinBox_time.value()
+        self.time_index = self.spinBox_timeIndex.value()
         self.slider_time.setValue(self.time_index)
 
         if self.checkBox_instant.isChecked():
             # Update plots
-            # self.getCurrentTab().plotUpdate(time_index=self.spinBox_time.value())
+            # self.getCurrentTab().plotUpdate(time_index=self.spinBox_timeIndex.value())
             self.updatePlotOfCurrentTab(time_index=self.time_index)
 
     def setIDS(self):

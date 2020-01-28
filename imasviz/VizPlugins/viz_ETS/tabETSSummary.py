@@ -647,6 +647,8 @@ class tabETSSummary(QWidget):
             # Get vacuum toroidal field at R0 (R0 = major radius)
             b0 = self.ids.core_profiles.vacuum_toroidal_field.b0[self.it]
             # Get total toroidal plasma current
+
+            # TODO: should be read from equilibrium
             ip = self.ids.core_profiles.global_quantities.ip[self.it]
 
             # Note: In ETSviz the total toroidal plasma current gets read from
@@ -695,6 +697,10 @@ class tabETSSummary(QWidget):
             # Number of impurities
             # TODO
             # NIMP = ? # unknown where in IDSs this data resides
+                       # According to cpo2ids_devel (keplerworkflows), impurities
+                       # get stored to cp_1d.ion[:] too. How to know which ion
+                       # is then considered being impurity?
+
             # for iimp in range(NIMP):
 
             #     self.log.debug(f"DEBUG: len(core_profiles[{self.it}].ion[{iion}].element): "
