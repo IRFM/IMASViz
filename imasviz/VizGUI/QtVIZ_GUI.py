@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import QMdiArea, QMdiSubWindow
 # Add imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
 
+from pathlib import Path
 from imasviz.VizUtils.QVizLogger import QVizLogger
 from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
     QPushButton, QVBoxLayout, QComboBox, QPlainTextEdit, QGridLayout
@@ -140,24 +141,21 @@ class GUIFrame(QTabWidget):
 
         publicDatabases = []
 
-        file = open(os.environ['VIZ_HOME'] + '/config/UDA_machines')
-        if file is not None:
-            UDAmachines = file.readline()
-            file.close()
-            publicDatabases = UDAmachines.split()
-        else:
-            logging.warning("Missing UDA_machines file in /config directory. UDA will be disabled!")
-            os.environ.get['UDA_DISABLED'] = 1
 
-        if os.environ.get('UDA_DISABLED') == 1:
-            print('UDA will be disabled')
-            self.tab2.setDisabled(True)
-        else:
-            if 'UDA_HOST' in os.environ:
-                self.tab2.setDisabled(False)
+        if os.environ.get('UDA_DISABLED') != 1:
+            udaConfigFilePath = Path(os.environ['VIZ_HOME'] + '/config/UDA_machines')
+            if udaConfigFilePath.is_file():
+                udaConfigFile = open(udaConfigFilePath)
+                UDAmachines = udaConfigFile.readline()
+                udaConfigFile.close()
+                publicDatabases = UDAmachines.split()
             else:
-                print('UDA will be disabled (no UDA_HOST defined')
+                logging.warning("Missing UDA_machines file in /config directory. UDA will be disabled!")
+                os.environ.get['UDA_DISABLED'] = 1
                 self.tab2.setDisabled(True)
+        else:
+            print('UDA will be disabled (UDA_DISABLED=1)')
+            self.tab2.setDisabled(True)
 
         self.cb = QComboBox()
         self.cb.addItems(publicDatabases)
