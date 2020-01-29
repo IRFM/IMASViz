@@ -81,8 +81,8 @@ class tabETSSummary(QWidget):
         self.canvas = FigCanvas(self.fig)
         self.toolbar = NavigationToolbar(self.canvas, self)
         # Add canvas to tab widget
-        self.layout().addWidget(self.canvas, 0, 0, 2, 10)
-        self.layout().addWidget(self.toolbar, 1, 0, 1, 10)
+        self.layout().addWidget(self.canvas, 0, 0, 1, 1)
+        self.layout().addWidget(self.toolbar, 1, 0, 1, 1)
 
         self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.35)
@@ -181,9 +181,9 @@ class tabETSSummary(QWidget):
         self.ax1.cla()
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             te = self.cp_1d.electrons.temperature
-            self.line_te, = self.ax1.plot(rhotor, 1.0e-3*te,
+            self.line_te, = self.ax1.plot(rho_tor_norm, 1.0e-3*te,
                                           label = "Te",
                                           color='r',
                                           linewidth=1.5)
@@ -193,7 +193,7 @@ class tabETSSummary(QWidget):
                 # Empty array
                 if self.cp_1d.ion[i].multiple_states_flag == 0:
                     self.line_ti[i], = \
-                        self.ax1.plot(rhotor,
+                        self.ax1.plot(rho_tor_norm,
                                       1.0e-3*self.cp_1d.ion[i].temperature,
                                       label='Ti %d'%(i+1),
                                       color=self.ion_colors[min(i,len(self.ion_colors)-1)],
@@ -203,7 +203,7 @@ class tabETSSummary(QWidget):
             self.log.error( 'ERROR occurred when plotting temperatures. (%s) ' % err,
                 exc_info=True)
 
-        self.ax1.set(xlabel= "rhotor [m]", ylabel='Temperature [keV]')
+        self.ax1.set(xlabel = "rho_tor_norm [-]", title="Temperature [keV]")
         # self.ax1.set_yticks([])
         self.ax1.xaxis.set_minor_locator(
             ticker.AutoMinorLocator(self._nminor_interval))
@@ -222,16 +222,16 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_te_ti() | START.")
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             te = self.cp_1d.electrons.temperature
 
-            self.line_te.set_xdata(rhotor)
+            self.line_te.set_xdata(rho_tor_norm)
             self.line_te.set_ydata(1.0e-3*te)
 
             for i in range(len(self.cp_1d.ion)):
                 ti = self.cp_1d.ion[i].temperature
                 if self.cp_1d.ion[i].multiple_states_flag == 0 :
-                    self.line_ti[i].set_xdata(rhotor)
+                    self.line_ti[i].set_xdata(rho_tor_norm)
                     self.line_ti[i].set_ydata(1.0e-3*self.cp_1d.ion[i].temperature)
                     # self.line_ti[i].set_color(self.ion_colors[min(i,len(self.ion_colors)-1)])
 
@@ -251,9 +251,9 @@ class tabETSSummary(QWidget):
         self.ax2.cla()
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             ne = self.cp_1d.electrons.density
-            self.line_ne, = self.ax2.plot(rhotor, 1.0e-19*ne,
+            self.line_ne, = self.ax2.plot(rho_tor_norm, 1.0e-19*ne,
                                           label = "Ne",
                                           color='r',
                                           linewidth=1.5)
@@ -262,7 +262,7 @@ class tabETSSummary(QWidget):
                 ni = self.cp_1d.ion[i].density
                 if self.cp_1d.ion[i].multiple_states_flag == 0 :
                     self.line_ni[i], = \
-                        self.ax2.plot(rhotor,
+                        self.ax2.plot(rho_tor_norm,
                                       1.0e-19*self.cp_1d.ion[i].density,
                                       label='Ni %d'%(i+1),
                                       color=self.ion_colors[min(i,len(self.ion_colors)-1)],
@@ -272,7 +272,7 @@ class tabETSSummary(QWidget):
             self.log.error( 'ERROR occurred when plotting densities. (%s) ' % err,
                 exc_info=True)
 
-        self.ax2.set(xlabel= "rhotor [m]", ylabel='Density [10^19 m-3]')
+        self.ax2.set(xlabel= "rho_tor_norm [-]", title='Density [10^19 m-3]')
         # self.ax2.set_yticks([])
         self.ax2.xaxis.set_minor_locator(
             ticker.AutoMinorLocator(self._nminor_interval))
@@ -291,15 +291,15 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_ne_ni() | START.")
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             ne = self.cp_1d.electrons.density
-            self.line_ne.set_xdata(rhotor)
+            self.line_ne.set_xdata(rho_tor_norm)
             self.line_ne.set_ydata(1.0e-19*ne)
 
             for i in range(len(self.cp_1d.ion)):
                 ni = self.cp_1d.ion[i].density
                 if self.cp_1d.ion[i].multiple_states_flag == 0 :
-                    self.line_ni[i].set_xdata(rhotor)
+                    self.line_ni[i].set_xdata(rho_tor_norm)
                     self.line_ni[i].set_ydata(1.0e-19*self.cp_1d.ion[i].density)
 
         except Exception as err:
@@ -319,16 +319,16 @@ class tabETSSummary(QWidget):
         self.ax3_2.cla()
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             q = self.cp_1d.q
             j_total = self.cp_1d.j_total
-            pl1 = self.ax3.plot(rhotor, 1.0e-6*abs(j_total),
+            pl1 = self.ax3.plot(rho_tor_norm, 1.0e-6*abs(j_total),
                           label = "j_total",
                           color='b',
                           linewidth=1.5)
             self.line_jtotal = pl1[0]
             self.ax3.tick_params(axis='y', colors='blue')
-            pl2 = self.ax3_2.plot(rhotor, abs(q),
+            pl2 = self.ax3_2.plot(rho_tor_norm, abs(q),
                           label = "q",
                           color='r',
                           linewidth=1.5)
@@ -345,8 +345,17 @@ class tabETSSummary(QWidget):
         leg = self.ax3_2.legend(pl, labs, loc=0)
         leg.set_draggable(True)
 
-        self.ax3.set(xlabel= "rhotor [m]", ylabel='j_total [MA/m2]')
-        self.ax3_2.set(xlabel= "rhotor [m]", ylabel='q [MA/m2]')
+        sign_q    = ' '
+        sign_jtot = ' '
+        if q[0]/abs(q[0]) == -1:
+          sign_q    = '-'
+        if j_total[0]/abs(j_total[0]) == -1:
+          sign_jtot = '-'
+
+        self.ax3.set(xlabel= "rho_tor_norm [-]")
+        self.ax3.set_title('%cj_total [MA/m2]' % sign_jtot[0], color='b', ha='right')
+        self.ax3_2.set(xlabel= "rho_tor_norm [-]")
+        self.ax3_2.set_title(10*' '+'%cq [MA/m2]' % sign_q[0], color='r', ha='left')
         # self.ax3.set_yticks([])
         self.ax3.xaxis.set_minor_locator(
             ticker.AutoMinorLocator(self._nminor_interval))
@@ -366,12 +375,12 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_jtotal_q() | START.")
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             q = self.cp_1d.q
             j_total = self.cp_1d.j_total
-            self.line_jtotal.set_xdata(rhotor)
+            self.line_jtotal.set_xdata(rho_tor_norm)
             self.line_jtotal.set_ydata(1.0e-6*abs(j_total))
-            self.line_q.set_xdata(rhotor)
+            self.line_q.set_xdata(rho_tor_norm)
             self.line_q.set_ydata(abs(q))
 
         except Exception as err:
@@ -390,11 +399,11 @@ class tabETSSummary(QWidget):
         self.ax4.cla()
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             zeff = self.cp_1d.zeff
-            self.ax4.set_xlim(0, max(rhotor))
+            self.ax4.set_xlim(0, max(rho_tor_norm))
             self.ax4.set_ylim(1, max(zeff)*1.05)
-            self.line_zeff, = self.ax4.plot(rhotor, zeff,
+            self.line_zeff, = self.ax4.plot(rho_tor_norm, zeff,
                                   label = "zeff",
                                   color='b',
                                   linewidth=1.5)
@@ -404,7 +413,7 @@ class tabETSSummary(QWidget):
             self.log.error( 'ERROR occurred when plotting Zeff profile. (%s) ' % err,
                 exc_info=True)
 
-        self.ax4.set(xlabel= "rhotor [m]", ylabel='Zeff [-]')
+        self.ax4.set(xlabel= "rho_tor_norm [-]", title='Zeff [-]')
         # self.ax4.set_yticks([])
         self.ax4.yaxis.set_major_formatter(pylab.NullFormatter())
         self.ax4.xaxis.set_minor_locator(
@@ -424,11 +433,11 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_zeff() | START.")
 
         try:
-            rhotor = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             zeff = self.cp_1d.zeff
-            self.ax4.set_xlim(0, max(rhotor))
+            self.ax4.set_xlim(0, max(rho_tor_norm))
             self.ax4.set_ylim(1, max(zeff)*1.05)
-            self.line_zeff.set_xdata(rhotor)
+            self.line_zeff.set_xdata(rho_tor_norm)
             self.line_zeff.set_ydata(zeff)
 
         except Exception as err:
@@ -447,12 +456,12 @@ class tabETSSummary(QWidget):
         self.ax5.cla()
 
         try:
-            # rhotor = self.cp_1d.grid.rho_tor_norm
-            rhotor = self.ct_1d.grid_d.rho_tor_norm
+            # rho_tor_norm = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.ct_1d.grid_d.rho_tor_norm
             diff_te = self.ct_1d.electrons.energy.d
             # diff_ti = self.ct_1d.total_ion_energy.d
-            self.ax5.set_xlim(0, max(rhotor))
-            self.line_diff_te, = self.ax5.plot(rhotor, diff_te,color='r', linewidth=1.5)
+            self.ax5.set_xlim(0, max(rho_tor_norm))
+            self.line_diff_te, = self.ax5.plot(rho_tor_norm, diff_te,color='r', linewidth=1.5)
 
             self.line_diff_ti = [0]*len(self.ct_1d.ion)
             self.line_diff_ni = [0]*len(self.ct_1d.ion)
@@ -461,11 +470,11 @@ class tabETSSummary(QWidget):
                 diff_ti = self.ct_1d.ion[i].energy.d
                 diff_ni = self.ct_1d.ion[i].particles.d
 
-                self.line_diff_ti[i], = self.ax5.plot(rhotor, diff_ti,
+                self.line_diff_ti[i], = self.ax5.plot(rho_tor_norm, diff_ti,
                     label = "diff_ti",
                     color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                     linewidth=1.5)
-                self.line_diff_ni[i], = self.ax5.plot(rhotor, diff_ni,
+                self.line_diff_ni[i], = self.ax5.plot(rho_tor_norm, diff_ni,
                     label = "diff_ni",
                     color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
                     linewidth=1.5)
@@ -474,8 +483,8 @@ class tabETSSummary(QWidget):
             self.log.error( 'ERROR occurred when plotting Transport coefficients. (%s) ' % err,
                 exc_info=True)
 
-        self.ax5.set_ylabel('diff [m^2/s]')
-        self.ax5.set_xlabel('rhotor [m]')
+        self.ax5.set_title('diff [m^2/s]')
+        self.ax5.set_xlabel('rho_tor_norm [-]')
         #self.ax5.xaxis.set_major_formatter(pylab.NullFormatter())
         self.ax5.yaxis.set_major_formatter(pylab.NullFormatter())
         self.ax5.set_yticks([])
@@ -495,22 +504,22 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_transport_coeff() | START.")
 
         try:
-            # rhotor = self.cp_1d.grid.rho_tor_norm
-            rhotor = self.ct_1d.grid_d.rho_tor_norm
+            # rho_tor_norm = self.cp_1d.grid.rho_tor_norm
+            rho_tor_norm = self.ct_1d.grid_d.rho_tor_norm
             diff_te = self.ct_1d.electrons.energy.d
             # diff_ti = self.ct_1d.total_ion_energy.d
-            self.ax5.set_xlim(0, max(rhotor))
-            self.line_diff_te.set_ydata(rhotor)
+            self.ax5.set_xlim(0, max(rho_tor_norm))
+            self.line_diff_te.set_ydata(rho_tor_norm)
             self.line_diff_te.set_xdata(diff_te)
 
             for i in range(len(self.ct_1d.ion)):
                 diff_ti = self.ct_1d.ion[i].energy.d
                 diff_ni = self.ct_1d.ion[i].particles.d
 
-                self.line_diff_ti[i].set_xdata(rhotor)
+                self.line_diff_ti[i].set_xdata(rho_tor_norm)
                 self.line_diff_ti[i].set_ydata(diff_ti)
 
-                self.line_diff_ni[i].set_xdata(rhotor)
+                self.line_diff_ni[i].set_xdata(rho_tor_norm)
                 self.line_diff_ni[i].set_ydata(diff_ni)
 
         except Exception as err:
@@ -529,16 +538,16 @@ class tabETSSummary(QWidget):
         self.ax6.cla()
 
         try:
-            rhotor = self.cs_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cs_1d.grid.rho_tor_norm
             sour_te = self.cs_1d.electrons.energy
             sour_ti_tot = self.cs_1d.total_ion_energy
             sour_ni0 = self.cs_1d.ion[0].particles
 
             self.ax6_2.set_ylim(-1,1)
 
-            self.ax6.set_xlim(0, max(rhotor))
+            self.ax6.set_xlim(0, max(rho_tor_norm))
             norm = abs(max(1,max(sour_te),max(sour_ti_tot),-min(sour_te),-min(sour_ti_tot)))
-            pl1 = self.ax6.plot(rhotor, sour_te/norm,
+            pl1 = self.ax6.plot(rho_tor_norm, sour_te/norm,
                                 label = "sour_te/norm",
                                 color='r',
                                 linewidth=1.5)
@@ -554,12 +563,12 @@ class tabETSSummary(QWidget):
                 norm = abs(max(norm,max(sour_ti),-min(sour_ti)))
                 norm1 = abs(max(norm1,max(sour_ni),-min(sour_ni)))
 
-                pl2 = self.ax6.plot(rhotor, sour_ti/norm,
+                pl2 = self.ax6.plot(rho_tor_norm, sour_ti/norm,
                                 label = "sour_ti/norm",
                                 color=self.ion_colors[min(i,len(self.ion_colors)-1)],
                                 linewidth=1.5)
                 self.line_sour_ti[i] = pl2[0]
-                pl3 = self.ax6.plot(rhotor, sour_ni/norm1,
+                pl3 = self.ax6.plot(rho_tor_norm, sour_ni/norm1,
                                 label = "sour_ni/norm",
                                 color=self.ion_ni_colors[min(i,len(self.ion_ni_colors)-1)],
                                 linewidth=1.5)
@@ -571,9 +580,9 @@ class tabETSSummary(QWidget):
 
         self.ax6_2.axhline(y=0, linewidth=0.3)
 
-        self.ax6.set_ylabel('q [kW.m-3]')
-        self.ax6.set_xlabel('rhotor [m]')
-        self.ax6_2.set_ylabel(" s [m-3 s-1]")
+        self.ax6.set_title(' '*10+'q [kW.m-3]', color='g', ha='left', )
+        self.ax6.set_xlabel('rho_tor_norm [-]')
+        self.ax6_2.set_title("s [m-3 s-1]", ha='right')
         self.ax6.grid()
         self.ax6.xaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
         self.ax6.yaxis.set_minor_locator(ticker.AutoMinorLocator(self._nminor_interval))
@@ -593,14 +602,14 @@ class tabETSSummary(QWidget):
         self.log.debug(f"DEBUG | {type(self).__name__} | plotUpdate_sources() | START.")
 
         try:
-            rhotor = self.cs_1d.grid.rho_tor_norm
+            rho_tor_norm = self.cs_1d.grid.rho_tor_norm
             sour_te = self.cs_1d.electrons.energy
             sour_ti_tot = self.cs_1d.total_ion_energy
             sour_ni0 = self.cs_1d.ion[0].particles
 
-            self.ax6.set_xlim(0, max(rhotor))
+            self.ax6.set_xlim(0, max(rho_tor_norm))
             norm = abs(max(1,max(sour_te),max(sour_ti_tot),-min(sour_te),-min(sour_ti_tot)))
-            self.line_sour_te.set_xdata(rhotor)
+            self.line_sour_te.set_xdata(rho_tor_norm)
             self.line_sour_te.set_ydata(sour_te/norm)
 
             norm1 = abs(max(1,max(sour_ni0),-min(sour_ni0)))
@@ -612,10 +621,10 @@ class tabETSSummary(QWidget):
                 norm = abs(max(norm,max(sour_ti),-min(sour_ti)))
                 norm1 = abs(max(norm1,max(sour_ni),-min(sour_ni)))
 
-                self.line_sour_ti[i].set_xdata(rhotor)
+                self.line_sour_ti[i].set_xdata(rho_tor_norm)
                 self.line_sour_ti[i].set_ydata(sour_ti/norm)
 
-                self.line_sour_ni[i].set_xdata(rhotor)
+                self.line_sour_ni[i].set_xdata(rho_tor_norm)
                 self.line_sour_ni[i].set_ydata(sour_ti/norm)
 
         except Exception as err:
