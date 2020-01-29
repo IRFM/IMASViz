@@ -24,7 +24,8 @@ from matplotlib.backends.backend_qt5agg import \
     NavigationToolbar2QT as NavigationToolbar
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
-    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox, QPushButton, QLineEdit)
+    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox, QPushButton, QLineEdit,
+    QHBoxLayout, QVBoxLayout)
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QDoubleValidator
 
@@ -114,7 +115,7 @@ class ETSplugin(QMainWindow):
         """
         print("ETS plugin: setting UI")
         self.mainWidget = QWidget(parent=self)
-        self.mainWidget.setLayout(QGridLayout())
+        self.mainWidget.setLayout(QVBoxLayout())
         self.tabWidget = QTabWidget(parent=self)
 
         # Set time slider
@@ -136,6 +137,7 @@ class ETSplugin(QMainWindow):
 
         # Set time value label
         self.label_timeValue = QLabel("Time value: ")
+        self.label_timeValue.setFixedWidth(120)
         # Set time value line edit
         self.lineEdit_timeValue = self.setTimeValueLineEdit()
 
@@ -145,13 +147,13 @@ class ETSplugin(QMainWindow):
         self.plotButton.clicked.connect(partial(
             self.updatePlotOfCurrentTab, time_index=self.getTimeIndex()))
         self.indexMinus10Button = QPushButton("<<", parent=self)
-        self.indexMinus10Button.setFixedWidth(60)
+        self.indexMinus10Button.setFixedWidth(80)
         self.indexMinus1Button = QPushButton("<", parent=self)
-        self.indexMinus1Button.setFixedWidth(60)
+        self.indexMinus1Button.setFixedWidth(80)
         self.indexPlus1Button = QPushButton(">", parent=self)
-        self.indexPlus1Button.setFixedWidth(60)
+        self.indexPlus1Button.setFixedWidth(80)
         self.indexPlus10Button = QPushButton(">>", parent=self)
-        self.indexPlus10Button.setFixedWidth(60)
+        self.indexPlus10Button.setFixedWidth(80)
 
         # Set check box
         self.checkBox_instant_label = QLabel("Instant plot update on time index change: ")
@@ -160,21 +162,45 @@ class ETSplugin(QMainWindow):
         self.checkBox_instant.setChecked(False)
 
         # Position widgets
-        self.mainWidget.layout().addWidget(self.time_indexLabel, 0, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.spinBox_timeIndex, 0, 1, 1, 1)
-        self.mainWidget.layout().addWidget(self.indexMinus10Button, 0, 2, 1, 1)
-        self.mainWidget.layout().addWidget(self.indexMinus1Button, 0, 3, 1, 1)
-        self.mainWidget.layout().addWidget(self.indexPlus1Button, 0, 4, 1, 1)
-        self.mainWidget.layout().addWidget(self.indexPlus10Button, 0, 5, 1, 1)
-        self.mainWidget.layout().addWidget(self.label_slider_tmin, 0, 6, 1, 1)
-        self.mainWidget.layout().addWidget(self.slider_time, 0, 7, 1, 4)
-        self.mainWidget.layout().addWidget(self.label_slider_tmax, 0, 11, 1, 1)
-        self.mainWidget.layout().addWidget(self.label_timeValue, 1, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.lineEdit_timeValue, 1, 1, 1, 1)
-        self.mainWidget.layout().addWidget(self.checkBox_instant_label, 1, 6, 1, 2)
-        self.mainWidget.layout().addWidget(self.checkBox_instant, 1, 8, 1, 1)
-        self.mainWidget.layout().addWidget(self.plotButton, 2, 0, 1, 1)
-        self.mainWidget.layout().addWidget(self.tabWidget, 3, 0, 1, 12)
+        self.mainWidget.layout().addWidget(self.tabWidget)
+
+        whbox1 = QWidget(self)
+        whbox1.setLayout(QHBoxLayout())
+        whbox1.layout().setContentsMargins(0,0,0,0)
+        whbox1.layout().addWidget(self.label_slider_tmin)
+        whbox1.layout().addWidget(self.slider_time)
+        whbox1.layout().addWidget(self.label_slider_tmax)
+        self.mainWidget.layout().addWidget(whbox1)
+
+        whbox2 = QWidget(self)
+        whbox2.setLayout(QHBoxLayout())
+        whbox2.layout().setContentsMargins(0,0,0,0)
+        whbox2.layout().addWidget(self.time_indexLabel)
+        whbox2.layout().addWidget(self.spinBox_timeIndex)
+        whbox2.layout().addStretch()
+        whbox2.layout().addWidget(self.indexMinus10Button)
+        whbox2.layout().addWidget(self.indexMinus1Button)
+        whbox2.layout().addWidget(self.indexPlus1Button)
+        whbox2.layout().addWidget(self.indexPlus10Button)
+        whbox2.layout().addStretch()
+        self.mainWidget.layout().addWidget(whbox2)
+
+        whbox3 = QWidget(self)
+        whbox3.setLayout(QHBoxLayout())
+        whbox3.layout().setContentsMargins(0,0,0,0)
+        whbox3.layout().addWidget(self.label_timeValue)
+        whbox3.layout().addWidget(self.lineEdit_timeValue)
+        whbox3.layout().addStretch()
+        self.mainWidget.layout().addWidget(whbox3)
+
+        whbox4 = QWidget(self)
+        whbox4.setLayout(QHBoxLayout())
+        whbox4.layout().setContentsMargins(0,0,0,0)
+        whbox4.layout().addWidget(self.plotButton)
+        whbox4.layout().addWidget(self.checkBox_instant_label)
+        whbox4.layout().addWidget(self.checkBox_instant)
+        whbox4.layout().addStretch()
+        self.mainWidget.layout().addWidget(whbox4)
 
         self.setCentralWidget(self.mainWidget)
 
