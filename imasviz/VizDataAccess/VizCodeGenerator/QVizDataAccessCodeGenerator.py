@@ -111,8 +111,9 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('logging.error("An attribute error has occurred. This means that IMASViz is using a wrong data parser ' +
                                'for the current IMAS data entry. This error can occur for IMAS data entries created with an old version of the Access Layer.' +
                                ' Update the DD version (field ids_properties.version_put.data_dictionary) of ' +
-                                'at least one IDS found in the current data entry.' +
+                                'at least one IDS found in the current data entry, IMASViz will then pick the right parser.' +
                                ' ")', 2)
+                self.printCode("self.progressBar.hide()", 2)
                 self.printCode('except Exception as exception:', 1)
                 self.printCode('logging.error(exception, exc_info=True)', 2)
                 self.printCode("self.progressBar.hide()", 2)
