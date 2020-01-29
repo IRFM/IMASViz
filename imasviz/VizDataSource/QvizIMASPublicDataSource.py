@@ -1,5 +1,5 @@
 import imas
-
+from PyQt5.QtWidgets import QTreeWidgetItem, QProgressBar
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGeneratedClassFactory
 from imasviz.VizUtils.QVizGlobalValues import GlobalColors
 import logging
@@ -18,10 +18,17 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, asynch=True):
         print ("Loading data using UDA")
+        self.progressBar = QProgressBar()
+        self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
+
+        self.progressBar.setMaximum(0)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setGeometry(100, 150, 500, 25)
+        self.progressBar.show()
         self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView,
                                                            IDSName,
                                                            occurrence,
-                                                           asynch).create()
+                                                           asynch).create(self.progressBar)
         print("*: self.ids: ", self.ids)
         if self.ids.get(occurrence) is None:
             self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber,
