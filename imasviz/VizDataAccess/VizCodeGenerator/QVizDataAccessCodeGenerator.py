@@ -74,35 +74,43 @@ class QVizDataAccessCodeGenerator:
                 self.printCode("self.progressBar = progressBar", 1)
 
                 self.printCode('def run(self):', 0)
-                self.printCode("idsData = None", 1)
+
+                self.printCode('try:', 1)
+
+                self.printCode("idsData = None", 2)
                 #print('-------->name_att')
                 #print (name_att)
                 for ids2 in root:
                     name_att2 = ids2.get('name')
-                    if name_att2 == None:
+                    if name_att2 is None:
                         continue
                     #print('name_att2')
-                    self.printCode("if self.idsName == '" + name_att2 + "':", 1)
-
-                    self.displayLoadingMessage(name_att2)
-
-                    #self.printCode("self.view.log.info('Loading occurrence ' + str(int(self.occurrence)) + ' of IDS ' + self.idsName + '...')", 2)
-                    self.printCode("t1 = time.time()", 2)
-                    self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 2)  # get the data from the database for the ids"
-                    self.printCode("t2 = time.time()", 2)
-                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')",2)
+                    self.printCode("if self.idsName == '" + name_att2 + "':", 2)
+                    self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
+                                   "'" + name_att2 + "' +  ' IDS'", 3)
+                    self.printCode("logging.info(message)", 3)
+                    self.printCode("t1 = time.time()", 3)
+                    self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 3)  # get the data from the database for the ids"
+                    self.printCode("t2 = time.time()", 3)
+                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')",3)
 
                     #self.printCode("print ('Get operation ended')", 2)
-                    self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 2)
-                    self.printCode("t3 = time.time()", 2)
-                    self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 2)
-                    self.printCode('if self.asynch:', 2)
+                    self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
+                    self.printCode("t3 = time.time()", 3)
+                    self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 3)
+                    self.printCode('if self.asynch:', 3)
 
-                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self), self.view.parent.eventResultId))',3)
-                    self.printCode("print ('waiting for view update...')" + '\n', 3)
-                    self.printCode('else:', 2)
-                    self.printCode('self.view.updateView(self.idsName, self.occurrence, idsData)', 3)
-                    self.printCode("self.progressBar.hide()", 3)
+                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self), self.view.parent.eventResultId))',4)
+                    self.printCode("print ('waiting for view update...')" + '\n', 4)
+                    self.printCode('else:', 3)
+                    self.printCode('self.view.updateView(self.idsName, self.occurrence, idsData)', 4)
+                    self.printCode("self.progressBar.hide()", 4)
+
+                self.printCode('except AttributeError as att_error:', 1)
+                self.printCode('logging.error(att_error, exc_info=True)', 2)
+                self.printCode('logging.error("An attribute error has occurred. This means that IMASViz is using a wrong data parser. Check that a DD version value is correctly defined in ids_properties.version_put.data_dictionary")', 2)
+                self.printCode('except Exception as exception:', 1)
+                self.printCode('logging.error(exception, exc_info=True)', 2)
 
                 self.printCode('\n', -1)
 
@@ -117,12 +125,6 @@ class QVizDataAccessCodeGenerator:
             self.printCode("return parent", 1)
             self.printCode('',-1)
             i+=1
-
-    def displayLoadingMessage(self, idsName):
-        self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
-                       "'" + idsName + "' +  ' IDS'" , 2)
-        self.printCode("logging.info(message)", 2)
-
 
     def generateParentsCode(self, level, path):
         path = self.replaceIndices(path)
@@ -643,7 +645,7 @@ if __name__ == "__main__":
                      "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
                      "3.23.1", "3.23.2", "3.23.3", "3.24.0", "3.25.0", "3.26.0"]
 
-    #imas_versions = ["3.24.0", "3.25.0"]
+    imas_versions = ["3.25.0"]
 
     patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
