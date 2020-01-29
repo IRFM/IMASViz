@@ -142,7 +142,7 @@ class GUIFrame(QTabWidget):
         publicDatabases = []
 
 
-        if os.environ.get('UDA_DISABLED') != 1:
+        if os.environ.get('UDA_DISABLED') != '1':
             udaConfigFilePath = Path(os.environ['VIZ_HOME'] + '/config/UDA_machines')
             if udaConfigFilePath.is_file():
                 udaConfigFile = open(udaConfigFilePath)
@@ -151,7 +151,7 @@ class GUIFrame(QTabWidget):
                 publicDatabases = UDAmachines.split()
             else:
                 logging.warning("Missing UDA_machines file in /config directory. UDA will be disabled!")
-                os.environ.get['UDA_DISABLED'] = 1
+                os.environ.get['UDA_DISABLED'] = '1'
                 self.tab2.setDisabled(True)
         else:
             print('UDA will be disabled (UDA_DISABLED=1)')
