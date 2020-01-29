@@ -164,9 +164,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
                 strategy = 'DEFAULT'
             mpView = QVizTablePlotView(parent=self, strategy=strategy)
         elif mpType == 'StackedPlotView':
-            if strategy is None:
-                strategy = 'TIME'
-            mpView = QVizStackedPlotView(parent=self, strategy=strategy)
+            mpView = QVizStackedPlotView(parent=self, strategy='TIME')
         else:
             logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
                            'provided!')

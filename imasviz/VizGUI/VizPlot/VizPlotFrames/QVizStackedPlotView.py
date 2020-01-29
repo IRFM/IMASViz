@@ -29,7 +29,7 @@ from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 class QVizStackedPlotView(QWidget):
 
-    def __init__(self, parent: QMainWindow, strategy=None):
+    def __init__(self, parent: QMainWindow, strategy="TIME"):
 
         super(QVizStackedPlotView, self).__init__(parent=parent)
 
@@ -142,7 +142,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
     """View containing the plots in a stacked layout.
     """
 
-    def __init__(self, parent: QWidget, ncols: int=1, strategy="TIME"):
+    def __init__(self, parent: QWidget, ncols: int=1, strategy=None):
         """
         Arguments:
             parent : Parent of StackedPlotWindow (QVizStackedPlotView).
