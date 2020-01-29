@@ -115,7 +115,7 @@ class QVizDataAccessCodeGenerator:
                                ' Second solution: quit IMASViz and load the IMAS version which was used to create the current data entry. Restart IMASViz.")', 2)
                 self.printCode('except Exception as exception:', 1)
                 self.printCode('logging.error(exception, exc_info=True)', 2)
-
+                self.printCode("self.progressBar.hide()", 2)
                 self.printCode('\n', -1)
 
 
@@ -125,7 +125,6 @@ class QVizDataAccessCodeGenerator:
             self.printCode('parent = ET.Element(' + "'" + ids.text + "'" + ')', 1)
             self.generateCodeForIDS(None, ids, 1, {}, [], '', 0, name_att)
             self.generateParentsCode(1, ids.text)
-            #self.printCode("self.progressBar.hide()", 1)
             self.printCode("return parent", 1)
             self.printCode('',-1)
             i+=1
@@ -649,7 +648,7 @@ if __name__ == "__main__":
                      "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
                      "3.23.1", "3.23.2", "3.23.3", "3.24.0", "3.25.0", "3.26.0"]
 
-    imas_versions = ["3.25.0"]
+    #imas_versions = ["3.25.0"]
 
     patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
