@@ -16,7 +16,11 @@ class QVizGeneratedClassFactory:
 
         XMLParser = None
 
-        imas__dd_version = os.environ['IMAS_VERSION']
+        imas__dd_version = self.IMASDataSource.data_dictionary_version
+
+        if imas__dd_version is None or imas__dd_version is '':
+            imas__dd_version = os.environ['IMAS_VERSION']
+
         if QVizGlobalValues.TESTING:
             imas__dd_version = QVizGlobalValues.TESTING_IMAS_VERSION
 
