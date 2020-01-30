@@ -6,6 +6,7 @@ visualizing static and dynamic IMAS data, stored within IMAS
 **Interface Data Structures** (**IDSs**).
 
 
+
 ## Installing and launching IMASViz from sources
 
 ### Requirements
@@ -70,6 +71,8 @@ This is done by executing make command from the $VIZ_HOME directory:
 can be accessed from the current machine where IMASViz is installed.
 Please refers to the documentation for the required prerequisites for accessing a particular remote UDA server.
 
+
+
 ### Running IMASViz from sources
 
     module load IMAS
@@ -91,6 +94,8 @@ In $VIZ_HOME directory execute:
     firefox doc/build/html/index.html
 
 
+
+
 ## Running IMASViz from installed modules on Gateway and ITER HPC
 
 ### GateWay HPC
@@ -108,10 +113,6 @@ Load a specific version of IMASViz, for example:
 
     module load imas-viz/2.3.7
 
-To launch IMASViz, just type:
-
-    viz
-
 
 ### ITER HPC
 
@@ -127,16 +128,12 @@ Load a specific version of IMASViz, for example:
 
     module load Viz/2.3.7-intel-2018a-Python-3.6.4
 
-To launch IMASViz, just type:
-
-    viz
-
 
 ### Launching IMASViz
 
 To launch **IMASViz**, execute the following command:
 
-    python $VIZ_HOME/imasviz/VizGUI/QtVIZ_GUI.py
+    viz
 
 
 ### IMASViz documentation
