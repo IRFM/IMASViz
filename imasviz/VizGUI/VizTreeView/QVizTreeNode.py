@@ -11,6 +11,7 @@ class QVizTreeNode(QTreeWidgetItem):
     def __init__(self, *args, **kwargs):
 
         self.globalTime = None
+        self.dataTreeView = None
         if len(args) == 0:
             self.createAttributes()
             self.infoDict = {}
@@ -33,6 +34,12 @@ class QVizTreeNode(QTreeWidgetItem):
             self.infoDict = args[2]
             self.initAttributes(args[3])
             QTreeWidgetItem.__init__(self, parent, name)
+
+    def getDataTreeView(self):
+        p = self
+        while p.dataTreeView is None:
+            p = p.parent()
+        return p.dataTreeView
 
     def createAttributes(self):
         self.parametrizedPath = None

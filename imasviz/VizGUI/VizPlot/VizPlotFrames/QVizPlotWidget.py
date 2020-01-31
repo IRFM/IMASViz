@@ -530,14 +530,14 @@ class sliderGroup():
             if self.isTimeSlider:
 
                 api.plotVsCoordinate1AtGivenTime(
-                    dataTreeView=self.dataTreeView,
+                    dataTreeView=node.getDataTreeView(),
                     currentFigureKey=currentFigureKey,
                     treeNode=self.active_treeNode,
                     update=1,
                     dataset_to_update=i)
             else:
                 api.plotVsTimeAtGivenCoordinate1(
-                    dataTreeView=self.dataTreeView,
+                    dataTreeView=node.getDataTreeView(),
                     coordinateIndex=currentIndex,
                     currentFigureKey=currentFigureKey,
                     treeNode=self.active_treeNode,

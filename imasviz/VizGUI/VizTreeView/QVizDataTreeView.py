@@ -111,7 +111,7 @@ class QVizDataTreeView(QTreeWidget):
 
         # Create a IDS root node with each shotnumber
         self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + str(dataSource.shotNumber) + ')'])
-
+        self.DTVRoot.dataTreeView = self
         # #Dictionary where each element is also a dictionary containing
         # self.dataTreeView.selectedSignalsDict[key] = \
         #     {'index': index,
