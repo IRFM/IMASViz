@@ -85,6 +85,7 @@ class ETSplugin(QMainWindow):
         # self.log.setLevel(logging.DEBUG)
         self.log.setLevel(logging.INFO)
         self.log.addHandler(logging.StreamHandler())
+        self.writeLogDebug(self, inspect.currentframe(), "START")
 
         # Set initial time slice
         self.time_index = 0
@@ -107,13 +108,16 @@ class ETSplugin(QMainWindow):
         # Set user interface of the main window
         self.setUI()
 
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
     def getLogger(self):
         return self.log
 
     def setUI(self):
         """Set user interface of the main window
         """
-        print("ETS plugin: setting UI")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        self.log.info("ETS plugin: setting UI")
         self.mainWidget = QWidget(parent=self)
         self.mainWidget.setLayout(QVBoxLayout())
         self.tabWidget = QTabWidget(parent=self)
@@ -219,6 +223,7 @@ class ETSplugin(QMainWindow):
         # On tab change update the tab-containing plots
         self.tabWidget.currentChanged.connect(partial(
             self.updatePlotOfCurrentTab, time_index=self.getTimeIndex()))
+        self.writeLogDebug(self, inspect.currentframe(), "START")
 
     def sizeHint(self):
         """Set initial window size.
@@ -231,9 +236,11 @@ class ETSplugin(QMainWindow):
         return self.time_index
 
     def setTimeIndex(self, time_index):
+
         self.time_index = time_index
 
     def setTimeSlider(self):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         # Set time slider
         slider_time = QSlider(Qt.Horizontal, self)
         slider_time.setValue(0)
@@ -246,23 +253,24 @@ class ETSplugin(QMainWindow):
 
         # slider_time.sliderMoved.connect(self.onSliderChange)
         # slider_time.sliderReleased.connect(self.onSliderChange)
+        self.writeLogDebug(self, inspect.currentframe(), "END")
         return slider_time
 
     def updatePlotOfCurrentTab(self, time_index=0):
         """Update plot of current tab.
         """
 
-        self.log.debug(f"DEBUG | {type(self).__name__} "
-                       "| updatePlotOfCurrentTab() | START.")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         time_index = self.time_index
         cw = self.getCurrentTab()
         cw.plotUpdate(time_index)
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def onSliderChange(self, event=None):
         """ PyQt slot: on change of the slider value.
         """
 
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
 
         if self.slider_time.value() != self.spinBox_timeIndex.value():
             # Update spinbox value
@@ -270,22 +278,22 @@ class ETSplugin(QMainWindow):
         # Update plots
         # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
 
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def getCurrentTab(self):
         """Get currently opened tab.
         """
 
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         # currentIndex=self.tabWidget.currentIndex()
         currentWidget = self.tabWidget.currentWidget()
 
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
         return currentWidget
 
     def setTimeSpinBox(self):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         spinBox_timeIndex = QSpinBox(parent=self)
         spinBox_timeIndex.setValue(0)
         spinBox_timeIndex.setMinimum(0)
@@ -295,23 +303,23 @@ class ETSplugin(QMainWindow):
         spinBox_timeIndex.valueChanged.connect(self.onSpinBoxChange)
         spinBox_timeIndex.editingFinished.connect(partial(
             self.updatePlotOfCurrentTab, time_index=self.time_index))
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
         return spinBox_timeIndex
 
     def setTimeValueLineEdit(self):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         lineEdit_timeValue = QLineEdit("", parent=self)
         self.onlyDouble = QDoubleValidator()
         lineEdit_timeValue.setValidator(self.onlyDouble)
         lineEdit_timeValue.setFixedWidth(50)
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
         return lineEdit_timeValue
 
     def onSpinBoxChange(self, event=None):
 
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         # Update slider value
         self.time_index = self.spinBox_timeIndex.value()
         self.slider_time.setValue(self.time_index)
@@ -320,10 +328,10 @@ class ETSplugin(QMainWindow):
             # Update plots
             # self.getCurrentTab().plotUpdate(time_index=self.spinBox_timeIndex.value())
             self.updatePlotOfCurrentTab(time_index=self.time_index)
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def setIDS(self):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         try:
             self.ids = imas.ids(self.IDS_parameters["shot"],
                                 self.IDS_parameters["run"])
@@ -338,31 +346,31 @@ class ETSplugin(QMainWindow):
         self.getCoreProfiles()
         self.getCoreTransport()
         self.getCoreSources()
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def getCoreProfiles(self, ):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         if self.ids is not None:
             self.ids.core_profiles.get()
             # Second method of opening slice
             # ts = 2.0
             # self.ids.core_profiles.getSlice(ts, imas.imasdef.CLOSEST_SAMPLE)
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def getCoreTransport(self):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         if self.ids is not None:
             self.ids.core_transport.get()
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def getCoreSources(self):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         if self.ids is not None:
             self.ids.core_sources.get()
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def checkIDS(self):
-        self.writeLogDebug(inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(), "START")
         if self.ids is None:
             print("IDS object is None!")
             return
@@ -378,16 +386,17 @@ class ETSplugin(QMainWindow):
         print("Number of time slices: ", len(self.ids.core_profiles.time))
         print("Number of profiles_1d slices: ",
               len(self.ids.core_profiles.profiles_1d))
-        self.writeLogDebug(inspect.currentframe(), "END")
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
-    def writeLogDebug(self, currentframe, msg):
+    def writeLogDebug(self, instance, currentframe, msg):
         """ Print to DEBUG log.
         Arguments:
+            instance     (obj) : Class instance (e.g. self).
             currentframe (obj) : Frame object for the caller’s stack frame.
             msg          (str) : Additional message (usually "START" or "END")
         """
 
-        self.log.debug(f"DEBUG | {type(self).__name__} | "
+        self.log.debug(f"DEBUG | {type(instance).__name__} | "
                        f"{currentframe.f_code.co_name}  | {msg}.")
 
 
