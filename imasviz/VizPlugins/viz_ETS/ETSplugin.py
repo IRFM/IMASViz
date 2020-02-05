@@ -21,7 +21,8 @@ import matplotlib
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
-                             QLineEdit, QHBoxLayout, QVBoxLayout)
+                             QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
+                             QAction)
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QDoubleValidator
 
@@ -82,8 +83,6 @@ class ETSplugin(QMainWindow):
 
         # Set log parser
         self.log = logging.getLogger(__name__)
-        # self.log.setLevel(logging.DEBUG)
-        self.log.setLevel(logging.INFO)
         self.log.addHandler(logging.StreamHandler())
         self.writeLogDebug(self, inspect.currentframe(), "START")
 
@@ -121,6 +120,9 @@ class ETSplugin(QMainWindow):
         self.mainWidget = QWidget(parent=self)
         self.mainWidget.setLayout(QVBoxLayout())
         self.tabWidget = QTabWidget(parent=self)
+
+        # Add menu bar
+        self.addMenuBar()
 
         # Set time slider
         self.slider_time = self.setTimeSlider()
@@ -231,6 +233,31 @@ class ETSplugin(QMainWindow):
               window/widget.
         """
         return QSize(self.width, self.height)
+
+    def addMenuBar(self):
+        """Create and configure the menu bar.
+        """
+        # Main menu bar
+        menuBar = QMenuBar(self)
+        options = menuBar.addMenu('Options')
+
+        # Set new menu item for saving plot configuration
+        act_setDebugMode = QAction('Debug mode', self, checkable=True)
+        act_setDebugMode.setStatusTip('Enable/disable debug mode')
+        act_setDebugMode.setChecked(False)
+        act_setDebugMode.triggered.connect(self.toggleDebugMode)
+        options.addAction(act_setDebugMode)
+
+        # Set menu bar
+        self.setMenuBar(menuBar)
+
+    def toggleDebugMode(self, state):
+        """ Toggle debug mode.
+        """
+        if state:
+            self.log.setLevel(logging.DEBUG)
+        else:
+            self.log.setLevel(logging.INFO)
 
     def getTimeIndex(self):
         return self.time_index
