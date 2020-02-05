@@ -7,31 +7,29 @@
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2019- D. Penko
 
 # Standard library imports
-import logging, os, sys
+import logging
+import sys
+import inspect
 from functools import partial
 
 # Third party imports
 import matplotlib
-matplotlib.use('Qt5Agg')
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import \
-    FigureCanvasQTAgg as FigCanvas
-from matplotlib.backends.backend_qt5agg import \
-    NavigationToolbar2QT as NavigationToolbar
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
-    QGridLayout, QSlider, QLabel, QSpinBox, QCheckBox, QPushButton, QLineEdit,
-    QHBoxLayout, QVBoxLayout)
+                             QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
+                             QLineEdit, QHBoxLayout, QVBoxLayout)
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QDoubleValidator
 
 # IMASViz application imports
 from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
 from imasviz.VizPlugins.viz_ETS.tabETSSummary import tabETSSummary
+matplotlib.use('Qt5Agg')
+
 
 def checkArguments():
     """ Check arguments when running plugin from the terminal (standalone).
@@ -57,19 +55,20 @@ def checkArguments():
                             help="Case parameter: device")
 
         args = parser.parse_args()
-        IDS_parameters = {  "shot": args.shot,
-                            "run": args.run,
-                            "user": args.user,
-                            "device": args.device}
+        IDS_parameters = {"shot": args.shot,
+                          "run": args.run,
+                          "user": args.user,
+                          "device": args.device}
     else:
         # Default parameters
         print("Using default parameters")
-        IDS_parameters = {  "shot": 36440,
-                            "run": 1,
-                            "user": "penkod",
-                            "device": "aug"}
+        IDS_parameters = {"shot": 36440,
+                          "run": 1,
+                          "user": "penkod",
+                          "device": "aug"}
 
     return IDS_parameters
+
 
 class ETSplugin(QMainWindow):
     def __init__(self, IDS_parameters, ids=None):
@@ -96,10 +95,11 @@ class ETSplugin(QMainWindow):
             # if it does not exist then a QApplication is created
             self.app = QApplication([])
 
-        self.setWindowTitle("European Transport Simulator (IMASViz plugin sample, work in progress)")
+        self.setWindowTitle("European Transport Simulator (IMASViz plugin "
+                            "sample, work in progress)")
         self.ids = ids
         self.IDS_parameters = IDS_parameters
-        if ids == None:
+        if ids is None:
             self.setIDS()
 
         self.checkIDS()
@@ -156,7 +156,8 @@ class ETSplugin(QMainWindow):
         self.indexPlus10Button.setFixedWidth(80)
 
         # Set check box
-        self.checkBox_instant_label = QLabel("Instant plot update on time index change: ")
+        self.checkBox_instant_label = QLabel("Instant plot update on time "
+                                             "index change: ")
         self.checkBox_instant_label.setFixedWidth(285)
         self.checkBox_instant = QCheckBox(parent=self)
         self.checkBox_instant.setChecked(False)
@@ -166,7 +167,7 @@ class ETSplugin(QMainWindow):
 
         whbox1 = QWidget(self)
         whbox1.setLayout(QHBoxLayout())
-        whbox1.layout().setContentsMargins(0,0,0,0)
+        whbox1.layout().setContentsMargins(0, 0, 0, 0)
         whbox1.layout().addWidget(self.label_slider_tmin)
         whbox1.layout().addWidget(self.slider_time)
         whbox1.layout().addWidget(self.label_slider_tmax)
@@ -174,7 +175,7 @@ class ETSplugin(QMainWindow):
 
         whbox2 = QWidget(self)
         whbox2.setLayout(QHBoxLayout())
-        whbox2.layout().setContentsMargins(0,0,0,0)
+        whbox2.layout().setContentsMargins(0, 0, 0, 0)
         whbox2.layout().addWidget(self.time_indexLabel)
         whbox2.layout().addWidget(self.spinBox_timeIndex)
         whbox2.layout().addStretch()
@@ -187,7 +188,7 @@ class ETSplugin(QMainWindow):
 
         whbox3 = QWidget(self)
         whbox3.setLayout(QHBoxLayout())
-        whbox3.layout().setContentsMargins(0,0,0,0)
+        whbox3.layout().setContentsMargins(0, 0, 0, 0)
         whbox3.layout().addWidget(self.label_timeValue)
         whbox3.layout().addWidget(self.lineEdit_timeValue)
         whbox3.layout().addStretch()
@@ -195,7 +196,7 @@ class ETSplugin(QMainWindow):
 
         whbox4 = QWidget(self)
         whbox4.setLayout(QHBoxLayout())
-        whbox4.layout().setContentsMargins(0,0,0,0)
+        whbox4.layout().setContentsMargins(0, 0, 0, 0)
         whbox4.layout().addWidget(self.plotButton)
         whbox4.layout().addWidget(self.checkBox_instant_label)
         whbox4.layout().addWidget(self.checkBox_instant)
@@ -205,12 +206,14 @@ class ETSplugin(QMainWindow):
         self.setCentralWidget(self.mainWidget)
 
         # Set initial window size
-        self.height = self.app.desktop().availableGeometry().height()*0.7
-        self.width = self.app.desktop().availableGeometry().width()*0.95
+        dh = self.app.desktop().availableGeometry().height()
+        dw = self.app.desktop().availableGeometry().width()
+        self.height = dh*0.7
+        self.width = dw*0.95
 
         # Move window to the center of the screen
-        Ycenter = (self.app.desktop().availableGeometry().height() - self.height)*0.5
-        Xcenter = (self.app.desktop().availableGeometry().width() - self.width)*0.5
+        Ycenter = (dh - self.height)*0.5
+        Xcenter = (dw - self.width)*0.5
         self.move(int(Xcenter), int(Ycenter))
 
         # On tab change update the tab-containing plots
@@ -222,7 +225,7 @@ class ETSplugin(QMainWindow):
         Note: Qt calls this routine automatically by default when creating this
               window/widget.
         """
-        return QSize(self.width,self.height)
+        return QSize(self.width, self.height)
 
     def getTimeIndex(self):
         return self.time_index
@@ -249,31 +252,40 @@ class ETSplugin(QMainWindow):
         """Update plot of current tab.
         """
 
-        self.log.debug(f"DEBUG | {type(self).__name__} | updatePlotOfCurrentTab() | START.")
+        self.log.debug(f"DEBUG | {type(self).__name__} "
+                       "| updatePlotOfCurrentTab() | START.")
         time_index = self.time_index
         cw = self.getCurrentTab()
         cw.plotUpdate(time_index)
 
     def onSliderChange(self, event=None):
+        """ PyQt slot: on change of the slider value.
+        """
 
-        self.log.debug(f"DEBUG | {type(self).__name__} | onSliderChange() | START.")
+        self.writeLogDebug(inspect.currentframe(), "START")
+
         if self.slider_time.value() != self.spinBox_timeIndex.value():
             # Update spinbox value
             self.spinBox_timeIndex.setValue(self.slider_time.value())
         # Update plots
         # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
 
+        self.writeLogDebug(inspect.currentframe(), "END")
+
     def getCurrentTab(self):
         """Get currently opened tab.
         """
 
-        self.log.debug(f"DEBUG | {type(self).__name__} | getCurrentTab() | START.")
+        self.writeLogDebug(inspect.currentframe(), "START")
         # currentIndex=self.tabWidget.currentIndex()
-        currentWidget=self.tabWidget.currentWidget()
+        currentWidget = self.tabWidget.currentWidget()
+
+        self.writeLogDebug(inspect.currentframe(), "END")
 
         return currentWidget
 
     def setTimeSpinBox(self):
+        self.writeLogDebug(inspect.currentframe(), "START")
         spinBox_timeIndex = QSpinBox(parent=self)
         spinBox_timeIndex.setValue(0)
         spinBox_timeIndex.setMinimum(0)
@@ -283,20 +295,23 @@ class ETSplugin(QMainWindow):
         spinBox_timeIndex.valueChanged.connect(self.onSpinBoxChange)
         spinBox_timeIndex.editingFinished.connect(partial(
             self.updatePlotOfCurrentTab, time_index=self.time_index))
+        self.writeLogDebug(inspect.currentframe(), "END")
 
         return spinBox_timeIndex
 
     def setTimeValueLineEdit(self):
+        self.writeLogDebug(inspect.currentframe(), "START")
         lineEdit_timeValue = QLineEdit("", parent=self)
         self.onlyDouble = QDoubleValidator()
         lineEdit_timeValue.setValidator(self.onlyDouble)
         lineEdit_timeValue.setFixedWidth(50)
+        self.writeLogDebug(inspect.currentframe(), "END")
 
         return lineEdit_timeValue
 
     def onSpinBoxChange(self, event=None):
 
-        self.log.debug(f"DEBUG | {type(self).__name__} | onSpinBoxChange() | START.")
+        self.writeLogDebug(inspect.currentframe(), "START")
         # Update slider value
         self.time_index = self.spinBox_timeIndex.value()
         self.slider_time.setValue(self.time_index)
@@ -305,9 +320,10 @@ class ETSplugin(QMainWindow):
             # Update plots
             # self.getCurrentTab().plotUpdate(time_index=self.spinBox_timeIndex.value())
             self.updatePlotOfCurrentTab(time_index=self.time_index)
+        self.writeLogDebug(inspect.currentframe(), "END")
 
     def setIDS(self):
-        self.log.debug(f"DEBUG | {type(self).__name__} | setIDS() | START.")
+        self.writeLogDebug(inspect.currentframe(), "START")
         try:
             self.ids = imas.ids(self.IDS_parameters["shot"],
                                 self.IDS_parameters["run"])
@@ -315,30 +331,39 @@ class ETSplugin(QMainWindow):
                               self.IDS_parameters["device"], '3')
         except:
             self.ids = None
-            print("Error when trying to get() the IDS. Data for given IDS " \
+            print("Error when trying to get() the IDS. Data for given IDS "
                   "parameters either doesn't exist or is corrupted.")
+
         # Read data from the required IDSs (get() routine)
         self.getCoreProfiles()
         self.getCoreTransport()
         self.getCoreSources()
+        self.writeLogDebug(inspect.currentframe(), "END")
 
     def getCoreProfiles(self, ):
-        if self.ids != None:
+        self.writeLogDebug(inspect.currentframe(), "START")
+        if self.ids is not None:
             self.ids.core_profiles.get()
             # Second method of opening slice
             # ts = 2.0
             # self.ids.core_profiles.getSlice(ts, imas.imasdef.CLOSEST_SAMPLE)
+        self.writeLogDebug(inspect.currentframe(), "END")
 
     def getCoreTransport(self):
-        if self.ids != None:
+        self.writeLogDebug(inspect.currentframe(), "START")
+        if self.ids is not None:
             self.ids.core_transport.get()
+        self.writeLogDebug(inspect.currentframe(), "END")
 
     def getCoreSources(self):
-        if self.ids != None:
+        self.writeLogDebug(inspect.currentframe(), "START")
+        if self.ids is not None:
             self.ids.core_sources.get()
+        self.writeLogDebug(inspect.currentframe(), "END")
 
     def checkIDS(self):
-        if self.ids == None:
+        self.writeLogDebug(inspect.currentframe(), "START")
+        if self.ids is None:
             print("IDS object is None!")
             return
 
@@ -351,9 +376,22 @@ class ETSplugin(QMainWindow):
         # print('ts =', ts)
 
         print("Number of time slices: ", len(self.ids.core_profiles.time))
-        print("Number of profiles_1d slices: ", len(self.ids.core_profiles.profiles_1d))
+        print("Number of profiles_1d slices: ",
+              len(self.ids.core_profiles.profiles_1d))
+        self.writeLogDebug(inspect.currentframe(), "END")
 
-if  __name__ == "__main__":
+    def writeLogDebug(self, currentframe, msg):
+        """ Print to DEBUG log.
+        Arguments:
+            currentframe (obj) : Frame object for the caller’s stack frame.
+            msg          (str) : Additional message (usually "START" or "END")
+        """
+
+        self.log.debug(f"DEBUG | {type(self).__name__} | "
+                       f"{currentframe.f_code.co_name}  | {msg}.")
+
+
+if __name__ == "__main__":
     # Set mandatory arguments
     IDS_parameters = checkArguments()
 
