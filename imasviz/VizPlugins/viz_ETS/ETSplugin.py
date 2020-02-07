@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
                              QAction)
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator
 
 # IMASViz application imports
@@ -72,6 +72,9 @@ def checkArguments():
 
 
 class ETSplugin(QMainWindow):
+
+    time_index_changed = pyqtSignal()
+
     def __init__(self, IDS_parameters, ids=None):
         """
         Arguments:
@@ -106,6 +109,10 @@ class ETSplugin(QMainWindow):
 
         # Set user interface of the main window
         self.setUI()
+
+        # When self.time_index changes update all widgets that display time
+        # index value (spinbox, slider etc.)
+        self.time_index_changed.connect(self.updateWidgetsTimeIndexValue)
 
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -278,6 +285,8 @@ class ETSplugin(QMainWindow):
         else:
             self.time_index = time_index
 
+        self.time_index_changed.emit()
+
     def setTimeSlider(self):
         self.writeLogDebug(self, inspect.currentframe(), "START")
         # Set time slider
@@ -290,15 +299,20 @@ class ETSplugin(QMainWindow):
         # Set slider event handling
         slider_time.valueChanged.connect(self.onSliderChange)
 
-        # slider_time.sliderMoved.connect(self.onSliderChange)
-        # slider_time.sliderReleased.connect(self.onSliderChange)
         self.writeLogDebug(self, inspect.currentframe(), "END")
         return slider_time
+
+    @pyqtSlot()
+    def updateWidgetsTimeIndexValue(self):
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"Updating to {self.getTimeIndex()}")
+        self.slider_time.setValue(self.getTimeIndex())
+        self.spinBox_timeIndex.setValue(self.getTimeIndex())
 
     def updateTimeSliderTminTmaxLabel(self):
         """ Update tmin and tmax label/values.
         """
-        nslices = len(self.ids.core_profiles.profiles_1d)
+        # nslices = len(self.ids.core_profiles.profiles_1d)
 
         tmin = self.ids.core_profiles.profiles_1d[0].time
         tmax = self.ids.core_profiles.profiles_1d[-1].time
@@ -335,9 +349,6 @@ class ETSplugin(QMainWindow):
         self.writeLogDebug(self, inspect.currentframe(),
                            f"Global time_index: {self.getTimeIndex()}")
 
-        # Update spinbox value
-        self.spinBox_timeIndex.setValue(self.getTimeIndex())
-
         cw = self.getCurrentTab()
         cw.plotUpdate(self.time_index)
         self.writeLogDebug(self, inspect.currentframe(), "END")
@@ -347,13 +358,7 @@ class ETSplugin(QMainWindow):
         """
 
         self.writeLogDebug(self, inspect.currentframe(), "START")
-
-        if self.slider_time.value() != self.spinBox_timeIndex.value():
-            # Update spinbox value
-            self.spinBox_timeIndex.setValue(self.slider_time.value())
-        # Update plots
-        # self.getCurrentTab().plotUpdate(time_index=self.slider_time.value())
-
+        self.setTimeIndex(self.slider_time.value())
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def getCurrentTab(self):
@@ -393,12 +398,12 @@ class ETSplugin(QMainWindow):
 
         return lineEdit_timeValue
 
+    @pyqtSlot()
     def onSpinBoxChange(self, event=None):
 
         self.writeLogDebug(self, inspect.currentframe(), "START")
-        # Update slider value
+        # Update global time_index value (auto spinbox value update)
         self.time_index = self.spinBox_timeIndex.value()
-        self.slider_time.setValue(self.time_index)
 
         if self.checkBox_instant.isChecked():
             # Update plots
