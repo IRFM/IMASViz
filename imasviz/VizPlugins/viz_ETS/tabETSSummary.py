@@ -107,8 +107,9 @@ class tabETSSummary(QWidget):
         """
         self.parent.writeLogDebug(self, inspect.currentframe(), "START")
 
-        nslices = len(self.ids.core_profiles.profiles_1d)
-        self.nslices2plot = 1
+        # Update slider tmin and tmax values
+        self.parent.updateTimeSliderTminTmaxLabel()
+        # self.nslices2plot = 1
 
         # Core profiles
         self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]

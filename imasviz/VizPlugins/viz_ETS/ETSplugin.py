@@ -127,9 +127,7 @@ class ETSplugin(QMainWindow):
         # Set time slider
         self.slider_time = self.setTimeSlider()
         self.label_slider_tmin = QLabel("t<sub>min</sub>", parent=self)
-        self.label_slider_tmin.setFixedWidth(25)
         self.label_slider_tmax = QLabel("t<sub>max</sub>", parent=self)
-        self.label_slider_tmax.setFixedWidth(25)
 
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
@@ -263,7 +261,6 @@ class ETSplugin(QMainWindow):
         return self.time_index
 
     def setTimeIndex(self, time_index):
-
         self.time_index = time_index
 
     def setTimeSlider(self):
@@ -282,6 +279,27 @@ class ETSplugin(QMainWindow):
         # slider_time.sliderReleased.connect(self.onSliderChange)
         self.writeLogDebug(self, inspect.currentframe(), "END")
         return slider_time
+
+    def updateTimeSliderTminTmaxLabel(self):
+        """ Update tmin and tmax label/values.
+        """
+        nslices = len(self.ids.core_profiles.profiles_1d)
+
+        tmin = self.ids.core_profiles.profiles_1d[0].time
+        tmax = self.ids.core_profiles.profiles_1d[-1].time
+
+        # Check if empty time values were read
+        # (-9e+40 is default value == empty)
+        if tmin == -9e+40 or tmax == -9e+40:
+            self.writeLogDebug(self,
+                               inspect.currentframe(),
+                               "core_profiles.profiles_1d[:].time is empty. "
+                               "Switching to read core_profiles.time")
+            tmin = self.ids.core_profiles.time[0]
+            tmax = self.ids.core_profiles.time[-1]
+
+        self.label_slider_tmin.setText(f"t<sub>min</sub> = {tmin:.2f}")
+        self.label_slider_tmax.setText(f"t<sub>min</sub> = {tmax:.2f}")
 
     def updatePlotOfCurrentTab(self, time_index=0):
         """Update plot of current tab.
