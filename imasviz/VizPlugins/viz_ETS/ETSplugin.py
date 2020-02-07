@@ -148,16 +148,23 @@ class ETSplugin(QMainWindow):
         # Set buttons
         self.plotButton = QPushButton("Plot", parent=self)
         self.plotButton.setFixedWidth(120)
-        self.plotButton.clicked.connect(partial(
-            self.updatePlotOfCurrentTab, time_index=self.getTimeIndex()))
+        self.plotButton.clicked.connect(partial(self.updatePlotOfCurrentTab))
         self.indexMinus10Button = QPushButton("<<", parent=self)
         self.indexMinus10Button.setFixedWidth(80)
+        self.indexMinus10Button.clicked.connect(partial(
+            self.updatePlotOfCurrentTab, modify=-10))
         self.indexMinus1Button = QPushButton("<", parent=self)
         self.indexMinus1Button.setFixedWidth(80)
+        self.indexMinus1Button.clicked.connect(partial(
+            self.updatePlotOfCurrentTab, modify=-1))
         self.indexPlus1Button = QPushButton(">", parent=self)
         self.indexPlus1Button.setFixedWidth(80)
+        self.indexPlus1Button.clicked.connect(partial(
+            self.updatePlotOfCurrentTab, modify=+1))
         self.indexPlus10Button = QPushButton(">>", parent=self)
         self.indexPlus10Button.setFixedWidth(80)
+        self.indexPlus10Button.clicked.connect(partial(
+            self.updatePlotOfCurrentTab, modify=+10))
 
         # Set check box
         self.checkBox_instant_label = QLabel("Instant plot update on time "
@@ -261,7 +268,15 @@ class ETSplugin(QMainWindow):
         return self.time_index
 
     def setTimeIndex(self, time_index):
-        self.time_index = time_index
+
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"Given time_index: {time_index}")
+
+        # time slice index lower than 0 is not allowed
+        if time_index < 0:
+            self.time_index = 0
+        else:
+            self.time_index = time_index
 
     def setTimeSlider(self):
         self.writeLogDebug(self, inspect.currentframe(), "START")
@@ -301,14 +316,30 @@ class ETSplugin(QMainWindow):
         self.label_slider_tmin.setText(f"t<sub>min</sub> = {tmin:.2f}")
         self.label_slider_tmax.setText(f"t<sub>min</sub> = {tmax:.2f}")
 
-    def updatePlotOfCurrentTab(self, time_index=0):
+    def updatePlotOfCurrentTab(self, time_index=0, modify=None):
         """Update plot of current tab.
         """
 
         self.writeLogDebug(self, inspect.currentframe(), "START")
-        time_index = self.time_index
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"given time_index: {time_index}")
+
+        if time_index != 0:
+            self.setTimeIndex(time_index)
+
+        if modify:
+            self.setTimeIndex(self.getTimeIndex()+modify)
+        else:
+            self.setTimeIndex(self.getTimeIndex())
+
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"Global time_index: {self.getTimeIndex()}")
+
+        # Update spinbox value
+        self.spinBox_timeIndex.setValue(self.getTimeIndex())
+
         cw = self.getCurrentTab()
-        cw.plotUpdate(time_index)
+        cw.plotUpdate(self.time_index)
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def onSliderChange(self, event=None):
