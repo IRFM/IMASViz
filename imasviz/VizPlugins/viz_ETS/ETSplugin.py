@@ -117,6 +117,75 @@ class ETSplugin(QMainWindow):
 
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
+    def setIDS(self):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        try:
+            self.ids = imas.ids(self.IDS_parameters["shot"],
+                                self.IDS_parameters["run"])
+            self.ids.open_env(self.IDS_parameters["user"],
+                              self.IDS_parameters["device"], '3')
+        except:
+            self.ids = None
+            print("Error when trying to get() the IDS. Data for given IDS "
+                  "parameters either doesn't exist or is corrupted.")
+
+        # Read data from the required IDSs (get() routine)
+        self.getCoreProfiles()
+        self.getCoreTransport()
+        self.getCoreSources()
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def getCoreProfiles(self, ):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        if self.ids is not None:
+            self.ids.core_profiles.get()
+            # Second method of opening slice
+            # ts = 2.0
+            # self.ids.core_profiles.getSlice(ts, imas.imasdef.CLOSEST_SAMPLE)
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def getCoreTransport(self):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        if self.ids is not None:
+            self.ids.core_transport.get()
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def getCoreSources(self):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        if self.ids is not None:
+            self.ids.core_sources.get()
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def checkIDS(self):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        if self.ids is None:
+            print("IDS object is None!")
+            return
+
+        # Displaying basic information
+        print('Reading data...')
+        print('Shot    =', self.IDS_parameters["shot"])
+        print('Run     =', self.IDS_parameters["run"])
+        print('User    =', self.IDS_parameters["user"])
+        print('Device =', self.IDS_parameters["device"])
+        # print('ts =', ts)
+
+        print("Number of time slices: ", len(self.ids.core_profiles.time))
+        print("Number of profiles_1d slices: ",
+              len(self.ids.core_profiles.profiles_1d))
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def writeLogDebug(self, instance, currentframe, msg):
+        """ Print to DEBUG log.
+        Arguments:
+            instance     (obj) : Class instance (e.g. self).
+            currentframe (obj) : Frame object for the caller’s stack frame.
+            msg          (str) : Additional message (usually "START" or "END")
+        """
+
+        self.log.debug(f"DEBUG | {type(instance).__name__} | "
+                       f"{currentframe.f_code.co_name}  | {msg}.")
+
     def getLogger(self):
         return self.log
 
@@ -288,6 +357,62 @@ class ETSplugin(QMainWindow):
 
         self.time_index_changed.emit()
 
+    def getTimeValueForTimeIndex(self, time_index):
+        """ Get time value for given time index.
+        """
+
+        time_value = 0
+        if self.ids.core_profiles.profiles_1d[0].time == -9e+40:
+            time_value = self.ids.core_profiles.time[time_index]
+        else:
+            time_value = self.ids.core_profiles.profiles_1d[time_index].time
+
+        return time_value
+
+    def getCurrentTab(self):
+        """Get currently opened tab.
+        """
+
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        # currentIndex=self.tabWidget.currentIndex()
+        currentWidget = self.tabWidget.currentWidget()
+
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+        return currentWidget
+
+    def updatePlotOfCurrentTab(self, time_index=0, modify=None):
+        """Update plot of current tab.
+        """
+
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"given time_index: {time_index}")
+
+        if time_index != 0:
+            self.setTimeIndex(time_index)
+
+        if modify:
+            self.setTimeIndex(self.getTimeIndex()+modify)
+        else:
+            self.setTimeIndex(self.getTimeIndex())
+
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"Global time_index: {self.getTimeIndex()}")
+
+        cw = self.getCurrentTab()
+        cw.plotUpdate(self.time_index)
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    @pyqtSlot()
+    def updateWidgetsTimeIndexValue(self):
+        self.writeLogDebug(self, inspect.currentframe(),
+                           f"Updating to {self.getTimeIndex()}")
+        self.slider_time.setValue(self.getTimeIndex())
+        self.spinBox_timeIndex.setValue(self.getTimeIndex())
+        self.lineEdit_timeValue.setText(
+            f"{self.getTimeValueForTimeIndex(time_index=self.getTimeIndex())}")
+
     def setTimeSlider(self):
         self.writeLogDebug(self, inspect.currentframe(), "START")
         # Set time slider
@@ -303,26 +428,13 @@ class ETSplugin(QMainWindow):
         self.writeLogDebug(self, inspect.currentframe(), "END")
         return slider_time
 
-    @pyqtSlot()
-    def updateWidgetsTimeIndexValue(self):
-        self.writeLogDebug(self, inspect.currentframe(),
-                           f"Updating to {self.getTimeIndex()}")
-        self.slider_time.setValue(self.getTimeIndex())
-        self.spinBox_timeIndex.setValue(self.getTimeIndex())
-        self.lineEdit_timeValue.setText(
-            f"{self.getTimeValueForTimeIndex(time_index=self.getTimeIndex())}")
-
-    def getTimeValueForTimeIndex(self, time_index):
-        """ Get time value for given time index.
+    def onSliderChange(self, event=None):
+        """ PyQt slot: on change of the slider value.
         """
 
-        time_value = 0
-        if self.ids.core_profiles.profiles_1d[0].time == -9e+40:
-            time_value = self.ids.core_profiles.time[time_index]
-        else:
-            time_value = self.ids.core_profiles.profiles_1d[time_index].time
-
-        return time_value
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        self.setTimeIndex(self.slider_time.value())
+        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def updateTimeSliderTminTmaxLabel(self):
         """ Update tmin and tmax label/values.
@@ -348,49 +460,6 @@ class ETSplugin(QMainWindow):
                                        f"t<sub>min</sub> = {tmin:.2f}")
         self.label_slider_tmax.setText(f"t<sub>max</sub> = {tmax:.2f}")
 
-    def updatePlotOfCurrentTab(self, time_index=0, modify=None):
-        """Update plot of current tab.
-        """
-
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        self.writeLogDebug(self, inspect.currentframe(),
-                           f"given time_index: {time_index}")
-
-        if time_index != 0:
-            self.setTimeIndex(time_index)
-
-        if modify:
-            self.setTimeIndex(self.getTimeIndex()+modify)
-        else:
-            self.setTimeIndex(self.getTimeIndex())
-
-        self.writeLogDebug(self, inspect.currentframe(),
-                           f"Global time_index: {self.getTimeIndex()}")
-
-        cw = self.getCurrentTab()
-        cw.plotUpdate(self.time_index)
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def onSliderChange(self, event=None):
-        """ PyQt slot: on change of the slider value.
-        """
-
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        self.setTimeIndex(self.slider_time.value())
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def getCurrentTab(self):
-        """Get currently opened tab.
-        """
-
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        # currentIndex=self.tabWidget.currentIndex()
-        currentWidget = self.tabWidget.currentWidget()
-
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-        return currentWidget
-
     def setTimeSpinBox(self):
         self.writeLogDebug(self, inspect.currentframe(), "START")
         spinBox_timeIndex = QSpinBox(parent=self)
@@ -406,6 +475,19 @@ class ETSplugin(QMainWindow):
 
         return spinBox_timeIndex
 
+    @pyqtSlot()
+    def onSpinBoxChange(self, event=None):
+
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+        # Update global time_index value (auto spinbox value update)
+        self.time_index = self.spinBox_timeIndex.value()
+
+        if self.checkBox_instant.isChecked():
+            # Update plots
+            # self.getCurrentTab().plotUpdate(time_index=self.spinBox_timeIndex.value())
+            self.updatePlotOfCurrentTab(time_index=self.time_index)
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
     def setTimeValueLineEdit(self):
         self.writeLogDebug(self, inspect.currentframe(), "START")
         lineEdit_timeValue = QLineEdit("", parent=self)
@@ -419,19 +501,6 @@ class ETSplugin(QMainWindow):
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
         return lineEdit_timeValue
-
-    @pyqtSlot()
-    def onSpinBoxChange(self, event=None):
-
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        # Update global time_index value (auto spinbox value update)
-        self.time_index = self.spinBox_timeIndex.value()
-
-        if self.checkBox_instant.isChecked():
-            # Update plots
-            # self.getCurrentTab().plotUpdate(time_index=self.spinBox_timeIndex.value())
-            self.updatePlotOfCurrentTab(time_index=self.time_index)
-        self.writeLogDebug(self, inspect.currentframe(), "END")
 
     @pyqtSlot()
     def onTimeValueLineEditEditingFinished(self, event=None):
@@ -466,76 +535,6 @@ class ETSplugin(QMainWindow):
         self.setTimeIndex(index)
         self.updatePlotOfCurrentTab()
         self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def setIDS(self):
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        try:
-            self.ids = imas.ids(self.IDS_parameters["shot"],
-                                self.IDS_parameters["run"])
-            self.ids.open_env(self.IDS_parameters["user"],
-                              self.IDS_parameters["device"], '3')
-        except:
-            self.ids = None
-            print("Error when trying to get() the IDS. Data for given IDS "
-                  "parameters either doesn't exist or is corrupted.")
-
-        # Read data from the required IDSs (get() routine)
-        self.getCoreProfiles()
-        self.getCoreTransport()
-        self.getCoreSources()
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def getCoreProfiles(self, ):
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        if self.ids is not None:
-            self.ids.core_profiles.get()
-            # Second method of opening slice
-            # ts = 2.0
-            # self.ids.core_profiles.getSlice(ts, imas.imasdef.CLOSEST_SAMPLE)
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def getCoreTransport(self):
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        if self.ids is not None:
-            self.ids.core_transport.get()
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def getCoreSources(self):
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        if self.ids is not None:
-            self.ids.core_sources.get()
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def checkIDS(self):
-        self.writeLogDebug(self, inspect.currentframe(), "START")
-        if self.ids is None:
-            print("IDS object is None!")
-            return
-
-        # Displaying basic information
-        print('Reading data...')
-        print('Shot    =', self.IDS_parameters["shot"])
-        print('Run     =', self.IDS_parameters["run"])
-        print('User    =', self.IDS_parameters["user"])
-        print('Device =', self.IDS_parameters["device"])
-        # print('ts =', ts)
-
-        print("Number of time slices: ", len(self.ids.core_profiles.time))
-        print("Number of profiles_1d slices: ",
-              len(self.ids.core_profiles.profiles_1d))
-        self.writeLogDebug(self, inspect.currentframe(), "END")
-
-    def writeLogDebug(self, instance, currentframe, msg):
-        """ Print to DEBUG log.
-        Arguments:
-            instance     (obj) : Class instance (e.g. self).
-            currentframe (obj) : Frame object for the caller’s stack frame.
-            msg          (str) : Additional message (usually "START" or "END")
-        """
-
-        self.log.debug(f"DEBUG | {type(instance).__name__} | "
-                       f"{currentframe.f_code.co_name}  | {msg}.")
-
 
 if __name__ == "__main__":
     # Set mandatory arguments
