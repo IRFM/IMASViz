@@ -18,6 +18,7 @@ from functools import partial
 
 # Third party imports
 import matplotlib
+import numpy as np
 import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
@@ -308,11 +309,26 @@ class ETSplugin(QMainWindow):
                            f"Updating to {self.getTimeIndex()}")
         self.slider_time.setValue(self.getTimeIndex())
         self.spinBox_timeIndex.setValue(self.getTimeIndex())
+        self.lineEdit_timeValue.setText(
+            f"{self.getTimeValueForTimeIndex(time_index=self.getTimeIndex())}")
+
+    def getTimeValueForTimeIndex(self, time_index):
+        """ Get time value for given time index.
+        """
+
+        time_value = 0
+        if self.ids.core_profiles.profiles_1d[0].time == -9e+40:
+            time_value = self.ids.core_profiles.time[time_index]
+        else:
+            time_value = self.ids.core_profiles.profiles_1d[time_index].time
+
+        return time_value
 
     def updateTimeSliderTminTmaxLabel(self):
         """ Update tmin and tmax label/values.
         """
-        # nslices = len(self.ids.core_profiles.profiles_1d)
+        nslices = len(self.ids.core_profiles.profiles_1d)
+        ntimevalues = nslices
 
         tmin = self.ids.core_profiles.profiles_1d[0].time
         tmax = self.ids.core_profiles.profiles_1d[-1].time
@@ -326,9 +342,11 @@ class ETSplugin(QMainWindow):
                                "Switching to read core_profiles.time")
             tmin = self.ids.core_profiles.time[0]
             tmax = self.ids.core_profiles.time[-1]
+            ntimevalues = len(self.ids.core_profiles.time)
 
-        self.label_slider_tmin.setText(f"t<sub>min</sub> = {tmin:.2f}")
-        self.label_slider_tmax.setText(f"t<sub>min</sub> = {tmax:.2f}")
+        self.label_slider_tmin.setText(f"n<sub>t</sub> = {ntimevalues}; "
+                                       f"t<sub>min</sub> = {tmin:.2f}")
+        self.label_slider_tmax.setText(f"t<sub>max</sub> = {tmax:.2f}")
 
     def updatePlotOfCurrentTab(self, time_index=0, modify=None):
         """Update plot of current tab.
@@ -393,7 +411,11 @@ class ETSplugin(QMainWindow):
         lineEdit_timeValue = QLineEdit("", parent=self)
         self.onlyDouble = QDoubleValidator()
         lineEdit_timeValue.setValidator(self.onlyDouble)
-        lineEdit_timeValue.setFixedWidth(50)
+        lineEdit_timeValue.setFixedWidth(200)
+        lineEdit_timeValue.setText(
+            f"{self.getTimeValueForTimeIndex(time_index=0)}")
+        lineEdit_timeValue.editingFinished.connect(
+            self.onTimeValueLineEditEditingFinished)
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
         return lineEdit_timeValue
@@ -409,6 +431,40 @@ class ETSplugin(QMainWindow):
             # Update plots
             # self.getCurrentTab().plotUpdate(time_index=self.spinBox_timeIndex.value())
             self.updatePlotOfCurrentTab(time_index=self.time_index)
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    @pyqtSlot()
+    def onTimeValueLineEditEditingFinished(self, event=None):
+        """ When finished editing the time value line edit (pressing enter etc.)
+        find the closest value (and its array index -> time index) based on the
+        inserted value.
+        """
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+
+        # A simple routine to find the nearest value (and its index) based on
+        # given value
+        def find_nearest(array, value):
+            array = np.asarray(array)
+            idx = (np.abs(array - value)).argmin()
+            return array[idx], idx
+
+        value = float(self.lineEdit_timeValue.text())
+
+        time_values = 0
+        if self.ids.core_profiles.profiles_1d[0].time == -9e+40:
+            time_values = self.ids.core_profiles.time
+        else:
+            time_values = [0]*len(self.ids.core_profiles.profiles_1d)
+
+            for i in range(time_values):
+                time_values[i] = self.ids.core_profiles.profiles_1d[i].time
+
+        closest_value, index = find_nearest(time_values, value)
+
+        # by setting global time_index using setTimeIndex array all widgets
+        # get updated automatically
+        self.setTimeIndex(index)
+        self.updatePlotOfCurrentTab()
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def setIDS(self):
