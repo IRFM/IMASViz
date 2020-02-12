@@ -23,7 +23,7 @@ import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
-                             QAction)
+                             QAction, QFrame)
 from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator
 
@@ -152,6 +152,7 @@ class ETSplugin(QMainWindow):
 
     def getCoreSources(self):
         self.writeLogDebug(self, inspect.currentframe(), "START")
+
         if self.ids is not None:
             self.ids.core_sources.get()
         self.writeLogDebug(self, inspect.currentframe(), "END")
@@ -292,6 +293,10 @@ class ETSplugin(QMainWindow):
         self.mainWidget.layout().addWidget(whbox4)
 
         self.setCentralWidget(self.mainWidget)
+
+        # set status bar
+        self.setStatusBar()
+        self.setStatusBarText_1(text="OK")
 
         # Set initial window size
         dh = self.app.desktop().availableGeometry().height()
@@ -535,6 +540,32 @@ class ETSplugin(QMainWindow):
         self.setTimeIndex(index)
         self.updatePlotOfCurrentTab()
         self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def setStatusBar(self):
+        self.statusBar_text_1 = QLabel("")
+        self.statusBar_text_1.setStyleSheet('border: 0; color:  green;')
+        self.setStatusBarTexts()
+        VertLine = QFrame(self)
+        VertLine.setFrameShape(VertLine.VLine | VertLine.Sunken)
+        self.statusBar().addPermanentWidget(VertLine)
+        self.statusBar().addPermanentWidget(self.statusBar_text_1)
+        self.statusBar().show()
+
+    def setStatusBarTexts(self, text=" "):
+
+        self.statusBar().showMessage(f"USER={self.IDS_parameters['user']}; "
+                                     f"DEVICE={self.IDS_parameters['device']}; "
+                                     f"SHOT={self.IDS_parameters['shot']}; "
+                                     f"RUN={self.IDS_parameters['run']} ")
+        self.statusBar_text_1.setText(text)
+
+        # self.status_text.repaint()
+        # self.statusBar().show()
+
+    def setStatusBarText_1(self, text="", color="green"):
+        self.statusBar_text_1.setText(text)
+        self.statusBar_text_1.setStyleSheet(f'border: 0; color:  {color};')
+
 
 if __name__ == "__main__":
     # Set mandatory arguments
