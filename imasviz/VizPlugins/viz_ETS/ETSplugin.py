@@ -366,9 +366,13 @@ class ETSplugin(QMainWindow):
         """ Get time value for given time index.
         """
 
+        if time_index < 0:
+            time_index = 0
+
         time_value = 0
         if self.ids.core_profiles.profiles_1d[0].time == -9e+40:
-            time_value = self.ids.core_profiles.time[time_index]
+            if len(self.ids.core_profiles.time) > (time_index+1):
+                time_value = self.ids.core_profiles.time[time_index]
         else:
             time_value = self.ids.core_profiles.profiles_1d[time_index].time
 

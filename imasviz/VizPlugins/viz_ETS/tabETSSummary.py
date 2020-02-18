@@ -145,7 +145,7 @@ class tabETSSummary(QWidget):
         self.parent.writeLogDebug(self, inspect.currentframe(), "START")
 
         # Update time value
-        self.it = time_index
+        self.it = self.checkTimeIndex(time_index)
 
         self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
         self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
@@ -203,19 +203,20 @@ class tabETSSummary(QWidget):
                                           min(i, len(self.ion_colors)-1)],
                                       linewidth=1.5)
 
+            self.ax1.set(xlabel="rho_tor_norm [-]", title="Temperature [keV]")
+            # self.ax1.set_yticks([])
+            self.ax1.xaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax1.yaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax1.grid()
+            leg = self.ax1.legend()
+            leg.set_draggable(True)
+
         except Exception as err:
             self.log.error("ERROR occurred when plotting temperatures. (%s)"
                            % err, exc_info=True)
 
-        self.ax1.set(xlabel="rho_tor_norm [-]", title="Temperature [keV]")
-        # self.ax1.set_yticks([])
-        self.ax1.xaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax1.yaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax1.grid()
-        leg = self.ax1.legend()
-        leg.set_draggable(True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -274,19 +275,19 @@ class tabETSSummary(QWidget):
                                           min(i, len(self.ion_colors)-1)],
                                       linewidth=1.5)
 
+            self.ax2.set(xlabel="rho_tor_norm [-]", title='Density [10^19 m-3]')
+            # self.ax2.set_yticks([])
+            self.ax2.xaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax2.yaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax2.grid()
+            leg = self.ax2.legend()
+            leg.set_draggable(True)
+
         except Exception as err:
             self.log.error("ERROR occurred when plotting densities. (%s)"
                            % err, exc_info=True)
-
-        self.ax2.set(xlabel="rho_tor_norm [-]", title='Density [10^19 m-3]')
-        # self.ax2.set_yticks([])
-        self.ax2.xaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax2.yaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax2.grid()
-        leg = self.ax2.legend()
-        leg.set_draggable(True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -341,38 +342,38 @@ class tabETSSummary(QWidget):
             self.line_q = pl2[0]
             self.ax3_2.tick_params(axis='y', colors='red')
 
+            # Combine legend of the both plots into a single legend box
+            pl = pl1 + pl2
+            labs = [l.get_label() for l in pl]
+            leg = self.ax3_2.legend(pl, labs, loc=0)
+            leg.set_draggable(True)
+
+            sign_q = ' '
+            sign_jtot = ' '
+            if q[0]/abs(q[0]) == -1:
+                sign_q = '-'
+            if j_total[0]/abs(j_total[0]) == -1:
+                sign_jtot = '-'
+
+            self.ax3.set(xlabel="rho_tor_norm [-]")
+            self.ax3.set_title('%cj_total [MA/m2]' % sign_jtot[0], color='b',
+                               ha='right')
+            self.ax3_2.set(xlabel="rho_tor_norm [-]")
+            self.ax3_2.set_title(10*' '+'%cq [MA/m2]' % sign_q[0], color='r',
+                                 ha='left')
+            # self.ax3.set_yticks([])
+            self.ax3.xaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax3.yaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax3_2.yaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax3.grid(color="Blue")
+            self.ax3_2.grid(color="Red")
+
         except Exception as err:
             self.log.error("ERROR occurred when plotting equilibrium related "
                            "profiles. (%s)" % err, exc_info=True)
-
-        # Combine legend of the both plots into a single legend box
-        pl = pl1 + pl2
-        labs = [l.get_label() for l in pl]
-        leg = self.ax3_2.legend(pl, labs, loc=0)
-        leg.set_draggable(True)
-
-        sign_q = ' '
-        sign_jtot = ' '
-        if q[0]/abs(q[0]) == -1:
-            sign_q = '-'
-        if j_total[0]/abs(j_total[0]) == -1:
-            sign_jtot = '-'
-
-        self.ax3.set(xlabel="rho_tor_norm [-]")
-        self.ax3.set_title('%cj_total [MA/m2]' % sign_jtot[0], color='b',
-                           ha='right')
-        self.ax3_2.set(xlabel="rho_tor_norm [-]")
-        self.ax3_2.set_title(10*' '+'%cq [MA/m2]' % sign_q[0], color='r',
-                             ha='left')
-        # self.ax3.set_yticks([])
-        self.ax3.xaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax3.yaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax3_2.yaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax3.grid(color="Blue")
-        self.ax3_2.grid(color="Red")
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -416,21 +417,20 @@ class tabETSSummary(QWidget):
                                             color='b',
                                             linewidth=1.5)
             self.ax4.tick_params(axis='y', colors='blue')
+            self.ax4.set(xlabel="rho_tor_norm [-]", title='Zeff [-]')
+            # self.ax4.set_yticks([])
+            self.ax4.yaxis.set_major_formatter(pylab.NullFormatter())
+            self.ax4.xaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax4.yaxis.set_minor_locator(
+                ticker.AutoMinorLocator(self._nminor_interval))
+            self.ax4.grid()
+            leg = self.ax4.legend()
+            leg.set_draggable(True)
 
         except Exception as err:
             self.log.error("ERROR occurred when plotting Zeff profile. (%s)"
                            % err, exc_info=True)
-
-        self.ax4.set(xlabel="rho_tor_norm [-]", title='Zeff [-]')
-        # self.ax4.set_yticks([])
-        self.ax4.yaxis.set_major_formatter(pylab.NullFormatter())
-        self.ax4.xaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax4.yaxis.set_minor_locator(
-            ticker.AutoMinorLocator(self._nminor_interval))
-        self.ax4.grid()
-        leg = self.ax4.legend()
-        leg.set_draggable(True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -490,24 +490,24 @@ class tabETSSummary(QWidget):
                                       min(i, len(self.ion_ni_colors)-1)],
                                   linewidth=1.5)
 
+            self.ax5.set_title('diff [m^2/s]')
+            self.ax5.set_xlabel('rho_tor_norm [-]')
+            # self.ax5.xaxis.set_major_formatter(pylab.NullFormatter())
+            self.ax5.yaxis.set_major_formatter(pylab.NullFormatter())
+            self.ax5.set_yticks([])
+            self.ax5.grid()
+            self.ax5.xaxis.set_minor_locator(ticker.AutoMinorLocator(
+                                             self._nminor_interval))
+            self.ax5.yaxis.set_minor_locator(ticker.AutoMinorLocator(
+                                             self._nminor_interval))
+            # self.ax5.yaxis.set_minor_locator(ticker.AutoMinorLocator(
+            #                                  self._nminor_interval))
+            leg = self.ax5.legend()
+            leg.set_draggable(True)
+
         except Exception as err:
             self.log.error("ERROR occurred when plotting Transport "
                            "coefficients. (%s)" % err, exc_info=True)
-
-        self.ax5.set_title('diff [m^2/s]')
-        self.ax5.set_xlabel('rho_tor_norm [-]')
-        # self.ax5.xaxis.set_major_formatter(pylab.NullFormatter())
-        self.ax5.yaxis.set_major_formatter(pylab.NullFormatter())
-        self.ax5.set_yticks([])
-        self.ax5.grid()
-        self.ax5.xaxis.set_minor_locator(ticker.AutoMinorLocator(
-                                         self._nminor_interval))
-        self.ax5.yaxis.set_minor_locator(ticker.AutoMinorLocator(
-                                         self._nminor_interval))
-        # self.ax5.yaxis.set_minor_locator(ticker.AutoMinorLocator(
-        #                                  self._nminor_interval))
-        leg = self.ax5.legend()
-        leg.set_draggable(True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -591,27 +591,27 @@ class tabETSSummary(QWidget):
                                     linewidth=1.5)
                 self.line_sour_ni[i] = pl3[0]
 
+            self.ax6_2.axhline(y=0, linewidth=0.3)
+
+            self.ax6.set_title(' '*10+'q [kW.m-3]', color='g', ha='left', )
+            self.ax6.set_xlabel('rho_tor_norm [-]')
+            self.ax6_2.set_title("s [m-3 s-1]", ha='right')
+            self.ax6.grid()
+            self.ax6.xaxis.set_minor_locator(ticker.AutoMinorLocator(
+                                             self._nminor_interval))
+            self.ax6.yaxis.set_minor_locator(ticker.AutoMinorLocator(
+                                             self._nminor_interval))
+            self.ax6_2.yaxis.set_minor_locator(ticker.AutoMinorLocator(
+                                               self._nminor_interval))
+            # Combine legend of the both plots into a single legend box
+            pl = pl1 + pl2 + pl3
+            labs = [l.get_label() for l in pl]
+            leg = self.ax6_2.legend(pl, labs, loc=0)
+            leg.set_draggable(True)
+
         except Exception as err:
             self.log.error("ERROR occurred when plotting source related "
                            "profiles. (%s)" % err, exc_info=True)
-
-        self.ax6_2.axhline(y=0, linewidth=0.3)
-
-        self.ax6.set_title(' '*10+'q [kW.m-3]', color='g', ha='left', )
-        self.ax6.set_xlabel('rho_tor_norm [-]')
-        self.ax6_2.set_title("s [m-3 s-1]", ha='right')
-        self.ax6.grid()
-        self.ax6.xaxis.set_minor_locator(ticker.AutoMinorLocator(
-                                         self._nminor_interval))
-        self.ax6.yaxis.set_minor_locator(ticker.AutoMinorLocator(
-                                         self._nminor_interval))
-        self.ax6_2.yaxis.set_minor_locator(ticker.AutoMinorLocator(
-                                           self._nminor_interval))
-        # Combine legend of the both plots into a single legend box
-        pl = pl1 + pl2 + pl3
-        labs = [l.get_label() for l in pl]
-        leg = self.ax6_2.legend(pl, labs, loc=0)
-        leg.set_draggable(True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -772,3 +772,14 @@ class tabETSSummary(QWidget):
         self.fig.subplots_adjust(left=0.05, right=0.75, bottom=0.1, top=0.9)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def checkTimeIndex(self, time_index):
+        """Check if the given time index is legal, otherwise return default.
+        """
+
+        if time_index > len(self.ids.core_profiles.profiles_1d)-1:
+            new_time_index = 0
+        else:
+            new_time_index = time_index
+
+        return time_index
