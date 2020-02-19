@@ -28,8 +28,9 @@ from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDoubleValidator
 
 # IMASViz application imports
-from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
 from imasviz.VizPlugins.viz_ETS.tabETSSummary import tabETSSummary
+from imasviz.VizPlugins.viz_ETS.tabMain0DParam import tabMain0DParam
+from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
 matplotlib.use('Qt5Agg')
 
 
@@ -209,6 +210,7 @@ class ETSplugin(QMainWindow):
 
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
+        self.tabMain0DParam = tabMain0DParam(parent=self)
         self.tabCoreProfiles = tabCoreProfiles(parent=self)
 
         # Set time slice index label
