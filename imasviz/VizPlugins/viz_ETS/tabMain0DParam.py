@@ -4,6 +4,7 @@
 #
 #  Author :
 #         Dejan Penko
+#         Note: Followed ETSviz (ETS 5.x) design.
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
 #
@@ -55,14 +56,175 @@ class tabMain0DParam(QWidget):
         self.setLayout(QGridLayout())
         self.parent.tabWidget.addTab(self, "Main 0-D parameters")
 
+        # Create the matplotlib Figure and FigCanvas objects.
+        # 100 dots-per-inch
+        self.dpi = 100
+        self.fig = Figure(dpi=self.dpi)
+        self.canvas = FigCanvas(self.fig)
+
+        # Add canvas to tab widget
+        self.layout().addWidget(self.canvas, 0, 0, 1, 1)
+
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
     def plot(self):
         """Main plot function.
         """
-        pass
+
+        self.parent.writeLogDebug(self, inspect.currentframe(), "START")
+
+        # Get time index
+        self.it = self.parent.getTimeIndex()
+
+        self.eq = self.parent.ids.equilibrium
+
+        self.fig.clf()
+
+        xtext1 = 0.05
+        xtext2 = 0.40
+        xtext3 = 0.70
+        ytext1 = 0.90
+        ytext2 = 0.90
+        ytext3 = 0.90
+        ystep = 0.03
+
+        xtext11 = xtext1 + 0.01
+        xtext21 = xtext2 + 0.01
+        xtext31 = xtext3 + 0.01
+
+        colormap = '#000066', '#660000', '#006666'
+
+        # Titles:
+        self.fig.text(xtext1, ytext1, 'EQUILIBRIUM:', color=colormap[0],
+                      fontsize=14, weight='bold')
+        self.fig.text(xtext2, ytext2, 'PLASMA:', color=colormap[1],
+                      fontsize=14, weight='bold')
+        self.fig.text(xtext3, ytext3, 'SOURCES&SINKS:', color=colormap[2],
+                      fontsize=14, weight='bold')
+
+        # Equilibrium quantities:
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     Note: ETSviz (CPO)
+        #     self.fig.text(xtext11, ytext1,
+        #                   'COCOS            =  %d' % (self.eq.array[self.it].datainfo.cocos),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except Exception as err:
+        #     self.log.error("ERROR occurred when reading Equilibrium COCOS. (%s)"
+        #                    % err, exc_info=True)
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     Note: ETSviz (CPO)
+        #     self.fig.text(xtext11, ytext1,
+        #                   'BT                   =  %6.4f [T]' % (self.eq.array[self.it].global_param.toroid_field.b0),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        try:
+            ytext1 = ytext1 - ystep
+            self.fig.text(xtext11, ytext1,
+                          'VOLUME          =  %6.4f [m^3]' %
+                          (self.eq.time_slice[self.it].global_quantities.volume),
+                          color=colormap[0], fontsize=12, weight='bold')
+        except Exception as err:
+            self.log.error("ERROR occurred when reading Equilibrium VOLUME. (%s)"
+                           % err, exc_info=True)
+
+        # TODO (from ETSviz):
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'AREA               =  %6.4f [m^2]' % (self.eq.array[self.it].global_param.area),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'MAX_AX(R,Z)  =  (%6.4f,%6.4f) [m]' % (self.eq.array[self.it].global_param.mag_axis.position.r, self.eq.array[self.it].global_param.mag_axis.position.z),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'A_min              =  %6.4f [m]' % (self.eq.array[self.it].eqgeometry.a_minor),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'ELONG_UP       =  %6.4f [-]' % (self.eq.array[self.it].eqgeometry.elong_upper),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'ELONG_LOW    =  %6.4f [-]' % (self.eq.array[self.it].eqgeometry.elong_lower),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'TRIA_UP          =  %6.4f [-]' % (self.eq.array[self.it].eqgeometry.tria_upper),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'TRIA_LOW       =  %6.4f [-]' % (self.eq.array[self.it].eqgeometry.tria_lower),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'PSI_AX            =  %6.4f [Wb]' % (self.eq.array[self.it].global_param.psi_ax),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'PSI_BND          =  %6.4f [Wb]' % (self.eq.array[self.it].global_param.psi_bound),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'q_95                =  %6.4f [-]' % (self.eq.array[self.it].global_param.q_95),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'Li                     =  %6.4f [-]' % (self.eq.array[i].global_param.li),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'BETA_N            =  %6.4f [-]' % (self.eq.array[self.it].global_param.beta_normal),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+        # try:
+        #     ytext1 = ytext1 - ystep
+        #     self.fig.text(xtext11, ytext1,
+        #                   'MAG_ENERGY  =  %6.4f [J]' % (self.eq.array[self.it].global_param.w_mhd),
+        #                   color=colormap[0], fontsize=12, weight='bold')
+        # except:
+        #     pass
+
 
     def plotUpdate(self, time_index):
         """Update data.
         """
-        pass
+        self.plot()

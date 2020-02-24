@@ -134,6 +134,7 @@ class ETSplugin(QMainWindow):
         self.getCoreProfiles()
         self.getCoreTransport()
         self.getCoreSources()
+        self.getEquilibrium()
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def getCoreProfiles(self, ):
@@ -156,6 +157,13 @@ class ETSplugin(QMainWindow):
 
         if self.ids is not None:
             self.ids.core_sources.get()
+        self.writeLogDebug(self, inspect.currentframe(), "END")
+
+    def getEquilibrium(self):
+        self.writeLogDebug(self, inspect.currentframe(), "START")
+
+        if self.ids is not None:
+            self.ids.equilibrium.get()
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def checkIDS(self):

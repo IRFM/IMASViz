@@ -4,6 +4,7 @@
 #
 #  Author :
 #         Dejan Penko
+#         Note: Followed ETSviz (ETS 5.x) design.
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
 #
