@@ -112,28 +112,34 @@ class tabETSSummary(QWidget):
         self.parent.updateTimeSliderTminTmaxLabel()
         # self.nslices2plot = 1
 
-        # Core profiles
-        self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
-        # Core transport
-        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
-        # Core Sources
-        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
+        try:
 
-        # Re-plot te/ti (electron/ion temperature)
-        self.plot_te_ti()
-        # Re-plot ne/ni (electron/ion density)
-        self.plot_ne_ni()
-        # Plot j_total and q (total parallel current density and safety factor)
-        self.plot_jtotal_q()
-        # Plot zeff profile.
-        self.plot_zeff()
-        # Plot transport coefficients
-        self.plot_transport_coeff()
-        # Plot sources
-        self.plot_sources()
+            # Core profiles
+            self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
+            # Core transport
+            self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
+            # Core Sources
+            self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
 
-        # Add text beside plots
-        self.main_discharge_parameters()
+            # Re-plot te/ti (electron/ion temperature)
+            self.plot_te_ti()
+            # Re-plot ne/ni (electron/ion density)
+            self.plot_ne_ni()
+            # Plot j_total and q (total parallel current density and safety factor)
+            self.plot_jtotal_q()
+            # Plot zeff profile.
+            self.plot_zeff()
+            # Plot transport coefficients
+            self.plot_transport_coeff()
+            # Plot sources
+            self.plot_sources()
+
+            # Add text beside plots
+            self.main_discharge_parameters()
+
+        except Exception as err:
+            self.log.error("ERROR occurred in tabETSSummary plot. "
+                           "(%s)" % err, exc_info=True)
 
         self.show()
 
@@ -702,7 +708,45 @@ class tabETSSummary(QWidget):
         try:
             cp_1d = self.ids.core_profiles.profiles_1d[self.it]
             # Number of ions
-            NION = len(cp_1d.ion)
+
+            # Note that performing with lists of known size is much faster than
+            # using append. The illegal '-1' indices will be removed later
+            ION_indices = [-1]*len(cp_1d.ion)
+            IMP_indices = [-1]*len(cp_1d.ion)
+
+            for i in range(len(cp_1d.ion)):
+                if cp_1d.ion[i].multiple_states_flag == 0:
+                    ION_indices[i] = i
+                elif cp_1d.ion[i].multiple_states_flag == 1:
+                    ION_indices[i] = i
+                else:
+                    self.log.warning("WARNING: in Main discharge parameters."
+                                     "multiple_states_flag found that is "
+                                     "neither 0 (ion) or 1 (impurity).")
+
+            # Number of impurities
+
+            # Note: in CPO there was separate ions[:] and impurities[:]
+            # structure. In Core Profiles IDS also impurities get put to ion[:].
+            # To differentiate between ions and impurities the
+            # 'multiple_states_flag' is being used:
+            #  - multiple_states_flag == 0 -> ion
+            #  - multiple_states_flag == 1 -> impurity
+
+            # Removing illegal and obsolete '-1' indices
+            ION_indices = list(filter((-1).__ne__, ION_indices))
+            IMP_indices = list(filter((-1).__ne__, IMP_indices))
+            NION = len(ION_indices)
+            NIMP = len(IMP_indices)
+
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"NION: {NION}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"ION_indices: {ION_indices}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"NIMP: {NIMP}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"IMP_indices: {IMP_indices}")
 
             for iion in range(NION):
 
@@ -721,41 +765,37 @@ class tabETSSummary(QWidget):
                                   min(iion, len(self.ion_colors)-1)],
                               fontsize=11, weight='bold')
                 ytext = ytext - ystep * 0.8
-                # fig.text(xtext2,ytext,"amn = %d" % int(amn), color='black',
-                #             fontsize=10, weight='bold')
+                # self.fig.text(xtext2, ytext, "amn = %d" % int(amn),
+                #               color='black', fontsize=10, weight='bold')
                 # ytext   = ytext - ystep * 0.8
-                # fig.text(xtext2,ytext,"zn    = %d" % int(zn),color='black',
-                #             fontsize=10, weight='bold')
+                # self.fig.text(xtext2, ytext, "zn    = %d" % int(zn),
+                #               color='black', fontsize=10, weight='bold')
                 self.fig.text(xtext2, ytext, element(zn, amn), color='black',
                               fontsize=10, weight='bold')
 
-            # Number of impurities
-            # TODO
-            # NIMP = ? # unknown where in IDSs this data resides
-            #          # According to cpo2ids_devel (keplerworkflows),
-            #          # impurities get stored to cp_1d.ion[:] too. How to
-            #          # know which ion is then considered being impurity?
+            for iimp in range(NIMP):
 
-            # for iimp in range(NIMP):
+                self.parent.writeLogDebug(
+                    self, inspect.currentframe(),
+                    (f"len(core_profiles[{self.it}].ion[{iimp}].element): "
+                     f"{len(cp_1d.ion[iimp].element)}"))
 
-            #     self.log.debug(f"DEBUG: len(core_profiles[{self.it}].ion[{iion}].element): "
-            #         f"{len(cp_1d.ion[iion].element)}")
-            #     nucind  = ? - 1 # unknown where in IDSs this data resides
-            #     # Atomic mass number
-            #     amn = cp_1d.ion[iion].element[0].a
-            #     # Nuclear charge
-            #     zn = cp_1d.ion[iion].element[0].z_n
-            #     ytext   = ytext -ystep
-            #     self.fig.text(xtext1, ytext, "Impurity_%d:" % int(iimp+1),
-            #                     color='black', fontsize=11, weight='bold')
-            #     ytext   = ytext - ystep * 0.8
-            #     # self.fig.text(xtext2,ytext,"amn = %d" % int(amn),
-            #     #               color='black', fontsize=10, weight='bold')
-            #     # ytext   = ytext - ystep * 0.8
-            #     # self.fig.text(xtext2,ytext,"zn    = %d" % int(zn),
-            #     #               color='black', fontsize=10, weight='bold')
-            #     self.fig.text(xtext2, ytext, element(zn, amn), color='black',
-            #                     fontsize=10, weight='bold')
+                # nucind  = ? - 1 # unknown where in IDSs this data resides
+                # Atomic mass number
+                amn = cp_1d.ion[iimp].element[0].a
+                # Nuclear charge
+                zn = cp_1d.ion[iimp].element[0].z_n
+                ytext = ytext - ystep
+                self.fig.text(xtext1, ytext, "Impurity_%d:" % int(iimp+1),
+                              color='black', fontsize=11, weight='bold')
+                ytext = ytext - ystep * 0.8
+                # self.fig.text(xtext2, ytext, "amn = %d" % int(amn),
+                #               color='black', fontsize=10, weight='bold')
+                # ytext   = ytext - ystep * 0.8
+                # self.fig.text(xtext2, ytext, "zn    = %d" % int(zn),
+                #               color='black', fontsize=10, weight='bold')
+                self.fig.text(xtext2, ytext, element(zn, amn), color='black',
+                              fontsize=10, weight='bold')
 
             ytext = ytext - ystep
             self.fig.text(xtext1, ytext, "electrons", color='r', fontsize=10,

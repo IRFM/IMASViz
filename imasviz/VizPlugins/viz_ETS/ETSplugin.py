@@ -183,6 +183,11 @@ class ETSplugin(QMainWindow):
         print("Number of time slices: ", len(self.ids.core_profiles.time))
         print("Number of profiles_1d slices: ",
               len(self.ids.core_profiles.profiles_1d))
+
+        if len(self.ids.core_profiles.profiles_1d) == 0:
+            self.log.warning("WARNING: Found 0 profiles_1d arrays in "
+                             "Core Profiles!")
+
         self.writeLogDebug(self, inspect.currentframe(), "END")
 
     def writeLogDebug(self, instance, currentframe, msg):
@@ -378,13 +383,14 @@ class ETSplugin(QMainWindow):
 
         if time_index < 0:
             time_index = 0
-
         time_value = 0
+
         if self.ids.core_profiles.profiles_1d[0].time == -9e+40:
             if len(self.ids.core_profiles.time) > (time_index+1):
                 time_value = self.ids.core_profiles.time[time_index]
         else:
             time_value = self.ids.core_profiles.profiles_1d[time_index].time
+
 
         return time_value
 
