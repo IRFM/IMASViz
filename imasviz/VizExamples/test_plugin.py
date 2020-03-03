@@ -29,7 +29,7 @@ root.addHandler(handler)
 
 api = Viz_API()  # Creating IMASViz Application Programming Interface
 
-ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()  #  Asking for a shot
+ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()  #  Asking for a shot
 
 if not ok:
     logging.error("User input has failed. Test not executed.")
@@ -40,7 +40,7 @@ dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS
                                       shotNumber=shotNumber,
                                       runNumber=runNumber,
                                       userName=userName,
-                                      imasDbName=tokamak)
+                                      imasDbName=database)
 
 f = api.CreateDataTree(dataSource) # Build the data tree view frame
 paths = ['equilibrium.time_slice[0].profiles_1d.j_tor'] # Set the list of node paths that are to be selected

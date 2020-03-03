@@ -329,20 +329,20 @@ class QVizGlobalOperations:
         shotNumber = None
         runNumber = None
         userName = None
-        tokamak = None
+        database = None
         shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number")
         if not ok:
-            return (ok, shotNumber, runNumber, userName, tokamak)
+            return (ok, shotNumber, runNumber, userName, database)
         else:
             runNumber, ok = QInputDialog.getInt(None, "Run number", "enter the run number of shot " + str(shotNumber))
             if not ok:
-                return (ok, shotNumber, runNumber, userName, tokamak)
+                return (ok, shotNumber, runNumber, userName, database)
             else:
                 userName, ok = QInputDialog.getText(None, 'User name', "enter user name", QLineEdit.Normal, "")
                 if not ok:
-                    return (ok, shotNumber, runNumber, userName, tokamak)
+                    return (ok, shotNumber, runNumber, userName, database)
                 else:
-                    tokamak, ok = QInputDialog.getText(None, 'Tokamak', "enter tokamak", QLineEdit.Normal, "")
+                    database, ok = QInputDialog.getText(None, 'database', "enter database", QLineEdit.Normal, "")
                     if not ok:
-                        return (ok, shotNumber, runNumber, userName, tokamak)
-        return (ok, shotNumber, runNumber, userName, tokamak)
+                        return (ok, shotNumber, runNumber, userName, database)
+        return (ok, shotNumber, runNumber, userName, database)

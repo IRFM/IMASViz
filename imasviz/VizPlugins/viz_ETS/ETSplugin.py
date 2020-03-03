@@ -124,7 +124,7 @@ class ETSplugin(QMainWindow):
             self.ids = imas.ids(self.IDS_parameters["shot"],
                                 self.IDS_parameters["run"])
             self.ids.open_env(self.IDS_parameters["user"],
-                              self.IDS_parameters["device"], '3')
+                              self.IDS_parameters["database"], '3')
         except:
             self.ids = None
             print("Error when trying to get() the IDS. Data for given IDS "
@@ -177,7 +177,7 @@ class ETSplugin(QMainWindow):
         print('Shot    =', self.IDS_parameters["shot"])
         print('Run     =', self.IDS_parameters["run"])
         print('User    =', self.IDS_parameters["user"])
-        print('Device =', self.IDS_parameters["device"])
+        print('Database =', self.IDS_parameters["database"])
         # print('ts =', ts)
 
         print("Number of time slices: ", len(self.ids.core_profiles.time))

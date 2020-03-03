@@ -62,7 +62,7 @@ class ETSpluginIMASViz(VizPlugin):
         self.IDS_parameters["shot"] = shot
         self.IDS_parameters["run"] = run
         self.IDS_parameters["user"] = user
-        self.IDS_parameters["device"] = device
+        self.IDS_parameters["database"] = device
 
         self.ets = ETSplugin(self.IDS_parameters, self.ids)
         if self.dataTreeView.window().objectName() == "IMASViz root window":
