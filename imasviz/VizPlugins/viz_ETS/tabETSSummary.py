@@ -9,7 +9,7 @@
 #         dejan.penko@lecad.fs.uni-lj.si
 #
 # ****************************************************
-#     Copyright(c) 2019- D. Penko, J. Ferreira
+#     Copyright(c) 2019- D. Penko
 
 import inspect
 import matplotlib
@@ -400,8 +400,8 @@ class tabETSSummary(QWidget):
             self.line_q.set_ydata(abs(q))
 
         except Exception as err:
-            self.log.error("ERROR occurred when plotting equilibrium related "
-                           "profiles. (%s)" % err, exc_info=True)
+            self.log.error("ERROR occurred when re-plotting equilibrium "
+                           "related profiles. (%s)" % err, exc_info=True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -456,7 +456,7 @@ class tabETSSummary(QWidget):
             self.line_zeff.set_ydata(zeff)
 
         except Exception as err:
-            self.log.error("ERROR occurred when plotting Zeff profile. (%s)"
+            self.log.error("ERROR occurred when re-plotting Zeff profile. (%s)"
                            % err, exc_info=True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")

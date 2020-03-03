@@ -1,6 +1,6 @@
 #  Name   : tabMain0DParam
 #
-#           "Main 0-D parameters" tab for ETS plugin.
+#           "Main 0-D parameters" tab for the ETS plugin.
 #
 #  Author :
 #         Dejan Penko
@@ -444,4 +444,5 @@ class tabMain0DParam(QWidget):
     def plotUpdate(self, time_index):
         """Update data.
         """
-        self.plot() # TODO. make proper plotUpdate function
+        self.plot()  # TODO: Make proper plotUpdate function
+                     #       (for minor performance improvement)

@@ -30,6 +30,7 @@ from PyQt5.QtGui import QDoubleValidator
 # IMASViz application imports
 from imasviz.VizPlugins.viz_ETS.tabETSSummary import tabETSSummary
 from imasviz.VizPlugins.viz_ETS.tabMain0DParam import tabMain0DParam
+from imasviz.VizPlugins.viz_ETS.tabMain1DParam import tabMain1DParam
 from imasviz.VizPlugins.viz_ETS.tabCoreProfiles import tabCoreProfiles
 matplotlib.use('Qt5Agg')
 
@@ -42,7 +43,7 @@ def checkArguments():
         import argparse
         from argparse import RawTextHelpFormatter
         description = """ETS plugin. Example for running it from terminal:
->> python3 ETSplugin.py --shot=36440 --run=1 --user=penkod --device=aug
+>> python3 ETSplugin.py --shot=36440 --run=1 --user=penkod --database=aug
 """
 
         parser = argparse.ArgumentParser(description=description,
@@ -54,21 +55,21 @@ def checkArguments():
                             help="Case parameter: run")
         parser.add_argument("-u", "--user", type=str, required=True,
                             help="Case parameter: username")
-        parser.add_argument("-d", "--device", type=str, required=True,
-                            help="Case parameter: device")
+        parser.add_argument("-d", "--database", type=str, required=True,
+                            help="Case parameter: database")
 
         args = parser.parse_args()
         IDS_parameters = {"shot": args.shot,
                           "run": args.run,
                           "user": args.user,
-                          "device": args.device}
+                          "database": args.database}
     else:
         # Default parameters
         print("Using default parameters")
         IDS_parameters = {"shot": 36440,
                           "run": 1,
                           "user": "penkod",
-                          "device": "aug"}
+                          "database": "aug"}
 
     return IDS_parameters
 
@@ -81,7 +82,7 @@ class ETSplugin(QMainWindow):
         """
         Arguments:
             IDS_parameters (Dictionary) : Dictionary containing IDS parameters
-                                          (shot, run, user, device)
+                                          (shot, run, user, database)
             ids            (obj)        : IDS object
         """
         super(QMainWindow, self).__init__()
@@ -224,6 +225,7 @@ class ETSplugin(QMainWindow):
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
         self.tabMain0DParam = tabMain0DParam(parent=self)
+        self.tabMain0DParam = tabMain1DParam(parent=self)
         self.tabCoreProfiles = tabCoreProfiles(parent=self)
 
         # Set time slice index label
@@ -574,7 +576,7 @@ class ETSplugin(QMainWindow):
     def setStatusBarTexts(self, text=" "):
 
         self.statusBar().showMessage(f"USER={self.IDS_parameters['user']}; "
-                                     f"DEVICE={self.IDS_parameters['device']}; "
+                                     f"DATABASE={self.IDS_parameters['database']}; "
                                      f"SHOT={self.IDS_parameters['shot']}; "
                                      f"RUN={self.IDS_parameters['run']} ")
         self.statusBar_text_1.setText(text)
