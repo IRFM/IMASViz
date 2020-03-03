@@ -225,7 +225,7 @@ class ETSplugin(QMainWindow):
         # Set tabs
         self.tabETSSummary = tabETSSummary(parent=self)
         self.tabMain0DParam = tabMain0DParam(parent=self)
-        self.tabMain0DParam = tabMain1DParam(parent=self)
+        self.tabMain1DParam = tabMain1DParam(parent=self)
         self.tabCoreProfiles = tabCoreProfiles(parent=self)
 
         # Set time slice index label
@@ -597,6 +597,7 @@ if __name__ == "__main__":
 
     ets = ETSplugin(IDS_parameters)
     ets.tabETSSummary.plot()
+    ets.tabMain1DParam.plot()
 
     ets.show()
 

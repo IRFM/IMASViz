@@ -46,6 +46,10 @@ class tabMain1DParam(QWidget):
         # Set initial time slice
         self.it = 0
 
+        # Set number of slices and arrays for holding plot lines
+        nslices = len(self.ids.core_profiles.profiles_1d)
+        self.nslices2plot = min(nslices, 5)
+
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
     def setTabUI(self):
@@ -165,38 +169,38 @@ class tabMain1DParam(QWidget):
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # te = self.cp_1d.electrons.temperature
-            # self.line_te, = self.ax1.plot(rho_tor_norm, 1.0e-3*te,
-            #                               label="Te",
-            #                               color='r',
-            #                               linewidth=1.5)
-            # self.line_ti = [0]*len(self.cp_1d.ion)
-            # for i in range(len(self.cp_1d.ion)):
-            #     ti = self.cp_1d.ion[i].temperature
-            #     # Empty array
-            #     if self.cp_1d.ion[i].multiple_states_flag == 0:
-            #         self.line_ti[i], = \
-            #             self.ax1.plot(rho_tor_norm,
-            #                           1.0e-3*ti,
-            #                           label='Ti %d' % (i+1),
-            #                           color=self.ion_colors[
-            #                               min(i, len(self.ion_colors)-1)],
-            #                           linewidth=1.5)
+            j_Oh = self.cp_1d.j_ohmic
+            self.ax1.set_xlim(0, max(rho_tor_norm))
+            self.lines_j_Oh = [0]*self.nslices2plot
+            self.lines_j_Oh[0], = self.ax1.plot(rho_tor_norm, 1.0e-6*j_Oh,
+                                                label="j_Oh", color='#ff0033',
+                                                linewidth=1.5)
 
-            # self.ax1.set(xlabel="rho_tor_norm [-]", title="Temperature [keV]")
-            # # self.ax1.set_yticks([])
-            # self.ax1.xaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax1.yaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax1.grid()
-            # leg = self.ax1.legend()
-            # leg.set_draggable(True)
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(self.lines_j_Oh): "
+                                      f"{len(self.lines_j_Oh)}")
+            j = 1
+            for ii in range(-2, -self.nslices2plot-1, -1):
+                i = self.it + ii + 1
+                rho_tor_norm = \
+                    self.ids.core_profiles.profiles_1d[i].grid.rho_tor_norm
+                j_Oh = self.ids.core_profiles.profiles_1d[i].j_ohmic
+                self.lines_j_Oh[j], = \
+                    self.ax1.plot(rho_tor_norm, 1.0e-6*j_Oh, '--',
+                                  label=f"j_Oh slice {i}", color='#ff0033',
+                                  linewidth=0.5)
+                j += 1
+
+            self.ax1.set_title('j_Oh [MA/m^2]', fontsize=12, ha='center',
+                               color='DarkBlue')
+            self.ax1.set(xlabel="rho_tor_norm [-]")
+            self.ax1.grid()
+            leg = self.ax1.legend()
+            leg.set_draggable(True)
 
         except Exception as err:
             self.log.error("ERROR occurred when plotting j_Oh. (%s)"
                            % err, exc_info=True)
-
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -208,18 +212,28 @@ class tabMain1DParam(QWidget):
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # te = self.cp_1d.electrons.temperature
+            j_Oh = self.cp_1d.j_ohmic
 
-            # self.line_te.set_xdata(rho_tor_norm)
-            # self.line_te.set_ydata(1.0e-3*te)
+            self.lines_j_Oh[0].set_xdata(rho_tor_norm)
+            self.lines_j_Oh[0].set_ydata(1.0e-6*j_Oh)
 
-            # for i in range(len(self.cp_1d.ion)):
-            #     ti = self.cp_1d.ion[i].temperature
-            #     if self.cp_1d.ion[i].multiple_states_flag == 0:
-            #         self.line_ti[i].set_xdata(rho_tor_norm)
-            #         self.line_ti[i].set_ydata(1.0e-3*ti)
-            #         # self.line_ti[i].set_color(self.ion_colors[
-            #         #                           min(i,len(self.ion_colors)-1)])
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(self.lines_j_Oh): "
+                                      f"{len(self.lines_j_Oh)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"self.lines_j_Oh: "
+                                      f"{self.lines_j_Oh}")
+            j = 1
+            for ii in range(-2, -self.nslices2plot-1, -1):
+                i = self.it + ii + 1
+                rho_tor_norm = \
+                    self.ids.core_profiles.profiles_1d[i].grid.rho_tor_norm
+                j_Oh = self.ids.core_profiles.profiles_1d[i].j_ohmic
+                self.lines_j_Oh[j].set_xdata(rho_tor_norm)
+                self.lines_j_Oh[j].set_ydata(1.0e-6*j_Oh)
+                self.lines_j_Oh[j].set_label(f"j_Oh slice {i}")
+
+                j += 1
 
         except Exception as err:
             self.log.error("ERROR occurred when re-plotting J_Oh. (%s)"
