@@ -258,6 +258,7 @@ class QVizDataTreeViewBuilder:
 
         extra_attributes = QVizTreeNode()
         isSignal = 0
+        isStatic = 0
 
         data_type = dataElement.get('data_type')
         if data_type is not None:
@@ -311,6 +312,8 @@ class QVizDataTreeViewBuilder:
 
                     if dataElement.get('type') == 'dynamic':
                         isSignal = 1
+                    elif dataElement.get('type') == 'static':
+                        isStatic = 1
 
                     itemDataDict['path_doc'] = dataElement.get('path_doc')
                     itemDataDict['parametrizedPath'] = dataElement.get('parametrizedPath')
@@ -322,6 +325,7 @@ class QVizDataTreeViewBuilder:
                         itemDataDict[key_max_name] = dataElement.get(key_max_name)
 
             itemDataDict['isSignal'] = isSignal
+            itemDataDict['isStatic'] = isStatic
 
         return itemDataDict, extra_attributes
 

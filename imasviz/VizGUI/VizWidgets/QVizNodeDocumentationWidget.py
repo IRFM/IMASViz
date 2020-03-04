@@ -412,11 +412,55 @@ class QVizNodeDocumentationWidget(QWidget):
                     node_contents_dict['name'] = node_label
                     node_contents_dict['contents'] = item.getData()['0D_content']
 
+            elif item.isStaticData():
+
+                # - Set node contents
+                expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
+                expression = QVizGlobalOperations.makePythonPath(expression)
+                # Get the array of values
+                node_array_contents = eval(expression)
+
+                if item.is1D():
+                    # TODO: same procedure is used under
+                    # 'if item isDynamicData()'. Creating a common routine
+                    # might be a good idea.
+                    self.showFieldsForArrays()
+
+                    self.lNodeArraySizeTitle.setText('Array size: ')
+                    # Get string version of the array of values
+                    n = 200
+                    try:
+                        node_contents_dict['minimum'] = str(min(node_array_contents))
+                        node_contents_dict['maximum'] = str(max(node_array_contents))
+                        node_contents_dict['zeros'] = str(len(np.where(node_array_contents == 0)))
+                        node_contents_dict['nans'] = str(np.count_nonzero(np.isnan(node_array_contents)))
+                        node_contents_dict['infs'] = str(np.count_nonzero(np.isinf(node_array_contents)))
+                    except:
+                        pass
+                    if len(node_array_contents) > n * 2:
+                        node_contents_dict['contents'] = 'The array size is too ' \
+                                                         'large for display. Showing first ' + str(n) \
+                                                         + ' values: \n\n' \
+                                                         + str(node_array_contents[:n]) + '\n...\n' \
+                                                         + str(node_array_contents[-n:])
+                    else:
+                        node_contents_dict['contents'] = str(node_array_contents)
+                    # Formatting the string
+                    # Note: makes the node documentation slider a lot slower for
+                    # large arrays!
+                    # Numbered array:
+                    # node_contents_dict['contents'] =  '\n'.join('{}: {}'.format(
+                    #     *k) for k in enumerate(node_array_contents))
+                    # Get size of the array in as string
+                    node_contents_dict['size'] = str(len(node_array_contents))
+                    self.lNodeArraySizeText.setText(node_contents_dict['size'])
+
             else:
                 self.showMinimalDisplay()
                 node_contents_dict = {}
                 node_contents_dict['name'] = node_label
                 node_contents_dict['documentation'] = node_doc
+
 
         else:
             self.showFieldsForIDSRoot()
