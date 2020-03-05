@@ -66,6 +66,11 @@ class tabETSSummary(QWidget):
         # Set initial time slice
         self.it = 0
 
+        # Set dummy for holding instances relevant to core_transport and
+        # core_profiles profiles_1d structure
+        self.ct_1d = None
+        self.cs_1d = None
+
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
     def setTabUI(self):
@@ -117,15 +122,22 @@ class tabETSSummary(QWidget):
             # Core profiles
             self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
             # Core transport
-            self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
+            if len(self.ids.core_transport.model) > 0:
+                self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
+            else:
+                self.log.warning("WARNING! len(core_transport.model) = 0  ")
             # Core Sources
-            self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
+            if len(self.ids.core_sources.source) > 0:
+                self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
+            else:
+                self.log.warning("WARNING! len(core_sources.source) = 0  ")
 
             # Re-plot te/ti (electron/ion temperature)
             self.plot_te_ti()
             # Re-plot ne/ni (electron/ion density)
             self.plot_ne_ni()
-            # Plot j_total and q (total parallel current density and safety factor)
+            # Plot j_total and q (total parallel current density and safety
+            # factor)
             self.plot_jtotal_q()
             # Plot zeff profile.
             self.plot_zeff()
@@ -155,8 +167,10 @@ class tabETSSummary(QWidget):
         self.it = self.checkTimeIndex(time_index)
 
         self.cp_1d = self.ids.core_profiles.profiles_1d[self.it]
-        self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
-        self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
+        if self.ct_1d is not None:
+            self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
+        if self.cs_1d is not None:
+            self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
 
         # Plot update: te/ti (electron/ion temperature)
         self.plotUpdate_te_ti()
@@ -236,6 +250,15 @@ class tabETSSummary(QWidget):
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             te = self.cp_1d.electrons.temperature
+
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(rho_tor_norm): \n{len(rho_tor_norm)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"rho_tor_norm: \n{rho_tor_norm}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(te): \n{len(te)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"te: \n{te}")
 
             self.line_te.set_xdata(rho_tor_norm)
             self.line_te.set_ydata(1.0e-3*te)
@@ -470,6 +493,10 @@ class tabETSSummary(QWidget):
         # Clear plot
         self.ax5.cla()
 
+        # Return if core_transport is recognized as empty
+        if self.ct_1d is None:
+            return
+
         try:
             # rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             rho_tor_norm = self.ct_1d.grid_d.rho_tor_norm
@@ -524,6 +551,10 @@ class tabETSSummary(QWidget):
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "START")
 
+        # Return if core_transport is recognized as empty
+        if self.ct_1d is None:
+            return
+
         try:
             # rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             rho_tor_norm = self.ct_1d.grid_d.rho_tor_norm
@@ -557,6 +588,10 @@ class tabETSSummary(QWidget):
 
         # Clear plot
         self.ax6.cla()
+
+        # Return if core_sources is recognized as empty
+        if self.cs_1d is None:
+            return
 
         try:
             rho_tor_norm = self.cs_1d.grid.rho_tor_norm
@@ -628,11 +663,34 @@ class tabETSSummary(QWidget):
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "START")
 
+        # Return if core_sources is recognized as empty
+        if self.cs_1d is None:
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"self.cs_1d: \n{self.cs_1d}")
+            return
+
         try:
             rho_tor_norm = self.cs_1d.grid.rho_tor_norm
             sour_te = self.cs_1d.electrons.energy
             sour_ti_tot = self.cs_1d.total_ion_energy
             sour_ni0 = self.cs_1d.ion[0].particles
+
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(rho_tor_norm): \n{len(rho_tor_norm)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"rho_tor_norm: \n{rho_tor_norm}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(sour_te): \n{len(sour_te)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"sour_te: \n{sour_te}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(sour_ti_tot): \n{len(sour_ti_tot)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"sour_ti_tot: \n{sour_ti_tot}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(sour_ni0): \n{len(sour_ni0)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"sour_ni0: \n{sour_ni0}")
 
             self.ax6.set_xlim(0, max(rho_tor_norm))
             norm = abs(max(1, max(sour_te), max(sour_ti_tot),
