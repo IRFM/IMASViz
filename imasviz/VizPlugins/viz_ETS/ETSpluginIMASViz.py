@@ -7,14 +7,15 @@
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2019- D. Penko
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_ETS.ETSplugin import ETSplugin
-import logging, os, sys
+import logging
 from PyQt5.QtWidgets import QMdiSubWindow
 import traceback
+
 
 class ETSpluginIMASViz(VizPlugin):
 

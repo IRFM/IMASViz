@@ -125,12 +125,14 @@ class tabETSSummary(QWidget):
             if len(self.ids.core_transport.model) > 0:
                 self.ct_1d = self.ids.core_transport.model[0].profiles_1d[self.it]
             else:
-                self.log.warning("WARNING! len(core_transport.model) = 0  ")
+                self.log.warning("WARNING! Found unallocated "
+                                 "core_transport.model[:]!")
             # Core Sources
             if len(self.ids.core_sources.source) > 0:
                 self.cs_1d = self.ids.core_sources.source[0].profiles_1d[self.it]
             else:
-                self.log.warning("WARNING! len(core_sources.source) = 0  ")
+                self.log.warning("WARNING! Found unallocated "
+                                 "core_sources.source[:]!")
 
             # Re-plot te/ti (electron/ion temperature)
             self.plot_te_ti()

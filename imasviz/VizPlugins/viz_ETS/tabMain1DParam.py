@@ -79,7 +79,6 @@ class tabMain1DParam(QWidget):
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax3 = self.fig.add_subplot(self.grid_subp[0, 2])
-        self.ax3_2 = self.ax3.twinx()
         self.ax4 = self.fig.add_subplot(self.grid_subp[1, 0])
         self.ax5 = self.fig.add_subplot(self.grid_subp[1, 1])
         self.ax6 = self.fig.add_subplot(self.grid_subp[1, 2])
@@ -226,9 +225,9 @@ class tabMain1DParam(QWidget):
             j = 1
             for ii in range(-2, -self.nslices2plot-1, -1):
                 i = self.it + ii + 1
-                rho_tor_norm = \
-                    self.ids.core_profiles.profiles_1d[i].grid.rho_tor_norm
-                j_Oh = self.ids.core_profiles.profiles_1d[i].j_ohmic
+                cp_1d_i = self.ids.core_profiles.profiles_1d[i]
+                rho_tor_norm = cp_1d_i.grid.rho_tor_norm
+                j_Oh = cp_1d_i.j_ohmic
                 self.lines_j_Oh[j].set_xdata(rho_tor_norm)
                 self.lines_j_Oh[j].set_ydata(1.0e-6*j_Oh)
                 self.lines_j_Oh[j].set_label(f"j_Oh slice {i}")
@@ -242,39 +241,39 @@ class tabMain1DParam(QWidget):
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
     def plot_Vloop(self):
-        """Plot Vloop
+        """Plot Vloop (LCFS loop voltage)
         """
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "START")
+
 
         # Clear plot first
         self.ax2.cla()
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # ne = self.cp_1d.electrons.density
-            # self.line_ne, = self.ax2.plot(rho_tor_norm, 1.0e-19*ne,
-            #                               label="Ne",
-            #                               color='r',
-            #                               linewidth=1.5)
-            # self.line_ni = [0]*len(self.cp_1d.ion)
-            # for i in range(len(self.cp_1d.ion)):
-            #     ni = self.cp_1d.ion[i].density
-            #     if self.cp_1d.ion[i].multiple_states_flag == 0:
-            #         self.line_ni[i], = \
-            #             self.ax2.plot(rho_tor_norm,
-            #                           1.0e-19*ni,
-            #                           label='Ni %d' % (i+1),
-            #                           color=self.ion_colors[
-            #                               min(i, len(self.ion_colors)-1)],
-            #                           linewidth=1.5)
+            vloop = self.ids.core_profiles.global_quantities.v_loop
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(v_loop): \n{len(vloop)}")
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"v_loop: \n{vloop}")
+            # TODO: There is only a single value per time slice. This then makes
+            #       it 0D parameter, not 1D. Commenting out the code until
+            #       it is clear where to take v_loop from (it is not
+            #       present in profiles_1d[:])
+            # vloop = self.ids.core_profiles.global_quantities.v_loop[self.it]
+            # self.ax2.set_xlim(0, max(rho_tor_norm))
+            # self.ax2.plot(rho_tor_norm, vloop, color='#ff0033', linewidth=1.5)
+            # for ii in range(-2, -self.nslices2plot-1, -1):
+            #     i = self.it + ii + 1
+            #     cp_1d_i = self.ids.core_profiles.profiles_1d[i]
+            #     rho_tor_norm = cp_1d_i.grid.rho_tor_norm
+            #     vloop = self.ids.core_profiles.global_quantities.v_loop[self.it]
+            #     self.ax2.plot(rho_tor_norm, vloop, '--', color='#ff0033',
+            #                   linewidth=0.5)
 
-            # self.ax2.set(xlabel="rho_tor_norm [-]", title='Density [10^19 m-3]')
-            # # self.ax2.set_yticks([])
-            # self.ax2.xaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax2.yaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
+            # self.ax2.set_title('Vloop [V]', fontsize=12, ha='center',
+            #                    color='DarkBlue')
             # self.ax2.grid()
             # leg = self.ax2.legend()
             # leg.set_draggable(True)
@@ -293,6 +292,7 @@ class tabMain1DParam(QWidget):
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
+            self.plot_Vloop()
             # ne = self.cp_1d.electrons.density
             # self.line_ne.set_xdata(rho_tor_norm)
             # self.line_ne.set_ydata(1.0e-19*ne)
@@ -317,53 +317,40 @@ class tabMain1DParam(QWidget):
 
         # Clear plot first
         self.ax3.cla()
-        self.ax3_2.cla()
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # q = self.cp_1d.q
-            # j_total = self.cp_1d.j_total
-            # pl1 = self.ax3.plot(rho_tor_norm, 1.0e-6*abs(j_total),
-            #                     label="j_total",
-            #                     color='b',
-            #                     linewidth=1.5)
-            # self.line_jtotal = pl1[0]
-            # self.ax3.tick_params(axis='y', colors='blue')
-            # pl2 = self.ax3_2.plot(rho_tor_norm, abs(q),
-            #                       label="q",
-            #                       color='r',
-            #                       linewidth=1.5)
-            # self.line_q = pl2[0]
-            # self.ax3_2.tick_params(axis='y', colors='red')
+            pre_per = self.cp_1d.pressure_perpendicular
+            self.ax3.set_xlim(0, max(rho_tor_norm))
+            self.lines_pre_per = [0]*self.nslices2plot
 
-            # # Combine legend of the both plots into a single legend box
-            # pl = pl1 + pl2
-            # labs = [l.get_label() for l in pl]
-            # leg = self.ax3_2.legend(pl, labs, loc=0)
-            # leg.set_draggable(True)
+            self.lines_pre_per[0], = self.ax3.plot(rho_tor_norm, pre_per/1e6,
+                                                   label="pre_per",
+                                                   color='#ff0033',
+                                                   linewidth=1.5)
+            self.parent.writeLogDebug(self, inspect.currentframe(),
+                                      f"len(self.lines_pre_per): "
+                                      f"{len(self.lines_pre_per)}")
+            j = 1
+            for ii in range(-2, -self.nslices2plot-1, -1):
+                i = self.it + ii + 1
+                cp_1d_i = self.ids.core_profiles.profiles_1d[i]
+                rho_tor_norm = cp_1d_i.grid.rho_tor_norm
 
-            # sign_q = ' '
-            # sign_jtot = ' '
-            # if q[0]/abs(q[0]) == -1:
-            #     sign_q = '-'
-            # if j_total[0]/abs(j_total[0]) == -1:
-            #     sign_jtot = '-'
+                pre_per = self.cp_1d.pressure_perpendicular
+                self.lines_pre_per[j], = self.ax3.plot(rho_tor_norm, pre_per/1e6,
+                                                       '--',
+                                                       label=f"pre_per slice {i}",
+                                                       color='#ff0033',
+                                                       linewidth=0.5)
+                j += 1
 
-            # self.ax3.set(xlabel="rho_tor_norm [-]")
-            # self.ax3.set_title('%cj_total [MA/m2]' % sign_jtot[0], color='b',
-            #                    ha='right')
-            # self.ax3_2.set(xlabel="rho_tor_norm [-]")
-            # self.ax3_2.set_title(10*' '+'%cq [MA/m2]' % sign_q[0], color='r',
-            #                      ha='left')
-            # # self.ax3.set_yticks([])
-            # self.ax3.xaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax3.yaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax3_2.yaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax3.grid(color="Blue")
-            # self.ax3_2.grid(color="Red")
+            self.ax3.set_title('Pressure [MPa]', fontsize=12, ha='center',
+                               color='DarkBlue')
+            self.ax3.set(xlabel="rho_tor_norm [-]")
+            self.ax3.grid()
+            leg = self.ax3.legend()
+            leg.set_draggable(True)
 
         except Exception as err:
             self.log.error("ERROR occurred when plotting pressure. "
@@ -379,12 +366,22 @@ class tabMain1DParam(QWidget):
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # q = self.cp_1d.q
-            # j_total = self.cp_1d.j_total
-            # self.line_jtotal.set_xdata(rho_tor_norm)
-            # self.line_jtotal.set_ydata(1.0e-6*abs(j_total))
-            # self.line_q.set_xdata(rho_tor_norm)
-            # self.line_q.set_ydata(abs(q))
+            pre_per = self.cp_1d.pressure_perpendicular
+
+            self.lines_pre_per[0].set_xdata(rho_tor_norm)
+            self.lines_pre_per[0].set_ydata(pre_per/1e6)
+
+            j = 1
+            for ii in range(-2, -self.nslices2plot-1, -1):
+                i = self.it + ii + 1
+                cp_1d_i = self.ids.core_profiles.profiles_1d[i]
+                rho_tor_norm = cp_1d_i.grid.rho_tor_norm
+                pre_per = self.cp_1d.pressure_perpendicular
+                self.lines_pre_per[j].set_xdata(rho_tor_norm)
+                self.lines_pre_per[j].set_ydata(pre_per/1e6)
+                self.lines_pre_per[j].set_label(f"pre_per slice {i}")
+
+                j += 1
 
         except Exception as err:
             self.log.error("ERROR occurred when re-plotting pressure. "
