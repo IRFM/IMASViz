@@ -42,7 +42,7 @@ api = Viz_API()
 # Set data source retriever/factory
 dataSourceFactory = QVizDataSourceFactory()
 
-ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
+ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
 
 if not ok:
     print("User input has failed. Example1 not executed.")
@@ -53,7 +53,7 @@ else:
                                      shotNumber=shotNumber,
                                      runNumber=runNumber,
                                      userName=userName,
-                                     imasDbName=tokamak)
+                                     imasDbName=database)
 
 
     # Build the data tree view frame

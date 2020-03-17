@@ -140,8 +140,8 @@ class QVizGlobalValues:
         else:
             os.environ["VIZ_HOME"] = os.environ["HOME"] + "viz"
 
-        if os.getenv("TOKAMAK_NAME") is None:
-            os.environ["TOKAMAK_NAME"] = "WEST"
+        if os.getenv("DATABASE_NAME") is None:
+            os.environ["DATABASE_NAME"] = "WEST"
 
         if TESTING_VIZ_HOME is None:
             if os.environ["HOSTNAME"] == 'r000u11l06':
@@ -158,7 +158,7 @@ class QVizGlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.23.1"
+        TESTING_IMAS_VERSION = "3.26.0"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)

@@ -121,7 +121,7 @@ class QVizIMASDataSource:
         return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
     def getLongLabel(self):
-        return "User:" + self.userName + " Tokamak:" + self.imasDbName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
+        return "User:" + self.userName + " Database:" + self.imasDbName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
     def getKey(self):
         return self.getLongLabel()

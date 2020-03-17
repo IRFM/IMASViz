@@ -38,7 +38,7 @@ class ToFuPlugin(VizPlugin):
 
         dargs = {'shot':dataSource.shotNumber,
                 'user':dataSource.userName,
-                'tokamak':dataSource.machineName,
+                'database':dataSource.machineName,
                 'run':dataSource.runNumber}
         ids = vizNode.getIDSName()
 

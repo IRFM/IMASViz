@@ -18,7 +18,7 @@ class CompareFLT1DPlugin(VizPlugin):
             logging.info('Comparing current node to sibling node from another shot...')
             logging.info('Data :' + self.selectedTreeNode.getDataName())
 
-            ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
+            ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
             if not ok:
                 return
 
@@ -42,7 +42,7 @@ class CompareFLT1DPlugin(VizPlugin):
                 shotNumber=shotNumber,
                 runNumber=runNumber,
                 userName=userName,
-                imasDbName=tokamak)
+                imasDbName=database)
 
             logging.info('Creating datasource:' + dataSource.getLongLabel())
 

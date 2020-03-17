@@ -1,3 +1,17 @@
+#  Name   : tabCoreProfiles
+#
+#           Core Profiles tab for ETS plugin.
+#
+#  Author :
+#         Dejan Penko
+#         Jorge Ferreira
+#  E-mail :
+#         dejan.penko@lecad.fs.uni-lj.si
+#         jferreira@ipfn.tecnico.ulisboa.pt
+#
+#****************************************************
+#     Copyright(c) 2019- D. Penko, J. Ferreira
+
 from PyQt5.QtWidgets import QWidget, QGridLayout, QSlider, QLabel
 from PyQt5.QtCore import Qt
 import matplotlib
@@ -23,7 +37,6 @@ class tabCoreProfiles(QWidget):
 
     def setTabUI(self):
 
-        # self.tab1 = QWidget(self)
         self.setLayout(QGridLayout())
         self.parent.tabWidget.addTab(self, "Core Profiles")
 
@@ -40,9 +53,13 @@ class tabCoreProfiles(QWidget):
         self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9, \
                                  wspace=0.3, hspace=0.35)
 
-        self.fig.suptitle('ETS plugin')
+        # self.fig.suptitle('ETS plugin')
         self.grid_subp    = matplotlib.gridspec.GridSpec(2, 2)
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
+        self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
+        self.ax3 = self.fig.add_subplot(self.grid_subp[1, 0])
+        self.ax4 = self.fig.add_subplot(self.grid_subp[1, 1])
+        self.ax5 = self.ax4.twinx()
 
     def plot(self):
 
@@ -56,7 +73,6 @@ class tabCoreProfiles(QWidget):
         self.ax1.legend()
         self.ax1.grid()
 
-        self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax2.plot(self.cp.grid.rho_tor_norm, 1.0e-19*self.cp.electrons.density_thermal, label='el')
         for i in range(len(self.cp.ion)):
             if self.cp.ion[i].multiple_states_flag == 0 :
@@ -65,15 +81,12 @@ class tabCoreProfiles(QWidget):
         self.ax2.legend()
         self.ax2.grid()
 
-        self.ax3 = self.fig.add_subplot(self.grid_subp[1, 0])
         self.ax3.plot(self.cp.grid.rho_tor_norm, 1.0e-6*self.cp.j_total, label='j_tor')
         self.ax3.set(title='Current', xlabel='rhon', ylabel='[MA m-2]')
         self.ax3.legend()
         self.ax3.grid()
 
-        self.ax4 = self.fig.add_subplot(self.grid_subp[1, 1])
         pl4 = self.ax4.plot(self.cp.grid.rho_tor_norm, self.cp.q, label='q')
-        self.ax5 = self.ax4.twinx()
         pl5 = self.ax5.plot(self.cp.grid.rho_tor_norm, self.cp.magnetic_shear, color='C1', label='shear')
         self.ax4.set(title='safety factor / shear', xlabel='rhon', ylabel='[-]')
         # Combine legend of the both plots into a single legend box
@@ -86,12 +99,9 @@ class tabCoreProfiles(QWidget):
 
         self.show()
 
-    def plotUpdate(self):
+    def plotUpdate(self, time_value):
 
-        sliderValue = int(round(self.parent.slider_time.value()))
-        self.parent.spinBox_time.setValue(int(sliderValue))
-        # print("Slider value: ", sliderValue)
-        cp = self.ids.core_profiles.profiles_1d[sliderValue]
+        cp = self.ids.core_profiles.profiles_1d[time_value]
 
         # Clear all plots
         self.ax1.cla()

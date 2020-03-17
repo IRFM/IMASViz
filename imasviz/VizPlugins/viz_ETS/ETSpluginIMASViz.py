@@ -7,14 +7,15 @@
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2019- D. Penko
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_ETS.ETSplugin import ETSplugin
-import logging, os, sys
+import logging
 from PyQt5.QtWidgets import QMdiSubWindow
 import traceback
+
 
 class ETSpluginIMASViz(VizPlugin):
 
@@ -39,9 +40,22 @@ class ETSpluginIMASViz(VizPlugin):
 
         # Check if the IDS data is already loaded in IMASviz. If it is not,
         # load it
-        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_profiles', occurrence):
+        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_profiles',
+                                            occurrence):
             logging.info('Loading core_profiles IDS...')
             vizAPI.LoadIDSData(self.dataTreeView, 'core_profiles', occurrence)
+        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_sources',
+                                            occurrence):
+            logging.info('Loading core_sources IDS...')
+            vizAPI.LoadIDSData(self.dataTreeView, 'core_sources', occurrence)
+        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_transport',
+                                            occurrence):
+            logging.info('Loading core_transport IDS...')
+            vizAPI.LoadIDSData(self.dataTreeView, 'core_transport', occurrence)
+        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'equilibrium',
+                                            occurrence):
+            logging.info('Loading equilibrium IDS...')
+            vizAPI.LoadIDSData(self.dataTreeView, 'equilibrium', occurrence)
 
         # Get IDS
         self.ids = dataSource.getImasEntry(occurrence)
@@ -49,18 +63,17 @@ class ETSpluginIMASViz(VizPlugin):
         self.IDS_parameters["shot"] = shot
         self.IDS_parameters["run"] = run
         self.IDS_parameters["user"] = user
-        self.IDS_parameters["device"] = device
+        self.IDS_parameters["database"] = device
 
         self.ets = ETSplugin(self.IDS_parameters, self.ids)
         if self.dataTreeView.window().objectName() == "IMASViz root window":
 
             subwindow = QMdiSubWindow()
             subwindow.setWidget(self.ets)
-            subwindow.resize(400,400)
             self.dataTreeView.window().getMDI().addSubWindow(self.ets)
 
         try:
-            self.ets.tabCoreProfiles.plot()
+            self.ets.tabETSSummary.plot()
             self.ets.show()
         except :
             traceback.print_exc()

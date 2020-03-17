@@ -289,6 +289,9 @@ class QVizTreeNode(QTreeWidgetItem):
     def isDynamicData(self):
         return self.infoDict.get('isSignal')
 
+    def isStaticData(self):
+        return self.infoDict.get('isStatic')
+
     def hasAvailableData(self):
         if self.isIDSRoot():
             for occurrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):

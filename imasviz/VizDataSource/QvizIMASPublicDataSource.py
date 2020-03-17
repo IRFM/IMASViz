@@ -50,7 +50,7 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
         return "UDA: " + self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
     def getLongLabel(self):
-        return "(UDA) Tokamak:" + self.machineName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
+        return "(UDA) Database:" + self.machineName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
     def open(self, imas_entry):
         imas_entry.open_public(self.machineName)

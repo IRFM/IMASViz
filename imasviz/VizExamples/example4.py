@@ -45,7 +45,7 @@ dataSourceFactory = QVizDataSourceFactory()
 # Set user (get current user)
 userName = os.environ['USER']
 
-ok, shotNumber, runNumber, userName, tokamak = QVizGlobalOperations.askForShot()
+ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
 
 if not ok:
     print("User input has failed. Example3 not executed.")
@@ -57,7 +57,7 @@ else:
         shotNumber=shotNumber,
         runNumber=runNumber,
         userName=userName,
-        imasDbName=tokamak)
+        imasDbName=database)
 
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)
