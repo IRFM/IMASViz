@@ -157,8 +157,7 @@ In your :file:`myPlugin.py` file add:
 .. code-block:: python
 
     # Get dataSource from the VizAPI (IMASViz Application Program Interface)
-    # Note: instance of "self.datatreeView" is provided by the VizPlugins
-    # through inheritance
+    # Note: dataTreeView attribute (self.dataTreeView) is inherited from VizPlugin
     dataSource = vizAPI.GetDataSource(self.dataTreeView)
     # Get case parameters (shot, run, machine user) from the dataSource
     shot = dataSource.shotNumber
@@ -176,11 +175,10 @@ In your :file:`myPlugin.py` file add:
 
 **2. Checking if the IDS data was already fetched**
 
-With the use of functions provided by **vizAPI** we can be check if the
-case (IDS) data was already fetched (loaded in memory) while running IMASViz.
-In case the data was not yet fetched it can be done with the use of the
-**LoadIDSData** function (with the use of this function also the IMASViz data
-tree view browser gets updated automatically).
+With the use of functions provided by **vizAPI** we can check if IDS data have been already fetched (loaded in memory) while running IMASViz.
+In case the data have not been yet fetched, it can be done with the use of the
+**LoadIDSData** function (moreover, using this function, IMASViz data
+tree view browser is updated automatically).
 
 The IDS object is then obtained with the use of **getImasEntry()** function
 for given occurrence (default occurrence value is 0).
@@ -195,7 +193,7 @@ In your :file:`myPlugin.py` file add:
         logging.info('Loading magnetics IDS...')
         vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
-    # Get IDS object
+    # Get IDS data entry object
     self.ids = dataSource.getImasEntry(occurrence)
 
 **3. Extracting and plotting the data from the IDS**
@@ -246,13 +244,16 @@ In your :file:`myPlugin.py` file add:
 getEntries()
 """"""""""""
 
-The :guilabel:`getEntries()` method function provides IMASViz the information to
-which IDS the plugin is associated. While in the IMASViz tree view browser,
-the plugin will be then accessible by right-clicking on here defined IDS
-(the option for running this plugin gets shown in the popup menu).
+The :guilabel:`getEntries()` method function is returning available features provided by
+the plugin for the current context. Each entry corresponds to a plugin functionality. An entry
+is diplayed as a menu item in the 'plugins' menu. Zero or several entries can be returned by this
+function depending on the current user selection. Association between an entry and a menu item
+is performed by the function getAllEntries() described below.
 
-In this case, as the plugin deals with the data stored in **Magnetics IDS**,
-this option should be set to ``"magnetics"`` as shown in the code part below.
+In the example below, the getEntries() function returns 0 (this is the first entry since our plugin
+example has only 1 functionality) only if the user has selected the magnetics IDS (since the plugin
+is handling only data stored in **Magnetics IDS**). Otherwise, the function returns an empty list to indicate
+that no functionality is available for the current selection.
 
 In your :file:`myPlugin.py` file add:
 
@@ -261,6 +262,7 @@ In your :file:`myPlugin.py` file add:
     def getEntries(self):
         if self.selectedTreeNode.getIDSName() == "magnetics":
             return [0]
+        return []
 
 getPluginsConfiguration()
 """""""""""""""""""""""""
@@ -280,15 +282,18 @@ In your :file:`myPlugin.py` file add:
 getAllEntries()
 """""""""""""""
 
-The :guilabel:`getAllEntries()` method function provides IMASViz 'cosmetic'
-information (e.g. label which should be shown in the popup menu etc.).
+The :guilabel:`getAllEntries()` method function returns all possible entries (functionalities) provided by the plugin.
+All or a subset of these entries may be available for the current user selection. This the goal of the
+getEntries() function describes above to select the entries which can be diplayed to the user according to the
+current data selection.
+Each entry is associated to a menu item which will be shown in the plugins menu which is displayed to the user.
 
 In your :file:`myPlugin.py` file add:
 
 .. code-block:: python
 
     def getAllEntries(self):
-        # Set a text which will be displayed in the pop-up menu
+        # Set a text which will be displayed in the pop-up menu as a menu item
         return [(0, 'My plugin...')]
 
 

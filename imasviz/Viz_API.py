@@ -170,6 +170,22 @@ class Viz_API:
         self.nsw = QVizNodesSelectionWindow(dataTreeView)
         self.nsw.show()
 
+    def GetSelectedNodes(self, DTV):
+        """
+        Returns the list of nodes selected by GUI or script commands.
+        :param DTV: a QVizDataTreeViewFrame or QVizDataTreeView object
+        :return: a list of QVizTreeNode objects
+        """
+        dataTreeView = DTV
+        if isinstance(DTV, QVizDataTreeViewFrame):
+            dataTreeView = DTV.dataTreeView
+        selectedNodes = []
+        for key in dataTreeView.selectedSignalsDict:
+            v = dataTreeView.selectedSignalsDict[key]
+            vizTreeNode = v['QTreeWidgetItem']
+            selectedNodes.append(vizTreeNode)
+        return selectedNodes
+
     def GetSelectedSignalsDict(self, DTV):
         """
         Returns the list of signals (nodes) dictionaries selected by GUI or script commands.

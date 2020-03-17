@@ -38,7 +38,7 @@ class simplePlotPluginExample(VizPlugin):
     """A minimal working plugin example for IMASViz.
     There are 5 mandatory functions that every plugin must include (!):
     - execute
-    - getEntriesPerSubject
+    - getEntries
     - getPluginsConfiguration
     - getAllEntries
     - isEnabled
@@ -111,6 +111,7 @@ class simplePlotPluginExample(VizPlugin):
     def getEntries(self):
         if self.selectedTreeNode.getIDSName() == "magnetics":
             return [0]
+        return []
 
     def getPluginsConfiguration(self):
         return None
