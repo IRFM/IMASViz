@@ -43,14 +43,14 @@ dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS
                                       imasDbName=tokamak)
 
 f = api.CreateDataTree(dataSource) # Build the data tree view frame
-paths = ['equilibrium.time_slice[0].profiles_1d.j_tor'] # Set the list of node paths that are to be selected
-paths = {'paths' : paths, 'occurrences' : [0]} # Change paths to specify occurrence of each path
-
-# Select signal nodes corresponding to the paths in paths list
-api.SelectSignals(f, paths)
+# paths = ['equilibrium.time_slice[0].profiles_1d.j_tor'] # Set the list of node paths that are to be selected
+# paths = {'paths' : paths, 'occurrences' : [0]} # Change paths to specify occurrence of each path
+#
+# # Select signal nodes corresponding to the paths in paths list
+# api.SelectSignals(f, paths)
 
 # Execution of the 'viz_example_plugin' plugin
 plugin_instance = viz_example_plugin(f.dataTreeView.selectedItem, f.dataTreeView)
-plugin_instance.execute(api, pluginEntry=1)
+plugin_instance.execute(api, pluginEntry=2)
 
 app.exec() # Keep the application running

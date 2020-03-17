@@ -22,8 +22,7 @@ The procedure of executing the IMASViz
 
 1. In opened IMAS database navigate to the **equilibrium** IDS.
 
-2. While holding the **shift keyboard button**, **right-click** on the
-   **equilibirum** node. In a pop up menu a list of available plugins for the
+2. **Right-click** on the **equilibrium** node. In a pop up menu a list of available plugins for the
    equilibrium IDS will be displayed.
 
 3. Click the :guilabel:`Equilibrium overview` option.
@@ -48,7 +47,7 @@ takes a few seconds. After that the plugin window will appear.
 Equilibrium overview plugin GUI features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Equilibrium plugin allows some interaction with the plots that are described
+The Equilibrium plugin allows some interactions with the plots that are described
 below.
 
 Plot at time slice using slider
