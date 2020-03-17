@@ -111,7 +111,7 @@ class QVizDataTreeView(QTreeWidget):
 
         # Create a IDS root node with each shotnumber
         self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + str(dataSource.shotNumber) + ')'])
-
+        self.DTVRoot.dataTreeView = self
         # #Dictionary where each element is also a dictionary containing
         # self.dataTreeView.selectedSignalsDict[key] = \
         #     {'index': index,
@@ -233,7 +233,7 @@ class QVizDataTreeView(QTreeWidget):
             logging.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if item.hasAvailableData() and not item.is0D() and (not item.isIDSRoot()) and item.getName() is not None:
+        if item.hasAvailableData() and item.isDynamicData() and (not item.isIDSRoot()) and item.getName() is not None:
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel
@@ -504,7 +504,10 @@ class QVizDataTreeViewFrame(QMainWindow):
             idsName = event.data[0]
             occurrence = event.data[1]
             idsData = event.data[2]
+            progressBar = event.data[3]
+            progressBar.setWindowTitle("Updating view...")
             self.dataTreeView.updateView(idsName, occurrence, idsData)
+            progressBar.hide()
 
 
     def addMenuBar(self):

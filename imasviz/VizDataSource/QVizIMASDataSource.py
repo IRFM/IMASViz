@@ -16,6 +16,8 @@ class QVizIMASDataSource:
         self.runNumber = int(runNumber)
         self.machineName = machineName
         self.ids = {} #key = occurrence, value = ids object
+        self.data_dictionary_version = None #will be initialized only when loading the first IDS (currently, it is not possible to get
+                               #the DD version from the AL at the data entry level, see IMAS-2835 for details
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, asynch=True):
@@ -30,14 +32,14 @@ class QVizIMASDataSource:
 
         self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName,
                                                            occurrence, asynch).create(self.progressBar)
-        if self.generatedDataTree == None:
+        if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
 
         if self.ids.get(occurrence) is None:
             self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber, 0, 0)
             v = os.environ["IMAS_MAJOR_VERSION"]
             self.ids[occurrence].open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
-            if (self.ids[occurrence].expIdx == -1):
+            if self.ids[occurrence].expIdx == -1:
                 raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
 
         self.generatedDataTree.ids = self.ids[occurrence]
@@ -99,6 +101,7 @@ class QVizIMASDataSource:
                         "Found data for occurrence " + str(occurrence) + " of " + node.getIDSName() + " IDS...")
                     node.setHomogeneousTime(ht)
                     node.setAvailableIDSData(occurrence, 1)
+                    self.data_dictionary_version = ids_properties.version_put.data_dictionary
                     ret = True
                 elif occurrence == 0:
                     break  # we decide to break the loop as soon as occurrence 0 is empty

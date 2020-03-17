@@ -93,6 +93,10 @@ class ToFuPlugin(VizPlugin):
         return [(0, 'tofu - geom...'), (1, 'tofu - data')] #(config number, description)
 
     def isEnabled(self):
-        if tf.__version__ >= '1.4.2':
-            return True
+        try:
+            if tf.__version__ >= '1.4.2':
+                return True
+            return False
+        except:
+            return False
         return False

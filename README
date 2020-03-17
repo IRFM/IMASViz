@@ -5,16 +5,65 @@
 visualizing static and dynamic IMAS data, stored within IMAS
 **Interface Data Structures** (**IDSs**).
 
-## Installing IMASViz from source
 
-IMASViz does not require a full installation. It does however require the
-generated IDSDef parser Python files
-(generated to $VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
-This can be simply done by running make command from the $VIZ_HOME.
+
+## Installing and launching IMASViz from sources
+
+### Requirements
+
+IMASViz requires the following libraries:
+
+- IMAS
+
+- Python3.x and the following Python libraries:
+   - PyQt5
+   - pyqtgraph
+   - matplotlib
+   - Sphinx
+   (pip3 install sphinx)
+   - Sphinx RTD theme
+   (pip3 install sphinx_rtd_theme)
+
+
+### Obtaining the source code
+
+Clone the IMASViz repository from **git.iter.org**.
+
+[VIS]: <https://git.iter.org/projects/VIS/repos/viz/browse>
+
+Direct link to the **IMASViz** git.iter repository: [VIS].
+
+By default, the master branch will be created.
+
+To switch to the develop branch:
+
+    git checkout develop
+
+### Setting the environment
+
+To set the environment, go to **viz** directory and set **VIZ_HOME**
+and **VIZ_PRODUCTION** environment variables by executing the following
+commands:
+
+    cd viz
+
+    # bash
+    export VIZ_PRODUCTION=1
+    export VIZ_HOME=$PWD
+    export UDA_DISABLED=1 #disable UDA
+
+    # csh
+    setenv VIZ_PRODUCTION 1
+    setenv VIZ_HOME $PWD
+    setenv UDA_DISABLED 1 #disable UDA
+
+IMASViz requires generated Python files parsers built from the IMAS Data Dictionary.
+(these files are generated to folder $VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
+This is done by executing make command from the $VIZ_HOME directory:
 
         make
 
-## Configuring UDA
+### Configuring UDA
 
 1. The IMAS access layer used by IMASViz should support UDA for accessing remote UDA servers.
 
@@ -23,102 +72,72 @@ can be accessed from the current machine where IMASViz is installed.
 Please refers to the documentation for the required prerequisites for accessing a particular remote UDA server.
 
 
-## Running IMASViz from source
 
-The procedure below describes how to run IMASViz from source is decribed below.
+### Running IMASViz from sources
 
-### Requirements
+    module load IMAS
 
-The fundamental requirements in order to locally run IMASViz are:
+    python $VIZ_HOME/imasviz/VizGUI/QtVIZ_GUI.py
 
-- IMAS
-- Python3 and Python libraries:
-   - PyQt5
-   - pyqtgraph
-   - matplotlib
-   - Sphinx
-   - Sphinx RTD theme
-   pip3 install sphinx_rtd_theme
-
-### Obtaining the source code
-
-To obtain the IMASViz code source the next two steps are required:
-
-1. Clone repository from **git.iter.org** (permissions are required!).
-
-[VIS]: <https://git.iter.org/projects/VIS/repos/viz/browse>
-
-Direct link to the **IMASViz** git.iter repository: [VIS].
-
-2. Switch to IMASViz2.0 branch (required if master branch is not updated yet):
-
-        git fetch # optional
-        git branch -r # optional
-        git checkout viz2.0_develop
-
-### Setting the environment
-
-To set the environment, go to **viz** directory and set **VIZ_HOME**
-and **VIZ_PRODUCTION** environment variables by running the next
-commands in the terminal:
-
-    cd viz
-    # bash
-    export VIZ_PRODUCTION=1
-    export VIZ_HOME=$PWD
-    export UDA_DISABLED=1 #disable UDA
-    # csh
-    setenv VIZ_PRODUCTION 1
-    setenv VIZ_HOME $PWD
-    setenv UDA_DISABLED 1 #disable UDA
-
-Then proceed with the next instructions.
-
-#### GateWay HPC
-
-Load next modules:
-
-    module load cineca
-    module load imasenv
-    module load itm-gcc/6.1.0
-    module load itm-python/3.6
-    module load itm-qt/5.8.0
-    module load imas-viz
-
-#### ITER HPC
-
-Load next module:
-
-    module load IMAS/3.20.0-3.8.3
-
-### Running IMASViz
-
-
-To run **IMASViz**, run the next commands in terminal:
-
-    python3 $VIZ_HOME/imasviz/VizGUI/QtVIZ_GUI.py
-
-
-## IMASViz documentation
+### Installing and browsing IMASViz documentation
 
 **IMASViz documentation** can be generated to multiple formats, e.g. **HTML**, **PDF**...
 
-Powered by StructuredText.
-
-Prerequisites:
-
-- Python3 library Sphinx
-
-        pip3 install sphinx
-
-- Sphinx RTD theme
-
-        pip3 install sphinx_rtd_theme
-
-Then in $VIZ_HOME directory run
+In $VIZ_HOME directory execute:
 
     make doc
+
     # to open PDF documentation
     xdg-open doc/build/latex/IMASViz.pdf
+
     # to open HTML documentation
     firefox doc/build/html/index.html
+
+
+
+
+## Running IMASViz from installed modules on Gateway and ITER HPC
+
+### GateWay HPC
+
+Load the following modules:
+
+    module load cineca
+    module load imasenv
+
+Check the installed IMASViz modules:
+
+    module available imas-viz
+
+Load a specific version of IMASViz, for example:
+
+    module load imas-viz/2.3.7
+
+
+### ITER HPC
+
+Load the IMAS module:
+
+    module load IMAS
+
+Check the installed IMASViz modules:
+
+    module available Viz
+
+Load a specific version of IMASViz, for example:
+
+    module load Viz/2.3.7-intel-2018a-Python-3.6.4
+
+
+### Launching IMASViz
+
+To launch **IMASViz**, execute the following command:
+
+    viz
+
+
+### IMASViz documentation
+
+To browse IMASViz documentation, just type:
+
+    viz_doc

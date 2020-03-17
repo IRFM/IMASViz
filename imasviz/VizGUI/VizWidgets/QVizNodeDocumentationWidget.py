@@ -385,10 +385,14 @@ class QVizNodeDocumentationWidget(QWidget):
                     node_contents_dict['size'] = str(len(node_array_contents))
                     self.lNodeArraySizeText.setText(node_contents_dict['size'])
 
-                # elif item.is0D():
-                #     node_contents_dict['contents'] = str(node_array_contents)
-                #     self.lNodeArraySizeTitle.setText(item.getDataType() + ' scalar')
-                #     self.lNodeArraySizeText.setText('/')
+                elif item.is0D():
+                    if node_label is not None:
+                        self.showFieldsForScalars()
+                        # - Set node contents
+                        node_contents_dict = {}
+                        node_contents_dict['name'] = node_label
+                        node_contents_dict['documentation'] = node_doc
+                        node_contents_dict['contents'] = item.getData()['0D_content']
 
                 elif item.is2DOrLarger():
 

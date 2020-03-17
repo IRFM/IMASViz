@@ -19,7 +19,7 @@ import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList
+from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, PlotTypes
 from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
@@ -29,7 +29,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, parent, ncols=5):
+    def __init__(self, parent, ncols=5, strategy="DEFAULT"):
         """
         Arguments:
             parent (QtWidgets.QMainWindow) : Parent of TablePlotView
@@ -53,6 +53,8 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # QVizTreeNode (!))
         self.addTimeSlider = False
         self.addCoordinateSlider = False
+
+        self.plotStrategy = strategy
 
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -87,7 +89,18 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-    def plot1DSelectedSignals(self, update=0, all_DTV=True):
+
+    def getType(self):
+        return PlotTypes.TABLE_PLOT
+
+    def setStrategy(self, strategy):
+        self.plotStrategy = strategy
+
+    def getStrategy(self):
+        return self.plotStrategy
+
+
+    def plot1DSelectedSignals(self, update=0, all_DTV=True) :
         """Plot the set of 1D signals, selected by the user, as a function of
            time to TablePlotView.
 
@@ -123,21 +136,11 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 tup = (dtv.dataSource.shotNumber, signalNode)
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
-                # Get signal properties and values
-                # s = QVizPlotSignal.getSignal(dtv, vizTreeNode=signalNode)
-                # # Get array of time values
-                # t = QVizPlotSignal.getTime(s)
-                # # Get array of y-axis values
-                # v = QVizPlotSignal.get1DSignalValue(s)
-                # TODO (idea): create global getSignal(), getTime(),
-                # get1DSignalValue to be used by all plot frame routines
-
                 s= self.imas_viz_api.GetSignal(dataTreeView=self.dataTreeView,
                                             vizTreeNode=signalNode,
-                                            plotWidget=self,
-                                            strategy="DEFAULT")
+                                            plotWidget=self)
 
-                t = QVizPlotSignal.getTime(s)
+                t = QVizPlotSignal.getXAxisValues(s)
                 
                 # Get array of y-axis values
                 v = QVizPlotSignal.get1DSignalValue(s)
@@ -151,8 +154,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
                                            title=self.figureKey,
-                                           plotWidget=self,
-                                           strategy="DEFAULT")
+                                           plotWidget=self)
 
                 # Add plot
                 for i in range(0, nbRows):

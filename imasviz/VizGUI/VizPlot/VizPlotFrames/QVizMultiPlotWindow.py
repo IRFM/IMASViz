@@ -34,7 +34,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     """
 
     def __init__(self, dataTreeView, figureKey, update=0,
-                 configFile=None, all_DTV=False):
+                 configFile=None, all_DTV=False, strategy="DEFAULT"):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -62,7 +62,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.dataTreeView = dataTreeView
         self.configFile = configFile  # Full path to configuration file + filename
         self.plotConfig = None
-        if self.configFile != None:
+        if self.configFile is not None:
             # Set plot configuration dictionary
             self.plotConfig = ET.parse(self.configFile)  # dictionary
             # Set configuration before plotting
@@ -97,7 +97,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(self.figureKey)
 
         # Set multiPlot view (pg.GraphicWindow)
-        self.multiPlotView = self.setMultiPlotView(mpType=multiPlot_type)
+        self.multiPlotView = self.setMultiPlotView(mpType=multiPlot_type, strategy=strategy)
 
         # Embed GraphicsWindow inside scroll area
         scrollArea = self.setPlotViewAsScrollArea(self.multiPlotView)
@@ -151,7 +151,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         return figureKey
 
-    def setMultiPlotView(self, mpType):
+    def setMultiPlotView(self, mpType, strategy=None):
         """Set multiPlotView (pg.GraphicsWindow).
 
         Arguments:
@@ -160,9 +160,11 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         # Set multi plot view of specified multi plot type
         if mpType == 'TablePlotView':
-            mpView = QVizTablePlotView(parent=self)
+            if strategy is None:
+                strategy = 'DEFAULT'
+            mpView = QVizTablePlotView(parent=self, strategy=strategy)
         elif mpType == 'StackedPlotView':
-            mpView = QVizStackedPlotView(parent=self)
+            mpView = QVizStackedPlotView(parent=self, strategy='TIME')
         else:
             logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
                            'provided!')

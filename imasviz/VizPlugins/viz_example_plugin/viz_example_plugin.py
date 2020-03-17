@@ -53,8 +53,8 @@ class viz_example_plugin(VizPlugin):  # The plugin should inherit from VizPlugin
         logging.info('ylabel: ' + ylabel)
         # logging.info('coordinate1 (IMAS syntax): ' + self.selectedTreeNode.getCoordinate(coordinateNumber=1))
 
-        figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView)
-        QVizPlotSelectedSignals(self.dataTreeView, figureKey).execute(plotWidget)
+        #figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView)
+        QVizPlotSelectedSignals(dataTreeView=self.dataTreeView).execute()
 
     def secondEntry(self, vizAPI):
         ## Create random 3D data set with noisy signals

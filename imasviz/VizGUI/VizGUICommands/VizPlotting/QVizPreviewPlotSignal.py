@@ -59,11 +59,12 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         self.xlabel = xlabel
 
     def get1DArrayData(self):
-        return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode, strategy="DEFAULT")
+        return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode,
+                                                        plotWidget=self.getPlotWidget())
 
     def execute(self):
         try:
-            if not (self.treeNode.is1D()):
+            if not (self.treeNode.is1D() or self.treeNode.is0D()):
                 self.getPlotWidget().clear(noPreviewAvailable=True)
                 return
             elif self.signal is None:
@@ -90,7 +91,6 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         if plotWidget is None:
             error = 'Preview Plot Widget not found. Update not possible'
             raise ValueError(error)
-            logging.error(str(error))
         return plotWidget
 
     @staticmethod

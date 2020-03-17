@@ -7,7 +7,7 @@ import re
 
 from PyQt5.QtWidgets import QApplication
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, PlotTypes
 from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
 
 
@@ -16,10 +16,10 @@ class QVizIMASNativeDataAccess:
         self.dataSource = dataSource
 
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  coordinate_index=0, time_index=None, strategy=None):
+                  coordinate_index=0, time_index=None):
 
         if as_function_of_time is None:
-            as_function_of_time = treeNode.asFunctionOfTime(plotWidget=plotWidget,strategy=strategy)
+            as_function_of_time = treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
 
         if time_index is None:
             time_index = treeNode.timeValue()
@@ -54,19 +54,18 @@ class QVizIMASNativeDataAccess:
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
             xData = None
-            if plotWidget is not None and isinstance(plotWidget, StackedPlotWindow) \
-                    or isinstance(plotWidget, QVizTablePlotView) :
-                pgPlotItem = plotWidget.getCurrentPlotItem()
-                if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
-                    xData = pgPlotItem.dataItems[0].xData
-                    return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
-            elif plotWidget is not None and not isinstance(plotWidget, StackedPlotWindow):
-                pgPlotItem = plotWidget.pgPlotWidget.plotItem
-                if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
-                    xData = pgPlotItem.dataItems[0].xData
-                    return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
+            if plotWidget is not None:
+                if plotWidget.getType() == PlotTypes.STACKED_PLOT or plotWidget.getType() == PlotTypes.TABLE_PLOT:
+                    pgPlotItem = plotWidget.getCurrentPlotItem()
+                    if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
+                        xData = pgPlotItem.dataItems[0].xData
+                        return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
+                elif plotWidget.getType() == PlotTypes.SIMPLE_PLOT:
+                    pgPlotItem = plotWidget.pgPlotWidget.plotItem
+                    if pgPlotItem is not None and len(pgPlotItem.dataItems) > 0:
+                        xData = pgPlotItem.dataItems[0].xData
+                        return self.Get0DSignalVsOtherCoordinate(treeNode, itimeValue, xData)
             raise ValueError("Data node '" + treeNode.getName() + "' has no explicit dependency on current X axis.")
-
 
     def GetSignal1DAt(self, treeNode, itimeValue):
 

@@ -25,12 +25,13 @@ class CompareFLT1DPlugin(VizPlugin):
             dataSource = self.dataTreeView.dataSource
 
             logging.info('Plotting data from current node...')
-            figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView)
+            figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView, strategy="DEFAULT")
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
-                           vizTreeNode=self.selectedTreeNode)
+                           vizTreeNode=self.selectedTreeNode,
+                            plotWidget=plotWidget)
 
             #Plot data signal passing plotWidget which is a QWidget referencing a pg.PlotWidget(GraphicsView)
-            ps.execute(plotWidget, update=0)
+            ps.execute(update=0)
 
             # Set data source retriever/factory
             dataSourceFactory = QVizDataSourceFactory()

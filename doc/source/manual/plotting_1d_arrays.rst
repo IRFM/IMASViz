@@ -514,11 +514,22 @@ To create a new :guilabel:`Table Plot View`, follow the next steps:
 
 3. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
-   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New` |icon_new|->
+   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New (default strategy)` |icon_new|->
    :guilabel:`This IMAS database` |icon_thisDTV| or
-   :guilabel:`All IMAS databases` |icon_allDTV| or.
+   :guilabel:`All IMAS databases` |icon_allDTV|.
 
-   .. figure:: images/DTV_plot_selected_nodes_to_TPV_thisDTV.png
+   or
+
+   :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
+   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New ('TIME' strategy)` |icon_new|->
+   :guilabel:`This IMAS database` |icon_thisDTV| or
+   :guilabel:`All IMAS databases` |icon_allDTV|.
+
+   When the selection contains 1D nodes located in dynamic AOS, the 'TIME' strategy will plot these nodes along the time axis.
+   Default strategy will plot 1D data in dynamic AOS along the coordinate1 axis. The two strategies give the same results
+   if the selection does not contain nodes located in dynamic AOS.
+
+   .. figure:: images/DTV_plot_selected_nodes_to_TPV_thisDTV2.png
      :align: center
      :scale: 75%
 

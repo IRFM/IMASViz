@@ -23,17 +23,21 @@
 import xml.etree.ElementTree as ET
 import logging
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizAbstractPlot import QVizAbstractPlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 
-class QVizPlotSelectedSignals(QVizAbstractCommand):
+class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
     def __init__(self, dataTreeView, figureKey=None, update=0,
-                 configFile=None, all_DTV=True):
-        QVizAbstractCommand.__init__(self, dataTreeView, None)
+                 configFile=None, all_DTV=True,  strategy="TIME"):
+        self.api = dataTreeView.imas_viz_api
+        figureKey, plotWidget = self.api.GetPlotWidget(dataTreeView, figureKey, strategy=strategy)
         self.figureKey = figureKey
         self.update = update
+        QVizAbstractCommand.__init__(self, dataTreeView, None)
+        QVizAbstractPlot.__init__(self, plotWidget)
         self.plotConfig = None
         self.configFile = configFile
         self.all_DTV = all_DTV
@@ -42,16 +46,17 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
         # DTV
         self.dataTreeView = dataTreeView
         # Viz_API
-        self.api = self.dataTreeView.imas_viz_api
 
-    def execute(self, plotWidget=None):
+
+    def execute(self):
         if self.raiseErrorIfNoSelectedArrays():
             if len(self.dataTreeView.selectedSignalsDict) == 0:
                 #Removes the current figure
                 self.api.DeleteFigure(figureKey=self.figureKey)
                 raise ValueError("No signal selected.")
-        self.plot1DSelectedSignals(plotWidget, self.figureKey, self.update,
+        self.plot1DSelectedSignals(self.update,
                                    all_DTV=self.all_DTV)
+
 
     def raiseErrorIfNoSelectedArrays(self):
         return True
@@ -66,7 +71,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             return False
         return plotDimension
 
-    def plot1DSelectedSignals(self, plotWidget=None, figureKey=0, update=0, all_DTV=True):
+    def plot1DSelectedSignals(self, update=0, all_DTV=True):
         """Plot the set of 1D signals selected by the user as a function of time.
 
         Arguments
@@ -74,11 +79,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
             update    (int) :
         """
         try:
-            # Get plot widget if not defined
-            if plotWidget is None:
-                api = self.dataTreeView.imas_viz_api
-                figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                          figureKey=figureKey)
+
+            self.updateSlider()
 
             # Total number of existing DTVs
             self.num_view = len(self.api.DTVlist)
@@ -91,6 +93,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                 plot_DTVlist = [self.dataTreeView]
             else:
                 plot_DTVlist = self.api.DTVlist
+
+            disableSlider = True
             # Go through the list of opened DTVs, get its selected plot signals dict
             # and plot the signals to the same plot widget
             for dtv in plot_DTVlist:
@@ -111,13 +115,13 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
                     key = dtv.dataSource.dataKey(vizTreeNode)
                     tup = (dtv.dataSource.shotNumber, vizTreeNode)
-                    self.api.AddNodeToFigure(figureKey, key, tup)
+                    self.api.AddNodeToFigure(self.figureKey, key, tup)
 
                     # Get signal properties and values
-                    s = self.api.GetSignal(dtv, vizTreeNode, plotWidget=plotWidget)
+                    s = self.api.GetSignal(dtv, vizTreeNode, plotWidget=self.plotWidget)
 
                     # Get array of time values
-                    t = QVizPlotSignal.getTime(s)
+                    t = QVizPlotSignal.getXAxisValues(s)
                     # Get array of y-axis values
                     v = QVizPlotSignal.get1DSignalValue(s)
 
@@ -126,7 +130,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
 
                     # Set plot labels and title
                     label, xlabel, ylabel, title = \
-                        vizTreeNode.plotOptions(dtv, vizTreeNode.getShotNumber(),plotWidget=plotWidget)
+                        vizTreeNode.plotOptions(dtv, vizTreeNode.getShotNumber(),
+                                                plotWidget=self.plotWidget)
 
                     if i == 0 and update == 0:
                         # Adding the first plot (first selected signal)
@@ -139,7 +144,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                             # x-axis values
                             ti = t[0]
                             # Create plot
-                            plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, title='', xlabel=xlabel,
+                            self.plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, title='', xlabel=xlabel,
                                             ylabel=ylabel, label=label)
                     else:
                         # Appending plot (the remaining selected signals)
@@ -154,10 +159,18 @@ class QVizPlotSelectedSignals(QVizAbstractCommand):
                             # Note: do not pass again title, xlabel and ylabel
                             #       arguments if those attributes from the first
                             #       plot are to be kept.
-                            plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, label=label)
+                            self.plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, label=label)
+
+                    if vizTreeNode.embedded_in_time_dependent_aos() and vizTreeNode.is1DAndDynamic():
+                        disableSlider = False
+
                     i += 1
+
+            if not disableSlider:
+                self.plotWidget.setSliderComponentsDisabled(disableSlider)
+
             # Show the plotWidget, holding the plot
-            plotWidget.show()
+            self.plotWidget.show()
 
         except ValueError as e:
             logging.error(str(e))
