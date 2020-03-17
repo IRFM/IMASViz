@@ -64,18 +64,15 @@ class tabMain1DParam(QWidget):
         # Create the matplotlib Figure and FigCanvas objects.
         # 100 dots-per-inch
         self.dpi = 100
-        self.fig = Figure(dpi=self.dpi)
+        self.fig = Figure(dpi=self.dpi, constrained_layout=True)
         self.canvas = FigCanvas(self.fig)
         self.toolbar = NavigationToolbar(self.canvas, self)
         # Add canvas to tab widget
         self.layout().addWidget(self.canvas, 0, 0, 1, 1)
         self.layout().addWidget(self.toolbar, 1, 0, 1, 1)
 
-        self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9,
-                                 wspace=0.3, hspace=0.35)
-
         # self.fig.suptitle('ETS plugin')
-        self.grid_subp = matplotlib.gridspec.GridSpec(2, 3)
+        self.grid_subp = matplotlib.gridspec.GridSpec(2, 3, figure=self.fig)
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax3 = self.fig.add_subplot(self.grid_subp[0, 2])
@@ -186,7 +183,7 @@ class tabMain1DParam(QWidget):
                 j_Oh = self.ids.core_profiles.profiles_1d[i].j_ohmic
                 self.lines_j_Oh[j], = \
                     self.ax1.plot(rho_tor_norm, 1.0e-6*j_Oh, '--',
-                                  label=f"j_Oh slice {i}", color='#ff0033',
+                                  label=f"j_Oh slice: {i}", color='#ff0033',
                                   linewidth=0.5)
                 j += 1
 
@@ -230,9 +227,13 @@ class tabMain1DParam(QWidget):
                 j_Oh = cp_1d_i.j_ohmic
                 self.lines_j_Oh[j].set_xdata(rho_tor_norm)
                 self.lines_j_Oh[j].set_ydata(1.0e-6*j_Oh)
-                self.lines_j_Oh[j].set_label(f"j_Oh slice {i}")
+                self.lines_j_Oh[j].set_label(f"j_Oh slice: {i}")
 
                 j += 1
+
+            # Update legend
+            leg = self.ax1.legend()
+            leg.set_draggable(True)
 
         except Exception as err:
             self.log.error("ERROR occurred when re-plotting J_Oh. (%s)"
@@ -246,7 +247,6 @@ class tabMain1DParam(QWidget):
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "START")
 
-
         # Clear plot first
         self.ax2.cla()
 
@@ -257,9 +257,9 @@ class tabMain1DParam(QWidget):
                                       f"len(v_loop): \n{len(vloop)}")
             self.parent.writeLogDebug(self, inspect.currentframe(),
                                       f"v_loop: \n{vloop}")
-            # TODO: There is only a single value per time slice. This then makes
-            #       it 0D parameter, not 1D. Commenting out the code until
-            #       it is clear where to take v_loop from (it is not
+            # TODO: There is only a single value per time slice. This then
+            #       makes it 0D parameter, not 1D. Commenting out the code
+            #       until it is clear where to take v_loop from (it is not
             #       present in profiles_1d[:])
             # vloop = self.ids.core_profiles.global_quantities.v_loop[self.it]
             # self.ax2.set_xlim(0, max(rho_tor_norm))
@@ -293,15 +293,10 @@ class tabMain1DParam(QWidget):
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
             self.plot_Vloop()
-            # ne = self.cp_1d.electrons.density
-            # self.line_ne.set_xdata(rho_tor_norm)
-            # self.line_ne.set_ydata(1.0e-19*ne)
-
-            # for i in range(len(self.cp_1d.ion)):
-            #     ni = self.cp_1d.ion[i].density
-            #     if self.cp_1d.ion[i].multiple_states_flag == 0:
-            #         self.line_ni[i].set_xdata(rho_tor_norm)
-            #         self.line_ni[i].set_ydata(1.0e-19*ni)
+            # TODO: There is only a single value per time slice. This then
+            #       makes it 0D parameter, not 1D. Commenting out the code
+            #       until it is clear where to take v_loop from (it is not
+            #       present in profiles_1d[:])
 
         except Exception as err:
             self.log.error("ERROR occurred when re-plotting Vloop. (%s)"
@@ -323,7 +318,6 @@ class tabMain1DParam(QWidget):
             pre_per = self.cp_1d.pressure_perpendicular
             self.ax3.set_xlim(0, max(rho_tor_norm))
             self.lines_pre_per = [0]*self.nslices2plot
-
             self.lines_pre_per[0], = self.ax3.plot(rho_tor_norm, pre_per/1e6,
                                                    label="pre_per",
                                                    color='#ff0033',
@@ -338,9 +332,10 @@ class tabMain1DParam(QWidget):
                 rho_tor_norm = cp_1d_i.grid.rho_tor_norm
 
                 pre_per = self.cp_1d.pressure_perpendicular
-                self.lines_pre_per[j], = self.ax3.plot(rho_tor_norm, pre_per/1e6,
+                self.lines_pre_per[j], = self.ax3.plot(rho_tor_norm,
+                                                       pre_per/1e6,
                                                        '--',
-                                                       label=f"pre_per slice {i}",
+                                                       label=f"pre_per slice: {i}",
                                                        color='#ff0033',
                                                        linewidth=0.5)
                 j += 1
@@ -376,16 +371,20 @@ class tabMain1DParam(QWidget):
                 i = self.it + ii + 1
                 cp_1d_i = self.ids.core_profiles.profiles_1d[i]
                 rho_tor_norm = cp_1d_i.grid.rho_tor_norm
-                pre_per = self.cp_1d.pressure_perpendicular
+                pre_per = cp_1d_i.pressure_perpendicular
                 self.lines_pre_per[j].set_xdata(rho_tor_norm)
                 self.lines_pre_per[j].set_ydata(pre_per/1e6)
-                self.lines_pre_per[j].set_label(f"pre_per slice {i}")
+                self.lines_pre_per[j].set_label(f"pre_per slice: {i}")
 
                 j += 1
 
         except Exception as err:
             self.log.error("ERROR occurred when re-plotting pressure. "
                            "(%s)" % err, exc_info=True)
+
+        # Update legend
+        leg = self.ax3.legend()
+        leg.set_draggable(True)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
@@ -400,24 +399,35 @@ class tabMain1DParam(QWidget):
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # zeff = self.cp_1d.zeff
-            # self.ax4.set_xlim(0, max(rho_tor_norm))
-            # self.ax4.set_ylim(1, max(zeff)*1.05)
-            # self.line_zeff, = self.ax4.plot(rho_tor_norm, zeff,
-            #                                 label="zeff",
-            #                                 color='b',
-            #                                 linewidth=1.5)
-            # self.ax4.tick_params(axis='y', colors='blue')
-            # self.ax4.set(xlabel="rho_tor_norm [-]", title='Zeff [-]')
-            # # self.ax4.set_yticks([])
-            # self.ax4.yaxis.set_major_formatter(pylab.NullFormatter())
-            # self.ax4.xaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax4.yaxis.set_minor_locator(
-            #     ticker.AutoMinorLocator(self._nminor_interval))
-            # self.ax4.grid()
-            # leg = self.ax4.legend()
-            # leg.set_draggable(True)
+            e_par = self.cp_1d.e_field_parallel
+            self.ax4.set_xlim(0, max(rho_tor_norm))
+            self.lines_e_par = [0]*self.nslices2plot
+
+            self.lines_e_par[0], = self.ax4.plot(rho_tor_norm, e_par,
+                                                 label="e_par",
+                                                 color='#ff0033',
+                                                 linewidth=1.5)
+
+            j = 1
+            for ii in range(-2, -self.nslices2plot-1, -1):
+                i = self.it + ii + 1
+                cp_1d_i = self.ids.core_profiles.profiles_1d[i]
+                rho_tor_norm = cp_1d_i.grid.rho_tor_norm
+
+                e_par = cp_1d_i.e_field_parallel
+                self.lines_e_par[j], = self.ax4.plot(rho_tor_norm, e_par,
+                                                     '--',
+                                                     label=f"e_par slice: {i}",
+                                                     color='#ff0033',
+                                                     linewidth=0.5)
+                j += 1
+
+            self.ax4.set_title('E_parallel [V/m]', fontsize=12, ha='center',
+                               color='DarkBlue')
+            self.ax4.set(xlabel="rho_tor_norm [-]")
+            self.ax4.grid()
+            leg = self.ax4.legend()
+            leg.set_draggable(True)
 
         except Exception as err:
             self.log.error("ERROR occurred when plotting E_parallel. (%s)"
@@ -433,11 +443,26 @@ class tabMain1DParam(QWidget):
 
         try:
             rho_tor_norm = self.cp_1d.grid.rho_tor_norm
-            # zeff = self.cp_1d.zeff
-            # self.ax4.set_xlim(0, max(rho_tor_norm))
-            # self.ax4.set_ylim(1, max(zeff)*1.05)
-            # self.line_zeff.set_xdata(rho_tor_norm)
-            # self.line_zeff.set_ydata(zeff)
+            e_par = self.cp_1d.e_field_parallel
+
+            self.lines_e_par[0].set_xdata(rho_tor_norm)
+            self.lines_e_par[0].set_ydata(e_par)
+
+            j = 1
+            for ii in range(-2, -self.nslices2plot-1, -1):
+                i = self.it + ii + 1
+                cp_1d_i = self.ids.core_profiles.profiles_1d[i]
+                rho_tor_norm = cp_1d_i.grid.rho_tor_norm
+                e_par = cp_1d_i.e_field_parallel
+                self.lines_e_par[j].set_xdata(rho_tor_norm)
+                self.lines_e_par[j].set_ydata(e_par)
+                self.lines_e_par[j].set_label(f"e_par slice: {i}")
+
+                j += 1
+
+            # Update legend
+            leg = self.ax4.legend()
+            leg.set_draggable(True)
 
         except Exception as err:
             self.log.error("ERROR occurred when re-plotting E_parallel. (%s)"

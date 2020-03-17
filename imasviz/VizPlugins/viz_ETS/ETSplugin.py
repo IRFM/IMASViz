@@ -318,13 +318,19 @@ class ETSplugin(QMainWindow):
         # Set initial window size
         dh = self.app.desktop().availableGeometry().height()
         dw = self.app.desktop().availableGeometry().width()
-        self.height = dh*0.7
-        self.width = dw*0.95
+        self.height = dh*0.8
+        self.width = dw*0.65
 
         # Move window to the center of the screen
-        Ycenter = (dh - self.height)*0.5
-        Xcenter = (dw - self.width)*0.5
-        self.move(int(Xcenter), int(Ycenter))
+        self.setFixedWidth(self.width)
+        # Note: for actually resizing the window the SizeHint is required.
+        #       fixed dimensions are set here so that they are properly
+        #       rezognized by the self.frameGeometry() command
+        self.setFixedHeight(self.height)
+        qtRectangle = self.frameGeometry()
+        centerPoint = self.app.desktop().availableGeometry().center()
+        qtRectangle.moveCenter(centerPoint)
+        self.move(qtRectangle.topLeft())
 
         # On tab change update the tab-containing plots
         self.tabWidget.currentChanged.connect(partial(

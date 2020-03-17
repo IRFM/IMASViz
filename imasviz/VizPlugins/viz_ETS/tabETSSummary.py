@@ -92,11 +92,11 @@ class tabETSSummary(QWidget):
         self.layout().addWidget(self.canvas, 0, 0, 1, 1)
         self.layout().addWidget(self.toolbar, 1, 0, 1, 1)
 
-        self.fig.subplots_adjust(left=0.08, right=0.90, bottom=0.1, top=0.9,
-                                 wspace=0.3, hspace=0.35)
-
         # self.fig.suptitle('ETS plugin')
-        self.grid_subp = matplotlib.gridspec.GridSpec(2, 3)
+        self.grid_subp = self.fig.add_gridspec(nrows=2, ncols=3, left=0.05,
+                                               right=0.75, bottom=0.05,
+                                               top=0.95, wspace=0.3,
+                                               hspace=0.35)
         self.ax1 = self.fig.add_subplot(self.grid_subp[0, 0])
         self.ax2 = self.fig.add_subplot(self.grid_subp[0, 1])
         self.ax3 = self.fig.add_subplot(self.grid_subp[0, 2])
@@ -869,8 +869,6 @@ class tabETSSummary(QWidget):
         except Exception as err:
             self.log.error("ERROR: in Main discharge parameters ions (%s)"
                            % err, exc_info=True)
-
-        self.fig.subplots_adjust(left=0.05, right=0.75, bottom=0.1, top=0.9)
 
         self.parent.writeLogDebug(self, inspect.currentframe(), "END")
 
