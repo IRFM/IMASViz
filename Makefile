@@ -17,7 +17,9 @@ default:
 
 doc:
 	# Generate PDF and HTML documentation
-	# on the Gateway first loading the "texlive" is required
+	# Note: on the Gateway and ITER HPC first loading the "texlive" module is
+	# required
+	# module load texlive
 	cd ${VIZ_HOME}/doc; \
 	make html; \
 	make latexpdf
