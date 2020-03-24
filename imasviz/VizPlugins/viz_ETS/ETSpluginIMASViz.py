@@ -10,8 +10,12 @@
 # ****************************************************
 #     Copyright(c) 2019- D. Penko
 
+import sys
+import os
+sys.path.append(os.getenv('VIZ_HOME')+'/imasviz/VizPlugins/viz_ETS/ets-viz')
+
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from imasviz.VizPlugins.viz_ETS.ETSplugin import ETSplugin
+from imasviz.VizPlugins.viz_ETS.ets_viz.ETSViz import ETSViz
 import logging
 from PyQt5.QtWidgets import QMdiSubWindow
 import traceback
@@ -40,6 +44,8 @@ class ETSpluginIMASViz(VizPlugin):
 
         # Check if the IDS data is already loaded in IMASviz. If it is not,
         # load it
+
+        # TODO: use vizAPI.LoadListOfIDSs
         if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_profiles',
                                             occurrence):
             logging.info('Loading core_profiles IDS...')
@@ -65,7 +71,7 @@ class ETSpluginIMASViz(VizPlugin):
         self.IDS_parameters["user"] = user
         self.IDS_parameters["database"] = device
 
-        self.ets = ETSplugin(self.IDS_parameters, self.ids)
+        self.ets = ETSViz(self.IDS_parameters, self.ids)
         if self.dataTreeView.window().objectName() == "IMASViz root window":
 
             subwindow = QMdiSubWindow()
