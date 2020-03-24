@@ -1,0 +1,3 @@
+[submodule "imasviz/VizPlugins/viz_ETS/ets-viz"]
+	path = imasviz/VizPlugins/viz_ETS/ets-viz
+	url = ssh://git@git.iter.org/vis/ets-viz.git
