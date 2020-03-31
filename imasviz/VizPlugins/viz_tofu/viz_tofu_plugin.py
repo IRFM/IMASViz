@@ -50,7 +50,7 @@ class ToFuPlugin(VizPlugin):
         """
         idssByNames (dict) # key = IDS name, value = IDS object
         """
-        # idssByNames = vizAPI.loadRequiredIDSs(view, vizNode, [vizNode.getIDSName(), 'wall'])
+        # idssByNames = vizAPI.LoadListOfIDSs(view, [vizNode.getIDSName(), 'wall'])
         # dids = {key: {'ids': val, 'isget':True} for key, val in idssByNames.items()}
 
         try:

@@ -43,25 +43,10 @@ class ETSpluginIMASViz(VizPlugin):
         occurrence = 0
 
         # Check if the IDS data is already loaded in IMASviz. If it is not,
-        # load it
-
-        # TODO: use vizAPI.LoadListOfIDSs
-        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_profiles',
-                                            occurrence):
-            logging.info('Loading core_profiles IDS...')
-            vizAPI.LoadIDSData(self.dataTreeView, 'core_profiles', occurrence)
-        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_sources',
-                                            occurrence):
-            logging.info('Loading core_sources IDS...')
-            vizAPI.LoadIDSData(self.dataTreeView, 'core_sources', occurrence)
-        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'core_transport',
-                                            occurrence):
-            logging.info('Loading core_transport IDS...')
-            vizAPI.LoadIDSData(self.dataTreeView, 'core_transport', occurrence)
-        if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'equilibrium',
-                                            occurrence):
-            logging.info('Loading equilibrium IDS...')
-            vizAPI.LoadIDSData(self.dataTreeView, 'equilibrium', occurrence)
+        # load it (LoadListOfIDSs contains this IDS check strategy)
+        ids_list = ['core_profiles', 'core_sources', 'core_transport',
+                    'equilibrium']
+        vizAPI.LoadListOfIDSs(self.dataTreeView, ids_list, occurrence)
 
         # Get IDS
         self.ids = dataSource.getImasEntry(occurrence)
@@ -81,7 +66,9 @@ class ETSpluginIMASViz(VizPlugin):
         try:
             self.ets.tabETSSummary.plot()
             self.ets.show()
-        except :
+
+        except Exception as err:
+            logging.error("ERROR in ETS wrapper! (%s)" % err, exc_info=True)
             traceback.print_exc()
             logging.error(traceback.format_exc())
 

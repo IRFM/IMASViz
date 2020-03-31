@@ -684,13 +684,20 @@ class Viz_API:
         subWindow.resize(plotWidget.width(), plotWidget.height())
         self.getMDI().addSubWindow(subWindow)
 
-    def loadRequiredIDSs(self, dataTreeView, vizTreeNode, namesOfRequiredIDSs, occurrence = 0):
-        idssByNames = {}  # key = IDS name, value = IDS object
+    def LoadListOfIDSs(self, dataTreeView, namesOfIDSs, occurrence=0):
+        """Load given IDSs for given occurrence.
 
-        for idsName in namesOfRequiredIDSs:
+        Arguments:
+            dataTreeView (obj)   : Instance of DTV.
+            namesOfIDSs  (list)  : List of IDS names (strings)
+            occurrence   (int)   : IDS occurrence
+        """
+        idssByNames = {}
+
+        for idsName in namesOfIDSs:
             if not self.IDSDataAlreadyFetched(dataTreeView=dataTreeView,
-                                            IDSName=idsName,
-                                            occurrence=occurrence):
+                                              IDSName=idsName,
+                                              occurrence=occurrence):
                 self.LoadIDSData(dataTreeView, idsName, occurrence)
 
             idd = dataTreeView.dataSource.getImasEntry(occurrence)
