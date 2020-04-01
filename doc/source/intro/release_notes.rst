@@ -1,12 +1,48 @@
 .. _IMASViz_release_notes:
 
+.. My notes: use >>> git log --oneline -b master
+
 =============
 Release notes
 =============
 
 -------------
+Version 2.3.8
+-------------
+
+Released: 18.3.2020
+
+- Plugins documentation update
+- Major GUI and feature improvements to the ETS plugin (remains work in progress):
+
+    - Add debug options, add in-code debug checks
+    - Enable '<<', '<', '>' and '>>' buttons
+    - Display actual tmin and tmax values to labels right and left from the slider
+    - Display number of time slices
+    - Improve handling the widgets update on time index value change
+    - Improve widgets functionality (use of the 'enter' key etc.)
+    - Add status bar at the bottom of the window
+    - Include the Equilibrium IDS quantities
+    - Add 'Main 0-D Parameters' and 'Main 1-D Parameters' tabs (the second one
+      is not yet fully finished)
+
+- Transition from using 'device/machine' to 'database'
+- Add the missing strategy for displaying contents of the static tree items
+  in the Node Documentation Widget
+- Add support for DD 3.27.0
+- Improve exception catching
+- Fixed coordinate1/time slider bug
+- Fixed default strategy on StackedPlots
+- Fixed progress bar when loading shots from UDA
+- Fixed issue with UDA_DISABLED flag
+- Fixed some parser issues
+
+-------------
 Version 2.3.7
 -------------
+
+Released: 23.1.2020
+
 - Adding strategies for plotting data
 - Adding support for DD3.26.0
 - Fixing regressions
@@ -21,6 +57,8 @@ Version 2.3.7
 Version 2.3.6
 -------------
 
+Released: 12.12.2019
+
 - Code refactoring: renaming functions and other improvements
 - Tofu plugin: fixing import
 - Adding MDI feature for windows management
@@ -33,6 +71,8 @@ Version 2.3.6
 Version 2.3.5
 -------------
 
+Released: 18.11.2019
+
 - Fixing issue when mixing 0D and 1D data on stacked plots
 - Automatically adding sliders for plots of multiple data selection
 - Fixing bug which modifies user selection order
@@ -44,7 +84,7 @@ Version 2.3.5
 Version 2.3.4
 -------------
 
-Not released
+Released: 15.11.2019
 
 - Converting exception to warning when 0D data under dynamic AOS are plotted along a coordinate1 dimension
 - Setting warning message in red in the log output
@@ -53,6 +93,8 @@ Not released
 -------------
 Version 2.3.3
 -------------
+
+Released: 13.11.2019
 
 Released on GW as RC version (08.11.2019)
 
@@ -66,7 +108,7 @@ Released on GW as RC version (08.11.2019)
 Version 2.3.2
 -------------
 
-Released: To be released
+Released: 29.10.2019
 
 Changes:
 
@@ -83,7 +125,7 @@ Changes:
 Version 2.3.1
 -------------
 
-Released: To be released
+Released: 25.10.2019
 
 Changes:
 
@@ -124,8 +166,7 @@ Changes:
 Version 2.2.5
 -------------
 
-Released:
-3.9.2019
+Released: 3.9.2019
 
 Changes:
 
@@ -145,8 +186,7 @@ Changes:
 Version 2.2.4
 -------------
 
-Released:
-1.8.2019
+Released: 1.8.2019
 
 Changes:
 
@@ -156,8 +196,7 @@ Changes:
 Version 2.2.3
 -------------
 
-Released:
-30.7.2019
+Released: 30.7.2019
 
 Changes:
 
@@ -168,8 +207,7 @@ Changes:
 Version 2.2.2
 -------------
 
-Released:
-5.7.2019
+Released: 5.7.2019
 
 Changes:
 
@@ -180,8 +218,7 @@ Changes:
 Versions 2.1.0 - 2.2.1
 ----------------------
 
-Released:
-2.7.2019
+Released: 2.7.2019
 
 Changes:
 
@@ -206,8 +243,7 @@ Changes:
 Version 2.0.0
 -------------
 
-Released:
-4.2.2019
+Released: 4.2.2019
 
 Changes:
 
@@ -276,8 +312,7 @@ Overview of IMASViz 2.0 GUI:
 Version 1.2
 -----------
 
-Released:
-24.8.2018
+Released: 24.8.2018
 
 Changes:
 
@@ -290,8 +325,7 @@ Changes:
 Version 1.1
 -----------
 
-Released:
-8.6.2018
+Released: 8.6.2018
 
 Changes (since March 2017):
 
