@@ -7,34 +7,31 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *****************************************************************************
 
 import os
 import sys
 import logging
-from functools import partial
-from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
-from PyQt5.QtWidgets import QMdiArea, QMdiSubWindow
-
-# Add imasviz source path
-sys.path.append((os.environ['VIZ_HOME']))
-
+from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
+                             QMenu, QMainWindow, QDockWidget,
+                             QLineEdit, QPushButton, QVBoxLayout, QComboBox,
+                             QPlainTextEdit, QGridLayout, QMdiArea)
+from PyQt5.QtCore import Qt
 from pathlib import Path
-from imasviz.VizUtils.QVizLogger import QVizLogger
-from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
-    QPushButton, QVBoxLayout, QComboBox, QPlainTextEdit, QGridLayout
-from PyQt5.QtCore import QSize, pyqtSlot, Qt
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
-# from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController import QVizMainMenuController
-
-
 import matplotlib
 matplotlib.use('Qt5Agg')
+
+# Append imasviz source path
+
+sys.path.append((os.environ['VIZ_HOME']))
+from imasviz.VizUtils.QVizLogger import QVizLogger
+
+from imasviz.VizGUI import QVizDefault, QVizMainMenuController
+from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
+                              QVizGlobalOperations)
+
 
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
