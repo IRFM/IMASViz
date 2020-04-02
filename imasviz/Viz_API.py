@@ -16,17 +16,18 @@ import logging
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
+from imasviz.VizGUI.VizPlot import QVizPlotWidget
 from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame, QVizDataTreeView
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
+from imasviz.VizGUI.VizGUICommands import (QVizSelectSignals,
+                                           QVizSelectSignalsGroup,
+                                           QVizUnselectAllSignals)
+from imasviz.VizGUI.VizGUICommands import QVizLoadSelectedData
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from PyQt5.QtWidgets import QMdiSubWindow
+
 
 class Viz_API:
 
