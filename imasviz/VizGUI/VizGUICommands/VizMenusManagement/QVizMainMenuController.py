@@ -1,14 +1,7 @@
 
-import os
-import sys
-import logging
 from functools import partial
-from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
-from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
-    QPushButton, QVBoxLayout, QComboBox, QPlainTextEdit, QGridLayout
-from PyQt5.QtCore import QSize, pyqtSlot, Qt
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
+from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
+from imasviz.VizUtils import GlobalIcons
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 
 class QVizMainMenuController:

@@ -7,16 +7,17 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
 import pyqtgraph as pg
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, QLabel
-from PyQt5.QtCore import Qt, QMetaObject, QSize
+from PyQt5.QtCore import Qt, QMetaObject
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts, PlotTypes
+from imasviz.VizUtils import GlobalFonts, PlotTypes
+
 
 class QVizPreviewPlotWidget(QWidget):
     """PlotWidget containing pyqtgraph PlotWidget. Used for creating preview

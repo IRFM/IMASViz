@@ -3,7 +3,7 @@ from imasviz.VizDataSource.QVizToreSupraDataSource import ToreSupraDataSource
 from imasviz.VizDataSource.QvizIMASPublicDataSource import QVizIMASPublicDataSource
 
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues
 
 
 #A factory for creating a Tore-Supra or MDS+ native data-source for IMAS

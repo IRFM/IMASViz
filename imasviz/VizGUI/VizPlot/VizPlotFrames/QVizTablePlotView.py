@@ -10,17 +10,16 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *****************************************************************************
 
 import pyqtgraph as pg
 import logging
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, PlotTypes
-from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
+from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 
@@ -141,7 +140,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                                             plotWidget=self)
 
                 t = QVizPlotSignal.getXAxisValues(s)
-                
+
                 # Get array of y-axis values
                 v = QVizPlotSignal.get1DSignalValue(s)
 

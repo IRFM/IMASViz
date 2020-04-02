@@ -9,9 +9,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
 # !/usr/bin/python
 
@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import QApplication
 # IMASViz source imports
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
 

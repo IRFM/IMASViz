@@ -4,7 +4,7 @@ from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues
 
 
 class QVizOpenShotView:

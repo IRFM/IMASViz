@@ -7,13 +7,13 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
 import time
 import xml.etree.ElementTree as ET
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
 

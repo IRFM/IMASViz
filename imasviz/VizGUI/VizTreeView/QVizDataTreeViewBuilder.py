@@ -11,10 +11,8 @@
 #****************************************************
 import logging
 from threading import Thread, Condition
-from PyQt5.QtWidgets import QTreeWidgetItem, QTextEdit
-from PyQt5.QtCore import QSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalColors, QVizPreferences
+from imasviz.VizUtils import QVizGlobalValues
 
 class QVizDataTreeViewBuilder:
     def __init__(self, ids):

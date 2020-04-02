@@ -1,13 +1,12 @@
 import xml.etree.ElementTree as ET
 import os
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizPreferences
 #from MDSplus import Connection
 from threading import Thread, RLock
 import traceback
 
 connectionURL = 'altair.partenaires.cea.fr:8000'
 
-# Currently, the data tree is created differently according to the data source. 
+# Currently, the data tree is created differently according to the data source.
 #For Tore-Supra, the tree is created from XML mapping files parsing
 #For IMAS native data, the tree is created from IDS objects state loaded by the GET() operation
 

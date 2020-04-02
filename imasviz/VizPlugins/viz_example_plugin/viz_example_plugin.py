@@ -20,21 +20,17 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2019- L. Fleury
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizPlugins.viz_example_plugin.real_time import Graph
 
 import traceback
 import logging
-import os
-import sys
 import numpy as np
 import pyqtgraph as pg
-
 
 
 class viz_example_plugin(VizPlugin):  # The plugin has to inherit from VizPlugin

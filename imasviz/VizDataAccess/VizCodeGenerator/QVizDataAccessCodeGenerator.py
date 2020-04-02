@@ -1,8 +1,8 @@
 import xml.etree.ElementTree as ET
 import os, sys
 sys.path.append((os.environ['VIZ_HOME']))
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalValues
 
 ggd_warning = 0
 

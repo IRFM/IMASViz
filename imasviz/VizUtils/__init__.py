@@ -1,3 +1,16 @@
 # __init__.py
-from .QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
 from .QVizGlobalOperations import QVizGlobalOperations
+from .QVizGlobalValues import (FigureTypes,
+                               getRGBColorList,
+                               GlobalColors,
+                               GlobalIcons,
+                               GlobalIDs,
+                               GlobalFonts,
+                               GlobalPgSymbols,
+                               GlobalQtStyles,
+                               PlotTypes,
+                               QVizGlobalValues,
+                               QVizPreferences)
+from .QVizLogger import QVizLogger
+from .QVizWindowUtils import (getScreenGeometry,
+                              getWindowSize)

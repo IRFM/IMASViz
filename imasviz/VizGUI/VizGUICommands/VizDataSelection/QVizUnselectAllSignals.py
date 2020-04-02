@@ -14,7 +14,6 @@
 #****************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues
 
 
 class QVizUnselectAllSignals(QVizAbstractCommand):

@@ -1,11 +1,9 @@
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalValues, QVizGlobalOperations
 import traceback, logging, os, sys
-import numpy as np
-from PyQt5.QtWidgets import QInputDialog, QLineEdit
+
 
 class CompareFLT1DPlugin(VizPlugin):
     def __init__(self):

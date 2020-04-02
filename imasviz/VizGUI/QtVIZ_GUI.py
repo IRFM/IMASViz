@@ -24,13 +24,11 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 
 # Append imasviz source path
-
 sys.path.append((os.environ['VIZ_HOME']))
-from imasviz.VizUtils.QVizLogger import QVizLogger
 
 from imasviz.VizGUI import QVizDefault, QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
-                              QVizGlobalOperations)
+                              QVizGlobalOperations, QVizLogger)
 
 
 class GUIFrame(QTabWidget):

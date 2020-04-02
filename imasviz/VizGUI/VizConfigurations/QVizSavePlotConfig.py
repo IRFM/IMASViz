@@ -13,7 +13,7 @@
 
 import time, logging
 import xml.etree.ElementTree as ET
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations
 from PyQt5.QtGui import QTextDocument
 
 

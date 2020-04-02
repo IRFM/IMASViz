@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues
 
 
 class QVizTSDataAccess:

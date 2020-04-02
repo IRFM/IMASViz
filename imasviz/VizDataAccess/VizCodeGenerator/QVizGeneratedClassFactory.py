@@ -1,7 +1,7 @@
 import os
 
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalValues
-from imasviz.VizUtils.QVizGlobalValues import QVizPreferences
+from imasviz.VizUtils import QVizGlobalValues
+from imasviz.VizUtils import QVizPreferences
 
 class QVizGeneratedClassFactory:
     def __init__(self, IMASDataSource, view, IDSName, occurrence=0, asynch=True):

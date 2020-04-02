@@ -3,7 +3,7 @@ import imas
 import traceback, sys
 from PyQt5.QtWidgets import QTreeWidgetItem, QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, QVizGlobalValues, QVizPreferences
+from imasviz.VizUtils import QVizGlobalValues
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 class QVizIMASDataSource:

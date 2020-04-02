@@ -1162,7 +1162,7 @@ if (__name__ == '__main__'):
     from imasviz.Viz_API import Viz_API
     from imasviz.VizDataSource.QVizDataSourceFactory import \
         QVizDataSourceFactory
-    from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+    from imasviz.VizUtils import QVizGlobalOperations
 
     # Set object managing the PyQt GUI application's control flow and main
     # settings

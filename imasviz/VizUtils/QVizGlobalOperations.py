@@ -4,7 +4,6 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
-
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 

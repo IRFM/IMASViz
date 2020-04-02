@@ -2,11 +2,10 @@
 import importlib, logging
 import traceback
 from functools import partial
-from PyQt5.QtCore import QObject, pyqtSlot
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
+from PyQt5.QtCore import pyqtSlot
+from imasviz.VizUtils import GlobalIcons
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow, QWidget
+from PyQt5.QtWidgets import QAction, QApplication, QMainWindow, QWidget
 
 class MenuIDS:
     def __init__(self):
@@ -44,7 +43,7 @@ class QVizPluginsHandler:
 
             if entriesList is None or len(entriesList) == 0:
                 continue
-                
+
             for entry in entriesList:
                 if entry not in addedPluginsEntries[pluginsName]:
                     # TODO: properly set ID

@@ -11,20 +11,18 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *****************************************************************************
 
 import pyqtgraph as pg
-from pyqtgraph.graphicsItems.ViewBox.ViewBox import ViewBox
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, PlotTypes
+from imasviz.VizUtils import getRGBColorList, PlotTypes
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
-from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 
 class QVizStackedPlotView(QWidget):

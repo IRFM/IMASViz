@@ -6,8 +6,7 @@ import numpy as np
 import re
 
 from PyQt5.QtWidgets import QApplication
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, PlotTypes
+from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues, PlotTypes
 from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
 
 

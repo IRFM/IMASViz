@@ -8,19 +8,18 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
     QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
-    QDoubleSpinBox, QComboBox, QSpinBox, QHBoxLayout, QSizePolicy, QSpacerItem, \
-    QApplication, QPen, QPainter, QGraphicsGridLayout, QGraphicsWidget, QGraphicsScene, QGraphicsView
+    QDoubleSpinBox, QComboBox, QSpinBox, QSizePolicy, QSpacerItem, \
+    QApplication, QGraphicsScene, QGraphicsView
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
-from imasviz.VizUtils.QVizGlobalValues import GlobalQtStyles, GlobalPgSymbols, \
-    GlobalIcons
+from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 

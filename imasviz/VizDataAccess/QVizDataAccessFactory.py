@@ -1,7 +1,7 @@
 from imasviz.VizDataAccess.QVizTSDataAccess import QVizTSDataAccess
 
 from imasviz.VizDataAccess.QVizIMASNativeDataAccess import QVizIMASNativeDataAccess
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues
 
 
 class QVizDataAccessFactory:
