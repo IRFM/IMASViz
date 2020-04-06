@@ -17,14 +17,14 @@ import logging
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
 from imasviz.VizGUI.VizPlot import QVizPlotWidget
-from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame, QVizDataTreeView
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
+from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame, QVizDataTreeView
+from imasviz.VizGUI.VizGUICommands.VizPlotting import (QVizPlotSelectedSignals,
+                                                       QVizPlotSignal)
 from imasviz.VizGUI.VizGUICommands import (QVizSelectSignals,
                                            QVizSelectSignalsGroup,
-                                           QVizUnselectAllSignals)
-from imasviz.VizGUI.VizGUICommands import QVizLoadSelectedData
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
+                                           QVizUnselectAllSignals,
+                                           QVizLoadSelectedData)
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from PyQt5.QtWidgets import QMdiSubWindow
 

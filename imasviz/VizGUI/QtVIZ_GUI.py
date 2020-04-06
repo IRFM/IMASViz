@@ -26,7 +26,8 @@ matplotlib.use('Qt5Agg')
 # Append imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
 
-from imasviz.VizGUI import QVizDefault, QVizMainMenuController
+from imasviz.VizGUI.VizGuiCustomization import QVizDefault
+from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
                               QVizGlobalOperations, QVizLogger)
 
