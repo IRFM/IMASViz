@@ -36,30 +36,51 @@ class QVizHandleRightClick:
         """
         Arguments:
             node (QVizTreeNode) : Item (node) from in the QTreeWidget.
-            dataTreeView (QVizDataTreeView) : DataTreeView object to which the node belongs.
+            dataTreeView (QVizDataTreeView) : DataTreeView object to which the
+            node belongs.
         """
-        if dataTreeView.popupmenu is None:
-            dataTreeView.popupmenu = QMenu()
+
+        self.popupmenu = dataTreeView.popupmenu
+        if self.popupmenu is None:
+            self.popupmenu = QMenu()
         else:
-            dataTreeView.popupmenu.clear()
+            self.popupmenu.clear()
+
+        # Show tool tips that are set to menu actions etc.
+        self.popupmenu.setToolTipsVisible(True)
 
         showMenu = False
 
-        # If the node is a signal and occurrence contains data, call showPopUpMenu function for plotting data
+        # If the node is a signal and occurrence contains data, call
+        # showPopUpMenu function for plotting data
         if node.isDynamicData() and node.hasAvailableData():
             handling = QVizSignalHandling(dataTreeView=dataTreeView)
-            dataTreeView.popupmenu = handling.buildContextMenu(node)
+            self.popupmenu = handling.buildContextMenu(node)
             showMenu = True
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if node.isIDSRoot() and node.hasAvailableData():
                 subMenu = QMenu('Get ' + node.getIDSName() + ' data for occurrence')
-                dataTreeView.popupmenu.addMenu(subMenu)
+                self.popupmenu.addMenu(subMenu)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
-                sub_menu = QMenu('Plugins')
-                dataTreeView.popupmenu.addMenu(sub_menu)
-                QVizPluginsPopUpMenu().upateMenu(node, dataTreeView, sub_menu)
+                self.sub_menu = QMenu('Plugins')
+                self.popupmenu.addMenu(self.sub_menu)
+                QVizPluginsPopUpMenu().upateMenu(node, dataTreeView, self.sub_menu)
+
+                # Set message to be displayed in toolbar and in pop up window
+                # When hovering on the menu item
+                # TODO: this  get shown when hoovering over ACTION and not when
+                #       hovering over MENU ITEM for some reason... this
+                #       overrides our action tooltip...
+                # sub_menu_display_msg = "A list of plugins that are available " \
+                #                        "for the use with the selected IDS. " \
+                #                        "Note that the plugin might require " \
+                #                        "specific fields to be filled in order " \
+                #                        "for them to work properly."
+                # self.sub_menu.setStatusTip(sub_menu_display_msg)
+                # self.sub_menu.setToolTip(sub_menu_display_msg)
+
                 showMenu = True
 
         if showMenu:
-            dataTreeView.popupmenu.exec_(dataTreeView.viewport().mapToGlobal(dataTreeView.pos))
+            self.popupmenu.exec_(dataTreeView.viewport().mapToGlobal(dataTreeView.pos))

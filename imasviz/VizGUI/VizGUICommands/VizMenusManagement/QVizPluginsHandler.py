@@ -53,7 +53,6 @@ class QVizPluginsHandler:
                     self.menuIDS.PLUGINS_MENU_IDS.append(tuple)
                     addedPluginsEntries[pluginsName].append(entry) #plugins entry should appear only once in the popup menu
 
-        #print self.menuIDS.PLUGINS_MENU_IDS
         for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
             m = self.menuIDS.PLUGINS_MENU_IDS[i]
             pluginsName = m[0]
@@ -74,6 +73,10 @@ class QVizPluginsHandler:
             action_onPluginHandler = QAction(icon_onPluginHandler,
                                              pluginsCommandDescription , dataTreeView)
             action_onPluginHandler.triggered.connect(partial(self.popUpMenuHandler, i, dataTreeView))
+            # Set message to be displayed in status bar when hovering over the
+            # action in the pop up menu
+            action_onPluginHandler.setStatusTip(pluginsObject.getDescription())
+            menu.setToolTip(pluginsObject.getDescription())
             menu.addAction(action_onPluginHandler)
 
 

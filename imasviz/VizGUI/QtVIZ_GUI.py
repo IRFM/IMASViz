@@ -73,19 +73,26 @@ class GUIFrame(QTabWidget):
         self.userName = QLineEdit(default_user_name)
         self.userName.setStatusTip("Name of the user under which the case is "
                                    "being stored.")
+        self.userName.setToolTip("Name of the user under which the case is "
+                                 "being stored.")
         vboxLayout.addRow('User name', self.userName)
         self.imasDbName = QLineEdit(default_machine)
         self.imasDbName.setStatusTip("Database label under which the case is "
                                      "being stored.")
+        self.imasDbName.setToolTip("Database label under which the case is "
+                                   "being stored.")
         vboxLayout.addRow('Database', self.imasDbName)
         self.shotNumber = QLineEdit()
         self.shotNumber.setStatusTip("Shot case identifier.")
+        self.shotNumber.setToolTip("Shot case identifier.")
         vboxLayout.addRow('Shot number', self.shotNumber)
         self.runNumber = QLineEdit(default_run)
         self.runNumber.setStatusTip("Run case identifier.")
+        self.runNumber.setToolTip("Run case identifier.")
         vboxLayout.addRow('Run number', self.runNumber)
         button_open1 = QPushButton('Open', self)
         button_open1.setStatusTip("Open the case for the given parameters.")
+        button_open1.setToolTip("Open the case for the given parameters.")
 
         button_open1.clicked.connect(self.OpenDataSourceFromTab1)
 
