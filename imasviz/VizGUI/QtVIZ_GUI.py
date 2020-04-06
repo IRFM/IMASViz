@@ -17,7 +17,8 @@ import logging
 from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
-                             QPlainTextEdit, QGridLayout, QMdiArea)
+                             QPlainTextEdit, QGridLayout, QMdiArea, QLabel,
+                             QFrame)
 from PyQt5.QtCore import Qt
 from pathlib import Path
 import matplotlib
@@ -70,14 +71,21 @@ class GUIFrame(QTabWidget):
         vboxLayout = QFormLayout()
         """Set static text for each GUI box (left from the box itself) """
         self.userName = QLineEdit(default_user_name)
+        self.userName.setStatusTip("Name of the user under which the case is "
+                                   "being stored.")
         vboxLayout.addRow('User name', self.userName)
         self.imasDbName = QLineEdit(default_machine)
+        self.imasDbName.setStatusTip("Database label under which the case is "
+                                     "being stored.")
         vboxLayout.addRow('Database', self.imasDbName)
         self.shotNumber = QLineEdit()
+        self.shotNumber.setStatusTip("Shot case identifier.")
         vboxLayout.addRow('Shot number', self.shotNumber)
         self.runNumber = QLineEdit(default_run)
+        self.runNumber.setStatusTip("Run case identifier.")
         vboxLayout.addRow('Run number', self.runNumber)
         button_open1 = QPushButton('Open', self)
+        button_open1.setStatusTip("Open the case for the given parameters.")
 
         button_open1.clicked.connect(self.OpenDataSourceFromTab1)
 
@@ -236,6 +244,7 @@ class QVizStartWindow(QMainWindow):
     def logPanel(self):
         # #LOG WIDGET
         self.logWidget = QPlainTextEdit(parent=self)
+        self.logWidget.setStatusTip("Log panel.")
         self.logWidget.setReadOnly(True)
         self.dockWidget_log = QDockWidget("Log", self)
         self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
@@ -272,8 +281,9 @@ class QVizStartWindow(QMainWindow):
             return self.window().getMDI()
         return None
 
+
 class QVizMDI(QMdiArea):
-    """Class for MDI area.
+    """Class for Multiple Document Interface (MDI) area.
     """
 
     def __init__(self, parent):
@@ -293,6 +303,8 @@ class QVizMainWindow(QMainWindow):
         self.setWindowTitle(title)
         # Set name of this main window as the root
         self.setObjectName("IMASViz root window")
+        # set status bar
+        self.setStatusBar()
 
         # Set MDI (Multiple Document Interface)
         self.MDI = QVizMDI(self)
@@ -334,6 +346,10 @@ class QVizMainWindow(QMainWindow):
     def getStartWindow(self):
         return self.startWindow
 
+    def setStatusBar(self):
+        self.statusBar().show()
+
+
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
@@ -341,6 +357,7 @@ def main():
     window = QVizMainWindow()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()
