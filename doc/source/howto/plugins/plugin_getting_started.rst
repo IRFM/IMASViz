@@ -297,6 +297,23 @@ In your :file:`myPlugin.py` file add:
         return [(0, 'My plugin...')]
 
 
+getDescription()
+""""""""""""""""
+
+The :guilabel:`getDescription()` method function returns the custom plugin
+description.
+
+In your :file:`myPlugin.py` file add, for example:
+
+.. code-block:: python
+
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "This is my custom IMASViz plugin. \n" \
+               "Authors: My Name (my.email@...)."
+
 isEnabled()
 """""""""""
 
@@ -399,6 +416,13 @@ steps in the previous subsections.
         def getAllEntries(self):
             # Set a text which will be displayed in the pop-up menu
             return [(0, 'Magnetics overview (simple plot plugin example)...')]
+
+        def getDescription(self):
+            """ Return plugin description.
+            """
+
+            return "This is my custom IMASViz plugin. \n" \
+                   "Authors: My Name (my.email@...)."
 
         def isEnabled(self):
             return True

@@ -1,4 +1,4 @@
-.. _howto:
+.. _plugins:
 
 =======
 Plugins
