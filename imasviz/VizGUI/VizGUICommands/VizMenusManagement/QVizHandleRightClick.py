@@ -60,18 +60,20 @@ class QVizHandleRightClick:
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if node.isIDSRoot() and node.hasAvailableData():
-                subMenu = QMenu('Get ' + node.getIDSName() + ' data for occurrence')
+                subMenu = QMenu('Get ' + node.getIDSName() +
+                                ' data for occurrence')
                 self.popupmenu.addMenu(subMenu)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
                 self.sub_menu = QMenu('Plugins')
                 self.popupmenu.addMenu(self.sub_menu)
-                QVizPluginsPopUpMenu().upateMenu(node, dataTreeView, self.sub_menu)
+                QVizPluginsPopUpMenu().upateMenu(node, dataTreeView,
+                                                 self.sub_menu)
 
                 # Set message to be displayed in toolbar and in pop up window
                 # When hovering on the menu item
-                # TODO: this  get shown when hoovering over ACTION and not when
-                #       hovering over MENU ITEM for some reason... this
-                #       overrides our action tooltip...
+                # TODO: It doesn't get shown for some reason... the same
+                #       strategy that is being used for QActions and is
+                #       expected to work doesn't work at all
                 # sub_menu_display_msg = "A list of plugins that are available " \
                 #                        "for the use with the selected IDS. " \
                 #                        "Note that the plugin might require " \
@@ -79,8 +81,10 @@ class QVizHandleRightClick:
                 #                        "for them to work properly."
                 # self.sub_menu.setStatusTip(sub_menu_display_msg)
                 # self.sub_menu.setToolTip(sub_menu_display_msg)
+                # self.sub_menu.setToolTipsVisible(True)
 
                 showMenu = True
 
         if showMenu:
-            self.popupmenu.exec_(dataTreeView.viewport().mapToGlobal(dataTreeView.pos))
+            self.popupmenu.exec_(
+                dataTreeView.viewport().mapToGlobal(dataTreeView.pos))

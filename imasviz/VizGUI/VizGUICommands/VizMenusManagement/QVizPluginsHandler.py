@@ -1,5 +1,5 @@
 
-import importlib, logging
+import logging
 import traceback
 from functools import partial
 from PyQt5.QtCore import pyqtSlot
@@ -39,7 +39,8 @@ class QVizPluginsHandler:
             if isinstance(pluginsObject, VizPlugin):
                 entriesList = pluginsObject.getEntries()
             else:
-                entriesList = VizPlugin.getEntriesFor(pluginsName, selectedTreeNode)
+                entriesList = VizPlugin.getEntriesFor(pluginsName,
+                                                      selectedTreeNode)
 
             if entriesList is None or len(entriesList) == 0:
                 continue
@@ -71,14 +72,22 @@ class QVizPluginsHandler:
             icon_onPluginHandler = GlobalIcons.getCustomQIcon(QApplication,
                                                               'new')
             action_onPluginHandler = QAction(icon_onPluginHandler,
-                                             pluginsCommandDescription , dataTreeView)
-            action_onPluginHandler.triggered.connect(partial(self.popUpMenuHandler, i, dataTreeView))
-            # Set message to be displayed in status bar when hovering over the
-            # action in the pop up menu
-            action_onPluginHandler.setStatusTip(pluginsObject.getDescription())
-            menu.setToolTip(pluginsObject.getDescription())
+                                             pluginsCommandDescription,
+                                             dataTreeView)
+            action_onPluginHandler.triggered.connect(
+                partial(self.popUpMenuHandler, i, dataTreeView))
+            # Check if pluginsObject contains the 'getDescription' routine
+            if callable(getattr(pluginsObject, "getDescription", None)):
+                # Set message to be displayed in status bar when hovering over
+                # the # action in the pop up menu. Set it only
+                action_onPluginHandler.setStatusTip(
+                    pluginsObject.getDescription())
+                action_onPluginHandler.setToolTip(pluginsObject.getDescription())
+            else:
+                action_onPluginHandler.setStatusTip(pluginsName)
+                action_onPluginHandler.setToolTip(pluginsName)
+            menu.setToolTipsVisible(True)
             menu.addAction(action_onPluginHandler)
-
 
     @pyqtSlot(int)
     def popUpMenuHandler(self, itemId, dataTreeView):

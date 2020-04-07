@@ -77,5 +77,11 @@ class CompareFLT1DPlugin(VizPlugin):
     def getAllEntries(self):
         return [(0, 'Compare to shot...')]
 
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "Test plugin to compare two FLT_1D signals."
+
     def isEnabled(self):
         return True

@@ -88,8 +88,8 @@ class ETSpluginIMASViz(VizPlugin):
         """ Return plugin description.
         """
 
-        return "Visualization tool for ETS6 related data. \n" \
-               "This is ETSViz embedded in IMASViz as a plugin. \n" \
+        return "Visualization tool for ETS6 related data. \n"           \
+               "This is ETSViz embedded in IMASViz as a plugin. \n"     \
                "Authors: Dejan Penko (dejan.penko@lecad.fs.uni-lj.si)."
 
     def isEnabled(self):

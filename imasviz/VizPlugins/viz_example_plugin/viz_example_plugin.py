@@ -1,6 +1,7 @@
 #  Name   : viz_example_plugin
 #
-#           A plugin example that demonstrates how to provide multiple features from the same plugin code.
+#           A plugin example that demonstrates how to provide multiple features
+#           from the same plugin code.
 #
 #           Important: Every plugin must be registered in IMASViz. This is done
 #           by adding the plugin in the "RegisteredPlugins" in top part of the
@@ -138,6 +139,14 @@ class viz_example_plugin(VizPlugin):  # The plugin has to inherit from VizPlugin
     #The second entry (1) is displayed with the menu item 'Shows a 2D plot...'
     def getAllEntries(self):
         return [(0, 'Prints some node attributes to log using IMASViz API...'), (1, 'Shows a 2D plot...')]
+
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "A plugin example that demonstrates how to provide  \n" \
+               "multiple features from the same plugin code. \n"       \
+               "Authors: Ludovic Fleury (ludovic.fleury@cea.fr)."
 
     def isEnabled(self):
         return True
