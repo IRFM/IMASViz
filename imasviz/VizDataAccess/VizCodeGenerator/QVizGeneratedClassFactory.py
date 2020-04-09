@@ -3,14 +3,15 @@ import os
 from imasviz.VizUtils import QVizGlobalValues
 from imasviz.VizUtils import QVizPreferences
 
+
 class QVizGeneratedClassFactory:
-    def __init__(self, IMASDataSource, view, IDSName, occurrence=0, asynch=True):
+    def __init__(self, IMASDataSource, view, IDSName, occurrence=0,
+                 asynch=True):
         self.IDSName = IDSName
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
         self.asynch = asynch
-
 
     def create(self, progressBar=None):
 

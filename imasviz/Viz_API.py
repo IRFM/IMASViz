@@ -735,7 +735,7 @@ class Viz_API:
                                               occurrence=occurrence):
                 self.LoadIDSData(dataTreeView, idsName, occurrence)
 
-            # idd = dataTreeView.dataSource.getImasEntry(occurrence)
+            idd = dataTreeView.dataSource.getImasEntry(occurrence)
             idssByNames[idsName] = eval("idd." + idsName)
 
         return idssByNames

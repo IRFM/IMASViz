@@ -1,10 +1,9 @@
-import os, logging
+import os
+import logging
 import imas
-import traceback, sys
-from PyQt5.QtWidgets import QTreeWidgetItem, QProgressBar
+from PyQt5.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils import QVizGlobalValues
-from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
 class QVizIMASDataSource:
 
@@ -15,9 +14,11 @@ class QVizIMASDataSource:
         self.shotNumber = int(shotNumber)
         self.runNumber = int(runNumber)
         self.machineName = machineName
-        self.ids = {} #key = occurrence, value = ids object
-        self.data_dictionary_version = None #will be initialized only when loading the first IDS (currently, it is not possible to get
-                               #the DD version from the AL at the data entry level, see IMAS-2835 for details
+        self.ids = {}  # key = occurrence, value = ids object
+        # data_dictionary_version will be initialized only when loading
+        # the first IDS (currently, it is not possible to get the DD version
+        # from the AL at the data entry level, see IMAS-2835 for details
+        self.data_dictionary_version = None
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, asynch=True):
@@ -27,46 +28,57 @@ class QVizIMASDataSource:
 
         self.progressBar.setMaximum(0)
         self.progressBar.setMinimum(0)
-        self.progressBar.setGeometry(100,150,500,25)
+        self.progressBar.setGeometry(100, 150, 500, 25)
         self.progressBar.show()
 
-        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView, IDSName,
-                                                           occurrence, asynch).create(self.progressBar)
+        self.generatedDataTree = \
+            QVizGeneratedClassFactory(self, dataTreeView, IDSName,
+                                      occurrence,
+                                      asynch).create(self.progressBar)
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
 
         if self.ids.get(occurrence) is None:
-            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber, 0, 0)
+            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber,
+                                            0, 0)
             v = os.environ["IMAS_MAJOR_VERSION"]
-            self.ids[occurrence].open_env(self.userName, self.imasDbName, os.environ["IMAS_MAJOR_VERSION"])
+            self.ids[occurrence].open_env(self.userName,
+                                          self.imasDbName,
+                                          os.environ["IMAS_MAJOR_VERSION"])
             if self.ids[occurrence].expIdx == -1:
-                raise ValueError("Can not open shot " + str(self.shotNumber) + "  from data base " + self.imasDbName + " of user " + self.userName)
+                raise ValueError("Can not open shot " + str(self.shotNumber) +
+                                 " from data base " + self.imasDbName +
+                                 " of user " + self.userName)
 
         self.generatedDataTree.ids = self.ids[occurrence]
 
-
-
         if asynch:
-            self.generatedDataTree.start() #This will call asynchroneously the get() operation for fetching IMAS data
+            # This will call asynchroneously the get() operation for fetching
+            # IMAS data
+            self.generatedDataTree.start()
         else:
-            self.generatedDataTree.run()  #This will call the get() operation for fetching IMAS data
+            # This will call the get() operation for fetching IMAS data
+            self.generatedDataTree.run()
 
     @staticmethod
-    def try_to_open(imasDbName, userName, shotNumber, runNumber, imas_major_version='3'):
+    def try_to_open(imasDbName, userName, shotNumber, runNumber,
+                    imas_major_version='3'):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
         try:
             ids.open_env(userName, imasDbName, imas_major_version)
             ids.close()
         except Exception:
             raise ValueError("Can not open shot " + str(shotNumber) +
-                             "  from data base " + imasDbName + " of user " + userName + ".")
+                             "  from data base " + imasDbName + " of user " +
+                             userName + ".")
 
     @staticmethod
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
         ids.open_public(machineName)
         if (ids.expIdx == -1):
-            raise ValueError("Can not open shot " + str(shotNumber) + "  from " + machineName)
+            raise ValueError("Can not open shot " + str(shotNumber) +
+                             "  from " + machineName)
         else:
             ids.close()
 
@@ -89,39 +101,46 @@ class QVizIMASDataSource:
 
     def containsData(self, node, imas_entry):
         ret = False
-        logging.info("Searching available data in all occurrences of " + node.getIDSName() + " IDS...")
+        logging.info("Searching available data in all occurrences of " +
+                     node.getIDSName() + " IDS...")
         for occurrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
-            logging.info("Searching for occurrence: " + str(occurrence) + "...")
+            logging.info("Searching for occurrence: " + str(occurrence) +
+                         "...")
             node.setAvailableIDSData(occurrence, 0)
             try:
-                ids_properties = eval("imas_entry." + node.getIDSName() + ".partialGet('ids_properties', occurrence)")
+                ids_properties = eval("imas_entry." + node.getIDSName() +
+                                      ".partialGet('ids_properties', occurrence)")
                 ht = ids_properties.homogeneous_time
                 if ht == 0 or ht == 1 or ht == 2:
-                    logging.info(
-                        "Found data for occurrence " + str(occurrence) + " of " + node.getIDSName() + " IDS...")
+                    logging.info("Found data for occurrence " +
+                                 str(occurrence) + " of " + node.getIDSName() +
+                                 " IDS...")
                     node.setHomogeneousTime(ht)
                     node.setAvailableIDSData(occurrence, 1)
                     self.data_dictionary_version = ids_properties.version_put.data_dictionary
                     ret = True
                 elif occurrence == 0:
-                    break  # we decide to break the loop as soon as occurrence 0 is empty
-
+                    # break the loop as soon as occurrence 0 is empty
+                    break
             except:
                 pass
         logging.info("Data search ended.")
         return ret
 
-
-    # This defines the unique key attached to each data which can be plotted
     def dataKey(self, vizTreeNode):
-        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" \
-               + str(self.runNumber) + '::' + vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
+        """Defines the unique key attached to each data which can be plotted.
+        """
+        return self.name + "::" + self.imasDbName + "::" + \
+            str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
+            vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
 
     def getShortLabel(self):
-        return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+        return self.userName + ":" + self.imasDbName + ":" + \
+            str(self.shotNumber) + ":" + str(self.runNumber)
 
     def getLongLabel(self):
-        return "User:" + self.userName + " Database:" + self.imasDbName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
+        return "User:" + self.userName + " Database:" + self.imasDbName + \
+            " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
     def getKey(self):
         return self.getLongLabel()
@@ -147,7 +166,8 @@ class QVizIMASDataSource:
             # Extract IDS name and occurrence
             idsName, occurrence = db.split("/")
 
-            if os.getenv('IMAS_PREFIX') != None and 'IMAS' in os.getenv('IMAS_PREFIX'):
+            if os.getenv('IMAS_PREFIX') != None and \
+                    'IMAS' in os.getenv('IMAS_PREFIX'):
                 # Set the export command
                 command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
                           ".setExpIdx(exported_ids." + idsName + "._idx)"
@@ -158,12 +178,9 @@ class QVizIMASDataSource:
             # Run the export command
             eval(command2)
             logging.info("Calling IMAS put() for IDS " + idsName +
-                                  " occurrence " + str(occurrence) + ".")
+                         " occurrence " + str(occurrence) + ".")
             # Putting to occurrence
-            eval("self.ids[" + str(occurrence) + "]."  + idsName + ".put(" + str(
-                occurrence) +
-                 ")")
+            eval("self.ids[" + str(occurrence) + "]." + idsName +
+                 ".put(" + str(occurrence) + ")")
 
         exported_ids.close()
-
-
