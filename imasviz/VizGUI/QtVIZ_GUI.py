@@ -113,14 +113,14 @@ class GUIFrame(QTabWidget):
                     val = int(shotNumber)
 
                     """Check if data source is available"""
-                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE, val)
+                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE,
+                                               val)
 
                     self.mainMenuController.openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                                               imasDbName=self.imasDbName.text(),
                                                               userName=self.userName.text(),
                                                               runNumber=self.runNumber.text(),
                                                               shotNumber=str(val))
-
 
             except Exception as e:
                 raise ValueError(str(e))
@@ -151,7 +151,6 @@ class GUIFrame(QTabWidget):
         vboxlayout.addRow('Run number', self.runNumber2)
 
         publicDatabases = []
-
 
         if os.environ.get('UDA_DISABLED') != '1':
             udaConfigFilePath = Path(os.environ['VIZ_HOME'] + '/config/UDA_machines')
@@ -198,7 +197,8 @@ class GUIFrame(QTabWidget):
                 raise ValueError(str(e))
 
         except ValueError as e:
-            logging.error('Unable to open UDA data source, the reason is: ' + str(e))
+            logging.error('Unable to open UDA data source, the reason is: ' +
+                          str(e))
 
     def CheckInputsFromTab2(self):
         machineName = \
@@ -213,7 +213,8 @@ class GUIFrame(QTabWidget):
         if self.runNumber2.text() == '':
             raise ValueError("'Run number' field is empty.")
 
-        QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA, int(self.shotNumber2.text()))
+        QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA,
+                                   int(self.shotNumber2.text()))
 
     def contextMenuEvent(self, event):
 
@@ -259,7 +260,7 @@ class QVizStartWindow(QMainWindow):
         self.dockWidgetContents_log = QWidget()
         self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
         self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
-        #- Set dockwidget size
+        # Set dockwidget size
         self.gridLayout_log.setObjectName("GridLayout_LOG")
         self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
@@ -276,7 +277,7 @@ class QVizStartWindow(QMainWindow):
         answer = \
             QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
                                        caption='Please confirm')
-        if answer==True:
+        if answer == True:
             event.accept()
         else:
             event.ignore()
@@ -297,6 +298,7 @@ class QVizMDI(QMdiArea):
         super().__init__(parent)
         self.setWindowTitle("MDI")
         self.setObjectName("MDI")
+
 
 class QVizMainWindow(QMainWindow):
     """ Class for IMASViz main window, which contains MDI and all
@@ -322,8 +324,8 @@ class QVizMainWindow(QMainWindow):
 
         # Set layout and add start window and MDI to it
         layout = QGridLayout(centralWidget)
-        layout.setColumnStretch(0,1)
-        layout.setColumnStretch(1,7)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 7)
 
         layout.addWidget(self.startWindow, 0, 0, 1, 1)
         layout.addWidget(self.MDI, 0, 1, 1, 1)

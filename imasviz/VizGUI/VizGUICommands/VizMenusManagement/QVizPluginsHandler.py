@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QAction, QApplication, QMainWindow, QWidget
 
 class MenuIDS:
     def __init__(self):
-        self.PLUGINS_MENU_IDS = [] #list of tuples (Id, menu desc., plugins object)
+        self.PLUGINS_MENU_IDS = []  # list of tuples (Id, menu desc., plugins object)
 
 class QVizPluginsHandler:
 
@@ -23,7 +23,7 @@ class QVizPluginsHandler:
         addedPluginsEntries = {}
 
         pluginsNames = self.pluginsObjects[0]
-        pluginsObjects = self.pluginsObjects[1] #tuple: Plugins names, VizPlugin instances
+        pluginsObjects = self.pluginsObjects[1]  # tuple: Plugins names, VizPlugin instances
 
         for p in pluginsNames:
             addedPluginsEntries[p] = []  # each plugins entry should appear only once in the popup menu
