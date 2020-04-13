@@ -23,16 +23,17 @@
 #  E-mail :
 #         dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2019- D. Penko
 
 # modules for event logging system and for operating system dependent
 # functionality
-import logging, os
+import logging
 # IMASViz plugin sources
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 # Matplotlib library
 import matplotlib.pyplot as plt
+
 
 class simplePlotPluginExample(VizPlugin):
     """A minimal working plugin example for IMASViz.
@@ -119,6 +120,16 @@ class simplePlotPluginExample(VizPlugin):
     def getAllEntries(self):
         # Set a text which will be displayed in the pop-up menu
         return [(0, 'Magnetics overview (simple plot plugin example)...')]
+
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "A minimal plugin example for IMASViz. \n"                  \
+               "This plugin demonstrates also how to plot basic \n"        \
+               "data/signals found in the IDSs using matplotlib Python \n" \
+               "library. \n"     \
+               "Authors: Dejan Penko (dejan.penko@lecad.fs.uni-lj.si)."
 
     def isEnabled(self):
         return True

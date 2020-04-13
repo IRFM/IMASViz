@@ -1,30 +1,74 @@
 .. _IMASViz_release_notes:
 
+.. My notes:
+.. use >>> git log --oneline -b master
+.. git log $from_commit..$to_commit --pretty=oneline | wc -l
+.. git diff --stat $from_commit $to_commit -- . ':!*enerated*' ':!*.xml'
+
+.. from_commit = d25c4b8bddf
+.. to_commit = d9253fedf12d63761299a61c6930bc77f0d9b90c
+
 =============
 Release notes
 =============
 
 -------------
+Version 2.3.8
+-------------
+
+Released: 18.3.2020
+
+- Plugins documentation update
+- Major GUI and feature improvements to the ETS plugin (remains work in progress):
+
+    - Added debug options, added in-code debug checks
+    - Enabled '<<', '<', '>' and '>>' buttons
+    - Display actual tmin and tmax values to labels right and left from the slider
+    - Display number of time slices
+    - Improved handling the widgets update on time index value change
+    - Improved widgets functionality (use of the 'enter' key etc.)
+    - Added status bar at the bottom of the window
+    - Included  the Equilibrium IDS quantities
+    - Added 'Main 0-D Parameters' and 'Main 1-D Parameters' tabs (the second one
+      is not yet fully finished)
+
+- Transition from using 'device/machine' to 'database'
+- Added the missing strategy for displaying contents of the static tree items
+  in the Node Documentation Widget
+- Added support for DD 3.27.0
+- Improved exception catching
+- Fixed coordinate1/time slider bug
+- Fixed default strategy on StackedPlots
+- Fixed progress bar when loading shots from UDA
+- Fixed issue with UDA_DISABLED flag
+- Fixed some parser issues
+
+-------------
 Version 2.3.7
 -------------
-- Adding strategies for plotting data
-- Adding support for DD3.26.0
-- Fixing regressions
-- Adding all parser versions
+
+Released: 23.1.2020
+
+- Added strategies for plotting data
+- Added support for DD3.26.0
+- Fixed regressions
+- Added all parser versions
 - GGD can now be ignored or not according to user preferences
-- Fixing bugs in xlabels of plots
-- Fixing regression after refactoring
-- Fixing bug on documentation display of 0D nodes
-- Fixing regression for preview plots
+- Fixed bugs in xlabels of plots
+- Fixed regression after refactoring
+- Fixed bug on documentation display of 0D nodes
+- Fixed regression for preview plots
 
 -------------
 Version 2.3.6
 -------------
 
+Released: 12.12.2019
+
 - Code refactoring: renaming functions and other improvements
-- Tofu plugin: fixing import
-- Adding MDI feature for windows management
-- Adding comments to VIZ_API
+- Tofu plugin: fixed import
+- Added MDI feature for windows management
+- Added comments to VIZ_API
 - Prevent to overlap data with different time vectors when using the time slider
 - Prevent to overlap data with different coordinates when using the coord. slider
 - Bugs fixes
@@ -33,40 +77,45 @@ Version 2.3.6
 Version 2.3.5
 -------------
 
-- Fixing issue when mixing 0D and 1D data on stacked plots
+Released: 18.11.2019
+
+- Fixed issue when mixing 0D and 1D data on stacked plots
 - Automatically adding sliders for plots of multiple data selection
-- Fixing bug which modifies user selection order
-- Improving time/coordinate1 sliders labels
-- Adding occurrence in labels when occurrence > 0
-- Fixing bug when applying selection with occurrence > 0
+- Fixed bug which modifies user selection order
+- Improved time/coordinate1 sliders labels
+- Added occurrence in labels when occurrence > 0
+- Fixed bug when applying selection with occurrence > 0
 
 -------------
 Version 2.3.4
 -------------
 
-Not released
+Released: 15.11.2019
 
-- Converting exception to warning when 0D data under dynamic AOS are plotted along a coordinate1 dimension
-- Setting warning message in red in the log output
-- Removing old code in comments
+- Converting exception to warning when 0D data under dynamic AOS are plotted
+  along a coordinate1 dimension
+- Set warning message in red in the log output
+- Removed old code in comments
 
 -------------
 Version 2.3.3
 -------------
 
+Released: 13.11.2019
+
 Released on GW as RC version (08.11.2019)
 
-- Adding logic for plotting 1D and 0D data as function of time or coordinate1D
-- Adding support to DD3.25.0
-- Fixing bugs related to overlapped plots with available slider on time or coordinate1
-- Removing unwanted print command to console output
-- Fixing minor issue when checking if data plots are compatibles
+- Added logic for plotting 1D and 0D data as function of time or coordinate1D
+- Added support to DD3.25.0
+- Fixed bugs related to overlapped plots with available slider on time or coordinate1
+- Removed unwanted print command to console output
+- Fixed minor issue when checking if data plots are compatibles
 
 -------------
 Version 2.3.2
 -------------
 
-Released: To be released
+Released: 29.10.2019
 
 Changes:
 
@@ -77,24 +126,24 @@ Changes:
 - Menu added in menu bar of shots views for plots windows management
 - The list of plugins can be now displayed from right-click menu (more convenient)
 - Reducing font size of documentation widget to display more text
-- Adding log widget on the main panel - The logging mechanism is the same that shots views, uses the same logging handler (singleton)
+- Added log widget on the main panel - The logging mechanism is the same that shots views, uses the same logging handler (singleton)
 
 -------------
 Version 2.3.1
 -------------
 
-Released: To be released
+Released: 25.10.2019
 
 Changes:
 
 - Equilibrium plugin displays prints now requirements in the log
 - Equilibrium plugin raises an error if requirements are not satisfied
-- Fixing IMASViz menu items of shot views management when using UDA
+- Fixed IMASViz menu items of shot views management when using UDA
 - Check prerequisites for using UDA
-- UDA: removing MAST from available remote machines
+- UDA: removed MAST from available remote machines
 - Available UDA remote servers can now be configured from a configuration file
 - User preferences available now for colors of nodes containing data and for data selection
-- Fixing bug preventing time arrays to be previewed or plotted
+- Fixed bug preventing time arrays to be previewed or plotted
 - Code refactoring around IMAS path handling
 - Update of the README file
 
@@ -110,7 +159,7 @@ Changes:
   faulty pyqtgraph default Matplotlib exporter).
 - Add Makefile for generating the IDSDef_Parser.py files instead of keeping them
   in the project GIT repository.
-- Improve logging messages.
+- Improved logging messages.
 - IMAS-2629: Enabled creating plots for 0D signals.
 - IMAS-2651: Improvement of the time required to build the tree view.
 - IMAS-2641: Added display of size for 2D signals.
@@ -124,8 +173,7 @@ Changes:
 Version 2.2.5
 -------------
 
-Released:
-3.9.2019
+Released: 3.9.2019
 
 Changes:
 
@@ -145,8 +193,7 @@ Changes:
 Version 2.2.4
 -------------
 
-Released:
-1.8.2019
+Released: 1.8.2019
 
 Changes:
 
@@ -156,20 +203,18 @@ Changes:
 Version 2.2.3
 -------------
 
-Released:
-30.7.2019
+Released: 30.7.2019
 
 Changes:
 
-- Improve customization of legend labels in the plot configuration UI.
+- Improved customization of legend labels in the plot configuration UI.
 - IMAS-2475: Fixed display of multi-line strings (e.g. ids_properties.comment).
 
 -------------
 Version 2.2.2
 -------------
 
-Released:
-5.7.2019
+Released: 5.7.2019
 
 Changes:
 
@@ -180,8 +225,7 @@ Changes:
 Versions 2.1.0 - 2.2.1
 ----------------------
 
-Released:
-2.7.2019
+Released: 2.7.2019
 
 Changes:
 
@@ -206,8 +250,7 @@ Changes:
 Version 2.0.0
 -------------
 
-Released:
-4.2.2019
+Released: 4.2.2019
 
 Changes:
 
@@ -244,12 +287,6 @@ scripts):
 - 13316 insertions(+),
 - 10162 deletions(-)
 
-.. git log $from_commit..$to_commit --pretty=oneline | wc -l
-.. git diff --stat $from_commit $to_commit -- . ':!*enerated*' ':!*.xml'
-
-.. from_commit = d25c4b8bddf
-.. to_commit = d9253fedf12d63761299a61c6930bc77f0d9b90c
-
 .. Note::
    The migration to PyQt5 due to IMASViz containing a large code sets is not
    yet fully complete.
@@ -276,22 +313,20 @@ Overview of IMASViz 2.0 GUI:
 Version 1.2
 -----------
 
-Released:
-24.8.2018
+Released: 24.8.2018
 
 Changes:
 
 - New functionality: selection command of nodes belonging to same parent AOS
   (Array of Structures)
 - MultiPlot and SubPlot design improvements
-- Adding support for IMAS versions 3.19.0
+- Added support for IMAS versions 3.19.0
 
 -----------
 Version 1.1
 -----------
 
-Released:
-8.6.2018
+Released: 8.6.2018
 
 Changes (since March 2017):
 

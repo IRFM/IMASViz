@@ -3,7 +3,7 @@
 # If you need to restart vim tabs then :retab
 '''
     This demo demonstrates how to embed a matplotlib (mpl) plot
-    into a wxPython GUI application for IMAS visualization, including:
+    into a PyQt5 GUI application for IMAS visualization, including:
     * Using the navigation toolbar
     * Adding data to the plot
     * Dynamically modifying the plot's properties
@@ -14,6 +14,8 @@
     Jorge Morales (jorge.morales2@cea.fr)
     Based on a work by:
     Eli Bendersky (eliben@gmail.com)
+    Coverted from wxPython to PyQt5 by:
+    Dejan Penko (dejan.penko@lecad.fs.uni-lj.si)
     License: this code is in the public domain
 '''
 # Standard python modules
@@ -1150,6 +1152,29 @@ class equilibriumcharts(VizPlugin):
     def getAllEntries(self):
         return [(0, 'Equilibrium overview...')]
 
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "This demo demonstrates how to embed a matplotlib (mpl) \n" \
+               "plot into a PyQt5 GUI application for IMAS visualization, \n" \
+               "including: \n" \
+               "* Using the navigation toolbar \n" \
+               "* Adding data to the plot \n" \
+               "* Dynamically modifying the plot's properties \n" \
+               "* Processing mpl events \n" \
+               "* Saving the plot to a file from a menu \n" \
+               "The main goal is to serve as a basis for developing rich \n" \
+               "PyQt5 GUI applications featuring mpl plots \n " \
+               "(using the mpl OO API). \n" \
+               "Jorge Morales (jorge.morales2@cea.fr) \n" \
+               "Based on a work by: \n" \
+               "Eli Bendersky (eliben@gmail.com) \n" \
+               "Coverted from wxPython to PyQt5 by: \n" \
+               "Dejan Penko (dejan.penko@lecad.fs.uni-lj.si) \n" \
+               "License: this code is in the public domain"
+
+
 if (__name__ == '__main__'):
     # Test running. See also equilibrium test file.
 
@@ -1162,7 +1187,7 @@ if (__name__ == '__main__'):
     from imasviz.Viz_API import Viz_API
     from imasviz.VizDataSource.QVizDataSourceFactory import \
         QVizDataSourceFactory
-    from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+    from imasviz.VizUtils import QVizGlobalOperations
 
     # Set object managing the PyQt GUI application's control flow and main
     # settings
@@ -1200,5 +1225,3 @@ if (__name__ == '__main__'):
 
     # Keep the application running
     sys.exit(app.exec_())
-
-

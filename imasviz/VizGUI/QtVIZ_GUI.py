@@ -7,34 +7,31 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *****************************************************************************
 
 import os
 import sys
 import logging
-from functools import partial
-from PyQt5.QtWidgets import QMenuBar, QAction, QMenu, QMainWindow, QStyle, QDockWidget
-from PyQt5.QtWidgets import QMdiArea, QMdiSubWindow
-
-# Add imasviz source path
-sys.path.append((os.environ['VIZ_HOME']))
-
+from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
+                             QMenu, QMainWindow, QDockWidget,
+                             QLineEdit, QPushButton, QVBoxLayout, QComboBox,
+                             QPlainTextEdit, QGridLayout, QMdiArea, QLabel,
+                             QFrame)
+from PyQt5.QtCore import Qt
 from pathlib import Path
-from imasviz.VizUtils.QVizLogger import QVizLogger
-from PyQt5.QtWidgets import QTabWidget, QWidget, QFormLayout, QApplication, QLineEdit, \
-    QPushButton, QVBoxLayout, QComboBox, QPlainTextEdit, QGridLayout
-from PyQt5.QtCore import QSize, pyqtSlot, Qt
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizGUI.VizGuiCustomization.QVizDefault import QVizDefault
-# from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons, QVizPreferences
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController import QVizMainMenuController
-
-
 import matplotlib
 matplotlib.use('Qt5Agg')
+
+# Append imasviz source path
+sys.path.append((os.environ['VIZ_HOME']))
+
+from imasviz.VizGUI.VizGuiCustomization import QVizDefault
+from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
+from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
+                              QVizGlobalOperations, QVizLogger)
+
 
 class GUIFrame(QTabWidget):
     def __init__(self, parent):
@@ -74,14 +71,28 @@ class GUIFrame(QTabWidget):
         vboxLayout = QFormLayout()
         """Set static text for each GUI box (left from the box itself) """
         self.userName = QLineEdit(default_user_name)
+        self.userName.setStatusTip("Name of the user under which the case is "
+                                   "being stored.")
+        self.userName.setToolTip("Name of the user under which the case is "
+                                 "being stored.")
         vboxLayout.addRow('User name', self.userName)
         self.imasDbName = QLineEdit(default_machine)
+        self.imasDbName.setStatusTip("Database label under which the case is "
+                                     "being stored.")
+        self.imasDbName.setToolTip("Database label under which the case is "
+                                   "being stored.")
         vboxLayout.addRow('Database', self.imasDbName)
         self.shotNumber = QLineEdit()
+        self.shotNumber.setStatusTip("Shot case identifier.")
+        self.shotNumber.setToolTip("Shot case identifier.")
         vboxLayout.addRow('Shot number', self.shotNumber)
         self.runNumber = QLineEdit(default_run)
+        self.runNumber.setStatusTip("Run case identifier.")
+        self.runNumber.setToolTip("Run case identifier.")
         vboxLayout.addRow('Run number', self.runNumber)
         button_open1 = QPushButton('Open', self)
+        button_open1.setStatusTip("Open the case for the given parameters.")
+        button_open1.setToolTip("Open the case for the given parameters.")
 
         button_open1.clicked.connect(self.OpenDataSourceFromTab1)
 
@@ -102,14 +113,14 @@ class GUIFrame(QTabWidget):
                     val = int(shotNumber)
 
                     """Check if data source is available"""
-                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE, val)
+                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE,
+                                               val)
 
                     self.mainMenuController.openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_NATIVE,
                                                               imasDbName=self.imasDbName.text(),
                                                               userName=self.userName.text(),
                                                               runNumber=self.runNumber.text(),
                                                               shotNumber=str(val))
-
 
             except Exception as e:
                 raise ValueError(str(e))
@@ -140,7 +151,6 @@ class GUIFrame(QTabWidget):
         vboxlayout.addRow('Run number', self.runNumber2)
 
         publicDatabases = []
-
 
         if os.environ.get('UDA_DISABLED') != '1':
             udaConfigFilePath = Path(os.environ['VIZ_HOME'] + '/config/UDA_machines')
@@ -187,7 +197,8 @@ class GUIFrame(QTabWidget):
                 raise ValueError(str(e))
 
         except ValueError as e:
-            logging.error('Unable to open UDA data source, the reason is: ' + str(e))
+            logging.error('Unable to open UDA data source, the reason is: ' +
+                          str(e))
 
     def CheckInputsFromTab2(self):
         machineName = \
@@ -202,7 +213,8 @@ class GUIFrame(QTabWidget):
         if self.runNumber2.text() == '':
             raise ValueError("'Run number' field is empty.")
 
-        QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA, int(self.shotNumber2.text()))
+        QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA,
+                                   int(self.shotNumber2.text()))
 
     def contextMenuEvent(self, event):
 
@@ -240,6 +252,7 @@ class QVizStartWindow(QMainWindow):
     def logPanel(self):
         # #LOG WIDGET
         self.logWidget = QPlainTextEdit(parent=self)
+        self.logWidget.setStatusTip("Log panel.")
         self.logWidget.setReadOnly(True)
         self.dockWidget_log = QDockWidget("Log", self)
         self.dockWidget_log.setFeatures(QDockWidget.DockWidgetFloatable)
@@ -247,7 +260,7 @@ class QVizStartWindow(QMainWindow):
         self.dockWidgetContents_log = QWidget()
         self.dockWidgetContents_log.setObjectName("DockWidgetContents_LOG")
         self.gridLayout_log = QGridLayout(self.dockWidgetContents_log)
-        #- Set dockwidget size
+        # Set dockwidget size
         self.gridLayout_log.setObjectName("GridLayout_LOG")
         self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
@@ -264,7 +277,7 @@ class QVizStartWindow(QMainWindow):
         answer = \
             QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
                                        caption='Please confirm')
-        if answer==True:
+        if answer == True:
             event.accept()
         else:
             event.ignore()
@@ -276,14 +289,16 @@ class QVizStartWindow(QMainWindow):
             return self.window().getMDI()
         return None
 
+
 class QVizMDI(QMdiArea):
-    """Class for MDI area.
+    """Class for Multiple Document Interface (MDI) area.
     """
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setWindowTitle("MDI")
         self.setObjectName("MDI")
+
 
 class QVizMainWindow(QMainWindow):
     """ Class for IMASViz main window, which contains MDI and all
@@ -297,6 +312,8 @@ class QVizMainWindow(QMainWindow):
         self.setWindowTitle(title)
         # Set name of this main window as the root
         self.setObjectName("IMASViz root window")
+        # set status bar
+        self.setStatusBar()
 
         # Set MDI (Multiple Document Interface)
         self.MDI = QVizMDI(self)
@@ -307,8 +324,8 @@ class QVizMainWindow(QMainWindow):
 
         # Set layout and add start window and MDI to it
         layout = QGridLayout(centralWidget)
-        layout.setColumnStretch(0,1)
-        layout.setColumnStretch(1,7)
+        layout.setColumnStretch(0, 1)
+        layout.setColumnStretch(1, 7)
 
         layout.addWidget(self.startWindow, 0, 0, 1, 1)
         layout.addWidget(self.MDI, 0, 1, 1, 1)
@@ -338,6 +355,10 @@ class QVizMainWindow(QMainWindow):
     def getStartWindow(self):
         return self.startWindow
 
+    def setStatusBar(self):
+        self.statusBar().show()
+
+
 def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
@@ -345,6 +366,7 @@ def main():
     window = QVizMainWindow()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == '__main__':
     main()

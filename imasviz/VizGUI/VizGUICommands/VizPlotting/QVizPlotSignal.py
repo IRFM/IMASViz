@@ -23,12 +23,9 @@
 import sys, logging
 import traceback
 
-from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
-
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizAbstractPlot import QVizAbstractPlot
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations
 
 class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
     """Handling plot execution.

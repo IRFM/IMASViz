@@ -18,8 +18,8 @@ from PyQt5.QtCore import Qt, QMetaObject, QRect
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame
 import PyQt5.QtWidgets as QtWidgets
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import getRGBColorList, GlobalFonts, PlotTypes
+from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
+                              GlobalFonts, PlotTypes)
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 

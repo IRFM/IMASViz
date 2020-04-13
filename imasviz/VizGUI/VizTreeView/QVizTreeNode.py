@@ -1,7 +1,7 @@
 import numpy as np
 import logging
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, QVizPreferences, GlobalColors
+from imasviz.VizUtils import (QVizGlobalOperations, QVizGlobalValues,
+                              QVizPreferences, GlobalColors)
 from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QTreeWidgetItem
 

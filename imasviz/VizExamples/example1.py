@@ -8,11 +8,11 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
-#!/usr/bin/python
+# !/usr/bin/python
 """This example demonstrates the procedure of plotting multiple arrays to
 a single plot, Table Plot View and Stacked Plot View, using IMAS IDS databases
 located on the GateWay HPC.
@@ -24,10 +24,9 @@ import sys
 # PyQt library imports
 from PyQt5.QtWidgets import QApplication
 # IMASViz source imports
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings

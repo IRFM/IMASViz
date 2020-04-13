@@ -7,21 +7,13 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
-import numpy
-import sys
+from PyQt5.QtWidgets import (QTableWidget, QTableWidgetItem, QDialog,
+                             QSizePolicy, QGridLayout, QHeaderView)
 
-from functools import partial
-from PyQt5.QtCore import Qt, pyqtSlot
-from PyQt5.QtWidgets import QAbstractScrollArea, QMainWindow, QPushButton, QVBoxLayout, \
-    QHBoxLayout, QTableWidget, QTableWidgetItem, QDialog, QSizePolicy, QGridLayout, QHeaderView, QMenu, QApplication, QAction
-
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors, GlobalFonts
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import GlobalIcons, FigureTypes
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 
 

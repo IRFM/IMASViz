@@ -10,18 +10,17 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *****************************************************************************
 from pyqtgraph import GraphicsWindow, mkPen
 import pyqtgraph as pg
 import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMdiSubWindow
 import xml.etree.ElementTree as ET
-from imasviz.VizUtils.QVizGlobalValues import FigureTypes
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizWindowUtils import getScreenGeometry
+from imasviz.VizUtils import (FigureTypes, QVizGlobalOperations,
+                              getScreenGeometry)
 from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig \
     import QVizSavePlotConfig
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView

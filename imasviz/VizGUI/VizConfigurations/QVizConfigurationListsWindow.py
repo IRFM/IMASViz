@@ -20,11 +20,10 @@ from functools import partial
 from PyQt5.QtCore import Qt, pyqtSlot, QObject
 from PyQt5.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
                              QPushButton, QWidget, QSizePolicy, QLabel)
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations, GlobalFonts
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizUtils.QVizGlobalValues import GlobalFonts
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 
 

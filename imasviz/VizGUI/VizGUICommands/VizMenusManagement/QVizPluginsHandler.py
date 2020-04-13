@@ -1,16 +1,15 @@
 
-import importlib, logging
+import logging
 import traceback
 from functools import partial
-from PyQt5.QtCore import QObject, pyqtSlot
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIcons
+from PyQt5.QtCore import pyqtSlot
+from imasviz.VizUtils import GlobalIcons
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from PyQt5.QtWidgets import QAction, QMenu,  QApplication, QMainWindow, QWidget
+from PyQt5.QtWidgets import QAction, QApplication, QMainWindow, QWidget
 
 class MenuIDS:
     def __init__(self):
-        self.PLUGINS_MENU_IDS = [] #list of tuples (Id, menu desc., plugins object)
+        self.PLUGINS_MENU_IDS = []  # list of tuples (Id, menu desc., plugins object)
 
 class QVizPluginsHandler:
 
@@ -24,7 +23,7 @@ class QVizPluginsHandler:
         addedPluginsEntries = {}
 
         pluginsNames = self.pluginsObjects[0]
-        pluginsObjects = self.pluginsObjects[1] #tuple: Plugins names, VizPlugin instances
+        pluginsObjects = self.pluginsObjects[1]  # tuple: Plugins names, VizPlugin instances
 
         for p in pluginsNames:
             addedPluginsEntries[p] = []  # each plugins entry should appear only once in the popup menu
@@ -40,11 +39,12 @@ class QVizPluginsHandler:
             if isinstance(pluginsObject, VizPlugin):
                 entriesList = pluginsObject.getEntries()
             else:
-                entriesList = VizPlugin.getEntriesFor(pluginsName, selectedTreeNode)
+                entriesList = VizPlugin.getEntriesFor(pluginsName,
+                                                      selectedTreeNode)
 
             if entriesList is None or len(entriesList) == 0:
                 continue
-                
+
             for entry in entriesList:
                 if entry not in addedPluginsEntries[pluginsName]:
                     # TODO: properly set ID
@@ -54,7 +54,6 @@ class QVizPluginsHandler:
                     self.menuIDS.PLUGINS_MENU_IDS.append(tuple)
                     addedPluginsEntries[pluginsName].append(entry) #plugins entry should appear only once in the popup menu
 
-        #print self.menuIDS.PLUGINS_MENU_IDS
         for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
             m = self.menuIDS.PLUGINS_MENU_IDS[i]
             pluginsName = m[0]
@@ -73,10 +72,22 @@ class QVizPluginsHandler:
             icon_onPluginHandler = GlobalIcons.getCustomQIcon(QApplication,
                                                               'new')
             action_onPluginHandler = QAction(icon_onPluginHandler,
-                                             pluginsCommandDescription , dataTreeView)
-            action_onPluginHandler.triggered.connect(partial(self.popUpMenuHandler, i, dataTreeView))
+                                             pluginsCommandDescription,
+                                             dataTreeView)
+            action_onPluginHandler.triggered.connect(
+                partial(self.popUpMenuHandler, i, dataTreeView))
+            # Check if pluginsObject contains the 'getDescription' routine
+            if callable(getattr(pluginsObject, "getDescription", None)):
+                # Set message to be displayed in status bar when hovering over
+                # the # action in the pop up menu. Set it only
+                action_onPluginHandler.setStatusTip(
+                    pluginsObject.getDescription())
+                action_onPluginHandler.setToolTip(pluginsObject.getDescription())
+            else:
+                action_onPluginHandler.setStatusTip(pluginsName)
+                action_onPluginHandler.setToolTip(pluginsName)
+            menu.setToolTipsVisible(True)
             menu.addAction(action_onPluginHandler)
-
 
     @pyqtSlot(int)
     def popUpMenuHandler(self, itemId, dataTreeView):

@@ -2,24 +2,27 @@
 import os
 import sys
 import logging
-from PyQt5 import QtWidgets
 from PyQt5 import QtGui
+
 
 class FigureTypes:
     FIGURETYPE = "Figure:"
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
 
+
 class Imas_Viz_Options:
 
     HIDE_EMPTY_SIGNALS = False
     HIDE_OBSOLESCENT_NODES = False
+
 
 class PlotTypes:
     STACKED_PLOT = "STACKED_PLOT"
     TABLE_PLOT = "TABLE_PLOT"
     SIMPLE_PLOT = "SIMPLE_PLOT"
     PREVIEW_PLOT = "PREVIEW_PLOT"
+
 
 class GlobalColors:
     """Global colors
@@ -52,7 +55,6 @@ class GlobalColors:
     TEAL_HEX = '#008080'
     NAVY_HEX = '#000080'
 
-
     def getAvailableColorForNodes(index):
         availableColors = []
         availableColors.append(GlobalColors.BLUE)
@@ -62,6 +64,7 @@ class GlobalColors:
         availableColors.append(GlobalColors.LIGHT_CYAN)
         availableColors.append(GlobalColors.LIGHT_GREY)
         return availableColors[index]
+
 
 class QVizPreferences:
 
@@ -122,9 +125,7 @@ class QVizGlobalValues:
     AUG = "AUG"
     MAST = "MAST"
 
-
     ExternalSources = (MAST, WEST, TCV, JET, AUG)
-
 
     if "VIZ_PRODUCTION" not in os.environ:
         print ("VIZ_PRODUCTION environment variable not defined")
@@ -158,7 +159,7 @@ class QVizGlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.26.0"
+        TESTING_IMAS_VERSION = "3.27.0"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
@@ -172,7 +173,6 @@ class QVizGlobalValues:
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
         os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
-
 
 
 class GlobalIDs:
@@ -229,6 +229,7 @@ class GlobalIDs:
     # PyQt5
     RESULT_EVENT = 9999
 
+
 def getRGBColorList():
     """Get RGB color list for plot lines using hex colors defined in
     GlobalColors.
@@ -255,6 +256,7 @@ def getRGBColorList():
 
     return RGBlist
 
+
 class GlobalFonts:
     """Global fonts.
     """
@@ -272,6 +274,7 @@ class GlobalFonts:
     TEXT_BIG = QFont('Open Sans', 11)
     # TEXT.setStyleHint(QFont.TypeWriter)
 
+
 class GlobalQtStyles:
     """Global Qt styles dictionary.
     """
@@ -285,6 +288,7 @@ class GlobalQtStyles:
                   'Dash Dot Line' : Qt.DashDotLine,
                   'Dash Dot Dot Line' : Qt.DashDotDotLine,
                   'Hide Line': Qt.NoPen}
+
 
 class GlobalPgSymbols:
     """Global pyqtgraph list of symbols.
@@ -304,6 +308,8 @@ class GlobalPgSymbols:
                     'Pentagon'       : 'p',
                     'Hexagon'        : 'h',
                     'Star'           : 'star'}
+
+
 class GlobalIcons:
     """Global IMASViz icons.
     """
@@ -376,4 +382,3 @@ class GlobalIcons:
             QStyleID    (int)          : QStyle icon ID.
         """
         return QtGui.QIcon(application.style().standardIcon(QStyleID))
-

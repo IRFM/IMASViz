@@ -34,12 +34,13 @@ import numpy as np
 import threading
 from threading import Thread, Condition
 from functools import partial
-from PyQt5.QtCore import Qt, QSize, pyqtSlot, QMetaObject
+from PyQt5.QtCore import Qt, pyqtSlot, QMetaObject
 from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
 from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
-    QWidget, QGridLayout, QTextEdit, QPlainTextEdit
+    QWidget, QGridLayout, QPlainTextEdit
 from PyQt5.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
-from imasviz.VizUtils.QVizLogger import QVizLogger
+from imasviz.VizUtils import (QVizLogger, QVizGlobalValues, GlobalIDs,
+                              getWindowSize)
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
@@ -58,8 +59,6 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget \
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues, GlobalIDs, GlobalColors, QVizPreferences
-from imasviz.VizUtils.QVizWindowUtils import getWindowSize
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
     import QVizUnselectAllSignals

@@ -80,8 +80,17 @@ class ETSpluginIMASViz(VizPlugin):
         return None
 
     def getAllEntries(self):
-        # Set a text which will be displayed in the pop-up menu
+        """ Set a text which will be displayed in the pop-up menu.
+        """
         return [(0, 'ETS plugin...')]
+
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "Visualization tool for ETS6 related data. \n"           \
+               "This is ETSViz embedded in IMASViz as a plugin. \n"     \
+               "Authors: Dejan Penko (dejan.penko@lecad.fs.uni-lj.si)."
 
     def isEnabled(self):
         return True

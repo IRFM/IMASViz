@@ -11,15 +11,8 @@
 #     Copyright(c) 2016- L. Fleury, X. Li., D. Penko
 #****************************************************
 
-import time
 import xml.etree.ElementTree as ET
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-
-
-from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QTableWidget, QTableWidgetItem
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QWindow
 
 
 class QVizDisplayCurrentSelection(QVizAbstractCommand):

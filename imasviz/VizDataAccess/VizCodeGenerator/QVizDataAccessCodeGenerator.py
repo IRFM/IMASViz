@@ -1,10 +1,12 @@
 import xml.etree.ElementTree as ET
-import os, sys
+import os
+import sys
 sys.path.append((os.environ['VIZ_HOME']))
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalValues
 
 ggd_warning = 0
+
 
 class QVizDataAccessCodeGenerator:
 
@@ -26,10 +28,11 @@ class QVizDataAccessCodeGenerator:
         self.IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
         XMLtreeIDSDef = ET.parse(self.IDSDefFile)
         fileName = className + ".py"
-        if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] == None:
+        if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] is None:
             print("VIZ_HOME not defined! Exiting procedure.")
             sys.exit()
-        os.chdir(os.environ['VIZ_HOME'] + "/imasviz/VizDataAccess/VizGeneratedCode")
+        os.chdir(os.environ['VIZ_HOME'] +
+                 "/imasviz/VizDataAccess/VizGeneratedCode")
         self.f = open(fileName, 'w')
         self.generateCode(XMLtreeIDSDef, className)
         self.f.close()
@@ -44,7 +47,8 @@ class QVizDataAccessCodeGenerator:
                 continue
             # if name_att != 'equilibrium':
             #     continue
-            print("Generating code for: " + name_att + " from: " + self.IDSDefFile)
+            print("Generating code for: " + name_att + " from: " +
+                  self.IDSDefFile)
 
             ids.text = name_att
             if i == 0:
@@ -78,13 +82,13 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('try:', 1)
 
                 self.printCode("idsData = None", 2)
-                #print('-------->name_att')
-                #print (name_att)
+                # print('-------->name_att')
+                # print (name_att)
                 for ids2 in root:
                     name_att2 = ids2.get('name')
                     if name_att2 is None:
                         continue
-                    #print('name_att2')
+                    # print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 2)
                     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
                                    "'" + name_att2 + "' +  ' IDS'", 3)
@@ -92,9 +96,9 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("t1 = time.time()", 3)
                     self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 3)  # get the data from the database for the ids"
                     self.printCode("t2 = time.time()", 3)
-                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')",3)
+                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')", 3)
 
-                    #self.printCode("print ('Get operation ended')", 2)
+                    # self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
                     self.printCode("t3 = time.time()", 3)
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 3)
@@ -111,14 +115,13 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('logging.error("An attribute error has occurred. This means that IMASViz is using a wrong data parser ' +
                                'for the current IMAS data entry. This error can occur for IMAS data entries created with an old version of the Access Layer.' +
                                ' Update the DD version (field ids_properties.version_put.data_dictionary) of ' +
-                                'at least one IDS found in the current data entry, IMASViz will then pick the right parser.' +
+                               'at least one IDS found in the current data entry, IMASViz will then pick the right parser.' +
                                ' ")', 2)
                 self.printCode("self.progressBar.hide()", 2)
                 self.printCode('except Exception as exception:', 1)
                 self.printCode('logging.error(exception, exc_info=True)', 2)
                 self.printCode("self.progressBar.hide()", 2)
                 self.printCode('\n', -1)
-
 
             self.printCode('def load_' + name_att + "(self, IDSName, occurrence):" + '\n', 0)
             self.printCode("IDSName = '" + name_att + "'", 1)
@@ -128,7 +131,7 @@ class QVizDataAccessCodeGenerator:
             self.generateParentsCode(1, ids.text)
             self.printCode("return parent", 1)
             self.printCode('',-1)
-            i+=1
+            i += 1
 
     def generateParentsCode(self, level, path):
         path = self.replaceIndices(path)
@@ -140,30 +143,30 @@ class QVizDataAccessCodeGenerator:
         code1 = "parents['" + path + "'] = parent"
         self.printCode(code1, level + 1)
 
-    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel, parents, s, index, idsName):
+    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel,
+                           parents, s, index, idsName):
         global ggd_warning
         for ids_child_element in child:
             index += 1
             data_type = ids_child_element.get('data_type')
 
             if data_type == 'structure':
+                ids_child_element.text = child.text + '.' + ids_child_element.get('name')
 
-                 ids_child_element.text = child.text + '.' + ids_child_element.get('name')
+                self.generateParentsCode(level, child.text)
 
-                 self.generateParentsCode(level, child.text)
+                parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
+                self.printCode(parentCode, level)
 
-                 parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
-                 self.printCode(parentCode, level)
-
-                 units = ids_child_element.get('units')
-                 if units != None:
-                     code = "parent.set(" + "'units', '" + units + "')"
-                     self.printCode(code, level)
-                 if units == "as_parent":
-                     parent_units = child.get('units')
-                     if parent_units is not None:
-                         code = "parent.set(" + "'units', '" + parent_units + "')"
-                         self.printCode(code, level)
+                units = ids_child_element.get('units')
+                if units != None:
+                    code = "parent.set(" + "'units', '" + units + "')"
+                    self.printCode(code, level)
+                if units == "as_parent":
+                    parent_units = child.get('units')
+                    if parent_units is not None:
+                        code = "parent.set(" + "'units', '" + parent_units + "')"
+                        self.printCode(code, level)
 
                  documentation = ids_child_element.get('documentation')
                  if documentation != None:

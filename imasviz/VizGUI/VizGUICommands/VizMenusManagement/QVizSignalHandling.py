@@ -10,7 +10,7 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #  TODO:
 #
 #    - Function definitions (from SignalHandling class)
@@ -18,19 +18,16 @@
 #    def showStackedPlotViewsManager
 #    def # onClose
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury, L. Xinyi, D. Penko
-#****************************************************
+# ****************************************************
 
 from functools import partial
 import re, logging
 from PyQt5.QtCore import QObject, pyqtSlot
-from PyQt5.QtWidgets import QAction, QMenu, QWidget, QApplication, QStyle
-from PyQt5.QtGui import QIcon
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
-from imasviz.VizUtils.QVizGlobalValues import GlobalIcons, QVizPreferences
+from PyQt5.QtWidgets import QAction, QMenu, QApplication, QStyle
+from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView
@@ -40,9 +37,9 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPreviewPlotSignal import QViz
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
-from imasviz.VizUtils.QVizGlobalValues import FigureTypes
+from imasviz.VizUtils import FigureTypes
+
 
 class QVizSignalHandling(QObject):
     def __init__(self, dataTreeView):
@@ -791,7 +788,7 @@ class QVizSignalHandling(QObject):
         subWindow.resize(plotWidget.width(), plotWidget.height())
 
         self.getMDI().addSubWindow(subWindow)
-        
+
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
         """Add/Plot selected signals to existing figure.

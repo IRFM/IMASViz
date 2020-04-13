@@ -20,10 +20,9 @@ import sys
 # PyQt library imports
 from PyQt5.QtWidgets import QApplication
 # IMASViz source imports
-from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 # Set object managing the PyQt GUI application's control flow and main
 # settings

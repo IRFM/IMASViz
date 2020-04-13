@@ -1,8 +1,6 @@
 
 import numpy as np
 
-from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
-
 
 class QVizTSDataAccess:
     def __init__(self, dataSource):
@@ -13,7 +11,8 @@ class QVizTSDataAccess:
         shotNumber = treeNode.getShotNumber()
 
         try:
-            if signalName is None: return
+            if signalName is None:
+                return
             signalName.strip()
             if signalName.startswith("'") and signalName.endswith("'"):
                 signalName = signalName[1:-1]
@@ -22,7 +21,8 @@ class QVizTSDataAccess:
             # print expr
             r = self.conn.get('execute($)', expr).data()
             # print r
-            expr = 'dim_of(gettsbase(' + str(shotNumber) + ', "' + signalName + '"))'
+            expr = 'dim_of(gettsbase(' + str(shotNumber) + ', "' + \
+                   signalName + '"))'
             # print expr
             t = self.conn.get('execute($)', expr).data()
             # print t
@@ -33,9 +33,11 @@ class QVizTSDataAccess:
             if len(t.shape) == 1:
                 t = np.array([t])
 
-            return (t,r)
+            return (t, r)
+
         except:
-            raise ValueError("Error while getting the shape of signal " + signalName + " - signal not found ?")
+            raise ValueError("Error while getting the shape of signal " +
+                             signalName + " - signal not found ?")
 
     def GetShapeofSignal(self, selectedNodeData, shotNumber):
         try:
@@ -58,8 +60,10 @@ class QVizTSDataAccess:
                 t = np.array([t])
 
             return r.shape, t.shape
+
         except:
-            raise ValueError("Error while getting the shape of signal " + signalName + " - signal not found ?")
+            raise ValueError("Error while getting the shape of signal " +
+                             signalName + " - signal not found ?")
 
 # if __name__ == "__main__":
 #     import os

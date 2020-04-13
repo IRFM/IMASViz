@@ -92,6 +92,13 @@ class ToFuPlugin(VizPlugin):
     def getAllEntries(self):
         return [(0, 'tofu - geom...'), (1, 'tofu - data')] #(config number, description)
 
+    def getDescription(self):
+        """ Return plugin description.
+        """
+
+        return "Tofu plugin for IMASViz."
+
+
     def isEnabled(self):
         try:
             if tf.__version__ >= '1.4.2':

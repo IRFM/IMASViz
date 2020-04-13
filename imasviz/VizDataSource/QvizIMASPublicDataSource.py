@@ -1,8 +1,6 @@
 import imas
-from PyQt5.QtWidgets import QTreeWidgetItem, QProgressBar
+from PyQt5.QtWidgets import QProgressBar
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGeneratedClassFactory
-from imasviz.VizUtils.QVizGlobalValues import GlobalColors
-import logging
 
 
 class QVizIMASPublicDataSource(QVizIMASDataSource):
