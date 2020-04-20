@@ -45,6 +45,8 @@ class QVizPlotConfigUI(QDialog):
         elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.qWidgetParent.pg.legend
+        elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
+            self.legendItem = None
         else:
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
@@ -981,6 +983,8 @@ class TabPlotDesignProperties(QWidget):
                 pwg = self.viewBox.qWidgetParent.pg
                 plots = pg.listDataItems()
             elif "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
+                return
+            elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
                 return
             else:
                 pwg = self.viewBox.qWidgetParent.pgPlotWidget

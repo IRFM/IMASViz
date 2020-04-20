@@ -83,9 +83,15 @@ class QVizTreeNode(QTreeWidgetItem):
         elif self.is1DAndDynamic():
             if self.embedded_in_time_dependent_aos() or self.isCoordinateTimeDependent(coordinateNumber=1):
                 return True
+        elif self.is2DAndDynamic():
+            if self.embedded_in_time_dependent_aos() or self.isCoordinateTimeDependent(coordinateNumber=2):
+                return True
         return False
 
     def isPlotToPerformAlongTimeAxis(self, plotWidget):
+
+        if plotWidget is None:
+            return self.hasTimeAxis()
 
         if plotWidget.getStrategy() == "TIME":
             if not self.hasTimeAxis():
@@ -522,10 +528,11 @@ class QVizTreeNode(QTreeWidgetItem):
         time_index = 0
         coordinate_index = 0
 
-        if plotWidget.addTimeSlider:
-            time_index = plotWidget.sliderGroup.slider.value()
-        elif plotWidget.addCoordinateSlider:
-            coordinate_index = plotWidget.sliderGroup.slider.value()
+        if plotWidget is not None:
+            if plotWidget.addTimeSlider:
+                time_index = plotWidget.sliderGroup.slider.value()
+            elif plotWidget.addCoordinateSlider:
+                coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if self.is0DAndDynamic():
             label = None
@@ -542,8 +549,7 @@ class QVizTreeNode(QTreeWidgetItem):
             xlabel2 = None
             coordinateNumber = 1
             label = self.setLabelForFigure(dataTreeView.dataSource)
-            if self.coordinates[coordinateNumber - 1] == "1..N" or \
-                    self.coordinates[coordinateNumber - 1] == "1...N":
+            if "1.." in self.coordinates[coordinateNumber - 1]:
                 xlabel2 = "1..N"
             else:
                 if self.isPlotToPerformAlongTimeAxis(plotWidget):
@@ -581,3 +587,44 @@ class QVizTreeNode(QTreeWidgetItem):
         xlabel = xlabel.replace('itime', str(time_index))
 
         return label, xlabel, ylabel, title
+
+
+    def labels(self, plotWidget, coordinateNumber, coordinate_index, time_index):
+
+        xlabel = None
+        label = self.setLabelForFigure(self.getDataTreeView().dataSource)
+
+        if "1.." in self.coordinates[coordinateNumber - 1]:
+            xlabel = "1..N"
+        else:
+            if self.isPlotToPerformAlongTimeAxis(plotWidget):
+                if self.embedded_in_time_dependent_aos():
+                    xlabel = 'time'
+                    label = label.replace('itime', str(':')) + '[' + str(coordinate_index) + ']'
+                else:
+                    if self.hasHomogeneousTime():
+                        xlabel = 'time'
+                    else:
+                        xlabel = self.getIDSName() + "." + \
+                                 self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                    label = label.replace('itime', str(':'))
+            else:
+                label = label.replace('itime', str(time_index))
+                if self.isCoordinateTimeDependent(coordinateNumber=coordinateNumber):
+
+                    if self.hasHomogeneousTime():
+                        xlabel = 'time'
+                    else:
+                        xlabel = self.getIDSName() + "." + \
+                                  self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                else:
+                    xlabel = self.getIDSName() + "." + \
+                              self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+
+        label = QVizGlobalOperations.makeIMASPath(label)
+
+        if xlabel == 'time' or xlabel.endswith('.time'):
+            xlabel += '[s]'
+
+        xlabel = xlabel.replace('itime', str(time_index))
+        return label, xlabel

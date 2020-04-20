@@ -17,6 +17,7 @@ from PyQt5.QtCore import Qt, QMetaObject
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 from imasviz.VizUtils import GlobalFonts, PlotTypes
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
 
 
 class QVizPreviewPlotWidget(QWidget):
@@ -58,6 +59,9 @@ class QVizPreviewPlotWidget(QWidget):
     def getStrategy(self):
         return self.plotStrategy
 
+    def plot2D(self, data):
+        self.pg2dPlotWidget.addPlot(data)
+
     def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
@@ -86,15 +90,21 @@ class QVizPreviewPlotWidget(QWidget):
         self.pgPlotWidget.showGrid(x=True, y=True)
         return self
 
-    def clear(self, noPreviewAvailable=False):
+    def clear(self, treeNode, noPreviewAvailable=False):
         """Clear the widgets plot.
         """
         self.pgPlotWidget.clear()
         if noPreviewAvailable:
             self.pgPlotWidget.setVisible(False)
+            self.pg2dPlotWidget.setVisible(False)
             self.noPreviewLabel.setVisible(True)
-        else:
+        elif treeNode.is0D() or treeNode.is1D():
             self.pgPlotWidget.setVisible(True)
+            self.pg2dPlotWidget.setVisible(False)
+            self.noPreviewLabel.setVisible(False)
+        elif treeNode.is2D():
+            self.pgPlotWidget.setVisible(False)
+            self.pg2dPlotWidget.setVisible(True)
             self.noPreviewLabel.setVisible(False)
 
     def setContents(self):
@@ -104,6 +114,8 @@ class QVizPreviewPlotWidget(QWidget):
         # Set layout
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName("gridLayout")
+        # Set layout marigin (left, top, right, bottom)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
 
         # Set plotwidget (use IMASViz custom plot context menu)
         self.pgPlotWidget = pg.PlotWidget(self,
@@ -111,6 +123,15 @@ class QVizPreviewPlotWidget(QWidget):
         self.pgPlotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)
         # self.pgPlotWidget.addLegend()
+
+        # Add widgets to layout
+        self.gridLayout.addWidget(self.pgPlotWidget, 1, 0, 1, 1)
+
+
+        # Set plotwidget (use IMASViz custom plot context menu)
+        self.pg2dPlotWidget = QvizPlotImageWidget(rows=1, columns=1, size=(400, 200), dataTreeView=None)
+        # Add widgets to layout
+        self.gridLayout.addWidget(self.pg2dPlotWidget, 1, 0, 1, 1)
 
         # Set menu bar
         # Note: Currently disabled as there are no features for preview plot
@@ -120,12 +141,6 @@ class QVizPreviewPlotWidget(QWidget):
 
         # Set checkbox for toggling mouse
         #checkBox = self.customUI()
-
-        # Set layout marigin (left, top, right, bottom)
-        self.gridLayout.setContentsMargins(0, 0, 0, 0)
-
-        # Add widgets to layout
-        self.gridLayout.addWidget(self.pgPlotWidget, 1, 0, 1, 1)
 
         self.noPreviewLabel = QLabel()
         self.noPreviewLabel.setText("No preview available")

@@ -16,17 +16,7 @@ import logging
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
-from imasviz.VizGUI.VizPlot import QVizPlotWidget
-from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame, QVizDataTreeView
-from imasviz.VizGUI.VizGUICommands.VizPlotting import (QVizPlotSelectedSignals,
-                                                       QVizPlotSignal)
-from imasviz.VizGUI.VizGUICommands import (QVizSelectSignals,
-                                           QVizSelectSignalsGroup,
-                                           QVizUnselectAllSignals,
-                                           QVizLoadSelectedData)
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
-from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
-from imasviz.VizGUI.VizWidgets import QVizNodesSelectionWindow
+
 from PyQt5.QtWidgets import QMdiSubWindow
 
 
@@ -116,6 +106,7 @@ class Viz_API:
         :param dataSource: A QVizIMASDataSource object
         :returns:          A QVizDataTreeViewFrame object
         """
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         if QVizGlobalValues.TESTING:
             IMAS_VERSION = QVizGlobalValues.TESTING_IMAS_VERSION
         else:
@@ -146,6 +137,7 @@ class Viz_API:
         :param dataTreeView: (obj) A QVizDataTreeView or a
                                    QVizDataTreeViewFrame object
         """
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeView, QVizDataTreeViewFrame
         if isinstance(dataTreeView, QVizDataTreeViewFrame):
 
             # If MDI is present, add the DTV to it as a subwindow
@@ -168,6 +160,8 @@ class Viz_API:
 
         :param DTV (obj): A QVizDataTreeView or a QVizDataTreeViewFrame object
         """
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
+        from imasviz.VizGUI.VizWidgets import QVizNodesSelectionWindow
         dataTreeView = DTV
         if isinstance(DTV, QVizDataTreeViewFrame):
             dataTreeView = DTV.dataTreeView
@@ -180,6 +174,7 @@ class Viz_API:
         :param DTV: A QVizDataTreeViewFrame or QVizDataTreeView object
         :returns: (list) A list of QVizTreeNode objects.
         """
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         dataTreeView = DTV
         if isinstance(DTV, QVizDataTreeViewFrame):
             dataTreeView = DTV.dataTreeView
@@ -197,6 +192,7 @@ class Viz_API:
         :param DTV: A QVizDataTreeViewFrame or QVizDataTreeView object
         :returns: (list) A list of signals (nodes) dictionaries.
         """
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         dataTreeView = DTV
         if isinstance(DTV, QVizDataTreeViewFrame):
             dataTreeView = DTV.dataTreeView
@@ -352,6 +348,7 @@ class Viz_API:
         """
         # if figureKey is None:
         #     figureKey = self.GetNextKeyForFigurePlots()
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSelectedSignals
         QVizPlotSelectedSignals(dataTreeView=dataTreeFrame.dataTreeView,
                                 figureKey=figureKey,
                                 update=update,
@@ -368,6 +365,7 @@ class Viz_API:
         :param all_DTV:       When True, all current selected set of signals
                               on all shot views are plotted
         """
+        from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
         QVizSignalHandling(dataTreeFrame.dataTreeView). \
             onPlotToTablePlotView(all_DTV, strategy=strategy)
 
@@ -382,6 +380,7 @@ class Viz_API:
         :param all_DTV: When True, all current selected set of signals on all
                         shot views are plotted
         """
+        from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
         QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
             all_DTV=all_DTV,
             configFile=configFilePath,
@@ -411,6 +410,8 @@ class Viz_API:
         :param occurrence: (int) Occurrence of the IDS
         :param threadingEvent: If True, data are loaded from a new Thread
         """
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
+        from imasviz.VizGUI.VizGUICommands import QVizLoadSelectedData
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName,
                                  occurrence, threadingEvent).execute()
@@ -427,6 +428,7 @@ class Viz_API:
                                            ['magnetics/flux_loop(0)/flux/data'])
                                            pathsMap['occurrences'] : a list of occurrences
         """
+        from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
         QVizSelectSignals(DTV.dataTreeView, pathsMap).execute()
 
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None,
@@ -440,6 +442,7 @@ class Viz_API:
         """
         # figureKey, plotWidget = self.GetPlotWidget(dataTreeView=self.dataTreeView,
         #                                            figureKey=figureKey)
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSelectedSignals
         i = 0
         update = 0
         for f in dataTreeFramesList:
@@ -458,6 +461,7 @@ class Viz_API:
         :param all_DTV: When True, all selected signals from all shot views are
                         unselected
         """
+        from imasviz.VizGUI.VizGUICommands import  QVizUnselectAllSignals
         QVizUnselectAllSignals(dataTreeFrame.dataTreeView, all_DTV=all_DTV).execute()
 
     def SelectSignalsGroup(self, dataTreeFrame, occurrence, onePathInTheGroup):
@@ -472,6 +476,7 @@ class Viz_API:
                                       Example:
                                       'magnetics/flux_loop(0)/flux/data'
         """
+        from imasviz.VizGUI.VizGUICommands import  QVizSelectSignalsGroup
         QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,
                                dataTreeFrame.dataTreeView.selectedItem).execute()
 
@@ -506,18 +511,23 @@ class Viz_API:
         return availableOccurrences
 
     def GetDataSource(self, dataTreeFrame):
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             return dataTreeFrame.parent.dataSource
         else:
             return dataTreeFrame.dataSource
 
     def GetIMASDataEntry(self, dataTreeFrame, occurrence):
+        from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             return self.GetDataSource(dataTreeFrame.parent).ids[occurrence]
         else:
             return self.GetDataSource(dataTreeFrame).ids[occurrence]
 
     def CreatePlotWidget(self, dataTreeView, strategy="DEFAULT"):
+
+        from imasviz.VizGUI.VizPlot import QVizPlotWidget
+
         figureKey = self.GetNextKeyForFigurePlots()
 
         addTimeSlider = False
@@ -549,6 +559,7 @@ class Viz_API:
 
     def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
                   coordinate1_index=0, time_index=None, plotWidget=None):
+        from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
             return signalDataAccess.GetSignal(treeNode=vizTreeNode,
@@ -574,6 +585,7 @@ class Viz_API:
                                          e.time_slice[n].profiles_1d.phi[i])
         """
         # Get currently selected QVizTreeNode (QTreeWidgetItem)
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
         try:
             treeNode = dataTreeView.selectedItem
             # Get signal node index
@@ -599,6 +611,7 @@ class Viz_API:
     def plot0D_DataVsTimeCommand(self, dataTreeView):
         """Plotting of 0D data nodes, found within timed AOS
         """
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
         try:
             # Get currently selected QVizTreeNode (QTreeWidgetItem)
             treeNode = dataTreeView.selectedItem
@@ -631,6 +644,7 @@ class Viz_API:
                                       replace the current plot in figure
                                       window.
         """
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
         try:
 
             # Get label, title and xlabel
@@ -686,6 +700,7 @@ class Viz_API:
             treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
                                       replace the current plot in figure window.
         """
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
         try:
             currentFigureKey, plotWidget = \
                 self.GetPlotWidget(dataTreeView=dataTreeView,

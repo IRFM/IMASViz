@@ -33,7 +33,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSig
 
 class QVizPreviewPlotSignal(QVizAbstractCommand):
 
-    def __init__(self, dataTreeView, treeNode = None, signal = None,
+    def __init__(self, dataTreeView, treeNode = None,
                  title = '', label = None, xlabel = None, signalHandling = None):
 
         self.exists = None
@@ -41,11 +41,6 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
         QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
         self.signalHandling = signalHandling
-
-        if signal is None:
-            signal = self.get1DArrayData()
-
-        self.signal = signal
 
         # Set widget window title
         self.title = 'Preview Plot'
@@ -57,28 +52,34 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
         self.xlabel = xlabel
 
-    def get1DArrayData(self):
+
+    def getData(self):
         return self.dataTreeView.imas_viz_api.GetSignal(self.dataTreeView, self.treeNode,
                                                         plotWidget=self.getPlotWidget())
 
     def execute(self):
         try:
-            if not (self.treeNode.is1D() or self.treeNode.is0D()):
-                self.getPlotWidget().clear(noPreviewAvailable=True)
+            data = self.getData()
+
+            if not (self.treeNode.is1D() or self.treeNode.is0D() or self.treeNode.is2D()):
+                self.getPlotWidget().clear(self.treeNode, noPreviewAvailable=True)
                 return
-            elif self.signal is None:
+            elif data is None:
                 return
 
-            if len(self.signal) == 2:
-                t = QVizPreviewPlotSignal.getTime(self.signal)
-                v = QVizPreviewPlotSignal.get1DSignalValue(self.signal)
-                if len(t[0]) != len(v[0]):
+            if self.treeNode.is0D() or self.treeNode.is1D():
+                t = data[0]
+                v = data[1]
+                if len(t[0]) !=len(v[0]):
                     raise ValueError("Data can not be previewed, x and y shapes are different.")
                 self.plot1DSignal(shotNumber=self.dataTreeView.shotNumber,
                                   t=t, v=v, title=self.title,
                                   label=self.label, xlabel=self.xlabel)
+
+            elif self.treeNode.is2D():
+                self.plot2DImage(data) #coordinates, np.array([rval]), coordinate_of_time
             else:
-                raise ValueError("Warning! Only 1D plots are currently supported.")
+                raise ValueError("Warning! Only 1D and 2D plots are currently supported.")
         except ValueError as e:
             logging.error(str(e))
 
@@ -92,16 +93,18 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             raise ValueError(error)
         return plotWidget
 
-    @staticmethod
-    def getTime(oneDimensionSignal):
-        return oneDimensionSignal[0]
-
-    @staticmethod
-    def get1DSignalValue(oneDimensionSignal):
-        """Returns the signal values of a 1D signal returned by
-           get1DSignal(signalName, shotNumber)
-        """
-        return oneDimensionSignal[1]
+    def plot2DImage(self, data):
+        try:
+            # Get the preview plot widget
+            plotWidget = self.getPlotWidget()
+            # Clear the preview plot widget (should contain only one plot at
+            # a time)
+            plotWidget.clear(self.treeNode)
+            plotWidget.plot2D(data)
+            plotWidget.update()
+        except:
+            traceback.print_exc(file=sys.stdout)
+            raise
 
     def plot1DSignal(self, shotNumber, t, v, title='', label=None,
                      xlabel=None):
@@ -119,10 +122,10 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
         try:
             # Get the preview plot widget
-            self.plotWidget = self.getPlotWidget()
+            plotWidget = self.getPlotWidget()
             # Clear the preview plot widget (should contain only one plot at
             # a time)
-            self.plotWidget.clear()
+            plotWidget.clear(self.treeNode)
 
             # Shape of the signal
             nbRows = v.shape[0]
@@ -130,15 +133,15 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             # Set plot options
             label, xlabel, ylabel, title = \
                 self.dataTreeView.selectedItem.plotOptions(self.dataTreeView,label=label,
-                                 xlabel=xlabel, title=title, plotWidget=self.plotWidget)
+                                 xlabel=xlabel, title=title, plotWidget=plotWidget)
             # Get plottable data
             u = v[0]    # first (should be the only) array of physical
                         # quantity values
             ti = t[0]   # first (should be the only) array of time values
             # Create plot
-            self.plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+            plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
-            self.plotWidget.update()
+            plotWidget.update()
         except:
             traceback.print_exc(file=sys.stdout)
             raise
