@@ -68,53 +68,33 @@ class QvizPlotImageWidget(QWidget):
         self.column += 1
 
     def addPlotAt(self, row, column, dataArrayHandle):
-
         y = dataArrayHandle.arrayValues
         coordinate_of_time = dataArrayHandle.getTimeCoordinateDim()
         time_array = dataArrayHandle.getTimeCoordinateArray() #can be None
         #print(len(time_array))
         #print(np.shape(y))
         ii = pg.ImageItem(y)
-        pwdg = None
         pgw = pg.GraphicsLayoutWidget(parent=self)
+        plotItem = None
 
         if coordinate_of_time is None:
-            #pwdg = pg.PlotWidget(self)
             plotItem = pgw.addPlot(0,0)
-            plotItem.addItem(ii)
         else:
             orientation = 'left' #if coordinate_of_time == 2
             if coordinate_of_time == 1:
                 orientation = 'bottom'
             time_axis = TimeAxisItem(time_array, orientation=orientation)
-            #pwdg = pg.PlotWidget(self, axisItems={orientation:time_axis})
             plotItem = pgw.addPlot(row=0,col=0, axisItems={orientation:time_axis})
-            plotItem.addItem(ii)
-            #plotItem.axes[orientation] = time_axis
 
-        # plotItem = pwdg.getPlotItem()
-        # plotItem.addItem(ii)
-
+        plotItem.addItem(ii)
         self.manageTimeAxis(dataArrayHandle, coordinate_of_time=coordinate_of_time, plotItem=plotItem)
 
         histo = pg.HistogramLUTItem(image=ii)
-
-        #component_gridLayout = QGridLayout()
-        #component_gridLayout.setSpacing(0)
-        #component_gridLayout.setContentsMargins(0, 0, 0, 0)
-        #self.gridLayout.addLayout(component_gridLayout, row, column)
-
-        #component_gridLayout.addWidget(pwdg, 0, 0, 1, 1)
-
         pgw.addItem(histo, 0, 1)
-        #component_gridLayout.addWidget(pgw, 1, 0, 1, 1)
-
-        roi = self.addROI(pgw, y, imageItem=ii)
-        self.slice_plot = pg.PlotWidget(self)
-
-        #component_gridLayout.addWidget(self.slice_plot, 1, 0, 1, 2)
-        #print(np.shape(self.roi.getArrayRegion(self.y, self.ii)))
+        roi = self.addROI(plotItem, y, imageItem=ii)
+        self.slice_plotItem = pgw.addPlot(1, 0, 1, 2)
         self.roiChanged(roi, y, imageItem=ii)
+        self.gridLayout.addWidget(pgw,  row, column)
 
         # Number of current plots
         self.num_plots += 1
@@ -128,11 +108,10 @@ class QvizPlotImageWidget(QWidget):
 
 
     def roiChanged(self, roi, data, imageItem):
-        self.slice_plot.clear()
+        self.slice_plotItem.clear()
         slice = roi.getArrayRegion(data, imageItem)
-        self.slice_plot.plot(x=np.asarray(range(0, len(data[:,0]))), y=slice[:,0])
-
-         #print(np.shape(roi.getArrayRegion(data, img)))
+        self.slice_plotItem.plot(x=np.asarray(range(0, len(data[:,0]))), y=slice[:,0])
+        #print(np.shape(roi.getArrayRegion(data, img)))
 
     def manageTimeAxis(self, dataArrayHandle, coordinate_of_time, plotItem):
 
