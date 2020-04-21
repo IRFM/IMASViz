@@ -26,7 +26,8 @@ class QvizPlotImageWidget(QWidget):
     """QvizPlotImageWidget containing pyqtgraph ImageView.
     """
 
-    def __init__(self, dataTreeView, rows=1, columns=1, parent=None, size=(400, 200), title='QvizPlotImageWidget'):
+    def __init__(self, dataTreeView, rows=1, columns=1, plotSlideFromROI=False,
+                 parent=None, size=(400, 200), title='QvizPlotImageWidget'):
         super(QvizPlotImageWidget, self).__init__(parent)
 
         self.dataTreeView = dataTreeView
@@ -48,6 +49,7 @@ class QvizPlotImageWidget(QWidget):
         self.row = 0
         self.column = 0
         self.num_plots = 0
+        self.plotSlideFromROI = plotSlideFromROI
         # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
         self.setContents()
 
@@ -68,12 +70,12 @@ class QvizPlotImageWidget(QWidget):
         self.column += 1
 
     def addPlotAt(self, row, column, dataArrayHandle):
-        y = dataArrayHandle.arrayValues
+        data = dataArrayHandle.arrayValues
         coordinate_of_time = dataArrayHandle.getTimeCoordinateDim()
         time_array = dataArrayHandle.getTimeCoordinateArray() #can be None
         #print(len(time_array))
         #print(np.shape(y))
-        ii = pg.ImageItem(y)
+        imageItem = pg.ImageItem(data)
         pgw = pg.GraphicsLayoutWidget(parent=self)
         plotItem = None
 
@@ -86,20 +88,20 @@ class QvizPlotImageWidget(QWidget):
             time_axis = TimeAxisItem(time_array, orientation=orientation)
             plotItem = pgw.addPlot(row=0,col=0, axisItems={orientation:time_axis})
 
-        plotItem.addItem(ii)
+        plotItem.addItem(imageItem)
         self.manageTimeAxis(dataArrayHandle, coordinate_of_time=coordinate_of_time, plotItem=plotItem)
 
-        histo = pg.HistogramLUTItem(image=ii)
+        histo = pg.HistogramLUTItem(image=imageItem)
         pgw.addItem(histo, 0, 1)
-        roi = self.addROI(plotItem, y, imageItem=ii)
-        self.slice_plotItem = pgw.addPlot(1, 0, 1, 2)
-        self.roiChanged(roi, y, imageItem=ii)
-        self.gridLayout.addWidget(pgw,  row, column)
+        if self.plotSlideFromROI:
+            roi = self.addROI(pgw, plotItem, data, imageItem=imageItem)
+        self.gridLayout.addWidget(pgw, row, column)
 
         # Number of current plots
         self.num_plots += 1
 
-    def addROI(self, plotItem, data, imageItem):
+    def addROI(self, pgw, plotItem, data, imageItem):
+        self.slice_plotItem = pgw.addPlot(1, 0, 1, 2)
         roi = pg.RectROI(maxBounds=QRectF(0, 0, len(data[:,0]), len(data[0,:])), pos=(0,0), size=(len(data[:,0]), 70),
                          pen=pg.mkPen(pg.mkColor(255,0,0)), scaleSnap=True, snapSize=5)
         plotItem.getViewBox().addItem(roi)

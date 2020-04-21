@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from imasviz.VizUtils import QVizGlobalOperations, PlotTypes
-from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
+from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates, QVizTimedDataArrayHandle
 
 class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
@@ -28,8 +28,10 @@ class QVizIMASNativeDataAccess:
             coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if as_function_of_time:
+
             if treeNode.is0DAndDynamic():
                 return self.GetSignalVsTime(treeNode, coordinate_index)
+
             elif treeNode.is1DAndDynamic():
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
@@ -174,7 +176,7 @@ class QVizIMASNativeDataAccess:
             traceback.print_exc(file=sys.stdout)
             raise
 
-    def GetSignalVsTime(self, treeNode, index):
+    def GetSignalVsTime(self, treeNode, coordinate_index):
         """Function for getting values of dynamic arrays whose values are
         defined in time slices (dynamic AOSs).
         """
@@ -194,14 +196,27 @@ class QVizIMASNativeDataAccess:
             for i in range(0, time_slices_count):
                 # Get values of the array at index
                 value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
-                                      str(index) + ']')
+                                      str(coordinate_index) + ']')
                 v.append(value_at_index)
 
             rarray = np.array([np.array(v)])
             tarray = np.array([time])
             return tarray, rarray
         elif treeNode.is2DAndDynamic:
-            raise ValueError('2D arrays in dynamic AOS not yet supported')
+            #we assume that coordinate_index is a 2 length tuple
+            # Get list of paths of arrays through time slices
+            data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
+            time_slices_count = len(data_path_list)
+            v = []
+            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            for i in range(0, time_slices_count):
+                # Get values of the array at index
+                value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
+                                      str(coordinate_index[0]) + ',' + str(coordinate_index[1]) + ']')
+                v.append(value_at_index)
+
+            return QVizTimedDataArrayHandle(np.asarray(v), np.asarray(time))
+            #raise ValueError('2D arrays in dynamic AOS not yet supported')
 
     def Get0DSignalVsTime(self, treeNode):
         """Function intended for plotting 0D dynamic arrays whose values are
