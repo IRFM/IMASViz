@@ -24,7 +24,7 @@ class QVizGeneratedClassFactory:
 
         imas_dd_version = self.IMASDataSource.data_dictionary_version
 
-        if imas_dd_version is None or imas_dd_version is '':
+        if imas_dd_version is None or imas_dd_version == '':
             imas_dd_version = os.environ['IMAS_VERSION']
 
         if QVizGlobalValues.TESTING:
@@ -32,67 +32,7 @@ class QVizGeneratedClassFactory:
 
         if QVizPreferences.Ignore_GGD == 0:
 
-            if imas_dd_version == "3.7.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_7_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_7_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.9.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_9_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_9_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.9.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_9_1 \
-                    import IDSDef_XMLParser_Full_Generated_3_9_1 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.11.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_11_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_11_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.12.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_12_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_12_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.15.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_15_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_15_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.15.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_15_1 \
-                    import IDSDef_XMLParser_Full_Generated_3_15_1 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.16.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_16_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_16_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.17.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_17_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_17_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.17.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_17_1 \
-                    import IDSDef_XMLParser_Full_Generated_3_17_1 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.17.2":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_17_2 \
-                    import IDSDef_XMLParser_Full_Generated_3_17_2 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.18.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_18_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_18_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.19.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_19_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_19_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.19.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_19_1 \
-                    import IDSDef_XMLParser_Full_Generated_3_19_1 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.20.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_20_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_20_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.21.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_21_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_21_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.21.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_21_1 \
-                    import IDSDef_XMLParser_Full_Generated_3_21_1 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.22.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_22_0 \
-                    import IDSDef_XMLParser_Full_Generated_3_22_0 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.23.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_23_1 \
-                    import IDSDef_XMLParser_Full_Generated_3_23_1 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.23.2":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_23_2 \
-                    import IDSDef_XMLParser_Full_Generated_3_23_2 as IDSDef_XMLParser_Full_Generated
-            elif imas_dd_version == "3.23.3":
+            if imas_dd_version == "3.23.3":
                 from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Full_Generated_3_23_3 \
                     import IDSDef_XMLParser_Full_Generated_3_23_3 as IDSDef_XMLParser_Full_Generated
             elif imas_dd_version == "3.24.0":
@@ -134,68 +74,7 @@ class QVizGeneratedClassFactory:
                 asynch=self.asynch)
 
         else:
-
-            if imas_dd_version == "3.7.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_7_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_7_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.9.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_9_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_9_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.9.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_9_1 \
-                    import IDSDef_XMLParser_Partial_Generated_3_9_1 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.11.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_11_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_11_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.12.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_12_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_12_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.15.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_15_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_15_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.15.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_15_1 \
-                    import IDSDef_XMLParser_Partial_Generated_3_15_1 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.16.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_16_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_16_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.17.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_17_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_17_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.17.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_17_1 \
-                    import IDSDef_XMLParser_Partial_Generated_3_17_1 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.17.2":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_17_2 \
-                    import IDSDef_XMLParser_Partial_Generated_3_17_2 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.18.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_18_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_18_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.19.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_19_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_19_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.19.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_19_1 \
-                    import IDSDef_XMLParser_Partial_Generated_3_19_1 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.20.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_20_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_20_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.21.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_21_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_21_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.21.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_21_1 \
-                    import IDSDef_XMLParser_Partial_Generated_3_21_1 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.22.0":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_22_0 \
-                    import IDSDef_XMLParser_Partial_Generated_3_22_0 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.23.1":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_23_1 \
-                    import IDSDef_XMLParser_Partial_Generated_3_23_1 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.23.2":
-                from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_23_2 \
-                    import IDSDef_XMLParser_Partial_Generated_3_23_2 as IDSDef_XMLParser_Partial_Generated
-            elif imas_dd_version == "3.23.3":
+            if imas_dd_version == "3.23.3":
                 from imasviz.VizDataAccess.VizGeneratedCode.IDSDef_XMLParser_Partial_Generated_3_23_3 \
                     import IDSDef_XMLParser_Partial_Generated_3_23_3 as IDSDef_XMLParser_Partial_Generated
             elif imas_dd_version == "3.24.0":
