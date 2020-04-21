@@ -69,12 +69,6 @@ dataArrayHandles = selection_api.GetSelectedDataFeatures(dataTreeView=dtv)
 dataArrayHandle = dataArrayHandles[0]
 
 plotWidget = QvizPlotImageWidget(dataTreeView=dtv)
-#key, tup, x, y, label, xlabel, ylabel, title, coordinate_of_time
-# coordinates = data_feature[2]
-# array_2D = data_feature[3]
-# coordinate_of_time = data_feature[8]
-# v = (coordinates, array_2D, coordinate_of_time)
-
 plotWidget.addPlot(dataArrayHandle)
 plotWidget.show()
 

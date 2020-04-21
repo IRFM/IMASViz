@@ -570,6 +570,13 @@ class Viz_API:
         except:
             raise
 
+    def Plot2DArray(self, dataTreeView, vizTreeNode):
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
+        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView, plotSlideFromROI=True)
+        dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
+        plotWidget.addPlot(dataArrayHandle)
+        plotWidget.show()
+
     def plotSignalVsTimeCommand(self, dataTreeView):
         """Plotting of signal node, found within the 'time_slice[:]' array of
         structures in IDS. For certain physical quantities (e.g.

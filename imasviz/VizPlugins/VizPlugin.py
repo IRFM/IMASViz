@@ -11,7 +11,7 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      #'viz_spectrometer_plugin':'viz_spectrometer.viz_spectrometer_plugin',
                      'example_UiPlugin': '',
                      'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
-                     'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
+                     #'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
                      }
 
 

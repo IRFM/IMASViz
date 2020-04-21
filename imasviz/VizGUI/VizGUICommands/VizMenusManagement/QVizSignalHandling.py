@@ -71,7 +71,9 @@ class QVizSignalHandling(QObject):
         # Set new popup menu
         self.contextMenu = QMenu()
 
-        if not self.treeNode.is2DOrLarger():
+        if self.treeNode.is2D():
+            self.contextMenu.addAction(self.actionPlot2DArray())
+        elif not self.treeNode.is2DOrLarger():
 
             # SET TOP ACTIONS
             # - Add action for setting signal node select/unselect status
@@ -136,6 +138,19 @@ class QVizSignalHandling(QObject):
             action_plotAsFunctionOfTime.setDisabled(False)
 
         return action_plotAsFunctionOfTime
+
+    def actionPlot2DArray(self):
+        # Add action to plot 2D array data
+        # TODO: icon
+        action_plot2DArray = None
+        if self.treeNode.is2D():
+            icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
+            action_plot2DArray = QAction(icon, 'Plot 2D image', self)
+            api = self.dataTreeView.imas_viz_api
+            action_plot2DArray.triggered.connect(
+                partial(api.Plot2DArray, self.dataTreeView, self.treeNode))
+            action_plot2DArray.setDisabled(False)
+        return action_plot2DArray
 
 
     def actionSelectOrUnselectSignalNode(self):
