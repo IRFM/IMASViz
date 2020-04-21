@@ -168,31 +168,31 @@ class QVizDataAccessCodeGenerator:
                         code = "parent.set(" + "'units', '" + parent_units + "')"
                         self.printCode(code, level)
 
-                 documentation = ids_child_element.get('documentation')
-                 if documentation != None:
-                     documentation = documentation.replace("&#34;", "'")
-                     documentation = documentation.replace('"', "'")
-                     documentation = documentation.replace("'", "''")
-                     documentation = documentation.replace("\n", "")
-                     if self.imas_dd_version in patched_versions:
-                         code = "parent.set(" + "'documentation', '" + documentation + "')"
-                     else:
-                         code = "parent.set(" + '"documentation", "' + documentation + '")'
-                     self.printCode(code, level)
+                documentation = ids_child_element.get('documentation')
+                if documentation != None:
+                    documentation = documentation.replace("&#34;", "'")
+                    documentation = documentation.replace('"', "'")
+                    documentation = documentation.replace("'", "''")
+                    documentation = documentation.replace("\n", "")
+                    if self.imas_dd_version in patched_versions:
+                        code = "parent.set(" + "'documentation', '" + documentation + "')"
+                    else:
+                        code = "parent.set(" + '"documentation", "' + documentation + '")'
+                    self.printCode(code, level)
 
-                 parentName = ids_child_element.get('name')
-                 if parentName != None:
-                     parentName = parentName.replace("'", "''")
-                     parentName = parentName.replace("\n", "")
-                     code = "parent.set(" + "'name', '" + parentName + "')"
-                     self.printCode(code, level)
+                parentName = ids_child_element.get('name')
+                if parentName != None:
+                    parentName = parentName.replace("'", "''")
+                    parentName = parentName.replace("\n", "")
+                    code = "parent.set(" + "'name', '" + parentName + "')"
+                    self.printCode(code, level)
 
-                 lifecycle_status = ids_child_element.get('lifecycle_status')
-                 if lifecycle_status is not None:
-                     code = "parent.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
-                     self.printCode(code, level)
+                lifecycle_status = ids_child_element.get('lifecycle_status')
+                if lifecycle_status is not None:
+                    code = "parent.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
+                    self.printCode(code, level)
 
-                 self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index, idsName)
+                self.generateCodeForIDS(parent_AOS, ids_child_element, level, previousLevel, parents, s, index, idsName)
 
             elif data_type == 'struct_array':
 
