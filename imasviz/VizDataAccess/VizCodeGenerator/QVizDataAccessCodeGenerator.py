@@ -26,13 +26,31 @@ class QVizDataAccessCodeGenerator:
                         QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
 
         self.IDSDefFile = QVizGlobalOperations.getIDSDefFile(imas_dd_version)
+
+        if self.IDSDefFile is None:
+            print("WARNING: no suitable IDSDef.xml file found for given IMAS version.")
+            sys.exit()
+        elif "/IDSDef.xml" in self.IDSDefFile:
+            path_generated_code = os.environ['HOME'] + "/.imasviz/VizGeneratedCode"
+            if not os.path.exists(path_generated_code):
+                os.mkdir(path_generated_code)
+                print("Directory ", path_generated_code,  " created ")
+            else:
+                print("Directory ", path_generated_code,  " already exists")
+        else:
+            path_generated_code = os.environ['VIZ_HOME'] + \
+                "/imasviz/VizDataAccess/VizGeneratedCode"
+
+        print(f"The set generated code path: {path_generated_code}")
+
         XMLtreeIDSDef = ET.parse(self.IDSDefFile)
         fileName = className + ".py"
         if os.environ['VIZ_HOME'] == '' or os.environ['VIZ_HOME'] is None:
             print("VIZ_HOME not defined! Exiting procedure.")
             sys.exit()
-        os.chdir(os.environ['VIZ_HOME'] +
-                 "/imasviz/VizDataAccess/VizGeneratedCode")
+
+        # Change current working directory
+        os.chdir(path_generated_code)
         self.f = open(fileName, 'w')
         self.generateCode(XMLtreeIDSDef, className)
         self.f.close()
@@ -43,7 +61,7 @@ class QVizDataAccessCodeGenerator:
         i = 0
         for ids in root:
             name_att = ids.get('name')
-            if name_att == None:
+            if name_att is None:
                 continue
             # if name_att != 'equilibrium':
             #     continue
@@ -653,7 +671,7 @@ if __name__ == "__main__":
                      "3.23.1", "3.23.2", "3.23.3", "3.24.0", "3.25.0", "3.26.0",
                      "3.27.0"]
 
-    #imas_versions = ["3.25.0"]
+    # imas_versions = ["3.24.0", "3.25.0", "3.26.0"]
 
     patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",

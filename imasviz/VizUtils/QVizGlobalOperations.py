@@ -206,7 +206,25 @@ class QVizGlobalOperations:
 
     @staticmethod
     def getIDSDefFile(imas_dd_version):
-        return os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
+        """Get IDSDef.xml file. If not present in IMASViz try to find it in
+        $IMAS_PREFIX
+        """
+        # An optional system variable for setting path to IDSDef.xml file in
+        # case they're located on some non-standard location.
+        # Note that other paths won't be checked
+        if "IDSDEF_PATH" in os.environ:
+            IDSDef_path = os.environ['IDSDEF_PATH'] + "/IDSDef.xml"
+        else:
+            IDSDef_path = os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
+        if os.path.exists(IDSDef_path) is False:
+            # Assuming that the IDSDef.xml file is present in
+            # $IMAS_PREFIX/include directory (method used on both the ITER HPC
+            # and on the GATEWAY clusters)
+            IDSDef_path = os.environ['IMAS_PREFIX'] + "/include/IDSDef.xml"
+        else:
+            print("WARNING: no suitable IDSDef.xml file found for given IMAS version.")
+            IDSDef_path is None
+        return IDSDef_path
 
     @staticmethod
     def getConfFilesList(configType):
