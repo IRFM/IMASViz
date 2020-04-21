@@ -159,7 +159,7 @@ class QVizGlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.27.0"
+        TESTING_IMAS_VERSION = "3.26.0"
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
@@ -172,8 +172,10 @@ class QVizGlobalValues:
             IMAS_VIZ_VERSION = 'Undefined (please report to admin)'
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
-        os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
-
+        if "IMAS_VERSION" in os.environ:
+            os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
+        else:
+            os.environ["IMAS_MAJOR_VERSION"] = ""
 
 class GlobalIDs:
     """Global frame, panels etc. IDs.

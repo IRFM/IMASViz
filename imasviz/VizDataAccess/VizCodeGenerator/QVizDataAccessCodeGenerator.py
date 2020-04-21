@@ -11,14 +11,19 @@ ggd_warning = 0
 class QVizDataAccessCodeGenerator:
 
     GGD_ignore = 0
+    patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
+                     "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
+                     "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
+                     "3.23.1", "3.23.2", "3.23.3", "3.24.0"]
 
-    def __init__(self, imas_dd_version):
+    def __init__(self, imas_dd_version, GGD_ignore=0):
         self.imas_dd_version = imas_dd_version
         self.time_step = 10
 
         className = None
+        path_generated_code = None
 
-        if QVizDataAccessCodeGenerator.GGD_ignore == 1:
+        if QVizDataAccessCodeGenerator.GGD_ignore == 1 or GGD_ignore == 1:
             className = "IDSDef_XMLParser_Partial_Generated_" + \
                         QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
         else:
@@ -29,7 +34,6 @@ class QVizDataAccessCodeGenerator:
 
         if self.IDSDefFile is None:
             print("WARNING: no suitable IDSDef.xml file found for given IMAS version.")
-            sys.exit()
         elif "/IDSDef.xml" in self.IDSDefFile:
             path_generated_code = os.environ['HOME'] + "/.imasviz/VizGeneratedCode"
             if not os.path.exists(path_generated_code):
@@ -49,11 +53,12 @@ class QVizDataAccessCodeGenerator:
             print("VIZ_HOME not defined! Exiting procedure.")
             sys.exit()
 
-        # Change current working directory
-        os.chdir(path_generated_code)
-        self.f = open(fileName, 'w')
-        self.generateCode(XMLtreeIDSDef, className)
-        self.f.close()
+        if path_generated_code is not None:
+            # Change current working directory
+            os.chdir(path_generated_code)
+            self.f = open(fileName, 'w')
+            self.generateCode(XMLtreeIDSDef, className)
+            self.f.close()
 
     def generateCode(self, XMLtreeIDSDef, className):
 
@@ -192,7 +197,7 @@ class QVizDataAccessCodeGenerator:
                     documentation = documentation.replace('"', "'")
                     documentation = documentation.replace("'", "''")
                     documentation = documentation.replace("\n", "")
-                    if self.imas_dd_version in patched_versions:
+                    if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
                         code = "parent.set(" + "'documentation', '" + documentation + "')"
                     else:
                         code = "parent.set(" + '"documentation", "' + documentation + '")'
@@ -279,7 +284,7 @@ class QVizDataAccessCodeGenerator:
                     documentation = documentation.replace('"', "'")
                     documentation = documentation.replace("'", "''")
                     documentation = documentation.replace("\n", "")
-                    if self.imas_dd_version in patched_versions:
+                    if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
                         code = "parent.set(" + "'documentation', '" + documentation + "')"
                     else:
                         code = "parent.set(" + '"documentation", "' + documentation + '")'
@@ -343,7 +348,7 @@ class QVizDataAccessCodeGenerator:
                     documentation = documentation.replace('"', "'")
                     documentation = documentation.replace("'", "''")
                     documentation = documentation.replace("\n", "")
-                    if self.imas_dd_version in patched_versions:
+                    if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
                         code = "node.set(" + "'documentation', '" + documentation + "')"
                     else:
                         code = "node.set(" + '"documentation", "' + documentation + '")'
@@ -453,7 +458,7 @@ class QVizDataAccessCodeGenerator:
                     documentation = documentation.replace('"', "'")
                     documentation = documentation.replace("'","''")
                     documentation = documentation.replace("\n", "")
-                    if self.imas_dd_version in patched_versions:
+                    if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
                         code = "node.set(" + "'documentation', '" + documentation + "')"
                     else:
                         code = "node.set(" + '"documentation", "' + documentation + '")'
@@ -572,7 +577,7 @@ class QVizDataAccessCodeGenerator:
                     documentation = documentation.replace('"', "'")
                     documentation = documentation.replace("'","''")
                     documentation = documentation.replace("\n", "")
-                    if self.imas_dd_version in patched_versions:
+                    if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
                         code = "node.set(" + "'documentation', '" + documentation + "')"
                     else:
                         code = "node.set(" + '"documentation", "' + documentation + '")'
@@ -664,7 +669,7 @@ class QVizDataAccessCodeGenerator:
 if __name__ == "__main__":
 
     print("Starting code generation")
-    QVizGlobalOperations.checkEnvSettings()
+    QVizGlobalOperations.checkEnvSettings_generator()
     imas_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
                      "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
                      "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
@@ -672,11 +677,6 @@ if __name__ == "__main__":
                      "3.27.0"]
 
     # imas_versions = ["3.24.0", "3.25.0", "3.26.0"]
-
-    patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0", "3.12.1", "3.15.0",
-                     "3.15.1", "3.16.0", "3.17.0", "3.17.1", "3.17.2", "3.18.0",
-                     "3.19.0", "3.19.1", "3.20.0", "3.21.0", "3.21.1", "3.22.0",
-                     "3.23.1", "3.23.2", "3.23.3", "3.24.0"]
 
     print("Generating full parsers...")
     for v in imas_versions:
