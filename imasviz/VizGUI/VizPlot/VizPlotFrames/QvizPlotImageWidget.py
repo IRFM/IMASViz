@@ -80,19 +80,19 @@ class QvizPlotImageWidget(QWidget):
         plotItem = None
 
         if coordinate_of_time is None:
-            plotItem = pgw.addPlot(0,0)
+            plotItem = pgw.addPlot(0,0,1,2)
         else:
             orientation = 'left' #if coordinate_of_time == 2
             if coordinate_of_time == 1:
                 orientation = 'bottom'
             time_axis = TimeAxisItem(time_array, orientation=orientation)
-            plotItem = pgw.addPlot(row=0,col=0, axisItems={orientation:time_axis})
+            plotItem = pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis})
 
         plotItem.addItem(imageItem)
         self.manageTimeAxis(dataArrayHandle, coordinate_of_time=coordinate_of_time, plotItem=plotItem)
 
         histo = pg.HistogramLUTItem(image=imageItem)
-        pgw.addItem(histo, 0, 1)
+        pgw.addItem(histo, 0, 2)
         if self.plotSlideFromROI:
             roi = self.addROI(pgw, plotItem, data, imageItem=imageItem)
         self.gridLayout.addWidget(pgw, row, column)

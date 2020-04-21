@@ -572,7 +572,7 @@ class Viz_API:
 
     def Plot2DArray(self, dataTreeView, vizTreeNode):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
-        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView, plotSlideFromROI=True)
+        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView, size=(500, 400), plotSlideFromROI=True)
         dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
         plotWidget.addPlot(dataArrayHandle)
         plotWidget.show()
