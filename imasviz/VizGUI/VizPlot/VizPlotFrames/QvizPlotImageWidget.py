@@ -26,7 +26,7 @@ class QvizPlotImageWidget(QWidget):
     """QvizPlotImageWidget containing pyqtgraph ImageView.
     """
 
-    def __init__(self, dataTreeView, rows=1, columns=1, plotSlideFromROI=False,
+    def __init__(self, dataTreeView, rows=1, columns=1, plotSliceFromROI=False,
                  parent=None, size=(400, 200), title='QvizPlotImageWidget'):
         super(QvizPlotImageWidget, self).__init__(parent)
 
@@ -49,7 +49,7 @@ class QvizPlotImageWidget(QWidget):
         self.row = 0
         self.column = 0
         self.num_plots = 0
-        self.plotSlideFromROI = plotSlideFromROI
+        self.plotSliceFromROI = plotSliceFromROI
         # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
         self.setContents()
 
@@ -93,7 +93,7 @@ class QvizPlotImageWidget(QWidget):
 
         histo = pg.HistogramLUTItem(image=imageItem)
         pgw.addItem(histo, 0, 2)
-        if self.plotSlideFromROI:
+        if self.plotSliceFromROI:
             roi = self.addROI(pgw, plotItem, data, imageItem=imageItem)
         self.gridLayout.addWidget(pgw, row, column)
 
