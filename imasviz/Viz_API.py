@@ -239,6 +239,13 @@ class Viz_API:
         """
         return len(self.GetFiguresKeys())
 
+    def GetImagePlotsCount(self):
+        """Returns the next number of image plots.
+
+        :returns: (int) The next number of image plots
+        """
+        return len(self.GetFiguresKeys(FigureTypes.IMAGETYPE))
+
     def GetTablePlotViewsCount(self):
         """Returns the next table plot number available for plotting.
 
@@ -270,6 +277,15 @@ class Viz_API:
         :returns: (str) The key of the next figure (plot)
         """
         return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
+
+    def GetNextKeyForImagePlots(self):
+        """Returns the key of the next 2D plot (e.g. if 'Image i' is the
+        latest image on the list of existing 2D plots, value 'Image i+1' is
+        returned).
+
+        :returns: (str) The key of the next 2D plot
+        """
+        return FigureTypes.IMAGETYPE + str(self.GetFigurePlotsCount())
 
     def GetNextKeyForStackedPlotView(self):
         """Returns the key of the next stacked plot (e.g. if 'StackedPlot i'
@@ -570,9 +586,19 @@ class Viz_API:
         except:
             raise
 
+    # def Plot2DArray(self, dataTreeView, vizTreeNode):
+    #     from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
+    #     plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView, size=(500, 400), plotSliceFromROI=True)
+    #     dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
+    #     plotWidget.addPlot(dataArrayHandle)
+    #     plotWidget.show()
+
     def Plot2DArray(self, dataTreeView, vizTreeNode):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
-        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView, size=(500, 400), plotSliceFromROI=True)
+        imageKey = self.GetNextKeyForImagePlots()
+        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView,
+                                         size=(500, 400), plotSliceFromROI=True, title=imageKey)
+        self.addPlotWidgetToMDI(plotWidget)
         dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
         plotWidget.addPlot(dataArrayHandle)
         plotWidget.show()

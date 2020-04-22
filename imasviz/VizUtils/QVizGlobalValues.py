@@ -7,6 +7,7 @@ from PyQt5 import QtGui
 
 class FigureTypes:
     FIGURETYPE = "Figure:"
+    IMAGETYPE = "Image:"
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
 

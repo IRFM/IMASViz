@@ -38,6 +38,7 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal i
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QViz2DArrayHandling import QViz2DArrayHandling
 from imasviz.VizUtils import FigureTypes
 
 
@@ -72,7 +73,8 @@ class QVizSignalHandling(QObject):
         self.contextMenu = QMenu()
 
         if self.treeNode.is2D():
-            self.contextMenu.addAction(self.actionPlot2DArray())
+            array2DHandling = QViz2DArrayHandling(self.dataTreeView)
+            self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode())
         elif not self.treeNode.is2DOrLarger():
 
             # SET TOP ACTIONS
