@@ -68,7 +68,7 @@ dataArrayHandles = selection_api.GetSelectedDataFeatures(dataTreeView=dtv)
 
 dataArrayHandle = dataArrayHandles[0]
 
-plotWidget = QvizPlotImageWidget(dataTreeView=dtv, plotSliceFromROI=True)
+plotWidget = QvizPlotImageWidget(dataTreeView=dtv, plotSliceFromROI=True, showImageTitle=True)
 plotWidget.addPlot(dataArrayHandle)
 plotWidget.show()
 

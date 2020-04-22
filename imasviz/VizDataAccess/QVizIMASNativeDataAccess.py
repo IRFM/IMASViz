@@ -98,8 +98,9 @@ class QVizIMASNativeDataAccess:
             arrayPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
             rval = eval(arrayPath)
             coordinateValues = None
-            coordinate_labels = []
-
+            coordinates_labels = []
+            label = ''
+            quantityName = ''
             for dim in range(1,3):
                 coordinate = treeNode.evaluateCoordinateAt(coordinateNumber=dim,
                                                             itimeValue=itimeValue)
@@ -123,10 +124,11 @@ class QVizIMASNativeDataAccess:
                             raise ValueError("Coordinate array for dimension " + str(dim) + " has no values.")
 
                 coordinatesValues.append(coordinateValues)
-                coordinate_labels.append(treeNode.labels(plotWidget, dim, coordinate_index=0, time_index=itimeValue))
+                quantityName, label, coordinate_label = treeNode.labels(plotWidget, dim, coordinate_index=0, time_index=itimeValue)
+                coordinates_labels.append(coordinate_label)
 
-            arrayCoordinates = ArrayCoordinates(coordinatesPaths, coordinatesValues, coordinate_of_time, coordinate_labels)
-            return QVizDataArrayHandle(arrayCoordinates, np.asarray(rval))
+            arrayCoordinates = ArrayCoordinates(coordinatesPaths, coordinatesValues, coordinate_of_time, coordinates_labels)
+            return QVizDataArrayHandle(arrayCoordinates, np.asarray(rval), label=label, name=quantityName, itimeValue=itimeValue)
 
         except:
             print(sys.exc_info()[0])

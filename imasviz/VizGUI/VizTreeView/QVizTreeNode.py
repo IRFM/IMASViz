@@ -627,4 +627,9 @@ class QVizTreeNode(QTreeWidgetItem):
             xlabel += '[s]'
 
         xlabel = xlabel.replace('itime', str(time_index))
-        return label, xlabel
+
+        quantityName = self.getName()
+        if self.getUnits() is not None:
+            quantityName += '[' + self.getUnits() + ']'
+
+        return quantityName, label, xlabel

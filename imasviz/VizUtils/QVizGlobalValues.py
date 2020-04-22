@@ -337,7 +337,7 @@ class GlobalIcons:
         elif label == 'selectAOS':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
                                '/resources/VizIcons/plus3x.ico')
-        elif label == 'Figure':
+        elif label == 'Figure' or label == 'Image':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
                                '/resources/VizIcons/Figure.ico')
         elif label == 'TPV':

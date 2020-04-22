@@ -74,7 +74,7 @@ class QVizSignalHandling(QObject):
 
         if self.treeNode.is2D():
             array2DHandling = QViz2DArrayHandling(self.dataTreeView)
-            self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode())
+            self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode(self))
         elif not self.treeNode.is2DOrLarger():
 
             # SET TOP ACTIONS

@@ -18,10 +18,12 @@ import logging
 class QVizDataArrayHandle:
     """QVizDataArrayHandle for handling IMAS arrays.
     """
-    def __init__(self, arrayCoordinates, arrayValues, itimeValue=None):
+    def __init__(self, arrayCoordinates, arrayValues, name, label, itimeValue=None):
         self.arrayCoordinates = arrayCoordinates
         self.arrayValues = arrayValues
         self.itimeValue = itimeValue
+        self.label = label
+        self.name = name
 
     def getCoordinateValues(self, dim):
         return self.arrayCoordinates.coordinatesValues[dim - 1]
@@ -40,15 +42,21 @@ class QVizDataArrayHandle:
             return None
         return self.getCoordinateValues(self.getTimeCoordinateDim())
 
-    def getCoordinateLabels(self, dim):
-        return self.arrayCoordinates.coordinate_labels[dim - 1]
+    def getCoordinateLabel(self, dim):
+        return self.arrayCoordinates.coordinates_labels[dim - 1]
+
+    def getName(self):
+        return self.name
+
+    def getLabel(self):
+        return self.label
 
 class ArrayCoordinates:
-    def __init__(self, coordinatesPath=[], coordinatesValues=[], timeCoordinateDim=None, coordinate_labels=[]):
+    def __init__(self, coordinatesPath=[], coordinatesValues=[], timeCoordinateDim=None, coordinates_labels=[]):
         self.coordinatesPath = coordinatesPath
         self.coordinatesValues = coordinatesValues
         self.timeCoordinateDim = timeCoordinateDim
-        self.coordinate_labels = coordinate_labels
+        self.coordinates_labels = coordinates_labels
 
 class QVizTimedDataArrayHandle:
     def __init__(self, arrayValues, timeArray):

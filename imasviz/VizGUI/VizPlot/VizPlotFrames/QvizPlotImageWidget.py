@@ -27,7 +27,7 @@ class QvizPlotImageWidget(QWidget):
     """
 
     def __init__(self, dataTreeView, rows=1, columns=1, plotSliceFromROI=False,
-                 parent=None, size=(400, 200), title='QvizPlotImageWidget'):
+                 parent=None, size=(400, 200), title='QvizPlotImageWidget', showImageTitle=True):
         super(QvizPlotImageWidget, self).__init__(parent)
 
         self.dataTreeView = dataTreeView
@@ -50,6 +50,8 @@ class QvizPlotImageWidget(QWidget):
         self.column = 0
         self.num_plots = 0
         self.plotSliceFromROI = plotSliceFromROI
+        self.showImageTitle = showImageTitle
+        self.slice_plot = None
         # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
         self.setContents()
 
@@ -89,51 +91,76 @@ class QvizPlotImageWidget(QWidget):
             plotItem = pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis})
 
         plotItem.addItem(imageItem)
-        self.manageTimeAxis(dataArrayHandle, coordinate_of_time=coordinate_of_time, plotItem=plotItem)
+        if self.showImageTitle:
+            plotItem.setTitle(dataArrayHandle.getLabel(), size='8')
+        self.manageImageAxes(dataArrayHandle, coordinate_of_time=coordinate_of_time, plotItem=plotItem)
 
         histo = pg.HistogramLUTItem(image=imageItem)
         pgw.addItem(histo, 0, 2)
+
         if self.plotSliceFromROI:
-            roi = self.addROI(pgw, plotItem, data, imageItem=imageItem)
+            slice_plotItem = pgw.addPlot(1, 0, 1, 3)
+            self.manageSliceImageAxes(dataArrayHandle, slice_plotItem, coordinate_of_time)
+            roi = self.addSegmentROI(pgw, plotItem, data)
+            roi.sigRegionChanged.connect(partial(self.roiChanged, roi, data, imageItem, slice_plotItem))
+            self.roiChanged(roi, data, imageItem, slice_plotItem)
+
         self.gridLayout.addWidget(pgw, row, column)
 
         # Number of current plots
         self.num_plots += 1
 
-    def addROI(self, pgw, plotItem, data, imageItem):
-        self.slice_plotItem = pgw.addPlot(1, 0, 1, 2)
-        roi = pg.RectROI(maxBounds=QRectF(0, 0, len(data[:,0]), len(data[0,:])), pos=(0,0), size=(len(data[:,0]), 70),
-                         pen=pg.mkPen(pg.mkColor(255,0,0)), scaleSnap=True, snapSize=5)
+    def addSegmentROI(self, pgw, plotItem, data):
+        positions = []
+        positions.append((0, len(data[0, :]) / 2))
+        positions.append((len(data[:, 0]), len(data[0, :]) / 2))
+        maxBounds = QRectF(0, -len(data[0, :])/2, 0, len(data[0, :]))
+        roi = pg.LineSegmentROI(positions=positions, maxBounds=maxBounds,
+                                pos=(0, 0), scaleSnap=True, snapSize=5)
         plotItem.getViewBox().addItem(roi)
-        roi.sigRegionChanged.connect(partial(self.roiChanged, roi, data, imageItem))
+        roi.setPen(pg.mkPen(width=5, color='r'))
         return roi
 
+    def roiChanged(self, roi, data, imageItem, slice_plotItem):
+        for handle in roi.getHandles():
+            handle.hide()
 
-    def roiChanged(self, roi, data, imageItem):
-        self.slice_plotItem.clear()
-        slice = roi.getArrayRegion(data, imageItem)
-        self.slice_plotItem.plot(x=np.asarray(range(0, len(data[:,0]))), y=slice[:,0])
-        #print(np.shape(roi.getArrayRegion(data, img)))
+        slice = None
+        try:
+            slice = roi.getArrayRegion(data, imageItem)
+        except:
+            pass
+        #print(np.shape(roi.getArrayRegion(data, imageItem)))
+        if slice is not None and slice.ndim == 1:
+            if self.slice_plot is None:
+                slice_plotItem.clear()
+                self.slice_plot = slice_plotItem.plot(x=np.asarray(range(0, len(slice))), y=slice)
+            else:
+                self.slice_plot.setData(x=np.asarray(range(0, len(slice))), y=slice)
 
-    def manageTimeAxis(self, dataArrayHandle, coordinate_of_time, plotItem):
+    def manageImageAxes(self, dataArrayHandle, coordinate_of_time, plotItem):
 
         if coordinate_of_time is None:
-            labels = dataArrayHandle.getCoordinateLabels(1)
-            plotItem.setLabel('bottom', labels[1])
-            labels = dataArrayHandle.getCoordinateLabels(2)
-            plotItem.setLabel('left', labels[1])
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
+            plotItem.setLabel('left', dataArrayHandle.getCoordinateLabel(2))
             return
 
         if coordinate_of_time == 2:
             plotItem.setLabel('left', 'Time[s]')
-            labels = dataArrayHandle.getCoordinateLabels(1)
-            plotItem.setLabel('bottom', labels[1])
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
 
         elif coordinate_of_time == 1:
             plotItem.setLabel('bottom', 'Time[s]')
-            #axisItem = plotItem.getAxis('bottom')
-            labels = dataArrayHandle.getCoordinateLabels(2)
-            plotItem.setLabel('left', labels[1])
+            plotItem.setLabel('left', dataArrayHandle.getCoordinateLabel(2))
+
+    def manageSliceImageAxes(self, dataArrayHandle, plotItem, coordinate_of_time):
+        plotItem.setLabel('left', dataArrayHandle.getName())
+        if coordinate_of_time == 2:
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
+        elif coordinate_of_time == 1:
+            plotItem.setLabel('bottom', 'Time[s]')
+        else:
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
 
 
     def getPlotItem(self, row, col):
