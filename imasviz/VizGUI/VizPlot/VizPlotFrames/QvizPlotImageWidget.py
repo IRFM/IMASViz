@@ -31,6 +31,7 @@ class QvizPlotImageWidget(QWidget):
         super(QvizPlotImageWidget, self).__init__(parent)
 
         self.dataTreeView = dataTreeView
+        self.column_major = True
 
         # Set default background color: white
         pg.setConfigOption('background', 'w')
@@ -61,6 +62,17 @@ class QvizPlotImageWidget(QWidget):
         self.gridLayout = QGridLayout(self)
         self.gridLayout.setObjectName("gridLayout")
 
+    def getAxisOrientations(self):
+        i = None
+        j = None
+        if self.column_major:
+            i = 2
+            j = 1
+        else:
+            i = 1
+            j = 2
+        return i, j
+
     def addPlot(self, data_features):
         if self.column == self.columns:
             self.column = 0
@@ -84,8 +96,10 @@ class QvizPlotImageWidget(QWidget):
         if coordinate_of_time is None:
             plotItem = pgw.addPlot(0,0,1,2)
         else:
-            orientation = 'left' #if coordinate_of_time == 2
-            if coordinate_of_time == 1:
+            i, j = self.getAxisOrientations()
+            if coordinate_of_time == i:
+                orientation = 'left' #if coordinate_of_time == 2
+            elif coordinate_of_time == j:
                 orientation = 'bottom'
             time_axis = TimeAxisItem(time_array, orientation=orientation)
             plotItem = pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis})
@@ -124,7 +138,6 @@ class QvizPlotImageWidget(QWidget):
     def roiChanged(self, roi, data, imageItem, slice_plotItem):
         for handle in roi.getHandles():
             handle.hide()
-
         slice = None
         try:
             slice = roi.getArrayRegion(data, imageItem)
@@ -138,30 +151,44 @@ class QvizPlotImageWidget(QWidget):
             else:
                 self.slice_plot.setData(x=np.asarray(range(0, len(slice))), y=slice)
 
-    def manageImageAxes(self, dataArrayHandle, coordinate_of_time, plotItem):
+    def updateSlicePlot(self, roi, data, imageItem):
+        slice = None
+        try:
+            slice = roi.getArrayRegion(data, imageItem)
+        except:
+            pass
+        # print(np.shape(roi.getArrayRegion(data, imageItem)))
+        if slice is not None and slice.ndim == 1:
+            if self.slice_plot is None:
+                slice_plotItem.clear()
+                self.slice_plot = slice_plotItem.plot(x=np.asarray(range(0, len(slice))), y=slice)
+            else:
+                self.slice_plot.setData(x=np.asarray(range(0, len(slice))), y=slice)
 
+    def manageImageAxes(self, dataArrayHandle, coordinate_of_time, plotItem):
+        i, j = self.getAxisOrientations()
         if coordinate_of_time is None:
-            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
-            plotItem.setLabel('left', dataArrayHandle.getCoordinateLabel(2))
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(j))
+            plotItem.setLabel('left', dataArrayHandle.getCoordinateLabel(i))
             return
 
-        if coordinate_of_time == 2:
+        if coordinate_of_time == i:
             plotItem.setLabel('left', 'Time[s]')
-            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(j))
 
-        elif coordinate_of_time == 1:
+        elif coordinate_of_time == j:
             plotItem.setLabel('bottom', 'Time[s]')
-            plotItem.setLabel('left', dataArrayHandle.getCoordinateLabel(2))
+            plotItem.setLabel('left', dataArrayHandle.getCoordinateLabel(i))
 
     def manageSliceImageAxes(self, dataArrayHandle, plotItem, coordinate_of_time):
+        i, j = self.getAxisOrientations()
         plotItem.setLabel('left', dataArrayHandle.getName())
-        if coordinate_of_time == 2:
-            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
-        elif coordinate_of_time == 1:
+        if coordinate_of_time == i:
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(j))
+        elif coordinate_of_time == j:
             plotItem.setLabel('bottom', 'Time[s]')
         else:
-            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(1))
-
+            plotItem.setLabel('bottom', dataArrayHandle.getCoordinateLabel(j))
 
     def getPlotItem(self, row, col):
         item = self.gridLayout.itemAtPosition(row, col)
