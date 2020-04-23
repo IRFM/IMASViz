@@ -53,6 +53,7 @@ class QvizPlotImageWidget(QWidget):
         self.plotSliceFromROI = plotSliceFromROI
         self.showImageTitle = showImageTitle
         self.slice_plot = None
+        self.slice = None
         # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
         self.setContents()
 
@@ -90,11 +91,11 @@ class QvizPlotImageWidget(QWidget):
         #print(len(time_array))
         #print(np.shape(y))
         imageItem = pg.ImageItem(data)
-        pgw = pg.GraphicsLayoutWidget(parent=self)
+        self.pgw = pg.GraphicsLayoutWidget(parent=self)
         plotItem = None
 
         if coordinate_of_time is None:
-            plotItem = pgw.addPlot(0,0,1,2)
+            plotItem = self.pgw.addPlot(0,0,1,2)
         else:
             i, j = self.getAxisOrientations()
             if coordinate_of_time == i:
@@ -102,7 +103,7 @@ class QvizPlotImageWidget(QWidget):
             elif coordinate_of_time == j:
                 orientation = 'bottom'
             time_axis = TimeAxisItem(time_array, orientation=orientation)
-            plotItem = pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis})
+            plotItem = self.pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis})
 
         plotItem.addItem(imageItem)
         if self.showImageTitle:
@@ -110,21 +111,21 @@ class QvizPlotImageWidget(QWidget):
         self.manageImageAxes(dataArrayHandle, coordinate_of_time=coordinate_of_time, plotItem=plotItem)
 
         histo = pg.HistogramLUTItem(image=imageItem)
-        pgw.addItem(histo, 0, 2)
+        self.pgw.addItem(histo, 0, 2)
 
         if self.plotSliceFromROI:
-            slice_plotItem = pgw.addPlot(1, 0, 1, 3)
+            slice_plotItem = self.pgw.addPlot(1, 0, 1, 3)
             self.manageSliceImageAxes(dataArrayHandle, slice_plotItem, coordinate_of_time)
-            roi = self.addSegmentROI(pgw, plotItem, data)
+            roi = self.addSegmentROI(plotItem, data)
             roi.sigRegionChanged.connect(partial(self.roiChanged, roi, data, imageItem, slice_plotItem))
             self.roiChanged(roi, data, imageItem, slice_plotItem)
 
-        self.gridLayout.addWidget(pgw, row, column)
+        self.gridLayout.addWidget(self.pgw, row, column)
 
         # Number of current plots
         self.num_plots += 1
 
-    def addSegmentROI(self, pgw, plotItem, data):
+    def addSegmentROI(self, plotItem, data):
         positions = []
         positions.append((0, len(data[0, :]) / 2))
         positions.append((len(data[:, 0]), len(data[0, :]) / 2))
@@ -138,32 +139,32 @@ class QvizPlotImageWidget(QWidget):
     def roiChanged(self, roi, data, imageItem, slice_plotItem):
         for handle in roi.getHandles():
             handle.hide()
-        slice = None
         try:
-            slice = roi.getArrayRegion(data, imageItem)
+            self.slice = roi.getArrayRegion(data, imageItem)
         except:
             pass
         #print(np.shape(roi.getArrayRegion(data, imageItem)))
-        if slice is not None and slice.ndim == 1:
+        if self.slice is not None and self.slice.ndim == 1:
             if self.slice_plot is None:
                 slice_plotItem.clear()
-                self.slice_plot = slice_plotItem.plot(x=np.asarray(range(0, len(slice))), y=slice)
+                self.slice_plot = slice_plotItem.plot(x=np.asarray(range(0, len(self.slice))), y=self.slice)
             else:
-                self.slice_plot.setData(x=np.asarray(range(0, len(slice))), y=slice)
+                self.slice_plot.setData(x=np.asarray(range(0, len(self.slice))), y=self.slice)
+        # self.keepSlice()
+        # self.N += 1
+        # if self.N == 3:
+        #     self.removeAllSlices()
+        #     self.N = 0
 
-    def updateSlicePlot(self, roi, data, imageItem):
-        slice = None
-        try:
-            slice = roi.getArrayRegion(data, imageItem)
-        except:
-            pass
-        # print(np.shape(roi.getArrayRegion(data, imageItem)))
-        if slice is not None and slice.ndim == 1:
-            if self.slice_plot is None:
-                slice_plotItem.clear()
-                self.slice_plot = slice_plotItem.plot(x=np.asarray(range(0, len(slice))), y=slice)
-            else:
-                self.slice_plot.setData(x=np.asarray(range(0, len(slice))), y=slice)
+    def keepSlice(self):
+        if self.slice is not None and self.slice.ndim == 1:
+            slice_plotItem = self.pgw.getItem(1,0)
+            slice_plotItem.plot(x=np.asarray(range(0, len(self.slice))), y=self.slice) #create plotDataItem
+
+    def removeAllSlices(self):
+        slice_plotItem = self.pgw.getItem(1, 0)
+        for item in slice_plotItem.listDataItems()[1:]:
+            slice_plotItem.removeItem(item)
 
     def manageImageAxes(self, dataArrayHandle, coordinate_of_time, plotItem):
         i, j = self.getAxisOrientations()
