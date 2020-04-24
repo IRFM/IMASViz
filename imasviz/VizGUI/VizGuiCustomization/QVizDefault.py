@@ -13,7 +13,7 @@ class QVizDefaultGUIEntries:
     def getDefaultEntriesForWEST(self):
         default_user = 'public'
         default_machine = 'west'
-        default_run = '0'
+        default_run = '1'
         return default_user, default_machine, default_run
 
 class QVizDefault:

@@ -16,9 +16,11 @@ class QVizGlobalOperations:
             shotMin = 28764  # TODO
             shotMax = 100000  # TODO
             if shotNumber < shotMin:
-                raise ValueError("Shot number should be larger than " + str(shotMin))
+                raise ValueError("Shot number should be larger than "
+                                 + str(shotMin))
             if shotNumber > shotMax:
-                raise ValueError("Shot number should be smaller than " + str(shotMax))
+                raise ValueError("Shot number should be smaller than "
+                                 + str(shotMax))
         elif dataSourceName == QVizGlobalValues.IMAS_NATIVE:
             return
         elif dataSourceName == QVizGlobalValues.IMAS_UDA:
@@ -28,7 +30,8 @@ class QVizGlobalOperations:
 
     @staticmethod
     def isTimeHomogeneous(ids, selectedNodeData):
-        to_eval = "ids." + selectedNodeData['IDSName'] + ".ids_properties.homogeneous_time"
+        to_eval = "ids." + selectedNodeData['IDSName'] \
+            + ".ids_properties.homogeneous_time"
         homogeneous_time = eval(to_eval)
         if (homogeneous_time == 0):
             return False
@@ -44,7 +47,8 @@ class QVizGlobalOperations:
             if not homogeneous_time:
                 t = np.array(eval("ids." + selectedNodeData['IDSName'] + "." + coordinate))
             else:
-                t = np.array(eval("ids." + selectedNodeData['IDSName'] + ".time"))
+                t = np.array(eval("ids." + selectedNodeData['IDSName']
+                             + ".time"))
             return t
         except ValueError:
             return None
@@ -71,7 +75,8 @@ class QVizGlobalOperations:
     @staticmethod
     def YesNo(parent=None, question=None, caption='Confirm suppression'):
         w = QMessageBox()
-        result = QMessageBox.question(w, caption, question, QMessageBox.Yes | QMessageBox.No,
+        result = QMessageBox.question(w, caption, question,
+                                      QMessageBox.Yes | QMessageBox.No,
                                       QMessageBox.No)
         if result == QMessageBox.Yes:
             return True
@@ -80,26 +85,26 @@ class QVizGlobalOperations:
 
     @staticmethod  # replace '[' by '(' and ']' by ')'
     def replaceBrackets(stringToReplace):
-        if stringToReplace == None:
+        if stringToReplace is None:
             return None
         c = stringToReplace.replace("[", "(")
         return c.replace("]", ")")
 
     @staticmethod  # replace '[' by '(' and ']' by ')'
     def replaceDotsBySlashes(stringToReplace):
-        if stringToReplace == None:
+        if stringToReplace is None:
             return None
         return stringToReplace.replace(".", "/")
 
     @staticmethod  # replace '[' by '(' and ']' by ')'
     def replaceDotsByUnderScores(stringToReplace):
-        if stringToReplace == None:
+        if stringToReplace is None:
             return None
         return stringToReplace.replace(".", "_")
 
     @staticmethod  # replace '[' by '(' and ']' by ')'
     def replaceSpacesByUnderScores(stringToReplace):
-        if stringToReplace == None:
+        if stringToReplace is None:
             return None
         return stringToReplace.replace(" ", "_")
 
@@ -115,13 +120,13 @@ class QVizGlobalOperations:
         """
 
         home = os.environ['HOME']
-        if home == None:
+        if home is None:
             raise ValueError("HOME environment variable not defined")
         configurationDirectory = home + "/" + ".imasviz"
         if not os.path.exists(configurationDirectory):
             os.makedirs(configurationDirectory)
 
-        if configType != None:
+        if configType is not None:
             configurationFilePath = configurationDirectory + "/" + \
                 configName + "." + configType
         else:
@@ -140,6 +145,53 @@ class QVizGlobalOperations:
             i += 1
 
         file.write(tabs + text.encode("utf-8") + "\n")
+
+    @staticmethod
+    def checkEnvSettings_generator():
+        """Check if the mandatory systems variables are set.
+        """
+        if not QVizGlobalValues.TESTING:
+
+            print("IMAS_VIZ production environment.")
+
+            if 'HOME' not in os.environ:
+                print("Environment variable HOME not defined. Exiting.")
+                sys.exit()
+
+            if 'TS_MAPPINGS_DIR' not in os.environ:
+                print("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
+                sys.exit()
+
+            if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
+                print("Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting.")
+                sys.exit()
+
+            if 'USER' not in os.environ:
+                print("Environment variable USER not defined. Exiting.")
+                sys.exit()
+
+            if 'VIZ_HOME' not in os.environ:
+                print("Environment variable VIZ_HOME not defined. Exiting.")
+                sys.exit()
+
+        else:
+
+            print("IMAS_VIZ testing environment.")
+
+            if 'TS_MAPPINGS_DIR' not in os.environ:
+                os.environ["TS_MAPPINGS_DIR"] = QVizGlobalValues.TESTING_TS_MAPPINGS_DIR
+                print("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
+
+            if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
+                os.environ["IMAS_DATA_DICTIONARIES_DIR"] = QVizGlobalValues.TESTING_IMAS_DATA_DICTIONARIES_DIR
+                print("WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.")
+
+            if 'USER' not in os.environ:
+                os.environ['USER'] = QVizGlobalValues.TESTING_USER
+                print("WARNING: environment variable USER defined from testing environment.")
+
+            if 'VIZ_HOME' not in os.environ:
+                os.environ['VIZ_HOME'] = QVizGlobalValues.TESTING_VIZ_HOME
 
     @staticmethod
     def checkEnvSettings():
@@ -206,7 +258,29 @@ class QVizGlobalOperations:
 
     @staticmethod
     def getIDSDefFile(imas_dd_version):
-        return os.environ['IMAS_DATA_DICTIONARIES_DIR'] + '/IDSDef_' + imas_dd_version + '.xml'
+        """Get IDSDef.xml file. If not present in IMASViz try to find it in
+        $IMAS_PREFIX
+        """
+        # An optional system variable for setting path to IDSDef.xml file in
+        # case they're located on some non-standard location.
+        # Note that other paths won't be
+        IDSDef_path = None
+        if "IDSDEF_PATH" in os.environ:
+            IDSDef_path = os.environ['IDSDEF_PATH'] + "/IDSDef.xml"
+        else:
+            IDSDef_path = os.environ['IMAS_DATA_DICTIONARIES_DIR'] \
+                + '/IDSDef_' + imas_dd_version + '.xml'
+
+        if os.path.exists(IDSDef_path) is False and 'IMAS_PREFIX' in os.environ:
+            # Assuming that the IDSDef.xml file is present in
+            # $IMAS_PREFIX/include directory (method used on both the ITER HPC
+            # and on the GATEWAY clusters)
+            IDSDef_path = os.environ['IMAS_PREFIX'] + "/include/IDSDef.xml"
+
+        if IDSDef_path is None:
+            print("WARNING: no suitable IDSDef.xml file found for given IMAS "
+                  "version " + imas_dd_version + ".")
+        return IDSDef_path
 
     @staticmethod
     def getConfFilesList(configType):
@@ -330,19 +404,26 @@ class QVizGlobalOperations:
         runNumber = None
         userName = None
         database = None
-        shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number")
+        shotNumber, ok = QInputDialog.getInt(None, "Shot number",
+                                             "enter a shot number")
         if not ok:
             return (ok, shotNumber, runNumber, userName, database)
         else:
-            runNumber, ok = QInputDialog.getInt(None, "Run number", "enter the run number of shot " + str(shotNumber))
+            runNumber, ok = QInputDialog.getInt(None, "Run number",
+                                                "enter the run number of shot " + str(shotNumber))
             if not ok:
                 return (ok, shotNumber, runNumber, userName, database)
             else:
-                userName, ok = QInputDialog.getText(None, 'User name', "enter user name", QLineEdit.Normal, "")
+                userName, ok = QInputDialog.getText(None, 'User name',
+                                                    "enter user name",
+                                                    QLineEdit.Normal, "")
                 if not ok:
                     return (ok, shotNumber, runNumber, userName, database)
                 else:
-                    database, ok = QInputDialog.getText(None, 'database', "enter database", QLineEdit.Normal, "")
+                    database, ok = QInputDialog.getText(None, 'database',
+                                                        "enter database",
+                                                        QLineEdit.Normal, "")
                     if not ok:
                         return (ok, shotNumber, runNumber, userName, database)
+
         return (ok, shotNumber, runNumber, userName, database)

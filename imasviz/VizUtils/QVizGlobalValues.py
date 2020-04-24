@@ -160,7 +160,7 @@ class QVizGlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = "3.27.0"
+        TESTING_IMAS_VERSION = os.environ["IMAS_VERSION"]
         TESTING_IMAS_MAJOR_VERSION = "3"
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
@@ -173,8 +173,10 @@ class QVizGlobalValues:
             IMAS_VIZ_VERSION = 'Undefined (please report to admin)'
         os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
         os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
-        os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
-
+        if "IMAS_VERSION" in os.environ:
+            os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
+        else:
+            os.environ["IMAS_MAJOR_VERSION"] = ""
 
 class GlobalIDs:
     """Global frame, panels etc. IDs.
@@ -187,7 +189,7 @@ class GlobalIDs:
     ID_POPUP_MENU_SIGNALS_UNSELECT_SINGLE_DTV = 205
     ID_POPUP_MENU_SIGNALS_UNSELECT_ALL_DTV = 206
     ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE = 2011
-    ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION =2012
+    ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION = 2012
     ID_MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT = 2013
     ID_MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT = 2014
     ID_MENU_ITEM_SIGNALS_SAVE = 2015
