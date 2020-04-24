@@ -17,8 +17,7 @@ import logging
 from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
-                             QPlainTextEdit, QGridLayout, QMdiArea, QLabel,
-                             QFrame)
+                             QPlainTextEdit, QGridLayout, QMdiArea)
 from PyQt5.QtCore import Qt
 from pathlib import Path
 import matplotlib
@@ -67,7 +66,8 @@ class GUIFrame(QTabWidget):
 
     def tabOne(self):
         layout = QVBoxLayout()
-        default_user_name, default_machine, default_run = QVizDefault().getGUIEntries()
+        default_user_name, default_machine, default_run = \
+            QVizDefault().getGUIEntries()
         vboxLayout = QFormLayout()
         """Set static text for each GUI box (left from the box itself) """
         self.userName = QLineEdit(default_user_name)
