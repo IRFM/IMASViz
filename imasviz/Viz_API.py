@@ -285,7 +285,7 @@ class Viz_API:
 
         :returns: (str) The key of the next 2D plot
         """
-        return FigureTypes.IMAGETYPE + str(self.GetFigurePlotsCount())
+        return FigureTypes.IMAGETYPE + str(self.GetImagePlotsCount())
 
     def GetNextKeyForStackedPlotView(self):
         """Returns the key of the next stacked plot (e.g. if 'StackedPlot i'
@@ -597,7 +597,8 @@ class Viz_API:
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
         imageKey = self.GetNextKeyForImagePlots()
         plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView,
-                                         size=(500, 400), plotSliceFromROI=True, title=imageKey)
+                                         size=(500, 400), plotSliceFromROI=True, title=imageKey, showImageTitle=False)
+        self.figureframes[imageKey] = plotWidget
         self.addPlotWidgetToMDI(plotWidget)
         dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
         plotWidget.addPlot(dataArrayHandle)

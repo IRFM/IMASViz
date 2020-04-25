@@ -19,6 +19,10 @@ from PyQt5.QtGui import QWidget, QGridLayout, QHBoxLayout, QColor
 import PyQt5.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
+from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
+    import QVizCustomPlotContextMenu
+from imasviz.VizGUI.VizPlot.QVizImageCustomPlotContextMenu \
+    import QVizImageCustomPlotContextMenu
 from functools import partial
 
 
@@ -64,15 +68,7 @@ class QvizPlotImageWidget(QWidget):
         self.gridLayout.setObjectName("gridLayout")
 
     def getAxisOrientations(self):
-        i = None
-        j = None
-        if self.column_major:
-            i = 2
-            j = 1
-        else:
-            i = 1
-            j = 2
-        return i, j
+        return (2, 1) if self.column_major else (1, 2)
 
     def addPlot(self, data_features):
         if self.column == self.columns:
@@ -103,7 +99,9 @@ class QvizPlotImageWidget(QWidget):
             elif coordinate_of_time == j:
                 orientation = 'bottom'
             time_axis = TimeAxisItem(time_array, orientation=orientation)
-            plotItem = self.pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis})
+            viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
+            plotItem = self.pgw.addPlot(row=0,col=0, rowSpan=1, colSpan=2, axisItems={orientation:time_axis},
+                                        viewBox=viewBox)
 
         plotItem.addItem(imageItem)
         if self.showImageTitle:
@@ -114,7 +112,9 @@ class QvizPlotImageWidget(QWidget):
         self.pgw.addItem(histo, 0, 2)
 
         if self.plotSliceFromROI:
-            slice_plotItem = self.pgw.addPlot(1, 0, 1, 3)
+            viewBox = QVizImageCustomPlotContextMenu(qWidgetParent=self)
+            slice_plotItem = self.pgw.addPlot(1, 0, 1, 3, viewBox=viewBox)
+            #viewBox.setSlicePlotItem(slice_plotItem)
             self.manageSliceImageAxes(dataArrayHandle, slice_plotItem, coordinate_of_time)
             roi = self.addSegmentROI(plotItem, data)
             roi.sigRegionChanged.connect(partial(self.roiChanged, roi, data, imageItem, slice_plotItem))
@@ -150,16 +150,12 @@ class QvizPlotImageWidget(QWidget):
                 self.slice_plot = slice_plotItem.plot(x=np.asarray(range(0, len(self.slice))), y=self.slice)
             else:
                 self.slice_plot.setData(x=np.asarray(range(0, len(self.slice))), y=self.slice)
-        # self.keepSlice()
-        # self.N += 1
-        # if self.N == 3:
-        #     self.removeAllSlices()
-        #     self.N = 0
 
     def keepSlice(self):
         if self.slice is not None and self.slice.ndim == 1:
             slice_plotItem = self.pgw.getItem(1,0)
-            slice_plotItem.plot(x=np.asarray(range(0, len(self.slice))), y=self.slice) #create plotDataItem
+            pen, style = self.getPenAndStyle(len(slice_plotItem.listDataItems()))
+            slice_plotItem.plot(x=np.asarray(range(0, len(self.slice))), y=self.slice, pen=pen, style=style) #create plotDataItem
 
     def removeAllSlices(self):
         slice_plotItem = self.pgw.getItem(1, 0)
@@ -196,6 +192,28 @@ class QvizPlotImageWidget(QWidget):
         if item is not None:
             return item.widget()
         return None
+
+    def getPenAndStyle(self, num_plots):
+        RGBlist = getRGBColorList()
+
+        # Number of available colors
+        num_avail_colors = len(RGBlist)
+
+        # Set color loop counter (for cases where there are more plots
+        # than available plot color+style variations)
+        color_loop_counter = int(num_plots / num_avail_colors)
+        # Set next RGB ID
+        next_RGB_ID = num_plots - color_loop_counter * num_avail_colors
+        # Set pen style
+        if color_loop_counter % 2 == 0:
+            style = Qt.SolidLine
+        else:
+            style = Qt.DotLine
+
+        # Set pen
+        # Note: width higher than '1' considerably decreases performance
+        pen = pg.mkPen(color=RGBlist[next_RGB_ID], width=1, style=style)
+        return pen, style
 
 
 class TimeAxisItem(pg.AxisItem):

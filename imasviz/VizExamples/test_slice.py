@@ -15,7 +15,8 @@ from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizPlugins.viz_example_plugin.viz_example_plugin import viz_example_plugin
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
-
+from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
+    import QVizCustomPlotContextMenu
 
 # Set object managing the PyQt GUI application's control flow
 app = QApplication(sys.argv)
@@ -68,7 +69,7 @@ dataArrayHandles = selection_api.GetSelectedDataFeatures(dataTreeView=dtv)
 
 dataArrayHandle = dataArrayHandles[0]
 
-plotWidget = QvizPlotImageWidget(dataTreeView=dtv, plotSliceFromROI=True, showImageTitle=True)
+plotWidget = QvizPlotImageWidget(dataTreeView=dtv, plotSliceFromROI=True, showImageTitle=False)
 dataArrayHandle.arrayValues = np.transpose(dataArrayHandle.arrayValues)
 plotWidget.column_major = False
 plotWidget.addPlot(dataArrayHandle)

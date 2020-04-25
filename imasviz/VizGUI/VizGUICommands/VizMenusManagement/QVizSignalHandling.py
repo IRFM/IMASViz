@@ -68,6 +68,7 @@ class QVizSignalHandling(QObject):
         numFig = self.imas_viz_api.GetFigurePlotsCount()
         numTPV = self.imas_viz_api.GetTablePlotViewsCount()
         numSPV = self.imas_viz_api.GetStackedPlotViewsCount()
+        numImg = self.imas_viz_api.GetImagePlotsCount()
 
         # Set new popup menu
         self.contextMenu = QMenu()
@@ -107,7 +108,7 @@ class QVizSignalHandling(QObject):
 
         # - Add menu for handling show/hide if figures, TablePlotViews and
         #   StackedPlotViews.
-        self.menusShowHideAndDelete(numFig, numTPV, numSPV, self.contextMenu)
+        self.menusShowHideAndDelete(numFig, numTPV, numSPV, numImg, self.contextMenu)
         self.menusPlugins()
 
         # TODO:
@@ -452,7 +453,7 @@ class QVizSignalHandling(QObject):
 
         return menu
 
-    def menusShowHideAndDelete(self, numFig, numTPV, numSPV, menu):
+    def menusShowHideAndDelete(self, numFig, numTPV, numSPV, numImg, menu):
         """Set two menus: first  for handling show/hide and second for deleting
         of existing figures, TablePlotViews and StackedPlotViews.
         """
@@ -469,7 +470,7 @@ class QVizSignalHandling(QObject):
         menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication, QStyle.SP_DialogDiscardButton))
         menu_delete.setDisabled(True)
 
-        if numFig > 0 or numTPV > 0 or numSPV > 0:
+        if numFig > 0 or numTPV > 0 or numSPV > 0 or numImg > 0:
             menu_showHide.setDisabled(False)
             menu_delete.setDisabled(False)
 
@@ -606,6 +607,52 @@ class QVizSignalHandling(QObject):
                 self.deleteAllFigures, figureType=FigureTypes.TABLEPLOTTYPE))
             # Add to submenu
             subMenu_deleteSPV.addAction(action_deleteAllSPV)
+
+        # Set handling existing figures
+        if numImg > 0:
+
+            # Create and add empty submenu to handle figures show/hide
+            submenu_showHideFigure = menu_showHide.addMenu('Image')
+            submenu_showHideFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Image'))
+            # Create and add empty submenu to handle figures deletion
+            subMenu_deleteFigure = menu_delete.addMenu('Image')
+            subMenu_deleteFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Image'))
+
+            for imageKey in self.imas_viz_api.GetFiguresKeys(
+                    figureType=FigureTypes.IMAGETYPE):
+                # Get image number out from the figureKey string
+                # (e.g. 'Image:0' -> 0)
+                # id_Fig = int(figureKey.split(':')[1])
+                id_Fig = self.imas_viz_api.getFigureKeyNum(imageKey, FigureTypes.IMAGETYPE)
+
+                # --------------------------------------------------------------
+                # Add menu item to show/hide existing figure
+                # Set action
+                action_showHide_figure = QAction(imageKey, self)
+                action_showHide_figure.triggered.connect(
+                    partial(self.showHideFigure, id_Fig, FigureTypes.IMAGETYPE))
+                # Add to submenu
+                submenu_showHideFigure.addAction(action_showHide_figure)
+
+                # --------------------------------------------------------------
+                # Add menu item to delete existing figure
+                # Set action
+                action_delete_figure = QAction(imageKey, self)
+                action_delete_figure.triggered.connect(
+                    partial(self.deleteFigure, id_Fig, FigureTypes.IMAGETYPE))
+                # Add to submenu
+                subMenu_deleteFigure.addAction(action_delete_figure)
+
+            # ------------------------------------------------------------------
+            # Add menu item to delete all existing figures
+            # Set action
+            action_deleteAll_figure = QAction('All', self)
+            action_deleteAll_figure.triggered.connect(partial(
+                self.deleteAllFigures, figureType=FigureTypes.IMAGETYPE))
+            # Add to submenu
+            subMenu_deleteFigure.addAction(action_deleteAll_figure)
+            # Bitmap icon
+            # TODO
 
         menu.addMenu(menu_showHide)
         menu.addMenu(menu_delete)
