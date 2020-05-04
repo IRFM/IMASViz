@@ -60,7 +60,7 @@ class QVizPreviewPlotWidget(QWidget):
         return self.plotStrategy
 
     def plot2D(self, data):
-        self.pg2dPlotWidget.addPlot(data)
+        self.pg2dPlotWidget.plot(data)
 
     def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
@@ -129,7 +129,7 @@ class QVizPreviewPlotWidget(QWidget):
 
 
         # Set plotwidget (use IMASViz custom plot context menu)
-        self.pg2dPlotWidget = QvizPlotImageWidget(rows=1, columns=1, size=(400, 200), dataTreeView=None, showImageTitle=False)
+        self.pg2dPlotWidget = QvizPlotImageWidget(size=(500, 400), dataTreeView=None, showImageTitle=False)
         # Add widgets to layout
         self.gridLayout.addWidget(self.pg2dPlotWidget, 1, 0, 1, 1)
 

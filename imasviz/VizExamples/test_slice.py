@@ -17,6 +17,8 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSig
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
+from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
+
 
 # Set object managing the PyQt GUI application's control flow
 app = QApplication(sys.argv)
@@ -43,17 +45,17 @@ selection_api = Viz_DataSelection_API()
 
 shotNumber = 54178
 runNumber = 0
-userName= 'g2lfleur'
+userName= 'imas_public'
 database = 'west'
 
 # Creating IMASViz data source for this shot
-dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                      shotNumber=shotNumber,
-                                      runNumber=runNumber,
-                                      userName=userName,
-                                      imasDbName=database)
+#dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
+#                                      shotNumber=shotNumber,
+#                                      runNumber=runNumber,
+#                                      userName=userName,
+#                                      imasDbName=database)
 
-f = api.CreateDataTree(dataSource) # Build the data tree view frame
+#f = api.CreateDataTree(dataSource) # Build the data tree view frame
 
 # Set the list of node paths that are to be selected
 paths = []
@@ -63,33 +65,34 @@ paths.append('spectrometer_visible/channel(101)/grating_spectrometer/intensity_s
 pathsDict = {'paths' : paths, 'occurrences' : [0]}
 
 # Select signal nodes corresponding to the paths in paths list
-api.SelectSignals(f, pathsDict)
-dtv = f.dataTreeView
-dataArrayHandles = selection_api.GetSelectedDataFeatures(dataTreeView=dtv)
+#api.SelectSignals(f, pathsDict)
+#dtv = f.dataTreeView
+#dataArrayHandles = selection_api.GetSelectedDataFeatures(dataTreeView=dtv)
 
-dataArrayHandle = dataArrayHandles[0]
+#dataArrayHandle = dataArrayHandles[0]
+coordinatesPath = ['path.x', 'path.y']
+coordinatesValues = []
+coordinatesValues.append(np.linspace(0, 100., num=100))
+coordinatesValues.append(np.linspace(10., 33., num=200))
+coordinates_labels = ['x_label', 'y_label']
+timeCoordinateDim = 2
 
-plotWidget = QvizPlotImageWidget(dataTreeView=dtv, plotSliceFromROI=True, showImageTitle=False)
-dataArrayHandle.arrayValues = np.transpose(dataArrayHandle.arrayValues)
-plotWidget.column_major = False
-plotWidget.addPlot(dataArrayHandle)
+arrayCoordinates=ArrayCoordinates(coordinatesPath, coordinatesValues, timeCoordinateDim, coordinates_labels)
+
+sinx = np.sin(coordinatesValues[0]/50)
+cosy = np.cos(coordinatesValues[1]/20)
+arrayValues = np.zeros((100, 200))
+for i in range(0, 100):
+  arrayValues[i, :] = sinx[i]*cosy
+print(np.shape(arrayValues))
+name='test'
+label='label of the test'
+dataArrayHandle = QVizDataArrayHandle(arrayCoordinates, arrayValues, name, label)
+
+plotWidget = QvizPlotImageWidget(dataTreeView=None, plotSliceFromROI=True, showImageTitle=False)
+#dataArrayHandle.arrayValues = np.transpose(dataArrayHandle.arrayValues)
+#plotWidget.column_major = False
+plotWidget.plot(dataArrayHandle)
 plotWidget.show()
-
-#pg.ImageWindow
-
-# imv = pg.image(y)
-# imv.setImage(y)
-# #
-# # ## Set a custom color map
-# colors = [
-#     (0, 0, 0),
-#     (45, 5, 61),
-#     (84, 42, 55),
-#     (150, 87, 60),
-#     (208, 171, 141),
-#     (255, 255, 255)
-# ]
-# cmap = pg.ColorMap(pos=np.linspace(0.0, 1.0, 6), color=colors)
-# imv.setColorMap(cmap)
 
 app.exec() # Keep the application running

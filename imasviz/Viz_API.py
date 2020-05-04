@@ -597,11 +597,11 @@ class Viz_API:
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
         imageKey = self.GetNextKeyForImagePlots()
         plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView,
-                                         size=(500, 400), plotSliceFromROI=True, title=imageKey, showImageTitle=False)
+                                         size=(600, 500), plotSliceFromROI=True, title=imageKey, showImageTitle=False)
         self.figureframes[imageKey] = plotWidget
         self.addPlotWidgetToMDI(plotWidget)
         dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
-        plotWidget.addPlot(dataArrayHandle)
+        plotWidget.plot(dataArrayHandle)
         plotWidget.show()
 
     def plotSignalVsTimeCommand(self, dataTreeView):

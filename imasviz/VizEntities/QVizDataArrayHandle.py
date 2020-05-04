@@ -52,7 +52,8 @@ class QVizDataArrayHandle:
         return self.label
 
 class ArrayCoordinates:
-    def __init__(self, coordinatesPath=[], coordinatesValues=[], timeCoordinateDim=None, coordinates_labels=[]):
+    def __init__(self, coordinatesPath=[], coordinatesValues=[],
+                 timeCoordinateDim=None, coordinates_labels=[]):
         self.coordinatesPath = coordinatesPath
         self.coordinatesValues = coordinatesValues
         self.timeCoordinateDim = timeCoordinateDim

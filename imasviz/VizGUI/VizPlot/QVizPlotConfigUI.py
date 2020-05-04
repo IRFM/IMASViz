@@ -39,6 +39,12 @@ class QVizPlotConfigUI(QDialog):
         # Set viewBox variable
         self.viewBox = viewBox
 
+        self.saveLegendItem()
+
+        # Set main layout
+        self.setMainLayout()
+
+    def saveLegendItem(self):
         # In TablePlotView the legend is not used.
         if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = None
@@ -50,9 +56,6 @@ class QVizPlotConfigUI(QDialog):
         else:
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
-
-        # Set main layout
-        self.setMainLayout()
 
     def setTabWidget(self):
         """Set TabWidget and its tabbed widgets.
@@ -136,6 +139,8 @@ class SampleCopyFromLegend(QWidget):
         self.view = QGraphicsView(self)
 
         sample_original = self.legendItem.layout.itemAt(self.itemAtID,0)
+        if sample_original is None:
+            return
         sample_new = ItemSample(sample_original.item)
         self.scene.addItem(sample_new)
         self.view.setScene(self.scene)
@@ -220,6 +225,8 @@ class TabLineProperties(QWidget):
         # Add options for each plotDataItem
         i = 0 # layout line
         for pdItem in self.listPlotDataItems:
+            if isinstance(pdItem, pg.InfiniteLine):
+                continue
             j = 0 # layout column
 
             if self.legendItem != None:
@@ -572,6 +579,8 @@ class TabTextProperties(QWidget):
         # Add options for each plotDataItem
         i = 0 # layout line
         for pdItem in self.listPlotDataItems:
+            if isinstance(pdItem, pg.InfiniteLine):
+                continue
             j = 0 # layout column
 
             if self.legendItem != None:
@@ -794,15 +803,12 @@ class TabPlotDesignProperties(QWidget):
 
         # Widget settings
         self.setObjectName("TabPlotDesignProperties")
-        self.setWindowTitle("Plot Design Properties")
-        # self.resize(size[0], size[1])
-
-        # self.setSizePolicy(QSizePolicy.Expanding,
-        #                             QSizePolicy.Expanding)
 
         self.parent = parent
         # Set viewBox variable
         self.viewBox = self.parent.viewBox
+
+        self.hiddenLegend = False
 
         # Set up the QWidget contents
         self.setContents()
@@ -974,24 +980,9 @@ class TabPlotDesignProperties(QWidget):
 
     def hideShowLegend(self):
         if self.parent.legendItem is not None:
-            if self.parent.legendItem.scene() is not None:
-                self.parent.legendItem.scene().removeItem(self.parent.legendItem)
-            self.parent.legendItem = None
-        else:
-            pwg = None
-            if "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
-                pwg = self.viewBox.qWidgetParent.pg
-                plots = pg.listDataItems()
-            elif "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
-                return
-            elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
-                return
+            if self.hiddenLegend:
+                self.parent.legendItem.setVisible(True)
             else:
-                pwg = self.viewBox.qWidgetParent.pgPlotWidget
-                plots = pwg.getPlotItem().listDataItems()
+                self.parent.legendItem.setVisible(False)
+        self.hiddenLegend = not self.hiddenLegend
 
-            l = pwg.addLegend()
-            self.parent.legendItem = l
-
-            for p in plots:
-                l.addItem(p, p.name())

@@ -15,12 +15,14 @@ import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QAction, QMenu
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu import QVizCustomPlotContextMenu
+from imasviz.VizGUI.VizPlot.QVizImageSlicesPlotConfigUI \
+    import QVizImageSlicesPlotConfigUI
 
 class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
     """Subclass of ViewBox.
     """
 
-    def __init__(self, qWidgetParent, parent=None):
+    def __init__(self, qWidgetParent, parent=None, axis=1):
         """Constructor of the QVizCustomPlotContextMenu
 
         Arguments:
@@ -31,8 +33,21 @@ class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
             parent        (obj)     : Parent.
         """
         self.qWidgetParent = qWidgetParent
+        self.axis = axis
         super(QVizImageCustomPlotContextMenu, self).__init__(qWidgetParent=qWidgetParent, parent=parent)
+        self.plotConfDialog = None
 
+    def showConfigurePlot(self):
+        """Set and show custom plot configuration GUI.
+        """
+        if self.axis == 1:
+            self.plotConfDialog = QVizImageSlicesPlotConfigUI(
+                slicesPlotItem=self.qWidgetParent.slicesXPlotItem, axis=self.axis)
+        else:
+            self.plotConfDialog = QVizImageSlicesPlotConfigUI(
+                slicesPlotItem=self.qWidgetParent.slicesYPlotItem, axis=self.axis)
+
+        self.plotConfDialog.show()
 
     def addCustomMenu(self):
 
@@ -44,13 +59,25 @@ class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
 
         # Plot a slice
         self.keepSlice = QAction("Keep this slice", self.menu)
-        self.keepSlice.triggered.connect(self.qWidgetParent.keepSlice)
+        if self.axis == 1:
+            self.keepSlice.triggered.connect(self.qWidgetParent.slicesXPlotItem.keepSlice)
+        else:
+            self.keepSlice.triggered.connect(self.qWidgetParent.slicesYPlotItem.keepSlice)
         self.menu.addAction(self.keepSlice)
 
         #Remove all slices
         self.removeAllSlices = QAction("Delete all slices", self.menu)
-        self.removeAllSlices.triggered.connect(self.qWidgetParent.removeAllSlices)
+        if self.axis == 1:
+            self.removeAllSlices.triggered.connect(self.qWidgetParent.slicesXPlotItem.removeAllSlices)
+        else:
+            self.removeAllSlices.triggered.connect(self.qWidgetParent.slicesYPlotItem.removeAllSlices)
         self.menu.addAction(self.removeAllSlices)
-
-
+        
+        # Add a new marker
+        self.addMarker = QAction("Add new marker", self.menu)
+        if self.axis == 1:
+            self.addMarker.triggered.connect(self.qWidgetParent.slicesXPlotItem.addNewMarker)
+        else:
+            self.addMarker.triggered.connect(self.qWidgetParent.slicesYPlotItem.addNewMarker)
+        self.menu.addAction(self.addMarker)
 
