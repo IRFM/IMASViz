@@ -3,9 +3,9 @@ from PyQt5.QtGui import QMainWindow
 
 from pyqtgraph.exporters.Matplotlib import Exporter
 from pyqtgraph.parametertree import Parameter
-from pyqtgraph.GraphicsScene.exportDialog import ExportDialog
 from pyqtgraph.graphicsItems.PlotItem import PlotItem
 from pyqtgraph import functions as fn
+
 
 class QVizMatplotlibExporter(Exporter):
     """ The pyqtgraph 0.10.0 Matplotlib exporter has many issues, one of them are:
@@ -98,7 +98,7 @@ class QVizMatplotlibExporter(Exporter):
             ax = fig.add_subplot(111, title=title)
             ax.clear()
             self.cleanAxes(ax)
-            #ax.grid(True)
+            # ax.grid(True)
             for item in self.item.curves:
                 x, y = item.getData()
 
@@ -122,19 +122,25 @@ class QVizMatplotlibExporter(Exporter):
                     symbol = '^'
                 symbolPen = fn.mkPen(opts['symbolPen'])
                 symbolBrush = fn.mkBrush(opts['symbolBrush'])
-                markeredgecolor = tuple([c/255. for c in fn.colorTuple(symbolPen.color())])
-                markerfacecolor = tuple([c/255. for c in fn.colorTuple(symbolBrush.color())])
+                markeredgecolor = tuple(
+                    [c/255. for c in fn.colorTuple(symbolPen.color())])
+                markerfacecolor = tuple(
+                    [c/255. for c in fn.colorTuple(symbolBrush.color())])
                 markersize = opts['symbolSize']
 
                 if opts['fillLevel'] is not None and opts['fillBrush'] is not None:
                     fillBrush = fn.mkBrush(opts['fillBrush'])
-                    fillcolor = tuple([c/255. for c in fn.colorTuple(fillBrush.color())])
-                    ax.fill_between(x=x, y1=y, y2=opts['fillLevel'], facecolor=fillcolor)
+                    fillcolor = tuple(
+                        [c/255. for c in fn.colorTuple(fillBrush.color())])
+                    ax.fill_between(x=x, y1=y, y2=opts['fillLevel'],
+                                    facecolor=fillcolor)
 
-                pl = ax.plot(x, y, marker=symbol, color=color, linewidth=pen.width(),
-                        linestyle=linestyle, markeredgecolor=markeredgecolor,
-                        markerfacecolor=markerfacecolor,
-                        markersize=markersize)
+                pl = ax.plot(x, y, marker=symbol, color=color,
+                             linewidth=pen.width(),
+                             linestyle=linestyle,
+                             markeredgecolor=markeredgecolor,
+                             markerfacecolor=markerfacecolor,
+                             markersize=markersize)
                 xr, yr = self.item.viewRange()
 
                 # pyqtgraph by default uses scientific notation for large
@@ -153,7 +159,9 @@ class QVizMatplotlibExporter(Exporter):
         else:
             raise Exception("Matplotlib export currently only works with plot items")
 
+
 QVizMatplotlibExporter.register()
+
 
 class QVizMatplotlibWindow(QMainWindow):
     """Intended for QVizMatplotlibExporter.

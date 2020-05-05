@@ -7,11 +7,12 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *******************************************************************************
 
-import time, logging
+import time
+import logging
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils import QVizGlobalOperations
 from PyQt5.QtGui import QTextDocument
@@ -89,7 +90,7 @@ class QVizSavePlotConfig():
             key = (row, column)
 
             # Continue only if the plotItem is filled (contains signal info)
-            if hasattr(plotItem, 'signalData') != True:
+            if hasattr(plotItem, 'signalData') is not True:
                 break
 
             # Extract signal node data (it contains also 'path') from the
@@ -141,7 +142,7 @@ class QVizSavePlotConfig():
             sa(optsEl, 'fillBrush', opts['fillBrush'])
             sa(optsEl, 'stepMode', opts['stepMode'])
             # If symbol (shape) is not defined, save attribute as 'None'
-            if opts['symbol'] != None:
+            if opts['symbol'] is not None:
                 sa(optsEl, 'symbol', opts['symbol'])
             else:
                 sa(optsEl, 'symbol', 'None')
@@ -189,11 +190,12 @@ class QVizSavePlotConfig():
         # Set element tree
         treeConfiguration = ET.ElementTree(root)
         # Write configuration file
-        treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
+        treeConfiguration.write(filePath, encoding="utf-8",
+                                xml_declaration=True)
         # self.f.close()
         # Update the DTV configuration window (for the newly created
         # configuration to be displayed)
-        if self.dataTreeView.parent.configurationListsWindow != None:
+        if self.dataTreeView.parent.configurationListsWindow is not None:
             self.dataTreeView.parent.configurationListsWindow.updateList('pcfg')
 
     def saveAttribute(self, panelElement, attribute, value):
@@ -205,7 +207,7 @@ class QVizSavePlotConfig():
             attribute    (str)           : Attribute name/label.
             value        (any)           : Attribute value.
         """
-        if value != None:
+        if value is not None:
             panelElement.set(attribute, str(value))
 
     def savePenAttributes(self, panelElement, pen):
@@ -215,17 +217,17 @@ class QVizSavePlotConfig():
             panelElement (ET.SubElement) : (Sub)Element to which the attribute
                                            is to be stored.
             pen          (QPen)          : Pen from which pen attributes
-                                           (color, width etc.) are extracted and
-                                           saved under a new subelement tree for
-                                           panelElement.
+                                           (color, width etc.) are extracted
+                                           and saved under a new subelement
+                                           tree for panelElement.
         """
 
         # Set shorter name for saveAttribute function
         sa = self.saveAttribute
 
-        if pen != None:
-            # Set new subelement of the panelElement, holding all pen attributes
-            # (in a form of a tree of subelements)
+        if pen is not None:
+            # Set new subelement of the panelElement, holding all pen
+            # attributes (in a form of a tree of subelements)
             penEl = ET.SubElement(panelElement, 'pen')
             # - Brush
             penBrushEl = ET.SubElement(penEl, 'QBrush')
@@ -254,7 +256,7 @@ class QVizSavePlotConfig():
         else:
             # Print warning to DTV log
             logging.warning('savePenAttributes: Pen variable is not properly '
-                             'defined.')
+                            'defined.')
 
     def saveAxisAttributes(self, panelElement, axisType, plotItem):
         """Save pen attributes as string to panelElement.
@@ -278,8 +280,8 @@ class QVizSavePlotConfig():
 
         # if axisType is not None and is 'bottom' or 'top' or 'left' or 'right':
         if axisType is not None and axisType in axisLabelList:
-            # Set new subelement of the panelElement, holding all axis attributes
-            # (in a form of a tree of subelements)
+            # Set new subelement of the panelElement, holding all axis
+            # attributes (in a form of a tree of subelements)
             axisItemEl = ET.SubElement(panelElement, axisType)
             AxisItem = plotItem.getAxis(axisType)  # pg.AxisItem
             # Set new subelement for holding plot pen configuration
@@ -295,7 +297,8 @@ class QVizSavePlotConfig():
             axisItemLabelFontEl = ET.SubElement(axisItemEl, 'font')
             axisItemLabelFont = AxisItem.label.font()  # QGraphicsTextItem
             sa(axisItemLabelFontEl, 'bold', axisItemLabelFont.bold())
-            sa(axisItemLabelFontEl, 'capitalization', axisItemLabelFont.capitalization())
+            sa(axisItemLabelFontEl, 'capitalization',
+               axisItemLabelFont.capitalization())
             sa(axisItemLabelFontEl, 'family', axisItemLabelFont.family())
             sa(axisItemLabelFontEl, 'italic', axisItemLabelFont.italic())
             sa(axisItemLabelFontEl, 'overline', axisItemLabelFont.overline())
@@ -319,7 +322,7 @@ class QVizSavePlotConfig():
         else:
             # Print warning to DTV log
             logging.warning('saveAxisAttributes: AxisItem variable is not '
-                             'properly defined.')
+                            'properly defined.')
 
     def printCode(self, text, level):
         return QVizGlobalOperations.printCode(self.f, text, level)

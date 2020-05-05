@@ -7,19 +7,17 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QAction, QMenu, QTreeWidgetItem, QMainWindow
+from PyQt5.QtGui import QAction
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
 
 from pyqtgraph.exporters.Matplotlib import Exporter
-from imasviz.VizGUI.VizExporters.QVizMatplotlibExporter \
-    import QVizMatplotlibExporter
+
 
 class QVizCustomPlotContextMenu(pg.ViewBox):
     """Subclass of ViewBox.
@@ -31,8 +29,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         Arguments:
             qWidgetParent (QWidget) : Parent of ViewBox which is PyQt5 QWidget
                                       object (setting QWidget (PyQt5) as a
-                                      regular ViewBox (pyqtgraph) parent doesn't
-                                      seem to be allowed).
+                                      regular ViewBox (pyqtgraph) parent
+                                      doesn't seem to be allowed).
             parent        (obj)     : Parent.
         """
         super(QVizCustomPlotContextMenu, self).__init__(parent)
@@ -43,15 +41,15 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.qWidgetParent = qWidgetParent
 
         # Set original plot context menu
-        # Note: self.menu must not be None (this way works fine for plotWidgets,
-        # but not for GraphicsWindow (TablePlotView))
+        # Note: self.menu must not be None (this way works fine for
+        #       plotWidgets, but not for GraphicsWindow (TablePlotView))
         self.menu = pg.ViewBoxMenu.ViewBoxMenu(self)
 
         # Menu update property
         self.menuUpdate = True
 
-        # Modify list of available exporters (in order to remove the problematic
-        # Matplotlib exporter and replace it with ours)
+        # Modify list of available exporters (in order to remove the
+        # problematic Matplotlib exporter and replace it with ours)
         self.updateExportersList()
 
     def getMenu(self, event=None):
@@ -126,4 +124,3 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             if exporter.Name == 'Matplotlib Window (v2)':
                 i = Exporter.Exporters.index(exporter)
                 Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
-

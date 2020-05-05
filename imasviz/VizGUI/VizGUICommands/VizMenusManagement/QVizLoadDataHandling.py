@@ -9,15 +9,15 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #  TODO:
 #
 #    - Function definitions (from LoadDataHandling class)
 #       def popUpMenuHandler
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
-#****************************************************
+# *****************************************************************************
 
 from functools import partial
 
@@ -58,13 +58,18 @@ class QVizLoadDataHandling(QObject):
             #         function arguments. The use of partial is better
             #         and more bulletproof
             action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData,
-                                                                      dataTreeView, rootNode.getIDSName(), i, True))
+                                                              dataTreeView,
+                                                              rootNode.getIDSName(), i, True))
 
-    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, threadingEvent=None):
+    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0,
+                         threadingEvent=None):
         """Load data of selected IDS and its occurrence.
 
         Arguments:
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
         """
-        QVizLoadSelectedData(dataTreeView, IDSName, occurrence, threadingEvent).execute()
+        QVizLoadSelectedData(dataTreeView,
+                             IDSName,
+                             occurrence,
+                             threadingEvent).execute()

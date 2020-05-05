@@ -4,10 +4,12 @@ from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
 from imasviz.VizUtils import GlobalIcons
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 
+
 class QVizMainMenuController:
 
     def __init__(self, parent=None):
         self.openShotView = QVizOpenShotView(parent.getMDI())
+
     def updateMenu(self, menu, listenerWidget):
         numWindows = len(self.openShotView.api.GetDTVFrames())
         self.menusShowHideAndDelete(numWindows, menu, listenerWidget)
@@ -19,7 +21,8 @@ class QVizMainMenuController:
         # Create and add empty menu to handle deletion of plot views and
         # figures
         menu_delete = QMenu('Delete', menu)
-        menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication, QStyle.SP_DialogDiscardButton))
+        menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication,
+                                                         QStyle.SP_DialogDiscardButton))
         menu_delete.setDisabled(True)
 
         if numWindows > 0:
@@ -28,10 +31,12 @@ class QVizMainMenuController:
 
             # Create and add empty submenu to handle windows show/hide
             submenu_showHideView = menu_showHide.addMenu('Views')
-            submenu_showHideView.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+            submenu_showHideView.setIcon(
+                GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
             # Create and add empty submenu to handle windows deletion
             subMenu_deleteView = menu_delete.addMenu('Views')
-            subMenu_deleteView.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+            subMenu_deleteView.setIcon(
+                GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
 
             for i in range(0, numWindows):
                 # --------------------------------------------------------------

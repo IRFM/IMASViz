@@ -11,14 +11,14 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
+# *****************************************************************************
 #  TODO:
 #
 #    - class HandleRightClickAndShiftDown definition
 #
-# ****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-# ****************************************************
+# *****************************************************************************
 
 from PyQt5.QtWidgets import QMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling

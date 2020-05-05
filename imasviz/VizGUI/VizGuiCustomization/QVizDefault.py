@@ -1,5 +1,6 @@
 import os
 
+
 class QVizDefaultGUIEntries:
     def __init__(self):
         pass
@@ -15,6 +16,7 @@ class QVizDefaultGUIEntries:
         default_machine = 'west'
         default_run = '1'
         return default_user, default_machine, default_run
+
 
 class QVizDefault:
 

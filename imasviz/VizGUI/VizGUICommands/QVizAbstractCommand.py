@@ -9,6 +9,3 @@ class QVizAbstractCommand:
             self.treeNode = self.dataTreeView.selectedItem
         if self.treeNode is not None:
             self.nodeData = self.treeNode.getData()
-
-
-

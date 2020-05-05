@@ -9,12 +9,13 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# *****************************************************************************
 
 from PyQt5.QtWidgets import QMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
+
 
 class QVizHandleShiftAndRightClick:
     """Handle the mouse right click + shift down event on a tree widget item
@@ -29,5 +30,7 @@ class QVizHandleShiftAndRightClick:
         """Execute on the event
         """
         self.dataTreeView.popupmenu = QMenu()
-        self.pluginsPopUpMenu.upateMenu(treeNode, self.dataTreeView, self.dataTreeView.popupmenu)
-        self.dataTreeView.popupmenu.exec_(self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))
+        self.pluginsPopUpMenu.upateMenu(treeNode, self.dataTreeView,
+                                        self.dataTreeView.popupmenu)
+        self.dataTreeView.popupmenu.exec_(
+            self.dataTreeView.viewport().mapToGlobal(self.dataTreeView.pos))

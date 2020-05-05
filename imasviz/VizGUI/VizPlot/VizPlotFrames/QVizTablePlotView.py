@@ -88,7 +88,6 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-
     def getType(self):
         return PlotTypes.TABLE_PLOT
 
@@ -98,8 +97,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
     def getStrategy(self):
         return self.plotStrategy
 
-
-    def plot1DSelectedSignals(self, update=0, all_DTV=True) :
+    def plot1DSelectedSignals(self, update=0, all_DTV=True):
         """Plot the set of 1D signals, selected by the user, as a function of
            time to TablePlotView.
 
@@ -135,9 +133,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 tup = (dtv.dataSource.shotNumber, signalNode)
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
-                s= self.imas_viz_api.GetSignal(dataTreeView=self.dataTreeView,
-                                            vizTreeNode=signalNode,
-                                            plotWidget=self)
+                s = self.imas_viz_api.GetSignal(dataTreeView=self.dataTreeView,
+                                                vizTreeNode=signalNode,
+                                                plotWidget=self)
 
                 t = QVizPlotSignal.getXAxisValues(s)
 

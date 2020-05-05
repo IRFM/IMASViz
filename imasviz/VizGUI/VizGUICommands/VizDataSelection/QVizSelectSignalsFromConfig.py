@@ -8,9 +8,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-#****************************************************
+# *****************************************************************************
 
 import xml.etree.ElementTree as ET
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \

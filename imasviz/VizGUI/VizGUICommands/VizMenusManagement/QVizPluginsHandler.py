@@ -7,9 +7,11 @@ from imasviz.VizUtils import GlobalIcons
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from PyQt5.QtWidgets import QAction, QApplication, QMainWindow, QWidget
 
+
 class MenuIDS:
     def __init__(self):
         self.PLUGINS_MENU_IDS = []  # list of tuples (Id, menu desc., plugins object)
+
 
 class QVizPluginsHandler:
 
@@ -35,7 +37,7 @@ class QVizPluginsHandler:
             if isinstance(pluginsObject, VizPlugin):
                 if not pluginsObject.isEnabled():
                     continue
-            entriesList = [] #list of entry index (ex: [0,1])
+            entriesList = []  # list of entry index (ex: [0,1])
             if isinstance(pluginsObject, VizPlugin):
                 entriesList = pluginsObject.getEntries()
             else:
@@ -52,7 +54,7 @@ class QVizPluginsHandler:
                     tuple = (pluginsName, new_id, entry,
                              pluginsObject)
                     self.menuIDS.PLUGINS_MENU_IDS.append(tuple)
-                    addedPluginsEntries[pluginsName].append(entry) #plugins entry should appear only once in the popup menu
+                    addedPluginsEntries[pluginsName].append(entry)  # plugins entry should appear only once in the popup menu
 
         for i in range(0, len(self.menuIDS.PLUGINS_MENU_IDS)):
             m = self.menuIDS.PLUGINS_MENU_IDS[i]
@@ -103,8 +105,8 @@ class QVizPluginsHandler:
             # If pluginsObject is QMainWindow type (indicating that the
             # plugin was provided as an instance of the user interface
             # (.ui file)
-            logging.info('Running plugin through instance of '
-                                       'the user interface (.ui) file.')
+            logging.info('Running plugin through instance of the use interface'
+                         '(.ui) file.')
             # Find the main Qt designer widget (by widget object name)
             qdw = pluginsObject.findChild(QWidget, 'mainPluginWidget')
 
@@ -140,4 +142,5 @@ class QVizPluginsHandler:
                 traceback.print_exc()
                 logging.error(traceback.format_exc())
         else:
-            print("Unable to execute plugin: " + pluginsName + ". Bad implementation provided by the plugin!")
+            print("Unable to execute plugin: " + pluginsName +
+                  ". Bad implementation provided by the plugin!")

@@ -7,9 +7,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
-# ****************************************************
+# *****************************************************************************
 
 import time
 import xml.etree.ElementTree as ET
@@ -45,7 +45,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
 
         # Don't proceed with saving the signal selection if the dialog was
         # cancelled
-        if ok == False:
+        if ok is False:
             return
 
         # Format the configuration file name
@@ -94,14 +94,15 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
 
         self.indent(root)
         treeConfiguration = ET.ElementTree(root)
-        treeConfiguration.write(filePath, encoding="utf-8", xml_declaration=True)
+        treeConfiguration.write(filePath, encoding="utf-8",
+                                xml_declaration=True)
         #self.f.close()
 
-        if self.dataTreeView.parent.configurationListsWindow != None:
+        if self.dataTreeView.parent.configurationListsWindow is not None:
             self.dataTreeView.parent.configurationListsWindow.updateList('lsp')
 
     def saveAttribute(self, pathElement, attribute, value):
-        if value != None:
+        if value is not None:
             pathElement.set(attribute, str(value))
 
     def printCode(self, text, level):

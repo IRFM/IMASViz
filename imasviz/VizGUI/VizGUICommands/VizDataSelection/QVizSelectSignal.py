@@ -9,9 +9,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-# ****************************************************
+# *****************************************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
@@ -30,7 +30,7 @@ class QVizSelectSignal(QVizAbstractCommand):
                                          item in the DTV, will be used
                                          (self.dataTreeView.selectedItem).
     """
-    def __init__(self, dataTreeView, treeNode = None):
+    def __init__(self, dataTreeView, treeNode=None):
         QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
     def execute(self):
@@ -48,7 +48,7 @@ class QVizSelectSignal(QVizAbstractCommand):
         # data dictionaries of all selected signals
         # (should replace self.dataTreeView.selectedSignals)
         self.dataTreeView.selectedSignalsDict[key] = \
-             {'index'           : index,
+            {'index'            : index,
              'QTreeWidgetItem'  : selectedItem,
              'shotNumber'       : self.dataTreeView.dataSource.shotNumber,
              'runNumber'        : self.dataTreeView.dataSource.runNumber,

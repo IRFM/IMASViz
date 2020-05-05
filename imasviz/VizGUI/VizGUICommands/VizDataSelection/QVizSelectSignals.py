@@ -11,9 +11,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-# ****************************************************
+# *****************************************************************************
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignal import QVizSelectSignal
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
@@ -71,13 +71,14 @@ class QVizSelectSignals(QVizAbstractCommand):
                 occurrence = int(occurrencesList[i])
 
             if len(occurrencesList) > 1 and (len(occurrencesList) != len(pathsList)):
-                raise ValueError('The number of specified occurrences differ from the number of specified paths.')
+                raise ValueError('The number of specified occurrences differ '
+                                 'from the number of specified paths.')
 
             s = pathsList[i]
             # When the signal path matches the path from the given list,
             # select the signal
-            # Go through the list of signals and compare their path attribute with
-            # the paths from the given list
+            # Go through the list of signals and compare their path attribute
+            # with the paths from the given list
             for signal in self.dataTreeView.signalsList:
 
                 if occurrence != signal.getOccurrence() or s != signal.getPath():
@@ -137,7 +138,8 @@ class QVizSelectSignals(QVizAbstractCommand):
                 continue
 
             # Check/Populate the IDS tree node
-            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrence), asynch).execute()
+            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrence),
+                                 asynch).execute()
 
     @staticmethod
     def convertPathsLists(pathsList):
@@ -154,4 +156,3 @@ class QVizSelectSignals(QVizAbstractCommand):
             pathsList = [pathsList]
 
         return pathsList
-

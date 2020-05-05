@@ -110,7 +110,6 @@ class QVizStackedPlotView(QWidget):
         # Add checkbox to layout
         self.layout().addWidget(self.displayAllXAxis, 2, 0, 1, 1)
 
-
     @pyqtSlot()
     def checkGroupPanMode(self):
         """Check value of groupPanMode checkbox and change blockLink
@@ -135,6 +134,7 @@ class QVizStackedPlotView(QWidget):
         else:
             # Set false for all plots except for the last/bottom one
             [el.getAxis('bottom').setStyle(showValues=False) for el in self.plotList[:-1]]
+
 
 class StackedPlotWindow(pg.GraphicsWindow):
     """View containing the plots in a stacked layout.
@@ -199,7 +199,6 @@ class StackedPlotWindow(pg.GraphicsWindow):
         self.setBackground((255, 255, 255))
         self.centralWidget.setSpacing(0)
 
-
     def getType(self):
         return PlotTypes.STACKED_PLOT
 
@@ -209,7 +208,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
     def getStrategy(self):
         return self.plotStrategy
 
-    def plot1DSelectedSignals(self, update: int=0, all_DTV: bool=True):
+    def plot1DSelectedSignals(self, update: int = 0, all_DTV: bool = True):
         """Plot the set of 1D signals, selected by the user, as a function of
            time to StackedPlotView.
 
@@ -281,8 +280,8 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 # Set plot options
                 label, xlabel, ylabel, title = \
                     signalNode.plotOptions(dataTreeView=dtv,
-                                               title=self.figureKey,
-                                               plotWidget=self)
+                                           title=self.figureKey,
+                                           plotWidget=self)
 
                 # Add plot
                 for i in range(0, nbRows):
@@ -371,7 +370,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
         # Enable legend (Note: must be done before plotting!)
         p.addLegend()
-        #p.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
+        # p.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
         p.plot(x=x,
                y=y,
                name=label,

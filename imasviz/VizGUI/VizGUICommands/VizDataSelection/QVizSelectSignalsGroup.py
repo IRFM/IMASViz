@@ -9,9 +9,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-#****************************************************
+# *****************************************************************************
 
 import re
 
@@ -22,7 +22,7 @@ from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractComman
 class QVizSelectSignalsGroup(QVizAbstractCommand):
     """Select a group of all signals - siblings of the node.
     """
-    def __init__(self, dataTreeView, treeNode = None):
+    def __init__(self, dataTreeView, treeNode=None):
         """
         Arguments:
             dataTreeView (QTreeWidget) : QTreeWidget object (DTV tree widget).

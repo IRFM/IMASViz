@@ -9,9 +9,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-#****************************************************
+# *****************************************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
@@ -27,7 +27,7 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
         # If signals from all DTV are to be unselected, use the list of all
         # existing DTVs. Otherwise use current DTV.
         DTVList = []
-        if self.all_DTV != True:
+        if self.all_DTV is not True:
             DTVList.append(self.dataTreeView)
         else:
             DTVList = self.imas_viz_api.DTVlist
@@ -46,8 +46,8 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
 
                 # Search through the whole list of signals (all FLT_1D nodes etc.)
                 for s in dtv.signalsList:
-                    # If the itemVIZData matches, add the signal key to the list
-                    # of keys for removal
+                    # If the itemVIZData matches, add the signal key to the
+                    # list of keys for removal
                     if signalItemVIZData == s.getData():
                         # Set the signal isSelected attribute/status
                         signalItemVIZData['isSelected'] = 0
@@ -56,8 +56,8 @@ class QVizUnselectAllSignals(QVizAbstractCommand):
                         key = dtv.dataSource.dataKey(vizTreeNode)
                         keysToRemove.append(key)
                         break
-            # Go through the list of selected signals and delete all of them from
-            # the same list
+            # Go through the list of selected signals and delete all of them
+            # from the same list
             for i in range(0, len(dtv.selectedSignalsDict)):
                 key = keysToRemove[i]
                 # Delete the signal from selectedSignalsDict list

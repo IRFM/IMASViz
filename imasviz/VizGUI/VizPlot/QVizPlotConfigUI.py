@@ -65,7 +65,7 @@ class QVizPlotConfigUI(QDialog):
 
         # Disabling tab for customizing text properties in case legendItem is
         # not set (as many text customization refers to legend)
-        if self.legendItem != None:
+        if self.legendItem is not None:
             self.tabTP = TabTextProperties(parent=self)
             tabWidget.addTab(self.tabTP, "Text properties")
 
@@ -110,6 +110,7 @@ class QVizPlotConfigUI(QDialog):
         # Set dialog layout
         self.setLayout(layout)
 
+
 class SampleCopyFromLegend(QWidget):
     """ Create a widget containing the legend label marker ("sample").
     'sample' is the line marker shown in the plot legend
@@ -129,18 +130,19 @@ class SampleCopyFromLegend(QWidget):
         # Set graphics scene
         self.scene = QGraphicsScene()
         # Set scene size
-        self.scene.setSceneRect(0,0,0,0)
+        self.scene.setSceneRect(0, 0, 0, 0)
         # Set view
         self.view = QGraphicsView(self)
 
-        sample_original = self.legendItem.layout.itemAt(self.itemAtID,0)
+        sample_original = self.legendItem.layout.itemAt(self.itemAtID, 0)
         sample_new = ItemSample(sample_original.item)
         self.scene.addItem(sample_new)
         self.view.setScene(self.scene)
-        self.view.setMaximumSize(25,25)
+        self.view.setMaximumSize(25, 25)
 
     def getCopy(self):
         return self
+
 
 class TabLineProperties(QWidget):
     """Widget allowing plot color and line customization.
@@ -216,11 +218,11 @@ class TabLineProperties(QWidget):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
         # Add options for each plotDataItem
-        i = 0 # layout line
+        i = 0  # layout line
         for pdItem in self.listPlotDataItems:
-            j = 0 # layout column
+            j = 0  # layout column
 
-            if self.legendItem != None:
+            if self.legendItem is not None:
                 # Add line marker from the legend to the plot configuration to
                 # provide better way of identifying the plot to customize
                 newSampleWidget = SampleCopyFromLegend(parent=self,
@@ -228,8 +230,8 @@ class TabLineProperties(QWidget):
                                                        itemAtID=i).getCopy()
 
                 # - Add sample marker to layout
-                scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
-                j += 1 # go to next column
+                scrollLayout.addWidget(newSampleWidget, i+1, j, 1, 1)
+                j += 1  # go to next column
 
             # ------------------------------------------------------------------
             # Configuring plot pen color
@@ -251,7 +253,7 @@ class TabLineProperties(QWidget):
             #     self.updatePDItemColor,
             #     pdItem=pdItem,
             #     colorButton=penColorButton))
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen style
             styleComboBox = QComboBox()
@@ -271,7 +273,7 @@ class TabLineProperties(QWidget):
 
             # - Add comboBox to layout
             scrollLayout.addWidget(styleComboBox, i + 1, j, 1, 1)
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen width
             widthSpinBox = QDoubleSpinBox(value=pdItem.opts['pen'].width(),
@@ -286,7 +288,7 @@ class TabLineProperties(QWidget):
                 self.updatePDItemWidth,
                 pdItem=pdItem,
                 spinBox=widthSpinBox))
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol type
             symbolComboBox = QComboBox()
@@ -313,7 +315,7 @@ class TabLineProperties(QWidget):
 
             # - Add comboBox to layout
             scrollLayout.addWidget(symbolComboBox, i + 1, j, 1, 1)
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol size. Take current symbol size as a value
             symbolSizeSpinBox = QDoubleSpinBox(value=pdItem.opts['symbolSize'],
@@ -328,7 +330,7 @@ class TabLineProperties(QWidget):
                 self.updatePDItemSymbolSize,
                 pdItem=pdItem,
                 spinBox=symbolSizeSpinBox))
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol fill color
             symbolColorButton = pg.ColorButton()
@@ -349,7 +351,7 @@ class TabLineProperties(QWidget):
             #     self.updatePDItemSymbolColor,
             #     pdItem=pdItem,
             #     colorButton=symbolColorButton))
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol outline color
             symbolOColorButton = pg.ColorButton()
@@ -434,7 +436,8 @@ class TabLineProperties(QWidget):
 
         Arguments:
             pdItem  (pg.plotDataItem) : PlotDataItem to update.
-            spinBox (QDoubleSpinBox)  : SpinBox with which the new width is set.
+            spinBox (QDoubleSpinBox)  : SpinBox with which the new width is
+                                        set.
         """
 
         # Change item pen width
@@ -568,11 +571,11 @@ class TabTextProperties(QWidget):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
         # Add options for each plotDataItem
-        i = 0 # layout line
+        i = 0  # layout line
         for pdItem in self.listPlotDataItems:
-            j = 0 # layout column
+            j = 0  # layout column
 
-            if self.legendItem != None:
+            if self.legendItem is not None:
                 # Add line marker from the legend to the plot configuration to
                 # provide better way of identifying the plot to customize
                 newSampleWidget = SampleCopyFromLegend(parent=self,
@@ -580,8 +583,8 @@ class TabTextProperties(QWidget):
                                                        itemAtID=i).getCopy()
 
                 # - Add sample marker to layout
-                scrollLayout.addWidget(newSampleWidget, i +1, j, 1, 1)
-                j += 1 # go to next column
+                scrollLayout.addWidget(newSampleWidget, i+1, j, 1, 1)
+                j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring legend label
             # - Add editable text box containing item label (string)
@@ -595,7 +598,7 @@ class TabTextProperties(QWidget):
                 self.updatePDItemLabel,
                 pdItem=pdItem,
                 lineEdit=labelEdit))
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring legend thickness (boldness)
             boldButton = QPushButton('', self)
@@ -610,7 +613,7 @@ class TabTextProperties(QWidget):
                 legendItemID=i))
 
             # boldButton.released.connect()
-            j += 1 # go to next column
+            j += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring legend italic text style
             italicButton = QPushButton('', self)
@@ -669,13 +672,12 @@ class TabTextProperties(QWidget):
 
         key = 'bold'
         if key in legendLabelItem.opts:
-            if legendLabelItem.opts['bold'] == True:
+            if legendLabelItem.opts['bold'] is True:
                 self.setLegendItemBoldOFF(legendItemID=legendItemID)
-            elif legendLabelItem.opts['bold'] == False:
+            elif legendLabelItem.opts['bold'] is False:
                 self.setLegendItemBoldON(legendItemID=legendItemID)
         else:
             self.setLegendItemBoldON(legendItemID=legendItemID)
-
 
     @pyqtSlot(int)
     def setLegendItemBoldON(self, legendItemID):
@@ -728,9 +730,9 @@ class TabTextProperties(QWidget):
 
         key = 'italic'
         if key in legendLabelItem.opts:
-            if legendLabelItem.opts['italic'] == True:
+            if legendLabelItem.opts['italic'] is True:
                 self.setLegendItemItalicOFF(legendItemID=legendItemID)
-            elif legendLabelItem.opts['italic'] == False:
+            elif legendLabelItem.opts['italic'] is False:
                 self.setLegendItemItalicON(legendItemID=legendItemID)
         else:
             self.setLegendItemItalicON(legendItemID=legendItemID)
@@ -739,7 +741,6 @@ class TabTextProperties(QWidget):
     def setHideLegend(self, legendItemID):
 
         pass
-
 
     @pyqtSlot(int)
     def setLegendItemItalicON(self, legendItemID):
@@ -777,11 +778,11 @@ class TabTextProperties(QWidget):
         # Set style
         legendLabelStyle = {'italic': False}
 
-
         # Setting text style
         # Note: setAttr('bold', False) and setProperty('bold', False) have no
         #       effect.
         legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
+
 
 class TabPlotDesignProperties(QWidget):
     """Widget allowing plot color and line customization.
@@ -804,7 +805,6 @@ class TabPlotDesignProperties(QWidget):
 
         # Set up the QWidget contents
         self.setContents()
-
 
     def setContents(self):
         """ Set widget contents.
@@ -855,24 +855,24 @@ class TabPlotDesignProperties(QWidget):
 
         # Set spinboxes for each margin side
         self.marginSpinBox_left = QSpinBox(value=currentMargin[0],
-                                      maximum=250,
-                                      minimum=0,
-                                      singleStep=1)
+                                           maximum=250,
+                                           minimum=0,
+                                           singleStep=1)
 
         self.marginSpinBox_top = QSpinBox(value=currentMargin[1],
-                                     maximum=250,
-                                     minimum=0,
-                                     singleStep=1)
+                                          maximum=250,
+                                          minimum=0,
+                                          singleStep=1)
 
         self.marginSpinBox_right = QSpinBox(value=currentMargin[2],
-                                       maximum=250,
-                                       minimum=0,
-                                       singleStep=1)
+                                            maximum=250,
+                                            minimum=0,
+                                            singleStep=1)
 
         self.marginSpinBox_bottom = QSpinBox(value=currentMargin[3],
-                                        maximum=250,
-                                        minimum=0,
-                                        singleStep=1)
+                                             maximum=250,
+                                             minimum=0,
+                                             singleStep=1)
 
         # On spinbox value change, run update routine
         self.marginSpinBox_left.valueChanged.connect(

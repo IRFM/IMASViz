@@ -7,9 +7,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
+# *****************************************************************************
 
 import pyqtgraph as pg
 import numpy as np
@@ -29,8 +29,9 @@ class QVizPlotWidget(QWidget):
     feature.
     """
 
-    def __init__(self, dataTreeView, parent=None, size=(500, 400), title='QVizPlotWidget',
-                 addTimeSlider=False, addCoordinateSlider=False):
+    def __init__(self, dataTreeView, parent=None, size=(500, 400),
+                 title='QVizPlotWidget', addTimeSlider=False,
+                 addCoordinateSlider=False):
         super(QVizPlotWidget, self).__init__(parent)
 
         self.vizTreeNodesList = []
@@ -62,7 +63,6 @@ class QVizPlotWidget(QWidget):
 
         self.plotStrategy = None
 
-
     def getType(self):
         return PlotTypes.SIMPLE_PLOT
 
@@ -82,7 +82,8 @@ class QVizPlotWidget(QWidget):
     def getStrategy(self):
         return self.plotStrategy
 
-    def plot(self, vizTreeNode=None, x=None, y=None, title='', label='', xlabel='', ylabel='',
+    def plot(self, vizTreeNode=None, x=None, y=None, title='', label='',
+             xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
         """Add plot.
 
@@ -119,7 +120,8 @@ class QVizPlotWidget(QWidget):
 
             # Set pen
             # Note: width higher than '1' considerably decreases performance
-            pen = pg.mkPen(color=self.RGBlist[next_RGB_ID], width=1, style=style)
+            pen = pg.mkPen(color=self.RGBlist[next_RGB_ID], width=1,
+                           style=style)
 
         # Plot and plot settings
         # - Add plot
@@ -127,7 +129,7 @@ class QVizPlotWidget(QWidget):
         # if vizTreeNode.globalTime is None and self.addTimeSlider:
         #     self.sliderGroup.slider.setEnabled(False)
 
-        #if not self.plotsHaveSameTimeBasis(vizTreeNode):
+        # if not self.plotsHaveSameTimeBasis(vizTreeNode):
         #    return
 
         # if not self.plotsHaveSameCoordinate1(vizTreeNode):
@@ -190,8 +192,9 @@ class QVizPlotWidget(QWidget):
 
     def plotsHaveSameCoordinate1(self, vizTreeNode):
         if self.addCoordinateSlider:
-            if vizTreeNode.is0DAndDynamic():  # we ignore 0D data, they have no coordinate1, so they remain constant
-                                              # when sliding along coordinate1
+            # Ignore 0D data, they have no coordinate1, so they remain
+            # constant when sliding along coordinate1
+            if vizTreeNode.is0DAndDynamic():
                 return True
             coordinate1Vectors = self.getCoordinate1Values()
             if len(coordinate1Vectors) == 0:  # Happens when the first plot is added
@@ -235,7 +238,8 @@ class QVizPlotWidget(QWidget):
         if self.addTimeSlider or self.addCoordinateSlider:
 
             # Add slider time or corrdiante1D and its corresponding widgets
-            self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self, dataTreeView=self.dataTreeView)
+            self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self,
+                                           dataTreeView=self.dataTreeView)
             self.sliderGroupDict = self.sliderGroup.setupSlider()
             self.separatorLine = self.sliderGroupDict['separatorLine']
             self.slider = self.sliderGroupDict['slider']
@@ -260,7 +264,7 @@ class QVizPlotWidget(QWidget):
             # Add time label
             self.gridLayout.addWidget(self.sliderFieldLabel, 6, 0, 1, 10)
 
-        #Add a legend
+        # Add a legend
         self.pgPlotWidget.getPlotItem().addLegend()
 
         # Connect custom UI elements
@@ -306,6 +310,7 @@ class QVizPlotWidget(QWidget):
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
 
+
 class sliderGroup():
     """Set slider widget and its corresponding widgets (label,
     line edit etc.) to set and show time slice (change plot on
@@ -320,12 +325,12 @@ class sliderGroup():
         self.slider.setValue(0)
         # Set slider press variable as false
         self.sliderPress = False
-        self.isTimeSlider = isTimeSlider #otherwise it is a coordinate1D slider
+        self.isTimeSlider = isTimeSlider  # otherwise it is a coordinate1D slider
         if dataTreeView is None:
-            raise ValueError('inner sliderGroup class needs a not None dataTreeView object to operate')
+            raise ValueError('inner sliderGroup class needs a not None '
+                             'dataTreeView object to operate')
         self.dataTreeView = dataTreeView
         self.ignoreEvent = False
-
 
     def setupSlider(self):
         """Set and return the group of widgets.
@@ -357,12 +362,12 @@ class sliderGroup():
 
         # Set dictionary (for easier handling)
         self.timeSliderGroup = \
-            { 'separatorLine'        : self.separatorLine,
-              'slider'               : self.slider,
-              'sliderLabel'          : self.sliderLabel,
-              'sliderFieldLabel'     : self.sliderFieldLabel,
-              'indexLabel'           : self.indexLabel,
-              'sliderValueIndicator' : self.sliderValueIndicator}
+            {'separatorLine'        : self.separatorLine,
+             'slider'               : self.slider,
+             'sliderLabel'          : self.sliderLabel,
+             'sliderFieldLabel'     : self.sliderFieldLabel,
+             'indexLabel'           : self.indexLabel,
+             'sliderValueIndicator' : self.sliderValueIndicator}
 
         return self.timeSliderGroup
 
@@ -377,8 +382,8 @@ class sliderGroup():
                 self.active_treeNode.globalTime = \
                     self.active_treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
             if self.active_treeNode.globalTime is not None:
-                self.parent.sliderFieldLabel.setText("Time: " +
-                                              str(self.active_treeNode.globalTime[indexValue]) + " [s]")
+                self.parent.sliderFieldLabel.setText(
+                    "Time: " + str(self.active_treeNode.globalTime[indexValue]) + " [s]")
             else:
                 self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
         else:
@@ -388,14 +393,17 @@ class sliderGroup():
             if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
                 self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
                 if node.getCoordinate(coordinateNumber=1) == "1..N" or \
-                                node.getCoordinate(coordinateNumber=1) == "1...N":
+                        node.getCoordinate(coordinateNumber=1) == "1...N":
                     s = "1..N"
                 else:
                     s = node.getIDSName() + "." + \
                         node.evaluateCoordinateVsTime(coordinateNumber=1)
                     s = QVizGlobalOperations.makePythonPath(s)
-                value = node.coordinateValues(coordinateNumber=1, dataTreeView=self.dataTreeView)[indexValue]
-                self.parent.sliderFieldLabel.setText("Coordinate1: " + s + " (Value = " + str(value) + ")")
+                value = node.coordinateValues(coordinateNumber=1,
+                                              dataTreeView=self.dataTreeView)[indexValue]
+                self.parent.sliderFieldLabel.setText("Coordinate1: " + s +
+                                                     " (Value = " +
+                                                     str(value) + ")")
 
     def setSlider(self):
         """Set slider.
@@ -411,7 +419,7 @@ class sliderGroup():
             # vizApi = self.dataTreeView.imas_viz_api
             # arrayData = vizApi.GetSignal(self.dataTreeView, self.active_treeNode, plotWidget=self)
             # xValues = QVizPlotSignal.getXAxisValues(arrayData)
-            #v = QVizPlotSignal.get1DSignalValue(arrayData)
+            # v = QVizPlotSignal.get1DSignalValue(arrayData)
 
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
@@ -439,7 +447,6 @@ class sliderGroup():
         self.slider.setMinimum(minValue)
         self.slider.setMaximum(maxValue)
         self.ignoreEvent = False
-
 
     def setSeparatorLine(self):
         """Set separator line.
@@ -502,7 +509,6 @@ class sliderGroup():
         if not self.sliderPress and not self.ignoreEvent:
             self.executePlot()
 
-
     def onSliderRelease(self):
         """Action on slider release.
         """
@@ -522,7 +528,7 @@ class sliderGroup():
         """Replots according to slider values.
         """
         currentIndex = self.slider.value()
-        currentFigureKey = self.parent.windowTitle() #Get title of the current QVizPlotWidget
+        currentFigureKey = self.parent.windowTitle()  # Get title of the current QVizPlotWidget
         i = 0
         api = self.dataTreeView.imas_viz_api
         for node in self.parent.vizTreeNodesList:

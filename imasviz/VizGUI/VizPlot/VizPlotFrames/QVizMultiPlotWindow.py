@@ -13,8 +13,6 @@
 # *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
-from pyqtgraph import GraphicsWindow, mkPen
-import pyqtgraph as pg
 import logging
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QMdiSubWindow
@@ -70,7 +68,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         if self.getNumSignals(all_DTV=all_DTV) < 1:
             logging.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
-                             'MultiPlotView creation.')
+                            'MultiPlotView creation.')
             return
 
         # Get screen resolution (width and height)
@@ -96,7 +94,8 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.setWindowTitle(self.figureKey)
 
         # Set multiPlot view (pg.GraphicWindow)
-        self.multiPlotView = self.setMultiPlotView(mpType=multiPlot_type, strategy=strategy)
+        self.multiPlotView = self.setMultiPlotView(mpType=multiPlot_type,
+                                                   strategy=strategy)
 
         # Embed GraphicsWindow inside scroll area
         scrollArea = self.setPlotViewAsScrollArea(self.multiPlotView)
@@ -135,14 +134,14 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         elif 'TablePlotView' not in figureKey != 'StackedPlotView' not in figureKey:
             # If neither required strings are not found
             logging.warning('QVizMultiPlotWindow: Proper figureKey not '
-                             'provided! See class constructor figureKey '
-                             'variable description for more information.')
+                            'provided! See class constructor figureKey '
+                            'variable description for more information.')
             return
 
         # Check if figureKey already contains number identification at the end
         # of the name ( e.g. '0' in StackedPlotView:0)
         # If not, get the proper full figureKey
-        if figureKey[-1].isdigit() == False:
+        if figureKey[-1].isdigit() is False:
             if 'TablePlotView' in figureKey:
                 figureKey = self.imas_viz_api.GetNextKeyForTablePlotView()
             elif 'StackedPlotView' in figureKey:
@@ -166,7 +165,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
             mpView = QVizStackedPlotView(parent=self, strategy='TIME')
         else:
             logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
-                           'provided!')
+                          'provided!')
 
         # Set mpView title
         mpView.setWindowTitle(self.figureKey)
@@ -184,10 +183,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # use only single/current DTV.
         # Else if all_DTV is set to True (and not configuration is not
         # provided) use all existing DTVs
-        if (self.plotConfig != None) or (self.all_DTV == False):
+        if (self.plotConfig is not None) or (self.all_DTV is False):
             # Add a single (current) DTV to the list
             MultiPlotView_DTVList.append(self.dataTreeView)
-        elif self.all_DTV == True:
+        elif self.all_DTV is True:
             # Get the list of all currently opened DTVs
             MultiPlotView_DTVList = self.imas_viz_api.DTVlist
 
@@ -247,9 +246,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         # Main menu bar
         menuBar = QtWidgets.QMenuBar(self)
         options = menuBar.addMenu('Options')
-        #-----------------------------------------------------------------------
+        # ---------------------------------------------------------------------
         # Set new menu item for saving plot configuration
-        action_onSavePlotConf = QtWidgets.QAction('Save Plot Configuration', self)
+        action_onSavePlotConf = QtWidgets.QAction('Save Plot Configuration',
+                                                  self)
         action_onSavePlotConf.triggered.connect(self.onSavePlotConf)
         options.addAction(action_onSavePlotConf)
 
@@ -258,10 +258,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
     def getNumSignals(self, all_DTV=True):
         """Get number of signals intended for the TablePlotView and
-           StackedPlotView feature from either opened DTVs or from configuration
-           file if it is loaded.
+           StackedPlotView feature from either opened DTVs or from
+           configuration file if it is loaded.
         """
-        if self.plotConfig != None:
+        if self.plotConfig is not None:
             # Get number of signals through number of signal paths
             pathsList = QVizGlobalOperations.\
                 getSignalsPathsFromConfigurationFile(self.configFile)
@@ -269,10 +269,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         else:
             # If plotConfig is not present (save configuration was
             # not used)
-            if all_DTV == True:
+            if all_DTV is True:
                 nSignals = \
                     len(self.imas_viz_api.GetSelectedSignalsDictFromAllDTVs())
-            elif all_DTV == False:
+            elif all_DTV is False:
                 nSignals = \
                     len(self.imas_viz_api.GetSelectedSignalsDict(self.dataTreeView.parent))
 
@@ -330,7 +330,8 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         from ast import literal_eval
 
         logging.info('Applying plot configuration after plotting to plot '
-                      'view column ' + str(plotItem.column) + ' row ' + str(plotItem.row))
+                     'view column ' + str(plotItem.column) + ' row ' +
+                     str(plotItem.row))
 
         # TODO: Browsing through plotConfig is done also in
         # selectSignalsFromConfig(). It would be good to create a common

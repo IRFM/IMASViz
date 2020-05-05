@@ -10,9 +10,9 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-#****************************************************
+# ****************************************************
 
 import os
 from functools import partial
@@ -47,8 +47,10 @@ class QVizConfigurationListsWindow(QDialog):
         self.tabPlotConf = PlotConfigurationListsTab(parent=self)
         self.tabSignalListConf = ListOfSignalPathsListsTab(parent=self)
 
-        self.tabWidget.addTab(self.tabPlotConf, 'Available Plot Configurations')
-        self.tabWidget.addTab(self.tabSignalListConf, 'Available Node Selection Configurations')
+        self.tabWidget.addTab(self.tabPlotConf,
+                              'Available Plot Configurations')
+        self.tabWidget.addTab(self.tabSignalListConf,
+                              'Available Node Selection Configurations')
 
         layout = QVBoxLayout()
 
@@ -97,20 +99,21 @@ class CommonConfigurationRoutines(QObject):
 
         if len(selectedItems) > 0:
             # Set the first selected item from the list
-            # Note: Only one item can be selected at a time, so a list of one item
-            # is provided
+            # Note: Only one item can be selected at a time, so a list of one
+            #       item is provided
             selectedItem = selectedItems[0]
 
             # Get system path to the selected configuration file
             selectedFile = \
                 QVizGlobalOperations.getConfigurationFilesDirectory() + \
                 "/" + selectedItem.text()
-            # Extract signal paths from the config file and add them to a list of
-            # paths
+            # Extract signal paths from the config file and add them to a list
+            # of paths
             pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
                 configFile=selectedFile)
             # First unselect all signals
-            QVizUnselectAllSignals(dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
+            QVizUnselectAllSignals(
+                dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
             # Select the signals, defined by a path in a list of paths, in the
             # given DataTreeView (DTV) window
             QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,
@@ -131,8 +134,8 @@ class CommonConfigurationRoutines(QObject):
 
         if len(selectedItems) > 0:
             # Set the first selected item from the list
-            # Note: Only one item can be selected at a time, so a list of one item
-            # is provided
+            # Note: Only one item can be selected at a time, so a list of one
+            #       item is provided
             selectedItem = selectedItems[0]
             # Get system path to the selected configuration file
             selectedFile = \
@@ -298,8 +301,8 @@ class PlotConfigurationListsTab(QWidget):
 
         if len(selectedItems) > 0:
             # Set the first selected item from the list
-            # Note: Only one item can be selected at a time, so a list of one item
-            # is provided
+            # Note: Only one item can be selected at a time, so a list of one
+            #       item is provided
             selectedItem = selectedItems[0]
             # Get system path to the selected configuration file
             selectedFile = \
@@ -307,7 +310,8 @@ class PlotConfigurationListsTab(QWidget):
                 '/' + selectedItem.text()
 
             # Get next figurekey (label) for the TablePlotView
-            figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForTablePlotView()
+            figureKey = \
+                self.dataTreeView.imas_viz_api.GetNextKeyForTablePlotView()
             # Set up and show the TablePlotView using the config file
             QVizMultiPlotWindow(self.dataTreeView,
                                 figureKey=figureKey,

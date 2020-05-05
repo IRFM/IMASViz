@@ -7,12 +7,13 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-# ****************************************************
+# *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, QLabel
+from PyQt5.QtGui import (QWidget, QGridLayout, QCheckBox, QMenuBar, QAction,
+                         QLabel)
 from PyQt5.QtCore import Qt, QMetaObject
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
@@ -23,7 +24,8 @@ class QVizPreviewPlotWidget(QWidget):
     """PlotWidget containing pyqtgraph PlotWidget. Used for creating preview
     plots.
     """
-    def __init__(self, parent=None, size=(500,400), title='QVizPreviewPlotWidget'):
+    def __init__(self, parent=None, size=(500, 400),
+                 title='QVizPreviewPlotWidget'):
         super(QVizPreviewPlotWidget, self).__init__(parent=parent)
 
         # Set default background color: white
@@ -106,8 +108,9 @@ class QVizPreviewPlotWidget(QWidget):
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plotwidget (use IMASViz custom plot context menu)
-        self.pgPlotWidget = pg.PlotWidget(self,
-            viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+        self.pgPlotWidget = \
+            pg.PlotWidget(self,
+                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
         self.pgPlotWidget.setObjectName("pg_PreviewPlot")
         # Add legend (must be called before adding plot!!!)
         # self.pgPlotWidget.addLegend()
@@ -119,7 +122,7 @@ class QVizPreviewPlotWidget(QWidget):
         # self.gridLayout.setMenuBar(menuBar)
 
         # Set checkbox for toggling mouse
-        #checkBox = self.customUI()
+        # checkBox = self.customUI()
 
         # Set layout marigin (left, top, right, bottom)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
@@ -173,4 +176,3 @@ class QVizPreviewPlotWidget(QWidget):
             enabled = False
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
-

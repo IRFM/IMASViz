@@ -7,14 +7,15 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# *****************************************************************************
 
 # from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 from pyqtgraph import mkPen
+
 
 class QVizPlotServices():
     def __init__(self):

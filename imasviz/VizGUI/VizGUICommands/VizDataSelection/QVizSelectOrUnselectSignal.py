@@ -9,22 +9,24 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
+# *****************************************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
-# ****************************************************
+# *****************************************************************************
 
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
 
 class QVizSelectOrUnselectSignal(QVizAbstractCommand):
-    def __init__(self, dataTreeView, treeNode = None):
+    def __init__(self, dataTreeView, treeNode=None):
         QVizAbstractCommand.__init__(self, dataTreeView, treeNode)
 
     def execute(self):
         isSelected = self.nodeData['isSelected']
         key = self.dataTreeView.dataSource.dataKey(self.treeNode)
-        # If the signal is selected (isSelected == 1), unselect it (red -> blue)
-        # Else if the signal is unselected (isSelected == 0), select it (blue -> red)
+        # If the signal is selected (isSelected == 1), unselect it
+        # (red -> blue)
+        # Else if the signal is unselected (isSelected == 0), select it
+        # (blue -> red)
         if isSelected == 1:
             # If the node is unselected, the text color is blue
             # Set the item color
@@ -45,10 +47,9 @@ class QVizSelectOrUnselectSignal(QVizAbstractCommand):
             # data dictionaries of all selected signals
             # (should replace self.dataTreeView.selectedSignals)
             self.dataTreeView.selectedSignalsDict[key] = \
-                 {'index'           : index,
+                {'index'            : index,
                  'QTreeWidgetItem'  : self.dataTreeView.selectedItem,
                  'shotNumber'       : self.dataTreeView.dataSource.shotNumber,
                  'runNumber'        : self.dataTreeView.dataSource.runNumber,
                  'imasDbName'       : self.dataTreeView.dataSource.imasDbName,
                  'userName'         : self.dataTreeView.dataSource.userName}
-

@@ -1,5 +1,6 @@
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsHandler import QVizPluginsHandler
 
+
 class QVizPluginsPopUpMenu:
 
     def __init__(self):
@@ -16,4 +17,4 @@ class QVizPluginsPopUpMenu:
         # Set plugins handler. Pass the dataTreeView and item/subject to the
         # QVizPluginsHandler
         self.pluginsHandler = QVizPluginsHandler(dataTreeView, treeNode)
-        self.pluginsHandler.updateMenu(menu,dataTreeView, treeNode)
+        self.pluginsHandler.updateMenu(menu, dataTreeView, treeNode)
