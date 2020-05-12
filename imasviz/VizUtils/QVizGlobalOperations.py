@@ -284,6 +284,27 @@ class QVizGlobalOperations:
         return IDSDef_path
 
     @staticmethod
+    def getIDSDefParserFilePath(imas_dd_version, GGD=False):
+        """Get IDSDef_XMLParser file.
+        """
+
+        filePath = None
+
+        if GGD is True:
+            filePath = os.environ["HOME"] + "/.imasviz/VizGeneratedCode/" + \
+                           "IDSDef_XMLParser_Full_Generated_" + \
+                           QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version) + \
+                           ".py"
+        else:
+            filePath = os.environ["HOME"] + "/.imasviz/VizGeneratedCode/" + \
+                       "IDSDef_XMLParser_Partial_Generated_" + \
+                       QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version) + \
+                       ".py"
+
+        if not os.path.exists(filePath):
+            print("WARNING: No suitable IDSDef_XMLParser file found.")
+
+    @staticmethod
     def getConfFilesList(configType):
         """Get a list of configuration files of certain type.
 

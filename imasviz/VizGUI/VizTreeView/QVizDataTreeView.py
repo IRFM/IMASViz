@@ -166,7 +166,6 @@ class QVizDataTreeView(QTreeWidget):
                 self.idsNamesList.append(idsName)
 
                 """Set array holding IDS properties"""
-
                 IDSRootNode = self.createIDSRootNode(idsName=idsName,
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)

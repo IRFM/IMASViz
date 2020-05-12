@@ -240,6 +240,12 @@ class GUIFrame(QTabWidget):
             return self.window().getMDI()
         return None
 
+    # def keyPressEvent(self, event):
+    #     # Note Qt.Key_Enter is Enter key on numpad
+    #     if event.key() == Qt.Key_Return:
+    #         self.OpenDataSourceFromTab1(event)
+    #     event.accept()
+
 
 class QVizStartWindow(QMainWindow):
     def __init__(self, parent):
