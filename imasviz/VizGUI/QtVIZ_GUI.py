@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
                              QPlainTextEdit, QGridLayout, QMdiArea, QTableView)
-from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
+from PyQt5.QtCore import Qt
 from pathlib import Path
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -91,11 +91,6 @@ class GUIFrame(QTabWidget):
         self.runNumber.setToolTip("Run case identifier.")
         vboxLayout.addRow('Run number', self.runNumber)
 
-        self.IDSTableView = QTableView(self)
-        self.IDSTableView.setModel(TableModel(self))
-        self.IDSTableView.setSelectionBehavior(QTableView.SelectRows)
-        self.IDSTableView.clicked.connect(self.tableViewClicked)
-
         button_open1 = QPushButton('Open', self)
         button_open1.setStatusTip("Open the case for the given parameters.")
         button_open1.setToolTip("Open the case for the given parameters.")
@@ -104,17 +99,10 @@ class GUIFrame(QTabWidget):
         layout.addLayout(vboxLayout)
 
         vboxLayout2 = QVBoxLayout()
-        vboxLayout2.addWidget(self.IDSTableView)
         vboxLayout2.addWidget(button_open1)
 
         layout.addLayout(vboxLayout2)
         self.tab1.setLayout(layout)
-
-    def tableViewClicked(self, clickedIndex):
-        row = clickedIndex.row()
-        model = clickedIndex.model()
-        print("row: ", row)
-        print("model: ", model)
 
     def OpenDataSourceFromTab1(self, evt):
         try:
@@ -375,42 +363,6 @@ class QVizMainWindow(QMainWindow):
 
     def setStatusBar(self):
         self.statusBar().show()
-
-
-class TableModel(QAbstractTableModel):
-    def __init__(self, parent=None, *args):
-        QAbstractTableModel.__init__(self, parent, *args)
-        # self.insertColumns(10, 2)
-        # self.insertRows(10, 2)
-        self.headerItems = ['Database', 'Shot', 'Run']
-        self.items = ['test', '1', '1']
-
-    def flags(self, index):
-        return Qt.ItemIsEnabled | Qt.ItemIsSelectable
-
-    def rowCount(self, parent):
-        return 1
-
-    def columnCount(self, parent):
-        return len(self.items)
-
-    def data(self, index, role):
-        if not index.isValid():
-            return QVariant()
-        elif role != Qt.DisplayRole:
-            return QVariant()
-
-        column = index.column()
-        if column < len(self.items):
-            return QVariant(self.items[column])
-        else:
-            return QVariant()
-
-    def headerData(self, column, orientation, role=Qt.DisplayRole):
-        # if role != Qt.DisplayRole:
-        #     return QVariant()
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return QVariant(self.headerItems[column])
 
 
 def main():

@@ -67,6 +67,7 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling impor
 
 cv = Condition()
 
+
 class QVizDataTreeView(QTreeWidget):
     """Set and populate QTreeWidget.
     """

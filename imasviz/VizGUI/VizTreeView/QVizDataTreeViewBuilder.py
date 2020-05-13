@@ -61,7 +61,7 @@ class QVizDataTreeViewBuilder:
         dataElementName = dataElement.find('name')
 
         if dataElementName is not None:
-            itemDataDict['dataName'] = dataElementName.text #this is the name set by QVizDataAccessCodeGenerator (IMAS data full path)
+            itemDataDict['dataName'] = dataElementName.text  # this is the name set by QVizDataAccessCodeGenerator (IMAS data full path)
 
         if name is None:
             if dataElementName is not None:
@@ -78,7 +78,7 @@ class QVizDataTreeViewBuilder:
         attribName = dataElement.tag
         if 'name' in dataElement.attrib:
             attribName = dataElement.attrib['name']
-            itemDataDict['name'] = attribName #this is the name of the element defined in IDSDef.xml file
+            itemDataDict['name'] = attribName  # this is the name of the element defined in IDSDef.xml file
 
         path = self.getPath(parentNode, attribName, isArray,index)
 
@@ -92,7 +92,8 @@ class QVizDataTreeViewBuilder:
                                            occurrence)
 
             viewerNode = self.build_nodes(dataTreeView, dataElement,
-                                          parentNode, itemDataDict, extra_attributes,
+                                          parentNode, itemDataDict,
+                                          extra_attributes,
                                           path, imas_entry)
 
 
