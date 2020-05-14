@@ -1,5 +1,5 @@
 #!/usr/bin/python
-"""This test file executes the plugin 'viz_example_plugin' for testing
+"""This file uses the QVizPlotImageWidget for testing purpose
 """
 from PyQt5.QtWidgets import QApplication
 import sys, logging, os
@@ -19,7 +19,6 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
 
-
 # Set object managing the PyQt GUI application's control flow
 app = QApplication(sys.argv)
 
@@ -37,16 +36,16 @@ root.addHandler(handler)
 
 api = Viz_API()  # Creating IMASViz Application Programming Interface
 selection_api = Viz_DataSelection_API()
-#ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()  #  Asking for a shot
+ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()  #  Asking for a shot
 
-#if not ok:
-#    logging.error("User input has failed. Test not executed.")
-#    exit()
+if not ok:
+    logging.error("User input has failed. Test not executed.")
+    exit()
 
-shotNumber = 54178
-runNumber = 0
-userName= 'imas_public'
-database = 'west'
+#shotNumber = 54178
+#runNumber = 0
+#userName= 'imas_public'
+#database = 'west'
 
 # Creating IMASViz data source for this shot
 #dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
@@ -68,8 +67,6 @@ pathsDict = {'paths' : paths, 'occurrences' : [0]}
 #api.SelectSignals(f, pathsDict)
 #dtv = f.dataTreeView
 #dataArrayHandles = selection_api.GetSelectedDataFeatures(dataTreeView=dtv)
-
-#dataArrayHandle = dataArrayHandles[0]
 coordinatesPath = ['path.x', 'path.y']
 coordinatesValues = []
 coordinatesValues.append(np.linspace(0, 100., num=100))
@@ -90,8 +87,6 @@ label='label of the test'
 dataArrayHandle = QVizDataArrayHandle(arrayCoordinates, arrayValues, name, label)
 
 plotWidget = QvizPlotImageWidget(dataTreeView=None, plotSliceFromROI=True, showImageTitle=False)
-#dataArrayHandle.arrayValues = np.transpose(dataArrayHandle.arrayValues)
-#plotWidget.column_major = False
 plotWidget.plot(dataArrayHandle)
 plotWidget.show()
 
