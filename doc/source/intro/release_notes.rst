@@ -13,6 +13,15 @@ Release notes
 =============
 
 -------------
+Version 2.4.1
+-------------
+
+Released 18.5.2020
+
+- Fix bug when .imasviz/VizgeneratedCode directory is missing
+  (for generation of parser files) (IMAS-3113)
+
+-------------
 Version 2.4.0
 -------------
 
