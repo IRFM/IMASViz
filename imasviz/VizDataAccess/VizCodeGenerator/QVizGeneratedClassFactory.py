@@ -51,6 +51,12 @@ class QVizGeneratedClassFactory:
             else:
                 className = "IDSDef_XMLParser_Full_Generated_" + \
                     QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+
+                path_user_gencode = IDSDef_parser_path = os.environ['HOME'] + \
+                    "/.imasviz/VizGeneratedCode/"
+                if not os.path.exists(path_user_gencode):
+                    os.makedirs(path_user_gencode)
+
                 IDSDef_parser_path = os.environ['HOME'] + \
                     "/.imasviz/VizGeneratedCode/" + className + ".py"
                 print("IDSDef parser path: ", IDSDef_parser_path)
@@ -97,6 +103,12 @@ class QVizGeneratedClassFactory:
             else:
                 className = "IDSDef_XMLParser_Partial_Generated_" + \
                     QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+
+                path_user_gencode = IDSDef_parser_path = os.environ['HOME'] + \
+                    "/.imasviz/VizGeneratedCode/"
+                if not os.path.exists(path_user_gencode):
+                    os.makedirs(path_user_gencode)
+
                 IDSDef_parser_path = os.environ['HOME'] + \
                     "/.imasviz/VizGeneratedCode/" + className + ".py"
                 print("IDSDef parser path: ", IDSDef_parser_path)
