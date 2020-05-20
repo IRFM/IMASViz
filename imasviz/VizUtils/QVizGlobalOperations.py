@@ -38,15 +38,14 @@ class QVizGlobalOperations:
         return True
 
     @staticmethod
-    def getCoordinate1D_array(ids, selectedNodeData, coordinate1):
-        if coordinate1 is None:
+    def getCoordinate_array(ids, selectedNodeData, coordinate):
+        if coordinate is None:
             return None
         homogeneous_time = QVizGlobalOperations.isTimeHomogeneous(ids, selectedNodeData)
         t = None
         try:
             if not homogeneous_time:
-                t = np.array(eval("ids." + selectedNodeData['IDSName'] + "."
-                             + coordinate1))
+                t = np.array(eval("ids." + selectedNodeData['IDSName'] + "." + coordinate))
             else:
                 t = np.array(eval("ids." + selectedNodeData['IDSName']
                              + ".time"))
@@ -392,9 +391,10 @@ class QVizGlobalOperations:
     @staticmethod
     def makeIMASPaths(paths):
         i = 0
-        for path in paths:
-            paths[i] = QVizGlobalOperations.makeIMASPath(path)
-            i += 1
+        paths_copy = paths
+        paths = []
+        for path in paths_copy:
+            paths.append(QVizGlobalOperations.makeIMASPath(path))
         return paths
 
     @staticmethod

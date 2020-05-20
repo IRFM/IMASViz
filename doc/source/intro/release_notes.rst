@@ -13,6 +13,35 @@ Release notes
 =============
 
 -------------
+Version 2.4.1
+-------------
+
+Released 18.5.2020
+
+- Fix bug when .imasviz/VizgeneratedCode directory is missing
+  (for generation of parser files) (IMAS-3113)
+
+-------------
+Version 2.4.0
+-------------
+
+Released: 15.5.2020
+
+- Introduced tooltips and status bar
+- Support for visualization of 2D arrays
+- Improved the strategy for generating parser files to use the IDSDef.xml
+  files found in $IMAS_PREFIX. This offers automatic support for any IMAS
+  version (including the future releases). The paht for generated parser files
+  was changed to $HOME/.imasviz/VizGeneratedCode
+- Fixed crash when looking into transport_solver_numerics (IMAS-2934)
+- Plugins:
+
+    - Improved plugin strategy
+    - Removed ETSplugin source code and Setting ETS Viz submodule
+      (where the source code is now present).
+    - Plugins documentation update
+
+-------------
 Version 2.3.8
 -------------
 

@@ -15,8 +15,8 @@ User Manual
    loading_IDS.rst
    signal_node_selection.rst
    plotting_1d_arrays.rst
+   plotting_2d_arrays.rst
    plugins.rst
    other_GUI_features.rst
    scripting.rst
    user_preferences.rst
-   .. UDA.rst

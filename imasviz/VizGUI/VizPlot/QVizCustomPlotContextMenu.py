@@ -33,13 +33,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                                       doesn't seem to be allowed).
             parent        (obj)     : Parent.
         """
-        super(QVizCustomPlotContextMenu, self).__init__(parent)
-
-        # Set rect mode as default
-        # self.setRectMode() # Set mouse mode to rect for convenient zooming
-
         self.qWidgetParent = qWidgetParent
 
+        super(QVizCustomPlotContextMenu, self).__init__(parent)
         # Set original plot context menu
         # Note: self.menu must not be None (this way works fine for
         #       plotWidgets, but not for GraphicsWindow (TablePlotView))
@@ -71,14 +67,14 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                             mouseAction.setText("Area Zoom Mode")
 
             # Add custom contents to menu
-            self.addCustomToMenu()
+            self.addCustomMenu()
 
             # Set menu update to false
             self.menuUpdate = False
 
         return self.menu
 
-    def addCustomToMenu(self):
+    def addCustomMenu(self):
         """Add custom actions to the menu.
         """
         self.menu.addSeparator()

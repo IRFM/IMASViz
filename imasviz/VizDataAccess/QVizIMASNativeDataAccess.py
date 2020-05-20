@@ -5,7 +5,7 @@ import logging
 import numpy as np
 
 from imasviz.VizUtils import QVizGlobalOperations, PlotTypes
-
+from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates, QVizTimedDataArrayHandle
 
 class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
@@ -28,10 +28,20 @@ class QVizIMASNativeDataAccess:
             coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if as_function_of_time:
+
             if treeNode.is0DAndDynamic():
                 return self.GetSignalVsTime(treeNode, coordinate_index)
+
             elif treeNode.is1DAndDynamic():
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
+                    return self.GetSignalAt(treeNode, time_index, plotWidget)
+                elif treeNode.embedded_in_time_dependent_aos():
+                    return self.GetSignalVsTime(treeNode, coordinate_index)
+                else:
+                    raise ValueError("Unable to get time dependent signal " +
+                                     "for node: " + treeNode.getPath())
+            elif treeNode.is2DAndDynamic():
+                if treeNode.isCoordinateTimeDependent(coordinateNumber=2):
                     return self.GetSignalAt(treeNode, time_index, plotWidget)
                 elif treeNode.embedded_in_time_dependent_aos():
                     return self.GetSignalVsTime(treeNode, coordinate_index)
@@ -43,8 +53,13 @@ class QVizIMASNativeDataAccess:
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is1DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
+            elif treeNode.is2DAndDynamic():
+                return self.GetSignalAt(treeNode, time_index, plotWidget)
+
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
+        if treeNode.is2DAndDynamic():
+            return self.GetSignal2DAt(treeNode, itimeValue, plotWidget)
         if treeNode.is1DAndDynamic():
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
@@ -68,6 +83,58 @@ class QVizIMASNativeDataAccess:
             raise ValueError("Data node '" + treeNode.getName() +
                              "' has no explicit dependency on current X axis.")
 
+
+    def GetSignal2DAt(self, treeNode, itimeValue, plotWidget=None):
+
+        try:
+            if treeNode.getData() is None:
+                return
+
+            coordinatesPaths = []
+            coordinatesValues = []
+            coordinate_of_time = None
+
+            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            arrayPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
+            rval = eval(arrayPath)
+            coordinateValues = None
+            coordinates_labels = []
+            label = ''
+            quantityName = ''
+            for dim in range(1,3):
+                coordinate = treeNode.evaluateCoordinateAt(coordinateNumber=dim,
+                                                            itimeValue=itimeValue)
+
+                coordinatesPaths.append(coordinate)
+
+                if treeNode.isCoordinateTimeDependent(coordinateNumber=dim):
+                    # coordinate for dimension dim is a function of time
+                    coordinateValues = QVizGlobalOperations.getCoordinate_array(imas_entry,
+                                                                   treeNode.getData(),
+                                                                   coordinate)
+                    coordinate_of_time = dim
+                else:
+                    if "1.." in treeNode.getCoordinate(coordinateNumber=dim):
+                        N = len(rval)
+                        coordinateValues = np.asarray(range(0, N))
+                    else:
+                        path = "imas_entry." + treeNode.getIDSName() + "." + coordinate
+                        coordinateValues = eval(path)
+                        if len(coordinateValues) == 0:
+                            raise ValueError("Coordinate array for dimension " + str(dim) + " has no values.")
+
+                coordinatesValues.append(coordinateValues)
+                quantityName, label, coordinate_label = treeNode.labels(plotWidget, dim, coordinate_index=0, time_index=itimeValue)
+                coordinates_labels.append(coordinate_label)
+
+            arrayCoordinates = ArrayCoordinates(coordinatesPaths, coordinatesValues, coordinate_of_time, coordinates_labels)
+            return QVizDataArrayHandle(arrayCoordinates, np.asarray(rval), label=label, name=quantityName, itimeValue=itimeValue)
+
+        except:
+            print(sys.exc_info()[0])
+            traceback.print_exc(file=sys.stdout)
+            raise
+
     def GetSignal1DAt(self, treeNode, itimeValue):
 
         try:
@@ -84,7 +151,7 @@ class QVizIMASNativeDataAccess:
 
             if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                 # coordinate1 is a function of time
-                t = QVizGlobalOperations.getCoordinate1D_array(imas_entry,
+                t = QVizGlobalOperations.getCoordinate_array(imas_entry,
                                                                treeNode.getData(),
                                                                coordinate1)
                 t = np.array([t])
@@ -111,8 +178,8 @@ class QVizIMASNativeDataAccess:
             traceback.print_exc(file=sys.stdout)
             raise
 
-    def GetSignalVsTime(self, treeNode, index):
-        """Function intended to plotting 1D dynamic arrays whose values are
+    def GetSignalVsTime(self, treeNode, coordinate_index):
+        """Function for getting values of dynamic arrays whose values are
         defined in time slices (dynamic AOSs).
         """
 
@@ -122,20 +189,36 @@ class QVizIMASNativeDataAccess:
 
         if treeNode.is0DAndDynamic():
             return self.Get0DSignalVsTime(treeNode)
-        # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        time_slices_count = len(data_path_list)
-        v = []
-        imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
-        for i in range(0, time_slices_count):
-            # Get values of the array at index
-            value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
-                                  str(index) + ']')
-            v.append(value_at_index)
+        elif treeNode.is1DAndDynamic():
+            # Get list of paths of arrays through time slices
+            data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
+            time_slices_count = len(data_path_list)
+            v = []
+            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            for i in range(0, time_slices_count):
+                # Get values of the array at index
+                value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
+                                      str(coordinate_index) + ']')
+                v.append(value_at_index)
 
-        rarray = np.array([np.array(v)])
-        tarray = np.array([time])
-        return tarray, rarray
+            rarray = np.array([np.array(v)])
+            tarray = np.array([time])
+            return tarray, rarray
+        elif treeNode.is2DAndDynamic:
+            #we assume that coordinate_index is a 2 length tuple
+            # Get list of paths of arrays through time slices
+            data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
+            time_slices_count = len(data_path_list)
+            v = []
+            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            for i in range(0, time_slices_count):
+                # Get values of the array at index
+                value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
+                                      str(coordinate_index[0]) + ',' + str(coordinate_index[1]) + ']')
+                v.append(value_at_index)
+
+            return QVizTimedDataArrayHandle(np.asarray(v), np.asarray(time))
+            #raise ValueError('2D arrays in dynamic AOS not yet supported')
 
     def Get0DSignalVsTime(self, treeNode):
         """Function intended for plotting 0D dynamic arrays whose values are

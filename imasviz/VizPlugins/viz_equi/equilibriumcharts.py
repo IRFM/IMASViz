@@ -1156,7 +1156,9 @@ class equilibriumcharts(VizPlugin):
         """ Return plugin description.
         """
 
-        return "This demo demonstrates how to embed a matplotlib (mpl) \n" \
+        return "Equilibrium plugin allows to plot magnetic surfaces, separatrix \n" \
+               "and other equilibrium quantities as a function of time and space. \n" \
+               "This demo demonstrates how to embed a matplotlib (mpl) \n" \
                "plot into a PyQt5 GUI application for IMAS visualization, \n" \
                "including: \n" \
                "* Using the navigation toolbar \n" \
@@ -1170,7 +1172,9 @@ class equilibriumcharts(VizPlugin):
                "Jorge Morales (jorge.morales2@cea.fr) \n" \
                "Based on a work by: \n" \
                "Eli Bendersky (eliben@gmail.com) \n" \
-               "Coverted from wxPython to PyQt5 by: \n" \
+               "Initially integrated in IMASViz using wxPython by: \n" \
+               "Ludovic Fleury (ludovic.fleury@cea.fr) \n" \
+               "Converted from wxPython to PyQt5 by: \n" \
                "Dejan Penko (dejan.penko@lecad.fs.uni-lj.si) \n" \
                "License: this code is in the public domain"
 
