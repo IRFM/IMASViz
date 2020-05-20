@@ -63,65 +63,66 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
         """Set treeWidget items based on imasdb for given user.
         """
 
-        self.activeUsername = username
-        # Get (standard) imasdb path
-        # userPath = os.path.abspath(os.path.join(
-        #     os.path.dirname(__file__), '..', os.environ['HOME']))
+        try:
 
-        userPath = os.path.abspath(os.path.join(
-            os.path.dirname(__file__), os.environ['HOME'], '..'))
-        userPath = userPath + "/" + username
+            self.activeUsername = username
+            # Get (standard) imasdb path
+            # userPath = os.path.abspath(os.path.join(
+            #     os.path.dirname(__file__), '..', os.environ['HOME']))
 
-        # If user path does not exist, return
-        if os.path.exists(userPath) is False or \
-                username in self.presentUserNameList:
-            return False
+            userPath = os.path.abspath(os.path.join(
+                os.path.dirname(__file__), os.environ['HOME'], '..'))
+            userPath = userPath + "/" + username
 
-        self.presentUserNameList.append(username)
+            # If user path does not exist, return
+            if os.path.exists(userPath) is False or \
+                    username in self.presentUserNameList:
+                return False
 
-        rootUserItem = QTreeWidgetItem(self)
-        rootUserItem.setText(0, username)
+            self.presentUserNameList.append(username)
 
-        imasdbPath = userPath + "/public/imasdb"
+            rootUserItem = QTreeWidgetItem(self)
+            rootUserItem.setText(0, username)
 
-        databaseList = [dI for dI in os.listdir(imasdbPath)
-                        if os.path.isdir(os.path.join(imasdbPath, dI))]
+            imasdbPath = userPath + "/public/imasdb"
 
-        # Sort by alphabetical order
-        databaseList.sort()
-
-        # Go through databases
-        for db in databaseList:
-            databaseItem = QTreeWidgetItem(rootUserItem)
-            databaseItem.setText(0, db)
-
-            shotRunPath = imasdbPath + "/" + db + "/3/0"
-
-            if os.path.exists(shotRunPath) is False:
-                continue
-
-            # Shot list to take care the shot entries do no repeat
-            shotList = []
-            shotItemList = []
-
-            # Get number of *.datafile files (to avoid using list.append())
-            dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
-            dataFileList = [""]*dataFileCounter
-
-            # Set dataFileList
-            i = 0
-            for f in os.listdir(shotRunPath):
-                if f.endswith(".datafile"):
-                    dataFileList[i] = f
-                    i += 1
+            databaseList = [dI for dI in os.listdir(imasdbPath)
+                            if os.path.isdir(os.path.join(imasdbPath, dI))]
 
             # Sort by alphabetical order
-            # Note: This is mandatory, otherwise the further strategy of
-            #       avoiding duplication of shotItems will be broken
-            dataFileList.sort()
+            databaseList.sort()
 
-            for i in range(len(dataFileList)):
-                try:
+            # Go through databases
+            for db in databaseList:
+                databaseItem = QTreeWidgetItem(rootUserItem)
+                databaseItem.setText(0, db)
+
+                shotRunPath = imasdbPath + "/" + db + "/3/0"
+
+                if os.path.exists(shotRunPath) is False:
+                    continue
+
+                # Shot list to take care the shot entries do no repeat
+                shotList = []
+                shotItemList = []
+
+                # Get number of *.datafile files (to avoid using list.append())
+                dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
+                dataFileList = [""]*dataFileCounter
+
+                # Set dataFileList
+                i = 0
+                for f in os.listdir(shotRunPath):
+                    if f.endswith(".datafile"):
+                        dataFileList[i] = f
+                        i += 1
+
+                # Sort by alphabetical order
+                # Note: This is mandatory, otherwise the further strategy of
+                #       avoiding duplication of shotItems will be broken
+                dataFileList.sort()
+
+                for i in range(len(dataFileList)):
                     # Extract shot and run numbers
                     # Note: Last 4 digits are always run number. The rest are shot
                     rs = dataFileList[i].split(".")[0]
@@ -139,10 +140,11 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
 
                     runItem = QTreeWidgetItem(shotItem)
                     runItem.setText(0, run)
-                except Exception as e:
-                    print(str(e))
 
-        return True
+            return True
+        except Exception as e:
+            print(str(e))
+            return False
 
     def doubleClickHandler(self, item, column_No):
         """Handler for double click on QTreeWidgetItem in QTreeWidget
