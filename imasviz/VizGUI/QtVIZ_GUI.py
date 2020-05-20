@@ -30,6 +30,7 @@ from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
                               QVizGlobalOperations, QVizLogger)
+from imasviz.VizGUI.VizWidgets.QVizAvailableIDSBrowserWidget import QVizAvailableIDSBrowserWidget
 
 
 class GUIFrame(QTabWidget):
@@ -91,12 +92,16 @@ class GUIFrame(QTabWidget):
         self.runNumber.setToolTip("Run case identifier.")
         vboxLayout.addRow('Run number', self.runNumber)
 
+        self.AvailableIDSBrowserWidget = QVizAvailableIDSBrowserWidget(parent=self)
+        self.AvailableIDSBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
+
         button_open1 = QPushButton('Open', self)
         button_open1.setStatusTip("Open the case for the given parameters.")
         button_open1.setToolTip("Open the case for the given parameters.")
         button_open1.clicked.connect(self.OpenDataSourceFromTab1)
 
         layout.addLayout(vboxLayout)
+        layout.addWidget(self.AvailableIDSBrowserWidget)
 
         vboxLayout2 = QVBoxLayout()
         vboxLayout2.addWidget(button_open1)
@@ -138,6 +143,13 @@ class GUIFrame(QTabWidget):
 
         if self.shotNumber.text() == '' or self.runNumber.text() == '':
             raise ValueError("'Shot number' or 'run number' field is empty.")
+
+    def updateIDSparam(self):
+        """Update IDS parameters widgets.
+        """
+        self.imasDbName.setText(self.AvailableIDSBrowserWidget.getActiveDatabase())
+        self.shotNumber.setText(self.AvailableIDSBrowserWidget.getActiveShot())
+        self.runNumber.setText(self.AvailableIDSBrowserWidget.getActiveRun())
 
     def tabTwo(self):
 

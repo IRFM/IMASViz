@@ -1,4 +1,4 @@
-#  Name   : QVizPAvailableIDSBrowserWidget
+#  Name   : QVizAvailableIDSBrowserWidget
 #
 #          A widget for browsing through available IDSs.
 #
@@ -13,15 +13,18 @@
 
 
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PyQt5.QtCore import pyqtSignal
 import sys
 import os
 import getpass
 import glob
 
 
-class QVizPAvailableIDSBrowserWidget(QTreeWidget):
+class QVizAvailableIDSBrowserWidget(QTreeWidget):
     """Set and populate QTreeWidget.
     """
+
+    onItemDoubleClick = pyqtSignal()
 
     def __init__(self, parent):
         """
@@ -29,12 +32,18 @@ class QVizPAvailableIDSBrowserWidget(QTreeWidget):
             parent     (QWindow) : QVizDataTreeView parent.
         """
 
-        super(QVizPAvailableIDSBrowserWidget, self).__init__(parent)
+        super(QVizAvailableIDSBrowserWidget, self).__init__(parent)
 
         # Set QTreeWidget name
         self.setObjectName('AvailableIDSBrowserWidget')
         # Hide header
-        self.setHeaderHidden(True)
+        self.setHeaderHidden(False)
+        self.setHeaderLabels(['IDS cases browser'])
+
+        self.activeUsername = None
+        self.activeDatabase = None
+        self.activeShot = None
+        self.activeRun = None
 
         # # Connect 'itemClicked' with the 'onLeftClickItem' function.
         # # On clicking on the QTreeWidgetItem (left click) the function will
@@ -42,7 +51,7 @@ class QVizPAvailableIDSBrowserWidget(QTreeWidget):
         # self.itemClicked.connect(self.onLeftClickItem)
 
         # # Set action on double click on item
-        # self.itemDoubleClicked.connect(self.loadDefaultOccurrence)
+        self.itemDoubleClicked.connect(self.doubleClickHandler)
 
         self.setContents()
 
@@ -107,6 +116,38 @@ class QVizPAvailableIDSBrowserWidget(QTreeWidget):
                 runItem = QTreeWidgetItem(shotItem)
                 runItem.setText(0, run)
 
+    def doubleClickHandler(self, item, column_No):
+        """Handler for double click on QTreeWidgetItem in QTreeWidget
+        """
+
+        # When clicking on item representing run number
+        # (last in tree hierarchy -> 0 children)
+        if item.childCount() == 0:
+            # self.activeUsername = item.parent().parent().parent().text(0)
+            self.setActiveDatabase(item.parent().parent().text(0))
+            self.setActiveShot(item.parent().text(0))
+            self.setActiveRun(item.text(0))
+
+        self.onItemDoubleClick.emit()
+
+    def setActiveDatabase(self, db):
+        self.activeDatabase = db
+
+    def setActiveShot(self, shot):
+        self.activeShot = shot
+
+    def setActiveRun(self, run):
+        self.activeRun = run
+
+    def getActiveDatabase(self):
+        return self.activeDatabase
+
+    def getActiveShot(self):
+        return self.activeShot
+
+    def getActiveRun(self):
+        return self.activeRun
+
 
 if __name__ == '__main__':
     """Test.
@@ -115,7 +156,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     mainWin = QMainWindow()
-    treeWidget = QVizPAvailableIDSBrowserWidget(mainWin)
+    treeWidget = QVizAvailableIDSBrowserWidget(mainWin)
     mainWin.setCentralWidget(treeWidget)
     mainWin.show()
     sys.exit(app.exec_())
