@@ -82,7 +82,6 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
         rootUserItem = QTreeWidgetItem(self)
         rootUserItem.setText(0, username)
 
-        # imasdbPath = os.environ['HOME'] + "/public/imasdb"
         imasdbPath = userPath + "/public/imasdb"
 
         databaseList = [dI for dI in os.listdir(imasdbPath)
@@ -97,6 +96,9 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
             databaseItem.setText(0, db)
 
             shotRunPath = imasdbPath + "/" + db + "/3/0"
+
+            if os.path.exists(shotRunPath) is False:
+                continue
 
             # Shot list to take care the shot entries do no repeat
             shotList = []
@@ -119,23 +121,26 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
             dataFileList.sort()
 
             for i in range(len(dataFileList)):
-                # Extract shot and run numbers
-                # Note: Last 4 digits are always run number. The rest are shot
-                rs = dataFileList[i].split(".")[0]
-                rs = rs.split("_")[1]
-                run = int(rs[-4:])
-                run = str(run)
-                shot = rs[:-4]
+                try:
+                    # Extract shot and run numbers
+                    # Note: Last 4 digits are always run number. The rest are shot
+                    rs = dataFileList[i].split(".")[0]
+                    rs = rs.split("_")[1]
+                    run = int(rs[-4:])
+                    run = str(run)
+                    shot = rs[:-4]
 
-                if shot not in shotList:
-                    shotItem = QTreeWidgetItem(databaseItem)
-                    shotItem.setText(0, shot)
+                    if shot not in shotList:
+                        shotItem = QTreeWidgetItem(databaseItem)
+                        shotItem.setText(0, shot)
 
-                    shotList.append(shot)
-                    shotItemList.append(shotItem)
+                        shotList.append(shot)
+                        shotItemList.append(shotItem)
 
-                runItem = QTreeWidgetItem(shotItem)
-                runItem.setText(0, run)
+                    runItem = QTreeWidgetItem(shotItem)
+                    runItem.setText(0, run)
+                except Exception as e:
+                    print(str(e))
 
         return True
 
