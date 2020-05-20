@@ -44,6 +44,9 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
         self.activeDatabase = None
         self.activeShot = None
         self.activeRun = None
+        # A list to keep track of which databases had been shown and to
+        # use it to avoid duplicates
+        self.presentUserNameList = []
 
         # # Connect 'itemClicked' with the 'onLeftClickItem' function.
         # # On clicking on the QTreeWidgetItem (left click) the function will
@@ -52,23 +55,41 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
 
         # # Set action on double click on item
         self.itemDoubleClicked.connect(self.doubleClickHandler)
+        # Get current username
+        username = getpass.getuser()
+        self.addContentsForUsername(username)
 
-        self.setContents()
-
-    def setContents(self):
-        """Set treeWidget items.
+    def addContentsForUsername(self, username):
+        """Set treeWidget items based on imasdb for given user.
         """
 
-        rootUserItem = QTreeWidgetItem(self)
-        # Get current username
-        userName = getpass.getuser()
-        rootUserItem.setText(0, userName)
-
+        self.activeUsername = username
         # Get (standard) imasdb path
-        imasdbPath = os.environ['HOME'] + "/public/imasdb"
+        # userPath = os.path.abspath(os.path.join(
+        #     os.path.dirname(__file__), '..', os.environ['HOME']))
+
+        userPath = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), os.environ['HOME'], '..'))
+        userPath = userPath + "/" + username
+
+        # If user path does not exist, return
+        if os.path.exists(userPath) is False or \
+                username in self.presentUserNameList:
+            return False
+
+        self.presentUserNameList.append(username)
+
+        rootUserItem = QTreeWidgetItem(self)
+        rootUserItem.setText(0, username)
+
+        # imasdbPath = os.environ['HOME'] + "/public/imasdb"
+        imasdbPath = userPath + "/public/imasdb"
 
         databaseList = [dI for dI in os.listdir(imasdbPath)
                         if os.path.isdir(os.path.join(imasdbPath, dI))]
+
+        # Sort by alphabetical order
+        databaseList.sort()
 
         # Go through databases
         for db in databaseList:
@@ -115,6 +136,8 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
 
                 runItem = QTreeWidgetItem(shotItem)
                 runItem.setText(0, run)
+
+        return True
 
     def doubleClickHandler(self, item, column_No):
         """Handler for double click on QTreeWidgetItem in QTreeWidget

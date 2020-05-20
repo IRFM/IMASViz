@@ -14,6 +14,7 @@
 import os
 import sys
 import logging
+from functools import partial
 from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
@@ -94,6 +95,7 @@ class GUIFrame(QTabWidget):
 
         self.AvailableIDSBrowserWidget = QVizAvailableIDSBrowserWidget(parent=self)
         self.AvailableIDSBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
+        self.userName.editingFinished.connect(self.onUserNameEditFinished)
 
         button_open1 = QPushButton('Open', self)
         button_open1.setStatusTip("Open the case for the given parameters.")
@@ -150,6 +152,9 @@ class GUIFrame(QTabWidget):
         self.imasDbName.setText(self.AvailableIDSBrowserWidget.getActiveDatabase())
         self.shotNumber.setText(self.AvailableIDSBrowserWidget.getActiveShot())
         self.runNumber.setText(self.AvailableIDSBrowserWidget.getActiveRun())
+
+    def onUserNameEditFinished(self):
+        self.AvailableIDSBrowserWidget.addContentsForUsername(self.userName.text())
 
     def tabTwo(self):
 
