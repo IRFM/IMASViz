@@ -143,13 +143,13 @@ class QVizGlobalValues:
             os.environ["VIZ_HOME"] = os.environ["HOME"] + "viz"
 
         if os.getenv("DATABASE_NAME") is None:
-            os.environ["DATABASE_NAME"] = "WEST"
+            os.environ["DATABASE_NAME"] = os.uname()[1]
 
         if TESTING_VIZ_HOME is None:
             if os.environ["HOSTNAME"] == 'r000u11l06':
                 TESTING_VIZ_HOME = os.environ["HOME"] + '/workspace_python/viz'
             elif os.environ['HOSTNAME'] == 'spica.intra.cea.fr' or \
-                            os.environ['HOSTNAME'] == 'sirrah' \
+                        os.environ['HOSTNAME'] == 'sirrah' \
                     or os.environ['HOSTNAME'] == 'gemma.intra.cea.fr':
                 TESTING_VIZ_HOME = os.environ["HOME"] + '/viz'
             else:
