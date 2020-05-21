@@ -149,6 +149,7 @@ class GUIFrame(QTabWidget):
     def updateIDSparam(self):
         """Update IDS parameters widgets.
         """
+        self.userName.setText(self.AvailableIDSBrowserWidget.getActiveUsername())
         self.imasDbName.setText(self.AvailableIDSBrowserWidget.getActiveDatabase())
         self.shotNumber.setText(self.AvailableIDSBrowserWidget.getActiveShot())
         self.runNumber.setText(self.AvailableIDSBrowserWidget.getActiveRun())

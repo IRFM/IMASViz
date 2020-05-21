@@ -153,12 +153,15 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
         # When clicking on item representing run number
         # (last in tree hierarchy -> 0 children)
         if item.childCount() == 0:
-            # self.activeUsername = item.parent().parent().parent().text(0)
+            self.setActiveUsername(item.parent().parent().parent().text(0))
             self.setActiveDatabase(item.parent().parent().text(0))
             self.setActiveShot(item.parent().text(0))
             self.setActiveRun(item.text(0))
 
         self.onItemDoubleClick.emit()
+
+    def setActiveUsername(self, username):
+        self.activeUsername = username
 
     def setActiveDatabase(self, db):
         self.activeDatabase = db
@@ -168,6 +171,9 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
 
     def setActiveRun(self, run):
         self.activeRun = run
+
+    def getActiveUsername(self):
+        return self.activeUsername
 
     def getActiveDatabase(self):
         return self.activeDatabase
