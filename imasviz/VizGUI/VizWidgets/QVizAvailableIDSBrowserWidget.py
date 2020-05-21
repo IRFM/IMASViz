@@ -38,7 +38,12 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
         self.setObjectName('AvailableIDSBrowserWidget')
         # Hide header
         self.setHeaderHidden(False)
-        self.setHeaderLabels(['IDS cases browser'])
+        self.setHeaderLabels(['IDS collection browser'])
+        tip = 'Browser through available IDS cases for given user. \n On ' \
+              'setting a different user in user textbox then available IDS ' \
+              'cases for that user will be shown too.'
+        self.setToolTip(tip)
+        self.setStatusTip(tip)
 
         self.activeUsername = None
         self.activeDatabase = None
