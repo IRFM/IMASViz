@@ -20,6 +20,14 @@ Released 18.5.2020
 
 - Fix bug when .imasviz/VizgeneratedCode directory is missing
   (for generation of parser files) (IMAS-3113)
+- Add new widget - IDS case browser (similar to 'imasdbs' command). At startup
+  shows the available IDSs (in a form of a tree view). Browsing and double
+  clicking the 'run' parameter will update the IDS parameters text boxes above.
+  For searching IDS cases of other users fist an existing username must be
+  set in the Username textbox and confirmed (either by pressing enter key or
+  by clicking anywhere else outside the text box). The available IDS cases for
+  given users will be extracted and added to the IDS case browser widget.
+  Note that this widget searches for IDS cases only in 'username/public/imasdb'.
 
 -------------
 Version 2.4.0
