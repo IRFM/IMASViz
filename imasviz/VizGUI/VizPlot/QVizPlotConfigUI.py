@@ -4,13 +4,13 @@
 #          (line colors etc.).
 #
 #  Author :
-#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#         Ludovic Fleury, Dejan Penko
 #  E-mail :
-#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#         ludovic.fleury@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-# ****************************************************
-#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-# ****************************************************
+# *****************************************************************************
+#     Copyright(c) 2016- L. Fleury, D. Penko
+# *****************************************************************************
 
 import pyqtgraph as pg
 from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
@@ -68,11 +68,11 @@ class QVizPlotConfigUI(QDialog):
         self.tabLP = TabLineProperties(parent=self)
         tabWidget.addTab(self.tabLP, "Line Properties")
 
-        # Disabling tab for customizing text properties in case legendItem is
+        # Disabling tab for customizing legend properties in case legendItem is
         # not set (as many text customization refers to legend)
         if self.legendItem is not None:
-            self.tabTP = TabTextProperties(parent=self)
-            tabWidget.addTab(self.tabTP, "Text properties")
+            self.tabTP = TabLegendProperties(parent=self)
+            tabWidget.addTab(self.tabTP, "Legend properties")
 
         # - Plot design properties
         self.tabPDP = TabPlotDesignProperties(parent=self)
@@ -512,16 +512,16 @@ class TabLineProperties(QWidget):
         pdItem.updateItems()
 
 
-class TabTextProperties(QWidget):
-    """Widget allowing plot color and line customization.
+class TabLegendProperties(QWidget):
+    """Widget allowing legend customization.
     """
 
     def __init__(self, parent=None, size=(500, 400)):
-        super(TabTextProperties, self).__init__(parent)
+        super(TabLegendProperties, self).__init__(parent)
 
         # Widget settings
-        self.setObjectName("TabTextProperties")
-        self.setWindowTitle("Text Properties")
+        self.setObjectName("TabLegendProperties")
+        self.setWindowTitle("Legend Properties")
         # self.resize(size[0], size[1])
 
         self.parent = parent
