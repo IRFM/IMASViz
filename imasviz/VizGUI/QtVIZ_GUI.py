@@ -31,7 +31,7 @@ from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
                               QVizGlobalOperations, QVizLogger)
-from imasviz.VizGUI.VizWidgets.QVizAvailableIDSBrowserWidget import QVizAvailableIDSBrowserWidget
+from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 
 
 class GUIFrame(QTabWidget):
@@ -93,8 +93,8 @@ class GUIFrame(QTabWidget):
         self.runNumber.setToolTip("Run case identifier.")
         vboxLayout.addRow('Run number', self.runNumber)
 
-        self.AvailableIDSBrowserWidget = QVizAvailableIDSBrowserWidget(parent=self)
-        self.AvailableIDSBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
+        self.IMASdbBrowserWidget = QVizIMASdbBrowserWidget(parent=self)
+        self.IMASdbBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
         self.userName.editingFinished.connect(self.onUserNameEditFinished)
 
         button_open1 = QPushButton('Open', self)
@@ -103,7 +103,7 @@ class GUIFrame(QTabWidget):
         button_open1.clicked.connect(self.OpenDataSourceFromTab1)
 
         layout.addLayout(vboxLayout)
-        layout.addWidget(self.AvailableIDSBrowserWidget)
+        layout.addWidget(self.IMASdbBrowserWidget)
 
         vboxLayout2 = QVBoxLayout()
         vboxLayout2.addWidget(button_open1)
@@ -149,13 +149,13 @@ class GUIFrame(QTabWidget):
     def updateIDSparam(self):
         """Update IDS parameters widgets.
         """
-        self.userName.setText(self.AvailableIDSBrowserWidget.getActiveUsername())
-        self.imasDbName.setText(self.AvailableIDSBrowserWidget.getActiveDatabase())
-        self.shotNumber.setText(self.AvailableIDSBrowserWidget.getActiveShot())
-        self.runNumber.setText(self.AvailableIDSBrowserWidget.getActiveRun())
+        self.userName.setText(self.IMASdbBrowserWidget.getActiveUsername())
+        self.imasDbName.setText(self.IMASdbBrowserWidget.getActiveDatabase())
+        self.shotNumber.setText(self.IMASdbBrowserWidget.getActiveShot())
+        self.runNumber.setText(self.IMASdbBrowserWidget.getActiveRun())
 
     def onUserNameEditFinished(self):
-        self.AvailableIDSBrowserWidget.addContentsForUsername(self.userName.text())
+        self.IMASdbBrowserWidget.addContentsForUsername(self.userName.text())
 
     def tabTwo(self):
 

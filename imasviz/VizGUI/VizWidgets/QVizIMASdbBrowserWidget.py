@@ -1,4 +1,4 @@
-#  Name   : QVizAvailableIDSBrowserWidget
+#  Name   : QVizIMASdbBrowserWidget
 #
 #          A widget for browsing through available IDSs.
 #
@@ -20,7 +20,7 @@ import getpass
 import glob
 
 
-class QVizAvailableIDSBrowserWidget(QTreeWidget):
+class QVizIMASdbBrowserWidget(QTreeWidget):
     """Set and populate QTreeWidget.
     """
 
@@ -32,16 +32,27 @@ class QVizAvailableIDSBrowserWidget(QTreeWidget):
             parent     (QWindow) : QVizDataTreeView parent.
         """
 
-        super(QVizAvailableIDSBrowserWidget, self).__init__(parent)
+        super(QVizIMASdbBrowserWidget, self).__init__(parent)
 
         # Set QTreeWidget name
-        self.setObjectName('AvailableIDSBrowserWidget')
+        self.setObjectName('IMASdbBrowserWidget')
         # Hide header
         self.setHeaderHidden(False)
-        self.setHeaderLabels(['IDS collection browser'])
-        tip = 'Browser through available IDS cases for given user. \n On ' \
-              'setting a different user in user textbox then available IDS ' \
-              'cases for that user will be shown too.'
+        self.setHeaderLabels(['IMAS database browser'])
+        tip = """
+<html>
+Browser through IMAS database displaying available cases for
+given user. <br><br>
+- <b> Double clicking</b> on the last tree view item (IDS run
+parameter) will <b>set the selection</b> in the above
+IDS parameters widgets (local data source parameters). <br><br>
+- On setting a <b>different 'user name' in user textbox</b> and
+confirming the change (either by pressing enter key or by
+loosing focus on the textbox e.g. clicking anywhere else)
+then the available <b>IDS cases for that user will be shown too</b>.
+</html>
+"""
+
         self.setToolTip(tip)
         self.setStatusTip(tip)
 
@@ -197,7 +208,7 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     mainWin = QMainWindow()
-    treeWidget = QVizAvailableIDSBrowserWidget(mainWin)
+    treeWidget = QVizIMASdbBrowserWidget(mainWin)
     mainWin.setCentralWidget(treeWidget)
     mainWin.show()
     sys.exit(app.exec_())
