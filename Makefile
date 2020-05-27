@@ -9,6 +9,8 @@ all: default doc
 
 default:
 	# Generate IDSDef_XMLParser_Generated_<IMAS_VERSION>.py files
+	git submodule init
+	git submodule update
 	mkdir -p ${VIZ_HOME}/imasviz/VizDataAccess/VizGeneratedCode
 	export VIZ_HOME=${VIZ_HOME}; \
 	export VIZ_PRODUCTION=${VIZ_PRODUCTION}; \

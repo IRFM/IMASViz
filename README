@@ -61,9 +61,6 @@ IMASViz requires generated Python files parsers built from the IMAS Data Diction
 (these files are generated to folder $VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
 This is done by executing make command from the $VIZ_HOME directory:
 
-        # Updating GIT submodules (ETSViz plugin etc.)
-        git submodule init
-        git submodule update
         # Main command
         make
 
