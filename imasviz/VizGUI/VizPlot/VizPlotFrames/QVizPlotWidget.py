@@ -142,12 +142,17 @@ class QVizPlotWidget(QWidget):
         # should NOT change it.
 
         if len(self.getPlotList()) == 1:
+            # - Set title
+            # Note: dummy empty title, otherwise title updates in plot
+            #       configuration will not work)
+            self.pgPlotWidget.setTitle("")
             # - Set x-axis label
             self.pgPlotWidget.setLabel('left', ylabel, units='')
             # - Set y-axis label
             self.pgPlotWidget.setLabel('bottom', xlabel, units='')
             # - Enable grid
             self.pgPlotWidget.showGrid(x=True, y=True)
+
 
         if vizTreeNode is not None:
             self.vizTreeNodesList.append(vizTreeNode)

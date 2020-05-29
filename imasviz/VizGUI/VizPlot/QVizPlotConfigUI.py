@@ -13,10 +13,11 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtGui import QTabWidget, QWidget, QPushButton, QGridLayout, \
-    QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea, QLabel, QLineEdit, \
-    QDoubleSpinBox, QComboBox, QSpinBox, QSizePolicy, QSpacerItem, \
-    QApplication, QGraphicsScene, QGraphicsView, QCheckBox
+from PyQt5.QtGui import (QTabWidget, QWidget, QPushButton, QGridLayout,
+                         QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea,
+                         QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
+                         QSpinBox, QSizePolicy, QSpacerItem, QApplication,
+                         QGraphicsScene, QGraphicsView, QCheckBox)
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
@@ -65,14 +66,19 @@ class QVizPlotConfigUI(QDialog):
         tabWidget = QTabWidget(self)
         # Add tabs
         # - Color and line properties
-        self.tabLP = TabLineProperties(parent=self)
-        tabWidget.addTab(self.tabLP, "Line Properties")
+        self.tabLineP = TabLineProperties(parent=self)
+        tabWidget.addTab(self.tabLineP, "Line Properties")
 
+        # - Color and line properties
+        self.tabTextP = TabTextProperties(parent=self)
+        tabWidget.addTab(self.tabTextP, "Text Properties")
+
+        # - Legend properties
         # Disabling tab for customizing legend properties in case legendItem is
         # not set (as many text customization refers to legend)
         if self.legendItem is not None:
-            self.tabLP = TabLegendProperties(parent=self)
-            tabWidget.addTab(self.tabLP, "Legend properties")
+            self.tabLegendP = TabLegendProperties(parent=self)
+            tabWidget.addTab(self.tabLegendP, "Legend properties")
 
         # - Plot design properties
         self.tabPDP = TabPlotDesignProperties(parent=self)
@@ -114,6 +120,9 @@ class QVizPlotConfigUI(QDialog):
 
         # Set dialog layout
         self.setLayout(layout)
+
+    def getPlotItem(self):
+        return self.viewBox.qWidgetParent.getPlotItem()
 
 
 class SampleCopyFromLegend(QWidget):
@@ -386,20 +395,6 @@ class TabLineProperties(QWidget):
             itemID += 1
             row += 1
 
-            # TODO: axis configuration. Use (pg.DataItem):
-            # axis = pgPlotItem.getAxis('bottom')
-            # axis.setLabel("text", "unit")
-            # axis.label.setPlainText("text")
-            # axis.label  # QGraphicsTextItem
-            # axis.labelText = "text"
-            # axis.labelUnitPrefix = "units prefix"  # str
-            # axis.labelUnits = "units"  # str
-            # axis.range  # (float,float)
-            # axis.scale = 3.0  # float
-            # axis.style  # dict
-            # axis.textHeight = 20  # int
-            # axis.textWidth  # int
-
         # Set scrollArea contents margin to keep the contents lined to the top
         # even if not full scrollArea would be filled
         topMargin = 270 - (row - 1)*30
@@ -497,7 +492,6 @@ class TabLineProperties(QWidget):
         # Change symbol color
         pdItem.opts['symbolBrush'] = colorButton.color().getRgb()
         pdItem.updateItems()
-        pass
 
     @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
     def updatePDItemSymbolOutlineColor(self, pdItem, colorButton):
@@ -512,6 +506,121 @@ class TabLineProperties(QWidget):
         # Change symbol outline color
         pdItem.opts['symbolPen'] = colorButton.color().getRgb()
         pdItem.updateItems()
+
+
+class TabTextProperties(QWidget):
+    """Widget allowing text customization (axis, title, etc.).
+    """
+
+    def __init__(self, parent=None, size=(500, 400)):
+        super(TabTextProperties, self).__init__(parent)
+
+        # Widget settings
+        self.setObjectName("TabTextProperties")
+        self.setWindowTitle("Text Properties")
+        # self.resize(size[0], size[1])
+
+        self.parent = parent
+        # Set viewBox variable
+        self.viewBox = self.parent.viewBox
+
+        # Set up the QWidget contents
+        self.setContents()
+
+    def setContents(self):
+        """ Set widget contents.
+        """
+        # Set layout
+        self.gridLayout = QGridLayout(self)
+        self.gridLayout.setObjectName("gridLayout")
+
+        # Set scroll area containing a list of text customization options
+        self.plotListOptions = self.setPlotPropertiesList()
+        self.gridLayout.addWidget(self.plotListOptions, 0, 0, 1, 1)
+
+        # Set layout marigin (left, top, right, bottom)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self.gridLayout)
+
+    def setPlotPropertiesList(self):
+        """Set scroll area listing text customization options.
+        """
+
+        plotItem = self.parent.getPlotItem()
+        self.titleLabel = plotItem.titleLabel
+        # By default, plotItem.titleLabel.opts doesn't contain 'bold' key.
+        # We add it here.
+        self.titleLabel.setAttr('bold', False)
+
+        # Set scrollable area
+        scrollArea = QScrollArea(self)
+        scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setEnabled(True)
+        scrollContent = QWidget(scrollArea)
+
+        # Set layout for scrollable area
+        scrollLayout = QGridLayout(scrollContent)
+
+        scrollLayout.addWidget(QLabel("Title"), 0, 0, 1, 1)
+        self.titleLineEdit = QLineEdit(self.titleLabel.text)
+        scrollLayout.addWidget(self.titleLineEdit, 0, 1, 1, 1)
+        self.titleLineEdit.textChanged.connect(self.updatePlotItemTitle)
+
+        # Configuring title thickness (boldness)
+        boldButton = QPushButton('', self)
+        # Set icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
+        boldButton.setIcon(icon)
+        # - Add boldButton to layout
+        scrollLayout.addWidget(boldButton, 0, 2, 1, 1)
+        # - Add action triggered by pressing the button
+        boldButton.pressed.connect(self.setTitleBold)
+
+        # scrollLayout.addWidget(QLabel("Bottom axis"), 1, 0, 1, 1)
+        # # scrollLayout.addWidget(QLineEdit("TODO"), 1, 1, 1, 1)
+        # scrollLayout.addWidget(QLabel("Left axis"), 2, 0, 1, 1)
+        # scrollLayout.addWidget(QLabel("Top axis"), 3, 0, 1, 1)
+        # scrollLayout.addWidget(QLabel("Right axis"), 4, 0, 1, 1)
+
+        # TODO: axis configuration. Use (pg.DataItem):
+        # axis = pgPlotItem.getAxis('bottom')
+        # axis.setLabel("text", "unit")
+        # axis.label.setPlainText("text")
+        # axis.label  # QGraphicsTextItem
+        # axis.labelText = "text"
+        # axis.labelUnitPrefix = "units prefix"  # str
+        # axis.labelUnits = "units"  # str
+        # axis.range  # (float,float)
+        # axis.scale = 3.0  # float
+        # axis.style  # dict
+        # axis.textHeight = 20  # int
+        # axis.textWidth  # int
+
+        scrollLayout.setContentsMargins(0, 0, 0, 0)
+        # Add all contents to scrollArea widget
+        scrollContent.setLayout(scrollLayout)
+        scrollArea.setWidget(scrollContent)
+
+        return scrollArea
+
+    @pyqtSlot()
+    def updatePlotItemTitle(self):
+        self.titleLabel.setText(self.titleLineEdit.text())
+
+    @pyqtSlot()
+    def setTitleBold(self):
+
+        if self.titleLabel.opts['bold'] is False:
+            self.titleLabel.setAttr('bold', True)
+        else:
+            self.titleLabel.setAttr('bold', False)
+
+        # Re-set the same text for the bold to take effect.
+        # No self.titleLabel.update() function and similar doesn't display the
+        # changes immediately
+        self.updatePlotItemTitle()
 
 
 class TabLegendProperties(QWidget):
