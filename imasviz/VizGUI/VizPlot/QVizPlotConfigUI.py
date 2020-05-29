@@ -122,6 +122,8 @@ class QVizPlotConfigUI(QDialog):
         self.setLayout(layout)
 
     def getPlotItem(self):
+        # Note: works for QVizPlotWidget, doesn't work for stacked plot and
+        #       table plot view
         return self.viewBox.qWidgetParent.getPlotItem()
 
 
@@ -546,7 +548,18 @@ class TabTextProperties(QWidget):
         """Set scroll area listing text customization options.
         """
 
-        plotItem = self.parent.getPlotItem()
+        # In TablePlotView the legend is not used.
+        if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
+            return
+        elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
+            return
+        elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
+            return
+        else:
+            # Note: works for QVizPlotWidget, doesn't work for stacked plot and
+            #       table plot view
+            plotItem = self.parent.getPlotItem()
+
         self.titleLabel = plotItem.titleLabel
         # By default, plotItem.titleLabel.opts doesn't contain 'bold' key.
         # We add it here.
