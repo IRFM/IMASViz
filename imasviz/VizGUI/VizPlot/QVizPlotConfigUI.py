@@ -564,6 +564,7 @@ class TabTextProperties(QWidget):
         # By default, plotItem.titleLabel.opts doesn't contain 'bold' key.
         # We add it here.
         self.titleLabel.setAttr('bold', False)
+        self.titleLabel.setAttr('italic', False)
 
         # Set scrollable area
         scrollArea = QScrollArea(self)
@@ -590,6 +591,16 @@ class TabTextProperties(QWidget):
         scrollLayout.addWidget(boldButton, 0, 2, 1, 1)
         # - Add action triggered by pressing the button
         boldButton.pressed.connect(self.setTitleBold)
+
+        # Configuring title style (italic)
+        italic = QPushButton('', self)
+        # Set icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
+        italic.setIcon(icon)
+        # - Add italic to layout
+        scrollLayout.addWidget(italic, 0, 3, 1, 1)
+        # - Add action triggered by pressing the button
+        italic.pressed.connect(self.setTitleItalic)
 
         # scrollLayout.addWidget(QLabel("Bottom axis"), 1, 0, 1, 1)
         # # scrollLayout.addWidget(QLineEdit("TODO"), 1, 1, 1, 1)
@@ -631,6 +642,19 @@ class TabTextProperties(QWidget):
             self.titleLabel.setAttr('bold', False)
 
         # Re-set the same text for the bold to take effect.
+        # No self.titleLabel.update() function and similar doesn't display the
+        # changes immediately
+        self.updatePlotItemTitle()
+
+    @pyqtSlot()
+    def setTitleItalic(self):
+
+        if self.titleLabel.opts['italic'] is False:
+            self.titleLabel.setAttr('italic', True)
+        else:
+            self.titleLabel.setAttr('italic', False)
+
+        # Re-set the same text for the italic to take effect.
         # No self.titleLabel.update() function and similar doesn't display the
         # changes immediately
         self.updatePlotItemTitle()
