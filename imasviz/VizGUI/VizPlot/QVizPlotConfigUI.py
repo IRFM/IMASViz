@@ -565,6 +565,9 @@ class TabTextProperties(QWidget):
         # We add it here.
         self.titleLabel.setAttr('bold', False)
         self.titleLabel.setAttr('italic', False)
+        # references to axes
+        self.axisBottom = plotItem.getAxis('bottom')
+        self.axisBottom.labelStyle['bold'] = False
 
         # Set scrollable area
         scrollArea = QScrollArea(self)
@@ -577,21 +580,20 @@ class TabTextProperties(QWidget):
         # Set layout for scrollable area
         scrollLayout = QGridLayout(scrollContent)
 
+        # Configuring title
         scrollLayout.addWidget(QLabel("Title"), 0, 0, 1, 1)
         self.titleLineEdit = QLineEdit(self.titleLabel.text)
         scrollLayout.addWidget(self.titleLineEdit, 0, 1, 1, 1)
         self.titleLineEdit.textChanged.connect(self.updatePlotItemTitle)
-
         # Configuring title thickness (boldness)
-        boldButton = QPushButton('', self)
+        titleLabelBoldButton = QPushButton('', self)
         # Set icon
         icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
-        boldButton.setIcon(icon)
-        # - Add boldButton to layout
-        scrollLayout.addWidget(boldButton, 0, 2, 1, 1)
+        titleLabelBoldButton.setIcon(icon)
+        # - Add titleLabelBoldButton to layout
+        scrollLayout.addWidget(titleLabelBoldButton, 0, 2, 1, 1)
         # - Add action triggered by pressing the button
-        boldButton.pressed.connect(self.setTitleBold)
-
+        titleLabelBoldButton.pressed.connect(self.setTitleBold)
         # Configuring title style (italic)
         italic = QPushButton('', self)
         # Set icon
@@ -602,8 +604,40 @@ class TabTextProperties(QWidget):
         # - Add action triggered by pressing the button
         italic.pressed.connect(self.setTitleItalic)
 
-        # scrollLayout.addWidget(QLabel("Bottom axis"), 1, 0, 1, 1)
-        # # scrollLayout.addWidget(QLineEdit("TODO"), 1, 1, 1, 1)
+        # Configuring bottom axis label
+        scrollLayout.addWidget(QLabel("Bottom axis"), 1, 0, 1, 1)
+        # Set default label style (dict)
+        self.axisBottomLabelStyle = {'color': '#000000',
+                                     'font-size': '15px',
+                                     'font-weight': 'normal',
+                                     'font-style': 'normal',
+                                     }
+        self.axisBottomLineEdit = QLineEdit(self.axisBottom.labelText)
+        scrollLayout.addWidget(self.axisBottomLineEdit, 1, 1, 1, 1)
+        self.axisBottomLineEdit.textChanged.connect(self.updateAxisBottomLabel)
+        # Configuring title thickness (boldness)
+        self.axisBottomBoldButton = QPushButton('', self)
+        self.axisBottomBoldButton.setCheckable(True)
+        self.axisBottomBoldButton.setChecked(True)
+        self.axisBottomBoldButton.toggle()
+        # Set icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
+        self.axisBottomBoldButton.setIcon(icon)
+        self.axisBottomBoldButton.clicked.connect(self.updateAxisBottomLabel)
+        # - Add self.axisBottomBoldButton to layout
+        scrollLayout.addWidget(self.axisBottomBoldButton, 1, 2, 1, 1)
+        # Axis bottom label style
+        self.axisBottomItalicButton = QPushButton('', self)
+        self.axisBottomItalicButton.setCheckable(True)
+        self.axisBottomItalicButton.setChecked(True)
+        self.axisBottomItalicButton.toggle()
+        # Set icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
+        self.axisBottomItalicButton.setIcon(icon)
+        self.axisBottomItalicButton.clicked.connect(self.updateAxisBottomLabel)
+        # - Add self.axisBottomItalicButton to layout
+        scrollLayout.addWidget(self.axisBottomItalicButton, 1, 3, 1, 1)
+
         # scrollLayout.addWidget(QLabel("Left axis"), 2, 0, 1, 1)
         # scrollLayout.addWidget(QLabel("Top axis"), 3, 0, 1, 1)
         # scrollLayout.addWidget(QLabel("Right axis"), 4, 0, 1, 1)
@@ -658,6 +692,21 @@ class TabTextProperties(QWidget):
         # No self.titleLabel.update() function and similar doesn't display the
         # changes immediately
         self.updatePlotItemTitle()
+
+    def updateAxisBottomLabel(self):
+        if self.axisBottomBoldButton.isChecked():
+            self.axisBottomLabelStyle['font-weight'] = 'bold'
+        else:
+            self.axisBottomLabelStyle['font-weight'] = 'normal'
+
+        if self.axisBottomItalicButton.isChecked():
+            self.axisBottomLabelStyle['font-style'] = 'italic'
+        else:
+            self.axisBottomLabelStyle['font-style'] = 'normal'
+
+        # axis.setLabel("text", "unit")
+        self.axisBottom.setLabel(self.axisBottomLineEdit.text(),
+                                 **self.axisBottomLabelStyle)
 
 
 class TabLegendProperties(QWidget):
