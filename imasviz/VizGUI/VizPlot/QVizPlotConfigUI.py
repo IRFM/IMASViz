@@ -606,7 +606,7 @@ class TabTextProperties(QWidget):
 
         # Configuring bottom axis label
         scrollLayout.addWidget(QLabel("Bottom axis"), 1, 0, 1, 1)
-        # Set default label style (dict)
+        # - Set default label style (dict)
         self.axisBottomLabelStyle = {'color': '#000000',
                                      'font-size': '15px',
                                      'font-weight': 'normal',
@@ -615,28 +615,34 @@ class TabTextProperties(QWidget):
         self.axisBottomLineEdit = QLineEdit(self.axisBottom.labelText)
         scrollLayout.addWidget(self.axisBottomLineEdit, 1, 1, 1, 1)
         self.axisBottomLineEdit.textChanged.connect(self.updateAxisBottomLabel)
-        # Configuring title thickness (boldness)
+        # - Configuring title thickness (boldness)
         self.axisBottomBoldButton = QPushButton('', self)
-        self.axisBottomBoldButton.setCheckable(True)
-        self.axisBottomBoldButton.setChecked(True)
-        self.axisBottomBoldButton.toggle()
-        # Set icon
+        # -- Set icon
         icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
         self.axisBottomBoldButton.setIcon(icon)
         self.axisBottomBoldButton.clicked.connect(self.updateAxisBottomLabel)
-        # - Add self.axisBottomBoldButton to layout
+        # - Add to layout
         scrollLayout.addWidget(self.axisBottomBoldButton, 1, 2, 1, 1)
-        # Axis bottom label style
+        # -- Label style
         self.axisBottomItalicButton = QPushButton('', self)
-        self.axisBottomItalicButton.setCheckable(True)
-        self.axisBottomItalicButton.setChecked(True)
-        self.axisBottomItalicButton.toggle()
-        # Set icon
+        # -- Set icon
         icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
         self.axisBottomItalicButton.setIcon(icon)
         self.axisBottomItalicButton.clicked.connect(self.updateAxisBottomLabel)
-        # - Add self.axisBottomItalicButton to layout
+        # -- Add to layout
         scrollLayout.addWidget(self.axisBottomItalicButton, 1, 3, 1, 1)
+
+        # - Configuring symbol label size. Take current label size as a value
+        self.axisBottomLabelSizeSpinBox = QSpinBox(
+            value=int(self.axisBottomLabelStyle['font-size'].strip('px')))
+
+        # - Update label size on value change
+        self.axisBottomLabelSizeSpinBox.valueChanged.connect(
+            self.updateAxisBottomLabel)
+        # -- Add to layout
+        scrollLayout.addWidget(self.axisBottomLabelSizeSpinBox, 1, 4, 1, 1)
+
+
 
         # scrollLayout.addWidget(QLabel("Left axis"), 2, 0, 1, 1)
         # scrollLayout.addWidget(QLabel("Top axis"), 3, 0, 1, 1)
@@ -694,15 +700,18 @@ class TabTextProperties(QWidget):
         self.updatePlotItemTitle()
 
     def updateAxisBottomLabel(self):
-        if self.axisBottomBoldButton.isChecked():
+        if self.axisBottomLabelStyle['font-weight'] == 'normal':
             self.axisBottomLabelStyle['font-weight'] = 'bold'
         else:
             self.axisBottomLabelStyle['font-weight'] = 'normal'
 
-        if self.axisBottomItalicButton.isChecked():
+        if self.axisBottomLabelStyle['font-style'] == 'normal':
             self.axisBottomLabelStyle['font-style'] = 'italic'
         else:
             self.axisBottomLabelStyle['font-style'] = 'normal'
+
+        self.axisBottomLabelStyle['font-size'] = \
+            str(self.axisBottomLabelSizeSpinBox.value()) + 'px'
 
         # axis.setLabel("text", "unit")
         self.axisBottom.setLabel(self.axisBottomLineEdit.text(),
