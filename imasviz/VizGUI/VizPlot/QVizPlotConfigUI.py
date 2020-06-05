@@ -17,7 +17,7 @@ from PyQt5.QtGui import (QTabWidget, QWidget, QPushButton, QGridLayout,
                          QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea,
                          QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
                          QSpinBox, QSizePolicy, QSpacerItem, QApplication,
-                         QGraphicsScene, QGraphicsView, QCheckBox)
+                         QGraphicsScene, QGraphicsView, QCheckBox, QHBoxLayout)
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
@@ -569,9 +569,6 @@ class TabTextProperties(QWidget):
         if 'italic' not in self.titleLabel.opts:
             self.titleLabel.setAttr('italic', False)
 
-        # references to axes
-        self.axisBottom = plotItem.getAxis('bottom')
-
         # Set scrollable area
         scrollArea = QScrollArea(self)
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -581,12 +578,18 @@ class TabTextProperties(QWidget):
         scrollContent = QWidget(scrollArea)
 
         # Set layout for scrollable area
-        scrollLayout = QGridLayout(scrollContent)
+        layout = QVBoxLayout(scrollContent)
+
+        titleContentWidget = QWidget(scrollContent)
+        layoutTitle = QHBoxLayout(titleContentWidget)
 
         # Configuring title
-        scrollLayout.addWidget(QLabel("Title"), 0, 0, 1, 1)
+        titleQLabel = QLabel("Title")
+        # titleQLabel.resize(200, titleQLabel.height())
+        titleQLabel.setMinimumWidth(100)
+        layoutTitle.addWidget(titleQLabel)
         self.titleLineEdit = QLineEdit(self.titleLabel.text)
-        scrollLayout.addWidget(self.titleLineEdit, 0, 1, 1, 1)
+        layoutTitle.addWidget(self.titleLineEdit)
         self.titleLineEdit.textChanged.connect(self.updatePlotItemTitle)
         # Configuring title thickness (boldness)
         titleLabelBoldButton = QPushButton('', self)
@@ -594,7 +597,7 @@ class TabTextProperties(QWidget):
         icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
         titleLabelBoldButton.setIcon(icon)
         # - Add titleLabelBoldButton to layout
-        scrollLayout.addWidget(titleLabelBoldButton, 0, 2, 1, 1)
+        layoutTitle.addWidget(titleLabelBoldButton)
         # - Add action triggered by pressing the button
         titleLabelBoldButton.pressed.connect(self.setTitleBold)
         # Configuring title style (italic)
@@ -603,58 +606,40 @@ class TabTextProperties(QWidget):
         icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
         italic.setIcon(icon)
         # - Add italic to layout
-        scrollLayout.addWidget(italic, 0, 3, 1, 1)
+        layoutTitle.addWidget(italic)
         # - Add action triggered by pressing the button
         italic.pressed.connect(self.setTitleItalic)
 
-        # Configuring bottom axis label
-        scrollLayout.addWidget(QLabel("Bottom axis"), 1, 0, 1, 1)
-        # - Set default label style (dict)
-        self.axisBottomLineEdit = QLineEdit(self.axisBottom.labelText)
-        scrollLayout.addWidget(self.axisBottomLineEdit, 1, 1, 1, 1)
-        self.axisBottomLineEdit.textChanged.connect(self.updateAxisBottomLabel)
-        # - Configuring title thickness (boldness)
-        self.axisBottomBoldButton = QPushButton('', self)
-        self.axisBottomBoldButton.setCheckable(True)
-        self.axisBottomBoldButton.setChecked(True)
-        # -- Check label weight on start and set button pressed if true
-        if 'font-weight' in self.axisBottom.labelStyle:
-            if self.axisBottom.labelStyle['font-weight'] == 'bold':
-                self.axisBottomBoldButton.setChecked(False)
-        self.axisBottomBoldButton.toggle()
-        # -- Set icon
-        icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
-        self.axisBottomBoldButton.setIcon(icon)
-        self.axisBottomBoldButton.clicked.connect(self.updateAxisBottomLabel)
-        # - Add to layout
-        scrollLayout.addWidget(self.axisBottomBoldButton, 1, 2, 1, 1)
-        # -- Label style
-        self.axisBottomItalicButton = QPushButton('', self)
-        self.axisBottomItalicButton.setCheckable(True)
-        self.axisBottomItalicButton.setChecked(True)
-        # -- Check label style on start and set button pressed if true
-        if 'font-style' in self.axisBottom.labelStyle:
-            if self.axisBottom.labelStyle['font-style'] == 'italic':
-                self.axisBottomItalicButton.setChecked(False)
-        self.axisBottomItalicButton.toggle()
-        # -- Set icon
-        icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
-        self.axisBottomItalicButton.setIcon(icon)
-        self.axisBottomItalicButton.clicked.connect(self.updateAxisBottomLabel)
-        # -- Add to layout
-        scrollLayout.addWidget(self.axisBottomItalicButton, 1, 3, 1, 1)
+        titleContentWidget.setLayout(layoutTitle)
+        layout.addWidget(titleContentWidget)
 
-        # - Configuring symbol label size. Take current label size as a value
-        if 'font-weight' not in self.axisBottom.labelStyle:
-            self.axisBottom.labelStyle['font-size'] = '15px' # default value
-        self.axisBottomLabelSizeSpinBox = QSpinBox(
-            value=int(self.axisBottom.labelStyle['font-size'].strip('px')))
+        # Add configurations for bottom axis label
+        self.axisBottom = plotItem.getAxis('bottom')
+        self.axisBottomConfWidget = AxisConfWidget(axis=self.axisBottom,
+                                                   axis_name="Axis Bottom",
+                                                   parent=self)
+        layout.addWidget(self.axisBottomConfWidget)
 
-        # - Update label size on value change
-        self.axisBottomLabelSizeSpinBox.valueChanged.connect(
-            self.updateAxisBottomLabel)
-        # -- Add to layout
-        scrollLayout.addWidget(self.axisBottomLabelSizeSpinBox, 1, 4, 1, 1)
+        # Add configurations for left axis label
+        self.axisLeft = plotItem.getAxis('left')
+        self.axisLeftConfWidget = AxisConfWidget(axis=self.axisLeft,
+                                                 axis_name="Axis Left",
+                                                 parent=self)
+        layout.addWidget(self.axisLeftConfWidget)
+
+        # Add configurations for top axis label
+        self.axisTop = plotItem.getAxis('top')
+        self.axisTopConfWidget = AxisConfWidget(axis=self.axisTop,
+                                                axis_name="Axis Top",
+                                                parent=self)
+        layout.addWidget(self.axisTopConfWidget)
+
+        # Add configurations for right axis label
+        self.axisRight = plotItem.getAxis('right')
+        self.axisRightConfWidget = AxisConfWidget(axis=self.axisRight,
+                                                  axis_name="Axis Right",
+                                                  parent=self)
+        layout.addWidget(self.axisRightConfWidget)
 
         # TODO: color
         # TODO: font
@@ -677,9 +662,9 @@ class TabTextProperties(QWidget):
         # axis.textHeight = 20  # int
         # axis.textWidth  # int
 
-        scrollLayout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(0, 0, 0, 0)
         # Add all contents to scrollArea widget
-        scrollContent.setLayout(scrollLayout)
+        scrollContent.setLayout(layout)
         scrollArea.setWidget(scrollContent)
 
         return scrollArea
@@ -731,6 +716,95 @@ class TabTextProperties(QWidget):
         # axis.setLabel("text", "unit")
         self.axisBottom.setLabel(self.axisBottomLineEdit.text(),
                                  **self.axisBottom.labelStyle)
+
+class AxisConfWidget(QWidget):
+    """(Sub)Widget for configuring axis labels.
+    """
+
+    def __init__(self, axis, axis_name, parent=None):
+        super(AxisConfWidget, self).__init__(parent)
+
+        self.axis = axis
+        self.axis_name = axis_name
+
+        self.setContents()
+
+    def setContents(self):
+
+        layout = QHBoxLayout(self)
+
+        # Configuring axis label
+        axisNameQLabel = QLabel(self.axis_name)
+        axisNameQLabel.setMinimumWidth(100)
+        layout.addWidget(axisNameQLabel)
+        # - Set default label style (dict)
+        self.axisLineEdit = QLineEdit(self.axis.labelText)
+        layout.addWidget(self.axisLineEdit)
+        self.axisLineEdit.textChanged.connect(self.updateAxisLabel)
+        # - Configuring title thickness (boldness)
+        self.axisBoldButton = QPushButton('', self)
+        self.axisBoldButton.setCheckable(True)
+        self.axisBoldButton.setChecked(True)
+        # -- Check label weight on start and set button pressed if true
+        if 'font-weight' in self.axis.labelStyle:
+            if self.axis.labelStyle['font-weight'] == 'bold':
+                self.axisBoldButton.setChecked(False)
+        self.axisBoldButton.toggle()
+        # -- Set icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
+        self.axisBoldButton.setIcon(icon)
+        self.axisBoldButton.clicked.connect(self.updateAxisLabel)
+        # - Add to layout
+        layout.addWidget(self.axisBoldButton)
+        # -- Label style
+        self.axisItalicButton = QPushButton('', self)
+        self.axisItalicButton.setCheckable(True)
+        self.axisItalicButton.setChecked(True)
+        # -- Check label style on start and set button pressed if true
+        if 'font-style' in self.axis.labelStyle:
+            if self.axis.labelStyle['font-style'] == 'italic':
+                self.axisItalicButton.setChecked(False)
+        self.axisItalicButton.toggle()
+        # -- Set icon
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
+        self.axisItalicButton.setIcon(icon)
+        self.axisItalicButton.clicked.connect(self.updateAxisLabel)
+        # -- Add to layout
+        layout.addWidget(self.axisItalicButton)
+
+        # - Configuring symbol label size. Take current label size as a value
+        if 'font-weight' not in self.axis.labelStyle:
+            self.axis.labelStyle['font-size'] = '15px' # default value
+        self.axisLabelSizeSpinBox = QSpinBox(
+            value=int(self.axis.labelStyle['font-size'].strip('px')))
+
+        # - Update label size on value change
+        self.axisLabelSizeSpinBox.valueChanged.connect(
+            self.updateAxisLabel)
+        # -- Add to layout
+        layout.addWidget(self.axisLabelSizeSpinBox)
+        self.setLayout(layout)
+
+    def updateAxisLabel(self):
+        if self.axisBoldButton.isChecked():
+            self.axis.labelStyle['font-weight'] = 'bold'
+        else:
+            self.axis.labelStyle['font-weight'] = 'normal'
+
+        if self.axisItalicButton.isChecked():
+            self.axis.labelStyle['font-style'] = 'italic'
+        else:
+            self.axis.labelStyle['font-style'] = 'normal'
+
+        self.axis.labelStyle['font-size'] = \
+            str(self.axisLabelSizeSpinBox.value()) + 'px'
+
+        # axis.setLabel("text", "unit")
+        self.axis.setLabel(self.axisLineEdit.text(),
+                           **self.axis.labelStyle)
+
+
+
 
 
 class TabLegendProperties(QWidget):

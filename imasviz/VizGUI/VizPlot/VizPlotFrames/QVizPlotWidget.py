@@ -150,6 +150,9 @@ class QVizPlotWidget(QWidget):
             self.pgPlotWidget.setLabel('left', ylabel, units='')
             # - Set y-axis label
             self.pgPlotWidget.setLabel('bottom', xlabel, units='')
+            # - Set top and right axis default labels
+            self.pgPlotWidget.setLabel('top', '', units='')
+            self.pgPlotWidget.setLabel('right', '', units='')
             # - Enable grid
             self.pgPlotWidget.showGrid(x=True, y=True)
 
