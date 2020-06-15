@@ -143,7 +143,12 @@ then the available <b>IDS cases for that user will be shown too</b>.
                     # Note: Last 4 digits are always run number. The rest are shot
                     rs = dataFileList[i].split(".")[0]
                     rs = rs.split("_")[1]
-                    run = int(rs[-4:])
+                    try:
+                        run = int(rs[-4:])
+                    except:
+                        # In case non-valid .datafile name is found
+                        # e.g. 'ids_model.datafile', skip this file
+                        continue
                     run = str(run)
                     shot = rs[:-4]
 
