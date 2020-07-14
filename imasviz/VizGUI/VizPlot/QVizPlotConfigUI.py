@@ -24,7 +24,6 @@ from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 
-
 class QVizPlotConfigUI(QDialog):
     """Tabbed widget allowing plot customization.
     """
@@ -610,6 +609,18 @@ class TabTextProperties(QWidget):
         # - Add action triggered by pressing the button
         italic.pressed.connect(self.setTitleItalic)
 
+        # - Configuring symbol label size. Take current label size as a value
+        if "pt" in self.titleLabel.opts['size']:
+            self.titleLabel.setAttr('size', '15px')
+        self.titleLabelSizeSpinBox = QSpinBox(
+            value=int(self.titleLabel.opts['size'].strip('px')))
+        # - Update label size on value change
+        self.titleLabelSizeSpinBox.valueChanged.connect(
+            self.updateTitleSize)
+
+        # -- Add to layout
+        layoutTitle.addWidget(self.titleLabelSizeSpinBox)
+
         titleContentWidget.setLayout(layoutTitle)
         layout.addWidget(titleContentWidget)
 
@@ -699,6 +710,14 @@ class TabTextProperties(QWidget):
         # changes immediately
         self.updatePlotItemTitle()
 
+    def updateTitleSize(self):
+
+        self.titleLabel.setAttr('size',
+                                str(self.titleLabelSizeSpinBox.value()) + 'px')
+
+        self.titleLabel.setText(self.titleLineEdit.text(),
+                                 **self.titleLabel.opts)
+
     def updateAxisBottomLabel(self):
         if self.axisBottomBoldButton.isChecked():
             self.axisBottom.labelStyle['font-weight'] = 'bold'
@@ -773,7 +792,7 @@ class AxisConfWidget(QWidget):
         layout.addWidget(self.axisItalicButton)
 
         # - Configuring symbol label size. Take current label size as a value
-        if 'font-weight' not in self.axis.labelStyle:
+        if 'font-size' not in self.axis.labelStyle:
             self.axis.labelStyle['font-size'] = '15px' # default value
         self.axisLabelSizeSpinBox = QSpinBox(
             value=int(self.axis.labelStyle['font-size'].strip('px')))
@@ -802,10 +821,6 @@ class AxisConfWidget(QWidget):
         # axis.setLabel("text", "unit")
         self.axis.setLabel(self.axisLineEdit.text(),
                            **self.axis.labelStyle)
-
-
-
-
 
 class TabLegendProperties(QWidget):
     """Widget allowing legend customization.
