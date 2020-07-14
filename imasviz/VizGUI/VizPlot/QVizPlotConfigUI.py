@@ -579,6 +579,32 @@ class TabTextProperties(QWidget):
         # Set layout for scrollable area
         layout = QVBoxLayout(scrollContent)
 
+        headerContentWidget = QWidget(scrollContent)
+        layoutHeader = QHBoxLayout(headerContentWidget)
+
+        labelProperty = QLabel("Property")
+        labelProperty.setFixedWidth(100)
+        labelText = QLabel("Text")
+        labelText.setMinimumWidth(300)
+        labelBold = QLabel("Bold")
+        labelBold.setFixedWidth(40)
+        labelBold.setAlignment(Qt.AlignRight)
+        labelItalic = QLabel("Italic")
+        labelItalic.setFixedWidth(40)
+        labelSize = QLabel("Size")
+        labelSize.setFixedWidth(40)
+
+        layoutHeader.addWidget(labelProperty)
+        layoutHeader.addWidget(labelText)
+        layoutHeader.addWidget(labelBold)
+        layoutHeader.addWidget(labelItalic)
+        layoutHeader.addWidget(labelSize)
+
+        layoutHeader.setContentsMargins(1, 5, 1, 2)
+
+        headerContentWidget.setLayout(layoutHeader)
+        layout.addWidget(headerContentWidget)
+
         titleContentWidget = QWidget(scrollContent)
         layoutTitle = QHBoxLayout(titleContentWidget)
 
@@ -620,7 +646,7 @@ class TabTextProperties(QWidget):
 
         # -- Add to layout
         layoutTitle.addWidget(self.titleLabelSizeSpinBox)
-
+        layoutTitle.setContentsMargins(1, 2, 1, 2)
         titleContentWidget.setLayout(layoutTitle)
         layout.addWidget(titleContentWidget)
 
@@ -674,6 +700,7 @@ class TabTextProperties(QWidget):
         # axis.textWidth  # int
 
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(Qt.AlignTop)
         # Add all contents to scrollArea widget
         scrollContent.setLayout(layout)
         scrollArea.setWidget(scrollContent)
@@ -802,6 +829,7 @@ class AxisConfWidget(QWidget):
             self.updateAxisLabel)
         # -- Add to layout
         layout.addWidget(self.axisLabelSizeSpinBox)
+        layout.setContentsMargins(1, 2, 1, 2)
         self.setLayout(layout)
 
     def updateAxisLabel(self):
@@ -890,14 +918,6 @@ class TabLegendProperties(QWidget):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
 
         row = 0  # layout row
-        # Add option to hide/show legend
-        if self.legendItem is not None:
-            self.toggleLegendDisplay = QCheckBox("Show legend")
-            self.toggleLegendDisplay.setChecked(True)
-            self.toggleLegendDisplay.stateChanged.connect(self.showHideLegend)
-            scrollLayout.addWidget(self.toggleLegendDisplay, row+1, 0, 1, 3)
-
-            row += 1
 
         itemID = 0
         # Add options for each plotDataItem
@@ -959,6 +979,15 @@ class TabLegendProperties(QWidget):
                 legendItemID=row))
 
             itemID += 1
+            row += 1
+
+        # Add option to hide/show legend
+        if self.legendItem is not None:
+            self.toggleLegendDisplay = QCheckBox("Show legend")
+            self.toggleLegendDisplay.setChecked(True)
+            self.toggleLegendDisplay.stateChanged.connect(self.showHideLegend)
+            scrollLayout.addWidget(self.toggleLegendDisplay, row+1, 0, 1, 3)
+
             row += 1
 
         # Set scrollArea contents margin to keep the contents lined to the top
