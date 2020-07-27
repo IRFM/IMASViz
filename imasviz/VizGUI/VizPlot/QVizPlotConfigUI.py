@@ -222,14 +222,25 @@ class TabLineProperties(QWidget):
 
         # Set header
         # - Set list of header items
-        listHeaderLabels = ['Line',
-                            'Color',
-                            'Style',
-                            'Thickness',
-                            'Symbol',
-                            'Symbol Size',
-                            'Symbol Color',
-                            'Symbol Outline Color']
+        # Note: In TablePlotView the legend is not used.
+        if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
+            listHeaderLabels = ['Color',
+                                'Style',
+                                'Thickness',
+                                'Symbol',
+                                'Symbol Size',
+                                'Symbol Color',
+                                'Symbol Outline Color']
+        else:
+            listHeaderLabels = ['Line',
+                                'Color',
+                                'Style',
+                                'Thickness',
+                                'Symbol',
+                                'Symbol Size',
+                                'Symbol Color',
+                                'Symbol Outline Color']
+
         # - Set header item for each column (i)
         for i in range(len(listHeaderLabels)):
             scrollLayout.addWidget(QLabel(listHeaderLabels[i]), 0, i, 1, 1)
