@@ -167,6 +167,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
             logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
                           'provided!')
 
+        # Get a list of viewBoxes each plot has its own associated viewbox)
+        self.viewBoxes = mpView.viewBoxList
+
         # Set mpView title
         mpView.setWindowTitle(self.figureKey)
         # Add mpView to a list of IMASViz figure frames

@@ -31,20 +31,26 @@ class QVizPlotConfigUI(QDialog):
     def __init__(self, viewBox, parent=None, size=(1000, 400)):
         super(QVizPlotConfigUI, self).__init__(parent)
 
+        # Set viewBox variable. Each plot sub-window has its own viewBox e.g.
+        # stacked plot widget with 5 plot sub-windows contains 5 viewBoxes
+        # Note: To viewBox member in TablePlotView and StackedPlotView sources
+        # was added an "id" member which would help to determine which viewbox
+        # is being used to construct the user interface.
+        self.viewBox = viewBox
+        # List of plotDataItems (e.g. lines) within viewBox
+        self.listPlotDataItems = self.viewBox.addedItems
+
         # Dialog settings
         self.setObjectName("QVizPlotConfigUI")
-        self.setWindowTitle("Configure Plot")
+        self.setWindowTitle(f"Configure Plot (id: {viewBox.id})")
         self.resize(size[0], size[1])
 
-        # Set viewBox variable
-        self.viewBox = viewBox
-
-        self.saveLegendItem()
+        self.getLegendItem()
 
         # Set main layout
         self.setMainLayout()
 
-    def saveLegendItem(self):
+    def getLegendItem(self):
         # In TablePlotView the legend is not used.
         if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = None
@@ -179,9 +185,6 @@ class TabLineProperties(QWidget):
 
         self.legendItem = self.parent.legendItem
 
-        # List of plotDataItems within viewBox
-        self.listPlotDataItems = self.viewBox.addedItems
-
         # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         # Set up the QWidget contents
@@ -248,7 +251,7 @@ class TabLineProperties(QWidget):
         # Add options for each plotDataItem
         row = 0  # layout row
         itemID = 0
-        for pdItem in self.listPlotDataItems:
+        for pdItem in self.parent.listPlotDataItems:
             if isinstance(pdItem, pg.InfiniteLine):
                 continue
             col = 0  # layout column
@@ -558,11 +561,13 @@ class TabTextProperties(QWidget):
         """Set scroll area listing text customization options.
         """
 
-        # In TablePlotView the legend is not used.
+        # Get plot item
+        plotItem = None
         if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
             return
         elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
-            return
+            # Get plot item.
+            plotItem = self.viewBox.qWidgetParent.pg
         elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
             return
         else:
@@ -874,13 +879,11 @@ class TabLegendProperties(QWidget):
         # self.resize(size[0], size[1])
 
         self.parent = parent
-        # Set viewBox variable
-        self.viewBox = self.parent.viewBox
 
         self.legendItem = self.parent.legendItem
 
-        # List of plotDataItems within viewBox
-        self.listPlotDataItems = self.viewBox.addedItems
+        # Set viewBox variable
+        self.viewBox = self.parent.viewBox
 
         # Set up the QWidget contents
         self.setContents()
@@ -932,7 +935,7 @@ class TabLegendProperties(QWidget):
 
         itemID = 0
         # Add options for each plotDataItem
-        for pdItem in self.listPlotDataItems:
+        for pdItem in self.parent.listPlotDataItems:
             if isinstance(pdItem, pg.InfiniteLine):
                 continue
             col = 0  # layout column
@@ -960,6 +963,7 @@ class TabLegendProperties(QWidget):
                 self.updatePDItemLabel,
                 pdItem=pdItem,
                 lineEdit=labelEdit))
+
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring legend thickness (boldness)

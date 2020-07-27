@@ -88,6 +88,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
+        # Get a list of viewBoxList each plot has its own associated viewbox)
+        self.viewBoxList = None
+
     def getType(self):
         return PlotTypes.TABLE_PLOT
 
@@ -214,6 +217,8 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Set pen
         pen = self.setPen()
         # Set new plot (use IMASViz custom plot context menu)
+        viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
+        viewBox.id = n
         p = self.addPlot(x=x,
                          y=y,
                          name='Plot' + str(n),
@@ -221,7 +226,10 @@ class QVizTablePlotView(pg.GraphicsWindow):
                          xlabel=xlabel,
                          ylabel=ylabel,
                          pen=pen,
-                         viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+                         viewBox=viewBox)
+
+        # Add viewBox to list of viewBoxList
+        self.viewBoxList.append(viewBox)
         # pg.PlotItem
 
         # p = self.addPlot(name='plotName',

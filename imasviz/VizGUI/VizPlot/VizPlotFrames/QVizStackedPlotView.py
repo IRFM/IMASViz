@@ -49,7 +49,7 @@ class QVizStackedPlotView(QWidget):
         # Set graphicsWindow
         self.graphicsWindow = StackedPlotWindow(self, strategy=strategy)
         # Get a list of viewBoxes each plot has its own associated viewbox)
-        self.viewBoxes = self.graphicsWindow.viewBoxList
+        self.viewBoxList = self.graphicsWindow.viewBoxList
         # Get a list of plots
         self.plotList = self.graphicsWindow.plotList
         # Set layout
@@ -361,6 +361,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
         # Set viewBox
         viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
+        viewBox.id = n
 
         # Set new plot (use IMASViz custom plot context menu)
         p = self.addPlot(title=title,
