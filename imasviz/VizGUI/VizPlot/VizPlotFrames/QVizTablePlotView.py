@@ -77,6 +77,10 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # the centralWidget does not contain the 'cols' attribute)
         self.centralWidget.cols = self.ncols
 
+        # Set an empty list for viewBoxes (each plot has its own associated
+        # viewbox)
+        self.viewBoxList = []
+
         # Set pg.GraphicsWindow (holding plots)
         self.plot1DSelectedSignals(all_DTV=self.all_DTV)
 
@@ -88,8 +92,6 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-        # Get a list of viewBoxList each plot has its own associated viewbox)
-        self.viewBoxList = None
 
     def getType(self):
         return PlotTypes.TABLE_PLOT
