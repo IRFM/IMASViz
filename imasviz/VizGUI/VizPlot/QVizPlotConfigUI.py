@@ -56,7 +56,7 @@ class QVizPlotConfigUI(QDialog):
             self.legendItem = None
         elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
             # Get legend item. Contains legend labels, graphics etc.
-            self.legendItem = self.viewBox.qWidgetParent.pg.legend
+            self.legendItem = self.viewBox.plotItem.legend
         elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = None
         else:
@@ -567,7 +567,7 @@ class TabTextProperties(QWidget):
             return
         elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
             # Get plot item.
-            plotItem = self.viewBox.qWidgetParent.pg
+            plotItem = self.viewBox.plotItem
         elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
             return
         else:

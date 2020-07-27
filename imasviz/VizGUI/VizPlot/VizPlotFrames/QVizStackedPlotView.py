@@ -364,15 +364,15 @@ class StackedPlotWindow(pg.GraphicsWindow):
         viewBox.id = n
 
         # Set new plot (use IMASViz custom plot context menu)
-        p = self.addPlot(title=title,
+        plotItem = self.addPlot(title=title,
                          viewBox=viewBox)
         # Add viewBox to list of viewBoxes
         self.viewBoxList.append(viewBox)
 
         # Enable legend (Note: must be done before plotting!)
-        p.addLegend()
-        # p.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
-        p.plot(x=x,
+        plotItem.addLegend()
+        # plotItem.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
+        plotItem.plot(x=x,
                y=y,
                name=label,
                xlabel=xlabel,
@@ -385,52 +385,56 @@ class StackedPlotWindow(pg.GraphicsWindow):
         #                   row=rowNum,
         #                   col=colNum)
         # Set axis labels
-        p.setLabel('left', ylabel, units='')
-        p.setLabel('bottom', xlabel, units='')
+        plotItem.setLabel('left', ylabel, units='')
+        plotItem.setLabel('bottom', xlabel, units='')
         # Enable grid
-        p.showGrid(x=True, y=True)
+        plotItem.showGrid(x=True, y=True)
         # Add a name attribute directly to pg.PlotDataItem - a child of
         # pg.PlotData
-        # p.dataItems[0].opts['name'] = label.replace("\n", "")
-        p.dataItems[0].opts['name'] = label
+        # plotItem.dataItems[0].opts['name'] = label.replace("\n", "")
+        plotItem.dataItems[0].opts['name'] = label
 
-        p.column = int(n / self.centralWidget.cols)
-        p.row = int(n % self.centralWidget.cols)
+        plotItem.column = int(n / self.centralWidget.cols)
+        plotItem.row = int(n % self.centralWidget.cols)
 
+        self.plotItemFirst = None
         # Set plot rules
         if n == 0:
             # Rules for first plot
             # - Set reference global variable to first plot
-            p.getAxis('bottom').setStyle(showValues=False)
+            plotItem.getAxis('bottom').setStyle(showValues=False)
             # - Set bottom margin
-            p.setContentsMargins(0, 0, 0, self.bPlotMargin)
+            plotItem.setContentsMargins(0, 0, 0, self.bPlotMargin)
 
-            p.setMinimumHeight(100)
+            plotItem.setMinimumHeight(100)
             # Set a reference to plotItem
-            self.pg = p
+            self.plotItemFirst = plotItem
         elif n == (self.getNumSignals(all_DTV=False) - 1):
             # Rules for last plot
             # - Remove axis values
-            p.getAxis('bottom').setStyle(showValues=True)
+            plotItem.getAxis('bottom').setStyle(showValues=True)
             # - Set X and Y-axis link to first plot
-            p.setXLink(self.pg)
-            p.setYLink(self.pg)
-            p.setMinimumHeight(100)
+            plotItem.setXLink(self.plotItemFirst)
+            plotItem.setYLink(self.plotItemFirst)
+            plotItem.setMinimumHeight(100)
 
         else:
             # Rules for mid-plots
             # - Remove axis values
-            p.getAxis('bottom').setStyle(showValues=False)
+            plotItem.getAxis('bottom').setStyle(showValues=False)
             # - Set X and Y-axis link to first plot
-            p.setXLink(self.pg)
-            p.setYLink(self.pg)
+            plotItem.setXLink(self.plotItemFirst)
+            plotItem.setYLink(self.plotItemFirst)
             # - Set bottom margin
-            p.setContentsMargins(0, 0, 0, self.bPlotMargin)
+            plotItem.setContentsMargins(0, 0, 0, self.bPlotMargin)
 
-            p.setMinimumHeight(60)
+            plotItem.setMinimumHeight(60)
 
         # Add plot to a list of plots
-        self.plotList.append(p)
+        self.plotList.append(plotItem)
+
+        # Add reference to legend directly to viewBox
+        viewBox.plotItem = plotItem
 
         # Go to next row
         self.nextRow()
