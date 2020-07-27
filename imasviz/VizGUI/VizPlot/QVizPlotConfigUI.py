@@ -564,7 +564,7 @@ class TabTextProperties(QWidget):
         # Get plot item
         plotItem = None
         if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
-            return
+            plotItem = self.viewBox.plotItem
         elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
             # Get plot item.
             plotItem = self.viewBox.plotItem

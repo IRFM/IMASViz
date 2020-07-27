@@ -183,11 +183,10 @@ class QVizTablePlotView(pg.GraphicsWindow):
                     tLabel = currentPlotItem.titleLabel
                     # Set title label size
                     # Note: empty text provided as requires text argument
-                    tLabel.setText(text='', size='8pt')
+                    tLabel.setText(text=label, size='8pt')
                     # Set title width
-                    tLabel.item.setPlainText(label)
-                    # Set title label width
                     # Note: required for alignment to take effect
+                    tLabel.item.setPlainText(label)
                     tLabel.item.setTextWidth(self.plotBaseDim)
                     # Set alignment as text option
                     option = QtGui.QTextOption()
@@ -221,14 +220,14 @@ class QVizTablePlotView(pg.GraphicsWindow):
         # Set new plot (use IMASViz custom plot context menu)
         viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
         viewBox.id = n
-        p = self.addPlot(x=x,
-                         y=y,
-                         name='Plot' + str(n),
-                         title=label.replace("\n", ""),
-                         xlabel=xlabel,
-                         ylabel=ylabel,
-                         pen=pen,
-                         viewBox=viewBox)
+        plotItem = self.addPlot(x=x,
+                                y=y,
+                                name='Plot' + str(n),
+                                title=label.replace("\n", ""),
+                                xlabel=xlabel,
+                                ylabel=ylabel,
+                                pen=pen,
+                                viewBox=viewBox)
 
         # Add viewBox to list of viewBoxList
         self.viewBoxList.append(viewBox)
@@ -240,16 +239,19 @@ class QVizTablePlotView(pg.GraphicsWindow):
         #                   col=colNum)
         # p.plot(x, y, pen=pen)
         # Set axis labels
-        p.setLabel('left', ylabel, units='')
-        p.setLabel('bottom', xlabel, units='')
+        plotItem.setLabel('left', ylabel, units='')
+        plotItem.setLabel('bottom', xlabel, units='')
+
         # Enable grid
-        p.showGrid(x=True, y=True)
+        plotItem.showGrid(x=True, y=True)
         # Add a name attribute directly to pg.PlotDataItem - a child of
         # pg.PlotData
-        p.dataItems[0].opts['name'] = label.replace("\n", "")
+        plotItem.dataItems[0].opts['name'] = label.replace("\n", "")
 
-        p.column = int(n / self.centralWidget.cols)
-        p.row = int(n % self.centralWidget.cols)
+        plotItem.column = int(n / self.centralWidget.cols)
+        plotItem.row = int(n % self.centralWidget.cols)
+
+        viewBox.plotItem = plotItem
 
         if (n + 1) % self.centralWidget.cols == 0:
             self.nextRow()

@@ -365,7 +365,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
         # Set new plot (use IMASViz custom plot context menu)
         plotItem = self.addPlot(title=title,
-                         viewBox=viewBox)
+                                viewBox=viewBox)
         # Add viewBox to list of viewBoxes
         self.viewBoxList.append(viewBox)
 
@@ -373,11 +373,11 @@ class StackedPlotWindow(pg.GraphicsWindow):
         plotItem.addLegend()
         # plotItem.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
         plotItem.plot(x=x,
-               y=y,
-               name=label,
-               xlabel=xlabel,
-               ylabel=ylabel,
-               pen=pen)
+                      y=y,
+                      name=label,
+                      xlabel=xlabel,
+                      ylabel=ylabel,
+                      pen=pen)
         # pg.PlotItem
 
         # p = self.addPlot(name='plotName',
@@ -387,6 +387,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
         # Set axis labels
         plotItem.setLabel('left', ylabel, units='')
         plotItem.setLabel('bottom', xlabel, units='')
+
         # Enable grid
         plotItem.showGrid(x=True, y=True)
         # Add a name attribute directly to pg.PlotDataItem - a child of
