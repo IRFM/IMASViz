@@ -405,6 +405,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
             p.setContentsMargins(0, 0, 0, self.bPlotMargin)
 
             p.setMinimumHeight(100)
+            # Set a reference to plotItem
             self.pg = p
         elif n == (self.getNumSignals(all_DTV=False) - 1):
             # Rules for last plot
