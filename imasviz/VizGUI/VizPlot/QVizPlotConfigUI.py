@@ -127,9 +127,18 @@ class QVizPlotConfigUI(QDialog):
         self.setLayout(layout)
 
     def getPlotItem(self):
-        # Note: works for QVizPlotWidget, doesn't work for stacked plot and
-        #       table plot view
-        return self.viewBox.qWidgetParent.getPlotItem()
+        # Get plot item
+
+        widgetName = str(self.viewBox.qWidgetParent.objectName())
+
+        # if ("TablePlotView" or "StackedPlotView") in widgetName: # fails (?)
+        if ("TablePlotView" in widgetName) or ("StackedPlotView" in widgetName):
+            return self.viewBox.plotItem
+        elif "QVizPlotLayoutWidget" in widgetName:
+            # No support for PlotLayoutWidget
+            return None
+        else:
+            return self.viewBox.qWidgetParent.getPlotItem()
 
 
 class SampleCopyFromLegend(QWidget):
@@ -561,19 +570,7 @@ class TabTextProperties(QWidget):
         """Set scroll area listing text customization options.
         """
 
-        # Get plot item
-        plotItem = None
-        if "TablePlotView" in str(self.viewBox.qWidgetParent.objectName()):
-            plotItem = self.viewBox.plotItem
-        elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
-            # Get plot item.
-            plotItem = self.viewBox.plotItem
-        elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
-            return
-        else:
-            # Note: works for QVizPlotWidget, doesn't work for stacked plot and
-            #       table plot view
-            plotItem = self.parent.getPlotItem()
+        plotItem = self.parent.getPlotItem()
 
         self.titleLabel = plotItem.titleLabel
         if 'bold' not in self.titleLabel.opts:
