@@ -13,6 +13,31 @@ Release notes
 =============
 
 -------------
+Version 2.4.2
+-------------
+
+Released 28.7.2020
+
+- IMAS database browser:
+    - Rename "IDS case browser" to "IMAS database browser"
+    - Improved tooltip
+    - Add try/except statement in case a non-valid .datafile name is found.
+
+- Makefile: included "git submodule init" and "git submodule update"
+  (necessary for plugins-submodules such as ETSViz)
+- PlotConfigUI:
+
+    - Improved Text Properties tab
+    - Introduced Legend Properties tab
+    - Fix "show/hide legend" feature
+    - Enable editing plot title and axes (text size, bold, italic)
+    - Improve the interface to recognize the current text styles
+    - Improved margins and overall design
+    - Bugfixes and improvements concerning TablePlotView and StackedPlotView
+    - Improve the strategy of accessing the correct target plot when
+      opening the **Configure Plot** menu
+
+-------------
 Version 2.4.1
 -------------
 
@@ -39,7 +64,7 @@ Released: 15.5.2020
 - Support for visualization of 2D arrays
 - Improved the strategy for generating parser files to use the IDSDef.xml
   files found in $IMAS_PREFIX. This offers automatic support for any IMAS
-  version (including the future releases). The paht for generated parser files
+  version (including the future releases). The path for generated parser files
   was changed to $HOME/.imasviz/VizGeneratedCode
 - Fixed crash when looking into transport_solver_numerics (IMAS-2934)
 - Plugins:
