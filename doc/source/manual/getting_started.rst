@@ -46,7 +46,7 @@ modules:
 
     # With the imas-viz module loaded (version 2.3.0 or never)
     # the documentation can be accessed by running
-    biz-doc
+    viz-doc
 
 .. Warning::
    **IMPORTANT!** IMAS databases (IDSs) were written using specific version of
@@ -73,29 +73,47 @@ The main GUI window of IMAS_VIZ should display, as shown in the figure below:
 
 The description of the above input parameters is as follows:
 
-+--------------------+-----------------------------------------------------------+
-| **GUI Fields**     | **Description**                                           |
-+====================+===========================================================+
-| User name          | Creator/owner of the IMAS IDSs database                   |
-+--------------------+-----------------------------------------------------------+
-| IMAS database name | IMAS database label, usually device/machine name of the   |
-|                    | IMAS IDS database (i. e. iter, aug, west...)              |
-+--------------------+-----------------------------------------------------------+
-| Shot number        | Pulse shot number                                         |
-+--------------------+-----------------------------------------------------------+
-| Run number         | Pulse run number                                          |
-+--------------------+-----------------------------------------------------------+
++--------------------+---------------------------------------------------------+
+| **GUI Fields**     | **Description**                                         |
++====================+=========================================================+
+| User name          | Creator/owner of the IMAS IDSs database                 |
++--------------------+---------------------------------------------------------+
+| IMAS database name | IMAS database label, usually device/machine name of the |
+|                    | IMAS IDS database (i. e. iter, aug, west...)            |
++--------------------+---------------------------------------------------------+
+| Shot number        | Pulse shot number                                       |
++--------------------+---------------------------------------------------------+
+| Run number         | Pulse run number                                        |
++--------------------+---------------------------------------------------------+
 
-Available testing IMAS databases
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The **IMAS database browser** can be used to navigate through available users
+databases and select it by double clicking. The input parameters will then get
+filled automatically, as shown in figure below.
 
-On the GateWay HPC there are a few **testing IMAS IDS cases** available. These
+.. image:: images/startup_window_filled2.png
+   :align: center
+   :scale: 80%
+
+
+By typing a different user name in the **User name** text window and applying
+the change the list of available IMAS databases will be automatically added
+to the **IMAS database browser**.
+
+.. image:: images/startup_window_IMAS_database_browser.png
+   :align: center
+   :scale: 80%
+
+
+Available test IMAS databases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the GateWay HPC there are a few **test IMAS IDS cases** available. These
 databases are the main source of data used for IMASViz testing purposes and
 were also included in writing the this documentation. Users can freely use them
 for examples and practice purposes.
 
 .. Note:: There IMAS IDS cases are confirmed to work with IMAS versions
-          **3.23.2** - **3.24.0**.
+          **3.23.2** - **3.29.0**.
 
 +-----------------------------------------------------+
 | **Available IMAS IDS Case Parameters**              |
@@ -160,31 +178,49 @@ The main GUI window of IMAS_VIZ should display, as shown in the figure below:
    :align: center
    :scale: 80%
 
-The description of the above input parameters is as follows:
+The description of input parameters located in the top left corner is as
+follows:
 
-+--------------------+-----------------------------------------------------------+
-| **GUI Fields**     | **Description**                                           |
-+====================+===========================================================+
-| User name          | Creator/owner of the IMAS IDSs database                   |
-+--------------------+-----------------------------------------------------------+
-| IMAS database name | IMAS database label, usually device/machine name of the   |
-|                    | IMAS IDS database (i. e. iter, aug, west...)              |
-+--------------------+-----------------------------------------------------------+
-| Shot number        | Pulse shot number                                         |
-+--------------------+-----------------------------------------------------------+
-| Run number         | Pulse run number                                          |
-+--------------------+-----------------------------------------------------------+
++--------------------+---------------------------------------------------------+
+| **GUI Fields**     | **Description**                                         |
++====================+=========================================================+
+| User name          | Creator/owner of the IMAS IDSs database                 |
++--------------------+---------------------------------------------------------+
+| IMAS database name | IMAS database label, usually device/machine name of the |
+|                    | IMAS IDS database (i. e. iter, aug, west...)            |
++--------------------+---------------------------------------------------------+
+| Shot number        | Pulse shot number                                       |
++--------------------+---------------------------------------------------------+
+| Run number         | Pulse run number                                        |
++--------------------+---------------------------------------------------------+
 
-Available testing IMAS databases
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The **IMAS database browser** can be used to navigate through available users
+databases and select it by double clicking. The input parameters will then get
+filled automatically, as shown in figure below.
 
-On the ITER HPC there are a few **testing IMAS IDS cases** available. These
+.. image:: images/startup_window_filled2.png
+   :align: center
+   :scale: 80%
+
+By typing a different user name in the **User name** text window and applying
+the change the list of available IMAS databases will be automatically added
+to the **IMAS database browser**.
+
+.. image:: images/startup_window_IMAS_database_browser.png
+   :align: center
+   :scale: 80%
+
+
+Available test IMAS databases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+On the ITER HPC there are a few **test IMAS IDS cases** available. These
 databases are the main source of data used for IMASViz testing purposes and
 were also included in writing the this documentation. Users can freely use them
 for examples and practice purposes.
 
 .. Note:: There IMAS IDS cases are confirmed to work with IMAS versions
-          **3.23.2** - **3.24.0**
+          **3.23.2** - **3.29.0**
 
 +------------------------------------------+
 | **Available IMAS IDS Case Parameters**   |
@@ -304,20 +340,37 @@ The main GUI window of IMAS_VIZ should display, as shown in the figure below:
    :align: center
    :scale: 80%
 
-The description of the above input parameters is as follows:
+The description of the input parameters located in the top left corner is as
+follows:
 
-+--------------------+-----------------------------------------------------------+
-| **GUI Fields**     | **Description**                                           |
-+====================+===========================================================+
-| User name          | Creator/owner of the IMAS IDSs database                   |
-+--------------------+-----------------------------------------------------------+
-| IMAS database name | IMAS database label, usually device/machine name of the   |
-|                    | IMAS IDS database (i. e. iter, aug, west...)              |
-+--------------------+-----------------------------------------------------------+
-| Shot number        | Pulse shot number                                         |
-+--------------------+-----------------------------------------------------------+
-| Run number         | Pulse run number                                          |
-+--------------------+-----------------------------------------------------------+
++--------------------+---------------------------------------------------------+
+| **GUI Fields**     | **Description**                                         |
++====================+=========================================================+
+| User name          | Creator/owner of the IMAS IDSs database                 |
++--------------------+---------------------------------------------------------+
+| IMAS database name | IMAS database label, usually device/machine name of the |
+|                    | IMAS IDS database (i. e. iter, aug, west...)            |
++--------------------+---------------------------------------------------------+
+| Shot number        | Pulse shot number                                       |
++--------------------+---------------------------------------------------------+
+| Run number         | Pulse run number                                        |
++--------------------+---------------------------------------------------------+
+
+The **IMAS database browser** can be used to navigate through available users
+databases and select it by double clicking. The input parameters will then get
+filled automatically, as shown in figure below.
+
+.. image:: images/startup_window_filled2.png
+   :align: center
+   :scale: 80%
+
+By typing a different user name in the **User name** text window and applying
+the change the list of available IMAS databases will be automatically added
+to the **IMAS database browser**.
+
+.. image:: images/startup_window_IMAS_database_browser.png
+   :align: center
+   :scale: 80%
 
 
 Latest documentation and manual
