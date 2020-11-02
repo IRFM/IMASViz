@@ -47,6 +47,23 @@ The filled GUI should then look as shown in the next figure:
    :align: center
    :scale: 80%
 
+Alternatively, the The :guilabel:`IMAS database browser` can be used to navigate
+through available users databases and select it by double clicking. The
+input parameters will then get filled automatically, as shown in figure below.
+
+.. image:: images/startup_window_filled2.png
+   :align: center
+   :scale: 80%
+
+
+By typing a different user name in the :guilabel:`User name` text window and
+applying the change the list of available IMAS databases will be automatically
+added to the :guilabel:`IMAS database browser`.
+
+.. image:: images/startup_window_IMAS_database_browser.png
+   :align: center
+   :scale: 80%
+
 Open IDS
 --------
 
@@ -56,7 +73,8 @@ the procedure will be shown on **magnetics IDS**.
 
 1. Click :guilabel:`Open` button to open the IDS.
 
-   A navigation tree window will open, as shown in the figure below.
+   A navigation tree window will open inside the
+   **Multiple Document Interface (MDI)**, as shown in the figure below.
 
    .. image:: images/DTVFrame_empty.png
       :align: center
@@ -66,7 +84,8 @@ the procedure will be shown on **magnetics IDS**.
    **IDS root node**.
 
    This will expand the navigation :guilabel:`tree window` and display a
-   list of all IDSs.
+   list of all IDSs. The **filled IDSs** are market with With **blue** color,
+   other IDSs are empty.
    The tree will allow browsing data for the specific shot number which is
    displayed by the root node ( ``IDSs(52344)`` ).
 
@@ -83,8 +102,9 @@ the procedure will be shown on **magnetics IDS**.
       :width: 550px
 
    The :guilabel:`Node Documentation` widget can be freely taken out from the
-   main window by clicking :guilabel:`undock` button |button_undock| the and positioned anywhere on the screen. The same thing goes for the
-   :guilabel:`Preview Plot` and :guilabel:`Log` widget.
+   main window by clicking the :guilabel:`undock` button |button_undock|
+   and positioned anywhere on the screen. The same thing goes for
+   the :guilabel:`Preview Plot` and :guilabel:`Log` widget.
 
    .. image:: images/DTVFrame_undock_example.png
       :align: center

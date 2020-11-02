@@ -86,23 +86,6 @@ The description of the above input parameters is as follows:
 | Run number         | Pulse run number                                        |
 +--------------------+---------------------------------------------------------+
 
-The **IMAS database browser** can be used to navigate through available users
-databases and select it by double clicking. The input parameters will then get
-filled automatically, as shown in figure below.
-
-.. image:: images/startup_window_filled2.png
-   :align: center
-   :scale: 80%
-
-
-By typing a different user name in the **User name** text window and applying
-the change the list of available IMAS databases will be automatically added
-to the **IMAS database browser**.
-
-.. image:: images/startup_window_IMAS_database_browser.png
-   :align: center
-   :scale: 80%
-
 
 Available test IMAS databases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -193,23 +176,6 @@ follows:
 +--------------------+---------------------------------------------------------+
 | Run number         | Pulse run number                                        |
 +--------------------+---------------------------------------------------------+
-
-The **IMAS database browser** can be used to navigate through available users
-databases and select it by double clicking. The input parameters will then get
-filled automatically, as shown in figure below.
-
-.. image:: images/startup_window_filled2.png
-   :align: center
-   :scale: 80%
-
-By typing a different user name in the **User name** text window and applying
-the change the list of available IMAS databases will be automatically added
-to the **IMAS database browser**.
-
-.. image:: images/startup_window_IMAS_database_browser.png
-   :align: center
-   :scale: 80%
-
 
 Available test IMAS databases
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -323,7 +289,7 @@ Load next module:
 
 .. code-block:: console
 
-    module load IMAS/3.20.0-3.8.3
+    module load IMAS/3.20.0-3.8.3 # or IMAS module of different version
 
 Running IMASViz
 ~~~~~~~~~~~~~~~
@@ -355,23 +321,6 @@ follows:
 +--------------------+---------------------------------------------------------+
 | Run number         | Pulse run number                                        |
 +--------------------+---------------------------------------------------------+
-
-The **IMAS database browser** can be used to navigate through available users
-databases and select it by double clicking. The input parameters will then get
-filled automatically, as shown in figure below.
-
-.. image:: images/startup_window_filled2.png
-   :align: center
-   :scale: 80%
-
-By typing a different user name in the **User name** text window and applying
-the change the list of available IMAS databases will be automatically added
-to the **IMAS database browser**.
-
-.. image:: images/startup_window_IMAS_database_browser.png
-   :align: center
-   :scale: 80%
-
 
 Latest documentation and manual
 -------------------------------

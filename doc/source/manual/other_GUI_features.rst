@@ -148,7 +148,6 @@ those available options.
 
 .. figure:: images/ShowHideDeleteDTV_1.png
    :align: center
-   :scale: 90%
 
    :guilabel:`Show/Hide/Delete DTV` popup menu.
 
