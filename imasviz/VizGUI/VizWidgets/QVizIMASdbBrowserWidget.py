@@ -113,54 +113,66 @@ then the available <b>IDS cases for that user will be shown too</b>.
                 databaseItem = QTreeWidgetItem(rootUserItem)
                 databaseItem.setText(0, db)
 
-                shotRunPath = imasdbPath + "/" + db + "/3/0"
+                for d in range(10):  # will look in /0 and /1 dirs
+                    shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
 
-                if os.path.exists(shotRunPath) is False:
-                    continue
-
-                # Shot list to take care the shot entries do no repeat
-                shotList = []
-                shotItemList = []
-
-                # Get number of *.datafile files (to avoid using list.append())
-                dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
-                dataFileList = [""]*dataFileCounter
-
-                # Set dataFileList
-                i = 0
-                for f in os.listdir(shotRunPath):
-                    if f.endswith(".datafile"):
-                        dataFileList[i] = f
-                        i += 1
-
-                # Sort by alphabetical order
-                # Note: This is mandatory, otherwise the further strategy of
-                #       avoiding duplication of shotItems will be broken
-                dataFileList.sort()
-
-                for i in range(len(dataFileList)):
-                    # Extract shot and run numbers
-                    # Note: Last 4 digits are always run number. The rest are shot
-                    rs = dataFileList[i].split(".")[0]
-                    rs = rs.split("_")[1]
-                    try:
-                        run = int(rs[-4:])
-                    except:
-                        # In case non-valid .datafile name is found
-                        # e.g. 'ids_model.datafile', skip this file
+                    if os.path.exists(shotRunPath) is False:
                         continue
-                    run = str(run)
-                    shot = rs[:-4]
 
-                    if shot not in shotList:
-                        shotItem = QTreeWidgetItem(databaseItem)
-                        shotItem.setText(0, shot)
+                    # Shot list to take care the shot entries do no repeat
+                    shotList = []
+                    shotItemList = []
+                    dirItem = None
 
-                        shotList.append(shot)
-                        shotItemList.append(shotItem)
+                    # Get number of *.datafile files (to avoid using list.append())
+                    dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
+                    dataFileList = [""]*dataFileCounter
 
-                    runItem = QTreeWidgetItem(shotItem)
-                    runItem.setText(0, run)
+                    # Set dataFileList
+                    i = 0
+                    for f in os.listdir(shotRunPath):
+                        if f.endswith(".datafile"):
+                            dataFileList[i] = f
+                            i += 1
+
+                    # Sort by alphabetical order
+                    # Note: This is mandatory, otherwise the further strategy of
+                    #       avoiding duplication of shotItems will be broken
+                    dataFileList.sort()
+
+                    for i in range(len(dataFileList)):
+                        # Extract shot and run numbers
+                        # Strategy: Last 4 digits are always run number. The rest
+                        #           are shot (for /0 folder!)
+                        rs = dataFileList[i].split(".")[0]
+                        rs = rs.split("_")[1]
+                        try:
+                            if d == 0:
+                                run = int(rs[-4:])
+                            else:
+                                run = int(rs[-5:])
+                        except:
+                            # In case non-valid .datafile name is found
+                            # e.g. 'ids_model.datafile', skip this file
+                            continue
+                        run = str(run)
+                        if d == 0:
+                            shot = rs[:-4]
+                        else:
+                            shot = rs[:-5]
+
+                        if shot not in shotList:
+                            if dirItem is None:
+                                dirItem = QTreeWidgetItem(databaseItem)
+                                dirItem.setText(0, "/" + str(d))
+                            shotItem = QTreeWidgetItem(dirItem)
+                            shotItem.setText(0, shot)
+
+                            shotList.append(shot)
+                            shotItemList.append(shotItem)
+
+                        runItem = QTreeWidgetItem(shotItem)
+                        runItem.setText(0, run)
 
             return True
         except Exception as e:
@@ -174,8 +186,8 @@ then the available <b>IDS cases for that user will be shown too</b>.
         # When clicking on item representing run number
         # (last in tree hierarchy -> 0 children)
         if item.childCount() == 0:
-            self.setActiveUsername(item.parent().parent().parent().text(0))
-            self.setActiveDatabase(item.parent().parent().text(0))
+            self.setActiveUsername(item.parent().parent().parent().parent().text(0))
+            self.setActiveDatabase(item.parent().parent().parent().text(0))
             self.setActiveShot(item.parent().text(0))
             self.setActiveRun(item.text(0))
 
