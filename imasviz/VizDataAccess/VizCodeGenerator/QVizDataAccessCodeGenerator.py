@@ -42,9 +42,6 @@ class QVizDataAccessCodeGenerator:
                 print("Directory ", path_generated_code,  " created ")
             else:
                 print("Directory ", path_generated_code,  " already exists")
-        else:
-            path_generated_code = os.environ['VIZ_HOME'] + \
-                "/imasviz/VizDataAccess/VizGeneratedCode"
 
         print(f"The set generated code path: {path_generated_code}")
 
