@@ -113,54 +113,70 @@ then the available <b>IDS cases for that user will be shown too</b>.
                 databaseItem = QTreeWidgetItem(rootUserItem)
                 databaseItem.setText(0, db)
 
-                shotRunPath = imasdbPath + "/" + db + "/3/0"
+                # /0 contains runs=0...9999
+                # /1 contains runs=10000...19999, first run number is folder number
+                # /2 contains runs=20000...29999
+                # /3 contains runs=30000...39999
+                # /4 contains runs=40000...49999
+                # /5 contains runs=50000...59999
+                # /6 contains runs=60000...69999
+                # /7 contains runs=70000...79999
+                # /8 contains runs=80000...89999
+                # /9 contains runs=90000...99999
 
-                if os.path.exists(shotRunPath) is False:
-                    continue
+                for d in range(10):  # will look in /0 and /1 dirs
+                    shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
 
-                # Shot list to take care the shot entries do no repeat
-                shotList = []
-                shotItemList = []
-
-                # Get number of *.datafile files (to avoid using list.append())
-                dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
-                dataFileList = [""]*dataFileCounter
-
-                # Set dataFileList
-                i = 0
-                for f in os.listdir(shotRunPath):
-                    if f.endswith(".datafile"):
-                        dataFileList[i] = f
-                        i += 1
-
-                # Sort by alphabetical order
-                # Note: This is mandatory, otherwise the further strategy of
-                #       avoiding duplication of shotItems will be broken
-                dataFileList.sort()
-
-                for i in range(len(dataFileList)):
-                    # Extract shot and run numbers
-                    # Note: Last 4 digits are always run number. The rest are shot
-                    rs = dataFileList[i].split(".")[0]
-                    rs = rs.split("_")[1]
-                    try:
-                        run = int(rs[-4:])
-                    except:
-                        # In case non-valid .datafile name is found
-                        # e.g. 'ids_model.datafile', skip this file
+                    if os.path.exists(shotRunPath) is False:
                         continue
-                    run = str(run)
-                    shot = rs[:-4]
 
-                    if shot not in shotList:
-                        shotItem = QTreeWidgetItem(databaseItem)
-                        shotItem.setText(0, shot)
+                    # Shot list to take care the shot entries do no repeat
+                    shotList = []
+                    shotItemList = []
 
-                        shotList.append(shot)
-                        shotItemList.append(shotItem)
+                    # Get number of *.datafile files (to avoid using list.append())
+                    dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
+                    dataFileList = [""]*dataFileCounter
 
-                    runItem = QTreeWidgetItem(shotItem)
-                    runItem.setText(0, run)
+                    # Set dataFileList
+                    i = 0
+                    for f in os.listdir(shotRunPath):
+                        if f.endswith(".datafile"):
+                            dataFileList[i] = f
+                            i += 1
+
+                    # Sort by alphabetical order
+                    # Note: This is mandatory, otherwise the further strategy of
+                    #       avoiding duplication of shotItems will be broken
+                    dataFileList.sort()
+
+                    for i in range(len(dataFileList)):
+                        # Extract shot and run numbers
+                        # Strategy: Last 4 digits are always run number. The rest
+                        #           are shot (for /0 folder!)
+                        rs = dataFileList[i].split(".")[0]
+                        rs = rs.split("_")[1]
+                        try:
+                            if d == 0:
+                                run = int(rs[-4:])
+                            else:
+                                run = int(str(d)+rs[-4:])
+                        except:
+                            # In case non-valid .datafile name is found
+                            # e.g. 'ids_model.datafile', skip this file
+                            continue
+                        run = str(run)
+                        shot = rs[:-4]
+
+                        if shot not in shotList:
+                            shotItem = QTreeWidgetItem(databaseItem)
+                            shotItem.setText(0, shot)
+
+                            shotList.append(shot)
+                            shotItemList.append(shotItem)
+
+                        runItem = QTreeWidgetItem(shotItem)
+                        runItem.setText(0, run)
 
             return True
         except Exception as e:
