@@ -46,9 +46,9 @@ class QVizGeneratedClassFactory:
             print("IDSDef parser path: ", IDSDef_parser_path)
             if not os.path.exists(IDSDef_parser_path):
                 print("Generating full parsers for IMAS "
-                      f"{os.environ['IMAS_VERSION']}")
+                      f"{imas_dd_version}")
                 dag = QVizDataAccessCodeGenerator. \
-                    QVizDataAccessCodeGenerator(os.environ['IMAS_VERSION'],
+                    QVizDataAccessCodeGenerator(imas_dd_version,
                                                 GGD_ignore=1)
                 print("End of code generation")
             # full_module_name = className
@@ -82,9 +82,9 @@ class QVizGeneratedClassFactory:
             print("IDSDef parser path: ", IDSDef_parser_path)
             if not os.path.exists(IDSDef_parser_path):
                 print("Generating full parsers for IMAS "
-                      f"{os.environ['IMAS_VERSION']}")
+                      f"{imas_dd_version}")
                 dag = QVizDataAccessCodeGenerator. \
-                    QVizDataAccessCodeGenerator(os.environ['IMAS_VERSION'],
+                    QVizDataAccessCodeGenerator(imas_dd_version,
                                                 GGD_ignore=1)
                 print("End of code generation")
             # full_module_name = className
