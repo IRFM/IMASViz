@@ -2,6 +2,7 @@ import os
 import sys
 import importlib
 
+import logging
 from imasviz.VizUtils import QVizGlobalValues, QVizGlobalOperations
 from imasviz.VizUtils import QVizPreferences
 from imasviz.VizDataAccess.VizCodeGenerator import QVizDataAccessCodeGenerator
@@ -23,10 +24,16 @@ class QVizGeneratedClassFactory:
 
         XMLParser = None
 
-        imas_dd_version = self.IMASDataSource.data_dictionary_version
+        imas_dd_version = os.environ['IMAS_VERSION']
+        ids_dd_version = self.IMASDataSource.data_dictionary_version
 
-        if imas_dd_version is None or imas_dd_version == '':
-            imas_dd_version = os.environ['IMAS_VERSION']
+        if (( ids_dd_version is not None and ids_dd_version != '') and ids_dd_version < '3.28.0'):
+            if imas_dd_version >  ids_dd_version:
+                logging.warning("Non backward compatible change infos are not available for"
+                                " IDSs created with DD version prior to 3.28.0. You should use"
+                                " an older version of IMAS Access Layer to access data for DD "
+                                "fields that have been renamed. If it is the case, quit IMASViz and load an older "
+                                "IMAS Access Layer for DD version = " + ids_dd_version + ".")
 
         if QVizGlobalValues.TESTING:
             imas_dd_version = QVizGlobalValues.TESTING_IMAS_VERSION
