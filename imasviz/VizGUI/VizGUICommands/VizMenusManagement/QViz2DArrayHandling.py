@@ -33,7 +33,10 @@ class QViz2DArrayHandling(QObject):
         self.treeNode = self.dataTreeView.selectedItem
 
     def plot2DArray(self):
-        self.imas_viz_api.Plot2DArray(self.dataTreeView, self.treeNode)
+        try:
+            self.imas_viz_api.Plot2DArray(self.dataTreeView, self.treeNode)
+        except ValueError as e:
+            logging.error(str(e))
 
 
     def menuPlotCurrentArrayNode(self, signalHandling):
