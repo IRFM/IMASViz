@@ -13,6 +13,29 @@ Release notes
 =============
 
 -------------
+Version 2.4.4
+-------------
+
+Released 25.03.2021
+
+- Bug fix for IMAS-3564, IMAS-3552
+- Added patch to prevent plotting 2D arrays located in dynamic AOS (a feature not yet supported)
+- Added patch to warn users (at IDS loading time) that NBC management is not available for pulse files created with DD version < 3.26.0
+
+-------------
+Version 2.4.3
+-------------
+
+Released 16.12.2020
+
+IMASViz parsers: Remove all IMAS data dictionaries from the installation. Use only parser files that are generated in ~/.imasviz/VizGeneratedCode
+
+- IMAS database browser:
+    - Fix display of cases with run number larger than 5 digits eg. 10001. Add strategy for displaying cases found in /1, /2, ..., /9 directory
+    - Fix display of cases with run number larger than 5 digits eg.10001
+    - Add strategy for displaying cases found in /1, /2, ..., /9 directory
+
+-------------
 Version 2.4.2
 -------------
 
