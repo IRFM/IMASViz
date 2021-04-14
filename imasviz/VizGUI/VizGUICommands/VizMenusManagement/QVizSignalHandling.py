@@ -922,7 +922,7 @@ class QVizSignalHandling(QObject):
                     figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                               figureKey=figureKey)
                     # Following check on coordinates is performed only if the current plot axis is not the time axis
-                    if plotWidget.getStrategy() is not 'TIME':
+                    if plotWidget.getStrategy() != 'TIME':
                         if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
                             return False
                 if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
