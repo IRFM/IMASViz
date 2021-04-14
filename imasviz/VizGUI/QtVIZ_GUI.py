@@ -12,7 +12,7 @@
 # *****************************************************************************
 
 import os
-import sys
+import sys, getopt
 import logging
 from functools import partial
 from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
@@ -30,7 +30,7 @@ sys.path.append((os.environ['VIZ_HOME']))
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
-                              QVizGlobalOperations, QVizLogger)
+                              QVizGlobalOperations, QVizLogger, UserInputs)
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 
 
@@ -52,6 +52,11 @@ class GUIFrame(QTabWidget):
         self.setWindowTitle(title)
 
         self.mainMenuController = QVizMainMenuController(parent)
+
+        if UserInputs.inputs is not None and len(UserInputs.inputs) == 9:
+            UserInputs.enable = True
+            self.OpenDataSourceFromTab1(None)
+
         self.contextMenu = None
 
     def logPanel(self):
@@ -113,6 +118,25 @@ class GUIFrame(QTabWidget):
 
     def OpenDataSourceFromTab1(self, evt):
         try:
+            if UserInputs.enable:
+                try:
+                    opts, args = getopt.getopt(UserInputs.inputs[1:], 'u:d:s:r:')
+                    for opt, arg in opts:
+                        if opt == '-u':
+                            self.userName.setText(arg)
+                        elif opt in ("-d"):
+                            self.imasDbName.setText(arg)
+                        elif opt in ("-s"):
+                            self.shotNumber.setText(arg)
+                        elif opt in ("-r"):
+                            self.runNumber.setText(arg)
+                except getopt.GetoptError:
+                    logging.error("bad user input")
+                    sys.exit(-1)
+                    pass
+
+                UserInputs.enable = False
+
             self.CheckInputsFromTab1()
             tokens = self.shotNumber.text().split()
             try:
@@ -385,6 +409,7 @@ class QVizMainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    UserInputs().setUserInputs(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()
     window = QVizMainWindow()
