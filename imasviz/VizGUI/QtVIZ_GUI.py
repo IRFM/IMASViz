@@ -406,10 +406,34 @@ class QVizMainWindow(QMainWindow):
     def setStatusBar(self):
         self.statusBar().show()
 
+def help():
+    try:
+        #opts, args = getopt.getopt(UserInputs.inputs[1:], 'h', ['help'])
+        opts, args = getopt.getopt(sys.argv[1:], 'h', ['help'])
+        for opt, arg in opts:
+            if opt in ('-h', '--help'):
+                print("-------------------------------------------------------------------------------")
+                print("")
+                print("Help:")
+                print("")
+                print("1. Options for specifying user, database, shot and run numbers at startup time:")
+                print("viz -u <user> -d <database> -s <shot> -r <run>")
+                print("")
+                print("2. User guide for IMASViz:")
+                print ("firefox " + os.getenv("VIZ_HOME") + "/doc/build/html/index.html")
+                print("-------------------------------------------------------------------------------")
+                print("")
+                sys.exit(0)
+
+    except getopt.GetoptError:
+        print("usage: viz -u <user> -d <database> -s <shot> -r <run>")
+        print ("or: viz --help")
+        sys.exit(-1)
 
 def main():
-    app = QApplication(sys.argv)
+    help()
     UserInputs().setUserInputs(sys.argv)
+    app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()
     window = QVizMainWindow()
