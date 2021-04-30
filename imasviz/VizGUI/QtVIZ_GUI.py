@@ -408,6 +408,8 @@ class QVizMainWindow(QMainWindow):
 
 def help():
     try:
+        if len(sys.argv[1:]) != 1:
+            return
         opts, args = getopt.getopt(sys.argv[1:], 'h', ['help'])
         for opt, arg in opts:
             if opt in ('-h', '--help'):
