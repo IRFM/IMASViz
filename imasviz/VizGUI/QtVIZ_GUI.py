@@ -12,7 +12,7 @@
 # *****************************************************************************
 
 import os
-import sys
+import sys, getopt
 import logging
 from functools import partial
 from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
@@ -30,7 +30,7 @@ sys.path.append((os.environ['VIZ_HOME']))
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
-                              QVizGlobalOperations, QVizLogger)
+                              QVizGlobalOperations, QVizLogger, UserInputs)
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 
 
@@ -52,6 +52,11 @@ class GUIFrame(QTabWidget):
         self.setWindowTitle(title)
 
         self.mainMenuController = QVizMainMenuController(parent)
+
+        if UserInputs.inputs is not None and len(UserInputs.inputs) == 9:
+            UserInputs.enable = True
+            self.OpenDataSourceFromTab1(None)
+
         self.contextMenu = None
 
     def logPanel(self):
@@ -113,6 +118,25 @@ class GUIFrame(QTabWidget):
 
     def OpenDataSourceFromTab1(self, evt):
         try:
+            if UserInputs.enable:
+                try:
+                    opts, args = getopt.getopt(UserInputs.inputs[1:], 'u:d:s:r:')
+                    for opt, arg in opts:
+                        if opt == '-u':
+                            self.userName.setText(arg)
+                        elif opt in ("-d"):
+                            self.imasDbName.setText(arg)
+                        elif opt in ("-s"):
+                            self.shotNumber.setText(arg)
+                        elif opt in ("-r"):
+                            self.runNumber.setText(arg)
+                except getopt.GetoptError:
+                    logging.error("bad user input")
+                    sys.exit(-1)
+                    pass
+
+                UserInputs.enable = False
+
             self.CheckInputsFromTab1()
             tokens = self.shotNumber.text().split()
             try:
@@ -382,8 +406,34 @@ class QVizMainWindow(QMainWindow):
     def setStatusBar(self):
         self.statusBar().show()
 
+def help():
+    try:
+        if len(sys.argv[1:]) != 1:
+            return
+        opts, args = getopt.getopt(sys.argv[1:], 'h', ['help'])
+        for opt, arg in opts:
+            if opt in ('-h', '--help'):
+                print("-------------------------------------------------------------------------------")
+                print("")
+                print("Help:")
+                print("")
+                print("1. Options for specifying user, database, shot and run numbers at startup time:")
+                print("viz -u <user> -d <database> -s <shot> -r <run>")
+                print("")
+                print("2. User guide for IMASViz:")
+                print ("viz_doc")
+                print("-------------------------------------------------------------------------------")
+                print("")
+                sys.exit(0)
+
+    except getopt.GetoptError:
+        print("usage: viz -u <user> -d <database> -s <shot> -r <run>")
+        print ("or: viz --help")
+        sys.exit(-1)
 
 def main():
+    help()
+    UserInputs().setUserInputs(sys.argv)
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()

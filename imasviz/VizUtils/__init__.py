@@ -1,6 +1,7 @@
 # __init__.py
 from .QVizGlobalOperations import QVizGlobalOperations
 from .QVizGlobalValues import (FigureTypes,
+                               UserInputs,
                                getRGBColorList,
                                GlobalColors,
                                GlobalIcons,

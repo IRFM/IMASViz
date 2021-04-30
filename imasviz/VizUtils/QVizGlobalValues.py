@@ -11,6 +11,11 @@ class FigureTypes:
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
 
+class UserInputs:
+    inputs = None
+    enable = False
+    def setUserInputs(self, userInputs):
+        UserInputs.inputs = userInputs
 
 class Imas_Viz_Options:
 
