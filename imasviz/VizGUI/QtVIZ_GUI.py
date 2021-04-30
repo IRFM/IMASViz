@@ -419,7 +419,7 @@ def help():
                 print("viz -u <user> -d <database> -s <shot> -r <run>")
                 print("")
                 print("2. User guide for IMASViz:")
-                print ("firefox " + os.getenv("VIZ_HOME") + "/doc/build/html/index.html")
+                print ("viz_doc")
                 print("-------------------------------------------------------------------------------")
                 print("")
                 sys.exit(0)
