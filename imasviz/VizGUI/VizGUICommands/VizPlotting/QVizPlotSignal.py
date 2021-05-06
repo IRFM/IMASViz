@@ -168,6 +168,9 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                     # x-axis values
                     ti = t[0]
 
+                    # Setting range manually (see IMAS-3658)
+                    self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+
                     if i == 0:
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')

@@ -24,6 +24,7 @@ class QVizPlotServices():
     def plot(self, x=None, y=None, title='', xlabel='', ylabel='',
              pen=mkPen('b', width=3, style=Qt.SolidLine)):
         plotWidget = pg.plot(title=title)
+        plotWidget.getPlotItem().setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
         plotWidget.resize(400, 400)
         plotWidget.plot(x, y, pen=pen)
         plotWidget.setLabel('left', xlabel, units='')

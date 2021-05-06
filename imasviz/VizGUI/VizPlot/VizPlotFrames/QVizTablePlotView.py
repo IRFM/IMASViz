@@ -177,6 +177,8 @@ class QVizTablePlotView(pg.GraphicsWindow):
                               ylabel=ylabel)
                     # Get the current (last) plot item, created by self.plot()
                     currentPlotItem = self.getCurrentPlotItem()  # pg.PlotItem
+                    #Setting range manually (see IMAS-3658)
+                    currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
                     # Add new attribute to current item, holding all signal data
                     currentPlotItem.signalData = dtv_selectedSignals[signalKey]
                     # Get titleLabel
