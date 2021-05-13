@@ -38,7 +38,7 @@ class QVizDataAccessCodeGenerator:
         elif "/IDSDef.xml" in self.IDSDefFile:
             path_generated_code = os.environ['HOME'] + "/.imasviz/VizGeneratedCode"
             if not os.path.exists(path_generated_code):
-                os.mkdir(path_generated_code)
+                os.makedirs(path_generated_code)
                 print("Directory ", path_generated_code,  " created ")
             else:
                 print("Directory ", path_generated_code,  " already exists")
