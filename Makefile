@@ -2,8 +2,8 @@ VIZ_HOME ?= ${PWD}
 # VIZ_PRODUCTION = "0" # For development and testing purposes
 VIZ_PRODUCTION ?= "1"
 HOSTNAME ?= $(shell hostname)
-# Check if the source was cloned using GIT (returns true/false)
-GITREPO = $(shell git rev-parse --is-inside-work-tree)
+# Check if the source is a git repo
+GITREPO := $(wildcard .git)
 
 .PHONY: doc default
 
@@ -11,13 +11,8 @@ all: default doc
 
 default:
 	# Note that IMAS is required!
-
 	# In case the VIZ repository was cloned, update the submodules (e.g. ETSViz)
-	if test ${GITREPO} = "true" ; then \
-		git submodule init; \
-		git submodule update; \
-	fi
-
+	$(if ${GITREPO},git submodule init; git submodule update)
 	# Generate IDSDef_XMLParser_Generated_<IMAS_VERSION>.py files
 	mkdir -p ${VIZ_HOME}/imasviz/VizDataAccess/VizGeneratedCode
 	export VIZ_HOME=${VIZ_HOME}; \
