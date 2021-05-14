@@ -81,11 +81,15 @@ class QvizPlotLayoutWidget(QWidget):
         pgPlotWidget = self.getPlotItem(row, column)
         if pgPlotWidget is None:
             pgPlotWidget = pg.PlotWidget(self, viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+            # Setting range manually (see IMAS-3658)
+            pgPlotWidget.setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
             p = pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
             legend = pgPlotWidget.getPlotItem().addLegend(size=(5,1), offset=10)
             #legendLabelStyle = {'color': '#FFF', 'size': '8pt', 'bold': False, 'italic': False}
             legend.addItem(p, label)
         else:
+            # Setting range manually (see IMAS-3658)
+            pgPlotWidget.setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
             p = pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
         pgPlotWidget.setLabel('left', ylabel, units='')

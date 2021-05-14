@@ -82,7 +82,9 @@ class QVizPreviewPlotWidget(QWidget):
             pen        (QPen) : Plot line style.
         """
         # Access the UI elements through the `ui` attribute
-        # Add plot
+        # Adding plot
+        #Setting range manually (see IMAS-3658)
+        self.pgPlotWidget.getPlotItem().setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
         self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)
         # Set x-axis label
         self.pgPlotWidget.setLabel('left', ylabel, units='')

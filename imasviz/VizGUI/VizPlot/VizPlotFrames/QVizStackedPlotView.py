@@ -371,6 +371,8 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
         # Enable legend (Note: must be done before plotting!)
         plotItem.addLegend()
+        #Setting range manually (see IMAS-3658)
+        plotItem.setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
         # plotItem.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
         plotItem.plot(x=x,
                       y=y,
