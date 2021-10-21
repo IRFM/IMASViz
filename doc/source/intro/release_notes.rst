@@ -13,6 +13,17 @@ Release notes
 =============
 
 -------------
+Version 2.4.5
+-------------
+
+Released 10.18.2021
+
+- Bug fix for IMAS-3658: setting x and y ranges manually for 1D plots (workaround)   
+- Displaying help for Viz (IMAS-3386)
+- IMAS-3386: Option to specify user/device/shot/run on the command line    
+- IMAS-3601: Warning running Viz/1.4.4 (fix)
+
+-------------
 Version 2.4.4
 -------------
 
