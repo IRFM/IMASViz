@@ -80,29 +80,29 @@ class QVizSignalHandling(QObject):
 
             # SET TOP ACTIONS
             # - Add action for setting signal node select/unselect status
-            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1D():
                 self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
 
             # - Add action for selection of all signals from the same array of
             #   structures
-            if self.treeNode.is1DAndDynamic():
+            if self.treeNode.is1D():
                 if self.nodeData.get('aos_parents_count') != '0':
                     self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
 
             # SET TOP MENU ITEMS
             # - Add menu for handling plotting using the under-the-mouse selected
             #   signal node
-            if self.treeNode.is1DAndDynamic():
+            if self.treeNode.is1D():
                 self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
             elif self.treeNode.is0DAndDynamic():
                 self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
 
             # - Add menu for handling unselection of signal nodes
-            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1D():
                 self.contextMenu.addMenu(self.menuUnselectSignalNodes())
 
             # - Add menu for handling plotting a selection of signal nodes
-            if self.treeNode.is0DAndDynamic() or self.treeNode.is1DAndDynamic():
+            if self.treeNode.is0DAndDynamic() or self.treeNode.is1D():
                 self.contextMenu.addMenu(
                     self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
 
@@ -324,6 +324,18 @@ class QVizSignalHandling(QObject):
             subMenu_figure_new = subMenu_figure.addMenu('New')
             subMenu_figure_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                   'new'))
+                                                                  
+                                                                  
+            strategy = "DEFAULT"
+
+            if self.treeNode.embedded_in_time_dependent_aos() and \
+                    self.treeNode.is0DAndDynamic():
+                strategy = "TIME"
+            elif self.treeNode.is1DAndDynamic() and not \
+                    self.treeNode.embedded_in_time_dependent_aos():
+                strategy = "TIME"
+            else:
+                strategy = "COORDINATE1"
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
@@ -335,7 +347,7 @@ class QVizSignalHandling(QObject):
                                                 'This IMAS Database',
                                                 self)
                 action_figure_thisDTV.triggered.connect(
-                    partial(self.plotSelectedSignals, False, strategy='TIME'))
+                    partial(self.plotSelectedSignals, False, strategy=strategy))
                 # Add to submenu
                 subMenu_figure_new.addAction(action_figure_thisDTV)
 
@@ -347,7 +359,7 @@ class QVizSignalHandling(QObject):
                                            self)
             if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
                 action_figure_allDTV.triggered.connect(
-                    partial(self.plotSelectedSignals, True, strategy='TIME'))
+                    partial(self.plotSelectedSignals, True, strategy=strategy))
                 # Add to submenu
                 subMenu_figure_new.addAction(action_figure_allDTV)
 
@@ -449,8 +461,12 @@ class QVizSignalHandling(QObject):
             subMenu_SPV = menu.addMenu('StackedPlotView')
             subMenu_SPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'SPV'))
 
-            subMenu_SPV_new = subMenu_SPV.addMenu('New')
+            subMenu_SPV_new = subMenu_SPV.addMenu('New (default strategy)')
             subMenu_SPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
+                                                               'new'))
+                                                               
+            subMenu_SPV_new2 = subMenu_SPV.addMenu("New ('TIME' strategy)")
+            subMenu_SPV_new2.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                'new'))
 
             # -----
@@ -459,7 +475,7 @@ class QVizSignalHandling(QObject):
             action_SPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
                                          self)
             action_SPV_thisDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, False))
+                partial(self.onPlotToStackedPlotView, False, 'DEFAULT'))
             # Add to submenu
             subMenu_SPV_new.addAction(action_SPV_thisDTV)
 
@@ -469,9 +485,29 @@ class QVizSignalHandling(QObject):
             action_SPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
                                         self)
             action_SPV_allDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, True))
+                partial(self.onPlotToStackedPlotView, True, 'DEFAULT'))
             # Add to submenu
             subMenu_SPV_new.addAction(action_SPV_allDTV)
+            
+            
+            
+            action_SPV_thisDTV2 = QAction(icon_thisDTV, 'This IMAS Database',
+                                         self)
+            action_SPV_thisDTV2.triggered.connect(
+                partial(self.onPlotToStackedPlotView, False, 'TIME'))
+            # Add to submenu
+            subMenu_SPV_new2.addAction(action_SPV_thisDTV2)
+
+            # -----
+            # Add menu item to plot selected signals to single
+            # plot - All DTVs
+            action_SPV_allDTV2 = QAction(icon_allDTV, 'All IMAS Databases',
+                                        self)
+            action_SPV_allDTV2.triggered.connect(
+                partial(self.onPlotToStackedPlotView, True, 'TIME'))
+            # Add to submenu
+            subMenu_SPV_new2.addAction(action_SPV_allDTV2)
+            
 
         return menu
 

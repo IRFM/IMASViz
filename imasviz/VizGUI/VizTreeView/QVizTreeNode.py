@@ -293,7 +293,7 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.infoDict
 
     def isDynamicData(self):
-        return self.infoDict.get('isSignal')
+        return self.infoDict.get('isSignal') == 1 and not self.isStaticData()
 
     def isStaticData(self):
         return self.infoDict.get('isStatic')
@@ -544,7 +544,7 @@ class QVizTreeNode(QTreeWidgetItem):
                 label = label.replace('itime', str(time_index))
             label = QVizGlobalOperations.makeIMASPath(label)
 
-        elif self.is1DAndDynamic():
+        elif self.is1D():
             label = None
             xlabel2 = None
             coordinateNumber = 1

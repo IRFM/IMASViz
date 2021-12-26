@@ -232,7 +232,7 @@ class QVizDataTreeView(QTreeWidget):
             logging.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
-        if item.hasAvailableData() and item.isDynamicData() and (not item.isIDSRoot()) and item.getName() is not None:
+        if item.hasAvailableData() and (item.isDynamicData() or item.is1D()) and (not item.isIDSRoot()) and item.getName() is not None:
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel

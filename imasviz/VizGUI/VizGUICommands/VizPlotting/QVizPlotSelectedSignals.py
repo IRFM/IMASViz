@@ -63,7 +63,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
 
     def getDimension(self, treeNode):
         plotDimension = None
-        if treeNode.is1DAndDynamic() or treeNode.is0DAndDynamic():
+        if treeNode.is1D() or treeNode.is0DAndDynamic():
             plotDimension = "1D"
         else:
             logging.warning('Plots dimension larger than 1D are currently not supported.')

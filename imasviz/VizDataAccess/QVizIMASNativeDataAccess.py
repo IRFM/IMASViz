@@ -51,7 +51,7 @@ class QVizIMASNativeDataAccess:
         else:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
-            elif treeNode.is1DAndDynamic():
+            elif treeNode.is1D():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is2DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
@@ -60,7 +60,7 @@ class QVizIMASNativeDataAccess:
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
         if treeNode.is2DAndDynamic():
             return self.GetSignal2DAt(treeNode, itimeValue, plotWidget)
-        if treeNode.is1DAndDynamic():
+        if treeNode.is1D():
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
             xData = None

@@ -149,7 +149,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         return figureKey
 
-    def setMultiPlotView(self, mpType, strategy=None):
+    def setMultiPlotView(self, mpType, strategy='DEFAULT'):
         """Set multiPlotView (pg.GraphicsWindow).
 
         Arguments:
@@ -158,11 +158,9 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         # Set multi plot view of specified multi plot type
         if mpType == 'TablePlotView':
-            if strategy is None:
-                strategy = 'DEFAULT'
             mpView = QVizTablePlotView(parent=self, strategy=strategy)
         elif mpType == 'StackedPlotView':
-            mpView = QVizStackedPlotView(parent=self, strategy='TIME')
+            mpView = QVizStackedPlotView(parent=self, strategy=strategy)
         else:
             logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
                           'provided!')

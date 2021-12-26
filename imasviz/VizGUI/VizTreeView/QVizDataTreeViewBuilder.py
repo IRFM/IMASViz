@@ -125,7 +125,7 @@ class QVizDataTreeViewBuilder:
 
         self.setPath(viewerNode, path)
 
-        if viewerNode.isDynamicData():
+        if viewerNode.isDynamicData() or viewerNode.isStaticData():
             self.signalsList.append(viewerNode)
 
         return viewerNode
@@ -309,9 +309,9 @@ class QVizDataTreeViewBuilder:
                 if data_type.startswith("FLT_") or data_type.startswith("flt_") or \
                         data_type.startswith("INT_") or data_type.startswith("int_"):
 
-                    if dataElement.get('type') == 'dynamic':
+                    if dataElement.get('type') == 'dynamic' or dataElement.get('type') == 'static':
                         isSignal = 1
-                    elif dataElement.get('type') == 'static':
+                    if dataElement.get('type') == 'static':
                         isStatic = 1
 
                     itemDataDict['path_doc'] = dataElement.get('path_doc')

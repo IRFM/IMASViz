@@ -425,7 +425,6 @@ def help():
                 print("-------------------------------------------------------------------------------")
                 print("")
                 sys.exit(0)
-
     except getopt.GetoptError:
         print("usage: viz -u <user> -d <database> -s <shot> -r <run>")
         print ("or: viz --help")
