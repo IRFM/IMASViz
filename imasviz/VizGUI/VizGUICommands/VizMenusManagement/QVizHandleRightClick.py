@@ -53,7 +53,7 @@ class QVizHandleRightClick:
 
         # If the node is a signal and occurrence contains data, call
         # showPopUpMenu function for plotting data
-        if node.hasAvailableData():
+        if not node.isIDSRoot() and node.hasAvailableData():
             handling = QVizSignalHandling(dataTreeView=dataTreeView)
             self.popupmenu = handling.buildContextMenu(node)
             showMenu = True

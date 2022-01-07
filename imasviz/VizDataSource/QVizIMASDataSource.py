@@ -119,9 +119,9 @@ class QVizIMASDataSource:
                     node.setAvailableIDSData(occurrence, 1)
                     self.data_dictionary_version = ids_properties.version_put.data_dictionary
                     ret = True
-                elif occurrence == 0:
+                #elif occurrence == 0:
                     # break the loop as soon as occurrence 0 is empty
-                    break
+                #    break
             except:
                 pass
         logging.info("Data search ended.")

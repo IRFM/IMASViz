@@ -332,7 +332,8 @@ class QVizSignalHandling(QObject):
                     self.treeNode.is0DAndDynamic():
                 strategy = "TIME"
             elif self.treeNode.is1DAndDynamic() and not \
-                    self.treeNode.embedded_in_time_dependent_aos():
+                    self.treeNode.embedded_in_time_dependent_aos() and \
+                    self.treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                 strategy = "TIME"
             else:
                 strategy = "COORDINATE1"
@@ -762,7 +763,8 @@ class QVizSignalHandling(QObject):
                     self.treeNode.is0DAndDynamic():
                 strategy = "TIME"
             elif self.treeNode.is1DAndDynamic() and not \
-                    self.treeNode.embedded_in_time_dependent_aos():
+                    self.treeNode.embedded_in_time_dependent_aos() and \
+                    self.treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                 strategy = "TIME"
             else:
                 strategy = "COORDINATE1"
