@@ -13,6 +13,15 @@ Release notes
 =============
 
 -------------
+Version 2.4.7
+-------------
+
+Released 01.20.2021
+
+- IMAS-3967: fixing display of popup menus
+- IMAS-3115: enable plot of 1D static data
+
+-------------
 Version 2.4.5
 -------------
 
