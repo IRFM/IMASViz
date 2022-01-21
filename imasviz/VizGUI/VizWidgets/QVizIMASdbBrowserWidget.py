@@ -71,9 +71,12 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
         # # Set action on double click on item
         self.itemDoubleClicked.connect(self.doubleClickHandler)
-        # Get current username
-        username = getpass.getuser()
-        self.addContentsForUsername(username)
+
+        self.addContentsForUsername(getpass.getuser())
+        self.addContentsForUsername("public")
+        machine_name = os.getenv('MACHINE_NAME')
+        if machine_name is not None and machine_name.upper() == "WEST":
+         self.addContentsForUsername("imas_public")
 
     def addContentsForUsername(self, username):
         """Set treeWidget items based on imasdb for given user.
@@ -82,25 +85,26 @@ then the available <b>IDS cases for that user will be shown too</b>.
         try:
 
             self.activeUsername = username
-            # Get (standard) imasdb path
-            # userPath = os.path.abspath(os.path.join(
-            #     os.path.dirname(__file__), '..', os.environ['HOME']))
 
-            userPath = os.path.abspath(os.path.join(
-                os.path.dirname(__file__), os.environ['HOME'], '..'))
-            userPath = userPath + "/" + username
-
-            # If user path does not exist, return
-            if os.path.exists(userPath) is False or \
+            imasdbPath = None
+            if username != "public":
+               userPath = os.path.abspath(os.path.join(
+               os.path.dirname(__file__), os.environ['HOME'], '..'))
+               userPath = userPath + "/" + username
+               # If user path does not exist, return
+               if os.path.exists(userPath) is False or \
                     username in self.presentUserNameList:
-                return False
-
+                 return False
+               imasdbPath = userPath + "/public/imasdb"
+            else:
+               imasdbPath = os.environ['IMAS_HOME'] + "/shared/imasdb"
+               if not os.path.exists(imasdbPath):
+                 return False
+              
             self.presentUserNameList.append(username)
 
             rootUserItem = QTreeWidgetItem(self)
             rootUserItem.setText(0, username)
-
-            imasdbPath = userPath + "/public/imasdb"
 
             databaseList = [dI for dI in os.listdir(imasdbPath)
                             if os.path.isdir(os.path.join(imasdbPath, dI))]
