@@ -11,23 +11,9 @@ class QVizDefaultGUIEntries:
         default_run = '0'
         return default_user, default_machine, default_run
 
-    def getDefaultEntriesForWEST(self):
-        default_user = 'imas_public'
-        default_machine = 'west'
-        default_run = '0'
-        return default_user, default_machine, default_run
-
 
 class QVizDefault:
 
     @staticmethod
     def getGUIEntries():
-        machineName = os.getenv('DATABASE_NAME')
-        if machineName is None:
-            TESTING = not bool(int(os.environ["VIZ_PRODUCTION"]))
-            if TESTING:
-                machineName = ''
-        if machineName == 'WEST' or machineName == 'west':
-            return QVizDefaultGUIEntries().getDefaultEntriesForWEST()
-        else:
-            return QVizDefaultGUIEntries().getDefaultEntries()
+        return QVizDefaultGUIEntries().getDefaultEntries()

@@ -71,12 +71,10 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
         # # Set action on double click on item
         self.itemDoubleClicked.connect(self.doubleClickHandler)
-
-        self.addContentsForUsername(getpass.getuser())
-        self.addContentsForUsername("public")
-        machine_name = os.getenv('MACHINE_NAME')
-        if machine_name is not None and machine_name.upper() == "WEST":
-         self.addContentsForUsername("imas_public")
+        username = getpass.getuser()
+        self.addContentsForUsername(username)
+        if username != "public":
+           self.addContentsForUsername("public")
 
     def addContentsForUsername(self, username):
         """Set treeWidget items based on imasdb for given user.
@@ -98,7 +96,8 @@ then the available <b>IDS cases for that user will be shown too</b>.
                imasdbPath = userPath + "/public/imasdb"
             else:
                imasdbPath = os.environ['IMAS_HOME'] + "/shared/imasdb"
-               if not os.path.exists(imasdbPath):
+               if not os.path.exists(imasdbPath) or \
+                    username in self.presentUserNameList:
                  return False
               
             self.presentUserNameList.append(username)
