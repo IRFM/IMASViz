@@ -15,8 +15,6 @@ default:
 	# Note that IMAS is required!
 	# In case the VIZ repository was cloned, update the submodules (e.g. ETSViz)
 	$(if ${GITREPO},git submodule init; git submodule update)
-	# Generate IDSDef_XMLParser_Generated_<IMAS_VERSION>.py files
-	python3 ${VIZ_HOME}/imasviz/VizDataAccess/VizCodeGenerator/QVizDataAccessCodeGenerator.py
 
 doc:
 	# Generate PDF and HTML documentation
