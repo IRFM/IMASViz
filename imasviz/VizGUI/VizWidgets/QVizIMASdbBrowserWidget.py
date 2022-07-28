@@ -110,81 +110,168 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
             # Sort by alphabetical order
             databaseList.sort()
+            
+            mdsplus_backendItem = QTreeWidgetItem(rootUserItem)
+            mdsplus_backendItem.setText(0, "MDS+")
+            
+            hdf5_backendItem = QTreeWidgetItem(rootUserItem)
+            hdf5_backendItem.setText(0, "HDF5")
 
             # Go through databases
             for db in databaseList:
-                databaseItem = QTreeWidgetItem(rootUserItem)
-                databaseItem.setText(0, db)
-
-                # /0 contains runs=0...9999
-                # /1 contains runs=10000...19999, first run number is folder number
-                # /2 contains runs=20000...29999
-                # /3 contains runs=30000...39999
-                # /4 contains runs=40000...49999
-                # /5 contains runs=50000...59999
-                # /6 contains runs=60000...69999
-                # /7 contains runs=70000...79999
-                # /8 contains runs=80000...89999
-                # /9 contains runs=90000...99999
-
-                for d in range(10):  # will look in /0 and /1 dirs
-                    shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
-
-                    if os.path.exists(shotRunPath) is False:
-                        continue
-
-                    # Shot list to take care the shot entries do no repeat
-                    shotList = []
-                    shotItemList = []
-
-                    # Get number of *.datafile files (to avoid using list.append())
-                    dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
-                    dataFileList = [""]*dataFileCounter
-
-                    # Set dataFileList
-                    i = 0
-                    for f in os.listdir(shotRunPath):
-                        if f.endswith(".datafile"):
-                            dataFileList[i] = f
-                            i += 1
-
-                    # Sort by alphabetical order
-                    # Note: This is mandatory, otherwise the further strategy of
-                    #       avoiding duplication of shotItems will be broken
-                    dataFileList.sort()
-
-                    for i in range(len(dataFileList)):
-                        # Extract shot and run numbers
-                        # Strategy: Last 4 digits are always run number. The rest
-                        #           are shot (for /0 folder!)
-                        rs = dataFileList[i].split(".")[0]
-                        rs = rs.split("_")[1]
-                        try:
-                            if d == 0:
-                                run = int(rs[-4:])
-                            else:
-                                run = int(str(d)+rs[-4:])
-                        except:
-                            # In case non-valid .datafile name is found
-                            # e.g. 'ids_model.datafile', skip this file
-                            continue
-                        run = str(run)
-                        shot = rs[:-4]
-
-                        if shot not in shotList:
-                            shotItem = QTreeWidgetItem(databaseItem)
-                            shotItem.setText(0, shot)
-
-                            shotList.append(shot)
-                            shotItemList.append(shotItem)
-
-                        runItem = QTreeWidgetItem(shotItem)
-                        runItem.setText(0, run)
-
+                if self.found_mdsplus_pulse_files(db, imasdbPath):
+                    databaseItem = QTreeWidgetItem(mdsplus_backendItem)
+                    databaseItem.setText(0, db)
+                    self.populate_from_mdsplus(db, imasdbPath, databaseItem)
+                
+                if self.found_hdf5_pulse_files(db, imasdbPath):
+                    databaseItem = QTreeWidgetItem(hdf5_backendItem)
+                    databaseItem.setText(0, db)
+                    self.populate_from_hdf5(db, imasdbPath, databaseItem)
+                
             return True
         except Exception as e:
             print(str(e))
             return False
+        
+    def found_mdsplus_pulse_files(self, db, imasdbPath):
+       for d in range(10):  # will look in /0 and /1 dirs
+            shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
+
+            if os.path.exists(shotRunPath) is False:
+                continue
+
+            for f in os.listdir(shotRunPath):
+                if f.endswith(".datafile"):
+                    return True
+       return False
+       
+    def found_hdf5_pulse_files(self, db, imasdbPath):
+        shotPath = imasdbPath + "/" + db + "/3/"
+    
+        if os.path.exists(shotPath) is False:
+            return False
+    
+        shotList = []
+    
+        # Get shots directories
+        shotList = glob.glob1(shotPath, "*")
+        shotList.sort()
+    
+        for shot in shotList:
+    
+            if len(shot) < 5:
+                continue
+            
+            runList = []
+            runList = glob.glob1(shotPath + "/" + shot, "*")
+            
+            for run in runList:
+                
+                filesList = glob.glob1(shotPath + "/" + shot + "/" + run, "*.h5")
+                
+                if len(filesList) > 0:
+                    return True;
+                    
+        return False
+        
+    
+    def populate_from_mdsplus(self, db, imasdbPath, databaseItem):
+        # /0 contains runs=0...9999
+        # /1 contains runs=10000...19999, first run number is folder number
+        # /2 contains runs=20000...29999
+        # /3 contains runs=30000...39999
+        # /4 contains runs=40000...49999
+        # /5 contains runs=50000...59999
+        # /6 contains runs=60000...69999
+        # /7 contains runs=70000...79999
+        # /8 contains runs=80000...89999
+        # /9 contains runs=90000...99999
+
+        for d in range(10):  # will look in /0 and /1 dirs
+            shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
+
+            if os.path.exists(shotRunPath) is False:
+                continue
+
+            # Shot list to take care the shot entries do no repeat
+            shotList = []
+            shotItemList = []
+
+            # Get number of *.datafile files (to avoid using list.append())
+            dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
+            dataFileList = [""]*dataFileCounter
+
+            # Set dataFileList
+            i = 0
+            for f in os.listdir(shotRunPath):
+                if f.endswith(".datafile"):
+                    dataFileList[i] = f
+                    i += 1
+
+            # Sort by alphabetical order
+            # Note: This is mandatory, otherwise the further strategy of
+            #       avoiding duplication of shotItems will be broken
+            dataFileList.sort()
+
+            for i in range(len(dataFileList)):
+                # Extract shot and run numbers
+                # Strategy: Last 4 digits are always run number. The rest
+                #           are shot (for /0 folder!)
+                rs = dataFileList[i].split(".")[0]
+                rs = rs.split("_")[1]
+                try:
+                    if d == 0:
+                        run = int(rs[-4:])
+                    else:
+                        run = int(str(d)+rs[-4:])
+                except:
+                    # In case non-valid .datafile name is found
+                    # e.g. 'ids_model.datafile', skip this file
+                    continue
+                run = str(run)
+                shot = rs[:-4]
+
+                if shot not in shotList:
+                    shotItem = QTreeWidgetItem(databaseItem)
+                    shotItem.setText(0, shot)
+
+                    shotList.append(shot)
+                    shotItemList.append(shotItem)
+
+                runItem = QTreeWidgetItem(shotItem)
+                runItem.setText(0, run)
+                
+    def populate_from_hdf5(self, db, imasdbPath, databaseItem):
+        
+        shotPath = imasdbPath + "/" + db + "/3/"
+
+        if os.path.exists(shotPath) is False:
+            return
+
+        # Shot list to take care the shot entries do no repeat
+        shotList = []
+        shotItemList = []
+
+        # Get shots directories
+        shotList = glob.glob1(shotPath, "*")
+        shotList.sort()
+
+        for shot in shotList:
+
+            if len(shot) < 5:
+                continue
+            
+            shotItem = QTreeWidgetItem(databaseItem)
+            shotItem.setText(0, shot)
+            
+            runList = []
+            runList = glob.glob1(shotPath + "/" + shot, "*")
+            
+            for run in runList:
+                runItem = QTreeWidgetItem(shotItem)
+                runItem.setText(0, run) 
+
 
     def doubleClickHandler(self, item, column_No):
         """Handler for double click on QTreeWidgetItem in QTreeWidget
@@ -193,7 +280,7 @@ then the available <b>IDS cases for that user will be shown too</b>.
         # When clicking on item representing run number
         # (last in tree hierarchy -> 0 children)
         if item.childCount() == 0:
-            self.setActiveUsername(item.parent().parent().parent().text(0))
+            self.setActiveUsername(item.parent().parent().parent().parent().text(0))
             self.setActiveDatabase(item.parent().parent().text(0))
             self.setActiveShot(item.parent().text(0))
             self.setActiveRun(item.text(0))
