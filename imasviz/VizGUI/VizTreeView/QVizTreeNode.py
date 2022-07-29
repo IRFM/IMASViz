@@ -451,7 +451,7 @@ class QVizTreeNode(QTreeWidgetItem):
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
             e = eval('imas_entry.' + self.getDataName())
-            if e is None or e.all() is None:
+            if self.getDataType() != 'STR_1D' and (e is None or e.all() is None):
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             elif len(eval('imas_entry.' + self.getDataName())) == 0:  # empty (signals) arrays appear in black

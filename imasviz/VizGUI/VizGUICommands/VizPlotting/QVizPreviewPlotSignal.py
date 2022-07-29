@@ -60,8 +60,10 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
     def execute(self):
         try:
             data = self.getData()
-
-            if not (self.treeNode.is1D() or self.treeNode.is0D() or self.treeNode.is2D()):
+            
+            if self.treeNode.getDataType() == 'STR_1D':
+                return
+            elif not (self.treeNode.is1D() or self.treeNode.is0D() or self.treeNode.is2D()):
                 self.getPlotWidget().clear(self.treeNode, noPreviewAvailable=True)
                 return
             elif data is None:

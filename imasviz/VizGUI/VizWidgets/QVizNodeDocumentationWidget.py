@@ -456,6 +456,17 @@ class QVizNodeDocumentationWidget(QWidget):
                     node_contents_dict['size'] = str(len(node_array_contents))
                     self.lNodeArraySizeText.setText(node_contents_dict['size'])
 
+            elif item.getDataType() == 'STR_1D':
+                # - Set node contents
+                expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
+                expression = QVizGlobalOperations.makePythonPath(expression)
+                # Get the array of values
+                node_array_contents = eval(expression)
+                self.showFieldsForContents()
+                node_contents_dict = {}
+                node_contents_dict['name'] = node_label
+                node_contents_dict['contents'] = str(node_array_contents)
+            
             else:
                 self.showMinimalDisplay()
                 node_contents_dict = {}
