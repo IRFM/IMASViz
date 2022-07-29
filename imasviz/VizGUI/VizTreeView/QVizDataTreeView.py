@@ -646,7 +646,7 @@ class QVizDataTreeViewFrame(QMainWindow):
 
         # PREVIEW PLOT WIDGET (PPW)
         # - Set the widget
-        self.previewPlotWidget = QVizPreviewPlotWidget(parent=self,
+        self.previewPlotWidget = QVizPreviewPlotWidget(dataTreeView=self.dataTreeView, parent=self,
                                                        title='Preview Plot')
         # - Plot empty
         self.previewPlotWidget.plot()

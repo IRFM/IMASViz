@@ -12,6 +12,7 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
+import numpy as np
 from PyQt5.QtGui import (QWidget, QGridLayout, QCheckBox, QMenuBar, QAction,
                          QLabel)
 from PyQt5.QtCore import Qt, QMetaObject
@@ -25,7 +26,7 @@ class QVizPreviewPlotWidget(QWidget):
     """PlotWidget containing pyqtgraph PlotWidget. Used for creating preview
     plots.
     """
-    def __init__(self, parent=None, size=(500, 400),
+    def __init__(self, dataTreeView, parent=None, size=(500, 400),
                  title='QVizPreviewPlotWidget'):
         super(QVizPreviewPlotWidget, self).__init__(parent=parent)
 
@@ -46,6 +47,7 @@ class QVizPreviewPlotWidget(QWidget):
         self.setContents()
 
         self.vizTreeNodesList = []
+        self.dataTreeView = dataTreeView
 
         self.addTimeSlider = False
         self.addCoordinateSlider = False
@@ -64,7 +66,7 @@ class QVizPreviewPlotWidget(QWidget):
     def plot2D(self, data):
         self.pg2dPlotWidget.plot(data)
 
-    def plot(self, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
+    def plot(self, vizTreeNode=None, x=[0], y=[0], title='', label='', xlabel='', ylabel='',
              pen=pg.mkPen('b', width=3, style=Qt.SolidLine)):
         """Add plot.
 
@@ -81,6 +83,10 @@ class QVizPreviewPlotWidget(QWidget):
             ylabel      (str) : Plot Y-axis label.
             pen        (QPen) : Plot line style.
         """
+
+        if vizTreeNode is not None and vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+                x = np.append(x, [x[0]])
+                y = np.append(y, [y[0]])
         # Access the UI elements through the `ui` attribute
         # Adding plot
         #Setting range manually (see IMAS-3658)

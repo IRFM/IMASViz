@@ -94,9 +94,7 @@ class QVizTreeNode(QTreeWidgetItem):
             return self.hasTimeAxis()
 
         if plotWidget.getStrategy() == "TIME":
-            if not self.hasTimeAxis():
-                raise ValueError("Node " + self.getName() + " has no time axis.")
-            return self.hasTimeAxis()
+            return False
         elif plotWidget.getStrategy() == "DEFAULT" or plotWidget.getStrategy() == "COORDINATE1":
             if self.is0DAndDynamic():
                 return True
@@ -399,7 +397,22 @@ class QVizTreeNode(QTreeWidgetItem):
     def is2DOrLarger(self):
         if not self.is0D() and not self.is1D() and self.isDynamicData():
             return True
-
+            
+    def hasClosedOutline(self, dtv):
+        if not self.is1D():
+           return False
+        if self.coordinates[0] == "1..N" or\
+            self.coordinates[0] == "1...N":
+            return False
+        tokens = str(self.getPath()).split("/")
+        if not (len(tokens) > 1 and tokens[-2] == 'outline'):
+            return False
+        closedOutlinePath = self.getPath().replace("/" + tokens[-1], "", 1);
+        closedOutlinePath = closedOutlinePath.replace("/" + tokens[-2], "", 1) + "/closed";
+        expression = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + closedOutlinePath
+        value = eval(QVizGlobalOperations.makePythonPath(expression))
+        return value
+                
     def updateIDSNode(self, containsData):
         if containsData:
             # Set tree item style when node contains data
@@ -633,3 +646,16 @@ class QVizTreeNode(QTreeWidgetItem):
             quantityName += '[' + self.getUnits() + ']'
 
         return quantityName, label, xlabel
+
+    def getStrategyForDefaultPlotting(self):
+        strategy = "DEFAULT"
+        if self.embedded_in_time_dependent_aos() and \
+                self.treeNode.is0DAndDynamic():
+            strategy = "TIME"
+        elif self.is1DAndDynamic() and not \
+                self.embedded_in_time_dependent_aos() and \
+                self.isCoordinateTimeDependent(coordinateNumber=1):
+            strategy = "TIME"
+        else:
+            strategy = "COORDINATE1"
+        return strategy

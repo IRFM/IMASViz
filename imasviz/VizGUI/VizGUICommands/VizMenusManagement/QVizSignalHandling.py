@@ -324,19 +324,8 @@ class QVizSignalHandling(QObject):
             subMenu_figure_new = subMenu_figure.addMenu('New')
             subMenu_figure_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                   'new'))
-                                                                  
-                                                                  
-            strategy = "DEFAULT"
 
-            if self.treeNode.embedded_in_time_dependent_aos() and \
-                    self.treeNode.is0DAndDynamic():
-                strategy = "TIME"
-            elif self.treeNode.is1DAndDynamic() and not \
-                    self.treeNode.embedded_in_time_dependent_aos() and \
-                    self.treeNode.isCoordinateTimeDependent(coordinateNumber=1):
-                strategy = "TIME"
-            else:
-                strategy = "COORDINATE1"
+            strategy = self.treeNode.getStrategyForDefaultPlotting()
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
@@ -757,17 +746,7 @@ class QVizSignalHandling(QObject):
             label = None
             xlabel = None
 
-            strategy = "DEFAULT"
-
-            if self.treeNode.embedded_in_time_dependent_aos() and \
-                    self.treeNode.is0DAndDynamic():
-                strategy = "TIME"
-            elif self.treeNode.is1DAndDynamic() and not \
-                    self.treeNode.embedded_in_time_dependent_aos() and \
-                    self.treeNode.isCoordinateTimeDependent(coordinateNumber=1):
-                strategy = "TIME"
-            else:
-                strategy = "COORDINATE1"
+            strategy = self.treeNode.getStrategyForDefaultPlotting()
 
             api = self.dataTreeView.imas_viz_api
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
