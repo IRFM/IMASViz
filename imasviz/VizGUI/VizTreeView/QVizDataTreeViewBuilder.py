@@ -307,8 +307,7 @@ class QVizDataTreeViewBuilder:
 
             if data_type is not None:
                 if data_type.startswith("FLT_") or data_type.startswith("flt_") or \
-                        data_type.startswith("INT_") or data_type.startswith("int_"):
-
+                        data_type.startswith("INT_") or data_type.startswith("int_") or data_type == "STR_1D":
                     if dataElement.get('type') == 'dynamic' or dataElement.get('type') == 'static':
                         isSignal = 1
                     if dataElement.get('type') == 'static':

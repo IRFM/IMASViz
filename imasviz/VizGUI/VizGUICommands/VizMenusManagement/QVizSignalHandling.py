@@ -76,7 +76,7 @@ class QVizSignalHandling(QObject):
         if self.treeNode.is2D():
             array2DHandling = QViz2DArrayHandling(self.dataTreeView)
             self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode(self))
-        elif not self.treeNode.is2DOrLarger():
+        elif not self.treeNode.is2DOrLarger() and self.treeNode.getDataType() != 'STR_1D':
 
             # SET TOP ACTIONS
             # - Add action for setting signal node select/unselect status
