@@ -145,9 +145,7 @@ class QVizDataTreeViewBuilder:
             if dataElement.get('ggd_warning') is not None:
                 self.ggd_warning = 1
 
-            node = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-            #node.setStyleForElementAOS()
-            return node
+            viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
         elif dataElement.get('data_type') in ['FLT_0D', 'STR_0D', 'INT_0D', 'xs:integer']:
             itemDataDict['0D_content'] = dataElement.get('content')

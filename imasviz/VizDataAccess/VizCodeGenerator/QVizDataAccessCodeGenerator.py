@@ -207,6 +207,8 @@ class QVizDataAccessCodeGenerator:
                     parentName = parentName.replace("\n", "")
                     code = "parent.set(" + "'name', '" + parentName + "')"
                     self.printCode(code, level)
+                    code = "parent.set(" + "'data_type', '" + data_type + "')"
+                    self.printCode(code, level)
 
                 lifecycle_status = ids_child_element.get('lifecycle_status')
                 if lifecycle_status is not None:

@@ -363,6 +363,12 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setAvailableData(self, value): #value is True of False
         self.infoDict['availableData'] = value
+        
+    def isStructure(self):
+        return self.getDataType() == 'structure'
+        
+    def isArrayOfStructure(self):
+        return self.getDataType() == 'struct_array'
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \
@@ -430,7 +436,6 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleWhenContainingData(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-        self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
         if self.isDynamicData(): #set dynamic data to bold (0D and 1D nodes)
             self.setFontBold()
 
@@ -442,8 +447,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleForElementAOS(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-        self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
-
+      
     def setStyleForAOSNotContainingData(self):
         self.setForeground(0, GlobalColors.BLACK)
 
@@ -514,11 +518,24 @@ class QVizTreeNode(QTreeWidgetItem):
                 self.setAvailableData(1)
                 self.setStyleWhenContainingData()
 
-            self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
+        # elif self.isStructure():
+            # pass
+            
+        elif self.isArrayOfStructure():
+            self.setAvailableData(1)
+            self.setStyleWhenContainingData()
+            
         else:
-            #self.setForeground(0, GlobalColors.BLACK)
-            #self.parent().setForeground(0, self.foreground(0))
             pass
+            
+        if self.hasAvailableData() and self.isDynamicData(): #update parents
+            parent = self.parent()
+            while parent is not None and not(parent.isIDSRoot()): 
+                if not(parent.hasAvailableData()):
+                    parent.setAvailableData(True)
+                    parent.setStyleWhenContainingData()
+                    parent.updateStyle(imas_entry)
+                parent = parent.parent()
 
 
     def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, plotWidget=None):
