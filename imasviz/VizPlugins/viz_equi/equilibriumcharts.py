@@ -73,11 +73,47 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
     # Open shot and run of machine
     occurrence = 0 # default occurrence
+    
+    #root = logging.getLogger()
+    #root.setLevel(logging.DEBUG)
+
+    #handler = logging.StreamHandler(sys.stdout)
+    #handler.setLevel(logging.DEBUG)
+    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    #handler.setFormatter(formatter)
+    #root.addHandler(handler)
 
     logging.info("Here are the requirements for the ''Equilibrium'' plugin:"
                  "non empty equilibrium IDS with time slices,"
                  "non empty GGD (equilibrium.time_slice[:].ggd),"
                  "non empty IDS Wall.")
+    logging.info("-------------------")             
+    logging.info("Here are the required data for the 'equilibrium' IDS for all time slices:")
+    logging.info("--> time_slice[itime].profiles_1d.q")
+    logging.info("--> time_slice[itime].profiles_1d.elongation")
+    logging.info("--> time_slice([itime].profiles_1d.triangularity_upper")
+    logging.info("--> time_slice[itime].profiles_1d.triangularity_lower")
+    logging.info("--> time_slice[itime].profiles_1d.j_tor")
+    logging.info("--> time_slice[itime].profiles_1d.pressure")
+    logging.info("--> time_slice[itime].profiles_1d.f_df_dpsi")
+    logging.info("--> time_slice[itime].profiles_1d.dpressure_dpsi")
+    logging.info("--> time_slice[itime].global_quantities.ip")
+    logging.info("--> time_slice[itime].global_quantities.q_95")
+    logging.info("--> time_slice[itime].global_quantities.q_axis")
+    logging.info("--> time_slice[itime].global_quantities.li_3")
+    logging.info("--> time_slice[itime].global_quantities.w_mhd")
+    logging.info("--> time_slice[itime].global_quantities.magnetic_axis.r")
+    logging.info("--> time_slice[itime].global_quantities.magnetic_axis.z")
+    logging.info("--> time_slice[itime].boundary.outline.r")
+    logging.info("--> time_slice[itime].boundary.outline.z")
+    logging.info("--> time_slice[itime].ggd[0]")
+    logging.info("--> grids_ggd[0]")
+    
+    logging.info("") 
+    logging.info("Here are the required data for the 'wall' IDS:")
+    logging.info("--> description_2d[0].limiter.unit[0].outline.r")
+    logging.info("--> description_2d[0].limiter.unit[0].outline.z")
+    logging.info("-------------------") 
 
     if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'equilibrium', occurrence):
         logging.info('Loading equilibrium IDS...')
@@ -253,8 +289,22 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     rho_tor_label = np.array([None]*lenArrTimes, dtype=unicode_type)
 
     # Wall
-    wall[0, :] = idd.wall.description_2d[0].limiter.unit[0].outline.r
-    wall[1, :] = idd.wall.description_2d[0].limiter.unit[0].outline.z
+    status = -1
+        
+    try:
+        wall[0, :] = idd.wall.description_2d[0].limiter.unit[0].outline.r
+        wall[1, :] = idd.wall.description_2d[0].limiter.unit[0].outline.z
+        status = 0
+    except Exception as e:
+        logging.error(e)
+        
+    if status == -1:
+        return shot, run, machine, user, \
+                   None, None, \
+                   None, None, None, None, None, None, None, \
+                   None, None, None, None, None, \
+                   None, None, \
+                   None, None, None, None, None, None, -1
 
     # b0 vacuum toroidal field and r0
     b0 = idd.equilibrium.vacuum_toroidal_field.b0
@@ -269,13 +319,27 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
         equi_tSlice = idd.equilibrium.time_slice[timeit]
 
-        Ip[timeit]       = 1e-3*equi_tSlice.global_quantities.ip
-        q95[timeit]      = equi_tSlice.global_quantities.q_95
-        q_axis[timeit]   = equi_tSlice.global_quantities.q_axis
-        li_3[timeit]     = equi_tSlice.global_quantities.li_3
-        w_mhd[timeit]    = 1e-3*equi_tSlice.global_quantities.w_mhd
-        mag_ax_R[timeit] = equi_tSlice.global_quantities.magnetic_axis.r
-        mag_ax_Z[timeit] = equi_tSlice.global_quantities.magnetic_axis.z
+        status = -1
+        
+        try:
+            Ip[timeit]       = 1e-3*equi_tSlice.global_quantities.ip
+            q95[timeit]      = equi_tSlice.global_quantities.q_95
+            q_axis[timeit]   = equi_tSlice.global_quantities.q_axis
+            li_3[timeit]     = equi_tSlice.global_quantities.li_3
+            w_mhd[timeit]    = 1e-3*equi_tSlice.global_quantities.w_mhd
+            mag_ax_R[timeit] = equi_tSlice.global_quantities.magnetic_axis.r
+            mag_ax_Z[timeit] = equi_tSlice.global_quantities.magnetic_axis.z
+            status = 0
+        except Exception as e:
+            logging.error(e)
+            
+        if status == -1:
+            return shot, run, machine, user, \
+                       None, None, \
+                       None, None, None, None, None, None, None, \
+                       None, None, None, None, None, \
+                       None, None, \
+                       None, None, None, None, None, None, -1
 
         num_ggd_slices = len(idd.equilibrium.time_slice[0].ggd)
         if num_ggd_slices > 0:
