@@ -411,7 +411,7 @@ class QVizTreeNode(QTreeWidgetItem):
             self.coordinates[0] == "1...N":
             return False
         tokens = str(self.getPath()).split("/")
-        if not (len(tokens) > 1 and tokens[-2] == 'outline'):
+        if not (len(tokens) > 1 and tokens[-2].startswith('outline')):
             return False
         closedOutlinePath = self.getPath().replace("/" + tokens[-1], "", 1);
         closedOutlinePath = closedOutlinePath.replace("/" + tokens[-2], "", 1) + "/closed";
@@ -667,7 +667,7 @@ class QVizTreeNode(QTreeWidgetItem):
     def getStrategyForDefaultPlotting(self):
         strategy = "DEFAULT"
         if self.embedded_in_time_dependent_aos() and \
-                self.treeNode.is0DAndDynamic():
+                self.is0DAndDynamic():
             strategy = "TIME"
         elif self.is1DAndDynamic() and not \
                 self.embedded_in_time_dependent_aos() and \
