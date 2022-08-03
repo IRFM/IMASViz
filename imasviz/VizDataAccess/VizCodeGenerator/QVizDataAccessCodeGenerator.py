@@ -3,28 +3,27 @@ import os
 import sys
 sys.path.append((os.environ['VIZ_HOME']))
 from imasviz.VizUtils import QVizGlobalOperations
-from imasviz.VizUtils import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 
 ggd_warning = 0
 
 
 class QVizDataAccessCodeGenerator:
 
-    GGD_ignore = 0
     patched_versions = ["3.7.0", "3.9.0", "3.9.1", "3.11.0", "3.12.0",
                         "3.12.1", "3.15.0", "3.15.1", "3.16.0", "3.17.0",
                         "3.17.1", "3.17.2", "3.18.0", "3.19.0", "3.19.1",
                         "3.20.0", "3.21.0", "3.21.1", "3.22.0", "3.23.1",
                         "3.23.2", "3.23.3", "3.24.0"]
 
-    def __init__(self, imas_dd_version, GGD_ignore=0):
+    def __init__(self, imas_dd_version):
         self.imas_dd_version = imas_dd_version
         self.time_step = 10
 
         className = None
         path_generated_code = None
 
-        if QVizDataAccessCodeGenerator.GGD_ignore == 1 or GGD_ignore == 1:
+        if QVizPreferences.Ignore_GGD == 1:
             className = "IDSDef_XMLParser_Partial_Generated_" + \
                 QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
         else:
@@ -220,8 +219,7 @@ class QVizDataAccessCodeGenerator:
                                         idsName)
 
             elif data_type == 'struct_array':
-
-                if QVizDataAccessCodeGenerator.GGD_ignore == 1:
+                if QVizPreferences.Ignore_GGD == 1:
                     if ids_child_element.get('name') == "ggd" \
                         or ids_child_element.get('name').startswith("ggd_") \
                             or ids_child_element.get('name').endswith("_ggd"):
@@ -708,12 +706,12 @@ if __name__ == "__main__":
 
     print("Generating full parsers...")
     for v in imas_versions:
-        QVizDataAccessCodeGenerator.GGD_ignore = 0
+        QVizPreferences.Ignore_GGD = 0
         dag = QVizDataAccessCodeGenerator(v)
 
     print("Generating parsers ignoring GGD structures...")
     for v in imas_versions:
-        QVizDataAccessCodeGenerator.GGD_ignore = 1
+        QVizPreferences.Ignore_GGD = 1
         dag = QVizDataAccessCodeGenerator(v)
 
     print("End of code generation")
