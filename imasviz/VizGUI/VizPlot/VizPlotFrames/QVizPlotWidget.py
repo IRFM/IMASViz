@@ -208,7 +208,7 @@ class QVizPlotWidget(QWidget):
             self.error.setData(x=x, y=y, top=top, bottom=bottom)
             self.pgPlotWidget.addItem(self.error)
         else:
-            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedPath())
+            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
             
     def getPlotItem(self):
         """Return the PlotItem contained in QVizPlotWidget.

@@ -94,7 +94,7 @@ class QVizTreeNode(QTreeWidgetItem):
             return self.hasTimeAxis()
 
         if plotWidget.getStrategy() == "TIME":
-            return False
+            return self.hasTimeAxis()
         elif plotWidget.getStrategy() == "DEFAULT" or plotWidget.getStrategy() == "COORDINATE1":
             if self.is0DAndDynamic():
                 return True
