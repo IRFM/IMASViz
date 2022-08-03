@@ -20,15 +20,16 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 from imasviz.VizUtils import GlobalFonts, PlotTypes
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 
-
-class QVizPreviewPlotWidget(QWidget):
+class QVizPreviewPlotWidget(QVizPlotWidget):
     """PlotWidget containing pyqtgraph PlotWidget. Used for creating preview
     plots.
     """
     def __init__(self, dataTreeView, parent=None, size=(500, 400),
                  title='QVizPreviewPlotWidget'):
-        super(QVizPreviewPlotWidget, self).__init__(parent=parent)
+        #super(QVizPreviewPlotWidget, self).__init__(parent=parent)
+        super(QVizPreviewPlotWidget, self).__init__(dataTreeView=dataTreeView, parent=parent, size=size, title=title)
 
         # Set default background color: white
         pg.setConfigOption('background', 'w')
@@ -39,15 +40,15 @@ class QVizPreviewPlotWidget(QWidget):
         pg.setConfigOptions(antialias=True)
 
         # QVizPreviewPlotWidget settings
-        self.setObjectName("QVizPreviewPlotWidget")
-        self.setWindowTitle(title)
+        #self.setObjectName("QVizPreviewPlotWidget")
+        #self.setWindowTitle(title)
         # self.resize(size[0], size[1])
 
         # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
-        self.setContents()
+        #self.setContents()
 
-        self.vizTreeNodesList = []
-        self.dataTreeView = dataTreeView
+        #self.vizTreeNodesList = []
+        #self.dataTreeView = dataTreeView
 
         self.addTimeSlider = False
         self.addCoordinateSlider = False
@@ -98,6 +99,11 @@ class QVizPreviewPlotWidget(QWidget):
         self.pgPlotWidget.setLabel('bottom', xlabel, units='')
         # Enable grid
         self.pgPlotWidget.showGrid(x=True, y=True)
+        
+        if vizTreeNode is not None and len(self.vizTreeNodesList) == 1:
+            self.vizTreeNodesList[0] = vizTreeNode
+        elif vizTreeNode is not None and len(self.vizTreeNodesList) == 0:
+            self.vizTreeNodesList.append(vizTreeNode)
         return self
 
     def clear(self, treeNode, noPreviewAvailable=False):

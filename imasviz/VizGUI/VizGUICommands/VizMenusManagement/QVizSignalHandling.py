@@ -905,8 +905,8 @@ class QVizSignalHandling(QObject):
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)
         subWindow.resize(plotWidget.width(), plotWidget.height())
-
-        self.getMDI().addSubWindow(subWindow)
+        if self.getMDI() is not None:
+           self.getMDI().addSubWindow(subWindow)
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
