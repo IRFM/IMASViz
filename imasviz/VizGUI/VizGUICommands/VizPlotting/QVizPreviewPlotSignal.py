@@ -60,8 +60,10 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
     def execute(self):
         try:
             data = self.getData()
-
-            if not (self.treeNode.is1D() or self.treeNode.is0D() or self.treeNode.is2D()):
+            
+            if self.treeNode.getDataType() == 'STR_1D':
+                return
+            elif not (self.treeNode.is1D() or self.treeNode.is0D() or self.treeNode.is2D()):
                 self.getPlotWidget().clear(self.treeNode, noPreviewAvailable=True)
                 return
             elif data is None:
@@ -72,6 +74,8 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
                 v = data[1]
                 if len(t[0]) !=len(v[0]):
                     raise ValueError("Data can not be previewed, x and y shapes are different.")
+
+                self.getPlotWidget().setStrategy(self.treeNode.getStrategyForDefaultPlotting())
                 self.plot1DSignal(shotNumber=self.dataTreeView.shotNumber,
                                   t=t, v=v, title=self.title,
                                   label=self.label, xlabel=self.xlabel)
@@ -139,7 +143,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
                         # quantity values
             ti = t[0]   # first (should be the only) array of time values
             # Create plot
-            plotWidget.plot(x=ti, y=u, label=label, xlabel=xlabel,
+            plotWidget.plot(vizTreeNode=self.treeNode, x=ti, y=u, label=label, xlabel=xlabel,
                             ylabel=ylabel)
             plotWidget.update()
         except:

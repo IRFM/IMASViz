@@ -145,9 +145,7 @@ class QVizDataTreeViewBuilder:
             if dataElement.get('ggd_warning') is not None:
                 self.ggd_warning = 1
 
-            node = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
-            #node.setStyleForElementAOS()
-            return node
+            viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
         elif dataElement.get('data_type') in ['FLT_0D', 'STR_0D', 'INT_0D', 'xs:integer']:
             itemDataDict['0D_content'] = dataElement.get('content')
@@ -307,8 +305,7 @@ class QVizDataTreeViewBuilder:
 
             if data_type is not None:
                 if data_type.startswith("FLT_") or data_type.startswith("flt_") or \
-                        data_type.startswith("INT_") or data_type.startswith("int_"):
-
+                        data_type.startswith("INT_") or data_type.startswith("int_") or data_type == "STR_1D":
                     if dataElement.get('type') == 'dynamic' or dataElement.get('type') == 'static':
                         isSignal = 1
                     if dataElement.get('type') == 'static':

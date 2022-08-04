@@ -94,9 +94,7 @@ class QVizTreeNode(QTreeWidgetItem):
             return self.hasTimeAxis()
 
         if plotWidget.getStrategy() == "TIME":
-            if not self.hasTimeAxis():
-                raise ValueError("Node " + self.getName() + " has no time axis.")
-            return self.hasTimeAxis()
+            return False
         elif plotWidget.getStrategy() == "DEFAULT" or plotWidget.getStrategy() == "COORDINATE1":
             if self.is0DAndDynamic():
                 return True
@@ -365,6 +363,12 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setAvailableData(self, value): #value is True of False
         self.infoDict['availableData'] = value
+        
+    def isStructure(self):
+        return self.getDataType() == 'structure'
+        
+    def isArrayOfStructure(self):
+        return self.getDataType() == 'struct_array'
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \
@@ -399,7 +403,22 @@ class QVizTreeNode(QTreeWidgetItem):
     def is2DOrLarger(self):
         if not self.is0D() and not self.is1D() and self.isDynamicData():
             return True
-
+            
+    def hasClosedOutline(self, dtv):
+        if not self.is1D():
+           return False
+        if self.coordinates[0] == "1..N" or\
+            self.coordinates[0] == "1...N":
+            return False
+        tokens = str(self.getPath()).split("/")
+        if not (len(tokens) > 1 and tokens[-2] == 'outline'):
+            return False
+        closedOutlinePath = self.getPath().replace("/" + tokens[-1], "", 1);
+        closedOutlinePath = closedOutlinePath.replace("/" + tokens[-2], "", 1) + "/closed";
+        expression = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + closedOutlinePath
+        value = eval(QVizGlobalOperations.makePythonPath(expression))
+        return value
+                
     def updateIDSNode(self, containsData):
         if containsData:
             # Set tree item style when node contains data
@@ -417,7 +436,6 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleWhenContainingData(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-        self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
         if self.isDynamicData(): #set dynamic data to bold (0D and 1D nodes)
             self.setFontBold()
 
@@ -429,8 +447,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleForElementAOS(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-        self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
-
+      
     def setStyleForAOSNotContainingData(self):
         self.setForeground(0, GlobalColors.BLACK)
 
@@ -451,7 +468,7 @@ class QVizTreeNode(QTreeWidgetItem):
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
             e = eval('imas_entry.' + self.getDataName())
-            if e is None or e.all() is None:
+            if self.getDataType() != 'STR_1D' and (e is None or e.all() is None):
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             elif len(eval('imas_entry.' + self.getDataName())) == 0:  # empty (signals) arrays appear in black
@@ -501,11 +518,24 @@ class QVizTreeNode(QTreeWidgetItem):
                 self.setAvailableData(1)
                 self.setStyleWhenContainingData()
 
-            self.parent().setForeground(0, self.foreground(0))  # set the parent colour to the same colour
+        # elif self.isStructure():
+            # pass
+            
+        elif self.isArrayOfStructure():
+            self.setAvailableData(1)
+            self.setStyleWhenContainingData()
+            
         else:
-            #self.setForeground(0, GlobalColors.BLACK)
-            #self.parent().setForeground(0, self.foreground(0))
             pass
+            
+        if self.hasAvailableData() and self.isDynamicData(): #update parents
+            parent = self.parent()
+            while parent is not None and not(parent.isIDSRoot()): 
+                if not(parent.hasAvailableData()):
+                    parent.setAvailableData(True)
+                    parent.setStyleWhenContainingData()
+                    parent.updateStyle(imas_entry)
+                parent = parent.parent()
 
 
     def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, plotWidget=None):
@@ -633,3 +663,16 @@ class QVizTreeNode(QTreeWidgetItem):
             quantityName += '[' + self.getUnits() + ']'
 
         return quantityName, label, xlabel
+
+    def getStrategyForDefaultPlotting(self):
+        strategy = "DEFAULT"
+        if self.embedded_in_time_dependent_aos() and \
+                self.treeNode.is0DAndDynamic():
+            strategy = "TIME"
+        elif self.is1DAndDynamic() and not \
+                self.embedded_in_time_dependent_aos() and \
+                self.isCoordinateTimeDependent(coordinateNumber=1):
+            strategy = "TIME"
+        else:
+            strategy = "COORDINATE1"
+        return strategy

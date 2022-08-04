@@ -207,6 +207,8 @@ class QVizDataAccessCodeGenerator:
                     parentName = parentName.replace("\n", "")
                     code = "parent.set(" + "'name', '" + parentName + "')"
                     self.printCode(code, level)
+                    code = "parent.set(" + "'data_type', '" + data_type + "')"
+                    self.printCode(code, level)
 
                 lifecycle_status = ids_child_element.get('lifecycle_status')
                 if lifecycle_status is not None:
@@ -411,7 +413,7 @@ class QVizDataAccessCodeGenerator:
                     + ", str(" + str(level - 1) + "))"
                 self.printCode(code, level)
 
-            elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type':
+            elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type' or data_type == 'STR_1D':
 
                 self.generateParentsCode(level, child.text)
                 ids_child_element.text = "self.ids." + child.text + "." \
