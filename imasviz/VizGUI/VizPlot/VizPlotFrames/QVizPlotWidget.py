@@ -17,6 +17,8 @@ import logging
 from PyQt5.QtCore import Qt, QMetaObject, QRect
 from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame
+from functools import partial
+from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
 import PyQt5.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
@@ -51,7 +53,8 @@ class QVizPlotWidget(QWidget):
         # pg.setConfigOptions(useOpenGL=True)
 
         # QVizPlotWidget settings
-        self.setObjectName("QVizPlotWidget")
+        #self.setObjectName("QVizPlotWidget")
+        self.setObjectName(type(self).__name__)
         self.setWindowTitle(title)
         self.resize(size[0], size[1])
 
@@ -126,15 +129,6 @@ class QVizPlotWidget(QWidget):
         # Plot and plot settings
         # - Add plot
 
-        # if vizTreeNode.globalTime is None and self.addTimeSlider:
-        #     self.sliderGroup.slider.setEnabled(False)
-
-        # if not self.plotsHaveSameTimeBasis(vizTreeNode):
-        #    return
-
-        # if not self.plotsHaveSameCoordinate1(vizTreeNode):
-        #     return
-
         if vizTreeNode is not None and vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
                 x = np.append(x, [x[0]])
                 y = np.append(y, [y[0]])
@@ -165,7 +159,57 @@ class QVizPlotWidget(QWidget):
             self.vizTreeNodesList.append(vizTreeNode)
 
         return self
+ 
+    def addErrorBars(self, step, beam=0.5):
+        plotItem = self.pgPlotWidget.getPlotItem()
+        i = 0
+        for dataItem in plotItem.listDataItems():
+            self.addErrorBarsForDataItem(dataItem, self.vizTreeNodesList[i], step, beam)
+            i = i + 1
+        
+    def addErrorBarsForDataItem(self, dataItem, vizTreeNode, step=1, beam=0.5):
+        # creating a error bar item object
+        #data-data_error_lower, data+data_error_upper
+       
+        (x, y) = dataItem.getData()
+        shape_x = len(x)
+        shape_y = len(y)
+        
+        if step != 1:
+            x = x[0:shape_x-1:step]
+            y = y[0:shape_y-1:step]
+            
+        data_error_lower = vizTreeNode.get_data_error_lower(self.dataTreeView, dataItem)
+        data_error_upper = vizTreeNode.get_data_error_upper(self.dataTreeView, dataItem)
+        
+        if step != 1:
+            if data_error_lower is not None:
+               data_error_lower = data_error_lower[0:shape_y-1:step]
+            if data_error_upper is not None:
+               data_error_upper = data_error_upper[0:shape_y-1:step]
 
+        add_error_bars = False
+        top = None
+        bottom = None
+        
+        if data_error_lower is not None and data_error_upper is not None:
+            bottom = data_error_lower
+            top = data_error_upper
+            add_error_bars = True
+        elif data_error_lower is None and data_error_upper is not None:
+            bottom = data_error_upper
+            top = data_error_upper
+            add_error_bars = True
+        else:
+            add_error_bars = False
+
+        if add_error_bars:
+            self.error = pg.ErrorBarItem(beam=beam)
+            self.error.setData(x=x, y=y, top=top, bottom=bottom)
+            self.pgPlotWidget.addItem(self.error)
+        else:
+            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
+            
     def getPlotItem(self):
         """Return the PlotItem contained in QVizPlotWidget.
         Note: PlotItem contains the list of plots (see getPlotList).

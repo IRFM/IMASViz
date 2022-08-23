@@ -12,7 +12,9 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
+import logging
 from PyQt5.QtGui import QAction
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
 
@@ -92,6 +94,17 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
         # - Add to main menu
         self.menu.addAction(self.actionConfigurePlot)
+        
+        self.actionShowHideErrorBars = QAction("Show/Hide error bars", self.menu)
+        self.actionShowHideErrorBars.triggered.connect(self.showHideViewErrorBars)
+        # - Add to main menu
+        self.menu.addAction(self.actionShowHideErrorBars)
+        
+        self.actionShowHideErrorBarsWithSlicing = QAction("Show error bars (with slicing)", self.menu)
+        self.actionShowHideErrorBarsWithSlicing.triggered.connect(self.showHideViewErrorBarsWithSlicing)
+        # - Add to main menu
+        self.menu.addAction(self.actionShowHideErrorBarsWithSlicing)
+        
 
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
@@ -108,7 +121,39 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         """
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
-
+        
+    def removeErrorBars(self):
+        """Remove error bars for all plots (if error data are available).
+        """
+        deleted = False
+        for dataItem in self.addedItems:
+            if isinstance(dataItem, pg.ErrorBarItem):
+                deleted = True
+                self.qWidgetParent.pgPlotWidget.removeItem(dataItem)
+        return deleted
+           
+    def showHideViewErrorBars(self):
+        """Hide/show error bars for all plots (if error data are available).
+        """
+        deleted = self.removeErrorBars()
+        if not(deleted):
+           self.qWidgetParent.addErrorBars(1)
+           
+    def showHideViewErrorBarsWithSlicing(self):
+        """Show error bars for all plots with slicing (if error data are available).
+        """
+        self.removeErrorBars()
+        user_input = QInputDialog()
+        step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", QLineEdit.Normal, 10)
+        if not ok:
+            logging.error("Bad input from user.")
+            return
+        beam, ok = user_input.getDouble(None, "Enter a width of the beam of each bar", "Width:", QLineEdit.Normal, 0.1)
+        if not ok:
+            logging.error("Bad input from user.")
+            return
+        self.qWidgetParent.addErrorBars(step, beam)
+        
     def updateExportersList(self):
         """Update/Modify list of available exporters (in order to remove the
         problematic Matplotlib exporter and replace it with ours).

@@ -94,7 +94,7 @@ class QVizTreeNode(QTreeWidgetItem):
             return self.hasTimeAxis()
 
         if plotWidget.getStrategy() == "TIME":
-            return False
+            return self.hasTimeAxis()
         elif plotWidget.getStrategy() == "DEFAULT" or plotWidget.getStrategy() == "COORDINATE1":
             if self.is0DAndDynamic():
                 return True
@@ -676,3 +676,36 @@ class QVizTreeNode(QTreeWidgetItem):
         else:
             strategy = "COORDINATE1"
         return strategy
+        
+        
+    def get_data_error_lower(self, dtv, dataItem):
+        data_error_lower = None
+        try:
+            tokens = str(self.getPath()).split("/")
+            nodeName = tokens[-1]
+            data_error_lower_path = self.getPath().replace("/" + tokens[-1], "", 1);
+            data_error_lower_path = data_error_lower_path + "/" + nodeName + "_error_lower";
+            expression_error_lower_path = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + data_error_lower_path
+            data_error_lower = eval(QVizGlobalOperations.makePythonPath(expression_error_lower_path))
+            (x, y) = dataItem.getData()
+            if np.shape(data_error_lower) != np.shape(y):
+               return None
+        except:
+            return None
+        return data_error_lower
+
+    def get_data_error_upper(self, dtv, dataItem):
+        data_error_upper = None
+        try:
+            tokens = str(self.getPath()).split("/")
+            nodeName = tokens[-1]
+            data_error_upper_path = self.getPath().replace("/" + tokens[-1], "", 1);
+            data_error_upper_path = data_error_upper_path + "/" + nodeName + "_error_upper";
+            expression_error_upper_path = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + data_error_upper_path
+            data_error_upper = eval(QVizGlobalOperations.makePythonPath(expression_error_upper_path))
+            (x, y) = dataItem.getData()
+            if np.shape(data_error_upper) != np.shape(y):
+               return None
+        except:
+            return None
+        return data_error_upper
