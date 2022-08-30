@@ -37,6 +37,7 @@ class QVizPlotWidget(QWidget):
         super(QVizPlotWidget, self).__init__(parent)
 
         self.vizTreeNodesList = []
+        self.vizNodeToPlotDataItems = {} #map from data key (key = self.dataTreeView.dataSource.dataKey(treeNode)) to PlotDataItem
 
         self.addTimeSlider = addTimeSlider
         self.addCoordinateSlider = addCoordinateSlider
@@ -65,6 +66,8 @@ class QVizPlotWidget(QWidget):
         self.RGBlist = getRGBColorList()
 
         self.plotStrategy = None
+        
+        self.errorBarsStep = 0
 
     def getType(self):
         return PlotTypes.SIMPLE_PLOT
@@ -133,7 +136,7 @@ class QVizPlotWidget(QWidget):
                 x = np.append(x, [x[0]])
                 y = np.append(y, [y[0]])
 
-        self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
+        plotDataItem = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
         # Set only when adding the first plot. All additionally added plots
         # should correspond to the same xlabel, ylabel and grid and thus
@@ -155,17 +158,102 @@ class QVizPlotWidget(QWidget):
             self.pgPlotWidget.showGrid(x=True, y=True)
 
 
-        if vizTreeNode is not None:
+        if vizTreeNode not in self.vizTreeNodesList:
             self.vizTreeNodesList.append(vizTreeNode)
-
+        
+        plotDataItems = self.vizNodeToPlotDataItems.get(self.dataTreeView.dataSource.dataKey(vizTreeNode))
+        
+        if plotDataItems is None:
+            plotDataItems = []
+            plotDataItems.append(plotDataItem)
+            self.vizNodeToPlotDataItems[self.dataTreeView.dataSource.dataKey(vizTreeNode)] = plotDataItems
+        else:
+            plotDataItems.append(plotDataItem)
+            
         return self
+        
+    def addConfidenceBands(self):
+        plotItem = self.pgPlotWidget.getPlotItem()
+        #i = 0
+        for node in self.vizTreeNodesList:
+            plotDataItems = self.vizNodeToPlotDataItems.get(self.dataTreeView.dataSource.dataKey(node))
+            for dataItem in plotItem.listDataItems():
+                if isinstance(dataItem, pg.ErrorBarItem) or isinstance(dataItem, pg.FillBetweenItem):
+                    continue
+                if plotDataItems is not None and dataItem not in plotDataItems:
+                    continue
+                self.addConfidenceBandsForDataItem(dataItem, node)
+                #i = i + 1
+            
+    def addConfidenceBandsForDataItem(self, dataItem, vizTreeNode):
+        (x, y) = dataItem.getData()
+        shape_x = len(x)
+        shape_y = len(y)
+        data_error_lower = vizTreeNode.get_data_error_lower(self.dataTreeView, dataItem)
+        data_error_upper = vizTreeNode.get_data_error_upper(self.dataTreeView, dataItem)
+        add_confidence_bands = False
+        top = None
+        bottom = None
+        
+        if data_error_lower is not None and data_error_upper is not None:
+            bottom = data_error_lower
+            top = data_error_upper
+            add_confidence_bands = True
+        elif data_error_lower is None and data_error_upper is not None:
+            bottom = data_error_upper
+            top = data_error_upper
+            add_confidence_bands = True
+        else:
+            add_confidence_bands = False
+
+        if add_confidence_bands:
+            self.confidenceBandUpper = None
+            self.confidenceBandLower = None
+            self.confidenceBandUpper = pg.PlotDataItem(x, y + data_error_upper)
+            if bottom is not None:
+               self.confidenceBandLower = pg.PlotDataItem(x, y - data_error_lower)
+            else:
+               self.confidenceBandLower = pg.PlotDataItem(x, y - data_error_upper)
+            self.pgPlotWidget.addItem(self.confidenceBandUpper)
+            self.pgPlotWidget.addItem(self.confidenceBandLower)
+            self.fbitem = pg.FillBetweenItem(self.confidenceBandLower, self.confidenceBandUpper)
+            brush = pg.mkBrush('r')
+            brush.setStyle(Qt.DiagCrossPattern)
+            brush.setColor(Qt.red)
+            self.fbitem.setBrush(brush)
+            self.pgPlotWidget.addItem( self.fbitem)
+               
+        else:
+            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
+        
  
     def addErrorBars(self, step, beam=0.5):
+
+        self.errorBarsStep = step
         plotItem = self.pgPlotWidget.getPlotItem()
-        i = 0
-        for dataItem in plotItem.listDataItems():
-            self.addErrorBarsForDataItem(dataItem, self.vizTreeNodesList[i], step, beam)
-            i = i + 1
+        #i = 0
+        #print("len(self.vizTreeNodesList)=", len(self.vizTreeNodesList))
+        for node in self.vizTreeNodesList:
+            plotDataItems = self.vizNodeToPlotDataItems.get(self.dataTreeView.dataSource.dataKey(node))
+            for dataItem in plotItem.listDataItems():
+                if isinstance(dataItem, pg.ErrorBarItem) or isinstance(dataItem, pg.FillBetweenItem):
+                    continue
+                if plotDataItems is not None and dataItem not in plotDataItems:
+                    continue   
+                if beam == 0:
+                    (x, y) = dataItem.getData()
+                    x_range = np.amax(x) - np.amin(x)
+                    minBeam = float(x_range/1000)
+                    maxBeam = float(x_range/20)
+                    #beam = np.amax(0.1, np.amin(minBeam, maxBeam))
+                    beam = float(x_range/len(x))
+                    #print("beam=", beam)
+                    #print("minBeam=", minBeam)
+                    beam = np.maximum(minBeam, beam)
+                    beam = np.minimum(maxBeam, beam)
+                    
+                self.addErrorBarsForDataItem(dataItem, node, step, beam)
+
         
     def addErrorBarsForDataItem(self, dataItem, vizTreeNode, step=1, beam=0.5):
         # creating a error bar item object
@@ -565,6 +653,7 @@ class sliderGroup():
         if not self.sliderPress and not self.ignoreEvent:
             self.executePlot()
             self.parent.pgPlotWidget.getViewBox().updateErrorBars()
+            self.parent.pgPlotWidget.getViewBox().updateConfidenceBands()
 
     def onSliderRelease(self):
         """Action on slider release.
@@ -575,6 +664,7 @@ class sliderGroup():
         # Plot
         self.executePlot()
         self.parent.pgPlotWidget.getViewBox().updateErrorBars()
+        self.parent.pgPlotWidget.getViewBox().updateConfidenceBands()
 
     def onSliderPress(self):
         """Action on slider press.

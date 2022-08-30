@@ -55,6 +55,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         
         self.errorBars = 0
         self.errorBarsWithSlicing = 0
+        self.confidenceBands = 0
 
     def getMenu(self, event=None):
         """Modify the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
@@ -108,6 +109,11 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionShowHideErrorBarsWithSlicing)
         
+        self.actionShowHideConfidenceBands = QAction("Show/Hide confidence bands", self.menu)
+        self.actionShowHideConfidenceBands.triggered.connect(self.showHideViewConfidenceBands)
+        # - Add to main menu
+        self.menu.addAction(self.actionShowHideConfidenceBands)
+        
 
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
@@ -125,6 +131,33 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
         
+    def showHideViewConfidenceBands(self):
+        """Hide/show error bars for all plots (if error data are available).
+        """
+        deleted = self.removeConfidenceBands()
+        if not(deleted):
+           self.qWidgetParent.addConfidenceBands()
+           self.confidenceBands = 1
+           
+    def removeConfidenceBands(self):
+        """Remove error bars for all plots (if error data are available).
+        """
+        deleted = False
+        for dataItem in self.addedItems:
+            if isinstance(dataItem, pg.FillBetweenItem):
+                deleted = True
+                self.qWidgetParent.pgPlotWidget.removeItem(dataItem.curves[0])
+                self.qWidgetParent.pgPlotWidget.removeItem(dataItem.curves[1])
+                self.qWidgetParent.pgPlotWidget.removeItem(dataItem)
+                self.confidenceBands = 0
+        return deleted
+        
+    def updateConfidenceBands(self):
+        if self.confidenceBands == 0:
+            return
+        self.removeConfidenceBands()
+        self.showHideViewConfidenceBands()
+
     def updateErrorBars(self):
         if self.errorBars == 0 and self.errorBarsWithSlicing == 0:
             return
@@ -133,7 +166,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             self.showHideViewErrorBars()
         elif self.errorBarsWithSlicing == 1:
             self.removeErrorBars()
-            self.showHideViewErrorBarsWithSlicing()
+            self.showHideViewErrorBarsWithSlicing(useLatestSettings=1)
         
     def removeErrorBars(self):
         """Remove error bars for all plots (if error data are available).
@@ -143,8 +176,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             if isinstance(dataItem, pg.ErrorBarItem):
                 deleted = True
                 self.qWidgetParent.pgPlotWidget.removeItem(dataItem)
-        self.errorBars = 0
-        self.errorBarsWithSlicing = 0
+                self.errorBars = 0
+                self.errorBarsWithSlicing = 0
         return deleted
            
     def showHideViewErrorBars(self):
@@ -152,23 +185,23 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         """
         deleted = self.removeErrorBars()
         if not(deleted):
-           self.qWidgetParent.addErrorBars(1)
+           self.qWidgetParent.addErrorBars(1, beam=0)
            self.errorBars = 1
            
-    def showHideViewErrorBarsWithSlicing(self):
+    def showHideViewErrorBarsWithSlicing(self, useLatestSettings = 0):
         """Show error bars for all plots with slicing (if error data are available).
         """
         self.removeErrorBars()
-        user_input = QInputDialog()
-        step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", QLineEdit.Normal, 10)
-        if not ok:
-            logging.error("Bad input from user.")
-            return
-        beam, ok = user_input.getDouble(None, "Enter a width of the beam of each bar", "Width:", QLineEdit.Normal, 0.1)
-        if not ok:
-            logging.error("Bad input from user.")
-            return
-        self.qWidgetParent.addErrorBars(step, beam)
+        step = self.qWidgetParent.errorBarsStep
+        
+        if step == 0 or useLatestSettings == 0:
+            user_input = QInputDialog()
+            step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", QLineEdit.Normal, 10)
+            if not ok:
+                logging.error("Bad input from user.")
+                return
+
+        self.qWidgetParent.addErrorBars(step, beam=0)
         self.errorBarsWithSlicing = 1
         
     def updateExportersList(self):
