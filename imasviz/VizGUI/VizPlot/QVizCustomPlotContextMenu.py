@@ -52,6 +52,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # Modify list of available exporters (in order to remove the
         # problematic Matplotlib exporter and replace it with ours)
         self.updateExportersList()
+        
+        self.errorBars = 0
+        self.errorBarsWithSlicing = 0
 
     def getMenu(self, event=None):
         """Modify the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
@@ -122,6 +125,16 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
         
+    def updateErrorBars(self):
+        if self.errorBars == 0 and self.errorBarsWithSlicing == 0:
+            return
+        if self.errorBars == 1:
+            self.removeErrorBars()
+            self.showHideViewErrorBars()
+        elif self.errorBarsWithSlicing == 1:
+            self.removeErrorBars()
+            self.showHideViewErrorBarsWithSlicing()
+        
     def removeErrorBars(self):
         """Remove error bars for all plots (if error data are available).
         """
@@ -130,6 +143,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             if isinstance(dataItem, pg.ErrorBarItem):
                 deleted = True
                 self.qWidgetParent.pgPlotWidget.removeItem(dataItem)
+        self.errorBars = 0
+        self.errorBarsWithSlicing = 0
         return deleted
            
     def showHideViewErrorBars(self):
@@ -138,6 +153,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         deleted = self.removeErrorBars()
         if not(deleted):
            self.qWidgetParent.addErrorBars(1)
+           self.errorBars = 1
            
     def showHideViewErrorBarsWithSlicing(self):
         """Show error bars for all plots with slicing (if error data are available).
@@ -153,6 +169,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             logging.error("Bad input from user.")
             return
         self.qWidgetParent.addErrorBars(step, beam)
+        self.errorBarsWithSlicing = 1
         
     def updateExportersList(self):
         """Update/Modify list of available exporters (in order to remove the

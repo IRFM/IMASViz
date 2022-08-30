@@ -564,6 +564,7 @@ class sliderGroup():
         # keyboard arrow keys
         if not self.sliderPress and not self.ignoreEvent:
             self.executePlot()
+            self.parent.pgPlotWidget.getViewBox().updateErrorBars()
 
     def onSliderRelease(self):
         """Action on slider release.
@@ -573,6 +574,7 @@ class sliderGroup():
         self.sliderPress = False
         # Plot
         self.executePlot()
+        self.parent.pgPlotWidget.getViewBox().updateErrorBars()
 
     def onSliderPress(self):
         """Action on slider press.
