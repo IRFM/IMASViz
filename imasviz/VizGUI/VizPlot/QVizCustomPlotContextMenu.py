@@ -196,7 +196,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         
         if step == 0 or useLatestSettings == 0:
             user_input = QInputDialog()
-            step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", QLineEdit.Normal, 10)
+            step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", value=10, min=1)
             if not ok:
                 logging.error("Bad input from user.")
                 return
