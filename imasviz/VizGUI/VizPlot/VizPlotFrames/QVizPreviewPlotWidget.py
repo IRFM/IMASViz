@@ -28,7 +28,6 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
     """
     def __init__(self, dataTreeView, parent=None, size=(500, 400),
                  title='QVizPreviewPlotWidget'):
-        #super(QVizPreviewPlotWidget, self).__init__(parent=parent)
         super(QVizPreviewPlotWidget, self).__init__(dataTreeView=dataTreeView, parent=parent, size=size, title=title)
 
         # Set default background color: white
@@ -38,18 +37,6 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
 
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
-
-        # QVizPreviewPlotWidget settings
-        #self.setObjectName("QVizPreviewPlotWidget")
-        #self.setWindowTitle(title)
-        # self.resize(size[0], size[1])
-
-        # Set up the QWidget contents (pyqtgraph PlotWidget etc.)
-        #self.setContents()
-
-        #self.vizTreeNodesList = []
-        #self.dataTreeView = dataTreeView
-
         self.addTimeSlider = False
         self.addCoordinateSlider = False
 
@@ -85,14 +72,26 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
             pen        (QPen) : Plot line style.
         """
 
-        if vizTreeNode is not None and vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+        if vizTreeNode is None:
+            return
+            
+        self.pgPlotWidget.getViewBox().clearPlotDataItemsMap(node=None)
+            
+        if vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
                 x = np.append(x, [x[0]])
                 y = np.append(y, [y[0]])
         # Access the UI elements through the `ui` attribute
         # Adding plot
         #Setting range manually (see IMAS-3658)
         self.pgPlotWidget.getPlotItem().setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
-        self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)
+
+        plotDataItem = self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)
+
+        self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=1)
+        self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
+        
+        #self.plot(vizTreeNode=vizTreeNode, x=x, y=y, title='', pen=pen, preview=1, label=label, xlabel=xlabel, ylabel=ylabel)
+
         # Set x-axis label
         self.pgPlotWidget.setLabel('left', ylabel, units='')
         # Set y-axis label
@@ -100,10 +99,9 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
         # Enable grid
         self.pgPlotWidget.showGrid(x=True, y=True)
         
-        if vizTreeNode is not None and len(self.vizTreeNodesList) == 1:
-            self.vizTreeNodesList[0] = vizTreeNode
-        elif vizTreeNode is not None and len(self.vizTreeNodesList) == 0:
-            self.vizTreeNodesList.append(vizTreeNode)
+        self.pgPlotWidget.getViewBox().updateErrorBars()
+        self.pgPlotWidget.getViewBox().updateConfidenceBands()
+        
         return self
 
     def clear(self, treeNode, noPreviewAvailable=False):

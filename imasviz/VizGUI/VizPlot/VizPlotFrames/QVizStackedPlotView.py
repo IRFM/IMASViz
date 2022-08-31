@@ -160,9 +160,6 @@ class StackedPlotWindow(pg.GraphicsWindow):
         # Get figure key / label for the SPV window
         self.figureKey = parent.figureKey
 
-        # List of tree nodes contained in this plot
-        self.vizTreeNodesList = []
-
         # Define if time or coordinate slider is required (required by
         # QVizTreeNode (!))
         self.addTimeSlider = False
@@ -254,9 +251,6 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
 
-                # Append the node to the list of tree nodes
-                self.vizTreeNodesList.append(signalNode)
-
                 key = dtv.dataSource.dataKey(signalNode)
                 tup = (dtv.dataSource.shotNumber, signalNode)
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
@@ -294,7 +288,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
                     # Note: label='' is used because it is redefined with
                     # setText(text='', size='8pt')
                     self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                              ylabel=ylabel, title=title)
+                              ylabel=ylabel, title=title, node=signalNode)
                     # Get the current (last) plot item, created by self.plot()
                     currentPlotItem = self.getCurrentPlotItem()  # pg.PlotItem
                     # Add new attribute to current item, holding all signal data
@@ -327,7 +321,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
                 n += 1
 
     def plot(self, n: int, x: list, y: list, label: str,
-             xlabel: str, ylabel: str, title: str):
+             xlabel: str, ylabel: str, title: str, node=None):
         """Add new plot to StackedPlotView pg.GraphicsWindow.
 
         Arguments:
@@ -374,7 +368,7 @@ class StackedPlotWindow(pg.GraphicsWindow):
         #Setting range manually (see IMAS-3658)
         plotItem.setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
         # plotItem.getViewBox().enableAutoRange(axis=ViewBox.YAxis, enable=False)
-        plotItem.plot(x=x,
+        plotDataItem = plotItem.plot(x=x,
                       y=y,
                       name=label,
                       xlabel=xlabel,
@@ -438,6 +432,9 @@ class StackedPlotWindow(pg.GraphicsWindow):
 
         # Add reference to legend directly to viewBox
         viewBox.plotItem = plotItem
+        
+        viewBox.addVizTreeNode(node, preview=0)
+        viewBox.addVizTreeNodeDataItem(node, plotDataItem)
 
         # Go to next row
         self.nextRow()

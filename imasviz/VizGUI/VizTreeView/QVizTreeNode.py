@@ -678,8 +678,9 @@ class QVizTreeNode(QTreeWidgetItem):
         return strategy
         
         
-    def get_data_error_lower(self, dtv, dataItem):
+    def get_data_error_lower(self, dataItem):
         data_error_lower = None
+        dtv = self.getDataTreeView()
         try:
             tokens = str(self.getPath()).split("/")
             nodeName = tokens[-1]
@@ -694,8 +695,9 @@ class QVizTreeNode(QTreeWidgetItem):
             return None
         return data_error_lower
 
-    def get_data_error_upper(self, dtv, dataItem):
+    def get_data_error_upper(self, dataItem):
         data_error_upper = None
+        dtv = self.getDataTreeView()
         try:
             tokens = str(self.getPath()).split("/")
             nodeName = tokens[-1]

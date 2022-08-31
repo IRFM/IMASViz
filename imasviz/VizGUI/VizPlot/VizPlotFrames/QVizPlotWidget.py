@@ -36,9 +36,6 @@ class QVizPlotWidget(QWidget):
                  addCoordinateSlider=False):
         super(QVizPlotWidget, self).__init__(parent)
 
-        self.vizTreeNodesList = []
-        self.vizNodeToPlotDataItems = {} #map from data key (key = self.dataTreeView.dataSource.dataKey(treeNode)) to PlotDataItem
-
         self.addTimeSlider = addTimeSlider
         self.addCoordinateSlider = addCoordinateSlider
         self.dataTreeView = dataTreeView
@@ -66,14 +63,12 @@ class QVizPlotWidget(QWidget):
         self.RGBlist = getRGBColorList()
 
         self.plotStrategy = None
-        
-        self.errorBarsStep = 0
 
     def getType(self):
         return PlotTypes.SIMPLE_PLOT
 
     def isPlotAlongTimeAxis(self):
-        if len(self.vizTreeNodesList) == 0:
+        if len(self.getViewBox().vizTreeNodesList) == 0:
             return None
         elif self.addTimeSlider:
             return False
@@ -90,7 +85,7 @@ class QVizPlotWidget(QWidget):
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='',
              xlabel='', ylabel='',
-             pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1):
+             pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1, preview=0):
         """Add plot.
 
         Arguments:
@@ -157,147 +152,11 @@ class QVizPlotWidget(QWidget):
             # - Enable grid
             self.pgPlotWidget.showGrid(x=True, y=True)
 
+        self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=preview)
+        self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
 
-        if vizTreeNode not in self.vizTreeNodesList:
-            self.vizTreeNodesList.append(vizTreeNode)
-        
-        plotDataItems = self.vizNodeToPlotDataItems.get(self.dataTreeView.dataSource.dataKey(vizTreeNode))
-        
-        if plotDataItems is None:
-            plotDataItems = []
-            plotDataItems.append(plotDataItem)
-            self.vizNodeToPlotDataItems[self.dataTreeView.dataSource.dataKey(vizTreeNode)] = plotDataItems
-        else:
-            plotDataItems.append(plotDataItem)
-            
         return self
-        
-    def addConfidenceBands(self):
-        plotItem = self.pgPlotWidget.getPlotItem()
-        #i = 0
-        for node in self.vizTreeNodesList:
-            plotDataItems = self.vizNodeToPlotDataItems.get(self.dataTreeView.dataSource.dataKey(node))
-            for dataItem in plotItem.listDataItems():
-                if isinstance(dataItem, pg.ErrorBarItem) or isinstance(dataItem, pg.FillBetweenItem):
-                    continue
-                if plotDataItems is not None and dataItem not in plotDataItems:
-                    continue
-                self.addConfidenceBandsForDataItem(dataItem, node)
-                #i = i + 1
-            
-    def addConfidenceBandsForDataItem(self, dataItem, vizTreeNode):
-        (x, y) = dataItem.getData()
-        shape_x = len(x)
-        shape_y = len(y)
-        data_error_lower = vizTreeNode.get_data_error_lower(self.dataTreeView, dataItem)
-        data_error_upper = vizTreeNode.get_data_error_upper(self.dataTreeView, dataItem)
-        add_confidence_bands = False
-        top = None
-        bottom = None
-        
-        if data_error_lower is not None and data_error_upper is not None:
-            bottom = data_error_lower
-            top = data_error_upper
-            add_confidence_bands = True
-        elif data_error_lower is None and data_error_upper is not None:
-            bottom = data_error_upper
-            top = data_error_upper
-            add_confidence_bands = True
-        else:
-            add_confidence_bands = False
-
-        if add_confidence_bands:
-            self.confidenceBandUpper = None
-            self.confidenceBandLower = None
-            self.confidenceBandUpper = pg.PlotDataItem(x, y + data_error_upper)
-            if bottom is not None:
-               self.confidenceBandLower = pg.PlotDataItem(x, y - data_error_lower)
-            else:
-               self.confidenceBandLower = pg.PlotDataItem(x, y - data_error_upper)
-            self.pgPlotWidget.addItem(self.confidenceBandUpper)
-            self.pgPlotWidget.addItem(self.confidenceBandLower)
-            self.fbitem = pg.FillBetweenItem(self.confidenceBandLower, self.confidenceBandUpper)
-            brush = pg.mkBrush('r')
-            brush.setStyle(Qt.DiagCrossPattern)
-            brush.setColor(Qt.red)
-            self.fbitem.setBrush(brush)
-            self.pgPlotWidget.addItem( self.fbitem)
-               
-        else:
-            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
-        
- 
-    def addErrorBars(self, step, beam=0.5):
-
-        self.errorBarsStep = step
-        plotItem = self.pgPlotWidget.getPlotItem()
-        #i = 0
-        #print("len(self.vizTreeNodesList)=", len(self.vizTreeNodesList))
-        for node in self.vizTreeNodesList:
-            plotDataItems = self.vizNodeToPlotDataItems.get(self.dataTreeView.dataSource.dataKey(node))
-            for dataItem in plotItem.listDataItems():
-                if isinstance(dataItem, pg.ErrorBarItem) or isinstance(dataItem, pg.FillBetweenItem):
-                    continue
-                if plotDataItems is not None and dataItem not in plotDataItems:
-                    continue   
-                if beam == 0:
-                    (x, y) = dataItem.getData()
-                    x_range = np.amax(x) - np.amin(x)
-                    minBeam = float(x_range/1000)
-                    maxBeam = float(x_range/20)
-                    #beam = np.amax(0.1, np.amin(minBeam, maxBeam))
-                    beam = float(x_range/len(x))
-                    #print("beam=", beam)
-                    #print("minBeam=", minBeam)
-                    beam = np.maximum(minBeam, beam)
-                    beam = np.minimum(maxBeam, beam)
-                    
-                self.addErrorBarsForDataItem(dataItem, node, step, beam)
-
-        
-    def addErrorBarsForDataItem(self, dataItem, vizTreeNode, step=1, beam=0.5):
-        # creating a error bar item object
-        #data-data_error_lower, data+data_error_upper
-       
-        (x, y) = dataItem.getData()
-        shape_x = len(x)
-        shape_y = len(y)
-        
-        if step != 1:
-            x = x[0:shape_x-1:step]
-            y = y[0:shape_y-1:step]
-            
-        data_error_lower = vizTreeNode.get_data_error_lower(self.dataTreeView, dataItem)
-        data_error_upper = vizTreeNode.get_data_error_upper(self.dataTreeView, dataItem)
-        
-        if step != 1:
-            if data_error_lower is not None:
-               data_error_lower = data_error_lower[0:shape_y-1:step]
-            if data_error_upper is not None:
-               data_error_upper = data_error_upper[0:shape_y-1:step]
-
-        add_error_bars = False
-        top = None
-        bottom = None
-        
-        if data_error_lower is not None and data_error_upper is not None:
-            bottom = data_error_lower
-            top = data_error_upper
-            add_error_bars = True
-        elif data_error_lower is None and data_error_upper is not None:
-            bottom = data_error_upper
-            top = data_error_upper
-            add_error_bars = True
-        else:
-            add_error_bars = False
-
-        if add_error_bars:
-            self.error = pg.ErrorBarItem(beam=beam)
-            self.error.setData(x=x, y=y, top=top, bottom=bottom)
-            self.pgPlotWidget.addItem(self.error)
-        else:
-            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
-            
+           
     def getPlotItem(self):
         """Return the PlotItem contained in QVizPlotWidget.
         Note: PlotItem contains the list of plots (see getPlotList).
@@ -323,15 +182,15 @@ class QVizPlotWidget(QWidget):
 
     def getGlobalTimeVectors(self):
         timeVectors = []
-        for node in self.vizTreeNodesList:
+        for node in self.getViewBox().vizTreeNodesList:
             timeVectors.append(node.globalTime)
         return timeVectors
 
     def getCoordinate1Values(self):
         coordinate1Vectors = []
-        for node in self.vizTreeNodesList:
+        for node in self.getViewBox().vizTreeNodesList:
             if node.is1DAndDynamic():
-                coordinate1Vectors.append(node.coordinateValues(coordinateNumber=1, dataTreeView=self.dataTreeView))
+                coordinate1Vectors.append(node.coordinateValues(coordinateNumber=1, dataTreeView=node.getDataTreeView()))
         return coordinate1Vectors
 
     def plotsHaveSameCoordinate1(self, vizTreeNode):
@@ -532,8 +391,8 @@ class sliderGroup():
                 self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
         else:
             node = self.active_treeNode
-            if len(self.parent.vizTreeNodesList) > 0:
-                node = self.parent.vizTreeNodesList[0]
+            if len(self.parent.pgPlotWidget.getViewBox().vizTreeNodesList) > 0:
+                node = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList[0]
             if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
                 self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
                 if node.getCoordinate(coordinateNumber=1) == "1..N" or \
@@ -679,7 +538,7 @@ class sliderGroup():
         currentFigureKey = self.parent.windowTitle()  # Get title of the current QVizPlotWidget
         i = 0
         api = self.dataTreeView.imas_viz_api
-        for node in self.parent.vizTreeNodesList:
+        for node in self.parent.pgPlotWidget.getViewBox().vizTreeNodesList:
             self.active_treeNode = node
             if self.isTimeSlider:
 

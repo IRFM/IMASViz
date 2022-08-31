@@ -45,9 +45,6 @@ class QVizTablePlotView(pg.GraphicsWindow):
         self.imas_viz_api = parent.getIMASVizAPI()
         self.figureKey = parent.getFigureKey()
 
-        # List of tree nodes contained in this plot
-        self.vizTreeNodesList = []
-
         # Define if time or coordinate slider is required (required by
         # QVizTreeNode (!))
         self.addTimeSlider = False
@@ -131,9 +128,6 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 # Get node data
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
 
-                # Append the node to the list of tree nodes
-                self.vizTreeNodesList.append(signalNode)
-
                 key = dtv.dataSource.dataKey(signalNode)
                 tup = (dtv.dataSource.shotNumber, signalNode)
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
@@ -174,7 +168,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                         logging.error(mess)
                         continue
                     self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                              ylabel=ylabel)
+                              ylabel=ylabel, node=signalNode)
                     # Get the current (last) plot item, created by self.plot()
                     currentPlotItem = self.getCurrentPlotItem()  # pg.PlotItem
                     #Setting range manually (see IMAS-3658)
@@ -205,7 +199,7 @@ class QVizTablePlotView(pg.GraphicsWindow):
                 # Next plot number
                 n += 1
 
-    def plot(self, n, x, y, label, xlabel, ylabel):
+    def plot(self, n, x, y, label, xlabel, ylabel, node=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
 
         Arguments:
@@ -257,6 +251,9 @@ class QVizTablePlotView(pg.GraphicsWindow):
 
         if (n + 1) % self.centralWidget.cols == 0:
             self.nextRow()
+            
+        viewBox.addVizTreeNode(node, preview=0)
+        viewBox.addVizTreeNodeDataItem(node, plotItem.dataItems[0])
 
     @staticmethod
     def setPen():
