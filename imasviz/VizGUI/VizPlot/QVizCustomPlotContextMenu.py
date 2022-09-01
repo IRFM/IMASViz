@@ -12,6 +12,7 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
+from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 import logging
 from PyQt5.QtGui import QAction
 from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
@@ -41,7 +42,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # Set original plot context menu
         # Note: self.menu must not be None (this way works fine for
         #       plotWidgets, but not for GraphicsWindow (TablePlotView))
-        self.menu = pg.ViewBoxMenu.ViewBoxMenu(self)
+        self.menu = ViewBoxMenu(self)
 
         # Default id
         self.id = 0
