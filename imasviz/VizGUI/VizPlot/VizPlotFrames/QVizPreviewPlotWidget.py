@@ -98,6 +98,8 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
         self.pgPlotWidget.setLabel('bottom', xlabel, units='')
         # Enable grid
         self.pgPlotWidget.showGrid(x=True, y=True)
+
+        self.pgPlotWidget.autoRange()
         
         self.pgPlotWidget.getViewBox().updateErrorBars()
         self.pgPlotWidget.getViewBox().updateConfidenceBands()
