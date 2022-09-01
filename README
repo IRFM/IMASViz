@@ -58,7 +58,7 @@ commands:
     setenv UDA_DISABLED 1 #disable UDA
 
 IMASViz requires generated Python files parsers built from the IMAS Data Dictionary.
-(these files are generated to folder $VIZ_HOME/imasviz/VizDataAccess/VizGeneratedCode/).
+(these files are generated to folder $HOME/.imasviz/VizGeneratedCode/).
 This is done by executing make command from the $VIZ_HOME directory:
 
         # Main command

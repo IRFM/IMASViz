@@ -55,8 +55,7 @@ class QVizGeneratedClassFactory:
                 print("Generating full parsers for IMAS "
                       f"{imas_dd_version}")
                 dag = QVizDataAccessCodeGenerator. \
-                    QVizDataAccessCodeGenerator(imas_dd_version,
-                                                GGD_ignore=1)
+                    QVizDataAccessCodeGenerator(imas_dd_version)
                 print("End of code generation")
             # full_module_name = className
             moduleName = className
@@ -91,8 +90,7 @@ class QVizGeneratedClassFactory:
                 print("Generating full parsers for IMAS "
                       f"{imas_dd_version}")
                 dag = QVizDataAccessCodeGenerator. \
-                    QVizDataAccessCodeGenerator(imas_dd_version,
-                                                GGD_ignore=1)
+                    QVizDataAccessCodeGenerator(imas_dd_version)
                 print("End of code generation")
             # full_module_name = className
             moduleName = className
