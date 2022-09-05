@@ -60,7 +60,7 @@ class QVizHandleRightClick:
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if node.isIDSRoot() and node.hasAvailableData():
-                subMenu = QMenu('Get (display one time slice only if any) ' + node.getIDSName() +
+                subMenu = QMenu('Get (display first time slice only if any) ' + node.getIDSName() +
                                 ' data for occurrence')
                 self.popupmenu.addMenu(subMenu)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
@@ -74,6 +74,11 @@ class QVizHandleRightClick:
                                 ' data for occurrence')
                 self.popupmenu.addMenu(subMenu2)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu2, loadingStrategy="One over 10 time slices")
+                
+                subMenu3 = QMenu('Get (display specific time slice only if any) ' + node.getIDSName() +
+                                ' data for occurrence')
+                self.popupmenu.addMenu(subMenu3)
+                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu3, loadingStrategy="Specific time slice only")
                 
                 self.sub_menu = QMenu('Plugins')
                 self.popupmenu.addMenu(self.sub_menu)

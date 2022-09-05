@@ -76,7 +76,7 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('import xml.etree.ElementTree as ET', -1)
                 self.printCode('import os, logging', -1)
                 self.printCode('from PyQt5.QtCore import QThread', -1)
-                self.printCode('from PyQt5.QtWidgets import QApplication', -1)
+                self.printCode('from PyQt5.QtWidgets import QApplication, QInputDialog', -1)
                 self.printCode('import imas', -1)
                 self.printCode('import time', -1)
                 self.printCode('from imasviz.VizGUI.VizTreeView.QVizResultEvent import QVizResultEvent', -1)
@@ -254,6 +254,8 @@ class QVizDataAccessCodeGenerator:
                 step = m + '_step'
                 parameter = step + ' = 1' + '\n'
                 self.printCode(parameter, level)
+                
+                self.printCode("minLimit = 0", level)
 
                 dim = m
 
@@ -262,13 +264,20 @@ class QVizDataAccessCodeGenerator:
                     time_slices = "1"
                     self.printCode("if " + m + " > 0:", level)
                     self.printCode("if self.loadingStrategy == 1:", level + 1)
-                    parameter = maxLimit + ' = 1 #only one time slice is kept for the tree' + '\n'
+                    parameter = maxLimit + ' = 1 #only first time slice is kept for the tree' + '\n'
                     self.printCode(parameter, level + 2)
                     self.printCode("elif self.loadingStrategy == 2:", level + 1)
                     parameter = step + ' = 10 #only one time slice over 10 is displayed in the view' + '\n'
                     self.printCode(parameter, level + 2)
+                    self.printCode("elif self.loadingStrategy == 4:", level + 1)
+                    self.printCode("user_input = QInputDialog()", level + 2)
+                    self.printCode("minLimit, ok = user_input.getInt(None, 'Enter time slice index value to be displayed', 'Time slice index:', value=0, min=0, max=" + maxLimit + ")", level + 2)
+                    self.printCode("if not ok:", level + 2)
+                    self.printCode("logging.error('Bad input from user.')", level + 3)
+                    self.printCode("return", level + 3)
+                    self.printCode(maxLimit + " = minLimit + 1" , level + 2)
 
-                self.printCode('for ' + s + ' in range(0,' + maxLimit + ',' + step + '):' + '\n', level)
+                self.printCode('for ' + s + ' in range(minLimit,' + maxLimit + ',' + step + '):' + '\n', level)
                 self.loop_content_for_struct_array(ids_child_element, s, previousLevel, level, dim, time_slices, data_type, parents, parent_AOS, index, idsName)
 
             elif data_type == 'STR_0D' or data_type == 'INT_0D' or data_type == 'FLT_0D':

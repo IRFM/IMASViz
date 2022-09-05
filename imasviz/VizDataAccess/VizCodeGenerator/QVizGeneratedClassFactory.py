@@ -22,12 +22,14 @@ class QVizGeneratedClassFactory:
         self.asynch = asynch
         
     def convertLoadingStrategyToInt(self, loadingStrategy):
-       if loadingStrategy is None or loadingStrategy == "One time slice only":
+       if loadingStrategy is None or loadingStrategy == "First time slice only":
            return 1
        elif loadingStrategy == "One over 10 time slices":
            return 2
        elif loadingStrategy == "All time slices":
            return 3
+       elif loadingStrategy == "Specific time slice only":
+           return 4
        else:
            return 1 #default strategy
            

@@ -37,7 +37,7 @@ class QVizLoadDataHandling(QObject):
         """
         super(QVizLoadDataHandling, self).__init__()
 
-    def updateMenu(self, rootNode, dataTreeView, subMenu, loadingStrategy="One time slice only"):
+    def updateMenu(self, rootNode, dataTreeView, subMenu, loadingStrategy="First time slice only"):
         """Show the pop up menu for loading IDS.
 
         Arguments:
@@ -61,7 +61,7 @@ class QVizLoadDataHandling(QObject):
                                                               dataTreeView,
                                                               rootNode.getIDSName(), i, loadingStrategy, True))
 
-    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, loadingStrategy="One time slice only",
+    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, loadingStrategy="First time slice only",
                          threadingEvent=None):
         """Load data of selected IDS and its occurrence.
 
