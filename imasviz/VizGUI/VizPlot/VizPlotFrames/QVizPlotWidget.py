@@ -15,7 +15,7 @@ import pyqtgraph as pg
 import numpy as np
 import logging
 from PyQt5.QtCore import Qt, QMetaObject, QRect
-from PyQt5.QtGui import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
+from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame
 from functools import partial
 from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle

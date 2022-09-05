@@ -13,7 +13,7 @@
 
 import pyqtgraph as pg
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QAction, QMenu
+from PyQt5.QtWidgets import QAction, QMenu
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu import QVizCustomPlotContextMenu
 from imasviz.VizGUI.VizPlot.QVizImageSlicesPlotConfigUI \
     import QVizImageSlicesPlotConfigUI

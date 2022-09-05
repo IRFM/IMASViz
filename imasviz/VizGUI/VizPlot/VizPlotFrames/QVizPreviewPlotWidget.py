@@ -13,7 +13,7 @@
 
 import pyqtgraph as pg
 import numpy as np
-from PyQt5.QtGui import (QWidget, QGridLayout, QCheckBox, QMenuBar, QAction,
+from PyQt5.QtWidgets import (QWidget, QGridLayout, QCheckBox, QMenuBar, QAction,
                          QLabel)
 from PyQt5.QtCore import Qt, QMetaObject
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
