@@ -488,7 +488,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     # def setPlotConfigAttribute
 
 
-class QVizStackedPlotViewScrollArea(QtGui.QScrollArea):
+class QVizStackedPlotViewScrollArea(QtWidgets.QScrollArea):
     """Custom QtGui.QScrollArea.
     """
 

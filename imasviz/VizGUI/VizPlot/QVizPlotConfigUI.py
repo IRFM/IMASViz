@@ -13,7 +13,7 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtGui import (QTabWidget, QWidget, QPushButton, QGridLayout,
+from PyQt5.QtWidgets import (QTabWidget, QWidget, QPushButton, QGridLayout,
                          QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea,
                          QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
                          QSpinBox, QSizePolicy, QSpacerItem, QApplication,
