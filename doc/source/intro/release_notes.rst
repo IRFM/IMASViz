@@ -13,6 +13,29 @@ Release notes
 =============
 
 -------------
+Version 2.4.8
+-------------
+
+Released 09.05.2022
+
+- IMAS-4303: apply auto range automatically for the preview plot window
+- IMAS-2696: option for plotting incertainty intervals
+- IMAS-3845: fix
+- IMAS-4142: printing requirements of the equilibrium plugins in the log window
+- IMAS-3824: closing 1D outline plots when closed=1	IMAS-3824: closing 1D outline plots when closed=1	
+- IMAS-4186: support of STR_1D data type	
+- IMAS-4264: update shots browser for hdf5 support
+- IMAS-4014: adding 'public' user in the browser
+- Updating Makefile: removing useless code generation at install	
+- 'ignore_ggd' user preference bug fix
+- Import fixes such as QtGui->QtWidgets to work with PyQtGraph == 0.11.1 or PyQtGraph == 0.12.4 and matplotlib == 3.5.1 or matplotlib == 3.3.3
+
+IMPORTANT NOTE:
+
+if you are using Viz before 2.4.8, you need to clean Viz cache before to start the tool in order to see the expected change by IMAS-4186 fix:
+rm -rf ~/.imasviz/VizGeneratedCode/*.py
+
+-------------
 Version 2.4.7
 -------------
 
