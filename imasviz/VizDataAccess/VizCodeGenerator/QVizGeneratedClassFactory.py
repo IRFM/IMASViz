@@ -13,13 +13,24 @@ sys.path.append(os.environ['HOME'] + "/.imasviz/VizGeneratedCode")
 
 class QVizGeneratedClassFactory:
     def __init__(self, IMASDataSource, view, IDSName, occurrence=0,
-                 asynch=True):
+                 loadingStrategy=None, asynch=True):
         self.IDSName = IDSName
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
+        self.loadingStrategy = self.convertLoadingStrategyToInt(loadingStrategy)
         self.asynch = asynch
-
+        
+    def convertLoadingStrategyToInt(self, loadingStrategy):
+       if loadingStrategy is None or loadingStrategy == "One time slice only":
+           return 1
+       elif loadingStrategy == "One over 10 time slices":
+           return 2
+       elif loadingStrategy == "All time slices":
+           return 3
+       else:
+           return 1 #default strategy
+           
     def create(self, progressBar=None):
 
         XMLParser = None
@@ -72,6 +83,7 @@ class QVizGeneratedClassFactory:
                 view=self.view,
                 IDSName=self.IDSName,
                 occurrence=self.occurrence,
+                loadingStrategy=self.loadingStrategy,
                 asynch=self.asynch)
 
         else: # If QVizPreferences.Ignore_GGD == 1
@@ -108,6 +120,7 @@ class QVizGeneratedClassFactory:
                 view=self.view,
                 IDSName=self.IDSName,
                 occurrence=self.occurrence,
+                loadingStrategy=self.loadingStrategy,
                 asynch=self.asynch)
 
         XMLParser.setProgressBar(progressBar)

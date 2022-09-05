@@ -208,9 +208,10 @@ class QVizTreeNode(QTreeWidgetItem):
             return self.parameters_max_values[self.index_name_of_itime()]
 
     def timeValue(self):
+        time_index = 0
         if self.time_dependent(self.parametrizedPath):
-            return self.parameters_values[self.index_name_of_itime()]
-
+            time_index = self.parameters_values[self.index_name_of_itime()]
+        return time_index
 
     def getItimeIndex(self):
         i = self.itime_index
@@ -538,7 +539,7 @@ class QVizTreeNode(QTreeWidgetItem):
                 parent = parent.parent()
 
 
-    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, plotWidget=None):
+    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, plotWidget=None, time_index=None, coordinate_index=None):
         """Set plot options.
 
         Arguments:
@@ -555,15 +556,16 @@ class QVizTreeNode(QTreeWidgetItem):
         if self.getUnits() is not None:
             ylabel += '[' + self.getUnits() + ']'
 
-        time_index = 0
-        coordinate_index = 0
-
-        if plotWidget is not None:
-            if plotWidget.addTimeSlider:
-                time_index = plotWidget.sliderGroup.slider.value()
-            elif plotWidget.addCoordinateSlider:
-                coordinate_index = plotWidget.sliderGroup.slider.value()
-
+        if time_index is None:
+            time_index = self.timeValue()
+            if plotWidget is not None and plotWidget.addTimeSlider:
+               time_index = plotWidget.sliderGroup.slider.value()
+               
+        if coordinate_index is None:
+            coordinate_index = 0
+            if plotWidget is not None and plotWidget.addCoordinateSlider:
+               coordinate_index = plotWidget.sliderGroup.slider.value()
+                  
         if self.is0DAndDynamic():
             label = None
             xlabel = 'time'

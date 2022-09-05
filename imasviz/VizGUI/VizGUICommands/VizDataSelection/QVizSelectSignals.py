@@ -138,8 +138,8 @@ class QVizSelectSignals(QVizAbstractCommand):
                 continue
 
             # Check/Populate the IDS tree node
-            QVizLoadSelectedData(self.dataTreeView, IDSName, int(occurrence),
-                                 asynch).execute()
+            QVizLoadSelectedData(dataTreeView=self.dataTreeView, IDSName=IDSName, occurrence=int(occurrence),
+                                 asynch=asynch).execute()
 
     @staticmethod
     def convertPathsLists(pathsList):

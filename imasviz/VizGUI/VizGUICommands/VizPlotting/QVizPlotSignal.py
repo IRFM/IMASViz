@@ -59,6 +59,13 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
         try:
 
             api = self.dataTreeView.imas_viz_api
+            
+            if self.plotWidget is not None:
+               if self.plotWidget.addTimeSlider:
+                  if update==0:
+                     time_index = self.treeNode.timeValue()
+                     self.plotWidget.sliderGroup.setValue(int(time_index))
+                
             self.signal = api.GetSignal(self.dataTreeView, self.treeNode, plotWidget=self.plotWidget)
 
             if len(self.signal) == 2:

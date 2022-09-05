@@ -407,7 +407,9 @@ class sliderGroup():
                 self.parent.sliderFieldLabel.setText("Coordinate1: " + s +
                                                      " (Value = " +
                                                      str(value) + ")")
-
+    def setValue(self, value):
+        self.slider.setValue(value)
+        
     def setSlider(self):
         """Set slider.
         """
@@ -419,11 +421,6 @@ class sliderGroup():
         maxValue = self.slider.maximum()
 
         if self.isTimeSlider:
-            # vizApi = self.dataTreeView.imas_viz_api
-            # arrayData = vizApi.GetSignal(self.dataTreeView, self.active_treeNode, plotWidget=self)
-            # xValues = QVizPlotSignal.getXAxisValues(arrayData)
-            # v = QVizPlotSignal.get1DSignalValue(arrayData)
-
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
             minValue = 0

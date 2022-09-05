@@ -37,7 +37,7 @@ class QVizDataAccessCodeGenerator:
         elif "/IDSDef.xml" in self.IDSDefFile:
             path_generated_code = os.environ['HOME'] + "/.imasviz/VizGeneratedCode"
             if not os.path.exists(path_generated_code):
-                os.makedirs(path_generated_code)
+                os.mkdir(path_generated_code)
                 print("Directory ", path_generated_code,  " created ")
             else:
                 print("Directory ", path_generated_code,  " already exists")
@@ -83,15 +83,17 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(QThread):", -1)
-                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, asynch=True):", 0)
+                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, loadingStrategy=None, asynch=True):", 0)
                 self.printCode("super(" + className + ", self).__init__()", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
                 self.printCode("self.ids = None", 1)
                 self.printCode("self.idsName = IDSName", 1)
                 self.printCode("self.view.IDSNameSelected[occurrence] = IDSName", 1)
+                self.printCode("self.loadingStrategy = loadingStrategy", 1)
                 self.printCode("self.asynch = asynch", 1)
                 self.printCode("self.progressBar = None", 1)
+                self.printCode("self.parameters = None", 1)
                 self.printCode('', -1)
 
                 self.printCode('def setProgressBar(self, progressBar):', 0)
@@ -248,6 +250,10 @@ class QVizDataAccessCodeGenerator:
                 parameter = maxLimit + ' = ' + m + '\n'
                 self.printCode(parameter, level)
                 self.printCode(s + '= 0', level)
+                
+                step = m + '_step'
+                parameter = step + ' = 1' + '\n'
+                self.printCode(parameter, level)
 
                 dim = m
 
@@ -255,65 +261,15 @@ class QVizDataAccessCodeGenerator:
                 if ids_child_element.get('type') is not None and ids_child_element.get('type') == 'dynamic':
                     time_slices = "1"
                     self.printCode("if " + m + " > 0:", level)
+                    self.printCode("if self.loadingStrategy == 1:", level + 1)
                     parameter = maxLimit + ' = 1 #only one time slice is kept for the tree' + '\n'
-                    self.printCode(parameter, level + 1)
+                    self.printCode(parameter, level + 2)
+                    self.printCode("elif self.loadingStrategy == 2:", level + 1)
+                    parameter = step + ' = 10 #only one time slice over 10 is displayed in the view' + '\n'
+                    self.printCode(parameter, level + 2)
 
-                self.printCode('while ' + s + ' < ' + maxLimit + ':' + '\n', level)
-
-                code = "current_parent_" + str(level) + "= parent"  #keep in memory the parent of the current level
-                self.printCode(code, level + 1)
-
-                parentCode = "parent = ET.SubElement(parent, " + "'" \
-                    + ids_child_element.get('name') + "'" + ")"
-                self.printCode(parentCode, level + 1)
-
-                code = "parent.set(" + "'index', str(" + s + "))"
-                self.printCode(code, level + 1)
-                code = "parent.set(" + "'dim', str(" + dim + "))"
-                self.printCode(code, level + 1)
-                code = "parent.set(" + "'limited_nodes', str(" + time_slices + "))"
-                self.printCode(code, level + 1)
-                code = "parent.set(" + "'data_type', '" + data_type + "')"
-                self.printCode(code, level + 1)
-
-                lifecycle_status = ids_child_element.get('lifecycle_status')
-                if lifecycle_status is not None:
-                    code = "parent.set(" + "'lifecycle_status', '" \
-                        + lifecycle_status + "')"
-                    self.printCode(code, level + 1)
-
-                documentation = ids_child_element.get('documentation')
-                if documentation is not None:
-                    documentation = documentation.replace("&#34;", "'")
-                    documentation = documentation.replace('"', "'")
-                    documentation = documentation.replace("'", "''")
-                    documentation = documentation.replace("\n", "")
-                    if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
-                        code = "parent.set(" + "'documentation', '" \
-                            + documentation + "')"
-                    else:
-                        code = "parent.set(" + '"documentation", "' \
-                            + documentation + '")'
-                    self.printCode(code, level + 1)
-
-                parentName = ids_child_element.get('name')
-                if parentName is not None:
-                    parentName = parentName.replace("'", "''")
-                    parentName = parentName.replace("\n", "")
-                    code = "parent.set(" + "'name', '" + parentName + "')"
-                    self.printCode(code, level + 1)
-
-                if '(i' in ids_child_element.get('path_doc'):  # this is an array of
-                    parent_AOS = ids_child_element
-
-                previousLevel[level] = s
-                self.generateCodeForIDS(parent_AOS, ids_child_element,
-                                        level + 1, previousLevel, parents, s,
-                                        index, idsName)
-
-                code = "parent = current_parent_" + str(level)  # keep the parent of the current level
-                self.printCode(code, level + 1)
-                self.printCode(s + '+= 1', level + 1)
+                self.printCode('for ' + s + ' in range(0,' + maxLimit + ',' + step + '):' + '\n', level)
+                self.loop_content_for_struct_array(ids_child_element, s, previousLevel, level, dim, time_slices, data_type, parents, parent_AOS, index, idsName)
 
             elif data_type == 'STR_0D' or data_type == 'INT_0D' or data_type == 'FLT_0D':
                 self.generateParentsCode(level, child.text)
@@ -655,6 +611,63 @@ class QVizDataAccessCodeGenerator:
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
+    def loop_content_for_struct_array(self, ids_child_element, s, previousLevel, level, dim, time_slices, data_type, parents, parent_AOS, index, idsName):
+        code = "current_parent_" + str(level) + "= parent"  #keep in memory the parent of the current level
+        self.printCode(code, level + 1)
+
+        parentCode = "parent = ET.SubElement(parent, " + "'" \
+            + ids_child_element.get('name') + "'" + ")"
+        self.printCode(parentCode, level + 1)
+
+        code = "parent.set(" + "'index', str(" + s + "))"
+        self.printCode(code, level + 1)
+        code = "parent.set(" + "'dim', str(" + dim + "))"
+        self.printCode(code, level + 1)
+        code = "parent.set(" + "'limited_nodes', str(" + time_slices + "))"
+        self.printCode(code, level + 1)
+        code = "parent.set(" + "'data_type', '" + data_type + "')"
+        self.printCode(code, level + 1)
+
+        lifecycle_status = ids_child_element.get('lifecycle_status')
+        if lifecycle_status is not None:
+            code = "parent.set(" + "'lifecycle_status', '" \
+                + lifecycle_status + "')"
+            self.printCode(code, level + 1)
+
+        documentation = ids_child_element.get('documentation')
+        if documentation is not None:
+            documentation = documentation.replace("&#34;", "'")
+            documentation = documentation.replace('"', "'")
+            documentation = documentation.replace("'", "''")
+            documentation = documentation.replace("\n", "")
+            if self.imas_dd_version in QVizDataAccessCodeGenerator.patched_versions:
+                code = "parent.set(" + "'documentation', '" \
+                    + documentation + "')"
+            else:
+                code = "parent.set(" + '"documentation", "' \
+                    + documentation + '")'
+            self.printCode(code, level + 1)
+
+        parentName = ids_child_element.get('name')
+        if parentName is not None:
+            parentName = parentName.replace("'", "''")
+            parentName = parentName.replace("\n", "")
+            code = "parent.set(" + "'name', '" + parentName + "')"
+            self.printCode(code, level + 1)
+
+        if '(i' in ids_child_element.get('path_doc'):  # this is an array of
+            parent_AOS = ids_child_element
+
+        previousLevel[level] = s
+        self.generateCodeForIDS(parent_AOS, ids_child_element,
+                                level + 1, previousLevel, parents, s,
+                                index, idsName)
+
+        code = "parent = current_parent_" + str(level)  # keep the parent of the current level
+        self.printCode(code, level + 1)
+        self.printCode(s + '+= 1', level + 1)
+        
+        
     def printCode(self, text, level):
         n = level + 1
         tabs = ''

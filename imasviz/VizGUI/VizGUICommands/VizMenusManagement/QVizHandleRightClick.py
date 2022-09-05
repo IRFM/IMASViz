@@ -60,29 +60,25 @@ class QVizHandleRightClick:
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
             if node.isIDSRoot() and node.hasAvailableData():
-                subMenu = QMenu('Get ' + node.getIDSName() +
+                subMenu = QMenu('Get (display one time slice only if any) ' + node.getIDSName() +
                                 ' data for occurrence')
                 self.popupmenu.addMenu(subMenu)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
+                
+                subMenu1 = QMenu('Get (display all time slices if any) ' + node.getIDSName() +
+                                ' data for occurrence')
+                self.popupmenu.addMenu(subMenu1)
+                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu1, loadingStrategy="All time slices")
+                
+                subMenu2 = QMenu('Get (display 1 over 10 time slices if any) ' + node.getIDSName() +
+                                ' data for occurrence')
+                self.popupmenu.addMenu(subMenu2)
+                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu2, loadingStrategy="One over 10 time slices")
+                
                 self.sub_menu = QMenu('Plugins')
                 self.popupmenu.addMenu(self.sub_menu)
                 QVizPluginsPopUpMenu().upateMenu(node, dataTreeView,
                                                  self.sub_menu)
-
-                # Set message to be displayed in toolbar and in pop up window
-                # When hovering on the menu item
-                # TODO: It doesn't get shown for some reason... the same
-                #       strategy that is being used for QActions and is
-                #       expected to work doesn't work at all
-                # sub_menu_display_msg = "A list of plugins that are available " \
-                #                        "for the use with the selected IDS. " \
-                #                        "Note that the plugin might require " \
-                #                        "specific fields to be filled in order " \
-                #                        "for them to work properly."
-                # self.sub_menu.setStatusTip(sub_menu_display_msg)
-                # self.sub_menu.setToolTip(sub_menu_display_msg)
-                # self.sub_menu.setToolTipsVisible(True)
-
                 showMenu = True
 
         if showMenu:

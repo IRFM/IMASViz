@@ -21,7 +21,7 @@ class QVizIMASDataSource:
         self.data_dictionary_version = None
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, asynch=True):
+    def load(self, dataTreeView, IDSName, occurrence=0, loadingStrategy=None, asynch=True):
 
         self.progressBar = QProgressBar()
         self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
@@ -33,7 +33,7 @@ class QVizIMASDataSource:
 
         self.generatedDataTree = \
             QVizGeneratedClassFactory(self, dataTreeView, IDSName,
-                                      occurrence,
+                                      occurrence, loadingStrategy,
                                       asynch).create(self.progressBar)
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")

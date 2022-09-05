@@ -429,11 +429,11 @@ class Viz_API:
         from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         from imasviz.VizGUI.VizGUICommands import QVizLoadSelectedData
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
-            QVizLoadSelectedData(dataTreeFrame.dataTreeView, IDSName,
-                                 occurrence, threadingEvent).execute()
+            QVizLoadSelectedData(dataTreeView=dataTreeFrame.dataTreeView, IDSName=IDSName,
+                                 occurrence=occurrence, asynch=threadingEvent).execute()
         else:
-            QVizLoadSelectedData(dataTreeFrame, IDSName, occurrence,
-                                 threadingEvent).execute()
+            QVizLoadSelectedData(dataTreeView=dataTreeFrame, IDSName=IDSName,
+                                 occurrence=occurrence, asynch=threadingEvent).execute()
 
     def SelectSignals(self, DTV, pathsMap):
         """Select signals nodes from a list of IMAS paths for the given shot
@@ -456,8 +456,6 @@ class Viz_API:
         :param all_DTV: When True, all current selected set of signals on all
                         shot views are plotted
         """
-        # figureKey, plotWidget = self.GetPlotWidget(dataTreeView=self.dataTreeView,
-        #                                            figureKey=figureKey)
         from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSelectedSignals
         i = 0
         update = 0
@@ -586,12 +584,6 @@ class Viz_API:
         except:
             raise
 
-    # def Plot2DArray(self, dataTreeView, vizTreeNode):
-    #     from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
-    #     plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView, size=(500, 400), plotSliceFromROI=True)
-    #     dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
-    #     plotWidget.addPlot(dataArrayHandle)
-    #     plotWidget.show()
 
     def Plot2DArray(self, dataTreeView, vizTreeNode):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget

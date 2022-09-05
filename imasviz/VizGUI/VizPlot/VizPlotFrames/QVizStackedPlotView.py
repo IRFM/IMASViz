@@ -232,16 +232,6 @@ class StackedPlotWindow(pg.GraphicsWindow):
         # Clear plot list
         self.plotList = []
 
-        # for dtv in self.getDTVList():
-        #     # Get list of selected signals in DTV
-        #     dtv_selectedSignals = dtv.selectedSignalsDict
-        #     # Go through the list of selected signals for every DTV
-        #     for signalKey in dtv_selectedSignals:
-        #         # Get node data
-        #         signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
-        #         if strategy == 'TIME' and not signalNode.hasTimeAxis():
-        #             raise ValueError('Unable to plot node ' + signalNode.getName() + ' which does not depend on time.')
-
         for dtv in self.getDTVList():
             # Get list of selected signals in DTV
             dtv_selectedSignals = dtv.selectedSignalsDict
