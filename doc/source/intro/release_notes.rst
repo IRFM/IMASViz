@@ -13,10 +13,10 @@ Release notes
 =============
 
 -------------
-Version 2.4.8
+Version 2.5.0
 -------------
 
-Released 09.05.2022
+Released 09.07.2022
 
 - IMAS-4303: apply auto range automatically for the preview plot window
 - IMAS-2696: option for plotting incertainty intervals
@@ -32,7 +32,7 @@ Released 09.05.2022
 
 IMPORTANT NOTE:
 
-if you are using Viz before 2.4.8, you need to clean Viz cache before to start the tool in order to see the expected change by IMAS-4186 fix:
+if you are using Viz before 2.5.0, you need to clean Viz cache before to start the tool in order to see the expected change by IMAS-4186 fix:
 rm -rf ~/.imasviz/VizGeneratedCode/*.py
 
 -------------
