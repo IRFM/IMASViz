@@ -22,7 +22,7 @@ Released 09.07.2022
 - IMAS-2696: option for plotting incertainty intervals
 - IMAS-3845: fix
 - IMAS-4142: printing requirements of the equilibrium plugins in the log window
-- IMAS-3824: closing 1D outline plots when closed=1	IMAS-3824: closing 1D outline plots when closed=1	
+- IMAS-3824: closing 1D outline plots when closed=1
 - IMAS-4186: support of STR_1D data type	
 - IMAS-4264: update shots browser for hdf5 support
 - IMAS-4014: adding 'public' user in the browser
