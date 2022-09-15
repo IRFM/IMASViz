@@ -280,24 +280,24 @@ class QVizDataTreeView(QTreeWidget):
             QVizHandleRightClick().execute(treeNode, self)
 
 
-    def updateView(self, idsName, occurrence, idsData=None):
+    def updateView(self, idsName, occurrence, idsData=None, viewLoadingStrategy=None):
         """ Update QVizDataTreeViewFrame.
         Arguments:
             idsName        (str) : Name of the IDS e.g. 'magnetics'.
             occurrence     (int) : IDS occurrence number (0-9).
             idsData        (obj) : Object (element) holding IDS data.
         """
-        self.update_view(idsName, occurrence, idsData)
+        self.update_view(idsName, occurrence, idsData, viewLoadingStrategy)
 
 
-    def update_view(self, idsName, occurrence, idsData):
+    def update_view(self, idsName, occurrence, idsData, viewLoadingStrategy=None):
         """ Update the tree view with the data.
         """
         global cv
         if idsData is not None:
             self.IDSRoots[idsName].setOccurrence(occurrence)
             nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.ids)
-            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData))
+            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData, viewLoadingStrategy))
             cv.acquire()
             thread1.start()
             cv.wait()
@@ -305,7 +305,7 @@ class QVizDataTreeView(QTreeWidget):
             nodeBuilder.endBuildView(idsName, occurrence, self)
 
 
-    def buildTreeView(self, nodeBuilder, idsName, occurrence, idsData):
+    def buildTreeView(self, nodeBuilder, idsName, occurrence, idsData, viewLoadingStrategy):
         """ Build the data tree view by adding a set of available IDS nodes as
             an items to it.
 
@@ -317,17 +317,24 @@ class QVizDataTreeView(QTreeWidget):
         cv.acquire()
         import time
         t1 = time.time()
-        logging.info("Loading occurrence "
+        logging.info("Occurrence "
                      + str(int(occurrence))
                      + " of " + idsName
-                     + " IDS ended successfully, building "
+                     + " IDS in memory, building "
                      + " view...")
-        #DTVRoot = None
         idsDocumentation = self.IDSRoots[idsName].getDocumentation()
         root_node_ori = self.IDSRoots[idsName]
         ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
-        ids_root_occ = QVizTreeNode(ids_root_node, ['occurrence ' + str(int(occurrence))], ids_root_node.getData())
+        root_node_label = 'occurrence ' + str(int(occurrence))
+        if viewLoadingStrategy is not None:
+            label = viewLoadingStrategy.getLabel()
+            if label is not None:
+               root_node_label += " [" + label + "]"
+        ids_root_occ = QVizTreeNode(ids_root_node, [root_node_label], ids_root_node.getData())
+        ids_root_occ.setOccurrenceEntry(True)
+        if viewLoadingStrategy is not None:
+            ids_root_occ.setIDSIsDynamic(viewLoadingStrategy.isIDSDynamic())
         ids_root_occ.setStyleWhenContainingData()
 
         for child in idsData:
@@ -401,7 +408,7 @@ class QVizDataTreeView(QTreeWidget):
 
         # Set class object
         ldh_obj = QVizLoadDataHandling()
-        ldh_obj.loadSelectedData(self, item.getIDSName(), occ, True)
+        ldh_obj.loadSelectedData(self, item.getIDSName(), occ, None, True)
 
     def getMDI(self):
         """ Get MDI area through the root IMASViz main window.
@@ -505,7 +512,8 @@ class QVizDataTreeViewFrame(QMainWindow):
             idsData = event.data[2]
             progressBar = event.data[3]
             progressBar.setWindowTitle("Updating view...")
-            self.dataTreeView.updateView(idsName, occurrence, idsData)
+            viewLoadingStrategy = event.data[4]
+            self.dataTreeView.updateView(idsName, occurrence, idsData, viewLoadingStrategy)
             progressBar.hide()
 
 

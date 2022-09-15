@@ -83,14 +83,15 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('\n', -1)
 
                 self.printCode("class " + className + "(QThread):", -1)
-                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, loadingStrategy=None, asynch=True):", 0)
+                self.printCode("def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):", 0)
                 self.printCode("super(" + className + ", self).__init__()", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
                 self.printCode("self.ids = None", 1)
                 self.printCode("self.idsName = IDSName", 1)
                 self.printCode("self.view.IDSNameSelected[occurrence] = IDSName", 1)
-                self.printCode("self.loadingStrategy = loadingStrategy", 1)
+                self.printCode("self.loadData = True", 1)
+                self.printCode("self.viewLoadingStrategy = viewLoadingStrategy", 1)
                 self.printCode("self.asynch = asynch", 1)
                 self.printCode("self.progressBar = None", 1)
                 self.printCode("self.parameters = None", 1)
@@ -112,13 +113,16 @@ class QVizDataAccessCodeGenerator:
                         continue
                     # print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 2)
+                    self.printCode("if self.loadData:", 3)
                     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
-                                   "'" + name_att2 + "' +  ' IDS'", 3)
-                    self.printCode("logging.info(message)", 3)
-                    self.printCode("t1 = time.time()", 3)
-                    self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 3)  # get the data from the database for the ids"
-                    self.printCode("t2 = time.time()", 3)
-                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')", 3)
+                                   "'" + name_att2 + "' +  ' IDS'", 4)
+                    self.printCode("logging.info(message)", 4)
+                    self.printCode("t1 = time.time()", 4)
+                    self.printCode("self.ids." + name_att2 + ".get(self.occurrence)", 4)  # get the data from the database for the ids"
+                    self.printCode("t2 = time.time()", 4)
+                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')", 4)
+                    self.printCode("else:", 3)
+                    self.printCode("t2 = time.time()", 4)
 
                     # self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
@@ -126,10 +130,10 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 3)
                     self.printCode('if self.asynch:', 3)
 
-                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self), self.view.parent.eventResultId))',4)
+                    self.printCode('QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId))',4)
                     self.printCode("print ('waiting for view update...')" + '\n', 4)
                     self.printCode('else:', 3)
-                    self.printCode('self.view.updateView(self.idsName, self.occurrence, idsData)', 4)
+                    self.printCode('self.view.updateView(self.idsName, self.occurrence, idsData, self.viewLoadingStrategy)', 4)
                     self.printCode("self.progressBar.hide()", 4)
 
                 self.printCode('except AttributeError as att_error:', 1)
@@ -263,19 +267,20 @@ class QVizDataAccessCodeGenerator:
                 if ids_child_element.get('type') is not None and ids_child_element.get('type') == 'dynamic':
                     time_slices = "1"
                     self.printCode("if " + m + " > 0:", level)
-                    self.printCode("if self.loadingStrategy == 1:", level + 1)
+                    self.printCode("if self.viewLoadingStrategy is None or self.viewLoadingStrategy.getIdentifier() == 1:", level + 1)
                     parameter = maxLimit + ' = 1 #only first time slice is kept for the tree' + '\n'
                     self.printCode(parameter, level + 2)
-                    self.printCode("elif self.loadingStrategy == 2:", level + 1)
+                    self.printCode("elif self.viewLoadingStrategy.getIdentifier() == 2:", level + 1)
                     parameter = step + ' = 10 #only one time slice over 10 is displayed in the view' + '\n'
                     self.printCode(parameter, level + 2)
-                    self.printCode("elif self.loadingStrategy == 4:", level + 1)
-                    self.printCode("user_input = QInputDialog()", level + 2)
-                    self.printCode("minLimit, ok = user_input.getInt(None, 'Enter time slice index value to be displayed', 'Time slice index:', value=0, min=0, max=" + maxLimit + ")", level + 2)
-                    self.printCode("if not ok:", level + 2)
-                    self.printCode("logging.error('Bad input from user.')", level + 3)
+                    self.printCode("elif self.viewLoadingStrategy.getIdentifier() == 4:", level + 1)
+                    self.printCode("minLimit = self.viewLoadingStrategy.getTimeIndex()", level + 2)
+                    self.printCode("if minLimit >= " + maxLimit + ":", level + 2)
+                    self.printCode("logging.error('Bad input from user: time index too large.')", level + 3)
                     self.printCode("return", level + 3)
                     self.printCode(maxLimit + " = minLimit + 1" , level + 2)
+                    self.printCode("if self.viewLoadingStrategy is not None:",  level + 1)
+                    self.printCode("self.viewLoadingStrategy.setIDSIsDynamic(True)" , level + 2)
 
                 self.printCode('for ' + s + ' in range(minLimit,' + maxLimit + ',' + step + '):' + '\n', level)
                 self.loop_content_for_struct_array(ids_child_element, s, previousLevel, level, dim, time_slices, data_type, parents, parent_AOS, index, idsName)

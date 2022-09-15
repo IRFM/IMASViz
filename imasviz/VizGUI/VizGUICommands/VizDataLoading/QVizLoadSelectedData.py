@@ -7,12 +7,12 @@ class QVizLoadSelectedData(QVizAbstractCommand):
 
     Lock = {}
 
-    def __init__(self, dataTreeView, IDSName, occurrence=0, loadingStrategy=None, asynch=True):
+    def __init__(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
         QVizAbstractCommand.__init__(self, dataTreeView, None)
         self.occurrence = occurrence
         self.asynch = asynch
         self.IDSName = IDSName
-        self.loadingStrategy = loadingStrategy
+        self.viewLoadingStrategy = viewLoadingStrategy
         QVizLoadSelectedData.Lock[self.IDSName] = False
 
     def execute(self):
@@ -24,7 +24,7 @@ class QVizLoadSelectedData(QVizAbstractCommand):
             self.dataTreeView.dataSource.load(self.dataTreeView,
                                               self.IDSName,
                                               self.occurrence,
-                                              self.loadingStrategy,
+                                              self.viewLoadingStrategy,
                                               self.asynch)
             QVizLoadSelectedData.Lock[self.IDSName] = False
 

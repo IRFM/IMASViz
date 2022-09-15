@@ -57,29 +57,18 @@ class QVizHandleRightClick:
             handling = QVizSignalHandling(dataTreeView=dataTreeView)
             self.popupmenu = handling.buildContextMenu(node)
             showMenu = True
+        elif node.isOccurrenceEntry() and node.isIDSDynamic():
+             subMenu1 = QMenu('Add a new view for ' + node.getIDSName())
+             self.popupmenu.addMenu(subMenu1)
+             QVizLoadDataHandling().buildingViewMenu(node, dataTreeView, subMenu1)
+             showMenu = True
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
-            if node.isIDSRoot() and node.hasAvailableData():
-                subMenu = QMenu('Get (display first time slice only if any) ' + node.getIDSName() +
+            if node.isIDSRoot() and node.hasAvailableData() and not(node.isOccurrenceEntry()):
+                subMenu = QMenu('Get ' + node.getIDSName() +
                                 ' data for occurrence')
                 self.popupmenu.addMenu(subMenu)
                 QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
-                
-                subMenu1 = QMenu('Get (display all time slices if any) ' + node.getIDSName() +
-                                ' data for occurrence')
-                self.popupmenu.addMenu(subMenu1)
-                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu1, loadingStrategy="All time slices")
-                
-                subMenu2 = QMenu('Get (display 1 over 10 time slices if any) ' + node.getIDSName() +
-                                ' data for occurrence')
-                self.popupmenu.addMenu(subMenu2)
-                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu2, loadingStrategy="One over 10 time slices")
-                
-                subMenu3 = QMenu('Get (display specific time slice only if any) ' + node.getIDSName() +
-                                ' data for occurrence')
-                self.popupmenu.addMenu(subMenu3)
-                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu3, loadingStrategy="Specific time slice only")
-                
                 self.sub_menu = QMenu('Plugins')
                 self.popupmenu.addMenu(self.sub_menu)
                 QVizPluginsPopUpMenu().upateMenu(node, dataTreeView,

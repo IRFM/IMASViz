@@ -430,10 +430,10 @@ class Viz_API:
         from imasviz.VizGUI.VizGUICommands import QVizLoadSelectedData
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             QVizLoadSelectedData(dataTreeView=dataTreeFrame.dataTreeView, IDSName=IDSName,
-                                 occurrence=occurrence, asynch=threadingEvent).execute()
+                                 occurrence=occurrence, viewLoadingStrategy=None, asynch=threadingEvent).execute()
         else:
             QVizLoadSelectedData(dataTreeView=dataTreeFrame, IDSName=IDSName,
-                                 occurrence=occurrence, asynch=threadingEvent).execute()
+                                 occurrence=occurrence, viewLoadingStrategy=None, asynch=threadingEvent).execute()
 
     def SelectSignals(self, DTV, pathsMap):
         """Select signals nodes from a list of IMAS paths for the given shot

@@ -6,6 +6,7 @@ import logging
 from imasviz.VizUtils import QVizGlobalValues, QVizGlobalOperations
 from imasviz.VizUtils import QVizPreferences
 from imasviz.VizDataAccess.VizCodeGenerator import QVizDataAccessCodeGenerator
+from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
 
 # Append imasviz source path
 sys.path.append(os.environ['HOME'] + "/.imasviz/VizGeneratedCode")
@@ -13,26 +14,17 @@ sys.path.append(os.environ['HOME'] + "/.imasviz/VizGeneratedCode")
 
 class QVizGeneratedClassFactory:
     def __init__(self, IMASDataSource, view, IDSName, occurrence=0,
-                 loadingStrategy=None, asynch=True):
+                 viewLoadingStrategy=None, asynch=True):
         self.IDSName = IDSName
         self.IMASDataSource = IMASDataSource
         self.view = view
         self.occurrence = occurrence
-        self.loadingStrategy = self.convertLoadingStrategyToInt(loadingStrategy)
+        self.viewLoadingStrategy = None
+        if viewLoadingStrategy is not None:
+           viewLoadingStrategy.setIdentifier(QVizViewLoadingStrategy.getLoadingStrategyIdentifier(viewLoadingStrategy))
+           self.viewLoadingStrategy = viewLoadingStrategy
         self.asynch = asynch
-        
-    def convertLoadingStrategyToInt(self, loadingStrategy):
-       if loadingStrategy is None or loadingStrategy == "First time slice only":
-           return 1
-       elif loadingStrategy == "One over 10 time slices":
-           return 2
-       elif loadingStrategy == "All time slices":
-           return 3
-       elif loadingStrategy == "Specific time slice only":
-           return 4
-       else:
-           return 1 #default strategy
-           
+     
     def create(self, progressBar=None):
 
         XMLParser = None
@@ -85,7 +77,7 @@ class QVizGeneratedClassFactory:
                 view=self.view,
                 IDSName=self.IDSName,
                 occurrence=self.occurrence,
-                loadingStrategy=self.loadingStrategy,
+                viewLoadingStrategy=self.viewLoadingStrategy,
                 asynch=self.asynch)
 
         else: # If QVizPreferences.Ignore_GGD == 1
@@ -122,7 +114,7 @@ class QVizGeneratedClassFactory:
                 view=self.view,
                 IDSName=self.IDSName,
                 occurrence=self.occurrence,
-                loadingStrategy=self.loadingStrategy,
+                viewLoadingStrategy=self.viewLoadingStrategy,
                 asynch=self.asynch)
 
         XMLParser.setProgressBar(progressBar)

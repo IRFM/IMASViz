@@ -21,7 +21,7 @@ class QVizIMASDataSource:
         self.data_dictionary_version = None
 
     # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, loadingStrategy=None, asynch=True):
+    def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
 
         self.progressBar = QProgressBar()
         self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
@@ -33,7 +33,7 @@ class QVizIMASDataSource:
 
         self.generatedDataTree = \
             QVizGeneratedClassFactory(self, dataTreeView, IDSName,
-                                      occurrence, loadingStrategy,
+                                      occurrence, viewLoadingStrategy,
                                       asynch).create(self.progressBar)
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
@@ -49,6 +49,8 @@ class QVizIMASDataSource:
                 raise ValueError("Can not open shot " + str(self.shotNumber) +
                                  " from data base " + self.imasDbName +
                                  " of user " + self.userName)
+        else:
+            self.generatedDataTree.loadData = False #Do not call IMAS GET(), data are already loaded in memory
 
         self.generatedDataTree.ids = self.ids[occurrence]
 

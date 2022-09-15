@@ -12,6 +12,8 @@ class QVizTreeNode(QTreeWidgetItem):
 
         self.globalTime = None
         self.dataTreeView = None
+        self.occurrenceEntry = False
+        self.ids_is_dynamic = False
         if len(args) == 0:
             self.createAttributes()
             self.infoDict = {}
@@ -40,6 +42,19 @@ class QVizTreeNode(QTreeWidgetItem):
         while p.dataTreeView is None:
             p = p.parent()
         return p.dataTreeView
+        
+    def getOccurrenceRootNode(self):
+        p = self
+        if p.occurrenceEntry:
+           return p
+        if p.parent() is None:
+           return None
+        p = p.parent()
+        while p is not None:
+            if p.occurrenceEntry:
+               return p
+            p = p.parent()
+        return None
 
     def createAttributes(self):
         self.parametrizedPath = None
@@ -60,6 +75,12 @@ class QVizTreeNode(QTreeWidgetItem):
         self.coordinates = vizTreeNode.coordinates
         self.coordinates_explicitly_time_dependent = vizTreeNode.coordinates_explicitly_time_dependent
 
+    def setOccurrenceEntry(self, value):
+        self.occurrenceEntry = value
+        
+    def isOccurrenceEntry(self):
+        return self.occurrenceEntry == True
+        
     def addParameterValue(self, aos_indice_name, value):
         self.parameters_values[aos_indice_name] = value
 
@@ -352,6 +373,18 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setIDSName(self, idsName):
         self.infoDict['IDSName'] = idsName
+        
+    def setIDSIsDynamic(self, ids_is_dynamic):
+        root_node_occ = self.getOccurrenceRootNode()
+        if root_node_occ is None:
+            raise ValueError("Node " + self.getName() + " has no occurrence root!")
+        root_node_occ.ids_is_dynamic = ids_is_dynamic
+        
+    def isIDSDynamic(self):
+        root_node_occ = self.getOccurrenceRootNode()
+        if root_node_occ is None:
+            raise ValueError("Node " + self.getName() + " has no occurrence root!")
+        return root_node_occ.ids_is_dynamic
 
     def setDataName(self, dataName):
         self.infoDict['dataName'] = dataName

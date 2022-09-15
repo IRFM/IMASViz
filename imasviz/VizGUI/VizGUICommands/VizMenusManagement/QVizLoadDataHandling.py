@@ -22,6 +22,7 @@
 from functools import partial
 
 from PyQt5.QtCore import QObject
+from PyQt5.QtWidgets import QInputDialog
 
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
@@ -37,7 +38,7 @@ class QVizLoadDataHandling(QObject):
         """
         super(QVizLoadDataHandling, self).__init__()
 
-    def updateMenu(self, rootNode, dataTreeView, subMenu, loadingStrategy="First time slice only"):
+    def updateMenu(self, rootNode, dataTreeView, subMenu, viewLoadingStrategy=None):
         """Show the pop up menu for loading IDS.
 
         Arguments:
@@ -45,6 +46,10 @@ class QVizLoadDataHandling(QObject):
             dataTreeView : current selected view
             subMenu : menu to update
         """
+        from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
+        if viewLoadingStrategy is None:
+           viewLoadingStrategy = QVizViewLoadingStrategy.getDefaultStrategy()
+        
         api = dataTreeView.imas_viz_api
         availableOccurrences = api.GetAllOccurrencesUnloadedWithAvailableData(dataTreeView, rootNode)
         if availableOccurrences is None:
@@ -59,9 +64,31 @@ class QVizLoadDataHandling(QObject):
             #         and more bulletproof
             action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData,
                                                               dataTreeView,
-                                                              rootNode.getIDSName(), i, loadingStrategy, True))
+                                                              rootNode.getIDSName(), i, viewLoadingStrategy, True))
+                                                        
+    def buildingViewMenu(self, rootNode, dataTreeView, subMenu):
+        """Show the pop up menu for building a new view to the IDS data.
 
-    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, loadingStrategy="First time slice only",
+        Arguments:
+            rootNode    (QVizTreeNode) : selected node
+            dataTreeView : current selected view
+            subMenu : menu to update
+        """
+        from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
+        api = dataTreeView.imas_viz_api
+        viewLoadingStrategies = QVizViewLoadingStrategy.getAllStrategies()
+        for viewLoadingStrategy in viewLoadingStrategies:
+            action_GET_IDS_OCC_DATA = \
+                            subMenu.addAction(viewLoadingStrategy.getName())
+            # - Connect action to function using partial
+            #   Note: PyQt5 lambda method is not a good way to pass the
+            #         function arguments. The use of partial is better
+            #         and more bulletproof
+            action_GET_IDS_OCC_DATA.triggered.connect(partial(self.loadSelectedData,
+                                                              dataTreeView,
+                                                              rootNode.getIDSName(), rootNode.getOccurrence(), viewLoadingStrategy, True))
+
+    def loadSelectedData(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None,
                          threadingEvent=None):
         """Load data of selected IDS and its occurrence.
 
@@ -69,8 +96,20 @@ class QVizLoadDataHandling(QObject):
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
         """
+        from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
+        if viewLoadingStrategy is None:
+           viewLoadingStrategy = QVizViewLoadingStrategy.getDefaultStrategy()
+           
+        if viewLoadingStrategy.getIdentifier() == 4:
+            user_input = QInputDialog()
+            minLimit, ok = user_input.getInt(None, 'Enter time slice index value to be displayed', 'Time slice index:', value=0, min=0)
+            if not ok:
+                logging.error('Bad input from user.')
+                return
+            viewLoadingStrategy.setTimeIndex(minLimit)
+            
         QVizLoadSelectedData(dataTreeView=dataTreeView,
                              IDSName=IDSName,
                              occurrence=occurrence,
-                             loadingStrategy=loadingStrategy,
+                             viewLoadingStrategy=viewLoadingStrategy,
                              asynch=threadingEvent).execute()
