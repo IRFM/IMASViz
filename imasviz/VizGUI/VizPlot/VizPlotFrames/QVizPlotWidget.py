@@ -155,7 +155,7 @@ class QVizPlotWidget(QWidget):
         self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=preview)
         self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
         
-        #self.sliderGroup.updateValues(self.sliderGroup.slider.value()) 
+        self.updateSlider(vizTreeNode)
 
         return self
            
@@ -264,8 +264,6 @@ class QVizPlotWidget(QWidget):
             self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
             self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
-            #self.sliderGroup.updateValues(self.sliderGroup.slider.value())  # update values of current time/coordinate1 changed by the slider
-
             # Add time label
             self.gridLayout.addWidget(self.sliderFieldLabel, 6, 0, 1, 10)
 
@@ -315,16 +313,17 @@ class QVizPlotWidget(QWidget):
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
         
-    def updateSlider(self, treeNode, update=0):
-        if treeNode.embedded_in_time_dependent_aos() and treeNode.is1DAndDynamic():
+    def updateSlider(self, treeNode):
+        nodesList = self.pgPlotWidget.getViewBox().vizTreeNodesList
+        if len(nodesList) == 1 and treeNode.embedded_in_time_dependent_aos() and treeNode.is1DAndDynamic():
               self.setSliderComponentsDisabled(False)
-                
-        if self.addTimeSlider:
-              if update==0:
-                  time_index = treeNode.timeValue()
-                  self.sliderGroup.setValue(int(time_index)) 
-                  self.sliderGroup.updateValues(int(time_index)) 
-
+        if self.sliderGroup.slider.isEnabled():
+            self.sliderGroup.setSlider()
+                    
+            if self.addTimeSlider:
+                time_index = treeNode.timeValue()
+                self.sliderGroup.slider.setValue(int(time_index)) 
+                self.sliderGroup.updateTimeValues(int(time_index)) 
 
 class sliderGroup():
     """Set slider widget and its corresponding widgets (label,
@@ -363,9 +362,6 @@ class sliderGroup():
             # Set index label
             self.indexLabel = self.setLabel(text='Index Value: ')
 
-        # Set slider
-        self.setSlider()
-
         self.sliderValueIndicator = self.setSliderValueIndicator()  # Set slider value indicator
 
         self.sliderFieldLabel = self.setSliderFieldLabel('')
@@ -386,7 +382,7 @@ class sliderGroup():
 
         return self.timeSliderGroup
 
-    def updateValues(self, indexValue):
+    def updateTimeValues(self, indexValue):
 
         if not self.slider.isEnabled():
             return
@@ -432,9 +428,7 @@ class sliderGroup():
                     else:
                         self.parent.sliderFieldLabel.setText(self.parent.sliderFieldLabel.toPlainText() + "\n" +
                             s + " (Value = " + str(value) + ")")
-                            
-    def setValue(self, value):
-        self.slider.setValue(value)
+
         
     def setSlider(self):
         """Set slider.
@@ -536,8 +530,6 @@ class sliderGroup():
         # keyboard arrow keys
         if not self.sliderPress and not self.ignoreEvent:
             self.executePlot()
-            self.parent.pgPlotWidget.getViewBox().updateErrorBars()
-            self.parent.pgPlotWidget.getViewBox().updateConfidenceBands()
 
     def onSliderRelease(self):
         """Action on slider release.
@@ -547,8 +539,6 @@ class sliderGroup():
         self.sliderPress = False
         # Plot
         self.executePlot()
-        self.parent.pgPlotWidget.getViewBox().updateErrorBars()
-        self.parent.pgPlotWidget.getViewBox().updateConfidenceBands()
 
     def onSliderPress(self):
         """Action on slider press.
@@ -560,6 +550,7 @@ class sliderGroup():
         """Replots according to slider values.
         """
         currentIndex = self.slider.value()
+
         currentFigureKey = self.parent.windowTitle()  # Get title of the current QVizPlotWidget
         i = 0
         api = self.dataTreeView.imas_viz_api
@@ -584,4 +575,6 @@ class sliderGroup():
 
             i += 1
 
-        self.updateValues(self.slider.value())
+        self.updateTimeValues(int(self.slider.value())) 
+        self.parent.pgPlotWidget.getViewBox().updateErrorBars()
+        self.parent.pgPlotWidget.getViewBox().updateConfidenceBands()

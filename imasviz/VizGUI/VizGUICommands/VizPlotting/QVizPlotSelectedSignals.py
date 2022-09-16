@@ -80,8 +80,6 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
         """
         try:
 
-            self.updateSlider()
-
             # Total number of existing DTVs
             self.num_view = len(self.api.DTVlist)
 

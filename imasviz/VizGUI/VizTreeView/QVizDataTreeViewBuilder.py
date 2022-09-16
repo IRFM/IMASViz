@@ -46,7 +46,7 @@ class QVizDataTreeViewBuilder:
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
         """
 
-        imas_entry = dataTreeView.dataSource.ids[occurrence]
+        imas_entry = dataTreeView.dataSource.data_entries[occurrence]
 
         itemDataDict = {}
         itemDataDict['IDSName'] = idsName

@@ -195,7 +195,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def coordinateLength(self, coordinateNumber, dataTreeView):
         # Set IDS source database
-        imas_data_entry = dataTreeView.dataSource.ids[self.getOccurrence()]
+        imas_data_entry = dataTreeView.dataSource.data_entries[self.getOccurrence()]
         if self.coordinates[coordinateNumber - 1] == "1..N" or\
                         self.coordinates[coordinateNumber - 1] == "1...N":
             r = np.array([eval('imas_data_entry.' + self.getDataName())])
@@ -210,7 +210,7 @@ class QVizTreeNode(QTreeWidgetItem):
         if len(self.coordinates) < coordinateNumber:
             return None
         # Set IDS data entry
-        imas_data_entry = dataTreeView.dataSource.ids[self.getOccurrence()]
+        imas_data_entry = dataTreeView.dataSource.data_entries[self.getOccurrence()]
         if self.coordinates[coordinateNumber - 1] == "1..N" or\
                         self.coordinates[coordinateNumber - 1] == "1...N":
             return np.array(range(len(eval('imas_data_entry.' + self.getDataName()))))
@@ -219,7 +219,7 @@ class QVizTreeNode(QTreeWidgetItem):
         return eval(to_evaluate)
 
     def getGlobalTimeForArraysInDynamicAOS(self, dataSource):
-        imas_entry = dataSource.ids[self.getOccurrence()]
+        imas_entry = dataSource.data_entries[self.getOccurrence()]
         t = None
         try:
             t = eval("imas_entry." + self.getIDSName() + ".time")
@@ -452,7 +452,7 @@ class QVizTreeNode(QTreeWidgetItem):
             return False
         closedOutlinePath = self.getPath().replace("/" + tokens[-1], "", 1);
         closedOutlinePath = closedOutlinePath.replace("/" + tokens[-2], "", 1) + "/closed";
-        expression = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + closedOutlinePath
+        expression = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + closedOutlinePath
         value = eval(QVizGlobalOperations.makePythonPath(expression))
         return value
                 
@@ -724,7 +724,7 @@ class QVizTreeNode(QTreeWidgetItem):
             nodeName = tokens[-1]
             data_error_lower_path = self.getPath().replace("/" + tokens[-1], "", 1);
             data_error_lower_path = data_error_lower_path + "/" + nodeName + "_error_lower";
-            expression_error_lower_path = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + data_error_lower_path
+            expression_error_lower_path = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + data_error_lower_path
             data_error_lower = eval(QVizGlobalOperations.makePythonPath(expression_error_lower_path))
             (x, y) = dataItem.getData()
             if np.shape(data_error_lower) != np.shape(y):
@@ -741,7 +741,7 @@ class QVizTreeNode(QTreeWidgetItem):
             nodeName = tokens[-1]
             data_error_upper_path = self.getPath().replace("/" + tokens[-1], "", 1);
             data_error_upper_path = data_error_upper_path + "/" + nodeName + "_error_upper";
-            expression_error_upper_path = 'dtv.dataSource.ids[' + str(self.getOccurrence()) + '].' + data_error_upper_path
+            expression_error_upper_path = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + data_error_upper_path
             data_error_upper = eval(QVizGlobalOperations.makePythonPath(expression_error_upper_path))
             (x, y) = dataItem.getData()
             if np.shape(data_error_upper) != np.shape(y):

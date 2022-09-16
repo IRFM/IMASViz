@@ -62,7 +62,7 @@ from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
     import QVizUnselectAllSignals
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
 
 cv = Condition()
@@ -296,7 +296,7 @@ class QVizDataTreeView(QTreeWidget):
         global cv
         if idsData is not None:
             self.IDSRoots[idsName].setOccurrence(occurrence)
-            nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.ids)
+            nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.data_entries)
             thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData, viewLoadingStrategy))
             cv.acquire()
             thread1.start()
@@ -407,8 +407,13 @@ class QVizDataTreeView(QTreeWidget):
             return
 
         # Set class object
-        ldh_obj = QVizLoadDataHandling()
-        ldh_obj.loadSelectedData(self, item.getIDSName(), occ, None, True)
+        #ldh_obj = QVizLoadDataHandling()
+        #ldh_obj.loadSelectedData(self, item.getIDSName(), occ, None, True)
+        QVizLoadSelectedData(dataTreeView=self,
+                             IDSName=item.getIDSName(),
+                             occurrence=occ,
+                             viewLoadingStrategy=None,
+                             asynch=True).execute()
 
     def getMDI(self):
         """ Get MDI area through the root IMASViz main window.

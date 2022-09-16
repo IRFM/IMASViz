@@ -115,7 +115,7 @@ class QVizPluginsHandler:
             dataSource = dataTreeView.dataSource
             # - get IDS object
             try:
-                ids = dataSource.ids[pluginsObject.targetOccurrence]
+                ids = dataSource.data_entries[pluginsObject.targetOccurrence]
             except:
                 ids = None
             if ids is None:
@@ -127,7 +127,7 @@ class QVizPluginsHandler:
                                 occurrence=pluginsObject.targetOccurrence,
                                 asynch=False)
                 # Set IDS
-                ids = dataSource.ids[pluginsObject.targetOccurrence]
+                ids = dataSource.data_entries[pluginsObject.targetOccurrence]
 
             # Set IDS object for the main Qt designer widget
             qdw.setIDS(ids)

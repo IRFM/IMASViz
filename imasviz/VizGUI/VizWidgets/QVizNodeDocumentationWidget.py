@@ -344,7 +344,7 @@ class QVizNodeDocumentationWidget(QWidget):
             if item.isDynamicData():
 
                 # - Set node contents
-                expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
+                expression = 'dataTreeView.dataSource.data_entries[' + str(item.getOccurrence()) + '].' + str(item.getPath())
                 expression = QVizGlobalOperations.makePythonPath(expression)
                 # Get the array of values
                 node_array_contents = eval(expression)
@@ -416,7 +416,7 @@ class QVizNodeDocumentationWidget(QWidget):
             elif item.isStaticData():
 
                 # - Set node contents
-                expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
+                expression = 'dataTreeView.dataSource.data_entries[' + str(item.getOccurrence()) + '].' + str(item.getPath())
                 expression = QVizGlobalOperations.makePythonPath(expression)
                 # Get the array of values
                 node_array_contents = eval(expression)
@@ -458,7 +458,7 @@ class QVizNodeDocumentationWidget(QWidget):
 
             elif item.getDataType() == 'STR_1D':
                 # - Set node contents
-                expression = 'dataTreeView.dataSource.ids[' + str(item.getOccurrence()) + '].' + str(item.getPath())
+                expression = 'dataTreeView.dataSource.data_entries[' + str(item.getOccurrence()) + '].' + str(item.getPath())
                 expression = QVizGlobalOperations.makePythonPath(expression)
                 # Get the array of values
                 node_array_contents = eval(expression)

@@ -14,10 +14,12 @@ class QVizIMASDataSource:
         self.shotNumber = int(shotNumber)
         self.runNumber = int(runNumber)
         self.machineName = machineName
-        self.ids = {}  # key = occurrence, value = ids object
+        self.data_entries = {}  # key = occurrence, value = IMAS data entry object
         # data_dictionary_version will be initialized only when loading
         # the first IDS (currently, it is not possible to get the DD version
         # from the AL at the data entry level, see IMAS-2835 for details
+        
+        self.loaded_ids = [] #list of names of IDS already fetched
         self.data_dictionary_version = None
 
     # Load IMAS data using IMAS api
@@ -38,21 +40,24 @@ class QVizIMASDataSource:
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
 
-        if self.ids.get(occurrence) is None:
-            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber,
+        if self.data_entries.get(occurrence) is None:
+            self.data_entries[occurrence] = imas.ids(self.shotNumber, self.runNumber,
                                             0, 0)
             v = os.environ["IMAS_MAJOR_VERSION"]
-            self.ids[occurrence].open_env(self.userName,
+            self.data_entries[occurrence].open_env(self.userName,
                                           self.imasDbName,
                                           os.environ["IMAS_MAJOR_VERSION"])
-            if self.ids[occurrence].expIdx == -1:
+            if self.data_entries[occurrence].expIdx == -1:
                 raise ValueError("Can not open shot " + str(self.shotNumber) +
                                  " from data base " + self.imasDbName +
                                  " of user " + self.userName)
-        else:
-            self.generatedDataTree.loadData = False #Do not call IMAS GET(), data are already loaded in memory
 
-        self.generatedDataTree.ids = self.ids[occurrence]
+        if IDSName in self.loaded_ids:
+            self.generatedDataTree.loadData = False #Do not call IMAS GET(), data are already loaded in memory
+        else:
+            self.generatedDataTree.loadData = True
+
+        self.generatedDataTree.ids = self.data_entries[occurrence]
 
         if asynch:
             # This will call asynchroneously the get() operation for fetching
@@ -61,6 +66,8 @@ class QVizIMASDataSource:
         else:
             # This will call the get() operation for fetching IMAS data
             self.generatedDataTree.run()
+            
+        self.loaded_ids.append(IDSName)
 
     @staticmethod
     def try_to_open(imasDbName, userName, shotNumber, runNumber,
@@ -99,7 +106,7 @@ class QVizIMASDataSource:
         imas_entry.close()
 
     def getImasEntry(self, occurrence):
-        return self.ids.get(occurrence)
+        return self.data_entries.get(occurrence)
 
     def containsData(self, node, imas_entry):
         ret = False
@@ -171,10 +178,10 @@ class QVizIMASDataSource:
             if os.getenv('IMAS_PREFIX') != None and \
                     'IMAS' in os.getenv('IMAS_PREFIX'):
                 # Set the export command
-                command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
+                command2 = "self.data_entries[" + str(occurrence) + "]." + idsName + \
                           ".setExpIdx(exported_ids." + idsName + "._idx)"
             else:
-                command2 = "self.ids[" + str(occurrence) + "]." + idsName + \
+                command2 = "self.data_entries[" + str(occurrence) + "]." + idsName + \
                            ".setExpIdx(exported_ids." + idsName + ".idx)"
 
             # Run the export command
@@ -182,7 +189,7 @@ class QVizIMASDataSource:
             logging.info("Calling IMAS put() for IDS " + idsName +
                          " occurrence " + str(occurrence) + ".")
             # Putting to occurrence
-            eval("self.ids[" + str(occurrence) + "]." + idsName +
+            eval("self.data_entries[" + str(occurrence) + "]." + idsName +
                  ".put(" + str(occurrence) + ")")
 
         exported_ids.close()

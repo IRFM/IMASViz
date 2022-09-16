@@ -94,7 +94,7 @@ class QVizIMASNativeDataAccess:
             coordinatesValues = []
             coordinate_of_time = None
 
-            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             arrayPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
             rval = eval(arrayPath)
             coordinateValues = None
@@ -141,7 +141,7 @@ class QVizIMASNativeDataAccess:
             if treeNode.getData() is None:
                 return
 
-            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             t = None
             signalPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
             rval = eval(signalPath)
@@ -194,7 +194,7 @@ class QVizIMASNativeDataAccess:
             data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
             time_slices_count = len(data_path_list)
             v = []
-            imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+            imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             for i in range(0, time_slices_count):
                 # Get values of the array at index
                 value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
@@ -214,7 +214,7 @@ class QVizIMASNativeDataAccess:
 
         # Get list of paths of arrays through time slices
         data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        ids = self.dataSource.ids[treeNode.getOccurrence()]
+        ids = self.dataSource.data_entries[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         # print "time_slices_count " + str(time_slices_count)
         v = []
@@ -236,7 +236,7 @@ class QVizIMASNativeDataAccess:
                         "' has no explicit dependency on coordinate1 dimension.")
         data_path_list = []
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
-        imas_entry = self.dataSource.ids[treeNode.getOccurrence()]
+        imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
         data_path = aos_vs_itime.replace("[itime]", "[" + str(itimeValue) + "]")
         value = eval('imas_entry.' + data_path)
         for i in range(0, len(xData)):  # constant 1D array
@@ -250,7 +250,7 @@ class QVizIMASNativeDataAccess:
             if selectedNodeData is None:
                 return
 
-            ids = self.dataSource.ids[selectedNodeData['occurrence']]
+            ids = self.dataSource.data_entries[selectedNodeData['occurrence']]
 
             # eval time
             t = np.array([eval(selectedNodeData['coordinate1'])])

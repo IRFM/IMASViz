@@ -118,7 +118,7 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
 
-            ids = self.dataTreeView.dataSource.ids[self.treeNode.getOccurrence()]
+            ids = self.dataTreeView.dataSource.data_entries[self.treeNode.getOccurrence()]
 
             # Get time
             self.treeNode.globalTime = self.treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
@@ -131,8 +131,6 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
             # TODO/Note: as it seems the QVizPlotSignal is used for single
             #            signals only, hence nbRows == 1 (always)
             nbRows = v.shape[0]
-
-            self.updateSlider()
 
             label, xlabel, ylabel, title = \
                 self.treeNode.plotOptions(self.dataTreeView,
@@ -147,7 +145,6 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                     # y-axis values
                     u = v[i]
                     # x-axis values
-                    # ti = t[i]
                     ti = t[0]
 
                     # Get plot display PlotItem and CentralWidget
@@ -184,8 +181,6 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                     else:
                         # Add plot
                         self.plotWidget.plot(vizTreeNode=self.treeNode,x=ti, y=u, label=label, update=update)
-
-            self.plotWidget.updateSlider(self.treeNode, update)
 
             # Show the widget window
             self.plotWidget.show()
