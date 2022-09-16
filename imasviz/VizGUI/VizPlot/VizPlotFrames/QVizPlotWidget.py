@@ -16,7 +16,7 @@ import numpy as np
 import logging
 from PyQt5.QtCore import Qt, QMetaObject, QRect
 from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
-                        QLabel, QFrame
+                        QLabel, QFrame, QTextEdit
 from functools import partial
 from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
 import PyQt5.QtWidgets as QtWidgets
@@ -154,6 +154,8 @@ class QVizPlotWidget(QWidget):
 
         self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=preview)
         self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
+        
+        #self.sliderGroup.updateValues(self.sliderGroup.slider.value()) 
 
         return self
            
@@ -262,7 +264,7 @@ class QVizPlotWidget(QWidget):
             self.gridLayout.addWidget(self.indexLabel, 5, 0, 1, 1)
             self.gridLayout.addWidget(self.sliderValueIndicator, 5, 1, 1, 1)
 
-            self.sliderGroup.updateValues(self.sliderGroup.slider.value())  # update values of current time/coordinate1 changed by the slider
+            #self.sliderGroup.updateValues(self.sliderGroup.slider.value())  # update values of current time/coordinate1 changed by the slider
 
             # Add time label
             self.gridLayout.addWidget(self.sliderFieldLabel, 6, 0, 1, 10)
@@ -312,6 +314,16 @@ class QVizPlotWidget(QWidget):
             enabled = False
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
+        
+    def updateSlider(self, treeNode, update=0):
+        if treeNode.embedded_in_time_dependent_aos() and treeNode.is1DAndDynamic():
+              self.setSliderComponentsDisabled(False)
+                
+        if self.addTimeSlider:
+              if update==0:
+                  time_index = treeNode.timeValue()
+                  self.sliderGroup.setValue(int(time_index)) 
+                  self.sliderGroup.updateValues(int(time_index)) 
 
 
 class sliderGroup():
@@ -381,32 +393,46 @@ class sliderGroup():
 
         if self.isTimeSlider:
             self.sliderFieldLabel = self.setLabel(text='Time:')
-            if self.active_treeNode.globalTime is None:
-                self.active_treeNode.globalTime = \
-                    self.active_treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
-            if self.active_treeNode.globalTime is not None:
-                self.parent.sliderFieldLabel.setText(
-                    "Time: " + str(self.active_treeNode.globalTime[indexValue]) + " [s]")
-            else:
-                self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
-        else:
-            node = self.active_treeNode
-            if len(self.parent.pgPlotWidget.getViewBox().vizTreeNodesList) > 0:
-                node = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList[0]
-            if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
-                self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
-                if node.getCoordinate(coordinateNumber=1) == "1..N" or \
-                        node.getCoordinate(coordinateNumber=1) == "1...N":
-                    s = "1..N"
+            nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
+            i = 0;
+            for node in nodesList:
+                label = node.setLabelForFigure(node.getDataTreeView().dataSource)
+                if node.globalTime is None:
+                    node.globalTime = \
+                        node.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
+                if node.globalTime is not None:
+                    time = "{:.6f}".format(float(node.globalTime[indexValue]))
+                    if i == 0:
+                        self.parent.sliderFieldLabel.setText(
+                        "Time [" + label + "]: " + str(time) + " [s]")
+                    else:
+                        self.parent.sliderFieldLabel.setText(self.parent.sliderFieldLabel.toPlainText() + "\n" +
+                            "Time [" + label + "]: " +  str(time) + " [s]")
+                    i = i + 1
                 else:
-                    s = node.getIDSName() + "." + \
-                        node.evaluateCoordinateVsTime(coordinateNumber=1)
-                    s = QVizGlobalOperations.makePythonPath(s)
-                value = node.coordinateValues(coordinateNumber=1,
-                                              dataTreeView=self.dataTreeView)[indexValue]
-                self.parent.sliderFieldLabel.setText("Coordinate1: " + s +
-                                                     " (Value = " +
-                                                     str(value) + ")")
+                    self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
+        else:
+            nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
+            i = 0;
+            self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
+            for node in nodesList:
+                if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
+                    
+                    if node.getCoordinate(coordinateNumber=1) == "1..N" or \
+                            node.getCoordinate(coordinateNumber=1) == "1...N":
+                        s = "1..N"
+                    else:
+                        s = node.getIDSName() + "." + \
+                            node.evaluateCoordinateVsTime(coordinateNumber=1)
+                        s = QVizGlobalOperations.makePythonPath(s)
+                    value = node.coordinateValues(coordinateNumber=1,
+                                                  dataTreeView=self.dataTreeView)[indexValue]
+                    if i == 0:      
+                        self.parent.sliderFieldLabel.setText(s + " (Value = " + str(value) + ")")
+                    else:
+                        self.parent.sliderFieldLabel.setText(self.parent.sliderFieldLabel.toPlainText() + "\n" +
+                            s + " (Value = " + str(value) + ")")
+                            
     def setValue(self, value):
         self.slider.setValue(value)
         
@@ -415,8 +441,6 @@ class sliderGroup():
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 
-        self.active_treeNode = self.dataTreeView.selectedItem
-
         minValue = self.slider.minimum()
         maxValue = self.slider.maximum()
 
@@ -424,23 +448,26 @@ class sliderGroup():
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
             minValue = 0
-
-            if self.active_treeNode.embedded_in_time_dependent_aos() and \
-                    self.active_treeNode.is1DAndDynamic():
-                # - Get maximum value by getting the length of the array
-                newMaxValue = int(self.active_treeNode.timeMaxValue()) - 1
-                if newMaxValue < self.slider.maximum() or maxValue == 0:
-                    maxValue = newMaxValue
+            nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
+            for node in nodesList:
+                if node.embedded_in_time_dependent_aos() and \
+                        node.is1DAndDynamic():
+                    # - Get maximum value by getting the length of the array
+                    newMaxValue = int(node.timeMaxValue()) - 1
+                    if newMaxValue < self.slider.maximum() or maxValue == 0:
+                        maxValue = newMaxValue
         else:
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
-            if self.active_treeNode.embedded_in_time_dependent_aos() and \
-                    self.active_treeNode.is1DAndDynamic():
-                newMaxValue = self.active_treeNode.coordinateLength(
-                    coordinateNumber=1, dataTreeView=self.dataTreeView) - 1
-                if newMaxValue < self.slider.maximum() or maxValue == 0:
-                    maxValue = newMaxValue
+            nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
+            for node in nodesList:
+                if node.embedded_in_time_dependent_aos() and \
+                        node.is1DAndDynamic():
+                    newMaxValue = node.coordinateLength(
+                        coordinateNumber=1, dataTreeView=self.dataTreeView) - 1
+                    if newMaxValue < self.slider.maximum() or maxValue == 0:
+                        maxValue = newMaxValue
 
         # Set default value
         self.ignoreEvent = True
@@ -476,11 +503,12 @@ class sliderGroup():
         """Set label with given text.
         """
 
-        sliderFieldLabel = QLabel()
+        #sliderFieldLabel = QLabel()
+        sliderFieldLabel = QTextEdit()
         sliderFieldLabel.setText(text)
         sliderFieldLabel.setAlignment(Qt.AlignLeft)
-        sliderFieldLabel.setWordWrap(True)
-        sliderFieldLabel.setFixedHeight(25)
+        #sliderFieldLabel.setWordWrap(True)
+        sliderFieldLabel.setFixedHeight(75)
         sliderFieldLabel.setFont(GlobalFonts.TEXT_MEDIUM)
 
         return sliderFieldLabel
@@ -536,13 +564,13 @@ class sliderGroup():
         i = 0
         api = self.dataTreeView.imas_viz_api
         for node in self.parent.pgPlotWidget.getViewBox().vizTreeNodesList:
-            self.active_treeNode = node
+            #self.active_treeNode = node
             if self.isTimeSlider:
 
                 api.plotVsCoordinate1AtGivenTime(
                     dataTreeView=node.getDataTreeView(),
                     currentFigureKey=currentFigureKey,
-                    treeNode=self.active_treeNode,
+                    treeNode=node,
                     update=1,
                     dataset_to_update=i)
             else:
@@ -550,7 +578,7 @@ class sliderGroup():
                     dataTreeView=node.getDataTreeView(),
                     coordinateIndex=currentIndex,
                     currentFigureKey=currentFigureKey,
-                    treeNode=self.active_treeNode,
+                    treeNode=node,
                     update=1,
                     dataset_to_update=i)
 
