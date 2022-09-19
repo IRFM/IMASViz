@@ -1,19 +1,34 @@
 
 from functools import partial
-from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
+from PyQt5.QtWidgets import QWidget, QApplication, QAction, QMenu, QStyle
 from imasviz.VizUtils import GlobalIcons
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
+from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PyQt5.QtCore import pyqtSignal
+
+from functools import partial
 
 
 class QVizMainMenuController:
 
     def __init__(self, parent=None):
+        self.parent = parent
         self.openShotView = QVizOpenShotView(parent.getMDI())
+        #self.hideAddPublicDBCommand = False
 
     def updateMenu(self, menu, listenerWidget):
         numWindows = len(self.openShotView.api.GetDTVFrames())
         self.menusShowHideAndDelete(numWindows, menu, listenerWidget)
+        #if not self.hideAddPublicDBCommand:
+        self.menuAddPublicDB(menu, listenerWidget)
 
+    def menuAddPublicDB(self, menu, listenerWidget):
+        action_addPublicDB = QAction('Add public databases', listenerWidget)
+        #action_addPublicDB.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'publicdbs'))
+        action_addPublicDB.triggered.connect(partial(self.addPublicDB))
+        # Add to menu
+        menu.addAction(action_addPublicDB)
+        
     def menusShowHideAndDelete(self, numWindows, menu, listenerWidget):
         menu_showHide = QMenu('Show/Hide shot views', menu)
         menu_showHide.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'showHide'))
@@ -137,7 +152,12 @@ class QVizMainMenuController:
                     # dtv.deleteLater()
             self.openShotView.api.RemoveDTVFrame(dtv)
 
+    def addPublicDB(self):
+        self.parent.IMASdbBrowserWidget.addUserDB("public")
+        
+    
     def getMDI(self):
         if self.parent.getMDI() != None:
             return self.parent.getMDI()
         return None
+        

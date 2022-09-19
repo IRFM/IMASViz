@@ -51,7 +51,7 @@ class GUIFrame(QTabWidget):
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
 
-        self.mainMenuController = QVizMainMenuController(parent)
+        self.mainMenuController = QVizMainMenuController(self)
 
         if UserInputs.inputs is not None and len(UserInputs.inputs) == 9:
             UserInputs.enable = True

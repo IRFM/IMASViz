@@ -13,11 +13,16 @@
 
 
 from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QObject, QThread
+from PyQt5.QtWidgets import QProgressBar
 import sys
 import os
 import getpass
 import glob
+import logging
+import threading
+from threading import Thread, Condition
+from functools import partial
 
 
 class QVizIMASdbBrowserWidget(QTreeWidget):
@@ -71,68 +76,98 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
         # # Set action on double click on item
         self.itemDoubleClicked.connect(self.doubleClickHandler)
-        username = getpass.getuser()
-        self.addContentsForUsername(username)
-        if username != "public":
-           self.addContentsForUsername("public")
+        
+        self.addUserDB(getpass.getuser())
+        self.setActiveUsername(getpass.getuser())
+        
+        self.progressBar = None
 
-    def addContentsForUsername(self, username):
-        """Set treeWidget items based on imasdb for given user.
+
+    def addUserDB(self, username):
+        logging.info("Populating database browser for user: " + username + "...")
+        self.progressBar = QProgressBar()
+        self.progressBar.setWindowTitle("Populating database browser for user: " + username + "...")
+
+        self.progressBar.setMaximum(0)
+        self.progressBar.setMinimum(0)
+        self.progressBar.setGeometry(100, 150, 500, 25)
+        self.progressBar.show()
+        
+        self.thread = QThread()
+        self.worker = Worker(username, self.presentUserNameList)
+        self.worker.moveToThread(self.thread)
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.thread.start()
+        self.thread.finished.connect(partial(self.addDB, self.worker))
+        
+    def addDB(self, worker):
+        if worker.rootUserItem is not None:
+            self.addTopLevelItem(worker.rootUserItem)
+            self.presentUserNameList.append(worker.username)
+            logging.info("End of populating database browser for user: " + worker.username + ".")
+        else:
+            logging.info("No database found for user: " + worker.username + ".")
+        if self.progressBar is not None:
+           self.progressBar.hide()
+
+
+    def doubleClickHandler(self, item, column_No):
+        """Handler for double click on QTreeWidgetItem in QTreeWidget
         """
 
-        try:
+        # When clicking on item representing run number
+        # (last in tree hierarchy -> 0 children)
+        if item.childCount() == 0:
+            self.setActiveUsername(item.parent().parent().parent().parent().text(0))
+            self.setActiveDatabase(item.parent().parent().text(0))
+            self.setActiveShot(item.parent().text(0))
+            self.setActiveRun(item.text(0))
 
-            self.activeUsername = username
+        self.onItemDoubleClick.emit()
 
-            imasdbPath = None
-            if username != "public":
-               userPath = os.path.abspath(os.path.join(
-               os.path.dirname(__file__), os.environ['HOME'], '..'))
-               userPath = userPath + "/" + username
-               # If user path does not exist, return
-               if os.path.exists(userPath) is False or \
-                    username in self.presentUserNameList:
-                 return False
-               imasdbPath = userPath + "/public/imasdb"
-            else:
-               imasdbPath = os.environ['IMAS_HOME'] + "/shared/imasdb"
-               if not os.path.exists(imasdbPath) or \
-                    username in self.presentUserNameList:
-                 return False
-              
-            self.presentUserNameList.append(username)
+    def setActiveUsername(self, username):
+        self.activeUsername = username
 
-            rootUserItem = QTreeWidgetItem(self)
-            rootUserItem.setText(0, username)
+    def setActiveDatabase(self, db):
+        self.activeDatabase = db
 
-            databaseList = [dI for dI in os.listdir(imasdbPath)
-                            if os.path.isdir(os.path.join(imasdbPath, dI))]
+    def setActiveShot(self, shot):
+        self.activeShot = shot
 
-            # Sort by alphabetical order
-            databaseList.sort()
-            
-            mdsplus_backendItem = QTreeWidgetItem(rootUserItem)
-            mdsplus_backendItem.setText(0, "MDS+")
-            
-            hdf5_backendItem = QTreeWidgetItem(rootUserItem)
-            hdf5_backendItem.setText(0, "HDF5")
+    def setActiveRun(self, run):
+        self.activeRun = run
 
-            # Go through databases
-            for db in databaseList:
-                if self.found_mdsplus_pulse_files(db, imasdbPath):
-                    databaseItem = QTreeWidgetItem(mdsplus_backendItem)
-                    databaseItem.setText(0, db)
-                    self.populate_from_mdsplus(db, imasdbPath, databaseItem)
-                
-                if self.found_hdf5_pulse_files(db, imasdbPath):
-                    databaseItem = QTreeWidgetItem(hdf5_backendItem)
-                    databaseItem.setText(0, db)
-                    self.populate_from_hdf5(db, imasdbPath, databaseItem)
-                
-            return True
-        except Exception as e:
-            print(str(e))
-            return False
+    def getActiveUsername(self):
+        return self.activeUsername
+
+    def getActiveDatabase(self):
+        return self.activeDatabase
+
+    def getActiveShot(self):
+        return self.activeShot
+
+    def getActiveRun(self):
+        return self.activeRun
+
+class Worker(QObject):
+    
+    finished = pyqtSignal()
+    progress = pyqtSignal(int)
+    
+    def __init__(self, username, presentUserNameList):
+       super(Worker, self).__init__()
+       
+       self.username = username
+       self.presentUserNameList = presentUserNameList
+       self.rootUserItem = None
+
+    def run(self):
+        """Long-running task."""
+        self.addContentsForUsername()
+        self.finished.emit()
         
     def found_mdsplus_pulse_files(self, db, imasdbPath):
        for d in range(10):  # will look in /0 and /1 dirs
@@ -271,46 +306,62 @@ then the available <b>IDS cases for that user will be shown too</b>.
             for run in runList:
                 runItem = QTreeWidgetItem(shotItem)
                 runItem.setText(0, run) 
-
-
-    def doubleClickHandler(self, item, column_No):
-        """Handler for double click on QTreeWidgetItem in QTreeWidget
+        
+    def addContentsForUsername(self):
+        """Set treeWidget items based on imasdb for given user.
         """
+        
+        try:
+            #self.activeUsername = self.username
 
-        # When clicking on item representing run number
-        # (last in tree hierarchy -> 0 children)
-        if item.childCount() == 0:
-            self.setActiveUsername(item.parent().parent().parent().parent().text(0))
-            self.setActiveDatabase(item.parent().parent().text(0))
-            self.setActiveShot(item.parent().text(0))
-            self.setActiveRun(item.text(0))
+            imasdbPath = None
+            if self.username != "public":
+               userPath = os.path.abspath(os.path.join(
+               os.path.dirname(__file__), os.environ['HOME'], '..'))
+               userPath = userPath + "/" + self.username
+               # If user path does not exist, return
+               if os.path.exists(userPath) is False or \
+                    self.username in self.presentUserNameList:
+                 return
+               if os.path.exists(userPath) is False:
+                 return
+               imasdbPath = userPath + "/public/imasdb"
+            else:
+               imasdbPath = os.environ['IMAS_HOME'] + "/shared/imasdb"
+               if not os.path.exists(imasdbPath) or \
+                    self.username in self.presentUserNameList:
+                 return
+              
+            self.rootUserItem = QTreeWidgetItem()
+            self.rootUserItem.setText(0, self.username)
 
-        self.onItemDoubleClick.emit()
+            databaseList = [dI for dI in os.listdir(imasdbPath)
+                            if os.path.isdir(os.path.join(imasdbPath, dI))]
 
-    def setActiveUsername(self, username):
-        self.activeUsername = username
+            # Sort by alphabetical order
+            databaseList.sort()
+            
+            mdsplus_backendItem = QTreeWidgetItem(self.rootUserItem)
+            mdsplus_backendItem.setText(0, "MDS+")
+            
+            hdf5_backendItem = QTreeWidgetItem(self.rootUserItem)
+            hdf5_backendItem.setText(0, "HDF5")
 
-    def setActiveDatabase(self, db):
-        self.activeDatabase = db
-
-    def setActiveShot(self, shot):
-        self.activeShot = shot
-
-    def setActiveRun(self, run):
-        self.activeRun = run
-
-    def getActiveUsername(self):
-        return self.activeUsername
-
-    def getActiveDatabase(self):
-        return self.activeDatabase
-
-    def getActiveShot(self):
-        return self.activeShot
-
-    def getActiveRun(self):
-        return self.activeRun
-
+            # Go through databases
+            for db in databaseList:
+                if self.found_mdsplus_pulse_files(db, imasdbPath):
+                    databaseItem = QTreeWidgetItem(mdsplus_backendItem)
+                    databaseItem.setText(0, db)
+                    self.populate_from_mdsplus(db, imasdbPath, databaseItem)
+                
+                if self.found_hdf5_pulse_files(db, imasdbPath):
+                    databaseItem = QTreeWidgetItem(hdf5_backendItem)
+                    databaseItem.setText(0, db)
+                    self.populate_from_hdf5(db, imasdbPath, databaseItem)
+                
+        except Exception as e:
+            print(str(e))
+            
 
 if __name__ == '__main__':
     """Test.

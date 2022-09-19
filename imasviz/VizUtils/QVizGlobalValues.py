@@ -362,6 +362,9 @@ class GlobalIcons:
         elif label == 'showHide':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
                                '/resources/VizIcons/showHide.ico')
+        elif label == 'publicdbs':
+            return QtGui.QIcon(os.environ['VIZ_HOME'] +
+                               '/resources/VizIcons/publicdbs.ico')
         elif label == 'thisDTV':
             return QtGui.QIcon(os.environ['VIZ_HOME'] +
                                '/resources/VizIcons/thisDTV.ico')
