@@ -20,9 +20,10 @@ class QVizGeneratedClassFactory:
         self.view = view
         self.occurrence = occurrence
         self.viewLoadingStrategy = None
-        if viewLoadingStrategy is not None:
-           viewLoadingStrategy.setIdentifier(QVizViewLoadingStrategy.getLoadingStrategyIdentifier(viewLoadingStrategy))
-           self.viewLoadingStrategy = viewLoadingStrategy
+        from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
+        if viewLoadingStrategy is None:
+           viewLoadingStrategy = QVizViewLoadingStrategy.getDefaultStrategy()
+        self.viewLoadingStrategy = viewLoadingStrategy
         self.asynch = asynch
      
     def create(self, progressBar=None):

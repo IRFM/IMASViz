@@ -327,10 +327,13 @@ class QVizDataTreeView(QTreeWidget):
         ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
         root_node_label = 'occurrence ' + str(int(occurrence))
+        print("TEST1")
         if viewLoadingStrategy is not None:
             label = viewLoadingStrategy.getLabel()
             if label is not None:
                root_node_label += " [" + label + "]"
+        else:
+            print("loading strategy is None")
         ids_root_occ = QVizTreeNode(ids_root_node, [root_node_label], ids_root_node.getData())
         ids_root_occ.setOccurrenceEntry(True)
         if viewLoadingStrategy is not None:
