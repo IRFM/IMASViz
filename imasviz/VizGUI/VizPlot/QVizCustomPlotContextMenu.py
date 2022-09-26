@@ -260,16 +260,16 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         data_error_lower = vizTreeNode.get_data_error_lower(dataItem)
         data_error_upper = vizTreeNode.get_data_error_upper(dataItem)
         add_confidence_bands = False
-        top = None
-        bottom = None
+        upper = None
+        lower = None
         
         if data_error_lower is not None and data_error_upper is not None:
-            bottom = data_error_lower
-            top = data_error_upper
+            lower = data_error_lower
+            upper = data_error_upper
             add_confidence_bands = True
         elif data_error_lower is None and data_error_upper is not None:
-            bottom = data_error_upper
-            top = data_error_upper
+            lower = data_error_upper
+            upper = data_error_upper
             add_confidence_bands = True
         else:
             add_confidence_bands = False
@@ -277,11 +277,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         if add_confidence_bands:
             self.confidenceBandUpper = None
             self.confidenceBandLower = None
-            self.confidenceBandUpper = pg.PlotDataItem(x, y + data_error_upper)
-            if bottom is not None:
-               self.confidenceBandLower = pg.PlotDataItem(x, y - data_error_lower)
-            else:
-               self.confidenceBandLower = pg.PlotDataItem(x, y - data_error_upper)
+            self.confidenceBandUpper = pg.PlotDataItem(x, y + upper)
+            self.confidenceBandLower = pg.PlotDataItem(x, y - lower)
             self.addItem(self.confidenceBandUpper)
             self.addItem(self.confidenceBandLower)
             self.fbitem = pg.FillBetweenItem(self.confidenceBandLower, self.confidenceBandUpper)

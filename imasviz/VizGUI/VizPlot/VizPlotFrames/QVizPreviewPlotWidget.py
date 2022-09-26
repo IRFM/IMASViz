@@ -76,10 +76,12 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
             return
             
         self.pgPlotWidget.getViewBox().clearPlotDataItemsMap(node=None)
-            
-        if vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
-                x = np.append(x, [x[0]])
-                y = np.append(y, [y[0]])
+        try:
+           if vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+                    x = np.append(x, [x[0]])
+                    y = np.append(y, [y[0]])
+        except:
+            print('closed attribute not found')
         # Access the UI elements through the `ui` attribute
         # Adding plot
         #Setting range manually (see IMAS-3658)
@@ -90,8 +92,6 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
         self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=1)
         self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
         
-        #self.plot(vizTreeNode=vizTreeNode, x=x, y=y, title='', pen=pen, preview=1, label=label, xlabel=xlabel, ylabel=ylabel)
-
         # Set x-axis label
         self.pgPlotWidget.setLabel('left', ylabel, units='')
         # Set y-axis label

@@ -126,11 +126,12 @@ class QVizPlotWidget(QWidget):
 
         # Plot and plot settings
         # - Add plot
-
-        if vizTreeNode is not None and vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
-                x = np.append(x, [x[0]])
-                y = np.append(y, [y[0]])
-
+        try:
+            if vizTreeNode is not None and vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+                    x = np.append(x, [x[0]])
+                    y = np.append(y, [y[0]])
+        except:
+            print('closed attribute not found')
         plotDataItem = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
         # Set only when adding the first plot. All additionally added plots
