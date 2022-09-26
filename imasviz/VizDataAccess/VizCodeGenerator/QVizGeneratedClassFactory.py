@@ -43,7 +43,7 @@ class QVizGeneratedClassFactory:
 
         if QVizGlobalValues.TESTING:
             imas_dd_version = QVizGlobalValues.TESTING_IMAS_VERSION
-
+            
         if QVizPreferences.Ignore_GGD == 0:
 
             className = "IDSDef_XMLParser_Full_Generated_" + \
@@ -53,10 +53,12 @@ class QVizGeneratedClassFactory:
                 "/.imasviz/VizGeneratedCode/"
             if not os.path.exists(path_user_gencode):
                 os.makedirs(path_user_gencode)
-
+            
             IDSDef_parser_path = os.environ['HOME'] + \
                 "/.imasviz/VizGeneratedCode/" + className + ".py"
             print("IDSDef parser path: ", IDSDef_parser_path)
+            self.removeParserIfTooOld(IDSDef_parser_path)
+            
             if not os.path.exists(IDSDef_parser_path):
                 print("Generating full parsers for IMAS "
                       f"{imas_dd_version}")
@@ -93,6 +95,8 @@ class QVizGeneratedClassFactory:
             IDSDef_parser_path = os.environ['HOME'] + \
                 "/.imasviz/VizGeneratedCode/" + className + ".py"
             print("IDSDef parser path: ", IDSDef_parser_path)
+            self.removeParserIfTooOld(IDSDef_parser_path)
+             
             if not os.path.exists(IDSDef_parser_path):
                 print("Generating full parsers for IMAS "
                       f"{imas_dd_version}")
@@ -121,3 +125,21 @@ class QVizGeneratedClassFactory:
         XMLParser.setProgressBar(progressBar)
 
         return XMLParser
+        
+        
+    def removeParserIfTooOld(self, IDSDef_parser_path):
+        import time
+        from datetime import datetime
+        dt_obj = datetime.strptime('26.09.2022 00:00:00,00',
+                       '%d.%m.%Y %H:%M:%S,%f')
+        millisec = dt_obj.timestamp() * 1000
+        if not ('IMAS_VIZ_VERSION' in os.environ):
+            logging.warn("Unable to check if Viz parsers are obsolete: 'IMAS_VIZ_VERSION' environment variable not defined.")
+            return
+        viz_version = os.environ['IMAS_VIZ_VERSION']
+        if viz_version >= "2.5.0" and os.path.exists(IDSDef_parser_path):
+            parser_age = 1000*os.stat(IDSDef_parser_path).st_mtime
+            if parser_age < millisec:
+                logging.info("Removing obsolete parser: " + IDSDef_parser_path + ".")
+                os.remove(IDSDef_parser_path)
+                    
