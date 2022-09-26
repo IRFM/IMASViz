@@ -108,8 +108,8 @@ then the available <b>IDS cases for that user will be shown too</b>.
             self.addTopLevelItem(worker.rootUserItem)
             self.presentUserNameList.append(worker.username)
             logging.info("End of populating database browser for user: " + worker.username + ".")
-        else:
-            logging.info("No database found for user: " + worker.username + ".")
+        #else:
+        #    logging.info("No database found for user: " + worker.username + ".")
         if self.progressBar is not None:
            self.progressBar.hide()
 
