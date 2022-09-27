@@ -84,7 +84,7 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
 
     def addUserDB(self, username):
-        logging.info("Populating database browser for user: " + username + "...")
+        #logging.info("Populating database browser for user: " + username + "...")
         self.progressBar = QProgressBar()
         self.progressBar.setWindowTitle("Populating database browser for user: " + username + "...")
 
@@ -101,13 +101,13 @@ then the available <b>IDS cases for that user will be shown too</b>.
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
         self.thread.start()
-        self.thread.finished.connect(partial(self.addDB, self.worker))
+        self.thread.finished.connect(partial(self.addDB))
         
-    def addDB(self, worker):
-        if worker.rootUserItem is not None:
-            self.addTopLevelItem(worker.rootUserItem)
-            self.presentUserNameList.append(worker.username)
-            logging.info("End of populating database browser for user: " + worker.username + ".")
+    def addDB(self):
+        if self.worker.rootUserItem is not None:
+            self.addTopLevelItem(self.worker.rootUserItem)
+            self.presentUserNameList.append(self.worker.username)
+            #logging.info("End of populating database browser for user: " + self.worker.username + ".")
         #else:
         #    logging.info("No database found for user: " + worker.username + ".")
         if self.progressBar is not None:
