@@ -534,9 +534,9 @@ class Viz_API:
     def GetIMASDataEntry(self, dataTreeFrame, occurrence):
         from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
-            return self.GetDataSource(dataTreeFrame.parent).ids[occurrence]
+            return self.GetDataSource(dataTreeFrame.parent).data_entries[occurrence]
         else:
-            return self.GetDataSource(dataTreeFrame).ids[occurrence]
+            return self.GetDataSource(dataTreeFrame).data_entries[occurrence]
 
     def CreatePlotWidget(self, dataTreeView, strategy="DEFAULT"):
 

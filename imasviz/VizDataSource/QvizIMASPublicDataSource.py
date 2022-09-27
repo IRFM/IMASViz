@@ -28,12 +28,12 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
                                                            occurrence,
                                                            asynch).create(self.progressBar)
         print("*: self.ids: ", self.ids)
-        if self.ids.get(occurrence) is None:
-            self.ids[occurrence] = imas.ids(self.shotNumber, self.runNumber,
+        if self.data_entries.get(occurrence) is None:
+            self.data_entries[occurrence] = imas.ids(self.shotNumber, self.runNumber,
                                             0, 0)
-            self.ids[occurrence].open_public(self.machineName)
+            self.data_entries[occurrence].open_public(self.machineName)
 
-        self.generatedDataTree.ids = self.ids.get(occurrence)
+        self.generatedDataTree.ids = self.data_entries.get(occurrence)
 
         if asynch == True:
             self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
