@@ -100,8 +100,9 @@ then the available <b>IDS cases for that user will be shown too</b>.
         self.worker.finished.connect(self.thread.quit)
         self.worker.finished.connect(self.worker.deleteLater)
         self.thread.finished.connect(self.thread.deleteLater)
-        self.thread.start()
         self.thread.finished.connect(partial(self.addDB))
+        self.thread.start()
+        
         
     def addDB(self):
         if self.worker.rootUserItem is not None:

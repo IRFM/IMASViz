@@ -179,7 +179,7 @@ class GUIFrame(QTabWidget):
         self.runNumber.setText(self.IMASdbBrowserWidget.getActiveRun())
 
     def onUserNameEditFinished(self):
-        self.IMASdbBrowserWidget.addUserDB(self.userName.text())
+        self.IMASdbBrowserWidget.setActiveUsername(self.userName.text())
 
     def tabTwo(self):
 

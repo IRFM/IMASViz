@@ -21,6 +21,7 @@ class QVizMainMenuController:
         self.menusShowHideAndDelete(numWindows, menu, listenerWidget)
         #if not self.hideAddPublicDBCommand:
         self.menuAddPublicDB(menu, listenerWidget)
+        self.menuAddSpecificUserDB(menu, listenerWidget)
 
     def menuAddPublicDB(self, menu, listenerWidget):
         action_addPublicDB = QAction('Add public databases', listenerWidget)
@@ -28,6 +29,15 @@ class QVizMainMenuController:
         action_addPublicDB.triggered.connect(partial(self.addPublicDB))
         # Add to menu
         menu.addAction(action_addPublicDB)
+        
+    def menuAddSpecificUserDB(self, menu, listenerWidget):
+        username = self.parent.IMASdbBrowserWidget.getActiveUsername()
+        if username == "":
+            return
+        action_addSpecificUserDB = QAction('Add databases from user ' + username, listenerWidget)
+        action_addSpecificUserDB.triggered.connect(partial(self.addSpecificUserDB))
+        # Add to menu
+        menu.addAction(action_addSpecificUserDB)
         
     def menusShowHideAndDelete(self, numWindows, menu, listenerWidget):
         menu_showHide = QMenu('Show/Hide shot views', menu)
@@ -155,7 +165,10 @@ class QVizMainMenuController:
     def addPublicDB(self):
         self.parent.IMASdbBrowserWidget.addUserDB("public")
         
-    
+    def addSpecificUserDB(self):
+        username = self.parent.IMASdbBrowserWidget.getActiveUsername()
+        self.parent.IMASdbBrowserWidget.addUserDB(username)
+        
     def getMDI(self):
         if self.parent.getMDI() != None:
             return self.parent.getMDI()
