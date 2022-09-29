@@ -20,3 +20,4 @@ User Manual
    other_GUI_features.rst
    scripting.rst
    user_preferences.rst
+   UDA.rst

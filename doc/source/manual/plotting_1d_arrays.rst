@@ -6,15 +6,15 @@
 Plotting 1D arrays
 ==================
 
-The plotting of 1D arrays option and plot handling is the main feature and
-purpose of the :guilabel:`IMASViz`.
+Plotting 1D arrays and plot handling are the main features and
+purposes of the :guilabel:`IMASViz`.
 
-This section describes the basics of plotting a 1D array, stored in
-the IDS, and how to handle the existing plots.
+This section describes the basics of plotting a 1D array stored in
+an IDS and how to handle the existing plots.
 
 .. _plotting_single_1d_array:
 
-Plotting a single 1D array to plot figure
+Plotting a single 1D array to a figure
 -----------------------------------------
 
 The procedure to plot 1D array is as follows:
@@ -30,10 +30,10 @@ The procedure to plot 1D array is as follows:
 
      Example of plottable FLT_1D node.
 
-   By clicking on the node the preview plot will be displayed in the
+   By clicking on the node, the preview plot will be displayed in the
    :guilabel:`Preview Plot`, located in the main window. This
    feature helps to quickly check how the data, stored in the FLT_1D, looks
-   when plotted.
+   when plotted on other figures.
 
    .. figure:: images/DTV_preview_plot.png
      :align: center
@@ -52,9 +52,9 @@ The procedure to plot 1D array is as follows:
      :align: center
      :scale: 80%
 
-     Navigating through right-click menu to plot data to plot figure.
+     Navigating through right-click menu to plot data on a figure.
 
-   The plot should display in plot figure as shown in the image below.
+   The plot should display in a figure as shown in the image below.
 
    .. figure:: images/plotWidget_basic.png
      :align: center
@@ -66,7 +66,7 @@ The procedure to plot 1D array is as follows:
 Basic plot display features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The below features are available for any :guilabel:`plot display`. Most of them
+The features described below are available for any :guilabel:`plot display`. Most of them
 are available in the right-click menu.
 
 .. Note::
@@ -80,7 +80,7 @@ are available in the right-click menu.
   :align: center
   :width: 450px
 
-  Plot display window right-click menu.
+  Window right-click menu of a plot.
 
 .. Disable/Enable Mouse
 .. ^^^^^^^^^^^^^^^^^^^^
@@ -295,7 +295,7 @@ The plot will be added to the existing plot as shown in the image below.
 Plotting a selection of 1D arrays to figure
 -------------------------------------------
 
-The procedure of 1D arrays selection and plotting to figure is as
+The procedure of 1D arrays selection and plotting to a figure is as
 follows:
 
 1. In main tree view window set a selection of nodes holding 1D arrays.
@@ -333,7 +333,9 @@ follows:
 Plotting 1D array as a function of coordinate1 along the time axis
 ------------------------------------------------------------------
 
-One of the IMASViz features is plotting coordinate along the time axis.
+One of the IMASViz features is to plot data along coordinate1 specified 
+in the IMAS Data Dictionary. Coordinate1 data can be set
+using a time slider along the time axis.
 This is allowed for IDS nodes, located within **time_slice[:]** structure, and
 it is already set as a default plotting feature for such arrays.
 
@@ -394,13 +396,13 @@ on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
           such existing plot might not work as expected, as the sliding through
           indexes works directly only the last added plot.
 
-Plotting 1D arrays at index as a function of the time
------------------------------------------------------
+Plotting 1D arrays at given coordinate1 index as a function of the time
+-----------------------------------------------------------------------
 
-One of the IMASViz features is plotting array values at certain index as a
-function of time. This is allowed for IDS nodes, located within
-**time_slice[:]** structure, and it is already set as a default plotting
-feature for such arrays.
+One of the IMASViz features is to plot data as a function of time for a given
+coordinate1 index which can be set using a slider. This is allowed for IDS nodes, 
+located within **time_slice[:]** structure, and it is already set as a 
+default plotting feature for such arrays.
 
 The procedure is described and demonstrated
 on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
@@ -462,18 +464,41 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
 
 .. _multiplot_features:
 
+
+Displaying error bars and/or confidence bands
+---------------------------------------------
+If data for fields error_upper and/or error_lower are available, errors bars and
+confidence bars can be displayed.
+Right clicking on a plot figure will display a popup menu as shown in 
+the image below.
+
+  .. figure:: images/plot_menu_error_bars.png
+     :align: center
+     :width: 550px
+
+'Show/Hide error bars' displays error bars for each data point while 
+'Show/Hide error bars (with slicing)' diplays error bars every N data points
+where N is a value asked to the user.
+
+'Show/Hide confidence bands' displays confidence bands as shown in 
+the image below.
+
+  .. figure:: images/confidence_bands.png
+     :align: center
+     :width: 550px
+ 
+
 MultiPlot features
 ------------------
 
-IMASViz provides few features that allow plotting each signal from a selection
-to its own plot view window.
+IMASViz provides few features that allow plotting a selection of 1D data
+to different plot figure templates (view).
 
-Currently there are two such features available:
+Currently there are two views available:
    - :guilabel:`Table Plot View` and
    - :guilabel:`Stacked Plot View`.
 
-Each of those Plot Views feature its own plot display layout and plot display
-window interaction features.
+Each of those Plot Views displays interactive menu for interaction features.
 
 .. Note::
    In the old IMASViz, the :guilabel:`Table Plot View` is known as
@@ -490,7 +515,7 @@ Table Plot View
 
 :guilabel:`Table Plot View` allows the user to create a multiplot window by
 plotting every array from selection to its own plot display.
-The plot displays are arranged to resemble a table layout, as shown in figure
+The plots are arranged to resemble a table layout as shown in the figure
 below.
 
 .. figure:: images/TablePlotView_example.png
@@ -502,9 +527,9 @@ below.
 Creating New View
 ^^^^^^^^^^^^^^^^^
 
-To create a new :guilabel:`Table Plot View`, follow the next steps:
+To create a new :guilabel:`Table Plot View`, follow the following steps:
 
-1. Create a selection of nodes, as described in section
+1. Create a selection of data nodes, as described in section
    :ref:`plotting_a_selection_to_figure`.
 
 2. When finished with node selection, either:

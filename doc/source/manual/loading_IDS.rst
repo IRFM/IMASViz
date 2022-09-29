@@ -8,23 +8,23 @@
 Loading IDS from IMAS local data source
 =======================================
 
-This section describes and demonstrates how to load the **IMAS IDS case**
-within **IMASViz** and open one of the **IDS nodes**.
+This section describes and demonstrates how to load IDSs
+within **IMASViz**
 
 .. Note:: The procedure below is executed on the **GateWay HPC** and thus the
-          **IMAS IDS cases** available on the GateWay are used.
+          shots in example are available on the GateWay.
 
-Loading IMAS IDS
-----------------
+Loading an IMAS IDS
+-------------------
 
-The procedure to load the IDS is as follows:
+The procedure to load an IDS is as follows:
 
 - In the main :guilabel:`IMASViz GUI`, select the first
   tab - :guilabel:`Local data source`.
 - Enter the following parameters, listed below, to the appropriate text fields.
 
 +-------------------------------+
-| **IMAS IDS case**             |
+| **IMAS IDS example**          |
 +--------------------+----------+
 | Parameters         | Values   |
 +====================+==========+
@@ -37,7 +37,7 @@ The procedure to load the IDS is as follows:
 | Run number         | 0        |
 +--------------------+----------+
 
-By default, the data source is a pulse file located in
+The data source is a MDS+ pulse file located in
 :file:`$HOME/public/imasdb/<IMAS database name>/3/0/` directory. In this
 case, the :file:`~public/imasdb/viztest/3/0/` directory of user ``g2penkod``.
 
@@ -57,18 +57,20 @@ input parameters will then get filled automatically, as shown in figure below.
 
 
 By typing a different user name in the :guilabel:`User name` text window and
-applying the change the list of available IMAS databases will be automatically
-added to the :guilabel:`IMAS database browser`.
+selecting 'Add databases from user ...' from the data browser popumenu 
+(obtained by a right click)  will automatically load the available databases
+to the :guilabel:`IMAS database browser`.
 
-.. image:: images/startup_window_IMAS_database_browser.png
+.. image:: images/adding_databases.png
    :align: center
    :scale: 80%
 
-Open IDS
---------
+
+Open an IDS
+-----------
 
 The procedure to open any IDS is the same. In this manual,
-the procedure will be shown on **magnetics IDS**.
+the procedure will be shown on a **magnetics IDS**.
 
 
 1. Click :guilabel:`Open` button to open the IDS.
@@ -110,7 +112,7 @@ the procedure will be shown on **magnetics IDS**.
       :align: center
       :width: 550px
 
-3. Open **magnetics IDS** by right-clicking on the **magnetics** node
+3. Open the **magnetics IDS** by right-clicking on the **magnetics** node
    and selecting the command :guilabel:`Get magnetics data` (occurrence 0)
    as shown in the figure below.
 
@@ -129,4 +131,37 @@ the procedure will be shown on **magnetics IDS**.
     .. image:: images/DTV_magnetics_IDS_contents_FLT_1D.png
       :align: center
       :scale: 80%
+      
+Adding a new view for IDSs containing a dynamic Array Of Structure
+------------------------------------------------------------------
+
+By default, Viz opens a view displaying only one time slice, even if
+more time slices have been loaded in memory during IDS loading described
+above. This default view/strategy (called 'one time slice only') 
+ensures to reduce the time to build the IDS tree which is displayed to 
+the user. However, different views of the data can be added by 
+right-clicking in the node 'Occurrence...' of the first view as shown 
+in the image below.
+
+    .. image:: images/views_menu.png
+      :align: center
+      :scale: 80%
+
+The different views/strategies are:
+
+- 'All time slices': all time slices are displayed in the tree
+
+- 'One over 10 time slices' : only 1 slice over 10 is displayed
+
+- 'Specific time slice only': only 1 slice is displayed with a time index choosen by the user
+
+- 'First time slice only': this is the default view.
+
+Below an example of 2 views of the same occurrence, the view 
+'One over 10 time slices' has been added by the user.
+
+    .. image:: images/two_views.png
+      :align: center
+      :scale: 80%
+
 

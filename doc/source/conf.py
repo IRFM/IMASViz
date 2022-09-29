@@ -26,7 +26,7 @@ author = 'Dejan Penko, Fleury Ludovic'
 # The short X.Y version
 version = ''
 # The full version, including alpha/beta/rc tags
-release = '2019'
+release = '2022'
 
 
 # -- General configuration ---------------------------------------------------

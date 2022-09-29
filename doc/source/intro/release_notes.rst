@@ -33,7 +33,7 @@ Released 09.07.2022
 IMPORTANT NOTE:
 
 if you are using Viz before 2.5.0, you need to clean Viz cache before to start the tool in order to see the expected change by IMAS-4186 fix:
-rm -rf ~/.imasviz/VizGeneratedCode/*.py
+rm -rf ~/.imasviz/VizGeneratedCode/\*.py
 
 -------------
 Version 2.4.7
