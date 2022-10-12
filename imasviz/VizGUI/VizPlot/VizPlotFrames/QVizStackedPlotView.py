@@ -136,7 +136,7 @@ class QVizStackedPlotView(QWidget):
             [el.getAxis('bottom').setStyle(showValues=False) for el in self.plotList[:-1]]
 
 
-class StackedPlotWindow(pg.GraphicsWindow):
+class StackedPlotWindow(pg.GraphicsView):
     """View containing the plots in a stacked layout.
     """
 

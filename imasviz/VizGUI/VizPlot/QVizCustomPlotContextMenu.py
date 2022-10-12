@@ -16,8 +16,8 @@ import numpy as np
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 import logging
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QAction
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
+#from PyQt5.QtGui import QAction
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QAction
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
 
