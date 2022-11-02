@@ -59,6 +59,8 @@ class QVizPlotConfigUI(QDialog):
             self.legendItem = self.viewBox.plotItem.legend
         elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = None
+        elif "QVizPlugin" in str(self.viewBox.qWidgetParent.objectName()):
+            self.legendItem = self.viewBox.plotItem.legend
         else:
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend
@@ -137,6 +139,8 @@ class QVizPlotConfigUI(QDialog):
         elif "QVizPlotLayoutWidget" in widgetName:
             # No support for PlotLayoutWidget
             return None
+        elif "QVizPlugin" in widgetName:
+            return self.viewBox.plotItem
         else:
             return self.viewBox.qWidgetParent.getPlotItem()
 
@@ -261,7 +265,7 @@ class TabLineProperties(QWidget):
         row = 0  # layout row
         itemID = 0
         for pdItem in self.parent.listPlotDataItems:
-            if isinstance(pdItem, pg.InfiniteLine):
+            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem, pg.FillBetweenItem):
                 continue
             col = 0  # layout column
 
@@ -933,7 +937,7 @@ class TabLegendProperties(QWidget):
         itemID = 0
         # Add options for each plotDataItem
         for pdItem in self.parent.listPlotDataItems:
-            if isinstance(pdItem, pg.InfiniteLine):
+            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem, pg.FillBetweenItem):
                 continue
             col = 0  # layout column
 

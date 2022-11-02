@@ -148,7 +148,8 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                     ti = t[0]
 
                     # Get plot display PlotItem and CentralWidget
-                    pgPlotItem = self.plotWidget.pgPlotWidget.plotItem
+                    #pgPlotItem = self.plotWidget.pgPlotWidget.plotItem
+                    pgPlotItem = self.plotWidget.getPlotItem()
                     pgCentralWidget = self.plotWidget.pgPlotWidget.centralWidget
                     pgPlotItem.items[dataset_to_update].setData(x=ti, y=u)
                     # Update x-axis label
@@ -168,7 +169,8 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
 
                     # Setting range manually (see IMAS-3658)
                     self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
-
+                    pm = self.plotWidget.getPlotItem()
+                    
                     if i == 0:
                         # New plot
                         # plotWidget_2 = QVizPlotServices().plot(x=ti, y=u, title=title, pen='b')
@@ -191,3 +193,6 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
 
     def onHide(self, api, figureKey):
         self.dataTreeView.imas_viz_api.figureframes[figureKey].hide()
+        
+    def getTreeNode(self):
+        return self.treeNode

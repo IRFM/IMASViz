@@ -10,6 +10,7 @@ class FigureTypes:
     IMAGETYPE = "Image:"
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
+    PROFILESPLOTTYPE = "PlotView:"
 
 class UserInputs:
     inputs = None

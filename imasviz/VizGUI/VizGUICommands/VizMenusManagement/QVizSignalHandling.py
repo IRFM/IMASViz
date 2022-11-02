@@ -43,7 +43,7 @@ from imasviz.VizUtils import FigureTypes
 
 
 class QVizSignalHandling(QObject):
-    def __init__(self, dataTreeView):
+    def __init__(self, dataTreeView, treeNode=None):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -56,7 +56,12 @@ class QVizSignalHandling(QObject):
         # Get signal node (tree item) data
         if self.dataTreeView.selectedItem is not None:
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
-        self.treeNode = self.dataTreeView.selectedItem
+        elif treeNode is not None:
+            self.nodeData = treeNode.getInfoDict()
+        if treeNode is not None:
+           self.treeNode = treeNode
+        else:
+           self.treeNode = self.dataTreeView.selectedItem
 
     def buildContextMenu(self, signalNode):
         """Build context menu.
@@ -69,6 +74,7 @@ class QVizSignalHandling(QObject):
         numTPV = self.imas_viz_api.GetTablePlotViewsCount()
         numSPV = self.imas_viz_api.GetStackedPlotViewsCount()
         numImg = self.imas_viz_api.GetImagePlotsCount()
+        numPro = self.imas_viz_api.GetProfilesPlotViewsCount()
 
         # Set new popup menu
         self.contextMenu = QMenu()
@@ -108,7 +114,7 @@ class QVizSignalHandling(QObject):
 
         # - Add menu for handling show/hide if figures, TablePlotViews and
         #   StackedPlotViews.
-        self.menusShowHideAndDelete(numFig, numTPV, numSPV, numImg, self.contextMenu)
+        self.menusShowHideAndDelete(numFig, numTPV, numSPV, numImg, numPro, self.contextMenu)
         self.menusPlugins()
 
         # TODO:
@@ -501,7 +507,7 @@ class QVizSignalHandling(QObject):
 
         return menu
 
-    def menusShowHideAndDelete(self, numFig, numTPV, numSPV, numImg, menu):
+    def menusShowHideAndDelete(self, numFig, numTPV, numSPV, numImg, numPro, menu):
         """Set two menus: first  for handling show/hide and second for deleting
         of existing figures, TablePlotViews and StackedPlotViews.
         """
@@ -520,7 +526,7 @@ class QVizSignalHandling(QObject):
                                                          QStyle.SP_DialogDiscardButton))
         menu_delete.setDisabled(True)
 
-        if numFig > 0 or numTPV > 0 or numSPV > 0 or numImg > 0:
+        if numFig > 0 or numTPV > 0 or numSPV > 0 or numImg > 0 or numPro >0:
             menu_showHide.setDisabled(False)
             menu_delete.setDisabled(False)
 
@@ -715,10 +721,60 @@ class QVizSignalHandling(QObject):
             subMenu_deleteFigure.addAction(action_deleteAll_figure)
             # Bitmap icon
             # TODO
+            
+        if numPro > 0:
+            print("updating menu...")
+            self.update_menus(menu_showHide, menu_delete, 'Profiles', figureType=FigureTypes.PROFILESPLOTTYPE)
 
         menu.addMenu(menu_showHide)
         menu.addMenu(menu_delete)
 
+    def update_menus(self, menu_showHide, menu_delete, name, figureType):
+        # Create and add empty submenu to handle figures show/hide
+            submenu_showHideFigure = menu_showHide.addMenu(name)
+            if GlobalIcons.getCustomQIcon(QApplication, name) is not None:
+               submenu_showHideFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, name))
+            # Create and add empty submenu to handle figures deletion
+            subMenu_deleteFigure = menu_delete.addMenu(name)
+            if GlobalIcons.getCustomQIcon(QApplication, name) is not None:
+               subMenu_deleteFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, name))
+
+            for key in self.imas_viz_api.GetFiguresKeys(
+                    figureType=figureType):
+                # Get image number out from the figureKey string
+                # (e.g. 'Image:0' -> 0)
+                # id_Fig = int(figureKey.split(':')[1])
+                id_Fig = self.imas_viz_api.getFigureKeyNum(key, figureType)
+
+                # --------------------------------------------------------------
+                # Add menu item to show/hide existing figure
+                # Set action
+                action_showHide_figure = QAction(key, self)
+                action_showHide_figure.triggered.connect(
+                    partial(self.showHideFigure, id_Fig, figureType))
+                # Add to submenu
+                submenu_showHideFigure.addAction(action_showHide_figure)
+
+                # --------------------------------------------------------------
+                # Add menu item to delete existing figure
+                # Set action
+                action_delete_figure = QAction(key, self)
+                action_delete_figure.triggered.connect(
+                    partial(self.deleteFigure, id_Fig, figureType))
+                # Add to submenu
+                subMenu_deleteFigure.addAction(action_delete_figure)
+
+            # ------------------------------------------------------------------
+            # Add menu item to delete all existing figures
+            # Set action
+            action_deleteAll_figure = QAction('All', self)
+            action_deleteAll_figure.triggered.connect(partial(
+                self.deleteAllFigures, figureType=figureType))
+            # Add to submenu
+            subMenu_deleteFigure.addAction(action_deleteAll_figure)
+            # Bitmap icon
+            # TODO
+        
     def selectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
 
@@ -875,27 +931,30 @@ class QVizSignalHandling(QObject):
         Arguments:
             numFig (int) : Number identification of the existing figure.
         """
-        try:
+        # try:
 
-            label = None
-            title = None
+            # label = None
+            # title = None
 
-            # Get figure key (e.g. 'Figure:0' string)
-            figureKey = self.imas_viz_api. \
-                GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
-            # Get widget linked to this figure
-            api = self.dataTreeView.imas_viz_api
-            figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                      figureKey=figureKey)
+            # # Get figure key (e.g. 'Figure:0' string)
+            # figureKey = self.imas_viz_api. \
+                # GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
+            # # Get widget linked to this figure
+            # api = self.dataTreeView.imas_viz_api
+            # figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
+                                                      # figureKey=figureKey)
 
-            QVizPlotSignal(dataTreeView=self.dataTreeView,
-                           label=label,
-                           title=title,
-                           vizTreeNode=self.treeNode,
-                           plotWidget=plotWidget).execute(figureKey=figureKey,
-                                                          update=0)
-        except ValueError as e:
-            logging.error(str(e))
+            # QVizPlotSignal(dataTreeView=self.dataTreeView,
+                           # label=label,
+                           # title=title,
+                           # vizTreeNode=self.treeNode,
+                           # plotWidget=plotWidget).execute(figureKey=figureKey,
+                                                          # update=0)
+        # except ValueError as e:
+            # logging.error(str(e))
+        # api = self.dataTreeView.imas_viz_api
+        api = self.dataTreeView.imas_viz_api
+        api.AddPlot1DToFig(numFig, self.treeNode)
 
     def addPlotWidgetToMDI(self, plotWidget):
         """Embeds the plotWidget inside MDI subwindow.
@@ -907,6 +966,8 @@ class QVizSignalHandling(QObject):
         subWindow.resize(plotWidget.width(), plotWidget.height())
         if self.getMDI() is not None:
            self.getMDI().addSubWindow(subWindow)
+        else:
+            self.subWindow = subWindow
 
     @pyqtSlot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -1031,4 +1092,5 @@ class QVizSignalHandling(QObject):
     def getMDI(self):
         if self.parent().getMDI() is not None:
             return self.parent().getMDI()
-        return None
+        else:
+            return None

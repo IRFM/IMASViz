@@ -1,9 +1,6 @@
 import os
 
-from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-
 from imasviz.Viz_API import Viz_API
-from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 from imasviz.VizUtils import QVizGlobalValues
 
 
@@ -13,6 +10,9 @@ class QVizOpenShotView:
 
     def Open(self, evt, dataSourceName, imasDbName, userName, shotNumber,
              runNumber, UDAMachineName=None):
+                 
+        from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+        from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
         if dataSourceName == QVizGlobalValues.IMAS_NATIVE:
             """Try to open the specified IDS database """

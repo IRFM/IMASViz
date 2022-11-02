@@ -9,6 +9,7 @@ RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
                      #'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                      #'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                      #'viz_spectrometer_plugin':'viz_spectrometer.viz_spectrometer_plugin',
+                     'VizProfiles_plugin':'viz_Profiles.VizProfiles_plugin', 
                      'example_UiPlugin': '',
                      'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
                      'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'

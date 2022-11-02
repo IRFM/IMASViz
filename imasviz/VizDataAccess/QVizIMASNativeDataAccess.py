@@ -22,7 +22,8 @@ class QVizIMASNativeDataAccess:
             time_index = treeNode.timeValue()
 
         if plotWidget is not None and plotWidget.addTimeSlider:
-            time_index = plotWidget.sliderGroup.slider.value()
+            if plotWidget.sliderGroup is not None:
+               time_index = plotWidget.sliderGroup.slider.value()
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
             coordinate_index = plotWidget.sliderGroup.slider.value()
@@ -52,6 +53,7 @@ class QVizIMASNativeDataAccess:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is1D():
+                #print("calling GetSignalAt ", time_index)
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is2DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
@@ -144,6 +146,7 @@ class QVizIMASNativeDataAccess:
             imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             t = None
             signalPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
+            #print("signalPath=", signalPath)
             rval = eval(signalPath)
             r = np.array([rval])
             coordinate1 = treeNode.evaluateCoordinateAt(coordinateNumber=1,
@@ -162,6 +165,7 @@ class QVizIMASNativeDataAccess:
                 else:
                     path = "imas_entry." + treeNode.getIDSName() + "." + \
                            coordinate1
+                    #print("path=", path)
                     e = eval(path)
                     if len(e) == 0:
                         path1 = treeNode.getIDSName() + "." + coordinate1
@@ -170,6 +174,7 @@ class QVizIMASNativeDataAccess:
                         path1 = treeNode.getIDSName() + "." + coordinate1
                         raise ValueError("Coordinate1 (" + path1 + ") array has not the same length than the signal you want to plot.")
                     t = np.array([e])
+                    #print(r)
 
             return t, r
 

@@ -172,6 +172,7 @@ class QVizDataTreeViewBuilder:
         viewerNode.updateStyle(imas_entry)
         # Adding coordinate and documentation nodes
         self.addQtNodes(itemDataDict, viewerNode)
+        viewerNode.dataTreeView = dataTreeView
         return viewerNode
 
     def addQtNodes(self, itemDataDict, viewerNode):
@@ -298,10 +299,10 @@ class QVizDataTreeViewBuilder:
                     for i in range(0, extra_attributes.aos_parents_count):
                         parameterName = QVizGlobalValues.indices[str(i + 1)]
                         parameterValue = dataElement.get(parameterName)
-                        extra_attributes.addParameterValue(parameterName, parameterValue)
+                        extra_attributes.setParameterValue(parameterName, parameterValue)
                         maxParameterName = QVizGlobalValues.max_indices[str(i + 1)]
                         maxParameterValue = dataElement.get(maxParameterName)
-                        extra_attributes.addMaxParameterValue(parameterName, maxParameterValue)
+                        extra_attributes.setMaxParameterValue(parameterName, maxParameterValue)
 
             if data_type is not None:
                 if data_type.startswith("FLT_") or data_type.startswith("flt_") or \

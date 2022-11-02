@@ -84,10 +84,10 @@ class QVizTreeNode(QTreeWidgetItem):
     def isOccurrenceEntry(self):
         return self.occurrenceEntry == True
         
-    def addParameterValue(self, aos_indice_name, value):
+    def setParameterValue(self, aos_indice_name, value):
         self.parameters_values[aos_indice_name] = value
 
-    def addMaxParameterValue(self, aos_indice_name, value):
+    def setMaxParameterValue(self, aos_indice_name, value):
         self.parameters_max_values[aos_indice_name] = value
 
     def isCoordinateTimeDependent(self, coordinateNumber):
@@ -575,7 +575,8 @@ class QVizTreeNode(QTreeWidgetItem):
                 parent = parent.parent()
 
 
-    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, plotWidget=None, time_index=None, coordinate_index=None):
+    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, 
+    plotWidget=None, time_index=None, coordinate_index=None):
         """Set plot options.
 
         Arguments:
@@ -590,19 +591,27 @@ class QVizTreeNode(QTreeWidgetItem):
         ylabel = self.getName()
 
         if self.getUnits() is not None:
-            ylabel += '[' + self.getUnits() + ']'
+            if 'as_parent' in self.getUnits():
+                ylabel += '[' + ''  + ']'
+            else:
+                ylabel += '[' + self.getUnits() + ']'
 
         if time_index is None:
             time_index = self.timeValue()
             if plotWidget is not None and plotWidget.addTimeSlider:
-               time_index = plotWidget.sliderGroup.slider.value()
+               if plotWidget.sliderGroup is not None:
+                  time_index = plotWidget.sliderGroup.slider.value()
                
         if coordinate_index is None:
             coordinate_index = 0
             if plotWidget is not None and plotWidget.addCoordinateSlider:
                coordinate_index = plotWidget.sliderGroup.slider.value()
-                  
-        if self.is0DAndDynamic():
+        
+        strategy = None
+        if plotWidget is not None:
+            strategy = plotWidget.getStrategy()
+            
+        if self.is0DAndDynamic() or (self.is1DAndDynamic() and (strategy is not None and strategy == 'TIME')) :
             label = None
             xlabel = 'time'
             label = self.setLabelForFigure(dataTreeView.dataSource)

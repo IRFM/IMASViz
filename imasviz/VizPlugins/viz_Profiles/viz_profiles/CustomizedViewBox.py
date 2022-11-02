@@ -13,22 +13,22 @@
 
 import pyqtgraph as pg
 import numpy as np
+from functools import partial
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 import logging
 from PyQt5.QtCore import Qt
-#from PyQt5.QtGui import QAction
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QAction
-from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
-    import QVizPlotConfigUI
+from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QAction, QMenu
+from imasviz.VizGUI.VizPlot.QVizPlotConfigUI import QVizPlotConfigUI
+from imasviz.VizUtils import FigureTypes
 
 from pyqtgraph.exporters.Matplotlib import Exporter
 
 
-class QVizCustomPlotContextMenu(pg.ViewBox):
+class CustomizedViewBox(pg.ViewBox):
     """Subclass of ViewBox.
     """
 
-    def __init__(self, qWidgetParent, parent=None):
+    def __init__(self, qWidgetParent, imas_viz_api, parent=None):
         """Constructor of the QVizCustomPlotContextMenu
 
         Arguments:
@@ -40,11 +40,12 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         """
         self.qWidgetParent = qWidgetParent
 
-        super(QVizCustomPlotContextMenu, self).__init__(parent)
-        # Set original plot context menu
-        # Note: self.menu must not be None (this way works fine for
-        #       plotWidgets, but not for GraphicsWindow (TablePlotView))
+        super(CustomizedViewBox, self).__init__(parent)
+        
         self.menu = ViewBoxMenu(self)
+        self.contextMenu = None
+        
+        self.imas_viz_api = imas_viz_api
 
         # Default id
         self.id = 0
@@ -64,6 +65,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.errorBarsStep = 0
         self.confidenceBands = 0
         
+        self.strategy = None
+        
     def addVizTreeNode(self, node, preview=0):
         if preview != 1:
             if node not in self.vizTreeNodesList:
@@ -74,14 +77,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             else:
                 self.vizTreeNodesList[0] = node
                 
-    def addVizTreeNodeDataItem(self, node, plotDataItem):
-        plotDataItems = self.vizNodeToPlotDataItems.get(node.getDataTreeView().dataSource.dataKey(node))
-        if plotDataItems is None:
-            plotDataItems = []
-            plotDataItems.append(plotDataItem)
-            self.vizNodeToPlotDataItems[node.getDataTreeView().dataSource.dataKey(node)] = plotDataItems
-        else:
-            plotDataItems.append(plotDataItem)
+    def addVizTreeNodeDataItems(self, node, plotDataItems):
+        self.vizNodeToPlotDataItems[node.getDataTreeView().dataSource.dataKey(node)] = plotDataItems
 
     def clearPlotDataItemsMap(self, node=None):
         if node is not None:
@@ -113,6 +110,13 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # Set menu update to false
             self.menuUpdate = False
 
+        if self.contextMenu is None:
+            self.contextMenu = QMenu()
+            
+        self.contextMenu.clear()
+        self.buildContextMenu()
+        self.menu.addMenu(self.contextMenu)
+        
         return self.menu
 
     def addCustomMenu(self):
@@ -146,7 +150,49 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionShowHideConfidenceBands)
         
+        if self.strategy == 'TIME':
+            self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
+            self.actionPlotToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
+            # - Add to main menu
+            self.menu.addAction(self.actionPlotToNewFigure)
+            
+            self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along coordinate1 axis)", self.menu)
+            self.actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
+            # - Add to main menu
+            self.menu.addAction(self.actionPlotVsTimeToNewFigure)
+        elif self.strategy == 'COORDINATE1':
+            self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
+            self.actionPlotToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
+            # - Add to main menu
+            self.menu.addAction(self.actionPlotToNewFigure)
+            
+            self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along time axis)", self.menu)
+            self.actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
+            # - Add to main menu
+            self.menu.addAction(self.actionPlotVsTimeToNewFigure)
+        else:
+            raise ValueEror("Unknow plot strategy")
+        
+        
+    def buildContextMenu(self):
+        node = self.vizTreeNodesList[0]
+        self.contextMenu.setTitle('Plot ' + node.getName() + ' to')
+        for figureKey in self.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE):
 
+            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
+                                                       FigureTypes.FIGURETYPE)
+
+            # Add menu item to add plot to specific existing figure
+            # Check for figures that share the same coordinates
+            if self.imas_viz_api.nodeDataShareSameCoordinates(figureKey, node):
+                # Set action
+                action_addSignalPlotToFig = QAction(figureKey, self)
+                action_addSignalPlotToFig.triggered.connect(
+                    partial(self.imas_viz_api.AddPlot1DToFig, id_Fig, node))
+                # Add to submenu
+                self.contextMenu.addAction(action_addSignalPlotToFig)
+        
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
         """
@@ -369,3 +415,24 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             if exporter.Name == 'Matplotlib Window (v2)':
                 i = Exporter.Exporters.index(exporter)
                 Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
+                
+                
+    def plotVsCoordinate1ToNewFigure(self):
+        from imasviz.Viz_API import Viz_API
+        node = self.vizTreeNodesList[0]
+        currentFigureKey = 0
+        key = node.dataTreeView.dataSource.dataKey(node)
+        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
+        self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
+        self.imas_viz_api.plotVsCoordinate1AtGivenTime(node.dataTreeView, figureKey, node, 0)
+        
+    def plotVsTimeToNewFigure(self):
+        from imasviz.Viz_API import Viz_API
+        node = self.vizTreeNodesList[0]
+        currentFigureKey = 0
+        key = node.dataTreeView.dataSource.dataKey(node)
+        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
+        self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
+        self.imas_viz_api.plotVsTimeAtGivenCoordinate1(node.dataTreeView, 0, figureKey, node, 0, 0)

@@ -142,6 +142,13 @@ class QVizIMASDataSource:
         return self.name + "::" + self.imasDbName + "::" + \
             str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
             vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
+            
+    def dataKey2(self, figureKey):
+        """Defines the unique key attached to a figure
+        """
+        return self.name + "::" + self.imasDbName + "::" + \
+            str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
+            str(figureKey)
 
     def getShortLabel(self):
         return self.userName + ":" + self.imasDbName + ":" + \

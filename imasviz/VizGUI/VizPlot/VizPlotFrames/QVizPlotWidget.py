@@ -226,8 +226,9 @@ class QVizPlotWidget(QWidget):
         self.gridLayout.setObjectName("gridLayout")
 
         # Set plot widget (use IMASViz custom plot context menu)
+        self.viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
         self.pgPlotWidget = pg.PlotWidget(self,
-                                          viewBox=QVizCustomPlotContextMenu(qWidgetParent=self))
+                                          viewBox=self.viewBox)
         self.pgPlotWidget.setObjectName("plotWidget")
 
         # Set checkbox for toggling mouse
@@ -243,7 +244,7 @@ class QVizPlotWidget(QWidget):
         # If the plottable array needs a slider for the X axis (time or coordinate)
         if self.addTimeSlider or self.addCoordinateSlider:
 
-            # Add slider time or corrdiante1D and its corresponding widgets
+            # Add slider time or coordinate1D and its corresponding widgets
             self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self,
                                            dataTreeView=self.dataTreeView)
             self.sliderGroupDict = self.sliderGroup.setupSlider()
@@ -556,7 +557,6 @@ class sliderGroup():
         i = 0
         api = self.dataTreeView.imas_viz_api
         for node in self.parent.pgPlotWidget.getViewBox().vizTreeNodesList:
-            #self.active_treeNode = node
             if self.isTimeSlider:
 
                 api.plotVsCoordinate1AtGivenTime(
