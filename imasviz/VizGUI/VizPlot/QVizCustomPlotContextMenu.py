@@ -285,7 +285,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             brush = pg.mkBrush('r')
             brush.setStyle(Qt.DiagCrossPattern)
             brush.setColor(Qt.red)
-            self.fbitem.setBrush(brush)
+            #self.fbitem.setBrush(brush)
             self.addItem( self.fbitem)
                
         else:

@@ -261,7 +261,7 @@ class TabLineProperties(QWidget):
         row = 0  # layout row
         itemID = 0
         for pdItem in self.parent.listPlotDataItems:
-            if isinstance(pdItem, pg.InfiniteLine):
+            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem, pg.FillBetweenItem):
                 continue
             col = 0  # layout column
 
@@ -933,7 +933,7 @@ class TabLegendProperties(QWidget):
         itemID = 0
         # Add options for each plotDataItem
         for pdItem in self.parent.listPlotDataItems:
-            if isinstance(pdItem, pg.InfiniteLine):
+            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem, pg.FillBetweenItem):
                 continue
             col = 0  # layout column
 
