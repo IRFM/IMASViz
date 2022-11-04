@@ -42,20 +42,20 @@ class QVizTreeNode(QTreeWidgetItem):
         while p.dataTreeView is None:
             p = p.parent()
         return p.dataTreeView
-        
+
     def getDataSource(self):
         return getDataTreeView().dataSource
-        
+
     def getOccurrenceRootNode(self):
         p = self
         if p.occurrenceEntry:
-           return p
+            return p
         if p.parent() is None:
-           return None
+            return None
         p = p.parent()
         while p is not None:
             if p.occurrenceEntry:
-               return p
+                return p
             p = p.parent()
         return None
 
@@ -66,7 +66,7 @@ class QVizTreeNode(QTreeWidgetItem):
         self.parameters_values = {}  # key = index name ('i', 'j', ...)
         self.parameters_max_values = {}
         self.coordinates = []
-        self.coordinates_explicitly_time_dependent = {} #key = coordinate number, value = 0 or 1
+        self.coordinates_explicitly_time_dependent = {}  # key = coordinate number, value = 0 or 1
 
     def initAttributes(self, vizTreeNode):
         self.createAttributes()
@@ -80,10 +80,10 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setOccurrenceEntry(self, value):
         self.occurrenceEntry = value
-        
+
     def isOccurrenceEntry(self):
         return self.occurrenceEntry == True
-        
+
     def setParameterValue(self, aos_indice_name, value):
         self.parameters_values[aos_indice_name] = value
 
@@ -158,14 +158,13 @@ class QVizTreeNode(QTreeWidgetItem):
             coordinate = coordinate.replace("[itime]", "[" + str(itimeValue) + "]")
         return coordinate
 
-
-    def coordinateLabels(self, coordinateNumber, dtv, index): #index is the coordinate value given by the slider
+    def coordinateLabels(self, coordinateNumber, dtv, index):  # index is the coordinate value given by the slider
         # Get time index
         itime_index = self.getItimeIndex()
         title = ''
         xlabel = ''
-        if self.coordinates[coordinateNumber-1] == "1..N" or \
-                        self.coordinates[coordinateNumber - 1] == "1...N":
+        if self.coordinates[coordinateNumber - 1] == "1..N" or \
+                self.coordinates[coordinateNumber - 1] == "1...N":
             title = "coordinate" + str(coordinateNumber) + " = " + str(index)
         else:
             xlabel = str(self.getIDSName() + "." + self.evaluateCoordinate(1))
@@ -190,19 +189,19 @@ class QVizTreeNode(QTreeWidgetItem):
             return dataSource.getShortLabel() + ":" + self.evaluatePath(self.getParametrizedDataPath()) \
                    + '[occ=' + str(self.getOccurrence()) + ']'
 
-    def evaluateCoordinateVsTime(self, coordinateNumber):#the result can eventually depend on [itime]
+    def evaluateCoordinateVsTime(self, coordinateNumber):  # the result can eventually depend on [itime]
         return self.evaluatePath(self.coordinates[coordinateNumber - 1])
 
     def coordinateLength(self, coordinateNumber, dataTreeView):
         # Set IDS source database
         imas_data_entry = dataTreeView.dataSource.data_entries[self.getOccurrence()]
-        if self.coordinates[coordinateNumber - 1] == "1..N" or\
-                        self.coordinates[coordinateNumber - 1] == "1...N":
+        if self.coordinates[coordinateNumber - 1] == "1..N" or \
+                self.coordinates[coordinateNumber - 1] == "1...N":
             r = np.array([eval('imas_data_entry.' + self.getDataName())])
             return len(r[0])
         # Set python expression to get length of the array
         to_evaluate = 'imas_data_entry.' + self.getIDSName() + '.' + \
-                       self.evaluateCoordinate(coordinateNumber)
+                      self.evaluateCoordinate(coordinateNumber)
         len_to_evaluate = eval('len(' + to_evaluate + ')')
         return len_to_evaluate
 
@@ -211,11 +210,11 @@ class QVizTreeNode(QTreeWidgetItem):
             return None
         # Set IDS data entry
         imas_data_entry = dataTreeView.dataSource.data_entries[self.getOccurrence()]
-        if self.coordinates[coordinateNumber - 1] == "1..N" or\
-                        self.coordinates[coordinateNumber - 1] == "1...N":
+        if self.coordinates[coordinateNumber - 1] == "1..N" or \
+                self.coordinates[coordinateNumber - 1] == "1...N":
             return np.array(range(len(eval('imas_data_entry.' + self.getDataName()))))
         to_evaluate = 'imas_data_entry.' + self.getIDSName() + '.' + \
-                       self.evaluateCoordinate(coordinateNumber)
+                      self.evaluateCoordinate(coordinateNumber)
         return eval(to_evaluate)
 
     def getGlobalTimeForArraysInDynamicAOS(self, dataSource):
@@ -253,10 +252,10 @@ class QVizTreeNode(QTreeWidgetItem):
     def evaluatePath(self, path):
         aos_valued = path
         path = QVizGlobalOperations.makePythonPath(path)
-        path = self.patchIndices(path) #replace [i1] by [i], [i2] by [j] and so on
-        for i in range(0, self.aos_parents_count): #loop on all AOSs which contain this path
+        path = self.patchIndices(path)  # replace [i1] by [i], [i2] by [j] and so on
+        for i in range(0, self.aos_parents_count):  # loop on all AOSs which contain this path
             index_name = QVizGlobalValues.indices[str(i + 1)]
-            index_value = self.parameters_values[index_name] #AOS index value for this node
+            index_value = self.parameters_values[index_name]  # AOS index value for this node
             s = "[" + index_name + "]"
             aos_valued = path.replace(s, "[" + index_value + "]")
             path = aos_valued
@@ -272,10 +271,10 @@ class QVizTreeNode(QTreeWidgetItem):
         value = value.replace("[i7]", "[t]")
         return value
 
-    def getDataTimeSlices(self): #return a list of full data path for all time slices
+    def getDataTimeSlices(self):  # return a list of full data path for all time slices
         data_list = []
         aos_vs_itime = self.evaluatePath(self.getParametrizedDataPath())
-        #print "QVizTreeNode : time max value = " + self.timeMaxValue()
+        # print "QVizTreeNode : time max value = " + self.timeMaxValue()
         for itime in range(0, int(self.timeMaxValue())):
             data_path = aos_vs_itime.replace("[itime]", "[" + str(itime) + "]")
             data_list.append(data_path)
@@ -289,7 +288,7 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.parametrizedPath
 
     def getParametrizedDataPath(self):
-        #e.g: 'magnetics.flux_loop[i].position[j].r'
+        # e.g: 'magnetics.flux_loop[i].position[j].r'
         return self.parametrizedPath + "." + self.getName()
 
     def getOccurrence(self):
@@ -327,11 +326,12 @@ class QVizTreeNode(QTreeWidgetItem):
                 if self.hasIDSAvailableData(occurrence):
                     return True
             return False
-        return self.infoDict.get('availableData') #node is not a root IDS node
+        return self.infoDict.get('availableData')  # node is not a root IDS node
 
     def hasIDSAvailableData(self, occurrence):
         if not self.isIDSRoot():
-            raise ValueError('Implementation error: method hasIDSAvailableData(occurrence) should be called for IDS root nodes only.')
+            raise ValueError(
+                'Implementation error: method hasIDSAvailableData(occurrence) should be called for IDS root nodes only.')
         return self.infoDict.get('availableIDSData/' + str(occurrence))
 
     def getDataType(self):
@@ -360,7 +360,7 @@ class QVizTreeNode(QTreeWidgetItem):
         if c is not None:
             return QVizGlobalOperations.makePythonPath(c)
         else:
-            raise ValueError('Undefined ' +  searchedCoordinate + ".")
+            raise ValueError('Undefined ' + searchedCoordinate + ".")
 
     def hasHomogeneousTime(self):
         return self.infoDict.get('homogeneous_time') == 1
@@ -376,13 +376,13 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setIDSName(self, idsName):
         self.infoDict['IDSName'] = idsName
-        
+
     def setIDSIsDynamic(self, ids_is_dynamic):
         root_node_occ = self.getOccurrenceRootNode()
         if root_node_occ is None:
             raise ValueError("Node " + self.getName() + " has no occurrence root!")
         root_node_occ.ids_is_dynamic = ids_is_dynamic
-        
+
     def isIDSDynamic(self):
         root_node_occ = self.getOccurrenceRootNode()
         if root_node_occ is None:
@@ -398,12 +398,12 @@ class QVizTreeNode(QTreeWidgetItem):
     def setAvailableIDSData(self, occurrence, value):
         self.infoDict['availableIDSData/' + str(occurrence)] = value
 
-    def setAvailableData(self, value): #value is True of False
+    def setAvailableData(self, value):  # value is True of False
         self.infoDict['availableData'] = value
-        
+
     def isStructure(self):
         return self.getDataType() == 'structure'
-        
+
     def isArrayOfStructure(self):
         return self.getDataType() == 'struct_array'
 
@@ -440,12 +440,12 @@ class QVizTreeNode(QTreeWidgetItem):
     def is2DOrLarger(self):
         if not self.is0D() and not self.is1D() and self.isDynamicData():
             return True
-            
+
     def hasClosedOutline(self, dtv):
         if not self.is1D():
-           return False
-        if self.coordinates[0] == "1..N" or\
-            self.coordinates[0] == "1...N":
+            return False
+        if self.coordinates[0] == "1..N" or \
+                self.coordinates[0] == "1...N":
             return False
         tokens = str(self.getPath()).split("/")
         if not (len(tokens) > 1 and tokens[-2].startswith('outline')):
@@ -455,7 +455,7 @@ class QVizTreeNode(QTreeWidgetItem):
         expression = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + closedOutlinePath
         value = eval(QVizGlobalOperations.makePythonPath(expression))
         return value
-                
+
     def updateIDSNode(self, containsData):
         if containsData:
             # Set tree item style when node contains data
@@ -473,7 +473,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleWhenContainingData(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-        if self.isDynamicData(): #set dynamic data to bold (0D and 1D nodes)
+        if self.isDynamicData():  # set dynamic data to bold (0D and 1D nodes)
             self.setFontBold()
 
     def setStyleForWhenNotContainingData(self):
@@ -484,7 +484,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def setStyleForElementAOS(self):
         self.setForeground(0, QVizPreferences.ColorOfNodesContainingData)
-      
+
     def setStyleForAOSNotContainingData(self):
         self.setForeground(0, GlobalColors.BLACK)
 
@@ -556,27 +556,26 @@ class QVizTreeNode(QTreeWidgetItem):
                 self.setStyleWhenContainingData()
 
         # elif self.isStructure():
-            # pass
-            
+        # pass
+
         elif self.isArrayOfStructure():
             self.setAvailableData(1)
             self.setStyleWhenContainingData()
-            
+
         else:
             pass
-            
-        if self.hasAvailableData() and self.isDynamicData(): #update parents
+
+        if self.hasAvailableData() and self.isDynamicData():  # update parents
             parent = self.parent()
-            while parent is not None and not(parent.isIDSRoot()): 
-                if not(parent.hasAvailableData()):
+            while parent is not None and not (parent.isIDSRoot()):
+                if not (parent.hasAvailableData()):
                     parent.setAvailableData(True)
                     parent.setStyleWhenContainingData()
                     parent.updateStyle(imas_entry)
                 parent = parent.parent()
 
-
-    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None, 
-    plotWidget=None, time_index=None, coordinate_index=None):
+    def plotOptions(self, dataTreeView, title='', label=None, xlabel=None,
+                    plotWidget=None, time_index=None, coordinate_index=None):
         """Set plot options.
 
         Arguments:
@@ -592,26 +591,26 @@ class QVizTreeNode(QTreeWidgetItem):
 
         if self.getUnits() is not None:
             if 'as_parent' in self.getUnits():
-                ylabel += '[' + ''  + ']'
+                ylabel += '[' + '' + ']'
             else:
                 ylabel += '[' + self.getUnits() + ']'
 
         if time_index is None:
             time_index = self.timeValue()
             if plotWidget is not None and plotWidget.addTimeSlider:
-               if plotWidget.sliderGroup is not None:
-                  time_index = plotWidget.sliderGroup.slider.value()
-               
+                if plotWidget.sliderGroup is not None:
+                    time_index = plotWidget.sliderGroup.slider.value()
+
         if coordinate_index is None:
             coordinate_index = 0
             if plotWidget is not None and plotWidget.addCoordinateSlider:
-               coordinate_index = plotWidget.sliderGroup.slider.value()
-        
+                coordinate_index = plotWidget.sliderGroup.slider.value()
+
         strategy = None
         if plotWidget is not None:
             strategy = plotWidget.getStrategy()
-            
-        if self.is0DAndDynamic() or (self.is1DAndDynamic() and (strategy is not None and strategy == 'TIME')) :
+
+        if self.is0DAndDynamic() or (self.is1DAndDynamic() and (strategy is not None and strategy == 'TIME')):
             label = None
             xlabel = 'time'
             label = self.setLabelForFigure(dataTreeView.dataSource)
@@ -638,7 +637,7 @@ class QVizTreeNode(QTreeWidgetItem):
                             xlabel2 = 'time'
                         else:
                             xlabel2 = self.getIDSName() + "." + \
-                                     self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                                      self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
                         label = label.replace('itime', str(':'))
                 else:
                     label = label.replace('itime', str(time_index))
@@ -659,12 +658,11 @@ class QVizTreeNode(QTreeWidgetItem):
                 xlabel = xlabel2
 
         if xlabel == 'time' or xlabel.endswith('.time'):
-                xlabel = xlabel + '[s]'
+            xlabel = xlabel + '[s]'
 
         xlabel = xlabel.replace('itime', str(time_index))
 
         return label, xlabel, ylabel, title
-
 
     def labels(self, plotWidget, coordinateNumber, coordinate_index, time_index):
 
@@ -693,10 +691,10 @@ class QVizTreeNode(QTreeWidgetItem):
                         xlabel = 'time'
                     else:
                         xlabel = self.getIDSName() + "." + \
-                                  self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                                 self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
                 else:
                     xlabel = self.getIDSName() + "." + \
-                              self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
+                             self.evaluateCoordinateVsTime(coordinateNumber=coordinateNumber)
 
         label = QVizGlobalOperations.makeIMASPath(label)
 
@@ -723,8 +721,7 @@ class QVizTreeNode(QTreeWidgetItem):
         else:
             strategy = "COORDINATE1"
         return strategy
-        
-        
+
     def get_data_error_lower(self, dataItem):
         data_error_lower = None
         dtv = self.getDataTreeView()
@@ -733,11 +730,12 @@ class QVizTreeNode(QTreeWidgetItem):
             nodeName = tokens[-1]
             data_error_lower_path = self.getPath().replace("/" + tokens[-1], "", 1);
             data_error_lower_path = data_error_lower_path + "/" + nodeName + "_error_lower";
-            expression_error_lower_path = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + data_error_lower_path
+            expression_error_lower_path = 'dtv.dataSource.data_entries[' + str(
+                self.getOccurrence()) + '].' + data_error_lower_path
             data_error_lower = eval(QVizGlobalOperations.makePythonPath(expression_error_lower_path))
             (x, y) = dataItem.getData()
             if np.shape(data_error_lower) != np.shape(y):
-               return None
+                return None
         except:
             return None
         return data_error_lower
@@ -750,11 +748,12 @@ class QVizTreeNode(QTreeWidgetItem):
             nodeName = tokens[-1]
             data_error_upper_path = self.getPath().replace("/" + tokens[-1], "", 1);
             data_error_upper_path = data_error_upper_path + "/" + nodeName + "_error_upper";
-            expression_error_upper_path = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + data_error_upper_path
+            expression_error_upper_path = 'dtv.dataSource.data_entries[' + str(
+                self.getOccurrence()) + '].' + data_error_upper_path
             data_error_upper = eval(QVizGlobalOperations.makePythonPath(expression_error_upper_path))
             (x, y) = dataItem.getData()
             if np.shape(data_error_upper) != np.shape(y):
-               return None
+                return None
         except:
             return None
         return data_error_upper

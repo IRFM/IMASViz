@@ -1,14 +1,14 @@
-#  Name   : QVizCustomPlotContextMenu
+#  Name   : CustomViewBox
 #
 #          Modified plot context menu.
 #
 #  Author :
-#         Ludovic Fleury, Xinyi Li, Dejan Penko
+#         Ludovic Fleury
 #  E-mail :
-#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#         ludovic.fleury@cea.fr
 #
 # *****************************************************************************
-#     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
+#     Copyright(c) 2016- L. Fleury
 # *****************************************************************************
 
 import pyqtgraph as pg
@@ -38,13 +38,23 @@ class CustomizedViewBox(pg.ViewBox):
                                       doesn't seem to be allowed).
             parent        (obj)     : Parent.
         """
+        self.confidenceBandLower = None
+        self.plotConfDialog = None
+        self.confidenceBandUpper = None
+        self.actionPlotVsTimeToNewFigure = None
+        self.actionPlotToNewFigure = None
+        self.actionShowHideConfidenceBands = None
+        self.actionShowHideErrorBarsWithSlicing = None
+        self.actionShowHideErrorBars = None
+        self.actionConfigurePlot = None
+        self.actionAutoRange = None
         self.qWidgetParent = qWidgetParent
 
         super(CustomizedViewBox, self).__init__(parent)
-        
+
         self.menu = ViewBoxMenu(self)
         self.contextMenu = None
-        
+
         self.imas_viz_api = imas_viz_api
 
         # Default id
@@ -56,36 +66,36 @@ class CustomizedViewBox(pg.ViewBox):
         # Modify list of available exporters (in order to remove the
         # problematic Matplotlib exporter and replace it with ours)
         self.updateExportersList()
-        
+
         self.vizTreeNodesList = []
-        self.vizNodeToPlotDataItems = {} #map from data key (key = dataTreeView.dataSource.dataKey(treeNode)) to PlotDataItem
-        
+        self.vizNodeToPlotDataItems = {}  # map from data key (key = dataTreeView.dataSource.dataKey(treeNode)) to PlotDataItem
+
         self.errorBars = 0
         self.errorBarsWithSlicing = 0
         self.errorBarsStep = 0
         self.confidenceBands = 0
-        
+
         self.strategy = None
-        
+
     def addVizTreeNode(self, node, preview=0):
         if preview != 1:
             if node not in self.vizTreeNodesList:
                 self.vizTreeNodesList.append(node)
-        else: #for the preview widget, we replace the item in the list if it exists already
+        else:  # for the preview widget, we replace the item in the list if it exists already
             if len(self.vizTreeNodesList) == 0:
                 self.vizTreeNodesList.append(node)
             else:
                 self.vizTreeNodesList[0] = node
-                
+
     def addVizTreeNodeDataItems(self, node, plotDataItems):
         self.vizNodeToPlotDataItems[node.getDataTreeView().dataSource.dataKey(node)] = plotDataItems
 
     def clearPlotDataItemsMap(self, node=None):
         if node is not None:
-           self.vizNodeToPlotDataItems.pop(node.getDataTreeView().dataSource.dataKey(node), None)
+            self.vizNodeToPlotDataItems.pop(node.getDataTreeView().dataSource.dataKey(node), None)
         else:
-           self.vizNodeToPlotDataItems.clear()
-        
+            self.vizNodeToPlotDataItems.clear()
+
     def getMenu(self, event=None):
         """Modify the menu. Called by the pyqtgraph.ViewBox raiseContextMenu()
         routine.
@@ -112,18 +122,18 @@ class CustomizedViewBox(pg.ViewBox):
 
         if self.contextMenu is None:
             self.contextMenu = QMenu()
-            
+
         self.contextMenu.clear()
         self.buildContextMenu()
         self.menu.addMenu(self.contextMenu)
-        
+
         return self.menu
 
     def addCustomMenu(self):
         """Add custom actions to the menu.
         """
         self.menu.addSeparator()
-        # Autorange feature
+        # Auto-range feature
         self.actionAutoRange = QAction("Auto Range", self.menu)
         self.actionAutoRange.triggered.connect(self.autoRange)
         # - Add to main menu
@@ -134,29 +144,30 @@ class CustomizedViewBox(pg.ViewBox):
         self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
         # - Add to main menu
         self.menu.addAction(self.actionConfigurePlot)
-        
+
         self.actionShowHideErrorBars = QAction("Show/Hide error bars", self.menu)
         self.actionShowHideErrorBars.triggered.connect(self.showHideViewErrorBars)
         # - Add to main menu
         self.menu.addAction(self.actionShowHideErrorBars)
-        
+
         self.actionShowHideErrorBarsWithSlicing = QAction("Show error bars (with slicing)", self.menu)
         self.actionShowHideErrorBarsWithSlicing.triggered.connect(self.showHideViewErrorBarsWithSlicing)
         # - Add to main menu
         self.menu.addAction(self.actionShowHideErrorBarsWithSlicing)
-        
+
         self.actionShowHideConfidenceBands = QAction("Show/Hide confidence bands", self.menu)
         self.actionShowHideConfidenceBands.triggered.connect(self.showHideViewConfidenceBands)
         # - Add to main menu
         self.menu.addAction(self.actionShowHideConfidenceBands)
-        
+
         if self.strategy == 'TIME':
             self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
             self.actionPlotToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
             # - Add to main menu
             self.menu.addAction(self.actionPlotToNewFigure)
-            
-            self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along coordinate1 axis)", self.menu)
+
+            self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along coordinate1 axis)",
+                                                       self.menu)
             self.actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
             # - Add to main menu
             self.menu.addAction(self.actionPlotVsTimeToNewFigure)
@@ -165,15 +176,14 @@ class CustomizedViewBox(pg.ViewBox):
             self.actionPlotToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
             # - Add to main menu
             self.menu.addAction(self.actionPlotToNewFigure)
-            
+
             self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along time axis)", self.menu)
             self.actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
             # - Add to main menu
             self.menu.addAction(self.actionPlotVsTimeToNewFigure)
         else:
-            raise ValueEror("Unknow plot strategy")
-        
-        
+            raise ValueError("Unknow plot strategy")
+
     def buildContextMenu(self):
         node = self.vizTreeNodesList[0]
         self.contextMenu.setTitle('Plot ' + node.getName() + ' to')
@@ -192,7 +202,7 @@ class CustomizedViewBox(pg.ViewBox):
                     partial(self.imas_viz_api.AddPlot1DToFig, id_Fig, node))
                 # Add to submenu
                 self.contextMenu.addAction(action_addSignalPlotToFig)
-        
+
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
         """
@@ -208,15 +218,15 @@ class CustomizedViewBox(pg.ViewBox):
         """
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
-        
+
     def showHideViewConfidenceBands(self):
         """Hide/show error bars for all plots (if error data are available).
         """
         deleted = self.removeConfidenceBands()
-        if not(deleted):
-           self.addConfidenceBands()
-           self.confidenceBands = 1
-           
+        if not deleted:
+            self.addConfidenceBands()
+            self.confidenceBands = 1
+
     def removeConfidenceBands(self):
         """Remove error bars for all plots (if error data are available).
         """
@@ -233,7 +243,7 @@ class CustomizedViewBox(pg.ViewBox):
         if deleted:
             self.confidenceBands = 0
         return deleted
-        
+
     def updateConfidenceBands(self):
         if self.confidenceBands == 0:
             return
@@ -249,7 +259,7 @@ class CustomizedViewBox(pg.ViewBox):
         elif self.errorBarsWithSlicing == 1:
             self.removeErrorBars()
             self.showHideViewErrorBarsWithSlicing(useLatestSettings=1)
-        
+
     def removeErrorBars(self):
         """Remove error bars for all plots (if error data are available).
         """
@@ -265,21 +275,21 @@ class CustomizedViewBox(pg.ViewBox):
             self.errorBars = 0
             self.errorBarsWithSlicing = 0
         return deleted
-           
+
     def showHideViewErrorBars(self):
         """Hide/show error bars for all plots (if error data are available).
         """
         deleted = self.removeErrorBars()
-        if not(deleted):
-           self.addErrorBars(1, beam=0)
-           self.errorBars = 1
-           
-    def showHideViewErrorBarsWithSlicing(self, useLatestSettings = 0):
+        if not deleted:
+            self.addErrorBars(1, beam=0)
+            self.errorBars = 1
+
+    def showHideViewErrorBarsWithSlicing(self, useLatestSettings=0):
         """Show error bars for all plots with slicing (if error data are available).
         """
         self.removeErrorBars()
         step = self.errorBarsStep
-        
+
         if step == 0 or useLatestSettings == 0:
             user_input = QInputDialog()
             step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", value=10, min=1)
@@ -289,7 +299,7 @@ class CustomizedViewBox(pg.ViewBox):
 
         self.addErrorBars(step, beam=0)
         self.errorBarsWithSlicing = 1
-        
+
     def addConfidenceBands(self):
         for node in self.vizTreeNodesList:
             dataTreeView = node.getDataTreeView()
@@ -298,7 +308,7 @@ class CustomizedViewBox(pg.ViewBox):
                 continue
             for dataItem in plotDataItems:
                 self.addConfidenceBandsForDataItem(dataItem, node)
-            
+
     def addConfidenceBandsForDataItem(self, dataItem, vizTreeNode):
         (x, y) = dataItem.getData()
         shape_x = len(x)
@@ -308,7 +318,7 @@ class CustomizedViewBox(pg.ViewBox):
         add_confidence_bands = False
         upper = None
         lower = None
-        
+
         if data_error_lower is not None and data_error_upper is not None:
             lower = data_error_lower
             upper = data_error_upper
@@ -327,17 +337,16 @@ class CustomizedViewBox(pg.ViewBox):
             self.confidenceBandLower = pg.PlotDataItem(x, y - lower)
             self.addItem(self.confidenceBandUpper)
             self.addItem(self.confidenceBandLower)
-            self.fbitem = pg.FillBetweenItem(self.confidenceBandLower, self.confidenceBandUpper)
+            fbitem = pg.FillBetweenItem(self.confidenceBandLower, self.confidenceBandUpper)
             brush = pg.mkBrush('r')
             brush.setStyle(Qt.DiagCrossPattern)
             brush.setColor(Qt.red)
-            #self.fbitem.setBrush(brush)
-            self.addItem( self.fbitem)
-               
+            # self.fbitem.setBrush(brush)
+            self.addItem(fbitem)
+
         else:
-            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
-        
- 
+            logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+
     def addErrorBars(self, step, beam=0.5):
 
         self.errorBarsStep = step
@@ -351,38 +360,37 @@ class CustomizedViewBox(pg.ViewBox):
                 if beam == 0:
                     (x, y) = dataItem.getData()
                     x_range = np.amax(x) - np.amin(x)
-                    minBeam = float(x_range/1000)
-                    maxBeam = float(x_range/20)
-                    beam = float(x_range/len(x))
+                    minBeam = float(x_range / 1000)
+                    maxBeam = float(x_range / 20)
+                    beam = float(x_range / len(x))
                     beam = np.maximum(minBeam, beam)
                     beam = np.minimum(maxBeam, beam)
-                    
+
                 self.addErrorBarsForDataItem(dataItem, node, step, beam)
 
-        
     def addErrorBarsForDataItem(self, dataItem, vizTreeNode, step=1, beam=0.5):
 
         (x, y) = dataItem.getData()
         shape_x = len(x)
         shape_y = len(y)
-        
+
         if step != 1:
-            x = x[0:shape_x-1:step]
-            y = y[0:shape_y-1:step]
-            
+            x = x[0:shape_x - 1:step]
+            y = y[0:shape_y - 1:step]
+
         data_error_lower = vizTreeNode.get_data_error_lower(dataItem)
         data_error_upper = vizTreeNode.get_data_error_upper(dataItem)
-        
+
         if step != 1:
             if data_error_lower is not None:
-               data_error_lower = data_error_lower[0:shape_y-1:step]
+                data_error_lower = data_error_lower[0:shape_y - 1:step]
             if data_error_upper is not None:
-               data_error_upper = data_error_upper[0:shape_y-1:step]
+                data_error_upper = data_error_upper[0:shape_y - 1:step]
 
         add_error_bars = False
         top = None
         bottom = None
-        
+
         if data_error_lower is not None and data_error_upper is not None:
             bottom = data_error_lower
             top = data_error_upper
@@ -395,12 +403,12 @@ class CustomizedViewBox(pg.ViewBox):
             add_error_bars = False
 
         if add_error_bars:
-            self.error = pg.ErrorBarItem(beam=beam)
-            self.error.setData(x=x, y=y, top=top, bottom=bottom)
-            self.addItem(self.error)
+            error = pg.ErrorBarItem(beam=beam)
+            error.setData(x=x, y=y, top=top, bottom=bottom)
+            self.addItem(error)
         else:
-            logging.error("No errors data available for: " +  vizTreeNode.getParametrizedDataPath())
-        
+            logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+
     def updateExportersList(self):
         """Update/Modify list of available exporters (in order to remove the
         problematic Matplotlib exporter and replace it with ours).
@@ -415,8 +423,7 @@ class CustomizedViewBox(pg.ViewBox):
             if exporter.Name == 'Matplotlib Window (v2)':
                 i = Exporter.Exporters.index(exporter)
                 Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
-                
-                
+
     def plotVsCoordinate1ToNewFigure(self):
         from imasviz.Viz_API import Viz_API
         node = self.vizTreeNodesList[0]
@@ -426,7 +433,7 @@ class CustomizedViewBox(pg.ViewBox):
         figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
         self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
         self.imas_viz_api.plotVsCoordinate1AtGivenTime(node.dataTreeView, figureKey, node, 0)
-        
+
     def plotVsTimeToNewFigure(self):
         from imasviz.Viz_API import Viz_API
         node = self.vizTreeNodesList[0]

@@ -31,10 +31,12 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
     def __init__(self, viz_api, dataTreeView):
         super(QVizTablePlotViewForPlugin, self).__init__()
 
+        self.okHeight = None
+        self.okWidth = None
         self.dataTreeView = dataTreeView
         self.ncols = 3
         self.imas_viz_api = viz_api
-        self.figureKey = 0; #TODO
+        self.figureKey = 0  # TODO
 
         # # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -46,7 +48,7 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         self.setWindowTitle(str(self.figureKey))
 
         # # Set number of rows and columns of panels in the TablePlotView frame
-        #self.ncols = int(self.screenWidth * 0.7 / self.plotBaseDim)  # round down
+        # self.ncols = int(self.screenWidth * 0.7 / self.plotBaseDim)  # round down
 
         # # Add attribute describing the number of columns
         # # (same as self.centralWidget.rows is for number of rows. Initially
@@ -56,40 +58,39 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
 
-        #self.modifySize()
+        # self.modifySize()
 
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
-        
+
         self.plotItems = []
-        
+
         self.plotWidget = None
-        
+
     def plot1D(self, plottable_signals, plotWidget, request):
 
         n = 0
         self.plotWidget = plotWidget
         dtv = self.dataTreeView
-        
+
         for plottable_signal in plottable_signals:
-            
+
             signalNode = plottable_signal[0]
             signal = plottable_signal[1]
-            
+
             print("-->plotting node:" + signalNode.getPath())
 
             t = QVizPlotSignal.getXAxisValues(signal)
-    
+
             # Get array of y-axis values
             v = QVizPlotSignal.get1DSignalValue(signal)
 
-    
             # Set plot options
             label, xlabel, ylabel, title = \
                 signalNode.plotOptions(dataTreeView=dtv,
                                        title=self.figureKey,
                                        plotWidget=self.plotWidget)
-        
+
             # Add plot
             # y-axis values
             u = v[0]
@@ -102,14 +103,13 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
                 continue
 
             currentPlotItem = self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                     ylabel=ylabel, node=signalNode, request=request)
+                                        ylabel=ylabel, node=signalNode, request=request)
 
-            #Setting range manually (see IMAS-3658)
+            # Setting range manually (see IMAS-3658)
             currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
 
             # Next plot number
-            n+=1
-            
+            n += 1
 
     def plot(self, n, x, y, label, xlabel, ylabel, node=None, request=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
@@ -129,33 +129,26 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         viewBox.id = n
         viewBox.addVizTreeNode(node)
         viewBox.strategy = request.strategy
-        title=label.replace("\n", "")
+        title = label.replace("\n", "")
         title = self.imas_viz_api.modifyTitle(title, None, request.slices_aos_name)
         plotItem = self.addPlot(x=x,
                                 y=y,
                                 pen=pen,
                                 title=title,
-                                viewBox=viewBox)                                              
+                                viewBox=viewBox)
         viewBox.addVizTreeNodeDataItems(node, plotItem.listDataItems())
-        
+
         # Get titleLabel
         tLabel = plotItem.titleLabel
-        
+
         # Set title label size
         # Note: empty text provided as requires text argument
         tLabel.setText(text=title, size='6pt')
-        
+
         # Set title width
         # Note: required for alignment to take effect
         tLabel.item.setPlainText(title)
-        
-        #tLabel.item.setTextWidth(self.plotBaseDim)
-        #tLabel.item.setTextWidth(300)
-        # Set alignment as text option
-        #option = QtGui.QTextOption()
-        #option.setAlignment(QtCore.Qt.AlignCenter)
-        #tLabel.item.document().setDefaultTextOption(option)
-            
+
         # Set axis labels
         plotItem.setLabel('left', ylabel, units='')
         plotItem.setLabel('bottom', xlabel, units='')
@@ -164,7 +157,7 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         plotItem.showGrid(x=True, y=True)
         # Add a name attribute directly to pg.PlotDataItem - a child of
         # pg.PlotData
-        #plotItem.dataItems[0].opts['name'] = label.replace("\n", "")
+        # plotItem.dataItems[0].opts['name'] = label.replace("\n", "")
         plotItem.dataItems[0].opts['name'] = title.replace("\n", "")
         # plotItem.column = int(n / self.centralWidget.cols)
         # plotItem.row = int(n % self.centralWidget.cols)
@@ -173,45 +166,40 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
 
         if (n + 1) % self.ncols == 0:
             self.nextRow()
-            
+
         self.plotItems.append(plotItem)
         return plotItem
-        
-   
 
     def updatePlot(self, signals):
 
-        #print("len(signals)=", len(signals))
-        #print("len(self.plotItems)=", len(self.plotItems))
-        
+        # print("len(signals)=", len(signals))
+        # print("len(self.plotItems)=", len(self.plotItems))
+
         for i in range(len(self.plotItems)):
-            
             plottable_signal = signals[i]
-           
+
             signalNode = plottable_signal[0]
             signal = plottable_signal[1]
-            
-            #print("-->updating node plot:" + signalNode.getPath())
+
+            # print("-->updating node plot:" + signalNode.getPath())
 
             t = QVizPlotSignal.getXAxisValues(signal)
             ti = t[0]
-    
+
             # Get array of y-axis values
             v = QVizPlotSignal.get1DSignalValue(signal)
             u = v[0]
-            
-            
-            #dataItem = self.dataItems[i]
+
+            # dataItem = self.dataItems[i]
             plotItem = self.plotItems[i]
             dataItem = plotItem.listDataItems()[0]
-            #print("u=", u)
+            # print("u=", u)
             dataItem.setData(x=ti, y=u)
-            
-            #Setting range manually (see IMAS-3658)
+
+            # Setting range manually (see IMAS-3658)
             plotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
-            
-            i+=1
-            
+
+            i += 1
 
     @staticmethod
     def setPen():
@@ -251,4 +239,3 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         self.okWidth = self.centralWidget.cols * (self.plotBaseDim + 50)
         self.okHeight = len(self.centralWidget.rows) * self.plotBaseDim
         self.setMinimumSize(self.okWidth, self.okHeight)
-

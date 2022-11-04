@@ -723,7 +723,6 @@ class QVizSignalHandling(QObject):
             # TODO
             
         if numPro > 0:
-            print("updating menu...")
             self.update_menus(menu_showHide, menu_delete, 'Profiles', figureType=FigureTypes.PROFILESPLOTTYPE)
 
         menu.addMenu(menu_showHide)

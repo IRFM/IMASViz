@@ -29,7 +29,7 @@ class Viz_API:
         self.figToNodes = {}  # key = figure, values = list of selected nodes
         # figureframes contains all plotting frames
         self.figureframes = {}  # key = FigureType + FigureKey,
-                                # example: FigureType="Figure:", FigureKey="1"
+        # example: FigureType="Figure:", FigureKey="1"
         self.DTVframeList = []
         self.DTVlist = []
 
@@ -119,7 +119,7 @@ class Viz_API:
                                       imas_viz_api=self)
 
         frame.dataTreeView.dataSource = dataSource  # update the dataSource
-                                                    # attached to the view
+        # attached to the view
 
         # Add created data tree view (DTV) frame to a list of DTV frames
         self.DTVframeList.append(frame)
@@ -259,7 +259,7 @@ class Viz_API:
         :returns: (int) The number of the next table plot
         """
         return len(self.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE))
-        
+
     def GetProfilesPlotViewsCount(self):
         """Returns the next plots table number available.
 
@@ -302,7 +302,7 @@ class Viz_API:
         :returns: (str) The key of the next stacked plot
         """
         return FigureTypes.STACKEDPLOTTYPE + str(self.GetStackedPlotViewsCount())
-        
+
     def GetNextKeyForProfilesPlotView(self):
         """Returns the key of the next table of profiles plot
         :returns: (str) The key of the next plots table
@@ -488,7 +488,7 @@ class Viz_API:
         :param all_DTV: When True, all selected signals from all shot views are
                         unselected
         """
-        from imasviz.VizGUI.VizGUICommands import  QVizUnselectAllSignals
+        from imasviz.VizGUI.VizGUICommands import QVizUnselectAllSignals
         QVizUnselectAllSignals(dataTreeFrame.dataTreeView, all_DTV=all_DTV).execute()
 
     def SelectSignalsGroup(self, dataTreeFrame, occurrence, onePathInTheGroup):
@@ -503,7 +503,7 @@ class Viz_API:
                                       Example:
                                       'magnetics/flux_loop(0)/flux/data'
         """
-        from imasviz.VizGUI.VizGUICommands import  QVizSelectSignalsGroup
+        from imasviz.VizGUI.VizGUICommands import QVizSelectSignalsGroup
         QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,
                                dataTreeFrame.dataTreeView.selectedItem).execute()
 
@@ -559,7 +559,7 @@ class Viz_API:
 
         addTimeSlider = False
         addCoordinateSlider = False
-        #print('Creation of a plot widget')
+        # print('Creation of a plot widget')
         if strategy == "COORDINATE1":
             addTimeSlider = True
             addCoordinateSlider = False
@@ -597,7 +597,6 @@ class Viz_API:
         except:
             raise
 
-
     def Plot2DArray(self, dataTreeView, vizTreeNode):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
         imageKey = self.GetNextKeyForImagePlots()
@@ -608,7 +607,7 @@ class Viz_API:
         dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
         plotWidget.plot(dataArrayHandle)
         plotWidget.show()
-        
+
     def AddPlot1DToFig(self, numFig, vizTreeNode):
         """Add signal plot to existing figure.
 
@@ -625,7 +624,7 @@ class Viz_API:
             figureKey = self.GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
             # Get widget linked to this figure
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=vizTreeNode.dataTreeView,
-                                                      figureKey=figureKey)
+                                                       figureKey=figureKey)
 
             QVizPlotSignal(dataTreeView=vizTreeNode.dataTreeView,
                            label=label,
@@ -635,7 +634,7 @@ class Viz_API:
                                                           update=0)
         except ValueError as e:
             logging.error(str(e))
-    
+
     def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
         figureDataList = self.figToNodes.get(figureKey)
         if figureDataList is None:
@@ -645,7 +644,7 @@ class Viz_API:
             v = figureDataList[k]
             figureNodesList.append(v[1])  # v[0] = shot number, v[1] = vizNode
         return self.nodeDataShareSameCoordinatesAs(figureNodesList, vizTreeNode, figureKey)
-                                                   
+
     def nodeDataShareSameCoordinatesAs(self, selectedNodeList, vizTreeNode,
                                        figureKey=None):
         """Check if data already in figure and next to be added signal plot
@@ -655,7 +654,7 @@ class Viz_API:
             for si in selectedNodeList:
                 if figureKey is not None:
                     figureKey, plotWidget = self.GetPlotWidget(dataTreeView=vizTreeNode.dataTreeView,
-                                                              figureKey=figureKey)
+                                                               figureKey=figureKey)
                     # Following check on coordinates is performed only if the current plot axis is not the time axis
                     if plotWidget.getStrategy() != 'TIME':
                         if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
@@ -812,8 +811,8 @@ class Viz_API:
             QVizPlotSignal(dataTreeView=dataTreeView,
                            vizTreeNode=treeNode,
                            plotWidget=plotWidget).execute(figureKey=currentFigureKey,
-                                                           update=update,
-                                                           dataset_to_update=dataset_to_update)
+                                                          update=update,
+                                                          dataset_to_update=dataset_to_update)
         except ValueError as e:
             logging.error(str(e))
 
@@ -852,63 +851,62 @@ class Viz_API:
             idssByNames[idsName] = eval("idd." + idsName)
 
         return idssByNames
-        
+
     def getAll1DNodes(self, ids_name, dataTreeView, node, nodes, nodes_id, errorBars=False, str_filter_only=None):
         if node.isIDSRoot():
-            #print("Root detected")
+            # print("Root detected")
             nodes_id = set()
             nodes = []
         children_id, children = self.getChildren_(node, set(), [])
         for child in children:
             if child.isDynamicData() and child.is1D() and child.hasAvailableData():
                 if not errorBars and not "_error_" in child.getPath():
-                   if str_filter_only is None or (str_filter_only is not None and str_filter_only in child.getPath()):
-                       if not id(child) in nodes_id:
-                          nodes_id.add(id(child))
-                          nodes.append(child)
-                          #print('adding child-->', child.getPath())
-            nodes_id, nodes = self.getAll1DNodes(ids_name, dataTreeView, child, nodes, nodes_id, errorBars, str_filter_only)
+                    if str_filter_only is None or (str_filter_only is not None and str_filter_only in child.getPath()):
+                        if not id(child) in nodes_id:
+                            nodes_id.add(id(child))
+                            nodes.append(child)
+                            # print('adding child-->', child.getPath())
+            nodes_id, nodes = self.getAll1DNodes(ids_name, dataTreeView, child, nodes, nodes_id, errorBars,
+                                                 str_filter_only)
         return nodes_id, nodes
-        
+
     def getChildren_(self, item, children_id, children):
         for row in range(item.childCount()):
-           child_item = item.child(row)
-           if not id(child_item) in children_id:
-              children_id.add(id(child_item))
-              children.append(child_item)
-           children_id, children = self.getChildren_(child_item, children_id, children)
+            child_item = item.child(row)
+            if not id(child_item) in children_id:
+                children_id.add(id(child_item))
+                children.append(child_item)
+            children_id, children = self.getChildren_(child_item, children_id, children)
         return children_id, children
-        
+
     def getAllPlottable1DSignals(self, dtv_nodes, dataTreeView, plotWidget=None):
-      s_list = []
-      for node in dtv_nodes:
-          try:
-            s = self.GetSignal(dataTreeView=dataTreeView,
-                                                vizTreeNode=node,
-                                                plotWidget=plotWidget)
-            s_list.append((node, s))
-          except Exception as e: 
-            print(e)
-            continue
-      return s_list
-      
-    
+        s_list = []
+        for node in dtv_nodes:
+            try:
+                s = self.GetSignal(dataTreeView=dataTreeView,
+                                   vizTreeNode=node,
+                                   plotWidget=plotWidget)
+                s_list.append((node, s))
+            except Exception as e:
+                print(e)
+                continue
+        return s_list
+
     def updateAllPlottable1DSignals(self, s_list, time_index, plotWidget=None):
-      s_new_list = []
-      for s in s_list:
-          try:
-            node = s[0]
-            snew = self.GetSignal(dataTreeView=node.dataTreeView,
-                                                vizTreeNode=node,
-                                                time_index=time_index,
-                                                plotWidget=plotWidget)
-            s_new_list.append((node, snew))
-          except Exception as e: 
-            print(e)
-            continue
-      return s_new_list                
-                      
-                      
+        s_new_list = []
+        for s in s_list:
+            try:
+                node = s[0]
+                snew = self.GetSignal(dataTreeView=node.dataTreeView,
+                                      vizTreeNode=node,
+                                      time_index=time_index,
+                                      plotWidget=plotWidget)
+                s_new_list.append((node, snew))
+            except Exception as e:
+                print(e)
+                continue
+        return s_new_list
+
     def modifyTitle(self, title, ids_name, slices_aos_name):
         if ids_name is not None:
             index = title.find(ids_name)
@@ -916,8 +914,10 @@ class Viz_API:
                 return title
             return title[index:]
         elif slices_aos_name is not None:
+            if 'itime' in title:
+                title = title.replace("itime", ":")
+            slices_aos_name = QVizGlobalOperations.makeIMASPath(slices_aos_name)
             index = title.find(slices_aos_name)
             if index == -1:
                 return title
-            return title[index+len(slices_aos_name)+4:]
-        
+            return title[index + len(slices_aos_name) + 4:]

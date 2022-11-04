@@ -33,7 +33,7 @@ class QVizGlobalOperations:
         to_eval = "ids." + selectedNodeData['IDSName'] \
             + ".ids_properties.homogeneous_time"
         homogeneous_time = eval(to_eval)
-        if (homogeneous_time == 0):
+        if homogeneous_time == 0:
             return False
         return True
 
@@ -412,6 +412,7 @@ class QVizGlobalOperations:
             i += 1
         return paths
 
+    @staticmethod
     def makePythonPath(path):
         path = path.replace('(', '[')
         path = path.replace(')', ']')
