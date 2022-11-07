@@ -112,6 +112,79 @@ electron density, ion temperature etc.) stored within
    The development procedure of the **SOLPS overview plugin** can be seen in a
    short movie found in section :ref:`plugins_qtdesigner`.
 
+
+'Profiles' plugin overview
+--------------------------
+
+This plugin allows to plot 0D/1D data embedded in dynamic AOS. It currently supports the following IDSs:
+
+- core_profiles
+- core_transport
+- core_sources
+- equilibrium
+- edge_profiles
+
+Executing the 'Profiles' plugin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Here is a scenario example on executing the IMASViz **Profiles plugin**:
+
+1. Navigate to the **core_sources**, **core_profiles**, **core_transport**, **edge_profiles** or **equilibrium**  IDS.
+
+2. **right-click** on the **core_profiles** node for example. The available plugin actions appear in the popup menu.
+
+    .. figure:: images/Profiles_plugin_profiles_plugin_menu.png
+     :align: center
+     :scale: 80%
+     :alt: Profiles plugin popup menu
+
+     Profiles plugin popup menu
+
+3. Select **Visualization of 1D nodes from profiles_1d(itime) along coordinate1 axis**. All 1D data contained contained in profiles_1d(itime) are plotted along the coordinate1 axis.
+
+    .. figure:: images/Profiles_plugin_plots_along_coordinate1_example.png
+     :align: center
+     :scale: 80%
+     :alt: Plots example along the 'coordinate1' axis using the 'Profiles' plugin
+
+     Plots example along the coordinate1 axis using the 'Profiles' plugin
+
+4. Move the time slider. Each plot is updated accordingly.
+
+5. **right-click** on a particular plot. A popup menu displays.
+
+    .. figure:: images/Profiles_plugin_plots_menu.png
+     :align: center
+     :scale: 80%
+     :alt: Plot menu
+
+     Plot menu
+
+6. Select 'Plot this in a new separate figure'
+
+.. Note::
+   For the 'core_sources' and 'core_transport' IDS, you will be asked for the index i1 of the 'source(i1) AOS' (index i1 of the model(i1) AOS respectively), 
+   in order to select all data contained in 'source(i1)/profiles_1d' and 'source(i1)/global_quantities' ('model(i1)/profile_1d' respectively).
+
+   The time slider appears only for plots along the 'coordinate1' axis.
+
+Each table of plots can be managed (hide/show and delete) from the menu 'Plot windows' as shown below:
+
+    .. figure:: images/Profiles_plugin_plots_windows_menu.png
+     :align: center
+     :scale: 80%
+     :alt: Plots windows menu
+
+     Plots windows menu
+
+Time value can be converted in time slice index using the field 'Time value':
+
+1. Enter the time value in the field 'Time value'. The time value is automatically converted in time index in the field 'Time slice index'
+2. Click the button 'Plot' in order to update the plots accordingly
+
+.. Note::
+   The plots are automatically updated if the checkbox 'Refresh plot(s) automatically on time index change' is enabled.
+
 Executing the SOLPS overview plugin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

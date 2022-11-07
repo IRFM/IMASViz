@@ -22,7 +22,7 @@ doc:
 	# required (module load texlive)
 	cd ${VIZ_HOME}/doc; \
 	make html; \
-	make latexpdf
+	#make latexpdf
 
 clean:
 	rm -rf ${HOME}/.imasviz/VizGeneratedCode
