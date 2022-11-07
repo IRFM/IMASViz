@@ -3,16 +3,16 @@ import os, sys
 
 from PyQt5.QtWidgets import QMainWindow
 
-RegisteredPlugins = {# 'equilibriumcharts':'viz_equi.equilibriumcharts',
-                     #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
+RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
+                     # 'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
                      # 'SOLPS_UiPlugin': '',
-                     #'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
-                     #'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
-                     #'viz_spectrometer_plugin':'viz_spectrometer.viz_spectrometer_plugin',
-                     'VizProfiles_plugin':'viz_Profiles.VizProfiles_plugin', 
+                     # 'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
+                     # 'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
+                     # 'viz_spectrometer_plugin':'viz_spectrometer.viz_spectrometer_plugin',
+                     'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
                      # 'example_UiPlugin': '',
                      # 'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
-                     #'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
+                     # 'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
                      }
 
 
@@ -99,7 +99,7 @@ class VizPlugin:
     @staticmethod
     def getPluginsConfigurationFor(pluginsName):
         RegisteredPluginsConfiguration = { \
-            'SOLPS_UiPlugin':   [{
+            'SOLPS_UiPlugin': [{
                 'UiFile': 'SOLPSplugin.ui',
                 'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
                 'targetIDSroot': 'edge_profiles',
