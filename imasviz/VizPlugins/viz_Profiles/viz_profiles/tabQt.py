@@ -19,26 +19,24 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotViewForPlugin imp
 
 class QVizTab(QWidget):
 
-    def __init__(self, request=None, tab_page_name=None):
-        super(QWidget, self).__init__()
+    def __init__(self, parent=None, tab_page_name=None):
+        super(QWidget, self).__init__(parent)
 
-        #self.parent = parent
-        self.request = request
+        self.parent = parent
         self.tab_page_name = tab_page_name
-        #self.data_entry = self.parent.data_entry
-        #self.dataTreeView = self.parent.dataTreeView
+        self.data_entry = self.parent.data_entry
+        self.dataTreeView = self.parent.dataTreeView
 
         # Get log parser
-        #self.log = self.parent.getLogger()
+        # self.log = self.parent.getLogger()
         self.signals = None
 
-    def setTabUI(self, multiPlots, signals, plotWidget, tabWidget):
+    def setTabUI(self, multiPlots, signals, plotWidget):
         """Set tab user interface.
         """
-
         scrollLayout = QGridLayout()
         self.setLayout(scrollLayout)
-        tabWidget.addTab(self, self.tab_page_name)
-        multiPlots.plot1D(signals, plotWidget, self.request)
+        self.parent.tabWidget.addTab(self, self.tab_page_name)
+        multiPlots.plot1D(signals, plotWidget, self.parent.request)
         scrollLayout.addWidget(multiPlots)
         self.signals = signals

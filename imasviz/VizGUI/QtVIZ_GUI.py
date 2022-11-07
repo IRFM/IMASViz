@@ -21,8 +21,7 @@ from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QPlainTextEdit, QGridLayout, QMdiArea, QTableView)
 from PyQt5.QtCore import Qt
 from pathlib import Path
-import matplotlib
-matplotlib.use('Qt5Agg')
+
 
 # Append imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))

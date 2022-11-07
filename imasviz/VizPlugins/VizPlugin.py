@@ -3,15 +3,15 @@ import os, sys
 
 from PyQt5.QtWidgets import QMainWindow
 
-RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
+RegisteredPlugins = {# 'equilibriumcharts':'viz_equi.equilibriumcharts',
                      #'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
-                     'SOLPS_UiPlugin': '',
+                     # 'SOLPS_UiPlugin': '',
                      #'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
                      #'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
                      #'viz_spectrometer_plugin':'viz_spectrometer.viz_spectrometer_plugin',
                      'VizProfiles_plugin':'viz_Profiles.VizProfiles_plugin', 
-                     'example_UiPlugin': '',
-                     'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
+                     # 'example_UiPlugin': '',
+                     # 'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
                      #'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
                      }
 

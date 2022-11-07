@@ -13,18 +13,15 @@
 # Standard library imports
 import logging
 import sys
-import inspect
-import time
 from functools import partial
 
 # Third party imports
 import numpy as np
-import imas
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
-                             QAction, QFrame, QScrollArea, QProgressBar)
-from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot, QThread
+                             QAction, QFrame, QScrollArea, QProgressBar, QDesktopWidget)
+from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot, QThread, QObject
 from PyQt5.QtGui import QDoubleValidator
 
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
@@ -36,6 +33,7 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.tabQt import QVizTab
 
 
 class VizProfiles(QMainWindow):
+    updateProgressBar = pyqtSignal()
 
     def __init__(self, viz_api, IDS_parameters, data_entry, dataTreeView, request):
         """
@@ -87,73 +85,83 @@ class VizProfiles(QMainWindow):
         tup = (dataTreeView.dataSource.shotNumber, None)
         viz_api.AddNodeToFigure(figureKey, key, tup)
         viz_api.figureframes[figureKey] = self
-        self.ex1 = Example(self)
-        self.ex1.btnFunc(viz_api, self.ids_related, dataTreeView, self.request.list_of_filters,
-                         self.strategy, self.request.tab_names)
 
-        self.ex1.thread.join()
+        self.pb = ProgressBar()
+        self.pb.show()
 
-        self.ex1.show()
         # Set user interface of the main window
-        self.setUI()
-
-        self.ex1.end_of_progress()
-        self.ex1.close()
+        self.buildUI_in_separate_thread()
 
     def getLogger(self):
         return self.log
 
-    # def setTabs(self):
-    #
-    #     filter_index = 0
-    #     j = 0
-    #     for str_filter_only in self.request.list_of_filters:
-    #         # print("str_filter_only-->", str_filter_only)
-    #         nodes_id, dtv_nodes = self.imas_viz_api.getAll1DNodes(self.ids_related,
-    #                                                               self.dataTreeView,
-    #                                                               self.dataTreeView.IDSRoots[self.ids_related], None,
-    #                                                               None, errorBars=False,
-    #                                                               str_filter_only=str_filter_only)
-    #         w = GlobalPlotWidget(plotStrategy=self.strategy)
-    #         self.plottable_signals = self.imas_viz_api.getAllPlottable1DSignals(dtv_nodes, self.dataTreeView,
-    #                                                                             w)  # return tuple (node, signal)
-    #
-    #         ncurves_per_page = 6
-    #         remaining_page = 0
-    #         if (len(self.plottable_signals) % ncurves_per_page) != 0:
-    #             remaining_page = 1
-    #
-    #         ntabs = int((len(self.plottable_signals) / ncurves_per_page)) + remaining_page
-    #         self.tabs = []
-    #
-    #         for i in range(ntabs):
-    #             j = j + 1
-    #             self.ex1.setProgress(j)
-    #             tab_name = self.request.tab_names[filter_index] + ' (' + str(i + 1) + '/' + str(ntabs) + ')'
-    #             tab = QVizTab(parent=self, tab_page_name=tab_name)
-    #             last_index = (i + 1) * ncurves_per_page
-    #             if last_index > ntabs * ncurves_per_page:
-    #                 last_index = ntabs * ncurves_per_page
-    #             multiPlots = QVizTablePlotViewForPlugin(self.imas_viz_api, self.dataTreeView)
-    #             tab.setTabUI(multiPlots=multiPlots, signals=self.plottable_signals[i * ncurves_per_page:last_index],
-    #                          plotWidget=w)
-    #             self.tabs.append(tab)
-    #
-    #         filter_index += 1
+    def closeProgressBar(self):
+        self.pb.close()
+
+    def setTabs(self):
+
+        results = self.worker.results
+        if len(results) == 0:
+            self.close()
+            logging.info("No data available for plotting.")
+            return
+
+        self.mainWidget = QWidget(parent=self)
+        self.mainWidget.setLayout(QVBoxLayout())
+        self.tabWidget = QTabWidget(parent=self)
+
+        w = GlobalPlotWidget(plotStrategy=self.request.strategy)
+        for filter_index in range(len(results)):
+            ncurves_per_page = 6
+            remaining_page = 0
+            plottable_signals = results[filter_index]
+            if (len(plottable_signals) % ncurves_per_page) != 0:
+                remaining_page = 1
+            ntabs = int((len(plottable_signals) / ncurves_per_page)) + remaining_page
+            for i in range(ntabs):
+                tab_name = self.request.tab_names[filter_index] + ' (' + str(i + 1) + '/' + str(ntabs) + ')'
+                tab = QVizTab(parent=self, tab_page_name=tab_name)
+                last_index = (i + 1) * ncurves_per_page
+                if last_index > ntabs * ncurves_per_page:
+                    last_index = ntabs * ncurves_per_page
+                multiPlots = QVizTablePlotViewForPlugin(self.imas_viz_api, self.dataTreeView)
+                tab.setTabUI(multiPlots=multiPlots, signals=plottable_signals[i * ncurves_per_page:last_index],
+                             plotWidget=w)
+        self.setUI()
+
+    def buildUI_in_separate_thread(self):
+        # Create a QThread object
+        self.thread = QThread()
+        # Create a worker object
+        self.worker = Worker(self.request, self.imas_viz_api, self.dataTreeView)
+        # Move worker to the thread
+        self.worker.moveToThread(self.thread)
+        # Connect signals and slots
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+        self.worker.finished.connect(self.closeProgressBar)
+        self.worker.call.connect(self.setTabs)
+        self.worker.finished.connect(self.show)
+        self.worker.progressBar.connect(self.pb.updateProgressBar)
+        self.worker.maxProgressBar.connect(self.pb.setMaxProgressBar)
+        self.worker.titleProgressBar.connect(self.pb.setTitleProgressBar)
+        # Start the thread
+        self.thread.start()
 
     def setUI(self):
         """Set user interface of the main window
         """
-        self.mainWidget = QWidget(parent=self)
-        self.mainWidget.setLayout(QVBoxLayout())
-        self.tabWidget = QTabWidget(parent=self)
+        # self.mainWidget = QWidget(parent=self)
+        # self.mainWidget.setLayout(QVBoxLayout())
+        # self.tabWidget = QTabWidget(parent=self)
 
         # Add menu bar
         self.addMenuBar()
 
         # Set tabs
-        # self.setTabs()
-        self.ex1.btnFunc()
+        #self.setTabs()
 
         # Position widgets
         self.mainWidget.layout().addWidget(self.tabWidget)
@@ -250,12 +258,12 @@ class VizProfiles(QMainWindow):
 
         # self.spinBox_timeIndex.valueChanged.connect(self.onTimeIndexChanged)
 
-    def sizeHint(self):
-        """Set initial window size.
-        Note: Qt calls this routine automatically by default when creating this
-              window/widget.
-        """
-        return QSize(int(self.width), int(self.height))
+    # def sizeHint(self):
+    #     """Set initial window size.
+    #     Note: Qt calls this routine automatically by default when creating this
+    #           window/widget.
+    #     """
+    #     return QSize(int(self.width), int(self.height))
 
     def addMenuBar(self):
         """Create and configure the menu bar.
@@ -284,6 +292,8 @@ class VizProfiles(QMainWindow):
 
         if time_slices_count == 0:
             message = "No time slice found for " + self.ids_related + "."
+            logging.error(message)
+            self.close()
             raise ValueError(message)
 
         if time_index > time_slices_count - 1:
@@ -475,101 +485,77 @@ class Request():
         self.strategy = strategy
 
 
-class Thread(QThread):
-    _signal = pyqtSignal(int)
+# worker class
+class Worker(QObject):
+    finished = pyqtSignal()
+    call = pyqtSignal()
+    progressBar = pyqtSignal(int)
+    maxProgressBar = pyqtSignal(int)
+    titleProgressBar = pyqtSignal()
 
-    def __init__(self, imas_viz_api, ids_related, dataTreeView, list_of_filters, strategy, tab_names):
-        super(Thread, self).__init__()
-        self.tabs = None
+    def __init__(self, request, imas_viz_api, dataTreeView):
+        super().__init__()
+        self.results = []
+        self.request = request
         self.imas_viz_api = imas_viz_api
-        self.ids_related = ids_related
         self.dataTreeView = dataTreeView
-        self.list_of_filters = list_of_filters
-        self.strategy = strategy
-        self.tab_names = tab_names
-        self.end_of_progress = False
-
-    def __del__(self):
-        self.wait()
 
     def run(self):
-        self.setTabs()
+        """Long-running task."""
+        self.buildPlottableSignals()
+        self.call.emit()
+        self.finished.emit()
 
-    def setTabs(self):
-
+    def buildPlottableSignals(self):
+        self.results = []
         filter_index = 0
+        jmax = len(self.request.list_of_filters)
+        self.maxProgressBar.emit(jmax)
         j = 0
-        for str_filter_only in self.list_of_filters:
-            # print("str_filter_only-->", str_filter_only)
-            nodes_id, dtv_nodes = self.imas_viz_api.getAll1DNodes(self.ids_related,
-                                                                  self.dataTreeView,
-                                                                  self.dataTreeView.IDSRoots[
-                                                                      self.ids_related], None,
-                                                                  None, errorBars=False,
-                                                                  str_filter_only=str_filter_only)
-            w = GlobalPlotWidget(plotStrategy=self.strategy)
-            plottable_signals = self.imas_viz_api.getAllPlottable1DSignals(dtv_nodes,
-                                                                           self.dataTreeView,
-                                                                           w)  # return tuple (
-            # node, signal)
-
-            ncurves_per_page = 6
-            remaining_page = 0
-            if (len(plottable_signals) % ncurves_per_page) != 0:
-                remaining_page = 1
-
-            ntabs = int((len(plottable_signals) / ncurves_per_page)) + remaining_page
-            self.tabs = []
-
-            for i in range(ntabs):
-                j = j + 1
-                self._signal.emit(10 * j)
-                tab_name = self.tab_names[filter_index] + ' (' + str(i + 1) + '/' + str(ntabs) + ')'
-                tab = QVizTab(request=request, tab_page_name=tab_name)
-                last_index = (i + 1) * ncurves_per_page
-                if last_index > ntabs * ncurves_per_page:
-                    last_index = ntabs * ncurves_per_page
-                multiPlots = QVizTablePlotViewForPlugin(self.imas_viz_api, self.dataTreeView)
-                tab.setTabUI(multiPlots=multiPlots,
-                             signals=plottable_signals[i * ncurves_per_page:last_index],
-                             plotWidget=w,
-                             tabWidget=)
-                self.tabs.append(tab)
-
+        for str_filter in self.request.list_of_filters:
+            j = j + 1
+            self.progressBar.emit(j)
+            # print("str_filter-->", str_filter_only)
+            nodes_id, dtv_nodes = self.imas_viz_api.getAll1DNodes(self.dataTreeView.IDSRoots[self.request.ids_related],
+                                                                  errorBars=False,
+                                                                  str_filter=str_filter,
+                                                                  strategy= self.request.strategy)
+            w = GlobalPlotWidget(plotStrategy=self.request.strategy)
+            plottable_signals = self.imas_viz_api.getAllPlottable1DSignals(dtv_nodes, self.dataTreeView,
+                                                                           w)  # return tuple (node, signal)
+            self.results.append(plottable_signals)
             filter_index += 1
 
-    @property
-    def signal(self):
-        return self._signal
 
-
-class Example(QWidget):
-    def __init__(self, parent):
-        super(Example, self).__init__()
-        self.tabs = None
-        self.parent = parent
-        self.progress = None
+class ProgressBar(QWidget):
+    def __init__(self):
+        super(ProgressBar, self).__init__()
         self.thread = None
-        self.setWindowTitle('QProgressBar')
+        self.setWindowTitle('Preparing plots...')
         self.pbar = QProgressBar(self)
         self.pbar.setValue(0)
         self.resize(300, 100)
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.pbar)
         self.setLayout(self.vbox)
+        self.pbar.setMinimum(0)
+        self.pbar.setMaximum(100)
+        self.pbar.setValue(0)
+        qtRectangle = self.frameGeometry()
+        centerPoint = QDesktopWidget().availableGeometry().center()
+        qtRectangle.moveCenter(centerPoint)
+        self.move(qtRectangle.topLeft())
         # self.show()
 
-    def btnFunc(self, imas_viz_api, ids_related, dataTreeView, str_filter_only, strategy, tab_names):
-        self.thread = Thread(imas_viz_api, ids_related, dataTreeView, str_filter_only, strategy, tab_names)
-        self.thread.signal.connect(self.signal_accept)
-        self.thread.start()
+    def updateProgressBar(self, i):
+        # print("updating progress bar to :" + str(i))
+        self.pbar.setValue(i)
 
-    def end_of_progress(self):
-        self.thread.end_of_progress = True
+    def setMaxProgressBar(self, i):
+        self.pbar.setMaximum(i)
 
-    def signal_accept(self, msg):
-        print("-->setting value to :" + str(msg))
-        self.pbar.setValue(int(msg))
+    def setTitleProgressBar(self):
+        self.pbar.setWindowTitle("Plotting...")
 
 
 # Main used only for testing purposes (No GUI)
@@ -633,11 +619,22 @@ if __name__ == "__main__":
     #              'profiles_1d/zeff_fit']
 
     # ids_name = 'core_profiles'
-    # strategy = 'COORDINATE1'
-    # #strategy = 'TIME'
+    # # strategy = 'COORDINATE1'
+    # strategy = 'TIME'
     # slices_aos_name = 'profiles_1d'
-    # list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion', 'global_quantities']
-    # tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'global_quantities']
+    # list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
+    #                    'profiles_1d(0)/neutral', 'profiles_1d(0)/t_i_average',
+    #                    'profiles_1d(0)/n_i', 'profiles_1d(0)/momentum_tor', 'profiles_1d(0)/zeff',
+    #                    'profiles_1d(0)/pressure', 'profiles_1d(0)/j_',
+    #                    'profiles_1d(0)/conductivity_parallel', 'profiles_1d(0)/e_field',
+    #                    'profiles_1d(0)/rotation', 'profiles_1d(0)/q', 'profiles_1d(0)/magnetic_shear',
+    #                    'global_quantities']
+    # tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'profiles_1d/neutral',
+    #              'profiles_1d/t_i_average', 'profiles_1d/n_i', 'profiles_1d/momentum_tor',
+    #              'profiles_1d/zeff', 'profiles_1d/pressure', 'profiles_1d/j',
+    #              'profiles_1d/conductivity_parallel', 'profiles_1d/e_field',
+    #              'profiles_1d/rotation', 'profiles_1d/q', 'profiles_1d/magnetic_shear',
+    #              'global_quantities']
 
     # ids_name = 'core_sources'
     # strategy = 'COORDINATE1'
@@ -655,6 +652,9 @@ if __name__ == "__main__":
     ids_name = 'equilibrium'
     slices_aos_name = 'time_slice'
     strategy = 'COORDINATE1'
+    # strategy = 'TIME'
+    list_of_filters = ['time_slice(0)/boundary']
+    tab_names = ['time_slice/boundary']
     list_of_filters = ['time_slice(0)/boundary', 'time_slice(0)/constraints', 'time_slice(0)/profiles_1d',
                        'time_slice(0)/profiles_2d', 'time_slice(0)/global_quantities',
                        'time_slice(0)/coordinate_system', 'time_slice(0)/convergence']
@@ -662,11 +662,25 @@ if __name__ == "__main__":
                  'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
                  'time_slice/convergence']
 
+    # ids_name = 'core_transport'
+    # model_index = 0
+    # strategy = 'TIME'
+    # slices_aos_name = 'model[' + str(model_index) + '].profiles_1d'
+    # model = 'model(' + str(model_index) + ')'
+    # profile = model + '/profiles_1d(0)'
+    # list_of_filters = [profile + '/grid', profile + '/conductivity', profile + '/electrons',
+    #                    profile + '/total_ion', profile + '/momentum', profile + '/e_field',
+    #                    profile + '/ion', profile + '/neutral']
+    # tab_name = 'model(' + str(model_index) + ')/profiles_1d'
+    # tab_names = [tab_name + '/grid', tab_name + '/conductivity', tab_name + '/electrons',
+    #              tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
+    #              tab_name + '/ion', tab_name + '/neutral']
+
     api.LoadIDSData(f, ids_name, occurrence)
     # f.show()
     data_entry = dataSource.getImasEntry(occurrence)
 
     request = Request(ids_name, tab_names, list_of_filters, slices_aos_name, strategy)
     vep = VizProfiles(api, IDS_parameters, data_entry, f.dataTreeView, request)
-    vep.show()
+    # vep.show()
     sys.exit(app.exec_())
