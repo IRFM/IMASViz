@@ -20,7 +20,7 @@ import numpy as np
 from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
-                             QAction, QFrame, QScrollArea, QProgressBar, QDesktopWidget)
+                             QAction, QFrame, QScrollArea, QProgressBar, QDesktopWidget, QLayout)
 from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot, QThread, QObject
 from PyQt5.QtGui import QDoubleValidator
 
@@ -101,6 +101,7 @@ class VizProfiles(QMainWindow):
     def setTabs(self):
 
         results = self.worker.results
+        results = self.worker.results[0:3]
         if len(results) == 0:
             self.close()
             logging.info("No data available for plotting.")
@@ -112,7 +113,7 @@ class VizProfiles(QMainWindow):
 
         w = GlobalPlotWidget(plotStrategy=self.request.strategy)
         for filter_index in range(len(results)):
-            ncurves_per_page = 6
+            ncurves_per_page = 96
             remaining_page = 0
             plottable_signals = results[filter_index]
             if (len(plottable_signals) % ncurves_per_page) != 0:
@@ -124,7 +125,13 @@ class VizProfiles(QMainWindow):
                 last_index = (i + 1) * ncurves_per_page
                 if last_index > ntabs * ncurves_per_page:
                     last_index = ntabs * ncurves_per_page
-                multiPlots = QVizTablePlotViewForPlugin(self.imas_viz_api, self.dataTreeView)
+                # print("i * ncurves_per_page=", i * ncurves_per_page)
+                # print("last_index=", last_index)
+                # print("len(plottable_signals)=", len(plottable_signals[i * ncurves_per_page:last_index]))
+                ncurves = len(plottable_signals[i * ncurves_per_page:last_index])
+                # print("ncurves=", ncurves)
+                multiPlots = QVizTablePlotViewForPlugin(self.imas_viz_api, self.dataTreeView,
+                                                        ncurves)
                 tab.setTabUI(multiPlots=multiPlots, signals=plottable_signals[i * ncurves_per_page:last_index],
                              plotWidget=w)
         self.setUI()
@@ -153,15 +160,8 @@ class VizProfiles(QMainWindow):
     def setUI(self):
         """Set user interface of the main window
         """
-        # self.mainWidget = QWidget(parent=self)
-        # self.mainWidget.setLayout(QVBoxLayout())
-        # self.tabWidget = QTabWidget(parent=self)
-
         # Add menu bar
         self.addMenuBar()
-
-        # Set tabs
-        #self.setTabs()
 
         # Position widgets
         self.mainWidget.layout().addWidget(self.tabWidget)
@@ -317,8 +317,9 @@ class VizProfiles(QMainWindow):
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
             import QVizPlotSignal
-        qvizTab = self.getCurrentTab()
-        multiplots = qvizTab.layout().itemAt(0).widget()  # returns a QVizTablePlotViewForPlugin
+        qvizTab = self.getCurrentTab().parent
+        print("qvizTab=", qvizTab.parent.__class__)
+        multiplots = qvizTab.layout.itemAt(0).widget()  # returns a QVizTablePlotViewForPlugin
         w = GlobalPlotWidget(plotStrategy=self.strategy)
         updated_signals = self.imas_viz_api.updateAllPlottable1DSignals(qvizTab.signals, self.time_index, plotWidget=w)
         multiplots.updatePlot(updated_signals)
@@ -519,7 +520,7 @@ class Worker(QObject):
             nodes_id, dtv_nodes = self.imas_viz_api.getAll1DNodes(self.dataTreeView.IDSRoots[self.request.ids_related],
                                                                   errorBars=False,
                                                                   str_filter=str_filter,
-                                                                  strategy= self.request.strategy)
+                                                                  strategy=self.request.strategy)
             w = GlobalPlotWidget(plotStrategy=self.request.strategy)
             plottable_signals = self.imas_viz_api.getAllPlottable1DSignals(dtv_nodes, self.dataTreeView,
                                                                            w)  # return tuple (node, signal)
@@ -579,6 +580,12 @@ if __name__ == "__main__":
     database = 'ITER'
     occurrence = 0
 
+    # shotNumber = 130012
+    # runNumber = 4
+    # userName = 'public'
+    # database = 'ITER_SCENARIOS'
+    # occurrence = 0
+
     # shotNumber = 54178
     # runNumber = 0
     # userName = 'fleuryl'
@@ -618,23 +625,23 @@ if __name__ == "__main__":
     #              'profiles_1d/n_i_thermal_total', 'profiles_1d/momentum_tor', 'profiles_1d/zeff',
     #              'profiles_1d/zeff_fit']
 
-    # ids_name = 'core_profiles'
-    # # strategy = 'COORDINATE1'
-    # strategy = 'TIME'
-    # slices_aos_name = 'profiles_1d'
-    # list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
-    #                    'profiles_1d(0)/neutral', 'profiles_1d(0)/t_i_average',
-    #                    'profiles_1d(0)/n_i', 'profiles_1d(0)/momentum_tor', 'profiles_1d(0)/zeff',
-    #                    'profiles_1d(0)/pressure', 'profiles_1d(0)/j_',
-    #                    'profiles_1d(0)/conductivity_parallel', 'profiles_1d(0)/e_field',
-    #                    'profiles_1d(0)/rotation', 'profiles_1d(0)/q', 'profiles_1d(0)/magnetic_shear',
-    #                    'global_quantities']
-    # tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'profiles_1d/neutral',
-    #              'profiles_1d/t_i_average', 'profiles_1d/n_i', 'profiles_1d/momentum_tor',
-    #              'profiles_1d/zeff', 'profiles_1d/pressure', 'profiles_1d/j',
-    #              'profiles_1d/conductivity_parallel', 'profiles_1d/e_field',
-    #              'profiles_1d/rotation', 'profiles_1d/q', 'profiles_1d/magnetic_shear',
-    #              'global_quantities']
+    ids_name = 'core_profiles'
+    # strategy = 'COORDINATE1'
+    strategy = 'TIME'
+    slices_aos_name = 'profiles_1d'
+    list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
+                       'profiles_1d(0)/neutral', 'profiles_1d(0)/t_i_average',
+                       'profiles_1d(0)/n_i', 'profiles_1d(0)/momentum_tor', 'profiles_1d(0)/zeff',
+                       'profiles_1d(0)/pressure', 'profiles_1d(0)/j_',
+                       'profiles_1d(0)/conductivity_parallel', 'profiles_1d(0)/e_field',
+                       'profiles_1d(0)/rotation', 'profiles_1d(0)/q', 'profiles_1d(0)/magnetic_shear',
+                       'global_quantities']
+    tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'profiles_1d/neutral',
+                 'profiles_1d/t_i_average', 'profiles_1d/n_i', 'profiles_1d/momentum_tor',
+                 'profiles_1d/zeff', 'profiles_1d/pressure', 'profiles_1d/j',
+                 'profiles_1d/conductivity_parallel', 'profiles_1d/e_field',
+                 'profiles_1d/rotation', 'profiles_1d/q', 'profiles_1d/magnetic_shear',
+                 'global_quantities']
 
     # ids_name = 'core_sources'
     # strategy = 'COORDINATE1'
@@ -649,18 +656,18 @@ if __name__ == "__main__":
     # list_of_filters = ['flux_loop']
     # tab_names = ['flux_loop']
 
-    ids_name = 'equilibrium'
-    slices_aos_name = 'time_slice'
-    strategy = 'COORDINATE1'
-    # strategy = 'TIME'
-    list_of_filters = ['time_slice(0)/boundary']
-    tab_names = ['time_slice/boundary']
-    list_of_filters = ['time_slice(0)/boundary', 'time_slice(0)/constraints', 'time_slice(0)/profiles_1d',
-                       'time_slice(0)/profiles_2d', 'time_slice(0)/global_quantities',
-                       'time_slice(0)/coordinate_system', 'time_slice(0)/convergence']
-    tab_names = ['time_slice/boundary', 'time_slice/constraints', 'time_slice/profiles_1d',
-                 'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
-                 'time_slice/convergence']
+    # ids_name = 'equilibrium'
+    # slices_aos_name = 'time_slice'
+    # strategy = 'COORDINATE1'
+    # # strategy = 'TIME'
+    # list_of_filters = ['time_slice(0)/boundary']
+    # tab_names = ['time_slice/boundary']
+    # list_of_filters = ['time_slice(0)/boundary', 'time_slice(0)/constraints', 'time_slice(0)/profiles_1d',
+    #                    'time_slice(0)/profiles_2d', 'time_slice(0)/global_quantities',
+    #                    'time_slice(0)/coordinate_system', 'time_slice(0)/convergence']
+    # tab_names = ['time_slice/boundary', 'time_slice/constraints', 'time_slice/profiles_1d',
+    #              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
+    #              'time_slice/convergence']
 
     # ids_name = 'core_transport'
     # model_index = 0

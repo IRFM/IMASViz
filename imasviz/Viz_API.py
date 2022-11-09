@@ -13,11 +13,17 @@
 
 import os
 import logging
+import sys
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
 
 from PyQt5.QtWidgets import QMdiSubWindow
+
+
+def getNodePath(node):
+    # print("getNodePath=", node.getPath())
+    return node.getParametrizedDataPath()
 
 
 class Viz_API:
@@ -852,39 +858,20 @@ class Viz_API:
 
         return idssByNames
 
-    # def getAll1DNodes(self, ids_name, dataTreeView, node, nodes, nodes_id, errorBars=False, str_filter_only=None):
-    #     if node.isIDSRoot():
-    #         # print("Root detected")
-    #         nodes_id = set()
-    #         nodes = []
-    #     children_id, children = self.getChildren_(node, set(), [], str_filter_only)
-    #     for child in children:
-    #         if child.isDynamicData() and (child.is1D() or child.is0D()) and child.hasAvailableData():
-    #             if not errorBars and "_error_" not in child.getPath():
-    #                 if str_filter_only is None or (str_filter_only is not None and str_filter_only in child.getPath()):
-    #                     if not id(child) in nodes_id:
-    #                         nodes_id.add(id(child))
-    #                         nodes.append(child)
-    #                         # print('adding child-->', child.getPath())
-    #         elif child.isStructure() or child.isArrayOfStructure():
-    #             nodes_id, nodes = self.getAll1DNodes(ids_name, dataTreeView, child, nodes, nodes_id, errorBars,
-    #                                                  str_filter_only)
-    #     return nodes_id, nodes
-
     def getAll1DNodes(self, node, errorBars=False, str_filter=None, strategy=None):
         children_id, children = self.getChildren_(node, set(), [], str_filter, errorBars, strategy)
+        children.sort(key=getNodePath)
         return children_id, children
 
     def getChildren_(self, item, children_id, children, str_filter, errorBars, strategy):
         criteria = strategy == 'TIME'
         for row in range(item.childCount()):
             child_item = item.child(row)
-            if child_item.isDynamicData() and (child_item.is1D() or criteria*child_item.is0D()) and \
+            if child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
                     child_item.hasAvailableData():
                 if not errorBars and "_error_" not in child_item.getPath():
                     if str_filter is None or (str_filter is not None and str_filter
                                               in child_item.getPath()):
-
                         if not id(child_item) in children_id:
                             # print("--------------> adding :", item.getPath())
                             children_id.add(id(child_item))

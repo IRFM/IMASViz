@@ -14,15 +14,16 @@
 
 import pyqtgraph as pg
 from PyQt5.QtWidgets import (QTabWidget, QWidget, QPushButton, QGridLayout,
-                         QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea,
-                         QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
-                         QSpinBox, QSizePolicy, QSpacerItem, QApplication,
-                         QGraphicsScene, QGraphicsView, QCheckBox, QHBoxLayout)
+                             QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea,
+                             QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
+                             QSpinBox, QSizePolicy, QSpacerItem, QApplication,
+                             QGraphicsScene, QGraphicsView, QCheckBox, QHBoxLayout)
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from functools import partial
 from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
+
 
 class QVizPlotConfigUI(QDialog):
     """Tabbed widget allowing plot customization.
@@ -265,7 +266,8 @@ class TabLineProperties(QWidget):
         row = 0  # layout row
         itemID = 0
         for pdItem in self.parent.listPlotDataItems:
-            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem, pg.FillBetweenItem):
+            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem,
+                                                                                                        pg.FillBetweenItem):
                 continue
             col = 0  # layout column
 
@@ -277,7 +279,7 @@ class TabLineProperties(QWidget):
                                                        itemAtID=itemID).getCopy()
 
                 # - Add sample marker to layout
-                scrollLayout.addWidget(newSampleWidget, row+1, col, 1, 1)
+                scrollLayout.addWidget(newSampleWidget, row + 1, col, 1, 1)
                 col += 1  # go to next column
 
             # ------------------------------------------------------------------
@@ -286,7 +288,7 @@ class TabLineProperties(QWidget):
             # - Set current plot pen color (takes QColor)
             penColorButton.setColor(pdItem.opts['pen'].color())
             # - Add penColorButton to layout
-            scrollLayout.addWidget(penColorButton, row+1, col, 1, 1)
+            scrollLayout.addWidget(penColorButton, row + 1, col, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -319,7 +321,7 @@ class TabLineProperties(QWidget):
                 comboBox=styleComboBox))
 
             # - Add comboBox to layout
-            scrollLayout.addWidget(styleComboBox, row+1, col, 1, 1)
+            scrollLayout.addWidget(styleComboBox, row + 1, col, 1, 1)
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen width
@@ -328,7 +330,7 @@ class TabLineProperties(QWidget):
                                           minimum=0.0,
                                           singleStep=0.5)
             # - Add spinBox to layout
-            scrollLayout.addWidget(widthSpinBox, row+1, col, 1, 1)
+            scrollLayout.addWidget(widthSpinBox, row + 1, col, 1, 1)
 
             # - Update plot pen width/thickness on value change
             widthSpinBox.valueChanged.connect(partial(
@@ -361,7 +363,7 @@ class TabLineProperties(QWidget):
                 comboBox=symbolComboBox))
 
             # - Add comboBox to layout
-            scrollLayout.addWidget(symbolComboBox, row+1, col, 1, 1)
+            scrollLayout.addWidget(symbolComboBox, row + 1, col, 1, 1)
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol size. Take current symbol size as a value
@@ -370,7 +372,7 @@ class TabLineProperties(QWidget):
                                                minimum=0.0,
                                                singleStep=0.5)
             # - Add spinBox to layout
-            scrollLayout.addWidget(symbolSizeSpinBox, row+1, col, 1, 1)
+            scrollLayout.addWidget(symbolSizeSpinBox, row + 1, col, 1, 1)
 
             # - Update plot pen width/thickness on value change
             symbolSizeSpinBox.valueChanged.connect(partial(
@@ -384,7 +386,7 @@ class TabLineProperties(QWidget):
             # - Set current symbol fill color (takes QColor)
             symbolColorButton.setColor(pdItem.opts['symbolBrush'])
             # - Add symbolColorButton to layout
-            scrollLayout.addWidget(symbolColorButton, row+1, col, 1, 1)
+            scrollLayout.addWidget(symbolColorButton, row + 1, col, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -405,7 +407,7 @@ class TabLineProperties(QWidget):
             # - Set current symbol outline color (takes QColor)
             symbolOColorButton.setColor(pdItem.opts['symbolPen'])
             # - Add symbolOColorButton to layout
-            scrollLayout.addWidget(symbolOColorButton, row+1, col, 1, 1)
+            scrollLayout.addWidget(symbolOColorButton, row + 1, col, 1, 1)
             # - Update plot pen color on value change
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
@@ -425,7 +427,7 @@ class TabLineProperties(QWidget):
 
         # Set scrollArea contents margin to keep the contents lined to the top
         # even if not full scrollArea would be filled
-        topMargin = 270 - (row - 1)*30
+        topMargin = 270 - (row - 1) * 30
         if topMargin < 0:
             topMargin = 0
         scrollLayout.setContentsMargins(0, 0, 0, topMargin)
@@ -760,7 +762,7 @@ class TabTextProperties(QWidget):
                                 str(self.titleLabelSizeSpinBox.value()) + 'px')
 
         self.titleLabel.setText(self.titleLineEdit.text(),
-                                 **self.titleLabel.opts)
+                                **self.titleLabel.opts)
 
     def updateAxisBottomLabel(self):
         if self.axisBottomBoldButton.isChecked():
@@ -779,6 +781,7 @@ class TabTextProperties(QWidget):
         # axis.setLabel("text", "unit")
         self.axisBottom.setLabel(self.axisBottomLineEdit.text(),
                                  **self.axisBottom.labelStyle)
+
 
 class AxisConfWidget(QWidget):
     """(Sub)Widget for configuring axis labels.
@@ -837,7 +840,7 @@ class AxisConfWidget(QWidget):
 
         # - Configuring symbol label size. Take current label size as a value
         if 'font-size' not in self.axis.labelStyle:
-            self.axis.labelStyle['font-size'] = '15px' # default value
+            self.axis.labelStyle['font-size'] = '15px'  # default value
         self.axisLabelSizeSpinBox = QSpinBox(
             value=int(self.axis.labelStyle['font-size'].strip('px')))
 
@@ -866,6 +869,7 @@ class AxisConfWidget(QWidget):
         # axis.setLabel("text", "unit")
         self.axis.setLabel(self.axisLineEdit.text(),
                            **self.axis.labelStyle)
+
 
 class TabLegendProperties(QWidget):
     """Widget allowing legend customization.
@@ -937,7 +941,8 @@ class TabLegendProperties(QWidget):
         itemID = 0
         # Add options for each plotDataItem
         for pdItem in self.parent.listPlotDataItems:
-            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem, pg.FillBetweenItem):
+            if isinstance(pdItem, pg.InfiniteLine) or isinstance(pdItem, pg.ErrorBarItem) or isinstance(pdItem,
+                                                                                                        pg.FillBetweenItem):
                 continue
             col = 0  # layout column
 
@@ -949,7 +954,7 @@ class TabLegendProperties(QWidget):
                                                        itemAtID=itemID).getCopy()
 
                 # - Add sample marker to layout
-                scrollLayout.addWidget(newSampleWidget, row+1, col, 1, 1)
+                scrollLayout.addWidget(newSampleWidget, row + 1, col, 1, 1)
                 col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring legend label
@@ -958,7 +963,7 @@ class TabLegendProperties(QWidget):
             # - Add item ID to labelEdit
             labelEdit.itemID = itemID
             # - Add labelEdit to layout
-            scrollLayout.addWidget(labelEdit, row+1, col, 1, 1)
+            scrollLayout.addWidget(labelEdit, row + 1, col, 1, 1)
             # - Add action triggered by modification of the text box
             labelEdit.textChanged.connect(partial(
                 self.updatePDItemLabel,
@@ -973,7 +978,7 @@ class TabLegendProperties(QWidget):
             icon = GlobalIcons.getCustomQIcon(QApplication, 'bold')
             boldButton.setIcon(icon)
             # - Add boldButton to layout
-            scrollLayout.addWidget(boldButton, row+1, col, 1, 1)
+            scrollLayout.addWidget(boldButton, row + 1, col, 1, 1)
             # - Add action triggered by pressing the button
             boldButton.pressed.connect(partial(
                 self.setLegendBold,
@@ -988,7 +993,7 @@ class TabLegendProperties(QWidget):
             icon = GlobalIcons.getCustomQIcon(QApplication, 'italic')
             italicButton.setIcon(icon)
             # - Add italicButton to layout
-            scrollLayout.addWidget(italicButton, row+1, col, 1, 1)
+            scrollLayout.addWidget(italicButton, row + 1, col, 1, 1)
             # - Add action triggered by pressing the button
             italicButton.pressed.connect(partial(
                 self.setLegendItalic,
@@ -1002,13 +1007,13 @@ class TabLegendProperties(QWidget):
             self.toggleLegendDisplay = QCheckBox("Show legend")
             self.toggleLegendDisplay.setChecked(True)
             self.toggleLegendDisplay.stateChanged.connect(self.showHideLegend)
-            scrollLayout.addWidget(self.toggleLegendDisplay, row+1, 0, 1, 3)
+            scrollLayout.addWidget(self.toggleLegendDisplay, row + 1, 0, 1, 3)
 
             row += 1
 
         # Set scrollArea contents margin to keep the contents lined to the top
         # even if not full scrollArea would be filled
-        topMargin = 270 - (row - 1)*30
+        topMargin = 270 - (row - 1) * 30
         if topMargin < 0:
             topMargin = 0
         scrollLayout.setContentsMargins(0, 0, 0, topMargin)
