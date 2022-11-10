@@ -24,12 +24,12 @@ from .CustomizedViewBox import CustomizedViewBox
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
 
 
-class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
+class QVizTablePlotView(pg.GraphicsLayoutWidget):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, viz_api, dataTreeView, ncurves):
-        super(QVizTablePlotViewForPlugin, self).__init__()
+    def __init__(self, viz_api, dataTreeView, n_curves):
+        super(QVizTablePlotView, self).__init__()
 
         self.nb_plots_per_line = 0
         self.last_node = ''
@@ -37,15 +37,14 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         self.okWidth = None
         self.dataTreeView = dataTreeView
         self.ncols = 4
-        # self.rows = ncurves/self.ncols
-        self.ncurves = ncurves
+        self.headers_count = 0
         self.imas_viz_api = viz_api
         self.figureKey = 0  # TODO
 
         # # Get screen resolution (width and height)
-        self.screenWidth, self.screenHeight = getScreenGeometry()
+        # self.screenWidth, self.screenHeight = getScreenGeometry()
         # # Set base dimension parameter for setting plot size
-        self.plotVerticalDim = 400
+        self.plotVerticalDim = 300
         self.plotHorizontalDim = 270
 
         # # Set object name and title if not already set
@@ -63,14 +62,10 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         self.setAntialiasing(True)
         self.setBackground((255, 255, 255))
 
-        self.modifySize()
-        # self.setMinimumSize(1000, 2000)
-
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
         self.plotItems = []
-
         self.plotWidget = None
 
     def plot1D(self, plottable_signals, plotWidget, request):
@@ -87,7 +82,7 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
             if n == 0:
                 self.last_node = signalNode.getParametrizedDataPath()
 
-            print("-->plotting node:" + signalNode.getPath())
+            # print("-->plotting node:" + signalNode.getPath())
 
             t = QVizPlotSignal.getXAxisValues(signal)
 
@@ -122,23 +117,24 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
 
     def addHeader(self, node):
         self.addLabel('----------------------------')
-        label = self.addLabel(colspan=2)
-        # label.setAttr('bold', True)
-        # label.setAttr('size', '8pt')
-        label.setText(node.getParametrizedDataPath(), bold=True, size='8pt')
+        label = self.addLabel(colspan=self.ncols - 2)
+        label.setText(node.getParametrizedDataPath(), bold=True, size='10pt')
         self.addLabel('----------------------------')
+        self.headers_count += 1
         self.nextRow()
 
     def plot(self, n, x, y, label, xlabel, ylabel, node=None, request=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
 
         Arguments:
-            n      (int)      : Plot number.
-            x      (1D array) : 1D array of X-axis values.
-            y      (1D array) : 1D array of Y-axis values.
-            label  (str)      : Plot label.
-            xlabel (str)      : Plot X-axis label.
-            ylabel (str)      : Plot Y-axis label.
+            :param n      (int)      : Plot number.
+            :param x      (1D array) : 1D array of X-axis values.
+            :param y      (1D array) : 1D array of Y-axis values.
+            :param label  (str)      : Plot label.
+            :param xlabel (str)      : Plot X-axis label.
+            :param ylabel (str)      : Plot Y-axis label.
+            :param node:
+            :param request:
         """
         # Set pen
         pen = self.setPen()
@@ -150,8 +146,9 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         title = self.imas_viz_api.modifyTitle(title, None, request.slices_aos_name)
 
         if self.last_node != node.getParametrizedDataPath():
-            for i in range(self.ncols - self.nb_plots_per_line):
-                self.addViewBox(colspan=1)
+            if self.nb_plots_per_line != 0:
+                for i in range(self.ncols - self.nb_plots_per_line):
+                    self.addViewBox(colspan=1)
             self.nextRow()
             self.addHeader(node)
             self.nb_plots_per_line = 0
@@ -164,7 +161,9 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
                                 pen=pen,
                                 title=title,
                                 viewBox=viewBox)
+
         self.nb_plots_per_line += 1
+
         viewBox.addVizTreeNodeDataItems(node, plotItem.listDataItems())
 
         # Get titleLabel
@@ -193,9 +192,8 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
 
         viewBox.plotItem = plotItem
 
-        # pp = node.getParametrizedDataPath()
-
         if self.nb_plots_per_line % self.ncols == 0:
+            self.nb_plots_per_line = 0
             self.nextRow()
 
         self.plotItems.append(plotItem)
@@ -245,30 +243,18 @@ class QVizTablePlotViewForPlugin(pg.GraphicsLayoutWidget):
         style = QtCore.Qt.SolidLine
         # Set pen
         pen = pg.mkPen(color=color, width=3, style=style)
-
         return pen
 
-    def getCurrentPlotItem(self):
-        """Get the current (last) plot item, created by gw.plot().
-        """
-        if len(self.centralWidget.items.keys()) > 0:
-            return list(self.centralWidget.items.keys())[-1]
-        return None
-
-    def getPlotItemsDict(self):
-        """Return dictionary of GraphicWindow plot items
-        (list of pg.DataItem-s).
-        """
-        return self.centralWidget.items
-
-    def modifySize(self):
+    def modifySize(self, n_plots):
         """Modify TablePlotView size.
         (depending on the number of plots and number of columns)
         """
         # Set suitable width and height
         self.okWidth = self.ncols * self.plotHorizontalDim + 200
-        nrows = int(self.ncurves / self.ncols)
-        if self.ncurves % self.ncols != 0:
-            nrows += 1
-        self.okHeight = nrows * self.plotVerticalDim + 200
+
+        # print('self.centralWidget.currentRow= ', self.centralWidget.currentRow)
+        n_plots_lines = self.centralWidget.currentRow + 1 - self.headers_count
+
+        # print('n_plots_lines= ', n_plots_lines)
+        self.okHeight = n_plots_lines * self.plotVerticalDim + 30 * self.headers_count
         self.setMinimumSize(self.okWidth, self.okHeight)

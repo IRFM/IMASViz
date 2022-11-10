@@ -14,25 +14,25 @@
 from PyQt5.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QScrollArea, QLayout
 from PyQt5.QtCore import Qt, QRect, pyqtSlot
 from imasviz.Viz_API import Viz_API
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotViewForPlugin import QVizTablePlotViewForPlugin
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView import QVizTablePlotView
 
 
 class QVizTab(QWidget):
 
-    def __init__(self, parent=None, tab_page_name=None):
+    def __init__(self, parent=None, tab_page_name=None, filter_index=None):
         super(QWidget, self).__init__(parent)
 
+        self.layout = None
         self.scrollArea = None
         self.parent = parent
         self.tab_page_name = tab_page_name
+        self.filter_index = filter_index
         self.data_entry = self.parent.data_entry
         self.dataTreeView = self.parent.dataTreeView
-
-        # Get log parser
-        # self.log = self.parent.getLogger()
+        self.tab_index = None
         self.signals = None
 
-    def setTabUI(self, multiPlots, signals, plotWidget):
+    def setTabUI(self, index):
         """Set tab user interface.
         """
         container = QWidget(self)
@@ -41,10 +41,16 @@ class QVizTab(QWidget):
         container.setLayout(self.layout)
         scrollArea = QVizScrollArea(self)
         scrollArea.setWidget(container)
-        self.parent.tabWidget.addTab(scrollArea, self.tab_page_name)
+        self.tab_index = self.parent.tabWidget.insertTab(index, scrollArea, self.tab_page_name)
+        # self.parent.tabWidget.addTab(scrollArea, self.tab_page_name)
+
+    def buildPlots(self, multiPlots, signals, plotWidget):
         multiPlots.plot1D(signals, plotWidget, self.parent.request)
+        multiPlots.modifySize(len(signals))
         self.layout.addWidget(multiPlots)
         self.signals = signals
+
+
 
 
 class QVizScrollArea(QScrollArea):
