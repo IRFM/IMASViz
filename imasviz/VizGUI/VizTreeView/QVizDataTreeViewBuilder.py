@@ -18,7 +18,6 @@ class QVizDataTreeViewBuilder:
     def __init__(self, ids):
         self.arrayParentNodes = {}
         self.ids = ids
-        self.ggd_warning = 0
         self.signalsList = []
         self.ids_root_node = None
 
@@ -30,9 +29,6 @@ class QVizDataTreeViewBuilder:
 
     def getIDSRootNode(self):
         return self.ids_root_node
-
-    def getGGDWarning(self):
-        return self.ggd_warning
 
     def addNewNode(self, idsName, dataElement, parentNode, occurrence,
                    dataTreeView, ids_root_occ):
@@ -142,8 +138,6 @@ class QVizDataTreeViewBuilder:
                 logging.info("Building node for " + path + "...")
 
             itemNodeName = dataElement.tag + ' ' + str(index) + '/' + dataElement.get('dim')
-            if dataElement.get('ggd_warning') is not None:
-                self.ggd_warning = 1
 
             viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
