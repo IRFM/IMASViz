@@ -284,9 +284,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             brush = pg.mkBrush('r')
             brush.setStyle(Qt.DiagCrossPattern)
             brush.setColor(Qt.red)
-            # self.fbitem.setBrush(brush)
-            self.addItem(self.fbitem)
-
+            #self.fbitem.setBrush(brush)
+            self.addItem( self.fbitem)
+               
         else:
             logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
 
