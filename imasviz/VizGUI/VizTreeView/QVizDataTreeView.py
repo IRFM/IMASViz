@@ -347,8 +347,6 @@ class QVizDataTreeView(QTreeWidget):
         nodeBuilder.setIDSRootNode(ids_root_node)
         logging.info("View update ended.")
 
-        if nodeBuilder.getGGDWarning() == 1:
-            logging.info("WARNING: GGD structures have been ignored")
         cv.notify()
         cv.release()
 
@@ -409,8 +407,6 @@ class QVizDataTreeView(QTreeWidget):
             return
 
         # Set class object
-        #ldh_obj = QVizLoadDataHandling()
-        #ldh_obj.loadSelectedData(self, item.getIDSName(), occ, None, True)
         QVizLoadSelectedData(dataTreeView=self,
                              IDSName=item.getIDSName(),
                              occurrence=occ,

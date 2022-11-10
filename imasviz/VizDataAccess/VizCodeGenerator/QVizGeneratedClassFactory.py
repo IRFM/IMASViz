@@ -22,10 +22,10 @@ class QVizGeneratedClassFactory:
         self.viewLoadingStrategy = None
         from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
         if viewLoadingStrategy is None:
-           viewLoadingStrategy = QVizViewLoadingStrategy.getDefaultStrategy()
+            viewLoadingStrategy = QVizViewLoadingStrategy.getDefaultStrategy()
         self.viewLoadingStrategy = viewLoadingStrategy
         self.asynch = asynch
-     
+
     def create(self, progressBar=None):
 
         XMLParser = None
@@ -33,8 +33,8 @@ class QVizGeneratedClassFactory:
         imas_dd_version = os.environ['IMAS_VERSION']
         ids_dd_version = self.IMASDataSource.data_dictionary_version
 
-        if (( ids_dd_version is not None and ids_dd_version != '') and ids_dd_version < '3.26.0'):
-            if imas_dd_version >  ids_dd_version:
+        if ((ids_dd_version is not None and ids_dd_version != '') and ids_dd_version < '3.26.0'):
+            if imas_dd_version > ids_dd_version:
                 logging.warning("Non backward compatible change infos are not available for"
                                 " IDSs created with DD version prior to 3.26.0. You should use"
                                 " an older version of IMAS Access Layer to access data for DD "
@@ -43,22 +43,22 @@ class QVizGeneratedClassFactory:
 
         if QVizGlobalValues.TESTING:
             imas_dd_version = QVizGlobalValues.TESTING_IMAS_VERSION
-            
+
         if QVizPreferences.Ignore_GGD == 0:
 
             className = "IDSDef_XMLParser_Full_Generated_" + \
-                QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+                        QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
 
             path_user_gencode = IDSDef_parser_path = os.environ['HOME'] + \
-                "/.imasviz/VizGeneratedCode/"
+                                                     "/.imasviz/VizGeneratedCode/"
             if not os.path.exists(path_user_gencode):
                 os.makedirs(path_user_gencode)
-            
+
             IDSDef_parser_path = os.environ['HOME'] + \
-                "/.imasviz/VizGeneratedCode/" + className + ".py"
+                                 "/.imasviz/VizGeneratedCode/" + className + ".py"
             print("IDSDef parser path: ", IDSDef_parser_path)
             self.removeParserIfTooOld(IDSDef_parser_path)
-            
+
             if not os.path.exists(IDSDef_parser_path):
                 print("Generating full parsers for IMAS "
                       f"{imas_dd_version}")
@@ -71,7 +71,7 @@ class QVizGeneratedClassFactory:
             IDSDef_XMLParser_Full_Generated = \
                 getattr(importlib.import_module(moduleName), className)
 
-                # raise ValueError("IMAS dictionary version not supported:" + imas_dd_version)
+            # raise ValueError("IMAS dictionary version not supported:" + imas_dd_version)
             XMLParser = IDSDef_XMLParser_Full_Generated(
                 userName=self.IMASDataSource.userName,
                 imasDbName=self.IMASDataSource.imasDbName,
@@ -83,20 +83,20 @@ class QVizGeneratedClassFactory:
                 viewLoadingStrategy=self.viewLoadingStrategy,
                 asynch=self.asynch)
 
-        else: # If QVizPreferences.Ignore_GGD == 1
+        else:  # If QVizPreferences.Ignore_GGD == 1
             className = "IDSDef_XMLParser_Partial_Generated_" + \
-                QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
+                        QVizGlobalOperations.replaceDotsByUnderScores(imas_dd_version)
 
             path_user_gencode = IDSDef_parser_path = os.environ['HOME'] + \
-                "/.imasviz/VizGeneratedCode/"
+                                                     "/.imasviz/VizGeneratedCode/"
             if not os.path.exists(path_user_gencode):
                 os.makedirs(path_user_gencode)
 
             IDSDef_parser_path = os.environ['HOME'] + \
-                "/.imasviz/VizGeneratedCode/" + className + ".py"
+                                 "/.imasviz/VizGeneratedCode/" + className + ".py"
             print("IDSDef parser path: ", IDSDef_parser_path)
             self.removeParserIfTooOld(IDSDef_parser_path)
-             
+
             if not os.path.exists(IDSDef_parser_path):
                 print("Generating full parsers for IMAS "
                       f"{imas_dd_version}")
@@ -125,21 +125,15 @@ class QVizGeneratedClassFactory:
         XMLParser.setProgressBar(progressBar)
 
         return XMLParser
-        
-        
+
     def removeParserIfTooOld(self, IDSDef_parser_path):
         import time
         from datetime import datetime
-        dt_obj = datetime.strptime('26.09.2022 00:00:00,00',
-                       '%d.%m.%Y %H:%M:%S,%f')
+        dt_obj = datetime.strptime('11.11.2022 00:00:00,00',
+                                   '%d.%m.%Y %H:%M:%S,%f')
         millisec = dt_obj.timestamp() * 1000
-        if not ('IMAS_VIZ_VERSION' in os.environ):
-            logging.warn("Unable to check if Viz parsers are obsolete: 'IMAS_VIZ_VERSION' environment variable not defined.")
-            return
-        viz_version = os.environ['IMAS_VIZ_VERSION']
-        if viz_version >= "2.5.0" and os.path.exists(IDSDef_parser_path):
-            parser_age = 1000*os.stat(IDSDef_parser_path).st_mtime
+        if os.path.exists(IDSDef_parser_path):
+            parser_age = 1000 * os.stat(IDSDef_parser_path).st_mtime
             if parser_age < millisec:
                 logging.info("Removing obsolete parser: " + IDSDef_parser_path + ".")
                 os.remove(IDSDef_parser_path)
-                    
