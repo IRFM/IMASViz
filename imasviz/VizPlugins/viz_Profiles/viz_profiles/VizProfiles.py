@@ -46,11 +46,12 @@ class VizProfiles(QMainWindow):
         super(QMainWindow, self).__init__()
 
         # Set log parser
+        self.results = None
         self.addNewTabsButton = None
         self.signals_last_index = []
         self.total_tabs = []
         self.total_undisplayed_tabs = []
-        self.tabs_index = {} # map tab name to tab index
+        self.tabs_index = {}  # map tab name to tab index
         self.total_displayed_plots = 0
         self.n_curves_per_page = 100
 
@@ -659,6 +660,9 @@ class ProgressBar(QWidget):
 
 # Main used only for testing purposes (No GUI)
 if __name__ == "__main__":
+
+    from imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin import VizProfiles_plugin
+
     # Set object managing the PyQt GUI application's control flow and main
     # settings
     app = QApplication(sys.argv)
@@ -705,85 +709,22 @@ if __name__ == "__main__":
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)
 
-    # ids_name = 'equilibrium'
-    # strategy = 'TIME'
-    # slices_aos_name = 'time_slice'
-    # list_of_filters = ['time_slice(0)']
-    # tab_names = ['time_slice']
+    pluginEntry = None
+    ids_name = None
 
-    # ids_name = 'edge_profiles'
-    # strategy = 'COORDINATE1'
-    # slices_aos_name = 'profiles_1d'
-    # list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
-    #                    'profiles_1d(0)/neutral', 'profiles_1d(0)/t_i_average_fit',
-    #                    'profiles_1d(0)/n_i_total_over_n_e', 'profiles_1d(0)/n_i_thermal_total',
-    #                    'profiles_1d(0)/momentum_tor', 'profiles_1d(0)/zeff', 'profiles_1d(0)/zeff_fit']
-    # tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'profiles_1d/neutral',
-    #              'profiles_1d/t_i_average_fit', 'profiles_1d/n_i_total_over_n_e',
-    #              'profiles_1d/n_i_thermal_total', 'profiles_1d/momentum_tor', 'profiles_1d/zeff',
-    #              'profiles_1d/zeff_fit']
-
-    ids_name = 'core_profiles'
-    strategy = 'COORDINATE1'
-    # strategy = 'TIME'
-    slices_aos_name = 'profiles_1d'
-    list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
-                       'profiles_1d(0)/neutral', 'profiles_1d(0)/t_i_average',
-                       'profiles_1d(0)/n_i', 'profiles_1d(0)/momentum_tor', 'profiles_1d(0)/zeff',
-                       'profiles_1d(0)/pressure', 'profiles_1d(0)/j_',
-                       'profiles_1d(0)/conductivity_parallel', 'profiles_1d(0)/e_field',
-                       'profiles_1d(0)/rotation', 'profiles_1d(0)/q', 'profiles_1d(0)/magnetic_shear']
-    tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'profiles_1d/neutral',
-                 'profiles_1d/t_i_average', 'profiles_1d/n_i', 'profiles_1d/momentum_tor',
-                 'profiles_1d/zeff', 'profiles_1d/pressure', 'profiles_1d/j',
-                 'profiles_1d/conductivity_parallel', 'profiles_1d/e_field',
-                 'profiles_1d/rotation', 'profiles_1d/q', 'profiles_1d/magnetic_shear']
-
-    # ids_name = 'core_sources'
-    # strategy = 'COORDINATE1'
-    # source_index = 0
-    # slices_aos_name = 'source[' + str(source_index) + '].profiles_1d'
-    # list_of_filters = ['source(' + str(source_index) + ')/profiles_1d(0)']
-    # tab_names = ['source(' + str(source_index) + ')/profiles_1d']
-
-    # ids_name = 'magnetics'
-    # strategy = 'TIME'
-    # slices_aos_name = 'flux_loop'
-    # list_of_filters = ['flux_loop']
-    # tab_names = ['flux_loop']
-
-    # ids_name = 'equilibrium'
-    # slices_aos_name = 'time_slice'
-    # strategy = 'COORDINATE1'
-    # # strategy = 'TIME'
-    # list_of_filters = ['time_slice(0)/boundary']
-    # tab_names = ['time_slice/boundary']
-    # list_of_filters = ['time_slice(0)/boundary', 'time_slice(0)/constraints', 'time_slice(0)/profiles_1d',
-    #                    'time_slice(0)/profiles_2d', 'time_slice(0)/global_quantities',
-    #                    'time_slice(0)/coordinate_system', 'time_slice(0)/convergence']
-    # tab_names = ['time_slice/boundary', 'time_slice/constraints', 'time_slice/profiles_1d',
-    #              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
-    #              'time_slice/convergence']
-
-    # ids_name = 'core_transport'
-    # model_index = 0
-    # strategy = 'TIME'
-    # slices_aos_name = 'model[' + str(model_index) + '].profiles_1d'
-    # model = 'model(' + str(model_index) + ')'
-    # profile = model + '/profiles_1d(0)'
-    # list_of_filters = [profile + '/grid', profile + '/conductivity', profile + '/electrons',
-    #                    profile + '/total_ion', profile + '/momentum', profile + '/e_field',
-    #                    profile + '/ion', profile + '/neutral']
-    # tab_name = 'model(' + str(model_index) + ')/profiles_1d'
-    # tab_names = [tab_name + '/grid', tab_name + '/conductivity', tab_name + '/electrons',
-    #              tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
-    #              tab_name + '/ion', tab_name + '/neutral']
+    if len(sys.arg) > 1:
+        ids_name = sys.argv[1]
+        pluginEntry = int(sys.argv[2])
+    else:
+        ids_name = "core_profiles"
+        pluginEntry = 0
 
     api.LoadIDSData(f, ids_name, occurrence)
     f.show()
-    data_entry = dataSource.getImasEntry(occurrence)
 
-    request = Request(ids_name, tab_names, list_of_filters, slices_aos_name, strategy)
-    vep = VizProfiles(api, IDS_parameters, data_entry, f.dataTreeView, request)
-    # vep.show()
+    vizProfiles_plugin = VizProfiles_plugin()
+    vizProfiles_plugin.dataTreeView = f.dataTreeView
+    vizProfiles_plugin.selectedTreeNode = f.dataTreeView.IDSRoots[ids_name]
+    vizProfiles_plugin.execute(api, pluginEntry=0)
+
     sys.exit(app.exec_())

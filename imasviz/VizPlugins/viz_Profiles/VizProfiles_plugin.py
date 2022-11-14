@@ -44,6 +44,7 @@ class VizProfiles_plugin(VizPlugin):
 
             # Check if the IDS data is already loaded in IMASviz. If it is not,
             # load it (LoadListOfIDSs contains this IDS check strategy)
+
             selected_ids = self.selectedTreeNode.getIDSName()
             ids_list = [selected_ids]
             vizAPI.LoadListOfIDSs(self.dataTreeView, ids_list, occurrence)

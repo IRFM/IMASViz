@@ -46,6 +46,7 @@ class QVizTab(QWidget):
 
     def buildPlots(self, multiPlots, signals, plotWidget):
         multiPlots.plot1D(signals, plotWidget, self.parent.request)
+        multiPlots.endOfPlotsProcessing()
         multiPlots.modifySize(len(signals))
         self.layout.addWidget(multiPlots)
         self.signals = signals

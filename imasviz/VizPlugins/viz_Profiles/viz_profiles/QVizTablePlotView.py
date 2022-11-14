@@ -31,6 +31,8 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
     def __init__(self, viz_api, dataTreeView, n_curves):
         super(QVizTablePlotView, self).__init__()
 
+        self.full_line = None
+        self.nb_lines = 0
         self.nb_plots_per_line = 0
         self.last_node = ''
         self.okHeight = None
@@ -44,7 +46,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         # # Get screen resolution (width and height)
         # self.screenWidth, self.screenHeight = getScreenGeometry()
         # # Set base dimension parameter for setting plot size
-        self.plotVerticalDim = 300
+        self.plotVerticalDim = 290
         self.plotHorizontalDim = 270
 
         # # Set object name and title if not already set
@@ -123,6 +125,21 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.headers_count += 1
         self.nextRow()
 
+    def addViewBoxes(self):
+        if self.nb_plots_per_line != 0:
+            for i in range(self.ncols - self.nb_plots_per_line):
+                self.addViewBox(colspan=1)
+
+    def endOfPlotsProcessing(self):
+        self.addViewBoxes()
+        if not self.full_line:
+            self.nb_lines += 1
+        if self.nb_lines == 1:
+            self.nextRow()
+            self.nb_lines += 1
+            for i in range(self.ncols):
+                self.addViewBox(colspan=1)
+
     def plot(self, n, x, y, label, xlabel, ylabel, node=None, request=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
 
@@ -146,9 +163,9 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         title = self.imas_viz_api.modifyTitle(title, None, request.slices_aos_name)
 
         if self.last_node != node.getParametrizedDataPath():
-            if self.nb_plots_per_line != 0:
-                for i in range(self.ncols - self.nb_plots_per_line):
-                    self.addViewBox(colspan=1)
+            self.addViewBoxes()
+            if not self.full_line:
+                self.nb_lines += 1
             self.nextRow()
             self.addHeader(node)
             self.nb_plots_per_line = 0
@@ -183,18 +200,16 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
         # Enable grid
         plotItem.showGrid(x=True, y=True)
-        # Add a name attribute directly to pg.PlotDataItem - a child of
-        # pg.PlotData
-        # plotItem.dataItems[0].opts['name'] = label.replace("\n", "")
         plotItem.dataItems[0].opts['name'] = title.replace("\n", "")
-        # plotItem.column = int(n / self.centralWidget.cols)
-        # plotItem.row = int(n % self.centralWidget.cols)
-
         viewBox.plotItem = plotItem
 
         if self.nb_plots_per_line % self.ncols == 0:
             self.nb_plots_per_line = 0
+            self.full_line = True
+            self.nb_lines += 1
             self.nextRow()
+        else:
+            self.full_line = False
 
         self.plotItems.append(plotItem)
         return plotItem
@@ -251,10 +266,8 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         """
         # Set suitable width and height
         self.okWidth = self.ncols * self.plotHorizontalDim + 200
-
-        # print('self.centralWidget.currentRow= ', self.centralWidget.currentRow)
-        n_plots_lines = self.centralWidget.currentRow + 1 - self.headers_count
-
-        # print('n_plots_lines= ', n_plots_lines)
-        self.okHeight = n_plots_lines * self.plotVerticalDim + 30 * self.headers_count
+        n_plots_lines = self.nb_lines
+        # print("n_plots_lines=", n_plots_lines)
+        # print("headers_count=", self.headers_count)
+        self.okHeight = n_plots_lines * self.plotVerticalDim + 100 * self.headers_count
         self.setMinimumSize(self.okWidth, self.okHeight)
