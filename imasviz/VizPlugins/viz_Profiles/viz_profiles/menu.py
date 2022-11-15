@@ -222,7 +222,10 @@ class Ui_MainWindow(object):
             self.f = self.api.CreateDataTree(dataSource)
 
     def call_profiles_plugin(self, ids_name, plugin_entry):
-        self.api.LoadIDSData(self.f, ids_name, occurrence)
+        if not self.api.IDSDataAlreadyFetched(dataTreeView=self.f.dataTreeView,
+                                         IDSName=ids_name,
+                                         occurrence=occurrence):
+            self.api.LoadIDSData(self.f, ids_name, occurrence)
         self.f.show()
         vizProfiles_plugin = VizProfiles_plugin()
         vizProfiles_plugin.dataTreeView = self.f.dataTreeView
@@ -292,9 +295,7 @@ class Worker(QObject):
         children_id, children = self.api.getAll_0D_1D_Nodes(root_node,
                                                             strategy=strategy,
                                                             str_filter=str_filter)
-        print('key=', key)
         profiles_count[key] = len(children)
-        print('len(children)=', len(children))
 
     def check_available_data(self):
         self.maxProgressBar.emit(100)
@@ -322,7 +323,8 @@ class Worker(QObject):
             #                                     str_filter="profiles_1d")
             self.profiles_count['core_sources'] = len(self.data_entry.partial_get('core_sources', 'source(:)'))
         except Exception as e:
-            print(e)
+            # print(e)
+            pass
         try:
             self.progressBar.emit(20, 'Checking core_transport...')
             # n = len(self.data_entry.partial_get('core_transport', 'model(:)'))
