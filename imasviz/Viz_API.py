@@ -858,7 +858,7 @@ class Viz_API:
 
         return idssByNames
 
-    def getAll1DNodes(self, node, errorBars=False, str_filter=None, strategy=None):
+    def getAll_0D_1D_Nodes(self, node, errorBars=False, str_filter=None, strategy=None):
         children_id, children = self.getChildren_(node, set(), [], str_filter, errorBars, strategy)
         children.sort(key=getNodePath)
         return children_id, children
@@ -881,7 +881,7 @@ class Viz_API:
                                                           children, str_filter, errorBars, strategy)
         return children_id, children
 
-    def getAllPlottable1DSignals(self, dtv_nodes, dataTreeView, plotWidget=None):
+    def getAllPlottable_0D_1D_Signals(self, dtv_nodes, dataTreeView, plotWidget=None):
         s_list = []
         for node in dtv_nodes:
             try:
@@ -894,7 +894,7 @@ class Viz_API:
                 continue
         return s_list
 
-    def updateAllPlottable1DSignals(self, s_list, time_index, plotWidget=None):
+    def updateAllPlottable_0D_1D_Signals(self, s_list, time_index, plotWidget=None):
         s_new_list = []
         for s in s_list:
             try:

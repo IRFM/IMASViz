@@ -110,8 +110,6 @@ class VizProfiles(QMainWindow):
 
     def setTabs(self):
         self.results = self.worker.results
-        # self.results = self.worker.results[0:3]
-
         if len(self.results) == 0:
             self.close()
             logging.info("No data available for plotting.")
@@ -218,6 +216,12 @@ class VizProfiles(QMainWindow):
                                plotWidget=w)
         self.disableOrEnabledAddNewTabsIfRequired()
 
+    def showWindow(self):
+        if len(self.results) != 0:
+            self.show()
+        else:
+            logging.warning("No data found.")
+
     def buildUI_in_separate_thread(self):
         # Create a QThread object
         self.thread = QThread()
@@ -232,7 +236,7 @@ class VizProfiles(QMainWindow):
         self.thread.finished.connect(self.thread.deleteLater)
         self.worker.finished.connect(self.closeProgressBar)
         self.worker.call.connect(self.setTabs)
-        self.worker.finished.connect(self.show)
+        self.worker.finished.connect(self.showWindow)
         self.worker.progressBar.connect(self.pb.updateProgressBar)
         self.worker.maxProgressBar.connect(self.pb.setMaxProgressBar)
         self.worker.titleProgressBar.connect(self.pb.setTitleProgressBar)
@@ -408,7 +412,8 @@ class VizProfiles(QMainWindow):
     def getCurrentTab(self):
         """Get currently selected tab if type QVizTab
         """
-        return self.tabWidget.currentWidget().parent
+        if self.tabWidget.currentWidget() is not None:
+            return self.tabWidget.currentWidget().parent
 
     def getTablePlotView(self):
         """Get a QVizTablePlotView instance attached to the current QVizTab tab
@@ -420,7 +425,7 @@ class VizProfiles(QMainWindow):
         """
         qvizTab = self.getCurrentTab()
         w = GlobalPlotWidget(plotStrategy=self.strategy)
-        updated_signals = self.imas_viz_api.updateAllPlottable1DSignals(qvizTab.signals, self.time_index, plotWidget=w)
+        updated_signals = self.imas_viz_api.updateAllPlottable_0D_1D_Signals(qvizTab.signals, self.time_index, plotWidget=w)
         self.getTablePlotView().updatePlot(updated_signals)
 
     def setTimeSlider(self):
@@ -616,14 +621,15 @@ class Worker(QObject):
             j = j + 1
             self.progressBar.emit(j)
             # print("str_filter-->", str_filter_only)
-            nodes_id, dtv_nodes = self.imas_viz_api.getAll1DNodes(self.dataTreeView.IDSRoots[self.request.ids_related],
-                                                                  errorBars=False,
-                                                                  str_filter=str_filter,
-                                                                  strategy=self.request.strategy)
+            nodes_id, dtv_nodes = self.imas_viz_api.getAll_0D_1D_Nodes(self.dataTreeView.IDSRoots[self.request.ids_related],
+                                                                       errorBars=False,
+                                                                       str_filter=str_filter,
+                                                                       strategy=self.request.strategy)
             w = GlobalPlotWidget(plotStrategy=self.request.strategy)
-            plottable_signals = self.imas_viz_api.getAllPlottable1DSignals(dtv_nodes, self.dataTreeView,
-                                                                           w)  # return tuple (node, signal)
-            self.results.append(plottable_signals)
+            plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
+                                                                                w)  # return tuple (node, signal)
+            if len(plottable_signals) != 0:
+                self.results.append(plottable_signals)
             filter_index += 1
 
 
