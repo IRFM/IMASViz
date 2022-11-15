@@ -13,9 +13,24 @@ Release notes
 =============
 
 -------------
+Version 2.5.1
+-------------
+Released 11/15/2022
+
+- IMAS-4394: fix
+- IMAS-3183: 'VizProfiles' plugin development, adding documentation
+- IMAS-4380: fix
+- IMAS-2696: fix
+- IMAS-3823: implementation
+- Fixing imports for pyQtGraph 0.13.1
+- Viz documentation update
+- Remove automatically generated parser files if too old
+- DB Browser: asynchoneous loading of database entries
+- Improvements of the time/coordinate1 display value when using slider with several plots
+
+-------------
 Version 2.5.0
 -------------
-
 Released 09.07.2022
 
 - IMAS-4303: apply auto range automatically for the preview plot window
