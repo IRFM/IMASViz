@@ -158,7 +158,7 @@ class QVizDataTreeView(QTreeWidget):
         self.dataSource.open(imas_entry)
 
         for child in xmlTree.getroot():
-            if (child.tag == 'IDS'):
+            if child.tag == 'IDS':
                 """Extract IDS properties from IDSDef.xml file"""
                 """Get IDS name"""
                 idsName = child.get('name')
