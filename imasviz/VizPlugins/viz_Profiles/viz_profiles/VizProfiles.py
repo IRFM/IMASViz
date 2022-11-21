@@ -132,6 +132,7 @@ class VizProfiles(QMainWindow):
 
     def addTabs(self, nb_tabs_count=1):
         w = GlobalPlotWidget(plotStrategy=self.request.strategy)
+
         for filter_index in range(len(self.results)):
             remaining_page = 0
             plottable_signals = self.results[filter_index]
@@ -620,7 +621,7 @@ class Worker(QObject):
         for str_filter in self.request.list_of_filters:
             j = j + 1
             self.progressBar.emit(j)
-            # print("str_filter-->", str_filter_only)
+            # print("str_filter-->", str_filter)
             nodes_id, dtv_nodes = self.imas_viz_api.getAll_0D_1D_Nodes(self.dataTreeView.IDSRoots[self.request.ids_related],
                                                                        errorBars=False,
                                                                        str_filter=str_filter,
@@ -628,8 +629,8 @@ class Worker(QObject):
             w = GlobalPlotWidget(plotStrategy=self.request.strategy)
             plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
                                                                                 w)  # return tuple (node, signal)
-            if len(plottable_signals) != 0:
-                self.results.append(plottable_signals)
+
+            self.results.append(plottable_signals)
             filter_index += 1
 
 
@@ -718,12 +719,12 @@ if __name__ == "__main__":
     pluginEntry = None
     ids_name = None
 
-    if len(sys.arg) > 1:
+    if len(sys.argv) > 1:
         ids_name = sys.argv[1]
         pluginEntry = int(sys.argv[2])
     else:
         ids_name = "core_profiles"
-        pluginEntry = 0
+        pluginEntry = 1
 
     api.LoadIDSData(f, ids_name, occurrence)
     f.show()
@@ -731,6 +732,6 @@ if __name__ == "__main__":
     vizProfiles_plugin = VizProfiles_plugin()
     vizProfiles_plugin.dataTreeView = f.dataTreeView
     vizProfiles_plugin.selectedTreeNode = f.dataTreeView.IDSRoots[ids_name]
-    vizProfiles_plugin.execute(api, pluginEntry=0)
+    vizProfiles_plugin.execute(api, pluginEntry=pluginEntry)
 
     sys.exit(app.exec_())
