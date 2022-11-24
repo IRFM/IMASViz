@@ -341,7 +341,7 @@ class VizProfiles(QMainWindow):
         dh = self.app.desktop().availableGeometry().height()
         dw = self.app.desktop().availableGeometry().width()
         self.height = dh * 0.9
-        self.width = dw * 0.65
+        self.width = dw * 0.7
         # self.resize(int(self.width), int(self.height))
         # Move window to the center of the screen
         self.setFixedWidth(int(self.width))
@@ -724,8 +724,8 @@ if __name__ == "__main__":
         ids_name = sys.argv[1]
         pluginEntry = int(sys.argv[2])
     else:
-        ids_name = "equilibrium"
-        pluginEntry = 0
+        ids_name = "core_profiles"
+        pluginEntry = 1
 
     api.LoadIDSData(f, ids_name, occurrence)
     f.show()
