@@ -627,6 +627,7 @@ class Worker(QObject):
                                                                        str_filter=str_filter,
                                                                        strategy=self.request.strategy)
             w = GlobalPlotWidget(plotStrategy=self.request.strategy)
+
             plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
                                                                                 w)  # return tuple (node, signal)
 
@@ -723,8 +724,8 @@ if __name__ == "__main__":
         ids_name = sys.argv[1]
         pluginEntry = int(sys.argv[2])
     else:
-        ids_name = "core_profiles"
-        pluginEntry = 1
+        ids_name = "equilibrium"
+        pluginEntry = 0
 
     api.LoadIDSData(f, ids_name, occurrence)
     f.show()

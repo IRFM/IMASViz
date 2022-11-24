@@ -76,10 +76,12 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.plotWidget = plotWidget
         dtv = self.dataTreeView
         self.nb_plots_per_line = 0
+
         for plottable_signal in plottable_signals:
 
             signalNode = plottable_signal[0]
             signal = plottable_signal[1]
+            coordinate1_value = plottable_signal[2]
 
             if n == 0:
                 self.last_node = signalNode.getParametrizedDataPath()
@@ -96,7 +98,6 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                 signalNode.plotOptions(dataTreeView=dtv,
                                        title=self.figureKey,
                                        plotWidget=self.plotWidget)
-
             # Add plot
             # y-axis values
             u = v[0]
@@ -114,16 +115,37 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             # Setting range manually (see IMAS-3658)
             currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
 
+            if signalNode.is1D() and request.strategy == 'TIME':
+                c1 = signalNode.evaluateCoordinateVsTime(coordinateNumber=1)
+                label = pg.LabelItem('coordinate1(' + c1 + ")=" + str(round(coordinate1_value, 2)),
+                                     size="6pt",
+                                     color="FF0000")
+                label.setParentItem(currentPlotItem)
+                label.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-30, 20))
+
             # Next plot number
             n += 1
 
+        self.addEndLine()
+
     def addHeader(self, node):
-        self.addLabel('----------------------------')
-        label = self.addLabel(colspan=self.ncols - 2)
+        label = self.addLabel(colspan=self.ncols)
         label.setText(node.getParametrizedDataPath(), bold=True, size='10pt')
-        self.addLabel('----------------------------')
         self.headers_count += 1
         self.nextRow()
+
+    def addEndLine(self):
+        self.nextRow()
+
+        label = self.addLabel(colspan=4)
+        label.setText('-------------------------------------------------------'
+                      '-------------------------------------------------------'
+                      '-------------------------------------------------------'
+                      '-------------------------------------------------------', bold=True, size='10pt')
+
+    def addViewBoxesForNextPlot(self, count):
+        for i in range(count):
+            self.addViewBox(colspan=1)
 
     def addViewBoxes(self):
         if self.nb_plots_per_line != 0:
@@ -164,6 +186,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
         if self.last_node != node.getParametrizedDataPath():
             self.addViewBoxes()
+            self.addEndLine()
             if not self.full_line:
                 self.nb_lines += 1
             self.nextRow()
@@ -265,7 +288,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         (depending on the number of plots and number of columns)
         """
         # Set suitable width and height
-        self.okWidth = self.ncols * self.plotHorizontalDim + 200
+        self.okWidth = self.ncols * self.plotHorizontalDim + 220
         n_plots_lines = self.nb_lines
         # print("n_plots_lines=", n_plots_lines)
         # print("headers_count=", self.headers_count)

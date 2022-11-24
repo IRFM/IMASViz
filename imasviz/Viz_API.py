@@ -14,6 +14,7 @@
 import os
 import logging
 import sys
+import numpy as np
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
@@ -835,7 +836,10 @@ class Viz_API:
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)
         subWindow.resize(plotWidget.width(), plotWidget.height())
-        self.getMDI().addSubWindow(subWindow)
+        if self.getMDI() is not None:
+           self.getMDI().addSubWindow(subWindow)
+        else:
+            self.subWindow = subWindow
 
     def LoadListOfIDSs(self, dataTreeView, namesOfIDSs, occurrence=0):
         """Load given IDSs for given occurrence.
@@ -881,29 +885,56 @@ class Viz_API:
                                                           children, str_filter, errorBars, strategy)
         return children_id, children
 
-    def getAllPlottable_0D_1D_Signals(self, dtv_nodes, dataTreeView, plotWidget=None):
+    def find_nearest(self, array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx], idx
+
+    def getAllPlottable_0D_1D_Signals(self, dtv_nodes, dataTreeView, plotWidget=None,
+                                      profile_center=True):
         s_list = []
         for node in dtv_nodes:
             try:
+                coordinate1_index = 0
+                closest_value = 0
+                if node.is1D() and plotWidget.plotStrategy == 'TIME' and profile_center:
+                    coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
+                    # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
+                    # closest_value, coordinate1_index = self.find_nearest(coordinate1_values,
+                    #                                                      np.max(coordinate1_values) / 2)
+                    coordinate1_index = int(coordinate1_values.size/2)
+                    # closest_value, coordinate1_index = coordinate1_values[int(coordinate1_values.size)]
+                    closest_value = coordinate1_values[coordinate1_index]
+
                 s = self.GetSignal(dataTreeView=dataTreeView,
                                    vizTreeNode=node,
+                                   coordinate1_index=coordinate1_index,
                                    plotWidget=plotWidget)
-                s_list.append((node, s))
+                s_list.append((node, s, closest_value))
             except Exception as e:
                 print(e)
                 continue
         return s_list
 
-    def updateAllPlottable_0D_1D_Signals(self, s_list, time_index, plotWidget=None):
+    def updateAllPlottable_0D_1D_Signals(self, s_list, time_index, plotWidget=None, profile_center=True):
         s_new_list = []
         for s in s_list:
             try:
                 node = s[0]
+                coordinate1_index = 0
+                closest_value = 0
+                if node.is1D() and plotWidget.plotStrategy == 'TIME' and profile_center:
+                    coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
+                    # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
+                    coordinate1_index = int(coordinate1_values.size / 2)
+                    # closest_value, coordinate1_index = coordinate1_values[int(coordinate1_values.size)]
+                    closest_value = coordinate1_values[coordinate1_index]
                 snew = self.GetSignal(dataTreeView=node.dataTreeView,
                                       vizTreeNode=node,
                                       time_index=time_index,
+                                      coordinate1_index=coordinate1_index,
                                       plotWidget=plotWidget)
-                s_new_list.append((node, snew))
+                s_new_list.append((node, snew, coordinate1_index))
             except Exception as e:
                 print(e)
                 continue
