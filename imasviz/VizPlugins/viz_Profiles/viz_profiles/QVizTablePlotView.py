@@ -22,6 +22,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSig
 from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
 from .CustomizedViewBox import CustomizedViewBox
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
+import numpy as np
 
 
 class QVizTablePlotView(pg.GraphicsLayoutWidget):
@@ -113,8 +114,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                                         ylabel=ylabel, node=signalNode, request=request)
 
             # Setting range manually (see IMAS-3658)
-            currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
-
+            try:
+               currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+            except:
+               pass
             if signalNode.is1D() and request.strategy == 'TIME':
                 c1 = signalNode.evaluateCoordinateVsTime(coordinateNumber=1)
                 label = pg.LabelItem('coordinate1(' + c1 + ")=" + str(round(coordinate1_value, 2)),
@@ -264,8 +267,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             dataItem.setData(x=ti, y=u)
 
             # Setting range manually (see IMAS-3658)
-            plotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
-
+            try:
+               plotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+            except:
+               pass
             i += 1
 
     @staticmethod
