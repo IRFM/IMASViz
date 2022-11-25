@@ -704,7 +704,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget_log)
         handler = QVizLoggerSingleton()
-        handler.new_signal_emiter.new_signal(self.logWidget.appendHtml)
+        handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
 
         # Set first docked widget minimum width
         self.dockWidget_ppw.setMinimumWidth(400)
