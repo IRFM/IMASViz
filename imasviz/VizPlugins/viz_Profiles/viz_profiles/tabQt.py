@@ -11,8 +11,8 @@
 # ****************************************************
 #     Copyright(c) 2022- L. Fleury
 
-from PyQt5.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QScrollArea, QLayout
-from PyQt5.QtCore import Qt, QRect, pyqtSlot
+from PySide2.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QScrollArea, QLayout
+from PySide2.QtCore import Qt, QRect, Slot
 from imasviz.Viz_API import Viz_API
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView import QVizTablePlotView
 

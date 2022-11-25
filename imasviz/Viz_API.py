@@ -18,7 +18,7 @@ import sys
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
 
-from PyQt5.QtWidgets import QMdiSubWindow
+from PySide2.QtWidgets import QMdiSubWindow
 
 
 def getNodePath(node):
@@ -830,7 +830,7 @@ class Viz_API:
     def addPlotWidgetToMDI(self, plotWidget):
         """Embeds the plotWidget inside MDI subwindow.
         """
-        from PyQt5.QtWidgets import QMdiSubWindow
+        from PySide2.QtWidgets import QMdiSubWindow
 
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)

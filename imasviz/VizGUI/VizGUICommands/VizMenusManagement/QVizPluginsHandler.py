@@ -2,10 +2,10 @@
 import logging
 import traceback
 from functools import partial
-from PyQt5.QtCore import pyqtSlot
+from PySide2.QtCore import Slot
 from imasviz.VizUtils import GlobalIcons
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from PyQt5.QtWidgets import QAction, QApplication, QMainWindow, QWidget
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QWidget
 
 
 class MenuIDS:
@@ -91,7 +91,7 @@ class QVizPluginsHandler:
             menu.setToolTipsVisible(True)
             menu.addAction(action_onPluginHandler)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def popUpMenuHandler(self, itemId, dataTreeView):
         m = self.menuIDS.PLUGINS_MENU_IDS[itemId]
         menuID = m[1]

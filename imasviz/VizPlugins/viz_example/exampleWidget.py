@@ -22,8 +22,8 @@ import os
 # import module providing log handling
 import logging
 # import modules providing PyQt5 parameters, functions etc.
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
-from PyQt5.QtCore import pyqtSlot, pyqtSignal
+from PySide2.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
+from PySide2.QtCore import Slot, Signal
 # import module providing matplotlib parameters, functions etc.
 import matplotlib
 matplotlib.use('Qt5Agg') # Use Qt rendering
@@ -39,7 +39,7 @@ class exampleWidget(QWidget):
     """
 
     # Create a custom signal
-    idsSet = pyqtSignal(bool)
+    idsSet = Signal(bool)
 
     def __init__(self, parent=None, ids=None, *args, **kwargs):
         """
@@ -92,7 +92,7 @@ class exampleWidget(QWidget):
         self.layout().addWidget(self.canvas)
         self.layout().addWidget(self.toolbar)
 
-    @pyqtSlot()
+    @Slot()
     def plotFluxAoS(self):
         """Plot Flux Loop arrays to canvas.
         """
@@ -107,7 +107,7 @@ class exampleWidget(QWidget):
         # Plot flux loop Aos
         self.canvas.plotFluxAoS(self.ids)
 
-    @pyqtSlot()
+    @Slot()
     def plotBPolAoS(self):
         """Plot poloidal field probe arrays to canvas.
         """
@@ -122,7 +122,7 @@ class exampleWidget(QWidget):
         # Plot Poloidal field AoS
         self.canvas.plotBPolAoS(self.ids)
 
-    @pyqtSlot()
+    @Slot()
     def openIDS(self):
         """Open magnetics IDS.
         """
@@ -143,49 +143,49 @@ class exampleWidget(QWidget):
     def getIDS(self):
         return self.ids
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setShot(self, shot):
         self.idsParameters['shot'] = shot
 
     def getShot(self):
         return self.idsParameters['shot']
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setRun(self, run):
         self.idsParameters['run'] = run
 
     def getRun(self):
         return self.idsParameters['run']
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setUser(self, user):
         self.idsParameters['user'] = user
 
     def getUser(self):
         return self.idsParameters['user']
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setDevice(self, device):
         self.idsParameters['device'] = device
 
     def getDevice(self):
         return self.idsParameters['device']
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setIMASmVer(self, ver):
         self.idsParameters['IMAS major version'] = ver
 
     def getIMASmVer(self):
         return self.idsParameters['IMAS major version']
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setIDSname(self, idsName):
         self.idsParameters['idsName'] = idsName
 
     def getIDSname(self):
         return self.idsParameters['idsName']
 
-    @pyqtSlot()
+    @Slot()
     def checkDisplay(self):
         try:
             os.environ['DISPLAY']

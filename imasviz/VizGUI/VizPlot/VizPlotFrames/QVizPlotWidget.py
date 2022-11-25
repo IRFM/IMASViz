@@ -14,12 +14,12 @@
 import pyqtgraph as pg
 import numpy as np
 import logging
-from PyQt5.QtCore import Qt, QMetaObject, QRect
-from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
+from PySide2.QtCore import Qt, QMetaObject, QRect
+from PySide2.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
                         QLabel, QFrame, QTextEdit
 from functools import partial
-from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
-import PyQt5.QtWidgets as QtWidgets
+from PySide2.QtWidgets import QApplication, QAction, QMenu, QStyle
+import PySide2.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \

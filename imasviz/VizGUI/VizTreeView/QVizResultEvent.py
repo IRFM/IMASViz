@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QEvent
+from PySide2.QtCore import QEvent
 
 class QVizResultEvent(QEvent):
     """ This function sets a custom QEvent.

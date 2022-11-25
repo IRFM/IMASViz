@@ -17,13 +17,13 @@ from functools import partial
 
 # Third party imports
 import numpy as np
-from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
+from PySide2.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
                              QAction, QFrame, QScrollArea, QProgressBar, QDesktopWidget, QLayout, QInputDialog,
                              QSizePolicy)
-from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot, QThread, QObject
-from PyQt5.QtGui import QDoubleValidator
+from PySide2.QtCore import Qt, QSize, Signal, Slot, QThread, QObject
+from PySide2.QtGui import QDoubleValidator
 
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
@@ -34,7 +34,7 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.tabQt import QVizTab
 
 
 class VizProfiles(QMainWindow):
-    updateProgressBar = pyqtSignal()
+    updateProgressBar = Signal()
 
     def __init__(self, viz_api, IDS_parameters, data_entry, dataTreeView, request):
         """
@@ -477,7 +477,7 @@ class VizProfiles(QMainWindow):
         #    self.updatePlotOfCurrentTab, time_index=self.time_index))
         return spinBox_timeIndex
 
-    @pyqtSlot()
+    @Slot()
     def onSpinBoxChange(self, event=None):
         # Update global time_index value (auto spinbox value update)
         # print('onSpinBoxChange')
@@ -515,7 +515,7 @@ class VizProfiles(QMainWindow):
 
         return lineEdit_timeValue
 
-    @pyqtSlot()
+    @Slot()
     def onTimeValueLineEditEditingFinished(self, event=None):
         """ When finished editing the time value line edit (pressing enter etc.)
         find the closest value (and its array index -> time index) based on the
@@ -592,11 +592,11 @@ class Request():
 
 # worker class
 class Worker(QObject):
-    finished = pyqtSignal()
-    call = pyqtSignal()
-    progressBar = pyqtSignal(int)
-    maxProgressBar = pyqtSignal(int)
-    titleProgressBar = pyqtSignal()
+    finished = Signal()
+    call = Signal()
+    progressBar = Signal(int)
+    maxProgressBar = Signal(int)
+    titleProgressBar = Signal()
 
     def __init__(self, request, imas_viz_api, dataTreeView):
         super().__init__()

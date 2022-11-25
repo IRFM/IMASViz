@@ -3,7 +3,7 @@ import warnings
 import traceback
 import threading
 import sys, os, logging
-from PyQt5.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication
 
 # Common
 import matplotlib.pyplot as plt

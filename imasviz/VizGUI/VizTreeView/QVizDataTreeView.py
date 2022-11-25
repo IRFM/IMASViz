@@ -34,12 +34,12 @@ import numpy as np
 import threading
 from threading import Thread, Condition
 from functools import partial
-from PyQt5.QtCore import Qt, pyqtSlot, QMetaObject
-from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
-from PyQt5.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
+from PySide2.QtCore import Qt, Slot, QMetaObject
+from PySide2.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
+from PySide2.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
-from PyQt5.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
-from imasviz.VizUtils import (QVizLogger, QVizGlobalValues, GlobalIDs,
+from PySide2.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
+from imasviz.VizUtils import (QVizLoggerSingleton, QVizGlobalValues, GlobalIDs,
                               getWindowSize)
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
@@ -207,9 +207,9 @@ class QVizDataTreeView(QTreeWidget):
         if event.key() == Qt.Key_Return:
             self.loadDefaultOccurrence()
 
-    # Note: pyqtSlot needs QObject to work, in this case, self=QTreeWidget
+    # Note: Slot needs QObject to work, in this case, self=QTreeWidget
     # (inherited)
-    @pyqtSlot(QTreeWidgetItem, int)
+    @Slot(QTreeWidgetItem, int)
     def onLeftClickItem(self, item, column):
         """ Action to execute upon left clicking on DTV item.
 
@@ -703,8 +703,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget_log)
-        handler = QVizLogger.getHandler()
-        handler.new_record.connect(self.logWidget.appendHtml)
+        handler = QVizLoggerSingleton.QVizLoggerSingleton()
+        handler.new_signal_emiter.new_signal(self.logWidget.appendHtml)
 
         # Set first docked widget minimum width
         self.dockWidget_ppw.setMinimumWidth(400)
@@ -717,7 +717,7 @@ class QVizDataTreeViewFrame(QMainWindow):
                           self.dockWidget_log],
                          [50, 50, 25], Qt.Vertical)
 
-    @pyqtSlot(QMainWindow)
+    @Slot(QMainWindow)
     def onShowConfigurations(self, parent):
         """Show configuration window.
         """
@@ -725,7 +725,7 @@ class QVizDataTreeViewFrame(QMainWindow):
             QVizConfigurationListsWindow(parent=self)
         self.configurationListsWindow.show()
 
-    @pyqtSlot()
+    @Slot()
     def onSaveSignalSelection(self):
         """Save signal selection as a list of signal paths for single DTV
         (QVizDataTreeView)
@@ -733,7 +733,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Save signal selection as a list of signal paths to .lsp file
         QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
 
-    @pyqtSlot()
+    @Slot()
     def onDisplayNodesSelection(self):
         """Displays signal selection as a list of signal paths for single DTV
         (QVizDataTreeView)
@@ -741,7 +741,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Displays signal selection as a list of signal paths
         QVizDisplayCurrentSelection(dataTreeView=self.dataTreeView).execute()
 
-    @pyqtSlot()
+    @Slot()
     def onExportToLocal(self):
         """A feature that allows export of opened (!) IDSs to a new separate
         IDS using a popup dialog window.

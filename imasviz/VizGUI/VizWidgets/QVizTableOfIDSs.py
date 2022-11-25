@@ -26,7 +26,7 @@
 #     Copyright(c) 2016- L. Fleury, D. Penko
 # *****************************************************************************
 
-from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
+from PySide2.QtCore import Qt, QAbstractTableModel, QVariant
 
 
 class TableModel(QAbstractTableModel):
@@ -68,7 +68,7 @@ class TableModel(QAbstractTableModel):
 if __name__ == '__main__':
 
     # Test example
-    from PyQt5.QtWidgets import QApplication, QTableView, QMainWindow
+    from PySide2.QtWidgets import QApplication, QTableView, QMainWindow
     import sys
     app = QApplication(sys.argv)
     mainWin = QMainWindow()

@@ -14,9 +14,9 @@
 import numpy as np
 import sys
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QScrollArea
-from PyQt5.QtWidgets import QFormLayout
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import QWidget, QLabel, QVBoxLayout, QScrollArea
+from PySide2.QtWidgets import QFormLayout
 from imasviz.VizUtils import QVizGlobalOperations, GlobalColors, GlobalFonts
 
 

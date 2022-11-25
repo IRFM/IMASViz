@@ -14,9 +14,9 @@
 import pyqtgraph as pg
 import numpy as np
 import logging
-from PyQt5.QtCore import Qt, QMetaObject, QRect
-from PyQt5.QtGui import QWidget, QGridLayout
-import PyQt5.QtWidgets as QtWidgets
+from PySide2.QtCore import Qt, QMetaObject, QRect
+from PySide2.QtGui import QWidget, QGridLayout
+import PySide2.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \

@@ -3,7 +3,7 @@
 """
 import sys, logging, os
 # PyQt library imports
-from PyQt5.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication
 # IMASViz source imports
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
