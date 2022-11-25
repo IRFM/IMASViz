@@ -146,7 +146,7 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
 
 
         # Set plotwidget (use IMASViz custom plot context menu)
-        self.pg2dPlotWidget = QvizPlotImageWidget(size=(500, 400), dataTreeView=None, showImageTitle=False)
+        self.pg2dPlotWidget = QvizPlotImageWidget(size=(500, 400), vizTreeNode=None, showImageTitle=False)
         # Add widgets to layout
         self.gridLayout.addWidget(self.pg2dPlotWidget, 1, 0, 1, 1)
 

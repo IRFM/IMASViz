@@ -16,7 +16,7 @@ import numpy as np
 import logging
 from PyQt5.QtCore import Qt, QMetaObject, QRect
 from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
-                        QLabel, QFrame, QTextEdit
+    QLabel, QFrame, QTextEdit
 from functools import partial
 from PyQt5.QtWidgets import QApplication, QAction, QMenu, QStyle
 import PyQt5.QtWidgets as QtWidgets
@@ -51,7 +51,7 @@ class QVizPlotWidget(QWidget):
         # pg.setConfigOptions(useOpenGL=True)
 
         # QVizPlotWidget settings
-        #self.setObjectName("QVizPlotWidget")
+        # self.setObjectName("QVizPlotWidget")
         self.setObjectName(type(self).__name__)
         self.setWindowTitle(title)
         self.resize(size[0], size[1])
@@ -127,9 +127,10 @@ class QVizPlotWidget(QWidget):
         # Plot and plot settings
         # - Add plot
         try:
-            if vizTreeNode is not None and vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
-                    x = np.append(x, [x[0]])
-                    y = np.append(y, [y[0]])
+            if vizTreeNode is not None and vizTreeNode.hasClosedOutline(
+                    self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+                x = np.append(x, [x[0]])
+                y = np.append(y, [y[0]])
         except:
             print('closed attribute not found')
         plotDataItem = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
@@ -155,11 +156,11 @@ class QVizPlotWidget(QWidget):
 
         self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=preview)
         self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
-        
+
         self.updateSlider(vizTreeNode)
 
         return self
-           
+
     def getPlotItem(self):
         """Return the PlotItem contained in QVizPlotWidget.
         Note: PlotItem contains the list of plots (see getPlotList).
@@ -193,7 +194,8 @@ class QVizPlotWidget(QWidget):
         coordinate1Vectors = []
         for node in self.getViewBox().vizTreeNodesList:
             if node.is1DAndDynamic():
-                coordinate1Vectors.append(node.coordinateValues(coordinateNumber=1, dataTreeView=node.getDataTreeView()))
+                coordinate1Vectors.append(
+                    node.coordinateValues(coordinateNumber=1, dataTreeView=node.getDataTreeView()))
         return coordinate1Vectors
 
     def plotsHaveSameCoordinate1(self, vizTreeNode):
@@ -243,7 +245,6 @@ class QVizPlotWidget(QWidget):
 
         # If the plottable array needs a slider for the X axis (time or coordinate)
         if self.addTimeSlider or self.addCoordinateSlider:
-
             # Add slider time or coordinate1D and its corresponding widgets
             self.sliderGroup = sliderGroup(self.addTimeSlider, parent=self,
                                            dataTreeView=self.dataTreeView)
@@ -314,18 +315,21 @@ class QVizPlotWidget(QWidget):
             enabled = False
 
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
-        
+
     def updateSlider(self, treeNode):
         nodesList = self.pgPlotWidget.getViewBox().vizTreeNodesList
         if len(nodesList) == 1 and treeNode.embedded_in_time_dependent_aos() and treeNode.is1DAndDynamic():
-              self.setSliderComponentsDisabled(False)
-        if self.sliderGroup.slider.isEnabled():
-            self.sliderGroup.setSlider()
-                    
-            if self.addTimeSlider:
-                time_index = treeNode.timeValue()
-                self.sliderGroup.slider.setValue(int(time_index)) 
-                self.sliderGroup.updateTimeValues(int(time_index)) 
+            self.setSliderComponentsDisabled(False)
+
+        if not (treeNode.is2DOrLarger()):
+            if self.sliderGroup.slider.isEnabled():
+                self.sliderGroup.setSlider()
+
+                if self.addTimeSlider:
+                    time_index = treeNode.timeValue()
+                    self.sliderGroup.slider.setValue(int(time_index))
+                    self.sliderGroup.updateTimeValues(int(time_index))
+
 
 class sliderGroup():
     """Set slider widget and its corresponding widgets (label,
@@ -375,12 +379,12 @@ class sliderGroup():
 
         # Set dictionary (for easier handling)
         self.timeSliderGroup = \
-            {'separatorLine'        : self.separatorLine,
-             'slider'               : self.slider,
-             'sliderLabel'          : self.sliderLabel,
-             'sliderFieldLabel'     : self.sliderFieldLabel,
-             'indexLabel'           : self.indexLabel,
-             'sliderValueIndicator' : self.sliderValueIndicator}
+            {'separatorLine': self.separatorLine,
+             'slider': self.slider,
+             'sliderLabel': self.sliderLabel,
+             'sliderFieldLabel': self.sliderFieldLabel,
+             'indexLabel': self.indexLabel,
+             'sliderValueIndicator': self.sliderValueIndicator}
 
         return self.timeSliderGroup
 
@@ -402,10 +406,10 @@ class sliderGroup():
                     time = "{:.6f}".format(float(node.globalTime[indexValue]))
                     if i == 0:
                         self.parent.sliderFieldLabel.setText(
-                        "Time [" + label + "]: " + str(time) + " [s]")
+                            "Time [" + label + "]: " + str(time) + " [s]")
                     else:
                         self.parent.sliderFieldLabel.setText(self.parent.sliderFieldLabel.toPlainText() + "\n" +
-                            "Time [" + label + "]: " +  str(time) + " [s]")
+                                                             "Time [" + label + "]: " + str(time) + " [s]")
                     i = i + 1
                 else:
                     self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
@@ -415,7 +419,7 @@ class sliderGroup():
             self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
             for node in nodesList:
                 if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
-                    
+
                     if node.getCoordinate(coordinateNumber=1) == "1..N" or \
                             node.getCoordinate(coordinateNumber=1) == "1...N":
                         s = "1..N"
@@ -425,13 +429,12 @@ class sliderGroup():
                         s = QVizGlobalOperations.makePythonPath(s)
                     value = node.coordinateValues(coordinateNumber=1,
                                                   dataTreeView=self.dataTreeView)[indexValue]
-                    if i == 0:      
+                    if i == 0:
                         self.parent.sliderFieldLabel.setText(s + " (Value = " + str(value) + ")")
                     else:
                         self.parent.sliderFieldLabel.setText(self.parent.sliderFieldLabel.toPlainText() + "\n" +
-                            s + " (Value = " + str(value) + ")")
+                                                             s + " (Value = " + str(value) + ")")
 
-        
     def setSlider(self):
         """Set slider.
         """
@@ -499,11 +502,11 @@ class sliderGroup():
         """Set label with given text.
         """
 
-        #sliderFieldLabel = QLabel()
+        # sliderFieldLabel = QLabel()
         sliderFieldLabel = QTextEdit()
         sliderFieldLabel.setText(text)
         sliderFieldLabel.setAlignment(Qt.AlignLeft)
-        #sliderFieldLabel.setWordWrap(True)
+        # sliderFieldLabel.setWordWrap(True)
         sliderFieldLabel.setFixedHeight(75)
         sliderFieldLabel.setFont(GlobalFonts.TEXT_MEDIUM)
 
@@ -576,6 +579,6 @@ class sliderGroup():
 
             i += 1
 
-        self.updateTimeValues(int(self.slider.value())) 
+        self.updateTimeValues(int(self.slider.value()))
         self.parent.pgPlotWidget.getViewBox().updateErrorBars()
         self.parent.pgPlotWidget.getViewBox().updateConfidenceBands()

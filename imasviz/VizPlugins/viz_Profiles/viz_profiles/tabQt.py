@@ -52,8 +52,6 @@ class QVizTab(QWidget):
         self.signals = signals
 
 
-
-
 class QVizScrollArea(QScrollArea):
     def __init__(self, parent):
         super(QScrollArea, self).__init__(parent)

@@ -607,7 +607,7 @@ class Viz_API:
     def Plot2DArray(self, dataTreeView, vizTreeNode):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
         imageKey = self.GetNextKeyForImagePlots()
-        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView,
+        plotWidget = QvizPlotImageWidget(vizTreeNode=vizTreeNode,
                                          size=(600, 500), plotSliceFromROI=True, title=imageKey, showImageTitle=False)
         self.figureframes[imageKey] = plotWidget
         self.addPlotWidgetToMDI(plotWidget)
@@ -837,7 +837,7 @@ class Viz_API:
         subWindow.setWidget(plotWidget)
         subWindow.resize(plotWidget.width(), plotWidget.height())
         if self.getMDI() is not None:
-           self.getMDI().addSubWindow(subWindow)
+            self.getMDI().addSubWindow(subWindow)
         else:
             self.subWindow = subWindow
 
@@ -902,7 +902,7 @@ class Viz_API:
                     # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
                     # closest_value, coordinate1_index = self.find_nearest(coordinate1_values,
                     #                                                      np.max(coordinate1_values) / 2)
-                    coordinate1_index = int(coordinate1_values.size/2)
+                    coordinate1_index = int(coordinate1_values.size / 2)
                     # closest_value, coordinate1_index = coordinate1_values[int(coordinate1_values.size)]
                     closest_value = coordinate1_values[coordinate1_index]
 
@@ -954,3 +954,30 @@ class Viz_API:
             if index == -1:
                 return title
             return title[index + len(slices_aos_name) + 4:]
+
+    def plot1DInNewFigure(self, x_label, signals_labels, signals, treeNode):
+        """Plot data in a new figure
+        Arguments:
+            figureKey  (str) : Label of the current/relevant figure window.
+            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
+                                      replace the current plot in figure
+                                      window.
+                                      :param signals_labels:
+                                      :param signals: List of tuple (x,y) where x and y are 1D numpy arrays
+                                      :param x_label:
+                                      :param treeNode:
+        """
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
+        try:
+            figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=treeNode.dataTreeView)
+            i = 0
+            for sig in signals:
+                QVizPlotSignal(dataTreeView=treeNode.dataTreeView,
+                               title='',
+                               label=signals_labels[i],
+                               xlabel=x_label,
+                               vizTreeNode=treeNode,
+                               plotWidget=plotWidget).execute(figureKey=figureKey, signal=sig)
+                i += 1
+        except ValueError as e:
+            logging.error(str(e))

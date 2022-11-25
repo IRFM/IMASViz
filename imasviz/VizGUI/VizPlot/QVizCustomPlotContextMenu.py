@@ -64,6 +64,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.errorBarsStep = 0
         self.confidenceBands = 0
 
+        self.displayMenu1D = True
+
     def addVizTreeNode(self, node, preview=0):
         if preview != 1:
             if node not in self.vizTreeNodesList:
@@ -125,26 +127,27 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionAutoRange)
 
-        # Configure plot
-        self.actionConfigurePlot = QAction("Configure Plot", self.menu)
-        self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
-        # - Add to main menu
-        self.menu.addAction(self.actionConfigurePlot)
+        if self.displayMenu1D:
+            # Configure plot
+            self.actionConfigurePlot = QAction("Configure Plot", self.menu)
+            self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
+            # - Add to main menu
+            self.menu.addAction(self.actionConfigurePlot)
 
-        self.actionShowHideErrorBars = QAction("Show/Hide error bars", self.menu)
-        self.actionShowHideErrorBars.triggered.connect(self.showHideViewErrorBars)
-        # - Add to main menu
-        self.menu.addAction(self.actionShowHideErrorBars)
+            self.actionShowHideErrorBars = QAction("Show/Hide error bars", self.menu)
+            self.actionShowHideErrorBars.triggered.connect(self.showHideViewErrorBars)
+            # - Add to main menu
+            self.menu.addAction(self.actionShowHideErrorBars)
 
-        self.actionShowHideErrorBarsWithSlicing = QAction("Show error bars (with slicing)", self.menu)
-        self.actionShowHideErrorBarsWithSlicing.triggered.connect(self.showHideViewErrorBarsWithSlicing)
-        # - Add to main menu
-        self.menu.addAction(self.actionShowHideErrorBarsWithSlicing)
+            self.actionShowHideErrorBarsWithSlicing = QAction("Show error bars (with slicing)", self.menu)
+            self.actionShowHideErrorBarsWithSlicing.triggered.connect(self.showHideViewErrorBarsWithSlicing)
+            # - Add to main menu
+            self.menu.addAction(self.actionShowHideErrorBarsWithSlicing)
 
-        self.actionShowHideConfidenceBands = QAction("Show/Hide confidence bands", self.menu)
-        self.actionShowHideConfidenceBands.triggered.connect(self.showHideViewConfidenceBands)
-        # - Add to main menu
-        self.menu.addAction(self.actionShowHideConfidenceBands)
+            self.actionShowHideConfidenceBands = QAction("Show/Hide confidence bands", self.menu)
+            self.actionShowHideConfidenceBands.triggered.connect(self.showHideViewConfidenceBands)
+            # - Add to main menu
+            self.menu.addAction(self.actionShowHideConfidenceBands)
 
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.

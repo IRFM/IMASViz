@@ -18,6 +18,7 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu import QVizCustomPlotConte
 from imasviz.VizGUI.VizPlot.QVizImageSlicesPlotConfigUI \
     import QVizImageSlicesPlotConfigUI
 
+
 class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
     """Subclass of ViewBox.
     """
@@ -37,6 +38,8 @@ class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
         super(QVizImageCustomPlotContextMenu, self).__init__(
             qWidgetParent=qWidgetParent, parent=parent)
         self.plotConfDialog = None
+
+        self.displayMenu1D = False
 
     def showConfigurePlot(self):
         """Set and show custom plot configuration GUI.
@@ -60,6 +63,15 @@ class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
         """
         self.menu.addSeparator()
 
+        #Plot to a new figure
+        self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
+        if self.axis == 1:
+            self.actionPlotToNewFigure.triggered.connect(self.qWidgetParent.slicesXPlotItem.plotToNewFigure)
+        else:
+            self.actionPlotToNewFigure.triggered.connect(self.qWidgetParent.slicesYPlotItem.plotToNewFigure)
+        # - Add to main menu
+        self.menu.addAction(self.actionPlotToNewFigure)
+
         # Plot a slice
         self.keepSlice = QAction("Keep this slice", self.menu)
         if self.axis == 1:
@@ -68,7 +80,7 @@ class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
             self.keepSlice.triggered.connect(self.qWidgetParent.slicesYPlotItem.keepSlice)
         self.menu.addAction(self.keepSlice)
 
-        #Remove all slices
+        # Remove all slices
         self.removeAllSlices = QAction("Delete all slices", self.menu)
         if self.axis == 1:
             self.removeAllSlices.triggered.connect(
