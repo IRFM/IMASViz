@@ -64,7 +64,7 @@ class GUIFrame(QTabWidget):
         #self.logWidget.resize(QSize(500, 300))
         self.logWidget.setReadOnly(True)
         logging.getLogger().setLevel(logging.INFO)
-        handler = QVizLoggerSingleton.QVizLoggerSingleton()
+        handler = QVizLoggerSingleton()
         logging.getLogger().addHandler(handler)
         handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
         layout = QVBoxLayout()
@@ -315,7 +315,7 @@ class QVizStartWindow(QMainWindow):
 
         self.addDockWidget(Qt.DockWidgetArea(8), self.dockWidget_log)
         logging.getLogger().setLevel(logging.INFO)
-        handler = QVizLoggerSingleton.QVizLoggerSingleton()
+        handler = QVizLoggerSingleton()
         logging.getLogger().addHandler(handler)
         handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
 

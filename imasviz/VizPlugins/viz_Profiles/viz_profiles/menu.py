@@ -394,7 +394,7 @@ if __name__ == "__main__":
     QVizGlobalOperations.checkEnvSettings()
 
     logging.getLogger().setLevel(logging.INFO)
-    handler = QVizLoggerSingleton.QVizLoggerSingleton()
+    handler = QVizLoggerSingleton()
 
     profiles_count = {}
 

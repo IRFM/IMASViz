@@ -12,7 +12,7 @@ class QVizLoggerSingleton( logging.Handler ):
 
     def __init__(self, use_rich_text=True):
         super().__init__()
-        formatter = Formatter('%(asctime)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
+        formatter = Formatter('%(asctime)s|src:%(name)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
         self.setFormatter(formatter)
         self.use_rich_text = use_rich_text
         self.new_signal_emiter = SignalEmiter()
