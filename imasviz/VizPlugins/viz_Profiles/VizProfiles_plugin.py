@@ -85,10 +85,8 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/e_field', 'profiles_1d/q',
                              'profiles_1d/rotation', 'profiles_1d/phi_potential', 'profiles_1d/magnetic_shear']
 
-                request = Request(selected_ids, tab_names, list_of_filters,
-                                  slices_aos_name, strategy)
+                request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
                 requests_list.append(request)
-
 
             elif selected_ids == 'edge_profiles':
                 slices_aos_name = 'profiles_1d'
@@ -107,8 +105,7 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/conductivity_parallel', 'profiles_1d/e_field', 'profiles_1d/rotation',
                              'profiles_1d/q', 'profiles_1d/magnetic_shear', 'profiles_1d/phi_potential']
 
-                request = Request(selected_ids, tab_names, list_of_filters,
-                                  slices_aos_name, strategy)
+                request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
                 requests_list.append(request)
 
             elif selected_ids == 'equilibrium':
@@ -120,8 +117,7 @@ class VizProfiles_plugin(VizPlugin):
                              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
                              'time_slice/convergence']
 
-                request = Request(selected_ids, tab_names, list_of_filters,
-                                  slices_aos_name, strategy)
+                request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
                 requests_list.append(request)
 
             elif selected_ids == 'core_sources':
@@ -139,8 +135,7 @@ class VizProfiles_plugin(VizPlugin):
                         list_of_filters = ['source(' + str(source_index) + ')/profiles_1d(0)']
                         tab_names = ['source(' + str(source_index) + ')/profiles_1d']
 
-                    request = Request(selected_ids, tab_names, list_of_filters,
-                                      slices_aos_name, strategy)
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
                     requests_list.append(request)
 
             elif selected_ids == 'core_transport':
@@ -167,12 +162,11 @@ class VizProfiles_plugin(VizPlugin):
                                  tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
                                  tab_name + '/ion', tab_name + '/neutral']
 
-                request = Request(selected_ids, tab_names, list_of_filters,
-                                  slices_aos_name, strategy)
+                request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
                 requests_list.append(request)
 
             self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.data_entry,
-                                                         self.dataTreeView, requests_list)
+                                                         self.dataTreeView, requests_list, selected_ids, strategy)
             # self.edge_profiles_main_window.show()
 
         except Exception as err:

@@ -36,7 +36,8 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.tabQt import QVizTab
 class VizProfiles(QMainWindow):
     updateProgressBar = pyqtSignal()
 
-    def __init__(self, viz_api, IDS_parameters, data_entry, dataTreeView, requests_list):
+    def __init__(self, viz_api, IDS_parameters, data_entry,
+                 dataTreeView, requests_list, ids_name, strategy):
         """
         Arguments:
             IDS_parameters (Dictionary) : Dictionary containing IDS parameters
@@ -66,15 +67,14 @@ class VizProfiles(QMainWindow):
         if self.app is None:
             # if it does not exist then a QApplication is created
             self.app = QApplication([])
-        # title = "'" + request.ids_related + "'" + " IDS (0D/1D data visualization"
-        # if request.strategy == 'COORDINATE1':
-        #     title += " along coordinate1 axis)"
-        # elif request.strategy == 'TIME':
-        #     title += " along time axis)"
-        # else:
-        #     raise ValueError("Unexpected strategy")
 
-        title = 'test'
+        title = "'" + ids_name + "'" + " IDS (0D/1D data visualization"
+        if strategy == 'COORDINATE1':
+            title += " along coordinate1 axis)"
+        elif strategy == 'TIME':
+            title += " along time axis)"
+        else:
+            raise ValueError("Unexpected strategy")
 
         figureKey = viz_api.GetNextKeyForProfilesPlotView()
 
@@ -97,8 +97,8 @@ class VizProfiles(QMainWindow):
         self.pb.show()
 
         # Set user interface of the main window
-        self.strategy = requests_list[0].strategy
-        self.ids_related = requests_list[0].ids_related
+        self.strategy = strategy
+        self.ids_related = ids_name
         self.buildUI_in_separate_thread(requests_list)
 
     def getLogger(self):
@@ -254,7 +254,7 @@ class VizProfiles(QMainWindow):
         # Create a QThread object
         self.thread = QThread()
         # Create a worker object
-        self.worker = Worker(requests_list, self.imas_viz_api, self.dataTreeView)
+        self.worker = Worker(requests_list, self.imas_viz_api, self.dataTreeView, self.strategy, self.ids_related)
         # Move worker to the thread
         self.worker.moveToThread(self.thread)
         # Connect signals and slots
@@ -630,7 +630,7 @@ class Worker(QObject):
     maxProgressBar = pyqtSignal(int)
     titleProgressBar = pyqtSignal()
 
-    def __init__(self, requests_list, imas_viz_api, dataTreeView):
+    def __init__(self, requests_list, imas_viz_api, dataTreeView, strategy, ids_name):
         super().__init__()
         self.results_map = {}
         self.tab_names_map = {}
@@ -638,6 +638,8 @@ class Worker(QObject):
         self.requests_list = requests_list
         self.imas_viz_api = imas_viz_api
         self.dataTreeView = dataTreeView
+        self.ids_name = ids_name
+        self.strategy = strategy
 
     def run(self):
         """Long-running task."""
@@ -656,15 +658,15 @@ class Worker(QObject):
                 self.progressBar.emit(j)
                 # print("str_filter-->", str_filter)
                 nodes_id, dtv_nodes = self.imas_viz_api.getAll_0D_1D_Nodes(
-                    self.dataTreeView.IDSRoots[request.ids_related],
+                    self.dataTreeView.IDSRoots[self.ids_name],
                     errorBars=False,
                     str_filter=str_filter,
-                    strategy=request.strategy)
+                    strategy=self.strategy)
 
                 if len(dtv_nodes) == 0:
                     continue
 
-                w = GlobalPlotWidget(plotStrategy=request.strategy)
+                w = GlobalPlotWidget(plotStrategy=self.strategy)
 
                 plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
                                                                                     w)  # return tuple (node, signal)

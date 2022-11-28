@@ -135,6 +135,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
     def addHeader(self, node):
         label = self.addLabel(colspan=self.ncols)
+        import re
+        phoneNumRegex = re.compile(r'\d\d\d-\d\d\d-\d\d\d\d')
+        mo = phoneNumRegex.search('My number is 415-555-4242.')
+
         label.setText(node.getParametrizedDataPath(), bold=True, size='10pt')
         self.headers_count += 1
         self.nextRow()
