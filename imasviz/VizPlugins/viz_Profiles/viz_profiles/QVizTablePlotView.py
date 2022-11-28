@@ -120,7 +120,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
             except:
                pass
-            if signalNode.is1D() and request.strategy == 'TIME':
+            if signalNode.is1D() and strategy == 'TIME':
                 c1 = signalNode.evaluateCoordinateVsTime(coordinateNumber=1)
                 label = pg.LabelItem('coordinate1(' + c1 + ")=" + str(round(coordinate1_value, 2)),
                                      size="6pt",
@@ -135,10 +135,6 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
     def addHeader(self, node):
         label = self.addLabel(colspan=self.ncols)
-        import re
-        phoneNumRegex = re.compile(r'\d\d\d-\d\d\d-\d\d\d\d')
-        mo = phoneNumRegex.search('My number is 415-555-4242.')
-
         label.setText(node.getParametrizedDataPath(), bold=True, size='10pt')
         self.headers_count += 1
         self.nextRow()
