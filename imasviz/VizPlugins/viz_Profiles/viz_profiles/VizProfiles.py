@@ -159,6 +159,7 @@ class VizProfiles(QMainWindow):
                 n_tabs = int((len(plottable_signals) / self.n_curves_per_page)) + remaining_page
                 self.total_tabs[key][filter_index] = n_tabs
                 self.total_undisplayed_tabs[key][filter_index] = n_tabs - nb_tabs_count
+                # print("-->key=", key)
                 # print("-->filter_index=", filter_index)
                 # print("-->self.total_undisplayed_tabs[filter_index]=", self.total_undisplayed_tabs[filter_index])
                 for i in range(nb_tabs_count):
@@ -168,7 +169,8 @@ class VizProfiles(QMainWindow):
                     n_curves = len(plottable_signals[start_index:last_index])
                     tab_name = tab_names_per_key[filter_index] + ' (' + str(i + 1) + '/' + str(n_tabs) + ')'
                     tab = QVizTab(parent=self, tab_page_name=tab_name, filter_index=filter_index, slices_aos_name=key)
-                    tab.setTabUI(self.tabWidget.currentIndex() + 1, self.tabWidget)
+                    # tab.setTabUI(self.tabWidget.currentIndex() + 1, self.tabWidget
+                    tab.setTabUI(self.tabWidget.count(), self.tabWidget)
                     self.tabs_index[tab_name] = tab.tab_index
                     multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves, key)
                     tab.buildPlots(multiPlots=multiPlots,
@@ -663,14 +665,17 @@ class Worker(QObject):
                     str_filter=str_filter,
                     strategy=self.strategy)
 
-                if len(dtv_nodes) == 0:
-                    continue
+                # if len(dtv_nodes) == 0:
+                #     results.append([])
+                #     continue
 
                 w = GlobalPlotWidget(plotStrategy=self.strategy)
-
-                plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
+                plottable_signals = []
+                if len(dtv_nodes) != 0:
+                    plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
                                                                                     w)  # return tuple (node, signal)
-                results.append(plottable_signals)
+                if len(plottable_signals) > 0:
+                    results.append(plottable_signals)
 
             self.slices_aos_names.append(request.slices_aos_name)
             self.results_map[request.slices_aos_name] = results
@@ -766,7 +771,7 @@ if __name__ == "__main__":
         ids_name = sys.argv[1]
         pluginEntry = int(sys.argv[2])
     else:
-        ids_name = "core_sources"
+        ids_name = "equilibrium"
         pluginEntry = 1
 
     api.LoadIDSData(f, ids_name, occurrence)

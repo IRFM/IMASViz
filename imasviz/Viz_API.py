@@ -712,13 +712,14 @@ class Viz_API:
         except ValueError as e:
             logging.error(str(e))
 
-    def plot0D_DataVsTimeCommand(self, dataTreeView):
+    def plot0D_DataVsTimeCommand(self, dataTreeView, treeNode=None):
         """Plotting of 0D data nodes, found within timed AOS
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
         try:
             # Get currently selected QVizTreeNode (QTreeWidgetItem)
-            treeNode = dataTreeView.selectedItem
+            if treeNode is None:
+                treeNode = dataTreeView.selectedItem
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                        figureKey=None,
                                                        strategy='TIME')  # None will force a new Figure
@@ -758,9 +759,10 @@ class Viz_API:
                     index=coordinateIndex)
 
             elif treeNode.is0DAndDynamic():
-                logging.warning(
-                    "Data node '" + treeNode.getName() +
-                    "' has no explicit dependency on coordinate1 dimension.")
+                # logging.warning(
+                #     "Data node '" + treeNode.getName() +
+                #     "' has no explicit dependency on coordinate1 dimension.")
+                self.plot0D_DataVsTimeCommand(dataTreeView, treeNode=treeNode)
                 return
 
             else:
