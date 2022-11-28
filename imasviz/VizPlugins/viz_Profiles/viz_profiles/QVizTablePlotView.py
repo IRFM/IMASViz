@@ -29,7 +29,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, viz_api, dataTreeView, n_curves):
+    def __init__(self, viz_api, dataTreeView, n_curves, slices_aos_name):
         super(QVizTablePlotView, self).__init__()
 
         self.full_line = None
@@ -43,6 +43,8 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.headers_count = 0
         self.imas_viz_api = viz_api
         self.figureKey = 0  # TODO
+
+        self.slices_aos_name = slices_aos_name
 
         # # Get screen resolution (width and height)
         # self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -71,7 +73,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.plotItems = []
         self.plotWidget = None
 
-    def plot1D(self, plottable_signals, plotWidget, request):
+    def plot1D(self, plottable_signals, plotWidget, strategy):
 
         n = 0
         self.plotWidget = plotWidget
@@ -111,7 +113,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                 continue
 
             currentPlotItem = self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                                        ylabel=ylabel, node=signalNode, request=request)
+                                        ylabel=ylabel, node=signalNode, strategy=strategy)
 
             # Setting range manually (see IMAS-3658)
             try:
@@ -165,7 +167,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             for i in range(self.ncols):
                 self.addViewBox(colspan=1)
 
-    def plot(self, n, x, y, label, xlabel, ylabel, node=None, request=None):
+    def plot(self, n, x, y, label, xlabel, ylabel, node=None, strategy=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
 
         Arguments:
@@ -176,16 +178,16 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             :param xlabel (str)      : Plot X-axis label.
             :param ylabel (str)      : Plot Y-axis label.
             :param node:
-            :param request:
+            :param strategy:
         """
         # Set pen
         pen = self.setPen()
         viewBox = CustomizedViewBox(qWidgetParent=self, imas_viz_api=self.imas_viz_api)
         viewBox.id = n
         viewBox.addVizTreeNode(node)
-        viewBox.strategy = request.strategy
+        viewBox.strategy = strategy
         title = label.replace("\n", "")
-        title = self.imas_viz_api.modifyTitle(title, None, request.slices_aos_name)
+        title = self.imas_viz_api.modifyTitle(title, None, self.slices_aos_name)
 
         if self.last_node != node.getParametrizedDataPath():
             self.addViewBoxes()

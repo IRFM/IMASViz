@@ -871,8 +871,11 @@ class Viz_API:
         criteria = strategy == 'TIME'
         for row in range(item.childCount()):
             child_item = item.child(row)
-            if child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
+            # print("--------------> checking :", child_item.getPath(), " strategy=", strategy)
+            if not child_item.isStructure() and not child_item.isArrayOfStructure() and\
+                    child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
                     child_item.hasAvailableData():
+
                 if not errorBars and "_error_" not in child_item.getPath():
                     if str_filter is None or (str_filter is not None and str_filter
                                               in child_item.getPath()):

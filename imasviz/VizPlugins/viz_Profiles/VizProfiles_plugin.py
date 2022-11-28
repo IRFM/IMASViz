@@ -56,6 +56,18 @@ class VizProfiles_plugin(VizPlugin):
             self.IDS_parameters["database"] = device
             self.IDS_parameters["occurrence"] = occurrence
 
+            if pluginEntry == 0:  # user has selected the first entry, so we call the first feature provided by the
+                # plugin
+                strategy = 'COORDINATE1'
+            elif pluginEntry == 1:
+                strategy = 'TIME'
+            elif pluginEntry == 2:
+                strategy = 'COORDINATE1'
+            elif pluginEntry == 3:
+                strategy = 'TIME'
+
+            requests_list = []
+
             if selected_ids == 'core_profiles':
                 slices_aos_name = 'profiles_1d'
                 list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
@@ -72,6 +84,11 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/conductivity_parallel', 'profiles_1d/current_parallel_inside',
                              'profiles_1d/e_field', 'profiles_1d/q',
                              'profiles_1d/rotation', 'profiles_1d/phi_potential', 'profiles_1d/magnetic_shear']
+
+                request = Request(selected_ids, tab_names, list_of_filters,
+                                  slices_aos_name, strategy)
+                requests_list.append(request)
+
 
             elif selected_ids == 'edge_profiles':
                 slices_aos_name = 'profiles_1d'
@@ -90,6 +107,10 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/conductivity_parallel', 'profiles_1d/e_field', 'profiles_1d/rotation',
                              'profiles_1d/q', 'profiles_1d/magnetic_shear', 'profiles_1d/phi_potential']
 
+                request = Request(selected_ids, tab_names, list_of_filters,
+                                  slices_aos_name, strategy)
+                requests_list.append(request)
+
             elif selected_ids == 'equilibrium':
                 slices_aos_name = 'time_slice'
                 list_of_filters = ['time_slice(0)/boundary', 'time_slice(0)/constraints', 'time_slice(0)/profiles_1d',
@@ -99,26 +120,28 @@ class VizProfiles_plugin(VizPlugin):
                              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
                              'time_slice/convergence']
 
+                request = Request(selected_ids, tab_names, list_of_filters,
+                                  slices_aos_name, strategy)
+                requests_list.append(request)
+
             elif selected_ids == 'core_sources':
                 user_input = QInputDialog()
                 source_index_max = len(self.data_entry.core_sources.source) - 1
-                source_index = 0
-                if source_index_max > 0:
-                    user_input.resize(400, 200)
-                    source_index, ok = user_input.getInt(None, "Source index:", "Index:",
-                                                         value=source_index_max, min=0, max=source_index_max)
-                    if not ok:
-                        logging.error("Cancelled or bad input from user.")
-                        return
+                for source_index in range(source_index_max):
+                    if pluginEntry == 0 or pluginEntry == 1:
+                        slices_aos_name = 'source[' + str(source_index) + '].global_quantities'
+                        list_of_filters = []
+                        tab_names = []
+                        list_of_filters.append('source(' + str(source_index) + ')/global_quantities(0)')
+                        tab_names.append('source(' + str(source_index) + ')/global_quantities')
+                    else:
+                        slices_aos_name = 'source[' + str(source_index) + '].profiles_1d'
+                        list_of_filters = ['source(' + str(source_index) + ')/profiles_1d(0)']
+                        tab_names = ['source(' + str(source_index) + ')/profiles_1d']
 
-                if pluginEntry == 0 or pluginEntry == 1:
-                    slices_aos_name = 'source[' + str(source_index) + '].global_quantities'
-                    list_of_filters = ['source(' + str(source_index) + ')/global_quantities(0)']
-                    tab_names = ['source(' + str(source_index) + ')/global_quantities']
-                else:
-                    slices_aos_name = 'source[' + str(source_index) + '].profiles_1d'
-                    list_of_filters = ['source(' + str(source_index) + ')/profiles_1d(0)']
-                    tab_names = ['source(' + str(source_index) + ')/profiles_1d']
+                    request = Request(selected_ids, tab_names, list_of_filters,
+                                      slices_aos_name, strategy)
+                    requests_list.append(request)
 
             elif selected_ids == 'core_transport':
                 user_input = QInputDialog()
@@ -144,19 +167,12 @@ class VizProfiles_plugin(VizPlugin):
                                  tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
                                  tab_name + '/ion', tab_name + '/neutral']
 
-            if pluginEntry == 0:  # user has selected the first entry, so we call the first feature provided by the
-                # plugin
-                strategy = 'COORDINATE1'
-            elif pluginEntry == 1:
-                strategy = 'TIME'
-            elif pluginEntry == 2:
-                strategy = 'COORDINATE1'
-            elif pluginEntry == 3:
-                strategy = 'TIME'
+                request = Request(selected_ids, tab_names, list_of_filters,
+                                  slices_aos_name, strategy)
+                requests_list.append(request)
 
-            request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
             self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.data_entry,
-                                                         self.dataTreeView, request)
+                                                         self.dataTreeView, requests_list)
             # self.edge_profiles_main_window.show()
 
         except Exception as err:
