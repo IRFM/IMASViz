@@ -678,8 +678,7 @@ class Worker(QObject):
                 if len(dtv_nodes) != 0:
                     plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
                                                                                     w)  # return tuple (node, signal)
-                if len(plottable_signals) > 0:
-                    results.append(plottable_signals)
+                results.append(plottable_signals)
 
             self.slices_aos_names.append(request.slices_aos_name)
             self.static_aos_index_map[request.slices_aos_name] = request.static_aos_index
