@@ -13,6 +13,14 @@ Release notes
 =============
 
 -------------
+Version 2.6.1
+-------------
+Released 11/29/2022
+
+- IMAS-4405: fixing issues of the new profiles plugin and improvements
+- Fixing regressions on StackedPlots and TablePlots
+
+-------------
 Version 2.6.0
 -------------
 Released 11/15/2022
