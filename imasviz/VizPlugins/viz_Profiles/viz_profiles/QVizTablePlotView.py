@@ -29,7 +29,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, viz_api, dataTreeView, n_curves, slices_aos_name):
+    def __init__(self, viz_api, dataTreeView, n_curves, slices_aos_name, static_aos_index):
         super(QVizTablePlotView, self).__init__()
 
         self.full_line = None
@@ -45,6 +45,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.figureKey = 0  # TODO
 
         self.slices_aos_name = slices_aos_name
+        self.static_aos_index = static_aos_index
 
         # # Get screen resolution (width and height)
         # self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -135,7 +136,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
     def addHeader(self, node):
         label = self.addLabel(colspan=self.ncols)
-        label.setText(node.getParametrizedDataPath(), bold=True, size='10pt')
+        path = node.getParametrizedDataPath()
+        if self.static_aos_index != -1:
+            path = path.replace('[i]', '[' + str(self.static_aos_index ) + ']')
+        label.setText(path, bold=True, size='10pt')
         self.headers_count += 1
         self.nextRow()
 

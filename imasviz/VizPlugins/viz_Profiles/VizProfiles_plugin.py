@@ -140,7 +140,8 @@ class VizProfiles_plugin(VizPlugin):
 
                     if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
                                        dynamic_aos_name=slices_aos_name):
-                        request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                        request = Request(selected_ids, tab_names, list_of_filters,
+                                          slices_aos_name, strategy, source_index)
                         requests_list.append(request)
 
             elif selected_ids == 'core_transport':
@@ -162,7 +163,8 @@ class VizProfiles_plugin(VizPlugin):
 
                     if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
                                        dynamic_aos_name=slices_aos_name):
-                        request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                        request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name,
+                                          strategy, model_index)
                         requests_list.append(request)
 
             if len(requests_list) > 0:

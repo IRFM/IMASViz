@@ -149,6 +149,7 @@ class VizProfiles(QMainWindow):
         for key in self.worker.slices_aos_names:
             tab_names_per_key = self.worker.tab_names_map[key]
             results_per_key = self.worker.results_map[key]
+            static_aos_index = self.worker.static_aos_index_map[key]
             for filter_index in range(len(results_per_key)):
                 remaining_page = 0
                 plottable_signals = results_per_key[filter_index]
@@ -167,12 +168,17 @@ class VizProfiles(QMainWindow):
                     last_index = start_index + self.n_curves_per_page
                     self.signals_last_index[key][filter_index] = last_index
                     n_curves = len(plottable_signals[start_index:last_index])
-                    tab_name = tab_names_per_key[filter_index] + ' (' + str(i + 1) + '/' + str(n_tabs) + ')'
+                    tab_name = None
+                    if n_tabs == 1:
+                        tab_name = tab_names_per_key[filter_index]
+                    else:
+                        tab_name = tab_names_per_key[filter_index] + ' (' + str(i + 1) + '/' + str(n_tabs) + ')'
                     tab = QVizTab(parent=self, tab_page_name=tab_name, filter_index=filter_index, slices_aos_name=key)
                     # tab.setTabUI(self.tabWidget.currentIndex() + 1, self.tabWidget
                     tab.setTabUI(self.tabWidget.count(), self.tabWidget)
                     self.tabs_index[tab_name] = tab.tab_index
-                    multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves, key)
+                    multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView,
+                                                   n_curves, key, static_aos_index)
                     tab.buildPlots(multiPlots=multiPlots,
                                    signals=plottable_signals[start_index:last_index],
                                    plotWidget=w,
@@ -211,6 +217,7 @@ class VizProfiles(QMainWindow):
         key = self.getCurrentTab().slices_aos_name
         results = self.worker.results_map[key]
         tab_names = self.worker.tab_names_map[key]
+        static_aos_index = self.worker.static_aos_index_map[key]
 
         filter_index = self.getCurrentTab().filter_index
 
@@ -238,7 +245,7 @@ class VizProfiles(QMainWindow):
                 index = self.tabs_index[latest_tab_name] + 1
             tab.setTabUI(index, self.tabWidget)
             self.tabs_index[tab_name] = tab.tab_index
-            multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves, key)
+            multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves, key, static_aos_index)
             tab.buildPlots(multiPlots=multiPlots,
                            signals=plottable_signals[start_index:last_index],
                            plotWidget=w,
@@ -615,13 +622,14 @@ class GlobalPlotWidget():
 
 
 class Request():
-    def __init__(self, ids_related, tab_names, list_of_filters, slices_aos_name, strategy):
+    def __init__(self, ids_related, tab_names, list_of_filters, slices_aos_name, strategy, static_aos_index=-1):
         super(Request, self).__init__()
         self.ids_related = ids_related
         self.list_of_filters = list_of_filters
         self.tab_names = tab_names
         self.slices_aos_name = slices_aos_name
         self.strategy = strategy
+        self.static_aos_index = static_aos_index
 
 
 # worker class
@@ -637,6 +645,7 @@ class Worker(QObject):
         self.results_map = {}
         self.tab_names_map = {}
         self.slices_aos_names = []
+        self.static_aos_index_map = {}
         self.requests_list = requests_list
         self.imas_viz_api = imas_viz_api
         self.dataTreeView = dataTreeView
@@ -664,11 +673,6 @@ class Worker(QObject):
                     errorBars=False,
                     str_filter=str_filter,
                     strategy=self.strategy)
-
-                # if len(dtv_nodes) == 0:
-                #     results.append([])
-                #     continue
-
                 w = GlobalPlotWidget(plotStrategy=self.strategy)
                 plottable_signals = []
                 if len(dtv_nodes) != 0:
@@ -678,6 +682,7 @@ class Worker(QObject):
                     results.append(plottable_signals)
 
             self.slices_aos_names.append(request.slices_aos_name)
+            self.static_aos_index_map[request.slices_aos_name] = request.static_aos_index
             self.results_map[request.slices_aos_name] = results
             self.tab_names_map[request.slices_aos_name] = request.tab_names
 
@@ -743,6 +748,12 @@ if __name__ == "__main__":
     database = 'ITER_SCENARIOS'
     occurrence = 0
 
+    # shotNumber = 134174
+    # runNumber = 117
+    # userName = 'hoeneno'
+    # database = 'ITER_SCENARIOS'
+    # occurrence = 0
+
     # shotNumber = 54178
     # runNumber = 0
     # userName = 'fleuryl'
@@ -771,8 +782,8 @@ if __name__ == "__main__":
         ids_name = sys.argv[1]
         pluginEntry = int(sys.argv[2])
     else:
-        ids_name = "equilibrium"
-        pluginEntry = 1
+        ids_name = "core_profiles"
+        pluginEntry = 0
 
     api.LoadIDSData(f, ids_name, occurrence)
     f.show()
