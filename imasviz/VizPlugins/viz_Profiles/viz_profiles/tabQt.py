@@ -19,7 +19,7 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView import QVizT
 
 class QVizTab(QWidget):
 
-    def __init__(self, parent=None, tab_page_name=None, filter_index=None):
+    def __init__(self, parent=None, tab_page_name=None, filter_index=None, slices_aos_name=None):
         super(QWidget, self).__init__(parent)
 
         self.layout = None
@@ -31,8 +31,9 @@ class QVizTab(QWidget):
         self.dataTreeView = self.parent.dataTreeView
         self.tab_index = None
         self.signals = None
+        self.slices_aos_name = slices_aos_name
 
-    def setTabUI(self, index):
+    def setTabUI(self, index, tabWidget):
         """Set tab user interface.
         """
         container = QWidget(self)
@@ -41,17 +42,14 @@ class QVizTab(QWidget):
         container.setLayout(self.layout)
         scrollArea = QVizScrollArea(self)
         scrollArea.setWidget(container)
-        self.tab_index = self.parent.tabWidget.insertTab(index, scrollArea, self.tab_page_name)
-        # self.parent.tabWidget.addTab(scrollArea, self.tab_page_name)
+        self.tab_index = tabWidget.insertTab(index, scrollArea, self.tab_page_name)
 
-    def buildPlots(self, multiPlots, signals, plotWidget):
-        multiPlots.plot1D(signals, plotWidget, self.parent.request)
+    def buildPlots(self, multiPlots, signals, plotWidget, strategy):
+        multiPlots.plot1D(signals, plotWidget, strategy)
         multiPlots.endOfPlotsProcessing()
         multiPlots.modifySize(len(signals))
         self.layout.addWidget(multiPlots)
         self.signals = signals
-
-
 
 
 class QVizScrollArea(QScrollArea):

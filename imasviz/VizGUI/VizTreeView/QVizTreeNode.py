@@ -44,7 +44,7 @@ class QVizTreeNode(QTreeWidgetItem):
         return p.dataTreeView
 
     def getDataSource(self):
-        return getDataTreeView().dataSource
+        return self.getDataTreeView().dataSource
 
     def getOccurrenceRootNode(self):
         p = self

@@ -62,6 +62,8 @@ class QVizPlotConfigUI(QDialog):
             self.legendItem = None
         elif "QVizPlugin" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = self.viewBox.plotItem.legend
+        elif "QvizPlotImageWidget" in str(self.viewBox.qWidgetParent.objectName()):
+            self.legendItem = self.viewBox.plotItem.legend
         else:
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.qWidgetParent.pgPlotWidget.centralWidget.legend

@@ -24,7 +24,7 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 
 
-class QVizTablePlotView(pg.GraphicsView):
+class QVizTablePlotView(pg.GraphicsLayoutWidget):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 

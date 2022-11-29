@@ -166,11 +166,14 @@ class CustomizedViewBox(pg.ViewBox):
             # - Add to main menu
             self.menu.addAction(self.actionPlotToNewFigure)
 
-            self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along coordinate1 axis)",
-                                                       self.menu)
-            self.actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
-            # - Add to main menu
-            self.menu.addAction(self.actionPlotVsTimeToNewFigure)
+            node = self.vizTreeNodesList[0]
+            if node.is1D():
+                self.actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along coordinate1 axis)",
+                                                           self.menu)
+                self.actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
+                # - Add to main menu
+                self.menu.addAction(self.actionPlotVsTimeToNewFigure)
+
         elif self.strategy == 'COORDINATE1':
             self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
             self.actionPlotToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)

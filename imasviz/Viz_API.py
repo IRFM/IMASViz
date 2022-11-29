@@ -14,6 +14,7 @@
 import os
 import logging
 import sys
+import numpy as np
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizGlobalValues, QVizPreferences)
@@ -606,7 +607,7 @@ class Viz_API:
     def Plot2DArray(self, dataTreeView, vizTreeNode):
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
         imageKey = self.GetNextKeyForImagePlots()
-        plotWidget = QvizPlotImageWidget(dataTreeView=dataTreeView,
+        plotWidget = QvizPlotImageWidget(vizTreeNode=vizTreeNode,
                                          size=(600, 500), plotSliceFromROI=True, title=imageKey, showImageTitle=False)
         self.figureframes[imageKey] = plotWidget
         self.addPlotWidgetToMDI(plotWidget)
@@ -711,13 +712,14 @@ class Viz_API:
         except ValueError as e:
             logging.error(str(e))
 
-    def plot0D_DataVsTimeCommand(self, dataTreeView):
+    def plot0D_DataVsTimeCommand(self, dataTreeView, treeNode=None):
         """Plotting of 0D data nodes, found within timed AOS
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
         try:
             # Get currently selected QVizTreeNode (QTreeWidgetItem)
-            treeNode = dataTreeView.selectedItem
+            if treeNode is None:
+                treeNode = dataTreeView.selectedItem
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                        figureKey=None,
                                                        strategy='TIME')  # None will force a new Figure
@@ -757,9 +759,10 @@ class Viz_API:
                     index=coordinateIndex)
 
             elif treeNode.is0DAndDynamic():
-                logging.warning(
-                    "Data node '" + treeNode.getName() +
-                    "' has no explicit dependency on coordinate1 dimension.")
+                # logging.warning(
+                #     "Data node '" + treeNode.getName() +
+                #     "' has no explicit dependency on coordinate1 dimension.")
+                self.plot0D_DataVsTimeCommand(dataTreeView, treeNode=treeNode)
                 return
 
             else:
@@ -835,7 +838,10 @@ class Viz_API:
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)
         subWindow.resize(plotWidget.width(), plotWidget.height())
-        self.getMDI().addSubWindow(subWindow)
+        if self.getMDI() is not None:
+            self.getMDI().addSubWindow(subWindow)
+        else:
+            self.subWindow = subWindow
 
     def LoadListOfIDSs(self, dataTreeView, namesOfIDSs, occurrence=0):
         """Load given IDSs for given occurrence.
@@ -867,8 +873,11 @@ class Viz_API:
         criteria = strategy == 'TIME'
         for row in range(item.childCount()):
             child_item = item.child(row)
-            if child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
+            # print("--------------> checking :", child_item.getPath(), " strategy=", strategy)
+            if not child_item.isStructure() and not child_item.isArrayOfStructure() and\
+                    child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
                     child_item.hasAvailableData():
+
                 if not errorBars and "_error_" not in child_item.getPath():
                     if str_filter is None or (str_filter is not None and str_filter
                                               in child_item.getPath()):
@@ -881,29 +890,56 @@ class Viz_API:
                                                           children, str_filter, errorBars, strategy)
         return children_id, children
 
-    def getAllPlottable_0D_1D_Signals(self, dtv_nodes, dataTreeView, plotWidget=None):
+    def find_nearest(self, array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx], idx
+
+    def getAllPlottable_0D_1D_Signals(self, dtv_nodes, dataTreeView, plotWidget=None,
+                                      profile_center=True):
         s_list = []
         for node in dtv_nodes:
             try:
+                coordinate1_index = 0
+                closest_value = 0
+                if node.is1D() and plotWidget.plotStrategy == 'TIME' and profile_center:
+                    coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
+                    # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
+                    # closest_value, coordinate1_index = self.find_nearest(coordinate1_values,
+                    #                                                      np.max(coordinate1_values) / 2)
+                    coordinate1_index = int(coordinate1_values.size / 2)
+                    # closest_value, coordinate1_index = coordinate1_values[int(coordinate1_values.size)]
+                    closest_value = coordinate1_values[coordinate1_index]
+
                 s = self.GetSignal(dataTreeView=dataTreeView,
                                    vizTreeNode=node,
+                                   coordinate1_index=coordinate1_index,
                                    plotWidget=plotWidget)
-                s_list.append((node, s))
+                s_list.append((node, s, closest_value))
             except Exception as e:
                 print(e)
                 continue
         return s_list
 
-    def updateAllPlottable_0D_1D_Signals(self, s_list, time_index, plotWidget=None):
+    def updateAllPlottable_0D_1D_Signals(self, s_list, time_index, plotWidget=None, profile_center=True):
         s_new_list = []
         for s in s_list:
             try:
                 node = s[0]
+                coordinate1_index = 0
+                closest_value = 0
+                if node.is1D() and plotWidget.plotStrategy == 'TIME' and profile_center:
+                    coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
+                    # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
+                    coordinate1_index = int(coordinate1_values.size / 2)
+                    # closest_value, coordinate1_index = coordinate1_values[int(coordinate1_values.size)]
+                    closest_value = coordinate1_values[coordinate1_index]
                 snew = self.GetSignal(dataTreeView=node.dataTreeView,
                                       vizTreeNode=node,
                                       time_index=time_index,
+                                      coordinate1_index=coordinate1_index,
                                       plotWidget=plotWidget)
-                s_new_list.append((node, snew))
+                s_new_list.append((node, snew, coordinate1_index))
             except Exception as e:
                 print(e)
                 continue
@@ -923,3 +959,30 @@ class Viz_API:
             if index == -1:
                 return title
             return title[index + len(slices_aos_name) + 4:]
+
+    def plot1DInNewFigure(self, x_label, signals_labels, signals, treeNode):
+        """Plot data in a new figure
+        Arguments:
+            figureKey  (str) : Label of the current/relevant figure window.
+            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
+                                      replace the current plot in figure
+                                      window.
+                                      :param signals_labels:
+                                      :param signals: List of tuple (x,y) where x and y are 1D numpy arrays
+                                      :param x_label:
+                                      :param treeNode:
+        """
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
+        try:
+            figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=treeNode.dataTreeView)
+            i = 0
+            for sig in signals:
+                QVizPlotSignal(dataTreeView=treeNode.dataTreeView,
+                               title='',
+                               label=signals_labels[i],
+                               xlabel=x_label,
+                               vizTreeNode=treeNode,
+                               plotWidget=plotWidget).execute(figureKey=figureKey, signal=sig)
+                i += 1
+        except ValueError as e:
+            logging.error(str(e))

@@ -36,7 +36,8 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.tabQt import QVizTab
 class VizProfiles(QMainWindow):
     updateProgressBar = pyqtSignal()
 
-    def __init__(self, viz_api, IDS_parameters, data_entry, dataTreeView, request):
+    def __init__(self, viz_api, IDS_parameters, data_entry,
+                 dataTreeView, requests_list, ids_name, strategy):
         """
         Arguments:
             IDS_parameters (Dictionary) : Dictionary containing IDS parameters
@@ -46,7 +47,6 @@ class VizProfiles(QMainWindow):
         super(QMainWindow, self).__init__()
 
         # Set log parser
-        self.results = None
         self.addNewTabsButton = None
         self.signals_last_index = []
         self.total_tabs = []
@@ -67,10 +67,11 @@ class VizProfiles(QMainWindow):
         if self.app is None:
             # if it does not exist then a QApplication is created
             self.app = QApplication([])
-        title = "'" + request.ids_related + "'" + " IDS (0D/1D data visualization"
-        if request.strategy == 'COORDINATE1':
+
+        title = "'" + ids_name + "'" + " IDS (0D/1D data visualization"
+        if strategy == 'COORDINATE1':
             title += " along coordinate1 axis)"
-        elif request.strategy == 'TIME':
+        elif strategy == 'TIME':
             title += " along time axis)"
         else:
             raise ValueError("Unexpected strategy")
@@ -79,13 +80,9 @@ class VizProfiles(QMainWindow):
 
         self.setWindowTitle(title + ' [' + str(figureKey) + ']')
         self.data_entry = data_entry
-        self.ids_related = request.ids_related
+
         self.IDS_parameters = IDS_parameters
         self.dataTreeView = dataTreeView
-
-        self.strategy = request.strategy
-        self.request = request
-
         self.imas_viz_api = viz_api
 
         # Set initial time slice
@@ -100,7 +97,9 @@ class VizProfiles(QMainWindow):
         self.pb.show()
 
         # Set user interface of the main window
-        self.buildUI_in_separate_thread()
+        self.strategy = strategy
+        self.ids_related = ids_name
+        self.buildUI_in_separate_thread(requests_list)
 
     def getLogger(self):
         return self.log
@@ -109,8 +108,14 @@ class VizProfiles(QMainWindow):
         self.pb.close()
 
     def setTabs(self):
-        self.results = self.worker.results
-        if len(self.results) == 0:
+
+        no_result = True
+        for key in self.worker.results_map:
+            if len(self.worker.results_map[key]) != 0:
+                no_result = False
+                break
+
+        if no_result:
             self.close()
             logging.info("No data available for plotting.")
             return
@@ -121,48 +126,72 @@ class VizProfiles(QMainWindow):
 
         self.tabWidget.currentChanged.connect(self.disableOrEnabledAddNewTabsIfRequired)
 
-        for filter_index in range(len(self.results)):
-            self.total_undisplayed_tabs.append(0)
-            self.total_tabs.append(0)
-            self.signals_last_index.append(0)
-
         self.addTabs()
         self.setUI()
         self.disableOrEnabledAddNewTabsIfRequired()
 
     def addTabs(self, nb_tabs_count=1):
-        w = GlobalPlotWidget(plotStrategy=self.request.strategy)
-        for filter_index in range(len(self.results)):
-            remaining_page = 0
-            plottable_signals = self.results[filter_index]
-            if len(plottable_signals) == 0:
-                continue
-            if (len(plottable_signals) % self.n_curves_per_page) != 0:
-                remaining_page = 1
-            n_tabs = int((len(plottable_signals) / self.n_curves_per_page)) + remaining_page
-            self.total_tabs[filter_index] = n_tabs
-            self.total_undisplayed_tabs[filter_index] = n_tabs - nb_tabs_count
-            # print("-->filter_index=", filter_index)
-            # print("-->self.total_undisplayed_tabs[filter_index]=", self.total_undisplayed_tabs[filter_index])
-            for i in range(nb_tabs_count):
-                start_index = i * self.n_curves_per_page + self.signals_last_index[filter_index]
-                last_index = start_index + self.n_curves_per_page
-                self.signals_last_index[filter_index] = last_index
-                n_curves = len(plottable_signals[start_index:last_index])
-                tab_name = self.request.tab_names[filter_index] + ' (' + str(i + 1) + '/' + str(n_tabs) + ')'
-                tab = QVizTab(parent=self, tab_page_name=tab_name, filter_index=filter_index)
-                tab.setTabUI(self.tabWidget.currentIndex() + 1)
-                self.tabs_index[tab_name] = tab.tab_index
-                multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves)
-                tab.buildPlots(multiPlots=multiPlots,
-                               signals=plottable_signals[start_index:last_index],
-                               plotWidget=w)
+
+        self.total_undisplayed_tabs = {}
+        self.total_tabs = {}
+        self.signals_last_index = {}
+
+        for key in self.worker.slices_aos_names:
+            self.total_undisplayed_tabs[key] = []
+            self.total_tabs[key] = []
+            self.signals_last_index[key] = []
+            for filter_index in range(len(self.worker.results_map[key])):
+                self.total_undisplayed_tabs[key].append(0)
+                self.total_tabs[key].append(0)
+                self.signals_last_index[key].append(0)
+
+        w = GlobalPlotWidget(plotStrategy=self.strategy)
+        for key in self.worker.slices_aos_names:
+            tab_names_per_key = self.worker.tab_names_map[key]
+            results_per_key = self.worker.results_map[key]
+            static_aos_index = self.worker.static_aos_index_map[key]
+            for filter_index in range(len(results_per_key)):
+                remaining_page = 0
+                plottable_signals = results_per_key[filter_index]
+                if len(plottable_signals) == 0:
+                    continue
+                if (len(plottable_signals) % self.n_curves_per_page) != 0:
+                    remaining_page = 1
+                n_tabs = int((len(plottable_signals) / self.n_curves_per_page)) + remaining_page
+                self.total_tabs[key][filter_index] = n_tabs
+                self.total_undisplayed_tabs[key][filter_index] = n_tabs - nb_tabs_count
+                # print("-->key=", key)
+                # print("-->filter_index=", filter_index)
+                # print("-->self.total_undisplayed_tabs[filter_index]=", self.total_undisplayed_tabs[filter_index])
+                for i in range(nb_tabs_count):
+                    start_index = i * self.n_curves_per_page + self.signals_last_index[key][filter_index]
+                    last_index = start_index + self.n_curves_per_page
+                    self.signals_last_index[key][filter_index] = last_index
+                    n_curves = len(plottable_signals[start_index:last_index])
+                    tab_name = None
+                    if n_tabs == 1:
+                        tab_name = tab_names_per_key[filter_index]
+                    else:
+                        tab_name = tab_names_per_key[filter_index] + ' (' + str(i + 1) + '/' + str(n_tabs) + ')'
+                    tab = QVizTab(parent=self, tab_page_name=tab_name, filter_index=filter_index, slices_aos_name=key)
+                    # tab.setTabUI(self.tabWidget.currentIndex() + 1, self.tabWidget
+                    tab.setTabUI(self.tabWidget.count(), self.tabWidget)
+                    self.tabs_index[tab_name] = tab.tab_index
+                    multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView,
+                                                   n_curves, key, static_aos_index)
+                    tab.buildPlots(multiPlots=multiPlots,
+                                   signals=plottable_signals[start_index:last_index],
+                                   plotWidget=w,
+                                   strategy=self.strategy)
 
     def disableOrEnabledAddNewTabsIfRequired(self):
         if self.addNewTabsButton is None or self.askForAddingNewTabsButton is None:
             return
+        if self.getCurrentTab() is None:
+            return
         filter_index = self.getCurrentTab().filter_index
-        if self.total_undisplayed_tabs[filter_index] == 0:
+        slices_aos_name = self.getCurrentTab().slices_aos_name
+        if self.total_undisplayed_tabs[slices_aos_name][filter_index] == 0:
             self.addNewTabsButton.setEnabled(False)
             self.askForAddingNewTabsButton.setEnabled(False)
         else:
@@ -172,7 +201,8 @@ class VizProfiles(QMainWindow):
     def askForAddingNewTabs(self):
         user_input = QInputDialog()
         filter_index = self.getCurrentTab().filter_index
-        nb_tabs_to_add_max = self.total_undisplayed_tabs[filter_index]
+        slices_aos_name = self.getCurrentTab().slices_aos_name
+        nb_tabs_to_add_max = self.total_undisplayed_tabs[slices_aos_name][filter_index]
         nb_tabs_to_add, ok = user_input.getInt(None, "Number of tab(s) to add:", "Number of tabs:",
                                                value=nb_tabs_to_add_max, min=1, max=nb_tabs_to_add_max)
         if not ok:
@@ -183,50 +213,57 @@ class VizProfiles(QMainWindow):
 
     def addNewTab(self):
         nb_tabs_count = 1
-        w = GlobalPlotWidget(plotStrategy=self.request.strategy)
-        for filter_index in range(len(self.results)):
-            n_tabs = self.total_tabs[filter_index]
-            n_tabs_displayed = n_tabs - self.total_undisplayed_tabs[filter_index]
-            if n_tabs_displayed == n_tabs:
-                continue
-            plottable_signals = self.results[filter_index]
-            # if nb_tabs_count > n_tabs - n_tabs_displayed:  # number of tabs to be added/displayed
-            #    nb_tabs_count = n_tabs - n_tabs_displayed
-            self.total_undisplayed_tabs[filter_index] -= nb_tabs_count
-            for i in range(nb_tabs_count):
-                start_index = i * self.n_curves_per_page + self.signals_last_index[filter_index]
-                last_index = start_index + self.n_curves_per_page
-                self.signals_last_index[filter_index] = last_index
-                j = i + n_tabs_displayed + 1
-                n_curves = len(plottable_signals[start_index:last_index])
-                tab_name = self.request.tab_names[filter_index] + ' (' + str(j) + '/' + str(n_tabs) + ')'
-                tab = QVizTab(parent=self, tab_page_name=tab_name, filter_index=filter_index)
-                # search the latest tab of this group
-                index = self.tabWidget.currentIndex() + 1
-                if n_tabs_displayed > 1:
-                    latest_tab_name = self.request.tab_names[filter_index] + ' (' + str(n_tabs_displayed) + '/' \
-                                      + str(n_tabs) + ')'
-                    # print("latest_tab_name=", latest_tab_name)
-                    index = self.tabs_index[latest_tab_name] + 1
-                tab.setTabUI(index)
-                self.tabs_index[tab_name] = tab.tab_index
-                multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves)
-                tab.buildPlots(multiPlots=multiPlots,
-                               signals=plottable_signals[start_index:last_index],
-                               plotWidget=w)
+        w = GlobalPlotWidget(plotStrategy=self.strategy)
+        key = self.getCurrentTab().slices_aos_name
+        results = self.worker.results_map[key]
+        tab_names = self.worker.tab_names_map[key]
+        static_aos_index = self.worker.static_aos_index_map[key]
+
+        filter_index = self.getCurrentTab().filter_index
+
+        n_tabs = self.total_tabs[key][filter_index]
+        n_tabs_displayed = n_tabs - self.total_undisplayed_tabs[key][filter_index]
+        if n_tabs_displayed == n_tabs:
+            return
+
+        plottable_signals = results[filter_index]
+        self.total_undisplayed_tabs[key][filter_index] -= nb_tabs_count
+        for i in range(nb_tabs_count):
+            start_index = i * self.n_curves_per_page + self.signals_last_index[key][filter_index]
+            last_index = start_index + self.n_curves_per_page
+            self.signals_last_index[key][filter_index] = last_index
+            j = i + n_tabs_displayed + 1
+            n_curves = len(plottable_signals[start_index:last_index])
+            tab_name = tab_names[filter_index] + ' (' + str(j) + '/' + str(n_tabs) + ')'
+            tab = QVizTab(parent=self, tab_page_name=tab_name, filter_index=filter_index, slices_aos_name=key)
+            # search the latest tab of this group
+            index = self.tabWidget.currentIndex() + 1
+            if n_tabs_displayed > 1:
+                latest_tab_name = tab_names[filter_index] + ' (' + str(n_tabs_displayed) + '/' \
+                                  + str(n_tabs) + ')'
+                # print("latest_tab_name=", latest_tab_name)
+                index = self.tabs_index[latest_tab_name] + 1
+            tab.setTabUI(index, self.tabWidget)
+            self.tabs_index[tab_name] = tab.tab_index
+            multiPlots = QVizTablePlotView(self.imas_viz_api, self.dataTreeView, n_curves, key, static_aos_index)
+            tab.buildPlots(multiPlots=multiPlots,
+                           signals=plottable_signals[start_index:last_index],
+                           plotWidget=w,
+                           strategy=self.strategy)
+
         self.disableOrEnabledAddNewTabsIfRequired()
 
     def showWindow(self):
-        if len(self.results) != 0:
+        if len(self.worker.results_map) != 0:
             self.show()
         else:
             logging.warning("No data found.")
 
-    def buildUI_in_separate_thread(self):
+    def buildUI_in_separate_thread(self, requests_list):
         # Create a QThread object
         self.thread = QThread()
         # Create a worker object
-        self.worker = Worker(self.request, self.imas_viz_api, self.dataTreeView)
+        self.worker = Worker(requests_list, self.imas_viz_api, self.dataTreeView, self.strategy, self.ids_related)
         # Move worker to the thread
         self.worker.moveToThread(self.thread)
         # Connect signals and slots
@@ -340,7 +377,7 @@ class VizProfiles(QMainWindow):
         dh = self.app.desktop().availableGeometry().height()
         dw = self.app.desktop().availableGeometry().width()
         self.height = dh * 0.9
-        self.width = dw * 0.65
+        self.width = dw * 0.7
         # self.resize(int(self.width), int(self.height))
         # Move window to the center of the screen
         self.setFixedWidth(int(self.width))
@@ -390,7 +427,8 @@ class VizProfiles(QMainWindow):
     def getTimeValueForTimeIndex(self, time_index):
         """ Get time value for given time index.
         """
-        time_slices_count = eval("len(self.data_entry." + self.ids_related + "." + self.request.slices_aos_name + ")")
+        slices_aos_name = self.getCurrentTab().slices_aos_name
+        time_slices_count = eval("len(self.data_entry." + self.ids_related + "." + slices_aos_name + ")")
 
         if time_slices_count == 0:
             message = "No time slice found for " + self.ids_related + "."
@@ -403,7 +441,7 @@ class VizProfiles(QMainWindow):
             raise ValueError(message)
 
         time_value = eval(
-            "self.data_entry." + self.ids_related + "." + self.request.slices_aos_name + "[time_index].time")
+            "self.data_entry." + self.ids_related + "." + slices_aos_name + "[time_index].time")
 
         if time_value == -9e+40:
             time_value = eval("self.data_entry." + self.ids_related + ".time[time_index]")
@@ -425,7 +463,8 @@ class VizProfiles(QMainWindow):
         """
         qvizTab = self.getCurrentTab()
         w = GlobalPlotWidget(plotStrategy=self.strategy)
-        updated_signals = self.imas_viz_api.updateAllPlottable_0D_1D_Signals(qvizTab.signals, self.time_index, plotWidget=w)
+        updated_signals = self.imas_viz_api.updateAllPlottable_0D_1D_Signals(qvizTab.signals, self.time_index,
+                                                                             plotWidget=w)
         self.getTablePlotView().updatePlot(updated_signals)
 
     def setTimeSlider(self):
@@ -446,13 +485,14 @@ class VizProfiles(QMainWindow):
     def updateTimeSliderTminTmaxLabel(self):
         """ Update tmin and tmax label/values.
         """
-        ntimevalues = eval("len(self.data_entry." + self.ids_related + "." + self.request.slices_aos_name + ")")
+        slices_aos_name = self.getCurrentTab().slices_aos_name
+        ntimevalues = eval("len(self.data_entry." + self.ids_related + "." + slices_aos_name + ")")
         tmin = -9e+40
         tmax = -9e+40
 
         if ntimevalues > 0:
-            tmin = eval("self.data_entry." + self.ids_related + "." + self.request.slices_aos_name + "[0].time")
-            tmax = eval("self.data_entry." + self.ids_related + "." + self.request.slices_aos_name + "[-1].time")
+            tmin = eval("self.data_entry." + self.ids_related + "." + slices_aos_name + "[0].time")
+            tmax = eval("self.data_entry." + self.ids_related + "." + slices_aos_name + "[-1].time")
 
         n = eval("len(self.data_entry." + self.ids_related + ".time)")
         # Check if empty time values were read
@@ -530,9 +570,10 @@ class VizProfiles(QMainWindow):
             return array[idx], idx
 
         value = float(self.lineEdit_timeValue.text())
-        time_profiles0 = eval("self.data_entry." + self.ids_related + "." + self.request.slices_aos_name + "[0].time")
+        slices_aos_name = self.getCurrentTab().slices_aos_name
+        time_profiles0 = eval("self.data_entry." + self.ids_related + "." + slices_aos_name + "[0].time")
         time = eval("self.data_entry." + self.ids_related + ".time")
-        ntimevalues = len(eval("self.data_entry." + self.ids_related + "." + self.request.slices_aos_name))
+        ntimevalues = len(eval("self.data_entry." + self.ids_related + "." + slices_aos_name))
         time_values = None
 
         if time_profiles0 == -9e+40:
@@ -541,7 +582,7 @@ class VizProfiles(QMainWindow):
             time_values = [0] * ntimevalues
             for i in range(len(time_values)):
                 time_values[i] = eval("self.data_entry." + self.ids_related + "." +
-                                      self.request.slices_aos_name + "[i].time")
+                                      slices_aos_name + "[i].time")
 
         closest_value, index = find_nearest(time_values, value)
         self.spinBox_timeIndex.setValue(index)
@@ -581,13 +622,14 @@ class GlobalPlotWidget():
 
 
 class Request():
-    def __init__(self, ids_related, tab_names, list_of_filters, slices_aos_name, strategy):
+    def __init__(self, ids_related, tab_names, list_of_filters, slices_aos_name, strategy, static_aos_index=-1):
         super(Request, self).__init__()
         self.ids_related = ids_related
         self.list_of_filters = list_of_filters
         self.tab_names = tab_names
         self.slices_aos_name = slices_aos_name
         self.strategy = strategy
+        self.static_aos_index = static_aos_index
 
 
 # worker class
@@ -598,12 +640,17 @@ class Worker(QObject):
     maxProgressBar = pyqtSignal(int)
     titleProgressBar = pyqtSignal()
 
-    def __init__(self, request, imas_viz_api, dataTreeView):
+    def __init__(self, requests_list, imas_viz_api, dataTreeView, strategy, ids_name):
         super().__init__()
-        self.results = []
-        self.request = request
+        self.results_map = {}
+        self.tab_names_map = {}
+        self.slices_aos_names = []
+        self.static_aos_index_map = {}
+        self.requests_list = requests_list
         self.imas_viz_api = imas_viz_api
         self.dataTreeView = dataTreeView
+        self.ids_name = ids_name
+        self.strategy = strategy
 
     def run(self):
         """Long-running task."""
@@ -612,25 +659,32 @@ class Worker(QObject):
         self.finished.emit()
 
     def buildPlottableSignals(self):
-        self.results = []
-        filter_index = 0
-        jmax = len(self.request.list_of_filters)
-        self.maxProgressBar.emit(jmax)
         j = 0
-        for str_filter in self.request.list_of_filters:
-            j = j + 1
-            self.progressBar.emit(j)
-            # print("str_filter-->", str_filter_only)
-            nodes_id, dtv_nodes = self.imas_viz_api.getAll_0D_1D_Nodes(self.dataTreeView.IDSRoots[self.request.ids_related],
-                                                                       errorBars=False,
-                                                                       str_filter=str_filter,
-                                                                       strategy=self.request.strategy)
-            w = GlobalPlotWidget(plotStrategy=self.request.strategy)
-            plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
-                                                                                w)  # return tuple (node, signal)
-            if len(plottable_signals) != 0:
-                self.results.append(plottable_signals)
-            filter_index += 1
+        for request in self.requests_list:
+            jmax = len(self.requests_list) * len(request.list_of_filters)
+            self.maxProgressBar.emit(jmax)
+            results = []
+            for str_filter in request.list_of_filters:
+                j = j + 1
+                self.progressBar.emit(j)
+                # print("str_filter-->", str_filter)
+                nodes_id, dtv_nodes = self.imas_viz_api.getAll_0D_1D_Nodes(
+                    self.dataTreeView.IDSRoots[self.ids_name],
+                    errorBars=False,
+                    str_filter=str_filter,
+                    strategy=self.strategy)
+                w = GlobalPlotWidget(plotStrategy=self.strategy)
+                plottable_signals = []
+                if len(dtv_nodes) != 0:
+                    plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,
+                                                                                    w)  # return tuple (node, signal)
+                if len(plottable_signals) > 0:
+                    results.append(plottable_signals)
+
+            self.slices_aos_names.append(request.slices_aos_name)
+            self.static_aos_index_map[request.slices_aos_name] = request.static_aos_index
+            self.results_map[request.slices_aos_name] = results
+            self.tab_names_map[request.slices_aos_name] = request.tab_names
 
 
 class ProgressBar(QWidget):
@@ -694,6 +748,12 @@ if __name__ == "__main__":
     database = 'ITER_SCENARIOS'
     occurrence = 0
 
+    # shotNumber = 134174
+    # runNumber = 117
+    # userName = 'hoeneno'
+    # database = 'ITER_SCENARIOS'
+    # occurrence = 0
+
     # shotNumber = 54178
     # runNumber = 0
     # userName = 'fleuryl'
@@ -718,7 +778,7 @@ if __name__ == "__main__":
     pluginEntry = None
     ids_name = None
 
-    if len(sys.arg) > 1:
+    if len(sys.argv) > 1:
         ids_name = sys.argv[1]
         pluginEntry = int(sys.argv[2])
     else:
@@ -731,6 +791,6 @@ if __name__ == "__main__":
     vizProfiles_plugin = VizProfiles_plugin()
     vizProfiles_plugin.dataTreeView = f.dataTreeView
     vizProfiles_plugin.selectedTreeNode = f.dataTreeView.IDSRoots[ids_name]
-    vizProfiles_plugin.execute(api, pluginEntry=0)
+    vizProfiles_plugin.execute(api, pluginEntry=pluginEntry)
 
     sys.exit(app.exec_())

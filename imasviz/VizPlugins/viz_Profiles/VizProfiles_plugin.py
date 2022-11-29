@@ -56,19 +56,39 @@ class VizProfiles_plugin(VizPlugin):
             self.IDS_parameters["database"] = device
             self.IDS_parameters["occurrence"] = occurrence
 
+            if pluginEntry == 0:  # user has selected the first entry, so we call the first feature provided by the
+                # plugin
+                strategy = 'COORDINATE1'
+            elif pluginEntry == 1:
+                strategy = 'TIME'
+            elif pluginEntry == 2:
+                strategy = 'COORDINATE1'
+            elif pluginEntry == 3:
+                strategy = 'TIME'
+
+            requests_list = []
+
             if selected_ids == 'core_profiles':
                 slices_aos_name = 'profiles_1d'
+
                 list_of_filters = ['profiles_1d(0)/grid', 'profiles_1d(0)/electrons', 'profiles_1d(0)/ion',
                                    'profiles_1d(0)/neutral', 'profiles_1d(0)/t_i_average',
                                    'profiles_1d(0)/n_i', 'profiles_1d(0)/momentum_tor', 'profiles_1d(0)/zeff',
                                    'profiles_1d(0)/pressure', 'profiles_1d(0)/j_',
-                                   'profiles_1d(0)/conductivity_parallel', 'profiles_1d(0)/e_field',
-                                   'profiles_1d(0)/rotation', 'profiles_1d(0)/q', 'profiles_1d(0)/magnetic_shear']
+                                   'profiles_1d(0)/conductivity_parallel', 'profiles_1d(0)/current_parallel_inside',
+                                   'profiles_1d(0)/e_field', 'profiles_1d(0)/q',
+                                   'profiles_1d(0)/rotation', 'profiles_1d(0)/phi_potential',
+                                   'profiles_1d(0)/magnetic_shear']
                 tab_names = ['profiles_1d/grid', 'profiles_1d/electrons', 'profiles_1d/ion', 'profiles_1d/neutral',
                              'profiles_1d/t_i_average', 'profiles_1d/n_i', 'profiles_1d/momentum_tor',
                              'profiles_1d/zeff', 'profiles_1d/pressure', 'profiles_1d/j',
-                             'profiles_1d/conductivity_parallel', 'profiles_1d/e_field',
-                             'profiles_1d/rotation', 'profiles_1d/q', 'profiles_1d/magnetic_shear']
+                             'profiles_1d/conductivity_parallel', 'profiles_1d/current_parallel_inside',
+                             'profiles_1d/e_field', 'profiles_1d/q',
+                             'profiles_1d/rotation', 'profiles_1d/phi_potential', 'profiles_1d/magnetic_shear']
+
+                if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                    requests_list.append(request)
 
             elif selected_ids == 'edge_profiles':
                 slices_aos_name = 'profiles_1d'
@@ -87,6 +107,10 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/conductivity_parallel', 'profiles_1d/e_field', 'profiles_1d/rotation',
                              'profiles_1d/q', 'profiles_1d/magnetic_shear', 'profiles_1d/phi_potential']
 
+                if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                    requests_list.append(request)
+
             elif selected_ids == 'equilibrium':
                 slices_aos_name = 'time_slice'
                 list_of_filters = ['time_slice(0)/boundary', 'time_slice(0)/constraints', 'time_slice(0)/profiles_1d',
@@ -96,70 +120,69 @@ class VizProfiles_plugin(VizPlugin):
                              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
                              'time_slice/convergence']
 
-            elif selected_ids == 'core_sources':
-                user_input = QInputDialog()
-                source_index_max = len(self.data_entry.core_sources.source) - 1
-                source_index = 0
-                if source_index_max > 0:
-                    user_input.resize(400, 200)
-                    source_index, ok = user_input.getInt(None, "Source index:", "Index:",
-                                                         value=source_index_max, min=0, max=source_index_max)
-                    if not ok:
-                        logging.error("Cancelled or bad input from user.")
-                        return
+                if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                    requests_list.append(request)
 
-                if pluginEntry == 0 or pluginEntry == 1:
-                    slices_aos_name = 'source[' + str(source_index) + '].global_quantities'
-                    list_of_filters = ['source(' + str(source_index) + ')/global_quantities(0)']
-                    tab_names = ['source(' + str(source_index) + ')/global_quantities']
-                else:
-                    slices_aos_name = 'source[' + str(source_index) + '].profiles_1d'
-                    list_of_filters = ['source(' + str(source_index) + ')/profiles_1d(0)']
-                    tab_names = ['source(' + str(source_index) + ')/profiles_1d']
+            elif selected_ids == 'core_sources':
+                source_index_max = len(self.data_entry.core_sources.source) - 1
+                for source_index in range(source_index_max):
+                    list_of_filters = []
+                    tab_names = []
+                    if pluginEntry == 0 or pluginEntry == 1:
+                        slices_aos_name = 'source[' + str(source_index) + '].global_quantities'
+                        list_of_filters.append('source(' + str(source_index) + ')/global_quantities(0)')
+                        tab_names.append('source(' + str(source_index) + ')/global_quantities')
+                    else:
+                        slices_aos_name = 'source[' + str(source_index) + '].profiles_1d'
+                        list_of_filters.append('source(' + str(source_index) + ')/profiles_1d(0)')
+                        tab_names.append('source(' + str(source_index) + ')/profiles_1d')
+
+                    if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
+                                       dynamic_aos_name=slices_aos_name):
+                        request = Request(selected_ids, tab_names, list_of_filters,
+                                          slices_aos_name, strategy, source_index)
+                        requests_list.append(request)
 
             elif selected_ids == 'core_transport':
-                user_input = QInputDialog()
                 model_index_max = len(self.data_entry.core_transport.model) - 1
-                model_index = 0
-                if model_index_max > 0:
-                    user_input.resize(400, 200)
-                    model_index, ok = user_input.getInt(None, "Model index:", "Index:",
-                                                        value=model_index_max, min=0, max=model_index_max)
-                    if not ok:
-                        logging.error("Cancelled by user or bad input.")
-                        return
+                list_of_filters = []
+                tab_names = []
+                for model_index in range(model_index_max):
+                    if pluginEntry == 0 or pluginEntry == 1:
+                        slices_aos_name = 'model[' + str(model_index) + '].profiles_1d'
+                        model = 'model(' + str(model_index) + ')'
+                        profile = model + '/profiles_1d(0)'
+                        list_of_filters = [profile + '/grid', profile + '/conductivity', profile + '/electrons',
+                                           profile + '/total_ion', profile + '/momentum', profile + '/e_field',
+                                           profile + '/ion', profile + '/neutral']
+                        tab_name = 'model(' + str(model_index) + ')/profiles_1d'
+                        tab_names = [tab_name + '/grid', tab_name + '/conductivity', tab_name + '/electrons',
+                                     tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
+                                     tab_name + '/ion', tab_name + '/neutral']
 
-                if pluginEntry == 0 or pluginEntry == 1:
-                    slices_aos_name = 'model[' + str(model_index) + '].profiles_1d'
-                    model = 'model(' + str(model_index) + ')'
-                    profile = model + '/profiles_1d(0)'
-                    list_of_filters = [profile + '/grid', profile + '/conductivity', profile + '/electrons',
-                                       profile + '/total_ion', profile + '/momentum', profile + '/e_field',
-                                       profile + '/ion', profile + '/neutral']
-                    tab_name = 'model(' + str(model_index) + ')/profiles_1d'
-                    tab_names = [tab_name + '/grid', tab_name + '/conductivity', tab_name + '/electrons',
-                                 tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
-                                 tab_name + '/ion', tab_name + '/neutral']
+                    if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
+                                       dynamic_aos_name=slices_aos_name):
+                        request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name,
+                                          strategy, model_index)
+                        requests_list.append(request)
 
-            if pluginEntry == 0:  # user has selected the first entry, so we call the first feature provided by the
-                # plugin
-                strategy = 'COORDINATE1'
-            elif pluginEntry == 1:
-                strategy = 'TIME'
-            elif pluginEntry == 2:
-                strategy = 'COORDINATE1'
-            elif pluginEntry == 3:
-                strategy = 'TIME'
-
-            request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
-            self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.data_entry,
-                                                         self.dataTreeView, request)
+            if len(requests_list) > 0:
+                self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.data_entry,
+                                                             self.dataTreeView, requests_list, selected_ids, strategy)
+            else:
+                message = "No profiles found for " + selected_ids + " IDS."
+                logging.warning(message)
             # self.edge_profiles_main_window.show()
 
         except Exception as err:
             logging.error("ERROR! (%s)" % err, exc_info=True)
             traceback.print_exc()
             logging.error(traceback.format_exc())
+
+    def data_found(self, data_entry, ids_name, dynamic_aos_name):
+        time_slices_count = eval("len(data_entry." + ids_name + "." + dynamic_aos_name + ")")
+        return time_slices_count != 0
 
     def getEntries(self):
         selected_ids = self.selectedTreeNode.getIDSName()

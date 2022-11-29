@@ -22,13 +22,14 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSig
 from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
 from .CustomizedViewBox import CustomizedViewBox
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
+import numpy as np
 
 
 class QVizTablePlotView(pg.GraphicsLayoutWidget):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, viz_api, dataTreeView, n_curves):
+    def __init__(self, viz_api, dataTreeView, n_curves, slices_aos_name, static_aos_index):
         super(QVizTablePlotView, self).__init__()
 
         self.full_line = None
@@ -42,6 +43,9 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.headers_count = 0
         self.imas_viz_api = viz_api
         self.figureKey = 0  # TODO
+
+        self.slices_aos_name = slices_aos_name
+        self.static_aos_index = static_aos_index
 
         # # Get screen resolution (width and height)
         # self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -70,16 +74,18 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.plotItems = []
         self.plotWidget = None
 
-    def plot1D(self, plottable_signals, plotWidget, request):
+    def plot1D(self, plottable_signals, plotWidget, strategy):
 
         n = 0
         self.plotWidget = plotWidget
         dtv = self.dataTreeView
         self.nb_plots_per_line = 0
+
         for plottable_signal in plottable_signals:
 
             signalNode = plottable_signal[0]
             signal = plottable_signal[1]
+            coordinate1_value = plottable_signal[2]
 
             if n == 0:
                 self.last_node = signalNode.getParametrizedDataPath()
@@ -96,7 +102,6 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                 signalNode.plotOptions(dataTreeView=dtv,
                                        title=self.figureKey,
                                        plotWidget=self.plotWidget)
-
             # Add plot
             # y-axis values
             u = v[0]
@@ -109,21 +114,47 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                 continue
 
             currentPlotItem = self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                                        ylabel=ylabel, node=signalNode, request=request)
+                                        ylabel=ylabel, node=signalNode, strategy=strategy)
 
             # Setting range manually (see IMAS-3658)
-            currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+            try:
+               currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+            except:
+               pass
+            if signalNode.is1D() and strategy == 'TIME':
+                c1 = signalNode.evaluateCoordinateVsTime(coordinateNumber=1)
+                label = pg.LabelItem('coordinate1(' + c1 + ")=" + str(round(coordinate1_value, 2)),
+                                     size="6pt",
+                                     color="FF0000")
+                label.setParentItem(currentPlotItem)
+                label.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-30, 20))
 
             # Next plot number
             n += 1
 
+        self.addEndLine()
+
     def addHeader(self, node):
-        self.addLabel('----------------------------')
-        label = self.addLabel(colspan=self.ncols - 2)
-        label.setText(node.getParametrizedDataPath(), bold=True, size='10pt')
-        self.addLabel('----------------------------')
+        label = self.addLabel(colspan=self.ncols)
+        path = node.getParametrizedDataPath()
+        if self.static_aos_index != -1:
+            path = path.replace('[i]', '[' + str(self.static_aos_index ) + ']')
+        label.setText(path, bold=True, size='10pt')
         self.headers_count += 1
         self.nextRow()
+
+    def addEndLine(self):
+        self.nextRow()
+
+        label = self.addLabel(colspan=4)
+        label.setText('-------------------------------------------------------'
+                      '-------------------------------------------------------'
+                      '-------------------------------------------------------'
+                      '-------------------------------------------------------', bold=True, size='10pt')
+
+    def addViewBoxesForNextPlot(self, count):
+        for i in range(count):
+            self.addViewBox(colspan=1)
 
     def addViewBoxes(self):
         if self.nb_plots_per_line != 0:
@@ -140,7 +171,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             for i in range(self.ncols):
                 self.addViewBox(colspan=1)
 
-    def plot(self, n, x, y, label, xlabel, ylabel, node=None, request=None):
+    def plot(self, n, x, y, label, xlabel, ylabel, node=None, strategy=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
 
         Arguments:
@@ -151,19 +182,20 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             :param xlabel (str)      : Plot X-axis label.
             :param ylabel (str)      : Plot Y-axis label.
             :param node:
-            :param request:
+            :param strategy:
         """
         # Set pen
         pen = self.setPen()
         viewBox = CustomizedViewBox(qWidgetParent=self, imas_viz_api=self.imas_viz_api)
         viewBox.id = n
         viewBox.addVizTreeNode(node)
-        viewBox.strategy = request.strategy
+        viewBox.strategy = strategy
         title = label.replace("\n", "")
-        title = self.imas_viz_api.modifyTitle(title, None, request.slices_aos_name)
+        title = self.imas_viz_api.modifyTitle(title, None, self.slices_aos_name)
 
         if self.last_node != node.getParametrizedDataPath():
             self.addViewBoxes()
+            self.addEndLine()
             if not self.full_line:
                 self.nb_lines += 1
             self.nextRow()
@@ -241,8 +273,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             dataItem.setData(x=ti, y=u)
 
             # Setting range manually (see IMAS-3658)
-            plotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
-
+            try:
+               plotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+            except:
+               pass
             i += 1
 
     @staticmethod
@@ -265,7 +299,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         (depending on the number of plots and number of columns)
         """
         # Set suitable width and height
-        self.okWidth = self.ncols * self.plotHorizontalDim + 200
+        self.okWidth = self.ncols * self.plotHorizontalDim + 220
         n_plots_lines = self.nb_lines
         # print("n_plots_lines=", n_plots_lines)
         # print("headers_count=", self.headers_count)
