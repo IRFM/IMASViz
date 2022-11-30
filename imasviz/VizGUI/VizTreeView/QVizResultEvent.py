@@ -12,5 +12,5 @@ class QVizResultEvent(QEvent):
             eventID (int) : Custom even ID.
         """
         #thread-safe
-        super(QVizResultEvent, self).__init__(eventID)
+        super(QVizResultEvent, self).__init__(QEvent.Type(eventID))
         self.data = idsData
