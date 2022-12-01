@@ -67,7 +67,7 @@ class QvizPlotImageWidget(QWidget):
     """
 
     def getAxisOrientations(self):
-        return (1, 2)
+        return 1, 2
 
     """
     Setup QvizPlotImageWidget contents.

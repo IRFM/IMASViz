@@ -1,4 +1,3 @@
-
 import sys
 import traceback
 import logging
@@ -6,6 +5,7 @@ import numpy as np
 
 from imasviz.VizUtils import QVizGlobalOperations, PlotTypes
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates, QVizTimedDataArrayHandle
+
 
 class QVizIMASNativeDataAccess:
     def __init__(self, dataSource):
@@ -23,7 +23,7 @@ class QVizIMASNativeDataAccess:
 
         if plotWidget is not None and plotWidget.addTimeSlider:
             if plotWidget.sliderGroup is not None:
-               time_index = plotWidget.sliderGroup.slider.value()
+                time_index = plotWidget.sliderGroup.slider.value()
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
             coordinate_index = plotWidget.sliderGroup.slider.value()
@@ -53,11 +53,10 @@ class QVizIMASNativeDataAccess:
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is1D():
-                #print("calling GetSignalAt ", time_index)
+                # print("calling GetSignalAt ", time_index)
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is2DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
-
 
     def GetSignalAt(self, treeNode, itimeValue, plotWidget=None):
         if treeNode.is2DAndDynamic():
@@ -85,7 +84,6 @@ class QVizIMASNativeDataAccess:
             raise ValueError("Data node '" + treeNode.getName() +
                              "' has no explicit dependency on current X axis.")
 
-
     def GetSignal2DAt(self, treeNode, itimeValue, plotWidget=None):
 
         try:
@@ -96,41 +94,44 @@ class QVizIMASNativeDataAccess:
             coordinatesValues = []
             coordinate_of_time = None
 
-            imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
-            arrayPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
-            rval = eval(arrayPath)
+            data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
+            arrayPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
+            r_val = eval(arrayPath)
             coordinateValues = None
             coordinates_labels = []
             label = ''
             quantityName = ''
-            for dim in range(1,3):
+            for dim in range(1, 3):
                 coordinate = treeNode.evaluateCoordinateAt(coordinateNumber=dim,
-                                                            itimeValue=itimeValue)
+                                                           itimeValue=itimeValue)
 
                 coordinatesPaths.append(coordinate)
 
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=dim):
                     # coordinate for dimension dim is a function of time
-                    coordinateValues = QVizGlobalOperations.getCoordinate_array(imas_entry,
-                                                                   treeNode.getData(),
-                                                                   coordinate)
+                    coordinateValues = QVizGlobalOperations.getCoordinate_array(data_entry,
+                                                                                treeNode.getData(),
+                                                                                coordinate)
                     coordinate_of_time = dim
                 else:
                     if "1.." in treeNode.getCoordinate(coordinateNumber=dim):
-                        N = len(rval)
+                        N = len(r_val)
                         coordinateValues = np.asarray(range(0, N))
                     else:
-                        path = "imas_entry." + treeNode.getIDSName() + "." + coordinate
+                        path = "data_entry." + treeNode.getIDSName() + "." + coordinate
                         coordinateValues = eval(path)
                         if len(coordinateValues) == 0:
                             raise ValueError("Coordinate array for dimension " + str(dim) + " has no values.")
 
                 coordinatesValues.append(coordinateValues)
-                quantityName, label, coordinate_label = treeNode.labels(plotWidget, dim, coordinate_index=0, time_index=itimeValue)
+                quantityName, label, coordinate_label = treeNode.labels(plotWidget, dim, coordinate_index=0,
+                                                                        time_index=itimeValue)
                 coordinates_labels.append(coordinate_label)
 
-            arrayCoordinates = ArrayCoordinates(coordinatesPaths, coordinatesValues, coordinate_of_time, coordinates_labels)
-            return QVizDataArrayHandle(arrayCoordinates, np.asarray(rval), label=label, name=quantityName, itimeValue=itimeValue)
+            arrayCoordinates = ArrayCoordinates(coordinatesPaths, coordinatesValues, coordinate_of_time,
+                                                coordinates_labels)
+            return QVizDataArrayHandle(arrayCoordinates, np.asarray(r_val), label=label, name=quantityName,
+                                       itimeValue=itimeValue)
 
         except:
             print(sys.exc_info()[0])
@@ -143,38 +144,40 @@ class QVizIMASNativeDataAccess:
             if treeNode.getData() is None:
                 return
 
-            imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
+            data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             t = None
-            signalPath = 'imas_entry.' + treeNode.evaluateDataPath(itimeValue)
-            #print("signalPath=", signalPath)
-            rval = eval(signalPath)
-            r = np.array([rval])
+            signalPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
+            # print("signalPath=", signalPath)
+            r_val = eval(signalPath)
+            r = np.array([r_val])
             coordinate1 = treeNode.evaluateCoordinateAt(coordinateNumber=1,
                                                         itimeValue=itimeValue)
 
             if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                 # coordinate1 is a function of time
-                t = QVizGlobalOperations.getCoordinate_array(imas_entry,
-                                                               treeNode.getData(),
-                                                               coordinate1)
+                t = QVizGlobalOperations.getCoordinate_array(data_entry,
+                                                             treeNode.getData(),
+                                                             coordinate1)
                 t = np.array([t])
             else:
                 if "1.." in treeNode.getCoordinate(coordinateNumber=1):
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:
-                    path = "imas_entry." + treeNode.getIDSName() + "." + \
+                    path = "data_entry." + treeNode.getIDSName() + "." + \
                            coordinate1
-                    #print("path=", path)
+                    # print("path=", path)
                     e = eval(path)
                     if len(e) == 0:
                         path1 = treeNode.getIDSName() + "." + coordinate1
                         raise ValueError("Coordinate1 has no values.")
-                    if len(e) != len(rval):
+                    if len(e) != len(r_val):
                         path1 = treeNode.getIDSName() + "." + coordinate1
-                        raise ValueError("Coordinate1 (" + path1 + ") array has not the same length than the signal you want to plot.")
+                        raise ValueError(
+                            "Coordinate1 (" + path1 + ") array has not the same length than the signal you want to "
+                                                      "plot.")
                     t = np.array([e])
-                    #print(r)
+                    # print(r)
 
             return t, r
 
@@ -196,19 +199,19 @@ class QVizIMASNativeDataAccess:
             return self.Get0DSignalVsTime(treeNode)
         elif treeNode.is1DAndDynamic():
             # Get list of paths of arrays through time slices
-            data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
+            data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... ,
+            # parametrizedPath[itime], ...
             time_slices_count = len(data_path_list)
             v = []
-            imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
+            data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             for i in range(0, time_slices_count):
                 # Get values of the array at index
-                value_at_index = eval('imas_entry.' + data_path_list[i] + '[' +
+                value_at_index = eval('data_entry.' + data_path_list[i] + '[' +
                                       str(coordinate_index) + ']')
                 v.append(value_at_index)
-
-            rarray = np.array([np.array(v)])
-            tarray = np.array([time])
-            return tarray, rarray
+            r_array = np.array([np.array(v)])
+            t_array = np.array([time])
+            return t_array, r_array
         elif treeNode.is2DAndDynamic:
             raise ValueError('Plotting 2D arrays located in a dynamic AOS is not currently supported')
 
@@ -216,10 +219,10 @@ class QVizIMASNativeDataAccess:
         """Function intended for plotting 0D dynamic arrays whose values are
         defined in time slices (dynamic AOSs).
         """
-
         # Get list of paths of arrays through time slices
-        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... , parametrizedPath[itime], ...
-        ids = self.dataSource.data_entries[treeNode.getOccurrence()]
+        data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... ,
+        # parametrizedPath[itime], ...
+        data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         # print "time_slices_count " + str(time_slices_count)
         v = []
@@ -228,13 +231,13 @@ class QVizIMASNativeDataAccess:
                 treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataSource)
         time = treeNode.globalTime
         # Get values of the 0D scalar at each time slice
-        for i in range(0, time_slices_count):
-            value_at_index = eval('ids.' + data_path_list[i])
+        for i in range(time_slices_count):
+            value_at_index = eval('data_entry.' + data_path_list[i])
             v.append(value_at_index)
 
-        rarray = np.array([np.array(v)])
-        tarray = np.array([time])
-        return tarray, rarray
+        r_array = np.array([np.array(v)])
+        t_array = np.array([time])
+        return t_array, r_array
 
     def Get0DSignalVsOtherCoordinate(self, treeNode, itimeValue, xData):
         logging.warning("Data node '" + treeNode.getName() +
@@ -246,25 +249,6 @@ class QVizIMASNativeDataAccess:
         value = eval('imas_entry.' + data_path)
         for i in range(0, len(xData)):  # constant 1D array
             data_path_list.append(value)
-        rarray = np.array([np.array(data_path_list)])
-        tarray = np.array([np.array(xData)])
-        return tarray, rarray
-
-    def GetShapeofSignal(self, selectedNodeData, shotNumber):
-        try:
-            if selectedNodeData is None:
-                return
-
-            ids = self.dataSource.data_entries[selectedNodeData['occurrence']]
-
-            # eval time
-            t = np.array([eval(selectedNodeData['coordinate1'])])
-
-            # eval values
-            r = np.array([eval(selectedNodeData['dataName'])])
-
-            return r.shape, t.shape
-
-        except:
-            # return -1
-            raise
+        r_array = np.array([np.array(data_path_list)])
+        t_array = np.array([np.array(xData)])
+        return t_array, r_array

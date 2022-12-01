@@ -10,18 +10,20 @@
 # *****************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
+from functools import partial
 
 import pyqtgraph as pg
 import numpy as np
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 import logging
 from PyQt5.QtCore import Qt
-# from PyQt5.QtGui import QAction
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QAction
+from PyQt5.QtWidgets import QInputDialog, QAction, QMenu
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI \
     import QVizPlotConfigUI
 
 from pyqtgraph.exporters.Matplotlib import Exporter
+
+from imasviz.VizUtils import FigureTypes
 
 
 class QVizCustomPlotContextMenu(pg.ViewBox):
@@ -38,6 +40,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                                       doesn't seem to be allowed).
             parent        (obj)     : Parent.
         """
+        self.contextMenu = None
         self.qWidgetParent = qWidgetParent
 
         super(QVizCustomPlotContextMenu, self).__init__(parent)
@@ -115,6 +118,13 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # Set menu update to false
             self.menuUpdate = False
 
+        if self.contextMenu is None:
+            self.contextMenu = QMenu()
+
+        self.contextMenu.clear()
+        self.buildContextMenu()
+        self.menu.addMenu(self.contextMenu)
+
         return self.menu
 
     def addCustomMenu(self):
@@ -148,6 +158,70 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             self.actionShowHideConfidenceBands.triggered.connect(self.showHideViewConfidenceBands)
             # - Add to main menu
             self.menu.addAction(self.actionShowHideConfidenceBands)
+
+            strategy = self.qWidgetParent.getStrategy()
+
+            if strategy == 'TIME':
+                actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
+                actionPlotToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
+                # - Add to main menu
+                self.menu.addAction(actionPlotToNewFigure)
+                node = self.vizTreeNodesList[0]
+                if node.is1D():
+                    actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along coordinate1 axis)",
+                                                          self.menu)
+                    actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
+                    # - Add to main menu
+                    self.menu.addAction(actionPlotVsTimeToNewFigure)
+
+            elif strategy == 'COORDINATE1':
+                actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
+                actionPlotToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
+                # - Add to main menu
+                self.menu.addAction(actionPlotToNewFigure)
+                actionPlotVsTimeToNewFigure = QAction("Plot in a new separate figure (along time axis)", self.menu)
+                actionPlotVsTimeToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
+                # - Add to main menu
+                self.menu.addAction(actionPlotVsTimeToNewFigure)
+            else:
+                raise ValueError("Unknow plot strategy")
+
+    def buildContextMenu(self):
+        node = self.vizTreeNodesList[0]
+        self.contextMenu.setTitle('Plot ' + node.getName() + ' to')
+        viz_api = node.dataTreeView.imas_viz_api
+        for figureKey in viz_api.GetFiguresKeys(
+                figureType=FigureTypes.FIGURETYPE):
+            id_Fig = viz_api.getFigureKeyNum(figureKey,
+                                             FigureTypes.FIGURETYPE)
+
+            # Add menu item to add plot to specific existing figure
+            # Check for figures that share the same coordinates
+            if viz_api.nodeDataShareSameCoordinates(figureKey, node):
+                # Set action
+                action_addSignalPlotToFig = QAction(figureKey, self)
+                action_addSignalPlotToFig.triggered.connect(
+                    partial(viz_api.AddPlot1DToFig, id_Fig, node))
+                # Add to submenu
+                self.contextMenu.addAction(action_addSignalPlotToFig)
+
+    def plotVsCoordinate1ToNewFigure(self):
+        node = self.vizTreeNodesList[0]
+        key = node.dataTreeView.dataSource.dataKey(node)
+        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        viz_api = node.dataTreeView.imas_viz_api
+        figureKey = viz_api.GetNextKeyForFigurePlots()
+        viz_api.AddNodeToFigure(figureKey, key, tup)
+        viz_api.plotVsCoordinate1AtGivenTime(node.dataTreeView, figureKey, node, 0)
+
+    def plotVsTimeToNewFigure(self):
+        node = self.vizTreeNodesList[0]
+        key = node.dataTreeView.dataSource.dataKey(node)
+        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        viz_api = node.dataTreeView.imas_viz_api
+        figureKey = viz_api.GetNextKeyForFigurePlots()
+        viz_api.AddNodeToFigure(figureKey, key, tup)
+        viz_api.plotVsTimeAtGivenCoordinate1(node.dataTreeView, 0, figureKey, node, 0, 0)
 
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
@@ -287,9 +361,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             brush = pg.mkBrush('r')
             brush.setStyle(Qt.DiagCrossPattern)
             brush.setColor(Qt.red)
-            #self.fbitem.setBrush(brush)
-            self.addItem( self.fbitem)
-               
+            # self.fbitem.setBrush(brush)
+            self.addItem(self.fbitem)
+
         else:
             logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
 

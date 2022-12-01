@@ -23,14 +23,12 @@
 # ****************************************************
 
 from functools import partial
-import re, logging
+import logging
 from PyQt5.QtCore import QObject, pyqtSlot
 from PyQt5.QtWidgets import QAction, QMenu, QApplication, QStyle
 from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlotView import QVizStackedPlotView
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPreviewPlotSignal import QVizPreviewPlotSignal
@@ -414,7 +412,7 @@ class QVizSignalHandling(QObject):
                                          self)
             action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=False,
-                        configFile=None, strategy='DEFAULT'))
+                        configFile=None, strategy='TIME'))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_thisDTV)
 
@@ -426,7 +424,7 @@ class QVizSignalHandling(QObject):
                                         self)
             action_TPV_allDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=True,
-                        configFile=None, strategy='DEFAULT'))
+                        configFile=None, strategy='TIME'))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_allDTV)
 
@@ -471,7 +469,7 @@ class QVizSignalHandling(QObject):
             action_SPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
                                          self)
             action_SPV_thisDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, False, 'DEFAULT'))
+                partial(self.onPlotToStackedPlotView, False, 'TIME'))
             # Add to submenu
             subMenu_SPV_new.addAction(action_SPV_thisDTV)
 
@@ -481,7 +479,7 @@ class QVizSignalHandling(QObject):
             action_SPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
                                         self)
             action_SPV_allDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, True, 'DEFAULT'))
+                partial(self.onPlotToStackedPlotView, True, 'TIME'))
             # Add to submenu
             subMenu_SPV_new.addAction(action_SPV_allDTV)
             

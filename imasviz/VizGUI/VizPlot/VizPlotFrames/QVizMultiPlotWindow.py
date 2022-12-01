@@ -149,7 +149,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         return figureKey
 
-    def setMultiPlotView(self, mpType, strategy='DEFAULT'):
+    def setMultiPlotView(self, mpType, strategy):
         """Set multiPlotView (pg.GraphicsWindow).
 
         Arguments:

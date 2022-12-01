@@ -393,10 +393,11 @@ class Viz_API:
 
     def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
                                                 all_DTV=False,
-                                                strategy='DEFAULT'):
+                                                strategy='TIME'):
         """Plots the current selected set of signals of this shot view on a
            new table plot.
 
+        :param strategy:
         :param dataTreeFrame: A QVizDataTreeViewFrame object
         :param all_DTV:       When True, all current selected set of signals
                               on all shot views are plotted
@@ -407,10 +408,11 @@ class Viz_API:
 
     # Plot the set of signals selected by the user
     def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath,
-                                        all_DTV=False, strategy='DEFAULT'):
+                                        all_DTV=False, strategy='TIME'):
         """Selects a set of signals using the selection file and plots of this
         shot view on a new table plot.
 
+        :param strategy:
         :param dataTreeFrame:  A QVizDataTreeViewFrame object
         :param configFilePath: The path to a data selection file
         :param all_DTV: When True, all current selected set of signals on all
@@ -874,7 +876,7 @@ class Viz_API:
         for row in range(item.childCount()):
             child_item = item.child(row)
             # print("--------------> checking :", child_item.getPath(), " strategy=", strategy)
-            if not child_item.isStructure() and not child_item.isArrayOfStructure() and\
+            if not child_item.isStructure() and not child_item.isArrayOfStructure() and \
                     child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
                     child_item.hasAvailableData():
 

@@ -89,7 +89,6 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         # Enable antialiasing for prettier plots
         pg.setConfigOptions(antialias=True)
 
-
     def getType(self):
         return PlotTypes.TABLE_PLOT
 
@@ -171,7 +170,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                               ylabel=ylabel, node=signalNode)
                     # Get the current (last) plot item, created by self.plot()
                     currentPlotItem = self.getCurrentPlotItem()  # pg.PlotItem
-                    #Setting range manually (see IMAS-3658)
+                    # Setting range manually (see IMAS-3658)
                     currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
                     # Add new attribute to current item, holding all signal data
                     currentPlotItem.signalData = dtv_selectedSignals[signalKey]
@@ -227,13 +226,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
         # Add viewBox to list of viewBoxList
         self.viewBoxList.append(viewBox)
-        # pg.PlotItem
 
-        # p = self.addPlot(name='plotName',
-        #                   title="Basic array plotting " + str(n),
-        #                   row=rowNum,
-        #                   col=colNum)
-        # p.plot(x, y, pen=pen)
         # Set axis labels
         plotItem.setLabel('left', ylabel, units='')
         plotItem.setLabel('bottom', xlabel, units='')
@@ -251,7 +244,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
         if (n + 1) % self.centralWidget.cols == 0:
             self.nextRow()
-            
+
         viewBox.addVizTreeNode(node, preview=0)
         viewBox.addVizTreeNodeDataItem(node, plotItem.dataItems[0])
 
