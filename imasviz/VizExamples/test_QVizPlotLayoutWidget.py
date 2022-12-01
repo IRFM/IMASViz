@@ -5,7 +5,7 @@ import sys, logging, os
 import numpy as np
 import pyqtgraph as pg
 # PyQt library imports
-from PyQt5.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication
 # IMASViz source imports
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API

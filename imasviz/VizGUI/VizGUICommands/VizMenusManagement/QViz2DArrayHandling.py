@@ -14,8 +14,8 @@
 
 from functools import partial
 import re, logging
-from PyQt5.QtCore import QObject, pyqtSlot
-from PyQt5.QtWidgets import QAction, QMenu, QApplication, QStyle
+from PySide2.QtCore import QObject, Slot
+from PySide2.QtWidgets import QAction, QMenu, QApplication, QStyle
 from imasviz.VizUtils import GlobalIcons, QVizPreferences, FigureTypes
 
 class QViz2DArrayHandling(QObject):

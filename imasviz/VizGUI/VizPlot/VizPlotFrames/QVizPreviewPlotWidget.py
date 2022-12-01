@@ -13,9 +13,9 @@
 
 import pyqtgraph as pg
 import numpy as np
-from PyQt5.QtWidgets import (QWidget, QGridLayout, QCheckBox, QMenuBar, QAction,
+from PySide2.QtWidgets import (QWidget, QGridLayout, QCheckBox, QMenuBar, QAction,
                          QLabel)
-from PyQt5.QtCore import Qt, QMetaObject
+from PySide2.QtCore import Qt, QMetaObject
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
 from imasviz.VizUtils import GlobalFonts, PlotTypes

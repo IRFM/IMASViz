@@ -16,8 +16,8 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtCore import pyqtSlot, Qt
-from PyQt5.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
+from PySide2.QtCore import Slot, Qt
+from PySide2.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes
@@ -110,7 +110,7 @@ class QVizStackedPlotView(QWidget):
         # Add checkbox to layout
         self.layout().addWidget(self.displayAllXAxis, 2, 0, 1, 1)
 
-    @pyqtSlot()
+    @Slot()
     def checkGroupPanMode(self):
         """Check value of groupPanMode checkbox and change blockLink
         (e.g. axis links between plots -> dragging views together) accordingly.
@@ -122,7 +122,7 @@ class QVizStackedPlotView(QWidget):
         else:
             [el.blockLink(True) for el in self.viewBoxes]
 
-    @pyqtSlot()
+    @Slot()
     def checkDisplayAllXAxis(self):
         """Check value of groupPanMode checkbox and change display of X axis
         of all plots accordingly.

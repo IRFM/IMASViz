@@ -24,8 +24,8 @@
 
 from functools import partial
 import re, logging
-from PyQt5.QtCore import QObject, pyqtSlot
-from PyQt5.QtWidgets import QAction, QMenu, QApplication, QStyle
+from PySide2.QtCore import QObject, Slot
+from PySide2.QtWidgets import QAction, QMenu, QApplication, QStyle
 from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlotView import QVizTablePlotView
@@ -777,20 +777,20 @@ class QVizSignalHandling(QObject):
     def selectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
 
-    @pyqtSlot()
+    @Slot()
     def selectOrUnselectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def onUnselectSignals(self, all_DTV=False):
         """Unselect all signals (single or all DTVs)."""
         QVizUnselectAllSignals(self.dataTreeView, all_DTV).execute()
 
-    @pyqtSlot()
+    @Slot()
     def selectAllSignalsFromSameAOS(self):
         QVizSelectSignalsGroup(self.dataTreeView, self.treeNode).execute()
 
-    @pyqtSlot()
+    @Slot()
     def plotSignalCommand(self):
         """Basic plotting of signal node plottable data command.
         """
@@ -834,7 +834,7 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.error(str(e))
 
-    # @pyqtSlot(bool)
+    # @Slot(bool)
     def plotSelectedSignals(self, all_DTV=True, strategy='TIME'):
         """Plot selected signals from current or all DTV instances.
 
@@ -864,7 +864,7 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.error(str(e))
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None,
                               strategy=None):
         """Plot selected nodes from single/all opened DTVs to MultiPlot
@@ -895,7 +895,7 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.error(str(e))
 
-    @pyqtSlot(bool)
+    @Slot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False, strategy="TIME"):
         """Plot selected nodes from single/all opened DTVs to MultiPlot
         StackedPlotView.
@@ -923,7 +923,7 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.error(str(e))
 
-    @pyqtSlot(int)
+    @Slot(int)
     def addSignalPlotToFig(self, numFig):
         """Add signal plot to existing figure.
 
@@ -958,7 +958,7 @@ class QVizSignalHandling(QObject):
     def addPlotWidgetToMDI(self, plotWidget):
         """Embeds the plotWidget inside MDI subwindow.
         """
-        from PyQt5.QtWidgets import QMdiSubWindow
+        from PySide2.QtWidgets import QMdiSubWindow
 
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)
@@ -968,7 +968,7 @@ class QVizSignalHandling(QObject):
         else:
             self.subWindow = subWindow
 
-    @pyqtSlot(int)
+    @Slot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
         """Add/Plot selected signals to existing figure.
 
@@ -1049,7 +1049,7 @@ class QVizSignalHandling(QObject):
                 return False
         return True
 
-    @pyqtSlot(int, str)
+    @Slot(int, str)
     def showHideFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):
         """Show/Hide figure plot widget window or TablePlotView frame.
 
@@ -1064,13 +1064,13 @@ class QVizSignalHandling(QObject):
             self.imas_viz_api.GetFigureKey(str(numFig), figureType)
         self.imas_viz_api.ShowHideFigure(figureKey)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def deleteAllFigures(self, figureType=FigureTypes.FIGURETYPE):
         figureKeys = self.imas_viz_api.GetFiguresKeys(figureType)
         for figureKey in figureKeys:
             self.imas_viz_api.DeleteFigure(figureKey)
 
-    @pyqtSlot(int, str)
+    @Slot(int, str)
     def deleteFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):
         """Delete figure plot widget window.
 

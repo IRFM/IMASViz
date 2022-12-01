@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QEvent
+from PySide2.QtCore import QEvent
 
 class QVizResultEvent(QEvent):
     """ This function sets a custom QEvent.
@@ -12,5 +12,5 @@ class QVizResultEvent(QEvent):
             eventID (int) : Custom even ID.
         """
         #thread-safe
-        super(QVizResultEvent, self).__init__(eventID)
+        super(QVizResultEvent, self).__init__(QEvent.Type(eventID))
         self.data = idsData

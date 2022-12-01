@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """This file uses the QVizPlotImageWidget for testing purpose
 """
-from PyQt5.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication
 import sys, logging, os
 import numpy as np
 import pyqtgraph as pg

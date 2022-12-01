@@ -2,7 +2,7 @@
 import os
 import sys
 import logging
-from PyQt5 import QtGui
+from PySide2 import QtGui
 
 
 class FigureTypes:
@@ -34,7 +34,7 @@ class PlotTypes:
 class GlobalColors:
     """Global colors
     """
-    from PyQt5.QtGui import QBrush, QColor
+    from PySide2.QtGui import QBrush, QColor
 
     BLUE = QBrush(QColor('#0000ff'))
     RED = QBrush(QColor('#ff0000'))
@@ -83,7 +83,7 @@ class QVizPreferences:
 
     def build(self):
         if not QVizPreferences.userPreferencesInitialized:
-            from PyQt5.QtGui import QBrush, QColor
+            from PySide2.QtGui import QBrush, QColor
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
             QVizPreferences.SelectionColor = GlobalColors.RED
             option1 = "Colour_of_data_nodes_containing_data="
@@ -269,7 +269,7 @@ def getRGBColorList():
 class GlobalFonts:
     """Global fonts.
     """
-    from PyQt5.QtGui import QFont
+    from PySide2.QtGui import QFont
 
     TITLE_MEDIUM = QFont('Open Sans', 11)
     # TITLE.setStyleHint(QFont.TypeWriter)
@@ -287,7 +287,7 @@ class GlobalFonts:
 class GlobalQtStyles:
     """Global Qt styles dictionary.
     """
-    from PyQt5.QtCore import Qt
+    from PySide2.QtCore import Qt
 
     # Set dictionary of line styles (keys) with their Qt style
     # counterpart (values)

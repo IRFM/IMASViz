@@ -22,8 +22,8 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 import numpy as np
 
-from PyQt5.QtCore import pyqtSlot
-from PyQt5.QtWidgets import QSizePolicy
+from PySide2.QtCore import Slot
+from PySide2.QtWidgets import QSizePolicy
 
 class QuadPlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):
@@ -37,7 +37,7 @@ class QuadPlotCanvas(FigureCanvas):
         FigureCanvas.setSizePolicy(self, QSizePolicy.Expanding, QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
-    @pyqtSlot()
+    @Slot()
     def plotData(self, nodes, quad_conn_array, qValues, title='Plot'):
         """Plots edge data to 2D VTK.
         """

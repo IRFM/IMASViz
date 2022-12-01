@@ -1,5 +1,5 @@
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QMainWindow
+from PySide2.QtCore import Qt
+from PySide2.QtGui import QMainWindow
 
 from pyqtgraph.exporters.Matplotlib import Exporter
 from pyqtgraph.parametertree import Parameter

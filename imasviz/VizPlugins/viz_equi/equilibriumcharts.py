@@ -34,12 +34,12 @@ import matplotlib.ticker as tick
 import numpy as np
 import os
 import sys, logging
-from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
+from PySide2.QtWidgets import QDockWidget, QMenuBar, QAction
+from PySide2.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
                             QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
                             QSlider, QPushButton, QHBoxLayout, QLabel, QMessageBox
-from PyQt5 import QtGui
-from PyQt5 import QtCore
+from PySide2 import QtGui
+from PySide2 import QtCore
 
 # Local python modules
 import imas
@@ -1250,7 +1250,7 @@ if (__name__ == '__main__'):
     # manipulate different parts of the Python runtime environment.
     import sys
     # PyQt library imports
-    from PyQt5.QtWidgets import QApplication
+    from PySide2.QtWidgets import QApplication
     # IMASViz source imports
     from imasviz.Viz_API import Viz_API
     from imasviz.VizDataSource.QVizDataSourceFactory import \

@@ -14,8 +14,8 @@
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
 import logging
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QMdiSubWindow
+from PySide2 import QtCore, QtGui, QtWidgets
+from PySide2.QtWidgets import QMdiSubWindow
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils import (FigureTypes, QVizGlobalOperations,
                               getScreenGeometry)
@@ -314,7 +314,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """Return dictionary of GraphicWindow plot items."""
         return self.multiPlotView.centralWidget.items
 
-    @QtCore.pyqtSlot()
+    @QtCore.Slot()
     def onSavePlotConf(self):
         """Save configuration for single DTV.
         """
