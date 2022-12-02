@@ -34,11 +34,9 @@ import matplotlib.ticker as tick
 import numpy as np
 import os
 import sys, logging
-from PySide2.QtWidgets import QDockWidget, QMenuBar, QAction
-from PySide2.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
-                            QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
-                            QSlider, QPushButton, QHBoxLayout, QLabel, QMessageBox
-from PySide2 import QtGui
+from PySide2.QtWidgets import QDockWidget, QMenuBar, QAction, QApplication, QMainWindow, QTreeWidget, \
+    QTreeWidgetItem, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout,  \
+    QLabel, QMessageBox, QStatusBar, QCheckBox
 from PySide2 import QtCore
 
 # Local python modules
@@ -447,7 +445,7 @@ class PlotFrame(QMainWindow):
             return
 
         # Set main widget
-        self.mainWidget = QtGui.QWidget(self)
+        self.mainWidget = QWidget(self)
 
         self.dataTimes = [round(0.5*(self.timeEquiIDS[0]+self.timeEquiIDS[-1]), 1)]
         self.dataTimes_old = self.dataTimes
@@ -565,7 +563,7 @@ class PlotFrame(QMainWindow):
         self.axes[13] = self.fig.add_subplot(grid_subp[5, 2])
 
         # Set checkbox to enable/disable grid in plots
-        self.cb_grid = QtGui.QCheckBox('Grid', self.panel)
+        self.cb_grid = QCheckBox('Grid', self.panel)
         self.cb_grid.setChecked(False)
         self.cb_grid.setObjectName("GridCheckBox")
         self.cb_grid.setText("Enable Grid")
@@ -632,7 +630,7 @@ class PlotFrame(QMainWindow):
 
     def create_status_bar(self):
         # self.statusBar = self.CreateStatusBar()
-        self.statusBar = QtGui.QStatusBar()
+        self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
 
     def draw_figure(self):

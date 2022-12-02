@@ -133,8 +133,9 @@ class QVizDataAccessCodeGenerator:
                     self.printCode('if self.asynch:', 3)
 
                     self.printCode(
-                        'QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId))',
-                        4)
+                        'QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, '
+                        'idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId), '
+                        '1)', 4)
                     self.printCode("print ('waiting for view update...')" + '\n', 4)
                     self.printCode('else:', 3)
                     self.printCode(

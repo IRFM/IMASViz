@@ -129,7 +129,7 @@ class QVizGeneratedClassFactory:
     def removeParserIfTooOld(self, IDSDef_parser_path):
         import time
         from datetime import datetime
-        dt_obj = datetime.strptime('11.11.2022 00:00:00,00',
+        dt_obj = datetime.strptime('02.12.2022 00:00:00,00',
                                    '%d.%m.%Y %H:%M:%S,%f')
         millisec = dt_obj.timestamp() * 1000
         if os.path.exists(IDSDef_parser_path):

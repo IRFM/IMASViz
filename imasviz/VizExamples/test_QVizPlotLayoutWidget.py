@@ -123,4 +123,4 @@ for i in range(0, 1024):
 
 plotWidget.show()
 
-app.exec() # Keep the application running
+app.exec_() # Keep the application running

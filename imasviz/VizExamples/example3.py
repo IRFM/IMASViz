@@ -71,4 +71,4 @@ else:
     api.ShowDataTree(f)
 
     # Keep the application running
-    app.exec()
+    app.exec_()

@@ -67,8 +67,12 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.displayMenu1D = True
 
     def addVizTreeNode(self, node, preview=0):
+
         if preview != 1:
-            if node not in self.vizTreeNodesList:
+            paths = []
+            for node in self.vizTreeNodesList:
+                paths.append(node.getPath())
+            if not (node.getPath() in paths):
                 self.vizTreeNodesList.append(node)
         else:  # for the preview widget, we replace the item in the list if it exists already
             if len(self.vizTreeNodesList) == 0:

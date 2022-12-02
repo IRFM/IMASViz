@@ -218,10 +218,10 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         scrollArea.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
         scrollArea.setWidgetResizable(True)
         scrollArea.setEnabled(True)
-        scrollContent = QtGui.QWidget(scrollArea)
+        scrollContent = QtWidgets.QWidget(scrollArea)
 
         # Set layout for scrollable area
-        scrollLayout = QtGui.QVBoxLayout(scrollContent)
+        scrollLayout = QtWidgets.QVBoxLayout(scrollContent)
         scrollLayout.addWidget(graphicsWindow)
         scrollLayout.setContentsMargins(0, 0, 0, 0)
         scrollContent.setLayout(scrollLayout)
@@ -487,13 +487,12 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     # TODO
     # def setPlotConfigAttribute
 
-
 class QVizStackedPlotViewScrollArea(QtWidgets.QScrollArea):
     """Custom QtGui.QScrollArea.
     """
 
     def __init__(self, parent):
-        QtGui.QScrollArea.__init__(self, parent=parent)
+        QtWidgets.QScrollArea.__init__(self, parent=parent)
 
     def wheelEvent(self, ev):
         """Disable mouse scroll event.

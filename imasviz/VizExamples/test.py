@@ -59,4 +59,4 @@ else:
 
     f.show()
     # Keep the application running
-    app.exec()
+    app.exec_()

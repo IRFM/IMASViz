@@ -496,7 +496,7 @@ class QVizDataTreeViewFrame(QMainWindow):
     def event(self, event):
         """ Listen to events.
         """
-        # print(event)
+        # print('event=', event)
         # print(event.type())
         if event.type() == GlobalIDs.RESULT_EVENT:
             self.onResult(event)

@@ -12,15 +12,12 @@
 #     Copyright(c) 2022- L. Fleury
 
 from PySide2.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QScrollArea, QLayout
-from PySide2.QtCore import Qt, QRect, Slot
-from imasviz.Viz_API import Viz_API
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView import QVizTablePlotView
 
 
 class QVizTab(QWidget):
 
     def __init__(self, parent=None, tab_page_name=None, filter_index=None, slices_aos_name=None):
-        super(QWidget, self).__init__(parent)
+        super(QVizTab, self).__init__(parent)
 
         self.layout = None
         self.scrollArea = None
@@ -54,5 +51,5 @@ class QVizTab(QWidget):
 
 class QVizScrollArea(QScrollArea):
     def __init__(self, parent):
-        super(QScrollArea, self).__init__(parent)
+        super(QVizScrollArea, self).__init__(parent)
         self.parent = parent

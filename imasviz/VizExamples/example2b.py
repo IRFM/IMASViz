@@ -103,4 +103,4 @@ else:
         f[1].show()
 
         # Keep the application running
-        app.exec()
+        app.exec_()

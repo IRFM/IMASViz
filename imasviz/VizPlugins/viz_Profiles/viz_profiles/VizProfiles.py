@@ -44,7 +44,7 @@ class VizProfiles(QMainWindow):
                                           (shot, run, user, database)
             ids            (obj)        : IDS object
         """
-        super(QMainWindow, self).__init__()
+        super(VizProfiles, self).__init__()
 
         # Set log parser
         self.addNewTabsButton = None
@@ -594,7 +594,7 @@ class VizProfiles(QMainWindow):
         self.statusBar_text_1.setStyleSheet('border: 0; color:  green;')
         self.setStatusBarTexts()
         VertLine = QFrame(self)
-        VertLine.setFrameShape(VertLine.VLine | VertLine.Sunken)
+        # VertLine.setFrameShape(VertLine.VLine | VertLine.Sunken)
         self.statusBar().addPermanentWidget(VertLine)
         self.statusBar().addPermanentWidget(self.statusBar_text_1)
         self.statusBar().show()

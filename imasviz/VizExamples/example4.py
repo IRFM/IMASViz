@@ -94,4 +94,4 @@ else:
         # Show the DTV window
         # f.show()
         # Keep the application running
-        app.exec()
+        app.exec_()

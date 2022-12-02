@@ -11,7 +11,6 @@
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
 
-import pyqtgraph as pg
 import numpy as np
 import logging
 from PySide2.QtCore import Qt, QMetaObject, QRect
@@ -24,6 +23,8 @@ from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
+
+import pyqtgraph as pg
 
 
 class QVizPlotWidget(QWidget):
@@ -85,7 +86,7 @@ class QVizPlotWidget(QWidget):
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='',
              xlabel='', ylabel='',
-             pen=pg.mkPen('b', width=3, style=Qt.SolidLine), update=1, preview=0):
+             pen=None, update=1, preview=0):
         """Add plot.
 
         Arguments:
@@ -101,6 +102,9 @@ class QVizPlotWidget(QWidget):
         """
         # Set pen (line design). Color and style are chosen depending on the
         # number of already present plots
+
+        if pen is None:
+            pen=pg.mkPen('b', width=3, style=Qt.SolidLine)
 
         if self.RGBlist is not None:
             # Get number of already present plots
@@ -229,8 +233,7 @@ class QVizPlotWidget(QWidget):
 
         # Set plot widget (use IMASViz custom plot context menu)
         self.viewBox = QVizCustomPlotContextMenu(qWidgetParent=self)
-        self.pgPlotWidget = pg.PlotWidget(self,
-                                          viewBox=self.viewBox)
+        self.pgPlotWidget = pg.PlotWidget(self, viewBox=self.viewBox)
         self.pgPlotWidget.setObjectName("plotWidget")
 
         # Set checkbox for toggling mouse
