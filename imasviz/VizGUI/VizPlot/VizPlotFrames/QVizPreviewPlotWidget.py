@@ -40,16 +40,16 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
         self.addTimeSlider = False
         self.addCoordinateSlider = False
 
-        self.plotStrategy = "DEFAULT"
+        self.plotAxis = "DEFAULT"
 
     def getType(self):
         return PlotTypes.PREVIEW_PLOT
 
-    def setStrategy(self, strategy):
-        self.plotStrategy = strategy
+    def setPlotAxis(self, plotAxis):
+        self.plotAxis = plotAxis
 
-    def getStrategy(self):
-        return self.plotStrategy
+    def getPlotAxis(self):
+        return self.plotAxis
 
     def plot2D(self, data):
         self.pg2dPlotWidget.plot(data)
@@ -77,14 +77,14 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
             
         self.pgPlotWidget.getViewBox().clearPlotDataItemsMap(node=None)
         try:
-           if vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+           if vizTreeNode.hasClosedOutline(self.dataTreeView) and self.getPlotAxis() == 'COORDINATE1':
                     x = np.append(x, [x[0]])
                     y = np.append(y, [y[0]])
         except:
             print('closed attribute not found')
         # Access the UI elements through the `ui` attribute
         # Adding plot
-        #Setting range manually (see IMAS-3658)
+        # Setting range manually (see IMAS-3658)
         self.pgPlotWidget.getPlotItem().setRange(xRange=(min(x), max(x)), yRange=(min(y), max(y)))
 
         plotDataItem = self.pgPlotWidget.plot(x, y, title='', pen=pen, name=label)

@@ -371,9 +371,10 @@ class Viz_API:
     #         print("No frame found with key: " + str(figureKey))
 
     def PlotSelectedSignals(self, dataTreeFrame, figureKey=None, update=0,
-                            all_DTV=False, strategy="TIME"):
+                            all_DTV=False, plotAxis="TIME"):
         """Plots the current selected set of signals on a figure.
 
+        :param plotAxis:
         :param dataTreeFrame: A QVizDataTreeViewFrame object
         :param plotWidget: A plot widget
         :param figureKey: A figure key. If None, a new figure is created.
@@ -389,30 +390,30 @@ class Viz_API:
                                 figureKey=figureKey,
                                 update=update,
                                 all_DTV=all_DTV,
-                                strategy=strategy).execute()
+                                plotAxis=plotAxis).execute()
 
     def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
                                                 all_DTV=False,
-                                                strategy='TIME'):
+                                                plotAxis='TIME'):
         """Plots the current selected set of signals of this shot view on a
            new table plot.
 
-        :param strategy:
+        :param plotAxis:
         :param dataTreeFrame: A QVizDataTreeViewFrame object
         :param all_DTV:       When True, all current selected set of signals
                               on all shot views are plotted
         """
         from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
         QVizSignalHandling(dataTreeFrame.dataTreeView). \
-            onPlotToTablePlotView(all_DTV, strategy=strategy)
+            onPlotToTablePlotView(all_DTV, plotAxis=plotAxis)
 
     # Plot the set of signals selected by the user
     def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath,
-                                        all_DTV=False, strategy='TIME'):
+                                        all_DTV=False, plotAxis='TIME'):
         """Selects a set of signals using the selection file and plots of this
         shot view on a new table plot.
 
-        :param strategy:
+        :param plotAxis:
         :param dataTreeFrame:  A QVizDataTreeViewFrame object
         :param configFilePath: The path to a data selection file
         :param all_DTV: When True, all current selected set of signals on all
@@ -422,7 +423,7 @@ class Viz_API:
         QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
             all_DTV=all_DTV,
             configFile=configFilePath,
-            strategy=strategy)
+            plotAxis=plotAxis)
 
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0,
                             threadingEvent=None):
@@ -560,7 +561,7 @@ class Viz_API:
         else:
             return self.GetDataSource(dataTreeFrame).data_entries[occurrence]
 
-    def CreatePlotWidget(self, dataTreeView, strategy="DEFAULT"):
+    def CreatePlotWidget(self, dataTreeView, plotAxis="DEFAULT"):
 
         from imasviz.VizGUI.VizPlot import QVizPlotWidget
 
@@ -569,10 +570,10 @@ class Viz_API:
         addTimeSlider = False
         addCoordinateSlider = False
         # print('Creation of a plot widget')
-        if strategy == "COORDINATE1":
+        if plotAxis == "COORDINATE1":
             addTimeSlider = True
             addCoordinateSlider = False
-        elif strategy == "TIME":
+        elif plotAxis == "TIME":
             addTimeSlider = False
             addCoordinateSlider = True
 
@@ -581,16 +582,16 @@ class Viz_API:
                                     dataTreeView=dataTreeView,
                                     addTimeSlider=addTimeSlider,
                                     addCoordinateSlider=addCoordinateSlider)
-        plotWidget.setStrategy(strategy)
+        plotWidget.setPlotAxis(plotAxis)
         self.figureframes[figureKey] = plotWidget
         return figureKey, plotWidget
 
-    def GetPlotWidget(self, dataTreeView, figureKey=0, strategy="DEFAULT"):
+    def GetPlotWidget(self, dataTreeView, figureKey=0, plotAxis="DEFAULT"):
         if figureKey in self.figureframes:
             plotWidget = self.figureframes[figureKey]
         else:
             figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=dataTreeView,
-                                                          strategy=strategy)
+                                                          plotAxis=plotAxis)
         return figureKey, plotWidget
 
     def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
@@ -665,14 +666,16 @@ class Viz_API:
                     figureKey, plotWidget = self.GetPlotWidget(dataTreeView=vizTreeNode.dataTreeView,
                                                                figureKey=figureKey)
                     # Following check on coordinates is performed only if the current plot axis is not the time axis
-                    if plotWidget.getStrategy() != 'TIME':
+                    if plotWidget.getPlotAxis() != 'TIME':
                         if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
                             return False
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
+                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and \
+                        vizTreeNode.getUnits() != si.getUnits():
                     return False
         elif vizTreeNode.is0DAndDynamic():
             for si in selectedNodeList:
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
+                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and \
+                        vizTreeNode.getUnits() != si.getUnits():
                     return False
         return True
 
@@ -702,7 +705,7 @@ class Viz_API:
                                           index=index)
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                        figureKey=None,
-                                                       strategy='TIME')
+                                                       plotAxis='TIME')
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
@@ -724,7 +727,7 @@ class Viz_API:
                 treeNode = dataTreeView.selectedItem
             figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
                                                        figureKey=None,
-                                                       strategy='TIME')  # None will force a new Figure
+                                                       plotAxis='TIME')  # None will force a new Figure
             self.addPlotWidgetToMDI(plotWidget)
             p = QVizPlotSignal(dataTreeView=dataTreeView,
                                vizTreeNode=treeNode,
@@ -774,7 +777,7 @@ class Viz_API:
             currentFigureKey, plotWidget = \
                 self.GetPlotWidget(dataTreeView=dataTreeView,
                                    figureKey=currentFigureKey,
-                                   strategy='TIME')
+                                   plotAxis='TIME')
 
             # Add plot window to subwindow and to MDI only if the plotWidget
             # with the given figurekey does not exist yet
@@ -813,7 +816,7 @@ class Viz_API:
             currentFigureKey, plotWidget = \
                 self.GetPlotWidget(dataTreeView=dataTreeView,
                                    figureKey=currentFigureKey,
-                                   strategy='COORDINATE1')
+                                   plotAxis='COORDINATE1')
             # Add plot window to subwindow and to MDI only if the plotWidget
             # with the given figurekey does not exist yet
             if currentFigureKey not in self.figureframes:
@@ -866,16 +869,16 @@ class Viz_API:
 
         return idssByNames
 
-    def getAll_0D_1D_Nodes(self, node, errorBars=False, str_filter=None, strategy=None):
-        children_id, children = self.getChildren_(node, set(), [], str_filter, errorBars, strategy)
+    def getAll_0D_1D_Nodes(self, node, errorBars=False, str_filter=None, plotAxis=None):
+        children_id, children = self.getChildren_(node, set(), [], str_filter, errorBars, plotAxis)
         children.sort(key=getNodePath)
         return children_id, children
 
-    def getChildren_(self, item, children_id, children, str_filter, errorBars, strategy):
-        criteria = strategy == 'TIME'
+    def getChildren_(self, item, children_id, children, str_filter, errorBars, plotAxis):
+        criteria = plotAxis == 'TIME'
         for row in range(item.childCount()):
             child_item = item.child(row)
-            # print("--------------> checking :", child_item.getPath(), " strategy=", strategy)
+            # print("--------------> checking :", child_item.getPath(), " plotAxis=", plotAxis)
             if not child_item.isStructure() and not child_item.isArrayOfStructure() and \
                     child_item.isDynamicData() and (child_item.is1D() or criteria * child_item.is0D()) and \
                     child_item.hasAvailableData():
@@ -889,7 +892,7 @@ class Viz_API:
                             children.append(child_item)
             elif child_item.isIDSRoot() or child_item.isStructure() or child_item.isArrayOfStructure():
                 children_id, children = self.getChildren_(child_item, children_id,
-                                                          children, str_filter, errorBars, strategy)
+                                                          children, str_filter, errorBars, plotAxis)
         return children_id, children
 
     def find_nearest(self, array, value):
@@ -904,7 +907,7 @@ class Viz_API:
             try:
                 coordinate1_index = 0
                 closest_value = 0
-                if node.is1D() and plotWidget.plotStrategy == 'TIME' and profile_center:
+                if node.is1D() and plotWidget.plotAxis == 'TIME' and profile_center:
                     coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
                     # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
                     # closest_value, coordinate1_index = self.find_nearest(coordinate1_values,
@@ -930,7 +933,7 @@ class Viz_API:
                 node = s[0]
                 coordinate1_index = 0
                 closest_value = 0
-                if node.is1D() and plotWidget.plotStrategy == 'TIME' and profile_center:
+                if node.is1D() and plotWidget.plotAxis == 'TIME' and profile_center:
                     coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
                     # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))
                     coordinate1_index = int(coordinate1_values.size / 2)

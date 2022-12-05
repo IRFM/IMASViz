@@ -117,9 +117,9 @@ class QVizTreeNode(QTreeWidgetItem):
         if plotWidget is None:
             return self.hasTimeAxis()
 
-        if plotWidget.getStrategy() == "TIME":
+        if plotWidget.getPlotAxis() == "TIME":
             return self.hasTimeAxis()
-        elif plotWidget.getStrategy() == "DEFAULT" or plotWidget.getStrategy() == "COORDINATE1":
+        elif plotWidget.getPlotAxis() == "DEFAULT" or plotWidget.getPlotAxis() == "COORDINATE1":
             if self.is0DAndDynamic():
                 return True
             elif self.is1DAndDynamic():
@@ -606,11 +606,11 @@ class QVizTreeNode(QTreeWidgetItem):
             if plotWidget is not None and plotWidget.addCoordinateSlider:
                 coordinate_index = plotWidget.sliderGroup.slider.value()
 
-        strategy = None
+        plotAxis = None
         if plotWidget is not None:
-            strategy = plotWidget.getStrategy()
+            plotAxis = plotWidget.getPlotAxis()
 
-        if self.is0DAndDynamic() or (self.is1DAndDynamic() and (strategy is not None and strategy == 'TIME')):
+        if self.is0DAndDynamic() or (self.is1DAndDynamic() and (plotAxis is not None and plotAxis == 'TIME')):
             label = None
             xlabel = 'time'
             label = self.setLabelForFigure(dataTreeView.dataSource)
@@ -709,18 +709,18 @@ class QVizTreeNode(QTreeWidgetItem):
 
         return quantityName, label, xlabel
 
-    def getStrategyForDefaultPlotting(self):
-        strategy = "DEFAULT"
+    def getPlotAxisForDefaultPlotting(self):
+        plotAxis = "DEFAULT"
         if self.embedded_in_time_dependent_aos() and \
                 self.is0DAndDynamic():
-            strategy = "TIME"
+            plotAxis = "TIME"
         elif self.is1DAndDynamic() and not \
                 self.embedded_in_time_dependent_aos() and \
                 self.isCoordinateTimeDependent(coordinateNumber=1):
-            strategy = "TIME"
+            plotAxis = "TIME"
         else:
-            strategy = "COORDINATE1"
-        return strategy
+            plotAxis = "COORDINATE1"
+        return plotAxis
 
     def get_data_error_lower(self, dataItem):
         data_error_lower = None

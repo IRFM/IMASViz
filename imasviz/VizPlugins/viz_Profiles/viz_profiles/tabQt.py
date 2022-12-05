@@ -41,8 +41,8 @@ class QVizTab(QWidget):
         scrollArea.setWidget(container)
         self.tab_index = tabWidget.insertTab(index, scrollArea, self.tab_page_name)
 
-    def buildPlots(self, multiPlots, signals, plotWidget, strategy):
-        multiPlots.plot1D(signals, plotWidget, strategy)
+    def buildPlots(self, multiPlots, signals, plotWidget, plotAxis):
+        multiPlots.plot1D(signals, plotWidget, plotAxis)
         multiPlots.endOfPlotsProcessing()
         multiPlots.modifySize(len(signals))
         self.layout.addWidget(multiPlots)

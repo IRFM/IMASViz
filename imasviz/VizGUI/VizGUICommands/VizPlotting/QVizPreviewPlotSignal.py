@@ -75,7 +75,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
                 if len(t[0]) !=len(v[0]):
                     raise ValueError("Data can not be previewed, x and y shapes are different.")
 
-                self.getPlotWidget().setStrategy(self.treeNode.getStrategyForDefaultPlotting())
+                self.getPlotWidget().setPlotAxis(self.treeNode.getPlotAxisForDefaultPlotting())
                 self.plot1DSignal(shotNumber=self.dataTreeView.shotNumber,
                                   t=t, v=v, title=self.title,
                                   label=self.label, xlabel=self.xlabel)

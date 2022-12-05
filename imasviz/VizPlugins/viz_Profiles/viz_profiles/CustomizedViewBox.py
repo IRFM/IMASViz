@@ -76,7 +76,7 @@ class CustomizedViewBox(pg.ViewBox):
         self.errorBarsStep = 0
         self.confidenceBands = 0
 
-        self.strategy = None
+        self.plotAxis = None
 
     def addVizTreeNode(self, node, preview=0):
         if preview != 1:
@@ -161,7 +161,7 @@ class CustomizedViewBox(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionShowHideConfidenceBands)
 
-        if self.strategy == 'TIME':
+        if self.plotAxis == 'TIME':
             self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
             self.actionPlotToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
             # - Add to main menu
@@ -175,7 +175,7 @@ class CustomizedViewBox(pg.ViewBox):
                 # - Add to main menu
                 self.menu.addAction(self.actionPlotVsTimeToNewFigure)
 
-        elif self.strategy == 'COORDINATE1':
+        elif self.plotAxis == 'COORDINATE1':
             self.actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
             self.actionPlotToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
             # - Add to main menu
@@ -186,7 +186,7 @@ class CustomizedViewBox(pg.ViewBox):
             # - Add to main menu
             self.menu.addAction(self.actionPlotVsTimeToNewFigure)
         else:
-            raise ValueError("Unknow plot strategy")
+            raise ValueError("Unknow plot Axis")
 
     def buildContextMenu(self):
         node = self.vizTreeNodesList[0]

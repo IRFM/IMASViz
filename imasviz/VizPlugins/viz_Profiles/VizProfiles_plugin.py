@@ -58,13 +58,13 @@ class VizProfiles_plugin(VizPlugin):
 
             if pluginEntry == 0:  # user has selected the first entry, so we call the first feature provided by the
                 # plugin
-                strategy = 'COORDINATE1'
+                plotAxis = 'COORDINATE1'
             elif pluginEntry == 1:
-                strategy = 'TIME'
+                plotAxis = 'TIME'
             elif pluginEntry == 2:
-                strategy = 'COORDINATE1'
+                plotAxis = 'COORDINATE1'
             elif pluginEntry == 3:
-                strategy = 'TIME'
+                plotAxis = 'TIME'
 
             requests_list = []
 
@@ -87,7 +87,7 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/rotation', 'profiles_1d/phi_potential', 'profiles_1d/magnetic_shear']
 
                 if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
-                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
 
             elif selected_ids == 'edge_profiles':
@@ -108,7 +108,7 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/q', 'profiles_1d/magnetic_shear', 'profiles_1d/phi_potential']
 
                 if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
-                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
 
             elif selected_ids == 'equilibrium':
@@ -121,7 +121,7 @@ class VizProfiles_plugin(VizPlugin):
                              'time_slice/convergence']
 
                 if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
-                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, strategy)
+                    request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
 
             elif selected_ids == 'core_sources':
@@ -141,7 +141,7 @@ class VizProfiles_plugin(VizPlugin):
                     if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
                                        dynamic_aos_name=slices_aos_name):
                         request = Request(selected_ids, tab_names, list_of_filters,
-                                          slices_aos_name, strategy, source_index)
+                                          slices_aos_name, plotAxis, source_index)
                         requests_list.append(request)
 
             elif selected_ids == 'core_transport':
@@ -164,12 +164,12 @@ class VizProfiles_plugin(VizPlugin):
                     if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
                                        dynamic_aos_name=slices_aos_name):
                         request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name,
-                                          strategy, model_index)
+                                          plotAxis, model_index)
                         requests_list.append(request)
 
             if len(requests_list) > 0:
                 self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.data_entry,
-                                                             self.dataTreeView, requests_list, selected_ids, strategy)
+                                                             self.dataTreeView, requests_list, selected_ids, plotAxis)
             else:
                 message = "No profiles found for " + selected_ids + " IDS."
                 logging.warning(message)

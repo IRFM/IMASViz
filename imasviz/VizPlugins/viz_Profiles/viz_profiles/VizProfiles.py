@@ -39,7 +39,7 @@ class VizProfiles(QMainWindow):
     updateProgressBar = Signal()
 
     def __init__(self, viz_api, IDS_parameters, data_entry,
-                 dataTreeView, requests_list, ids_name, strategy):
+                 dataTreeView, requests_list, ids_name, plotAxis):
         """
         Arguments:
             IDS_parameters (Dictionary) : Dictionary containing IDS parameters
@@ -71,12 +71,12 @@ class VizProfiles(QMainWindow):
             self.app = QApplication([])
 
         title = "'" + ids_name + "'" + " IDS (0D/1D data visualization"
-        if strategy == 'COORDINATE1':
+        if plotAxis == 'COORDINATE1':
             title += " along coordinate1 axis)"
-        elif strategy == 'TIME':
+        elif plotAxis == 'TIME':
             title += " along time axis)"
         else:
-            raise ValueError("Unexpected strategy")
+            raise ValueError("Unexpected plot Axis")
 
         figureKey = viz_api.GetNextKeyForProfilesPlotView()
 
@@ -99,7 +99,7 @@ class VizProfiles(QMainWindow):
         self.pb.show()
 
         # Set user interface of the main window
-        self.strategy = strategy
+        self.plotAxis = plotAxis
         self.ids_related = ids_name
         self.buildUI_in_separate_thread(requests_list)
 
@@ -147,7 +147,7 @@ class VizProfiles(QMainWindow):
                 self.total_tabs[key].append(0)
                 self.signals_last_index[key].append(0)
 
-        w = GlobalPlotWidget(plotStrategy=self.strategy)
+        w = GlobalPlotWidget(plotAxis=self.plotAxis)
         for key in self.worker.slices_aos_names:
             tab_names_per_key = self.worker.tab_names_map[key]
             results_per_key = self.worker.results_map[key]
@@ -184,7 +184,7 @@ class VizProfiles(QMainWindow):
                     tab.buildPlots(multiPlots=multiPlots,
                                    signals=plottable_signals[start_index:last_index],
                                    plotWidget=w,
-                                   strategy=self.strategy)
+                                   plotAxis=self.plotAxis)
 
     def disableOrEnabledAddNewTabsIfRequired(self):
         if self.addNewTabsButton is None or self.askForAddingNewTabsButton is None:
@@ -215,7 +215,7 @@ class VizProfiles(QMainWindow):
 
     def addNewTab(self):
         nb_tabs_count = 1
-        w = GlobalPlotWidget(plotStrategy=self.strategy)
+        w = GlobalPlotWidget(plotAxis=self.plotAxis)
         key = self.getCurrentTab().slices_aos_name
         results = self.worker.results_map[key]
         tab_names = self.worker.tab_names_map[key]
@@ -251,7 +251,7 @@ class VizProfiles(QMainWindow):
             tab.buildPlots(multiPlots=multiPlots,
                            signals=plottable_signals[start_index:last_index],
                            plotWidget=w,
-                           strategy=self.strategy)
+                           plotAxis=self.plotAxis)
 
         self.disableOrEnabledAddNewTabsIfRequired()
 
@@ -265,7 +265,7 @@ class VizProfiles(QMainWindow):
         # Create a QThread object
         self.thread = QThread()
         # Create a worker object
-        self.worker = Worker(requests_list, self.imas_viz_api, self.dataTreeView, self.strategy, self.ids_related)
+        self.worker = Worker(requests_list, self.imas_viz_api, self.dataTreeView, self.plotAxis, self.ids_related)
         # Move worker to the thread
         self.worker.moveToThread(self.thread)
         # Connect signals and slots
@@ -290,7 +290,7 @@ class VizProfiles(QMainWindow):
         # Position widgets
         self.mainWidget.layout().addWidget(self.tabWidget)
 
-        if self.strategy == 'COORDINATE1':
+        if self.plotAxis == 'COORDINATE1':
             # Set time slider
             self.label_slider_tmin = QLabel("t<sub>min</sub>", parent=self)
             self.label_slider_tmax = QLabel("t<sub>max</sub>", parent=self)
@@ -464,7 +464,7 @@ class VizProfiles(QMainWindow):
         """Update plot of current tab.
         """
         qvizTab = self.getCurrentTab()
-        w = GlobalPlotWidget(plotStrategy=self.strategy)
+        w = GlobalPlotWidget(plotAxis=self.plotAxis)
         updated_signals = self.imas_viz_api.updateAllPlottable_0D_1D_Signals(qvizTab.signals, self.time_index,
                                                                              plotWidget=w)
         self.getTablePlotView().updatePlot(updated_signals)
@@ -612,25 +612,25 @@ class VizProfiles(QMainWindow):
 
 class GlobalPlotWidget():
 
-    def __init__(self, plotStrategy):
+    def __init__(self, plotAxis):
         super(GlobalPlotWidget, self).__init__()
         self.addTimeSlider = True
         self.addCoordinateSlider = False
-        self.plotStrategy = plotStrategy
+        self.plotAxis = plotAxis
         self.sliderGroup = None
 
-    def getStrategy(self):
-        return self.plotStrategy
+    def getPlotAxis(self):
+        return self.plotAxis
 
 
 class Request():
-    def __init__(self, ids_related, tab_names, list_of_filters, slices_aos_name, strategy, static_aos_index=-1):
+    def __init__(self, ids_related, tab_names, list_of_filters, slices_aos_name, plotAxis, static_aos_index=-1):
         super(Request, self).__init__()
         self.ids_related = ids_related
         self.list_of_filters = list_of_filters
         self.tab_names = tab_names
         self.slices_aos_name = slices_aos_name
-        self.strategy = strategy
+        self.plotAxis = plotAxis
         self.static_aos_index = static_aos_index
 
 
@@ -642,7 +642,7 @@ class Worker(QObject):
     maxProgressBar = Signal(int)
     titleProgressBar = Signal()
 
-    def __init__(self, requests_list, imas_viz_api, dataTreeView, strategy, ids_name):
+    def __init__(self, requests_list, imas_viz_api, dataTreeView, plotAxis, ids_name):
         super().__init__()
         self.results_map = {}
         self.tab_names_map = {}
@@ -652,7 +652,7 @@ class Worker(QObject):
         self.imas_viz_api = imas_viz_api
         self.dataTreeView = dataTreeView
         self.ids_name = ids_name
-        self.strategy = strategy
+        self.plotAxis = plotAxis
 
     def run(self):
         """Long-running task."""
@@ -674,8 +674,8 @@ class Worker(QObject):
                     self.dataTreeView.IDSRoots[self.ids_name],
                     errorBars=False,
                     str_filter=str_filter,
-                    strategy=self.strategy)
-                w = GlobalPlotWidget(plotStrategy=self.strategy)
+                    plotAxis=self.plotAxis)
+                w = GlobalPlotWidget(plotAxis=self.plotAxis)
                 plottable_signals = []
                 if len(dtv_nodes) != 0:
                     plottable_signals = self.imas_viz_api.getAllPlottable_0D_1D_Signals(dtv_nodes, self.dataTreeView,

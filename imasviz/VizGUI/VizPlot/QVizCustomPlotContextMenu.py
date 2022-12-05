@@ -164,9 +164,9 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             # - Add to main menu
             self.menu.addAction(self.actionShowHideConfidenceBands)
 
-            strategy = self.qWidgetParent.getStrategy()
+            plotAxis = self.qWidgetParent.getPlotAxis()
 
-            if strategy == 'TIME':
+            if plotAxis == 'TIME':
                 actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
                 actionPlotToNewFigure.triggered.connect(self.plotVsTimeToNewFigure)
                 # - Add to main menu
@@ -179,7 +179,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                     # - Add to main menu
                     self.menu.addAction(actionPlotVsTimeToNewFigure)
 
-            elif strategy == 'COORDINATE1':
+            elif plotAxis == 'COORDINATE1':
                 actionPlotToNewFigure = QAction("Plot this in a new separate figure", self.menu)
                 actionPlotToNewFigure.triggered.connect(self.plotVsCoordinate1ToNewFigure)
                 # - Add to main menu

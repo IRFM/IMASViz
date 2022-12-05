@@ -64,7 +64,7 @@ class QVizPlotWidget(QWidget):
         # Get list of available global colors (RGB)
         self.RGBlist = getRGBColorList()
 
-        self.plotStrategy = None
+        self.plotAxis = None
 
     def getType(self):
         return PlotTypes.SIMPLE_PLOT
@@ -79,11 +79,11 @@ class QVizPlotWidget(QWidget):
         else:
             return None
 
-    def setStrategy(self, strategy):
-        self.plotStrategy = strategy
+    def setPlotAxis(self, plotAxis):
+        self.plotAxis = plotAxis
 
-    def getStrategy(self):
-        return self.plotStrategy
+    def getPlotAxis(self):
+        return self.plotAxis
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='',
              xlabel='', ylabel='',
@@ -133,7 +133,7 @@ class QVizPlotWidget(QWidget):
         # - Add plot
         try:
             if vizTreeNode is not None and vizTreeNode.hasClosedOutline(
-                    self.dataTreeView) and self.getStrategy() == 'COORDINATE1':
+                    self.dataTreeView) and self.getPlotAxis() == 'COORDINATE1':
                 x = np.append(x, [x[0]])
                 y = np.append(y, [y[0]])
         except:

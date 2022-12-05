@@ -291,10 +291,10 @@ class Worker(QObject):
         self.call.emit()
         self.finished.emit()
 
-    def check_available_data_nodes(self, api, root_node, key, profiles_count, strategy, str_filter):
+    def check_available_data_nodes(self, api, root_node, key, profiles_count, plotAxis, str_filter):
         profiles_count[key] = 0
         children_id, children = self.api.getAll_0D_1D_Nodes(root_node,
-                                                            strategy=strategy,
+                                                            plotAxis=plotAxis,
                                                             str_filter=str_filter)
         profiles_count[key] = len(children)
 
@@ -308,19 +308,19 @@ class Worker(QObject):
             #     root_node = self.f.dataTreeView.IDSRoots['core_sources']
             #     self.check_available_data_nodes(self.api, root_node,
             #                                     'core_sources/global_quantities/COORDINATE1',
-            #                                     self.profiles_count, strategy='COORDINATE1',
+            #                                     self.profiles_count, plotAxis='COORDINATE1',
             #                                     str_filter="global_quantities")
             #     self.check_available_data_nodes(self.api, root_node,
             #                                     'core_sources/profiles_1d/COORDINATE1',
-            #                                     self.profiles_count, strategy='COORDINATE1',
+            #                                     self.profiles_count, plotAxis='COORDINATE1',
             #                                     str_filter="profiles_1d")
             #     self.check_available_data_nodes(self.api, root_node,
             #                                     'core_sources/global_quantities/TIME',
-            #                                     self.profiles_count, strategy='TIME',
+            #                                     self.profiles_count, plotAxis='TIME',
             #                                     str_filter="global_quantities")
             #     self.check_available_data_nodes(self.api, root_node,
             #                                     'core_sources/profiles_1d/TIME',
-            #                                     self.profiles_count, strategy='TIME',
+            #                                     self.profiles_count, plotAxis='TIME',
             #                                     str_filter="profiles_1d")
             self.profiles_count['core_sources'] = len(self.data_entry.partial_get('core_sources', 'source(:)'))
         except Exception as e:
@@ -333,11 +333,11 @@ class Worker(QObject):
             #     root_node = self.f.dataTreeView.IDSRoots['core_transport']
             #     self.check_available_data_nodes(self.api, root_node,
             #                                     'core_transport/profiles_1d/COORDINATE1',
-            #                                     self.profiles_count, strategy='COORDINATE1',
+            #                                     self.profiles_count, plotAxis='COORDINATE1',
             #                                     str_filter="profiles_1d")
             #     self.check_available_data_nodes(self.api, root_node,
             #                                     'core_transport/profiles_1d/TIME',
-            #                                     self.profiles_count, strategy='TIME',
+            #                                     self.profiles_count, plotAxis='TIME',
             #                                     str_filter="profiles_1d")
             self.profiles_count['core_transport'] = len(self.data_entry.partial_get('core_transport', 'model(:)'))
         except Exception:

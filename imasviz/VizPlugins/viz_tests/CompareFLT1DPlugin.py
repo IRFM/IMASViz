@@ -23,12 +23,12 @@ class CompareFLT1DPlugin(VizPlugin):
             dataSource = self.dataTreeView.dataSource
 
             logging.info('Plotting data from current node...')
-            figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView, strategy="DEFAULT")
+            figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView, plotAxis="DEFAULT")
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
-                           vizTreeNode=self.selectedTreeNode,
-                            plotWidget=plotWidget)
+                                vizTreeNode=self.selectedTreeNode,
+                                plotWidget=plotWidget)
 
-            #Plot data signal passing plotWidget which is a QWidget referencing a pg.PlotWidget(GraphicsView)
+            # Plot data signal passing plotWidget which is a QWidget referencing a pg.PlotWidget(GraphicsView)
             ps.execute(update=0)
 
             # Set data source retriever/factory
@@ -63,10 +63,9 @@ class CompareFLT1DPlugin(VizPlugin):
             #       work
             vizAPI.PlotSelectedSignals(f, figureKey=figureKey, update=1)
 
-        except :
+        except:
             traceback.print_exc()
             logging.error(traceback.format_exc())
-
 
     def getEntries(self):
         if self.selectedTreeNode.is1DAndDynamic():

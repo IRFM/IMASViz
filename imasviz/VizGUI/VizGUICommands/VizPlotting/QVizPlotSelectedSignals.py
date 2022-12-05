@@ -29,9 +29,9 @@ from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractComman
 
 class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
     def __init__(self, dataTreeView, figureKey=None, update=0,
-                 configFile=None, all_DTV=True, strategy="TIME"):
+                 configFile=None, all_DTV=True, plotAxis="TIME"):
         self.api = dataTreeView.imas_viz_api
-        figureKey, plotWidget = self.api.GetPlotWidget(dataTreeView, figureKey, strategy=strategy)
+        figureKey, plotWidget = self.api.GetPlotWidget(dataTreeView, figureKey, plotAxis=plotAxis)
         self.figureKey = figureKey
         self.update = update
         QVizAbstractCommand.__init__(self, dataTreeView, None)

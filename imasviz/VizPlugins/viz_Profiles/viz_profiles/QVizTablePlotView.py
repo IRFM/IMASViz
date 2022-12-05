@@ -75,7 +75,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.plotItems = []
         self.plotWidget = None
 
-    def plot1D(self, plottable_signals, plotWidget, strategy):
+    def plot1D(self, plottable_signals, plotWidget, plotAxis):
 
         n = 0
         self.plotWidget = plotWidget
@@ -115,14 +115,14 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                 continue
 
             currentPlotItem = self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,
-                                        ylabel=ylabel, node=signalNode, strategy=strategy)
+                                        ylabel=ylabel, node=signalNode, plotAxis=plotAxis)
 
             # Setting range manually (see IMAS-3658)
             try:
                currentPlotItem.setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
             except:
                pass
-            if signalNode.is1D() and strategy == 'TIME':
+            if signalNode.is1D() and plotAxis == 'TIME':
                 c1 = signalNode.evaluateCoordinateVsTime(coordinateNumber=1)
                 label = pg.LabelItem('coordinate1(' + c1 + ")=" + str(round(coordinate1_value, 2)),
                                      size="6pt",
@@ -172,7 +172,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             for i in range(self.ncols):
                 self.addViewBox(colspan=1)
 
-    def plot(self, n, x, y, label, xlabel, ylabel, node=None, strategy=None):
+    def plot(self, n, x, y, label, xlabel, ylabel, node=None, plotAxis=None):
         """Add new plot to TablePlotView pg.GraphicsWindow.
 
         Arguments:
@@ -183,14 +183,14 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             :param xlabel (str)      : Plot X-axis label.
             :param ylabel (str)      : Plot Y-axis label.
             :param node:
-            :param strategy:
+            :param plotAxis:
         """
         # Set pen
         pen = self.setPen()
         viewBox = CustomizedViewBox(qWidgetParent=self, imas_viz_api=self.imas_viz_api)
         viewBox.id = n
         viewBox.addVizTreeNode(node)
-        viewBox.strategy = strategy
+        viewBox.plotAxis = plotAxis
         title = label.replace("\n", "")
         title = self.imas_viz_api.modifyTitle(title, None, self.slices_aos_name)
 

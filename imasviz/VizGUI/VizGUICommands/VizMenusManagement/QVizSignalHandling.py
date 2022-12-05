@@ -330,7 +330,7 @@ class QVizSignalHandling(QObject):
             subMenu_figure_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                   'new'))
 
-            strategy = self.treeNode.getStrategyForDefaultPlotting()
+            plotAxis = self.treeNode.getPlotAxisForDefaultPlotting()
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
@@ -342,7 +342,7 @@ class QVizSignalHandling(QObject):
                                                 'This IMAS Database',
                                                 self)
                 action_figure_thisDTV.triggered.connect(
-                    partial(self.plotSelectedSignals, False, strategy=strategy))
+                    partial(self.plotSelectedSignals, False, plotAxis=plotAxis))
                 # Add to submenu
                 subMenu_figure_new.addAction(action_figure_thisDTV)
 
@@ -354,7 +354,7 @@ class QVizSignalHandling(QObject):
                                            self)
             if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
                 action_figure_allDTV.triggered.connect(
-                    partial(self.plotSelectedSignals, True, strategy=strategy))
+                    partial(self.plotSelectedSignals, True, plotAxis=plotAxis))
                 # Add to submenu
                 subMenu_figure_new.addAction(action_figure_allDTV)
 
@@ -398,11 +398,11 @@ class QVizSignalHandling(QObject):
             subMenu_TPV = menu.addMenu('TablePlotView')
             subMenu_TPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'TPV'))
 
-            subMenu_TPV_new = subMenu_TPV.addMenu('New (default strategy)')
+            subMenu_TPV_new = subMenu_TPV.addMenu('New (default axis)')
             subMenu_TPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                'new'))
 
-            subMenu_TPV_new2 = subMenu_TPV.addMenu("New ('TIME' strategy)")
+            subMenu_TPV_new2 = subMenu_TPV.addMenu("New ('TIME' axis)")
             subMenu_TPV_new2.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                 'new'))
 
@@ -413,19 +413,19 @@ class QVizSignalHandling(QObject):
                                          self)
             action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=False,
-                        configFile=None, strategy='TIME'))
+                        configFile=None, plotAxis='TIME'))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_thisDTV)
 
             # -----
             # Add menu item to plot selected signals to single
             # plot - All DTVs
-            #icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
+            # icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
             action_TPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
                                         self)
             action_TPV_allDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=True,
-                        configFile=None, strategy='TIME'))
+                        configFile=None, plotAxis='TIME'))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_allDTV)
 
@@ -435,7 +435,7 @@ class QVizSignalHandling(QObject):
                                           self)
             action_TPV_thisDTV2.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=False,
-                        configFile=None, strategy='TIME'))
+                        configFile=None, plotAxis='TIME'))
             # Add to submenu
             subMenu_TPV_new2.addAction(action_TPV_thisDTV2)
 
@@ -447,7 +447,7 @@ class QVizSignalHandling(QObject):
                                          self)
             action_TPV_allDTV2.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=True,
-                        configFile=None, strategy='TIME'))
+                        configFile=None, plotAxis='TIME'))
             # Add to submenu
             subMenu_TPV_new2.addAction(action_TPV_allDTV2)
 
@@ -456,11 +456,11 @@ class QVizSignalHandling(QObject):
             subMenu_SPV = menu.addMenu('StackedPlotView')
             subMenu_SPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'SPV'))
 
-            subMenu_SPV_new = subMenu_SPV.addMenu('New (default strategy)')
+            subMenu_SPV_new = subMenu_SPV.addMenu('New (default axis)')
             subMenu_SPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                'new'))
                                                                
-            subMenu_SPV_new2 = subMenu_SPV.addMenu("New ('TIME' strategy)")
+            subMenu_SPV_new2 = subMenu_SPV.addMenu("New ('TIME' axis)")
             subMenu_SPV_new2.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                'new'))
 
@@ -800,12 +800,13 @@ class QVizSignalHandling(QObject):
             label = None
             xlabel = None
 
-            strategy = self.treeNode.getStrategyForDefaultPlotting()
+            plotAxis = self.treeNode.getPlotAxisForDefaultPlotting()
 
             api = self.dataTreeView.imas_viz_api
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                      figureKey=None, #passing figureKey=None means we want a new plotWidget
-                                                      strategy=strategy)
+                                                      figureKey=None,  # passing figureKey=None means we want
+                                                      # a new plotWidget
+                                                      plotAxis=plotAxis)
             self.addPlotWidgetToMDI(plotWidget)
             # Get the signal data for plot widget
             p = QVizPlotSignal(plotWidget=plotWidget,
@@ -834,12 +835,14 @@ class QVizSignalHandling(QObject):
             logging.error(str(e))
 
     # @Slot(bool)
-    def plotSelectedSignals(self, all_DTV=True, strategy='TIME'):
+    def plotSelectedSignals(self, all_DTV=True, plotAxis='TIME'):
         """Plot selected signals from current or all DTV instances.
 
         Arguments:
             all_DTV (bool) : Boolean operator specifying if current or all DTVs
                              should be considered.
+                             :param all_DTV:
+                             :param plotAxis:
         """
         # Get label for the next figure (e.c. if 'Figure 2' already exists,
         # value 'Figure 3' will be returned)
@@ -852,26 +855,29 @@ class QVizSignalHandling(QObject):
             # passing figureKey=None means we want a new plotWidget
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=None,
-                                                      strategy=strategy)
+                                                      plotAxis=plotAxis)
             self.addPlotWidgetToMDI(plotWidget)
             # Plot the selected signals
             QVizPlotSelectedSignals(dataTreeView=self.dataTreeView,
                                     figureKey=figureKey,
                                     all_DTV=all_DTV,
-                                    strategy=strategy).execute()
+                                    plotAxis=plotAxis).execute()
 
         except ValueError as e:
             logging.error(str(e))
 
     @Slot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None,
-                              strategy=None):
+                              plotAxis=None):
         """Plot selected nodes from single/all opened DTVs to MultiPlot
         TablePlotView.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
                              current or all DTVs.
+                             :param all_DTV:
+                             :param configFile:
+                             :param plotAxis:
         """
         # Get next figure key/label
         try:
@@ -883,25 +889,27 @@ class QVizSignalHandling(QObject):
                                     update=0,
                                     configFile=configFile,
                                     all_DTV=False,
-                                    strategy=strategy)
+                                    plotAxis=plotAxis)
             else:
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
                                     figureKey=figureKey,
                                     update=0,
                                     configFile=configFile,
                                     all_DTV=True,
-                                    strategy=strategy)
+                                    plotAxis=plotAxis)
         except ValueError as e:
             logging.error(str(e))
 
     @Slot(bool)
-    def onPlotToStackedPlotView(self, all_DTV=False, strategy="TIME"):
+    def onPlotToStackedPlotView(self, all_DTV=False, plotAxis="TIME"):
         """Plot selected nodes from single/all opened DTVs to MultiPlot
         StackedPlotView.
 
         Arguments:
             all_DTV (bool) : Operator to read selected signals from the
                              current or all DTVs.
+                             :param all_DTV:
+                             :param plotAxis:
         """
         try:
             # Get next figure key/label
@@ -912,13 +920,13 @@ class QVizSignalHandling(QObject):
                                     figureKey=figureKey,
                                     update=0,
                                     all_DTV=False,
-                                    strategy=strategy)
+                                    plotAxis=plotAxis)
             else:
                 QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
                                     figureKey=figureKey,
                                     update=0,
                                     all_DTV=True,
-                                    strategy=strategy)
+                                    plotAxis=plotAxis)
         except ValueError as e:
             logging.error(str(e))
 
@@ -998,7 +1006,7 @@ class QVizSignalHandling(QObject):
                     figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                               figureKey=figureKey)
                     # Following check on coordinates is performed only if the current plot axis is not the time axis
-                    if plotWidget.getStrategy() != 'TIME':
+                    if plotWidget.getPlotAxis() != 'TIME':
                         if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
                             return False
                 if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():

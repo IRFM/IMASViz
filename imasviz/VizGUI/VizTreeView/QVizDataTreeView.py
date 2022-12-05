@@ -298,7 +298,8 @@ class QVizDataTreeView(QTreeWidget):
         if idsData is not None:
             self.IDSRoots[idsName].setOccurrence(occurrence)
             nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.data_entries)
-            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData, viewLoadingStrategy))
+            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData,
+                                                                        viewLoadingStrategy))
             cv.acquire()
             thread1.start()
             cv.wait()

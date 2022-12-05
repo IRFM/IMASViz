@@ -31,7 +31,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
     """
 
     def __init__(self, dataTreeView, figureKey, update=0,
-                 configFile=None, all_DTV=False, strategy="DEFAULT"):
+                 configFile=None, all_DTV=False, plotAxis="DEFAULT"):
         """
         Arguments:
             dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
@@ -95,7 +95,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         # Set multiPlot view (pg.GraphicWindow)
         self.multiPlotView = self.setMultiPlotView(mpType=multiPlot_type,
-                                                   strategy=strategy)
+                                                   plotAxis=plotAxis)
 
         # Embed GraphicsWindow inside scroll area
         scrollArea = self.setPlotViewAsScrollArea(self.multiPlotView)
@@ -149,18 +149,20 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
 
         return figureKey
 
-    def setMultiPlotView(self, mpType, strategy):
+    def setMultiPlotView(self, mpType, plotAxis):
         """Set multiPlotView (pg.GraphicsWindow).
 
         Arguments:
             multiPlot_type (str) : Type of the multi plot view.
+            :param mpType:
+            :param plotAxis:
         """
 
         # Set multi plot view of specified multi plot type
         if mpType == 'TablePlotView':
-            mpView = QVizTablePlotView(parent=self, strategy=strategy)
+            mpView = QVizTablePlotView(parent=self, plotAxis=plotAxis)
         elif mpType == 'StackedPlotView':
-            mpView = QVizStackedPlotView(parent=self, strategy=strategy)
+            mpView = QVizStackedPlotView(parent=self, plotAxis=plotAxis)
         else:
             logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
                           'provided!')

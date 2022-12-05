@@ -28,7 +28,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
     """TablePlotView pg.GraphicsWindow containing the plots in a table layout.
     """
 
-    def __init__(self, parent, ncols=5, strategy="DEFAULT"):
+    def __init__(self, parent, ncols=5, plotAxis="DEFAULT"):
         """
         Arguments:
             parent (QtWidgets.QMainWindow) : Parent of TablePlotView
@@ -50,7 +50,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         self.addTimeSlider = False
         self.addCoordinateSlider = False
 
-        self.plotStrategy = strategy
+        self.plotAxis = plotAxis
 
         # Get screen resolution (width and height)
         self.screenWidth, self.screenHeight = getScreenGeometry()
@@ -92,11 +92,11 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
     def getType(self):
         return PlotTypes.TABLE_PLOT
 
-    def setStrategy(self, strategy):
-        self.plotStrategy = strategy
+    def setPlotAxis(self, plotAxis):
+        self.plotAxis = plotAxis
 
-    def getStrategy(self):
-        return self.plotStrategy
+    def getPlotAxis(self):
+        return self.plotAxis
 
     def plot1DSelectedSignals(self, update=0, all_DTV=True):
         """Plot the set of 1D signals, selected by the user, as a function of

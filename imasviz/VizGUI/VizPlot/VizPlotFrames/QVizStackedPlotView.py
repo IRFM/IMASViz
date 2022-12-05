@@ -27,7 +27,7 @@ from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
 
 class QVizStackedPlotView(QWidget):
 
-    def __init__(self, parent: QMainWindow, strategy="TIME"):
+    def __init__(self, parent: QMainWindow, plotAxis="TIME"):
 
         super(QVizStackedPlotView, self).__init__(parent=parent)
 
@@ -47,7 +47,7 @@ class QVizStackedPlotView(QWidget):
         self.all_DTV = parent.getAllDTV()
 
         # Set graphicsWindow
-        self.graphicsWindow = StackedPlotWindow(self, strategy=strategy)
+        self.graphicsWindow = StackedPlotWindow(self, plotAxis=plotAxis)
         # Get a list of viewBoxes each plot has its own associated viewbox)
         self.viewBoxList = self.graphicsWindow.viewBoxList
         # Get a list of plots
@@ -140,7 +140,7 @@ class StackedPlotWindow(pg.GraphicsLayoutWidget):
     """View containing the plots in a stacked layout.
     """
 
-    def __init__(self, parent: QWidget, ncols: int=1, strategy=None):
+    def __init__(self, parent: QWidget, ncols: int=1, plotAxis=None):
         """
         Arguments:
             parent : Parent of StackedPlotWindow (QVizStackedPlotView).
@@ -165,7 +165,7 @@ class StackedPlotWindow(pg.GraphicsLayoutWidget):
         self.addTimeSlider = False
         self.addCoordinateSlider = False
 
-        self.plotStrategy = strategy
+        self.plotAxis = plotAxis
 
         # Set bottom plot margin to remove unwanted whitespace between plot
         # widgets
@@ -199,11 +199,11 @@ class StackedPlotWindow(pg.GraphicsLayoutWidget):
     def getType(self):
         return PlotTypes.STACKED_PLOT
 
-    def setStrategy(self, strategy):
-        self.plotStrategy = strategy
+    def setPlotAxis(self, plotAxis):
+        self.plotAxis = plotAxis
 
-    def getStrategy(self):
-        return self.plotStrategy
+    def getPlotAxis(self):
+        return self.plotAxis
 
     def plot1DSelectedSignals(self, update: int = 0, all_DTV: bool = True):
         """Plot the set of 1D signals, selected by the user, as a function of
