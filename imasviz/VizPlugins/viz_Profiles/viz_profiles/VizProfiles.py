@@ -17,13 +17,15 @@ from functools import partial
 
 # Third party imports
 import numpy as np
-from PyQt5.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
+from PySide6.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
-                             QAction, QFrame, QScrollArea, QProgressBar, QDesktopWidget, QLayout, QInputDialog,
+                             QFrame, QScrollArea, QProgressBar, QLayout, QInputDialog,
                              QSizePolicy)
-from PyQt5.QtCore import Qt, QSize, pyqtSignal, pyqtSlot, QThread, QObject
-from PyQt5.QtGui import QDoubleValidator
+from PySide6.QtGui import QAction
+from PySide6.QtGui import QScreen, QGuiApplication
+from PySide6.QtCore import Qt, QSize, Signal, Slot, QThread, QObject
+from PySide6.QtGui import QDoubleValidator
 
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
@@ -34,7 +36,7 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.tabQt import QVizTab
 
 
 class VizProfiles(QMainWindow):
-    updateProgressBar = pyqtSignal()
+    updateProgressBar = Signal()
 
     def __init__(self, viz_api, IDS_parameters, data_entry,
                  dataTreeView, requests_list, ids_name, strategy):
@@ -44,7 +46,7 @@ class VizProfiles(QMainWindow):
                                           (shot, run, user, database)
             ids            (obj)        : IDS object
         """
-        super(QMainWindow, self).__init__()
+        super(VizProfiles, self).__init__()
 
         # Set log parser
         self.addNewTabsButton = None
@@ -374,26 +376,26 @@ class VizProfiles(QMainWindow):
         # self.setStatusBarText_1(text="OK")
 
         # Set initial window size
-        dh = self.app.desktop().availableGeometry().height()
-        dw = self.app.desktop().availableGeometry().width()
-        self.height = dh * 0.9
-        self.width = dw * 0.7
+        dw, dh = self.app.primaryScreen().size().toTuple()
+
+        height = dh * 0.9
+        width = dw * 0.7
+
+        self.resize(height, width)
+
         # self.resize(int(self.width), int(self.height))
         # Move window to the center of the screen
-        self.setFixedWidth(int(self.width))
-        # Note: for actually resizing the window the SizeHint is required.
-        #       fixed dimensions are set here so that they are properly
-        #       rezognized by the self.frameGeometry() command
-        self.setFixedHeight(int(self.height))
+        # self.setFixedWidth(400)
+        # self.setFixedHeight(600)
 
         qtRectangle = self.frameGeometry()
-        centerPoint = self.app.desktop().availableGeometry().center()
+        centerPoint = QScreen().availableGeometry().center()
+
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
 
         # On tab change update the tab-containing plots
-        self.tabWidget.currentChanged.connect(partial(
-            self.updatePlotOfCurrentTab))
+        self.tabWidget.currentChanged.connect(self.updatePlotOfCurrentTab)
 
         # self.spinBox_timeIndex.valueChanged.connect(self.onTimeIndexChanged)
 
@@ -517,7 +519,7 @@ class VizProfiles(QMainWindow):
         #    self.updatePlotOfCurrentTab, time_index=self.time_index))
         return spinBox_timeIndex
 
-    @pyqtSlot()
+    @Slot()
     def onSpinBoxChange(self, event=None):
         # Update global time_index value (auto spinbox value update)
         # print('onSpinBoxChange')
@@ -555,7 +557,7 @@ class VizProfiles(QMainWindow):
 
         return lineEdit_timeValue
 
-    @pyqtSlot()
+    @Slot()
     def onTimeValueLineEditEditingFinished(self, event=None):
         """ When finished editing the time value line edit (pressing enter etc.)
         find the closest value (and its array index -> time index) based on the
@@ -594,7 +596,7 @@ class VizProfiles(QMainWindow):
         self.statusBar_text_1.setStyleSheet('border: 0; color:  green;')
         self.setStatusBarTexts()
         VertLine = QFrame(self)
-        VertLine.setFrameShape(VertLine.VLine | VertLine.Sunken)
+        # VertLine.setFrameShape(VertLine.VLine | VertLine.Sunken)
         self.statusBar().addPermanentWidget(VertLine)
         self.statusBar().addPermanentWidget(self.statusBar_text_1)
         self.statusBar().show()
@@ -634,11 +636,11 @@ class Request():
 
 # worker class
 class Worker(QObject):
-    finished = pyqtSignal()
-    call = pyqtSignal()
-    progressBar = pyqtSignal(int)
-    maxProgressBar = pyqtSignal(int)
-    titleProgressBar = pyqtSignal()
+    finished = Signal()
+    call = Signal()
+    progressBar = Signal(int)
+    maxProgressBar = Signal(int)
+    titleProgressBar = Signal()
 
     def __init__(self, requests_list, imas_viz_api, dataTreeView, strategy, ids_name):
         super().__init__()
@@ -701,7 +703,7 @@ class ProgressBar(QWidget):
         self.pbar.setMaximum(100)
         self.pbar.setValue(0)
         qtRectangle = self.frameGeometry()
-        centerPoint = QDesktopWidget().availableGeometry().center()
+        centerPoint = QScreen().availableGeometry().center()
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
         # self.show()

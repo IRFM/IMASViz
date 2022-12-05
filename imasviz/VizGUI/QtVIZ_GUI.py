@@ -15,11 +15,11 @@ import os
 import sys, getopt
 import logging
 from functools import partial
-from PyQt5.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
+from PySide6.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
                              QPlainTextEdit, QGridLayout, QMdiArea, QTableView)
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 from pathlib import Path
 
 
@@ -29,7 +29,7 @@ sys.path.append((os.environ['VIZ_HOME']))
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
-                              QVizGlobalOperations, QVizLogger, UserInputs)
+                              QVizGlobalOperations, QVizLoggerSingleton, UserInputs)
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 
 
@@ -64,8 +64,9 @@ class GUIFrame(QTabWidget):
         #self.logWidget.resize(QSize(500, 300))
         self.logWidget.setReadOnly(True)
         logging.getLogger().setLevel(logging.INFO)
-        handler = QVizLogger.getHandler()
-        handler.new_record.connect(self.logWidget.appendHtml)
+        handler = QVizLoggerSingleton()
+        logging.getLogger().addHandler(handler)
+        handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
         layout = QVBoxLayout()
         layout.addWidget(self.logWidget)
         return layout
@@ -314,7 +315,9 @@ class QVizStartWindow(QMainWindow):
 
         self.addDockWidget(Qt.DockWidgetArea(8), self.dockWidget_log)
         logging.getLogger().setLevel(logging.INFO)
-        QVizLogger.getHandler().new_record.connect(self.logWidget.appendHtml)
+        handler = QVizLoggerSingleton()
+        logging.getLogger().addHandler(handler)
+        handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
 
     def closeEvent(self, event):
         """Modify close event to request confirmation trough dialog. If
@@ -437,7 +440,7 @@ def main():
     QVizPreferences().build()
     window = QVizMainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

@@ -4,11 +4,11 @@ import sys
 import os
 import logging
 
-from PyQt5.QtCore import pyqtSlot, QThread, pyqtSignal, pyqtProperty
-from PyQt5.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
+from PySide6.QtCore import Slot, QThread, Signal, pyqtProperty
+from PySide6.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
                              QGridLayout, QDialogButtonBox, QWidget,
                              QFormLayout, QLabel)
-from PyQt5.QtGui import QIntValidator
+from PySide6.QtGui import QIntValidator
 import getopt
 
 ENABLED = True
@@ -119,7 +119,7 @@ class GetIDSDialog(QDialog):
 
 class GetIDS(QWidget):
     """ Push button used for plugin."""
-    finished = pyqtSignal()
+    finished = Signal()
 
     def __init__(self, parent=None):
         super(GetIDS, self).__init__(parent)
@@ -146,7 +146,7 @@ class GetIDS(QWidget):
         self.thread.startFlag.connect(self.pushButton.setEnabled)
         self.thread.finished.connect(self.finished)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setUser(self, user):
         self.vars[GetIDSVars.user] = user
 
@@ -155,7 +155,7 @@ class GetIDS(QWidget):
 
     user = pyqtProperty(str, getUser, setUser)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setDevice(self, device):
         self.vars[GetIDSVars.device] = device
 
@@ -164,7 +164,7 @@ class GetIDS(QWidget):
 
     device = pyqtProperty(str, getDevice, setDevice)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setVersion(self, version):
         self.vars[GetIDSVars.device] = version
 
@@ -173,7 +173,7 @@ class GetIDS(QWidget):
 
     version = pyqtProperty(str, getVersion, setVersion)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setRun(self, run):
         self.vars[GetIDSVars.run] = run
 
@@ -182,7 +182,7 @@ class GetIDS(QWidget):
 
     runNumber = pyqtProperty(str, getRun, setRun)
 
-    @pyqtSlot(str)
+    @Slot(str)
     def setShot(self, shot):
         self.vars[GetIDSVars.shot] = shot
 
@@ -225,7 +225,7 @@ class GetIDS(QWidget):
 
         return True
 
-    @pyqtSlot()
+    @Slot()
     def getFromIDS(self):
         if not self.checkParameters():
             logging.warning('Not all parameters are set! Canceling.')
@@ -237,7 +237,7 @@ class GetIDS(QWidget):
         if not self.checkDestination:
             return
 
-    @pyqtSlot()
+    @Slot()
     def cleanUp(self):
         for key in self.vars:
             self.vars[key] = ''
@@ -245,7 +245,7 @@ class GetIDS(QWidget):
 class GetIDSQThread(QThread):
     """QThread for getting data from an IDS from a separate thread.
     """
-    startFlag = pyqtSignal(bool)
+    startFlag = Signal(bool)
 
     def __init__(self, parent=None):
         super(GetIDSQThread, self).__init__(parent)
@@ -269,12 +269,12 @@ class GetIDSQThread(QThread):
         # else:
         #     logging.warning('IDS did not open correctly.')
 
-    @pyqtSlot()
+    @Slot()
     def on_start(self):
         logging.info('Plugin start')
         self.startFlag.emit(False)
 
-    @pyqtSlot()
+    @Slot()
     def on_finish(self):
         logging.info('Plugin finished')
         self.startFlag.emit(True)

@@ -12,7 +12,7 @@
 #     Copyright(c) 2016- L. Fleury, D. Penko
 #****************************************************
 
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 def getWindowSize(window):
     """ Get Size of the QT window. Returns width, height.

@@ -13,7 +13,7 @@
 # ****************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, QRect, pyqtSlot
+from PySide6.QtCore import Qt, QRect, Slot
 from functools import partial
 from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI import QVizPlotConfigUI

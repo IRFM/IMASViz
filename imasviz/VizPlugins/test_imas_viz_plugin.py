@@ -4,7 +4,7 @@
 
 import getpass
 import sys
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 if (__name__ == '__main__'):
     app = QApplication(sys.argv)

@@ -1,7 +1,7 @@
 import os
 import logging
 import imas
-from PyQt5.QtWidgets import QProgressBar
+from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils import QVizGlobalValues
 

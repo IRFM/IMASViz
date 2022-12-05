@@ -11,7 +11,7 @@
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-from PyQt5.QtWidgets import (QTableWidget, QTableWidgetItem, QDialog,
+from PySide6.QtWidgets import (QTableWidget, QTableWidgetItem, QDialog,
                              QSizePolicy, QGridLayout, QHeaderView)
 
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal

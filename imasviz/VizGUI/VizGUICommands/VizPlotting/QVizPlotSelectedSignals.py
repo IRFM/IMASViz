@@ -9,29 +9,27 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#****************************************************
+# ****************************************************
 #  TODO:
 #
 #    - Function definitions (from PlotSignal class)
 #    def onHide
 #    def getSignal
 #
-#****************************************************
+# ****************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#****************************************************
+# ****************************************************
 
 import xml.etree.ElementTree as ET
 import logging
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizAbstractPlot import QVizAbstractPlot
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 
 
 class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
     def __init__(self, dataTreeView, figureKey=None, update=0,
-                 configFile=None, all_DTV=True,  strategy="TIME"):
+                 configFile=None, all_DTV=True, strategy="TIME"):
         self.api = dataTreeView.imas_viz_api
         figureKey, plotWidget = self.api.GetPlotWidget(dataTreeView, figureKey, strategy=strategy)
         self.figureKey = figureKey
@@ -47,16 +45,14 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
         self.dataTreeView = dataTreeView
         # Viz_API
 
-
     def execute(self):
         if self.raiseErrorIfNoSelectedArrays():
             if len(self.dataTreeView.selectedSignalsDict) == 0:
-                #Removes the current figure
+                # Removes the current figure
                 self.api.DeleteFigure(figureKey=self.figureKey)
                 raise ValueError("No signal selected.")
         self.plot1DSelectedSignals(self.update,
                                    all_DTV=self.all_DTV)
-
 
     def raiseErrorIfNoSelectedArrays(self):
         return True
@@ -114,15 +110,12 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
                     key = dtv.dataSource.dataKey(vizTreeNode)
                     tup = (dtv.dataSource.shotNumber, vizTreeNode)
                     self.api.AddNodeToFigure(self.figureKey, key, tup)
-
                     # Get signal properties and values
                     s = self.api.GetSignal(dtv, vizTreeNode, plotWidget=self.plotWidget)
-
                     # Get array of time values
                     t = QVizPlotSignal.getXAxisValues(s)
                     # Get array of y-axis values
                     v = QVizPlotSignal.get1DSignalValue(s)
-
                     # Get number of rows of the y-axis array of values
                     nbRows = v.shape[0]
 
@@ -145,7 +138,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
                             # Setting range manually (see IMAS-3658)
                             self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
                             self.plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, title='', xlabel=xlabel,
-                                            ylabel=ylabel, label=label)
+                                                 ylabel=ylabel, label=label)
                     else:
                         # Appending plot (the remaining selected signals)
                         # Else add the remaining selected node arrays

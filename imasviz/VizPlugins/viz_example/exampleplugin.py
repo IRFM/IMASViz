@@ -7,8 +7,8 @@ data.
 
 """
 
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtDesigner import QPyDesignerCustomWidgetPlugin
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtDesigner import QPyDesignerCustomWidgetPlugin
 
 from exampleWidget import exampleWidget
 

@@ -13,12 +13,12 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtWidgets import (QTabWidget, QWidget, QPushButton, QGridLayout,
+from PySide6.QtWidgets import (QTabWidget, QWidget, QPushButton, QGridLayout,
                              QDialogButtonBox, QDialog, QVBoxLayout, QScrollArea,
                              QLabel, QLineEdit, QDoubleSpinBox, QComboBox,
                              QSpinBox, QSizePolicy, QSpacerItem, QApplication,
                              QGraphicsScene, QGraphicsView, QCheckBox, QHBoxLayout)
-from PyQt5.QtCore import Qt, QRect, pyqtSlot
+from PySide6.QtCore import Qt, QRect, Slot
 from functools import partial
 from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
 # from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
@@ -439,7 +439,7 @@ class TabLineProperties(QWidget):
 
         return scrollArea
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
     def updatePDItemColor(self, pdItem, colorButton):
         """Update plotDataItem pen color.
         Note: instant update (no apply required).
@@ -453,7 +453,7 @@ class TabLineProperties(QWidget):
         pdItem.opts['pen'].setColor(colorButton.color())
         pdItem.updateItems()
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
     def updatePDItemStyle(self, pdItem, comboBox):
         """Update plotDataItem pen style.
         Note: instant update (no apply required).
@@ -467,7 +467,7 @@ class TabLineProperties(QWidget):
         pdItem.opts['pen'].setStyle(GlobalQtStyles.stylesDict[comboBox.currentText()])
         pdItem.updateItems()
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
     def updatePDItemWidth(self, pdItem, spinBox):
         """Update plotDataItem pen width.
         Note: instant update (no apply required).
@@ -482,7 +482,7 @@ class TabLineProperties(QWidget):
         pdItem.opts['pen'].setWidth(spinBox.value())
         pdItem.updateItems()
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
     def updatePDItemSymbol(self, pdItem, comboBox):
         """Update plotDataItem pen width.
         Note: instant update (no apply required).
@@ -497,7 +497,7 @@ class TabLineProperties(QWidget):
         pdItem.opts['symbol'] = GlobalPgSymbols.symbolsDict[comboBox.currentText()]
         pdItem.updateItems()
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
     def updatePDItemSymbolSize(self, pdItem, spinBox):
         """Update plotDataItem symbol size.
         Note: instant update (no apply required).
@@ -511,7 +511,7 @@ class TabLineProperties(QWidget):
         pdItem.opts['symbolSize'] = spinBox.value()
         pdItem.updateItems()
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
     def updatePDItemSymbolColor(self, pdItem, colorButton):
         """Update plotDataItem symbol color.
         Note: instant update (no apply required).
@@ -525,7 +525,7 @@ class TabLineProperties(QWidget):
         pdItem.opts['symbolBrush'] = colorButton.color().getRgb()
         pdItem.updateItems()
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
     def updatePDItemSymbolOutlineColor(self, pdItem, colorButton):
         """Update plotDataItem symbol outline color.
         Note: instant update (no apply required).
@@ -728,11 +728,11 @@ class TabTextProperties(QWidget):
 
         return scrollArea
 
-    @pyqtSlot()
+    @Slot()
     def updatePlotItemTitle(self):
         self.titleLabel.setText(self.titleLineEdit.text())
 
-    @pyqtSlot()
+    @Slot()
     def setTitleBold(self):
 
         if self.titleLabel.opts['bold'] is False:
@@ -745,7 +745,7 @@ class TabTextProperties(QWidget):
         # changes immediately
         self.updatePlotItemTitle()
 
-    @pyqtSlot()
+    @Slot()
     def setTitleItalic(self):
 
         if self.titleLabel.opts['italic'] is False:
@@ -1025,7 +1025,7 @@ class TabLegendProperties(QWidget):
 
         return scrollArea
 
-    @pyqtSlot(pg.graphicsItems.PlotDataItem.PlotDataItem, QLineEdit)
+    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QLineEdit)
     def updatePDItemLabel(self, pdItem, lineEdit):
         """Update plotDataItem label and plotWidget legend.
         Note: instant update (no apply required).
@@ -1048,7 +1048,7 @@ class TabLegendProperties(QWidget):
         # - Update label text
         legendLabelItem.setText(newLabel)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setLegendBold(self, legendItemID):
 
         # - Get legend labelItem
@@ -1063,7 +1063,7 @@ class TabLegendProperties(QWidget):
         else:
             self.setLegendItemBoldON(legendItemID=legendItemID)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setLegendItemBoldON(self, legendItemID):
         """Set plotDataItem legend label (in plotWidget) to bold.
         Note: instant update (no apply required).
@@ -1085,7 +1085,7 @@ class TabLegendProperties(QWidget):
         #       effect.
         legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setLegendItemBoldOFF(self, legendItemID):
         """Set plotDataItem legend label (in plotWidget) to flat (not bold).
         Note: instant update (no apply required).
@@ -1106,7 +1106,7 @@ class TabLegendProperties(QWidget):
         #       effect.
         legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setLegendItalic(self, legendItemID):
 
         # - Get legend labelItem
@@ -1121,12 +1121,12 @@ class TabLegendProperties(QWidget):
         else:
             self.setLegendItemItalicON(legendItemID=legendItemID)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setHideLegend(self, legendItemID):
 
         pass
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setLegendItemItalicON(self, legendItemID):
         """Set plotDataItem legend label (in plotWidget) to italic.
         Note: instant update (no apply required).
@@ -1146,7 +1146,7 @@ class TabLegendProperties(QWidget):
         # Setting text style
         legendLabelItem.setText(text=legendLabelItem.text, **legendLabelStyle)
 
-    @pyqtSlot(int)
+    @Slot(int)
     def setLegendItemItalicOFF(self, legendItemID):
         """Set plotDataItem legend label (in plotWidget) to "not italic".
         Note: instant update (no apply required).
@@ -1307,7 +1307,7 @@ class TabPlotDesignProperties(QWidget):
 
         return marginWidget
 
-    @pyqtSlot()
+    @Slot()
     def updatePlotWidgetContentsMargins(self):
         """Update plot widget contents margins.
         Note: instant update (no apply required).
@@ -1320,7 +1320,7 @@ class TabPlotDesignProperties(QWidget):
             self.marginSpinBox_right.value(),
             self.marginSpinBox_bottom.value())
 
-    @pyqtSlot()
+    @Slot()
     def setPreviousMargins(self):
         """Set plot widget contents margin back to previous.
         """
@@ -1332,7 +1332,7 @@ class TabPlotDesignProperties(QWidget):
         # Update spinbox values
         self.updateMarginsSpinboxValues(m[0], m[1], m[2], m[3])
 
-    @pyqtSlot()
+    @Slot()
     def setDefaultMargins(self):
         """Set plot widget contents margin back to default values.
         """

@@ -14,9 +14,10 @@
 
 import pyqtgraph as pg
 import logging
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QWidget, QScrollArea
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui
+from PySide6.QtWidgets import QWidget, QScrollArea
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from imasviz.Viz_API import Viz_API
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
@@ -125,7 +126,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                 c1 = signalNode.evaluateCoordinateVsTime(coordinateNumber=1)
                 label = pg.LabelItem('coordinate1(' + c1 + ")=" + str(round(coordinate1_value, 2)),
                                      size="6pt",
-                                     color="FF0000")
+                                     color=QColor().red())
                 label.setParentItem(currentPlotItem)
                 label.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-30, 20))
 

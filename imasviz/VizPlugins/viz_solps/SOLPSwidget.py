@@ -17,8 +17,8 @@
 
 import sys
 import os
-from PyQt5.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout
-from PyQt5.QtCore import pyqtSlot
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout
+from PySide6.QtCore import Slot
 
 import logging
 import matplotlib
@@ -69,7 +69,7 @@ class SOLPSwidget(QWidget):
         self.layout().addWidget(self.canvas)
         self.layout().addWidget(self.toolbar)
 
-    @pyqtSlot()
+    @Slot()
     def checkDisplay(self):
         try:
             os.environ['DISPLAY']
@@ -79,7 +79,7 @@ class SOLPSwidget(QWidget):
     def setIDS(self, ids):
         self.ids = ids
 
-    @pyqtSlot()
+    @Slot()
     def setEPIDS(self):
         """Set and read edge_profiles IDS.
         Check if either:
@@ -118,7 +118,7 @@ class SOLPSwidget(QWidget):
         # Read edge_profiles IDS
         self.ids.edge_profiles.get()
 
-    @pyqtSlot()
+    @Slot()
     def setGGDdata(self):
         """Show dialog for setting GGD parameters.
         """
@@ -137,23 +137,23 @@ class SOLPSwidget(QWidget):
             # Canceled!
             return False
 
-    @pyqtSlot()
+    @Slot()
     def getQuantityValues(self):
         return self.ggdVars['quantityValues']
 
-    @pyqtSlot()
+    @Slot()
     def getQuantityLabel(self):
         return self.ggdVars['quantityLabel']
 
-    @pyqtSlot()
+    @Slot()
     def getGridSubsetID(self):
         return self.ggdVars['gridSubsetId']
 
-    @pyqtSlot()
+    @Slot()
     def getGGDVars(self):
         return self.ggdVars
 
-    @pyqtSlot()
+    @Slot()
     def plotData(self):
         """Populate (plot) the canvas.
         """
@@ -179,7 +179,7 @@ class SOLPSwidget(QWidget):
         self.canvas.plotData(nodes, quad_conn_array, qValues,
                              title=ggdVars['quantityLabel'])
 
-    @pyqtSlot()
+    @Slot()
     def clearPlot(self):
         """Clear canvas plot.
         """

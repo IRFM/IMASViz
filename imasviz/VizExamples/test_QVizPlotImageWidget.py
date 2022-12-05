@@ -1,23 +1,20 @@
 #!/usr/bin/python
 """This file uses the QVizPlotImageWidget for testing purpose
 """
-from PyQt5.QtWidgets import QApplication
-import sys, logging, os
-import numpy as np
-import pyqtgraph as pg
-# PyQt library imports
+import logging
+import sys
 
+import numpy as np
+from PySide6.QtWidgets import QApplication
+
+from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
 # IMASViz source imports
-from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalOperations
 from imasviz.Viz_API import Viz_API
 from imasviz.Viz_DataSelection_API import Viz_DataSelection_API
-from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-from imasviz.VizPlugins.viz_example_plugin.viz_example_plugin import viz_example_plugin
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
-from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
-    import QVizCustomPlotContextMenu
-from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
+
+# PyQt library imports
 
 # Set object managing the PyQt GUI application's control flow
 app = QApplication(sys.argv)
@@ -90,4 +87,4 @@ plotWidget = QvizPlotImageWidget(dataTreeView=None, plotSliceFromROI=True, showI
 plotWidget.plot(dataArrayHandle)
 plotWidget.show()
 
-app.exec() # Keep the application running
+app.exec_() # Keep the application running
