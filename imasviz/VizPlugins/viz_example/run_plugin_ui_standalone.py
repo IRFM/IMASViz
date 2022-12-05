@@ -1,7 +1,7 @@
 # An example running the UI plugin in standalone way.
 
-from PySide2.QtWidgets import QApplication
-from PySide2 import uic
+from PySide6.QtWidgets import QApplication
+from PySide6 import uic
 import sys
 
 app = QApplication(sys.argv)

@@ -24,7 +24,7 @@
 import sys, logging
 import traceback
 
-from PySide2.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget
 
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand

@@ -11,7 +11,7 @@
 # ****************************************************
 #     Copyright(c) 2022- L. Fleury
 
-from PySide2.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QScrollArea, QLayout
+from PySide6.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QScrollArea, QLayout
 
 
 class QVizTab(QWidget):

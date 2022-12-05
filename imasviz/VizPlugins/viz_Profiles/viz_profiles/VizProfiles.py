@@ -17,13 +17,15 @@ from functools import partial
 
 # Third party imports
 import numpy as np
-from PySide2.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
+from PySide6.QtWidgets import (QWidget, QTabWidget, QApplication, QMainWindow,
                              QSlider, QLabel, QSpinBox, QCheckBox, QPushButton,
                              QLineEdit, QHBoxLayout, QVBoxLayout, QMenuBar,
-                             QAction, QFrame, QScrollArea, QProgressBar, QDesktopWidget, QLayout, QInputDialog,
+                             QFrame, QScrollArea, QProgressBar, QLayout, QInputDialog,
                              QSizePolicy)
-from PySide2.QtCore import Qt, QSize, Signal, Slot, QThread, QObject
-from PySide2.QtGui import QDoubleValidator
+from PySide6.QtGui import QAction
+from PySide6.QtGui import QScreen, QGuiApplication
+from PySide6.QtCore import Qt, QSize, Signal, Slot, QThread, QObject
+from PySide6.QtGui import QDoubleValidator
 
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
@@ -374,26 +376,26 @@ class VizProfiles(QMainWindow):
         # self.setStatusBarText_1(text="OK")
 
         # Set initial window size
-        dh = self.app.desktop().availableGeometry().height()
-        dw = self.app.desktop().availableGeometry().width()
-        self.height = dh * 0.9
-        self.width = dw * 0.7
+        dw, dh = self.app.primaryScreen().size().toTuple()
+
+        height = dh * 0.9
+        width = dw * 0.7
+
+        self.resize(height, width)
+
         # self.resize(int(self.width), int(self.height))
         # Move window to the center of the screen
-        self.setFixedWidth(int(self.width))
-        # Note: for actually resizing the window the SizeHint is required.
-        #       fixed dimensions are set here so that they are properly
-        #       rezognized by the self.frameGeometry() command
-        self.setFixedHeight(int(self.height))
+        # self.setFixedWidth(400)
+        # self.setFixedHeight(600)
 
         qtRectangle = self.frameGeometry()
-        centerPoint = self.app.desktop().availableGeometry().center()
+        centerPoint = QScreen().availableGeometry().center()
+
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
 
         # On tab change update the tab-containing plots
-        self.tabWidget.currentChanged.connect(partial(
-            self.updatePlotOfCurrentTab))
+        self.tabWidget.currentChanged.connect(self.updatePlotOfCurrentTab)
 
         # self.spinBox_timeIndex.valueChanged.connect(self.onTimeIndexChanged)
 
@@ -701,7 +703,7 @@ class ProgressBar(QWidget):
         self.pbar.setMaximum(100)
         self.pbar.setValue(0)
         qtRectangle = self.frameGeometry()
-        centerPoint = QDesktopWidget().availableGeometry().center()
+        centerPoint = QScreen().availableGeometry().center()
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
         # self.show()

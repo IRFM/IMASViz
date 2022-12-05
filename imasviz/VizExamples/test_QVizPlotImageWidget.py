@@ -5,7 +5,7 @@ import logging
 import sys
 
 import numpy as np
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget

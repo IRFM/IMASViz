@@ -1,10 +1,11 @@
 
 from functools import partial
-from PySide2.QtWidgets import QWidget, QApplication, QAction, QMenu, QStyle
+from PySide6.QtWidgets import QWidget, QApplication, QMenu, QStyle
+from PySide6.QtGui import QAction
 from imasviz.VizUtils import GlobalIcons
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem
-from PySide2.QtCore import Signal
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PySide6.QtCore import Signal
 
 from functools import partial
 

@@ -16,7 +16,7 @@ import os
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.VizProfiles import VizProfiles, Request
 import logging
-from PySide2.QtWidgets import QMdiSubWindow, QInputDialog
+from PySide6.QtWidgets import QMdiSubWindow, QInputDialog
 import traceback
 
 

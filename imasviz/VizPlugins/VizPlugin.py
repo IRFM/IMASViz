@@ -1,7 +1,7 @@
 import importlib
 import os, sys
 
-from PySide2.QtWidgets import QMainWindow
+from PySide6.QtWidgets import QMainWindow
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      # 'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
@@ -59,7 +59,7 @@ class VizPlugin:
 
             # Check for plugins created by Qt designer (.ui files)
             if 'UiPlugin' in key:
-                from PySide2 import uic
+                from PySide6 import uic
                 # Get directory where the plugin .ui file is located
                 pluginConfiguration = VizPlugin.getPluginsConfigurationFor(key)[0]
                 dir = pluginConfiguration['dir']

@@ -11,9 +11,9 @@
 #         dejan.penko@lecad.fs.uni-lj.si
 #
 
-from PySide2.QtWidgets import QLineEdit, QDialog, QFormLayout, QDialogButtonBox, \
+from PySide6.QtWidgets import QLineEdit, QDialog, QFormLayout, QDialogButtonBox, \
                             QComboBox
-from PySide2.QtGui import QIntValidator
+from PySide6.QtGui import QIntValidator
 import logging
 
 from src.getEPGGD import getEPGGD, GetGGDVars

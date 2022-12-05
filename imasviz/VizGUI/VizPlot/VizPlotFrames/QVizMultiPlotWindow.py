@@ -14,8 +14,8 @@
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
 import logging
-from PySide2 import QtCore, QtGui, QtWidgets
-from PySide2.QtWidgets import QMdiSubWindow
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtWidgets import QMdiSubWindow
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils import (FigureTypes, QVizGlobalOperations,
                               getScreenGeometry)

@@ -2,10 +2,11 @@
 import logging
 import traceback
 from functools import partial
-from PySide2.QtCore import Slot
+from PySide6.QtCore import Slot
 from imasviz.VizUtils import GlobalIcons
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
+from PySide6.QtGui import QAction
 
 
 class MenuIDS:

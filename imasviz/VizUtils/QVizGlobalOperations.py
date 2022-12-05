@@ -3,7 +3,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
-from PySide2.QtWidgets import QMessageBox, QInputDialog, QLineEdit
+from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit
 from imasviz.VizUtils.QVizGlobalValues import QVizGlobalValues
 
 

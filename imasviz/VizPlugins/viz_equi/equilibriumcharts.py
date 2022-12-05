@@ -25,19 +25,19 @@ import argparse
 from datetime import datetime
 import getpass
 import matplotlib
+# matplotlib.use('Qt5Agg')
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import \
-    FigureCanvasQTAgg as FigCanvas
-from matplotlib.backends.backend_qt5agg import \
-    NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.ticker as tick
 import numpy as np
 import os
 import sys, logging
-from PySide2.QtWidgets import QDockWidget, QMenuBar, QAction, QApplication, QMainWindow, QTreeWidget, \
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, QTreeWidget, \
     QTreeWidgetItem, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout,  \
     QLabel, QMessageBox, QStatusBar, QCheckBox
-from PySide2 import QtCore
+from PySide6 import QtCore
 
 # Local python modules
 import imas
@@ -1248,7 +1248,7 @@ if (__name__ == '__main__'):
     # manipulate different parts of the Python runtime environment.
     import sys
     # PyQt library imports
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     # IMASViz source imports
     from imasviz.Viz_API import Viz_API
     from imasviz.VizDataSource.QVizDataSourceFactory import \

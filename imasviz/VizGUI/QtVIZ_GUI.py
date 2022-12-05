@@ -15,11 +15,11 @@ import os
 import sys, getopt
 import logging
 from functools import partial
-from PySide2.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
+from PySide6.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
                              QPlainTextEdit, QGridLayout, QMdiArea, QTableView)
-from PySide2.QtCore import Qt
+from PySide6.QtCore import Qt
 from pathlib import Path
 
 
@@ -440,7 +440,7 @@ def main():
     QVizPreferences().build()
     window = QVizMainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

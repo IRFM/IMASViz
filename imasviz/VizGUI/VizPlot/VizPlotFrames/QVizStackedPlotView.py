@@ -16,8 +16,8 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
-from PySide2.QtCore import Slot, Qt
-from PySide2.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
+from PySide6.QtCore import Slot, Qt
+from PySide6.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes

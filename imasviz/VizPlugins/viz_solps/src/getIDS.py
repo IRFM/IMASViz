@@ -4,11 +4,11 @@ import sys
 import os
 import logging
 
-from PySide2.QtCore import Slot, QThread, Signal, pyqtProperty
-from PySide2.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
+from PySide6.QtCore import Slot, QThread, Signal, pyqtProperty
+from PySide6.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
                              QGridLayout, QDialogButtonBox, QWidget,
                              QFormLayout, QLabel)
-from PySide2.QtGui import QIntValidator
+from PySide6.QtGui import QIntValidator
 import getopt
 
 ENABLED = True

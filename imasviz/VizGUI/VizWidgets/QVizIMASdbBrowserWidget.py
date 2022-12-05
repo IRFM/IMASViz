@@ -12,9 +12,9 @@
 # *****************************************************************************
 
 
-from PySide2.QtWidgets import QTreeWidget, QTreeWidgetItem
-from PySide2.QtCore import Signal, QObject, QThread
-from PySide2.QtWidgets import QProgressBar
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PySide6.QtCore import Signal, QObject, QThread
+from PySide6.QtWidgets import QProgressBar
 import sys
 import os
 import getpass
@@ -367,7 +367,7 @@ class Worker(QObject):
 if __name__ == '__main__':
     """Test.
     """
-    from PySide2.QtWidgets import QApplication, QMainWindow
+    from PySide6.QtWidgets import QApplication, QMainWindow
 
     app = QApplication(sys.argv)
     mainWin = QMainWindow()

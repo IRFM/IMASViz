@@ -22,8 +22,8 @@ import os
 # import module providing log handling
 import logging
 # import modules providing PyQt5 parameters, functions etc.
-from PySide2.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
-from PySide2.QtCore import Slot, Signal
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout, QSizePolicy
+from PySide6.QtCore import Slot, Signal
 # import module providing matplotlib parameters, functions etc.
 import matplotlib
 matplotlib.use('Qt5Agg') # Use Qt rendering

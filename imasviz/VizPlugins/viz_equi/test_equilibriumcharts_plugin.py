@@ -8,7 +8,7 @@ Note: Script is adjusted to use IMAS database found on the GateWay.
 # manipulate different parts of the Python runtime environment.
 import sys
 # PyQt library imports
-from PySide2.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 # IMASViz source imports
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import \

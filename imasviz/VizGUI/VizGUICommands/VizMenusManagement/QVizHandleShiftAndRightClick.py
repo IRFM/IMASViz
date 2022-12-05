@@ -13,7 +13,7 @@
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
 
-from PySide2.QtWidgets import QMenu
+from PySide6.QtWidgets import QMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
 
 

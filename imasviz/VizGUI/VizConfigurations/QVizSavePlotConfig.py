@@ -15,7 +15,7 @@ import time
 import logging
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils import QVizGlobalOperations
-from PySide2.QtGui import QTextDocument
+from PySide6.QtGui import QTextDocument
 
 
 class QVizSavePlotConfig():

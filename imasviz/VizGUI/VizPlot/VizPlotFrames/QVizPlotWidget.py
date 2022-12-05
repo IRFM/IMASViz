@@ -13,12 +13,13 @@
 
 import numpy as np
 import logging
-from PySide2.QtCore import Qt, QMetaObject, QRect
-from PySide2.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, QAction, \
+from PySide6.QtCore import Qt, QMetaObject, QRect
+from PySide6.QtWidgets import QWidget, QGridLayout, QCheckBox, QMenuBar, \
                         QLabel, QFrame, QTextEdit
+from PySide6.QtGui import QAction
 from functools import partial
-from PySide2.QtWidgets import QApplication, QAction, QMenu, QStyle
-import PySide2.QtWidgets as QtWidgets
+from PySide6.QtWidgets import QApplication, QMenu, QStyle
+import PySide6.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \

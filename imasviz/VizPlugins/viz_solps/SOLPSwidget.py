@@ -17,8 +17,8 @@
 
 import sys
 import os
-from PySide2.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout
-from PySide2.QtCore import Slot
+from PySide6.QtWidgets import QApplication, QWidget, QMainWindow, QVBoxLayout
+from PySide6.QtCore import Slot
 
 import logging
 import matplotlib

@@ -6,8 +6,8 @@ A SOLPS 'Plot edge_profiles GGD' widget for Qt designer.
 
 """
 
-from PySide2.QtGui import QIcon, QPixmap
-from PySide2.QtDesigner import QPyDesignerCustomWidgetPlugin
+from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtDesigner import QPyDesignerCustomWidgetPlugin
 
 from SOLPSwidget import SOLPSwidget
 

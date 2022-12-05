@@ -22,8 +22,8 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 
 import numpy as np
 
-from PySide2.QtCore import Slot
-from PySide2.QtWidgets import QSizePolicy
+from PySide6.QtCore import Slot
+from PySide6.QtWidgets import QSizePolicy
 
 class QuadPlotCanvas(FigureCanvas):
     def __init__(self, parent=None, width=10, height=8, dpi=100):

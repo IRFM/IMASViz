@@ -1,5 +1,5 @@
 import imas
-from PySide2.QtWidgets import QProgressBar
+from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGeneratedClassFactory
 
 

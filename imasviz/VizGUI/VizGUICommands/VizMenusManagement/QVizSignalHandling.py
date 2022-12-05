@@ -24,8 +24,9 @@
 
 from functools import partial
 import re, logging
-from PySide2.QtCore import QObject, Slot
-from PySide2.QtWidgets import QAction, QMenu, QApplication, QStyle
+from PySide6.QtCore import QObject, Slot
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QMenu, QApplication, QStyle
 from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
@@ -956,7 +957,7 @@ class QVizSignalHandling(QObject):
     def addPlotWidgetToMDI(self, plotWidget):
         """Embeds the plotWidget inside MDI subwindow.
         """
-        from PySide2.QtWidgets import QMdiSubWindow
+        from PySide6.QtWidgets import QMdiSubWindow
 
         subWindow = QMdiSubWindow()
         subWindow.setWidget(plotWidget)

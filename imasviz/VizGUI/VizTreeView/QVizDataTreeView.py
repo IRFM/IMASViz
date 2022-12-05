@@ -34,11 +34,12 @@ import numpy as np
 import threading
 from threading import Thread, Condition
 from functools import partial
-from PySide2.QtCore import Qt, Slot, QMetaObject
-from PySide2.QtWidgets import QDockWidget, QMenuBar, QAction, QMenu
-from PySide2.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
+from PySide6.QtCore import Qt, Slot, QMetaObject
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QDockWidget, QMenuBar, QMenu
+from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
-from PySide2.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
+from PySide6.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
 from imasviz.VizUtils import (QVizLoggerSingleton, QVizGlobalValues, GlobalIDs,
                               getWindowSize)
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \

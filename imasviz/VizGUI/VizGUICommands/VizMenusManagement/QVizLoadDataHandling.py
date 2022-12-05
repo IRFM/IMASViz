@@ -21,8 +21,8 @@
 
 from functools import partial
 
-from PySide2.QtCore import QObject
-from PySide2.QtWidgets import QInputDialog
+from PySide6.QtCore import QObject
+from PySide6.QtWidgets import QInputDialog
 
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 

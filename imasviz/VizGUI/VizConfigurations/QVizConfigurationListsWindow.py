@@ -17,8 +17,8 @@
 import os
 from functools import partial
 
-from PySide2.QtCore import Qt, Slot, QObject
-from PySide2.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
+from PySide6.QtCore import Qt, Slot, QObject
+from PySide6.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
                              QPushButton, QWidget, QSizePolicy, QLabel)
 from imasviz.VizUtils import QVizGlobalOperations, GlobalFonts
 
