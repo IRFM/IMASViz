@@ -15,7 +15,6 @@ import time
 import logging
 import xml.etree.ElementTree as ET
 from imasviz.VizUtils import QVizGlobalOperations
-from PySide6.QtGui import QTextDocument
 
 
 class QVizSavePlotConfig():
@@ -37,7 +36,7 @@ class QVizSavePlotConfig():
         configName = None
         # Set dialog message
         message = 'Type the name of the plot configuration. \nNote. If left ' \
-            'empty the default name \n' + defaultName + '\nwill be used.'
+                  'empty the default name \n' + defaultName + '\nwill be used.'
         # Set configuration file name via dialog
         configName, ok = \
             QVizGlobalOperations.askWithCancel(parent=self.gWin,
@@ -65,11 +64,11 @@ class QVizSavePlotConfig():
         # Set root element
         root = ET.Element('PlotConfiguration')
         root.set('comment', 'This file has been generated automatically by '
-                 'the IMASVIZ application. It contains saved plot '
-                 'configuration: '
-                 'a list of configurations for each plot and its corresponding '
-                 'signal path - IDS database paths to arrays '
-                 'containing data suitable for plotting.')
+                            'the IMASVIZ application. It contains saved plot '
+                            'configuration: '
+                            'a list of configurations for each plot and its corresponding '
+                            'signal path - IDS database paths to arrays '
+                            'containing data suitable for plotting.')
 
         # Set new subelement
         gWindowEl = ET.SubElement(root, 'GraphicsWindow')
@@ -108,7 +107,7 @@ class QVizSavePlotConfig():
             sa(plotItemEl, 'column', column)
             # Set subelement attribute 'title'
             sa(plotItemEl, 'title',
-                plotItem.titleLabel.item.document().toPlainText())
+               plotItem.titleLabel.item.document().toPlainText())
 
             # ------------------------------------------------------------------
             # Set new subelement for holding pg.PlotDataItem data (child of

@@ -5,9 +5,12 @@ from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils import QVizGlobalValues
 
+
 class QVizIMASDataSource:
 
     def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
+        self.generatedDataTree = None
+        self.progressBar = None
         self.name = name
         self.userName = userName
         self.imasDbName = imasDbName
@@ -18,8 +21,8 @@ class QVizIMASDataSource:
         # data_dictionary_version will be initialized only when loading
         # the first IDS (currently, it is not possible to get the DD version
         # from the AL at the data entry level, see IMAS-2835 for details
-        
-        self.loaded_ids = [] #list of names of IDS already fetched
+
+        self.loaded_ids = []  # list of names of IDS already fetched
         self.data_dictionary_version = None
 
     # Load IMAS data using IMAS api
@@ -42,18 +45,18 @@ class QVizIMASDataSource:
 
         if self.data_entries.get(occurrence) is None:
             self.data_entries[occurrence] = imas.ids(self.shotNumber, self.runNumber,
-                                            0, 0)
-            v = os.environ["IMAS_MAJOR_VERSION"]
+                                                     0, 0)
+            major_version = os.environ["IMAS_MAJOR_VERSION"]
             self.data_entries[occurrence].open_env(self.userName,
-                                          self.imasDbName,
-                                          os.environ["IMAS_MAJOR_VERSION"])
+                                                   self.imasDbName,
+                                                   major_version)
             if self.data_entries[occurrence].expIdx == -1:
                 raise ValueError("Can not open shot " + str(self.shotNumber) +
                                  " from data base " + self.imasDbName +
                                  " of user " + self.userName)
 
         if IDSName in self.loaded_ids:
-            self.generatedDataTree.loadData = False #Do not call IMAS GET(), data are already loaded in memory
+            self.generatedDataTree.loadData = False  # Do not call IMAS GET(), data are already loaded in memory
         else:
             self.generatedDataTree.loadData = True
 
@@ -66,7 +69,7 @@ class QVizIMASDataSource:
         else:
             # This will call the get() operation for fetching IMAS data
             self.generatedDataTree.run()
-            
+
         self.loaded_ids.append(IDSName)
 
     @staticmethod
@@ -85,14 +88,14 @@ class QVizIMASDataSource:
     def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
         ids = imas.ids(shotNumber, runNumber, 0, 0)
         ids.open_public(machineName)
-        if (ids.expIdx == -1):
+        if ids.expIdx == -1:
             raise ValueError("Can not open shot " + str(shotNumber) +
                              "  from " + machineName)
         else:
             ids.close()
 
     # Check if the data for the given IDS exists
-    def exists(self, IDSName):
+    def exists(self, IDSName=None):
         return True
 
     def createImasDataEntry(self):
@@ -102,8 +105,8 @@ class QVizIMASDataSource:
         imas_major_version = os.environ['IMAS_MAJOR_VERSION']
         imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
 
-    def close(self, imas_entry):
-        imas_entry.close()
+    def close(self, data_entry):
+        data_entry.close()
 
     def getImasEntry(self, occurrence):
         return self.data_entries.get(occurrence)
@@ -128,8 +131,8 @@ class QVizIMASDataSource:
                     node.setAvailableIDSData(occurrence, 1)
                     self.data_dictionary_version = ids_properties.version_put.data_dictionary
                     ret = True
-                #elif occurrence == 0:
-                    # break the loop as soon as occurrence 0 is empty
+                # elif occurrence == 0:
+                # break the loop as soon as occurrence 0 is empty
                 #    break
             except:
                 pass
@@ -139,24 +142,21 @@ class QVizIMASDataSource:
     def dataKey(self, vizTreeNode):
         """Defines the unique key attached to each data which can be plotted.
         """
-        return self.name + "::" + self.imasDbName + "::" + \
-            str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
-            vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
-            
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + \
+               str(self.runNumber) + '::' + vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
+
     def dataKey2(self, figureKey):
         """Defines the unique key attached to a figure
         """
-        return self.name + "::" + self.imasDbName + "::" + \
-            str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
-            str(figureKey)
+        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
+               str(figureKey)
 
     def getShortLabel(self):
-        return self.userName + ":" + self.imasDbName + ":" + \
-            str(self.shotNumber) + ":" + str(self.runNumber)
+        return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
 
     def getLongLabel(self):
         return "User:" + self.userName + " Database:" + self.imasDbName + \
-            " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
+               " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
 
     def getKey(self):
         return self.getLongLabel()
@@ -182,11 +182,10 @@ class QVizIMASDataSource:
             # Extract IDS name and occurrence
             idsName, occurrence = db.split("/")
 
-            if os.getenv('IMAS_PREFIX') != None and \
-                    'IMAS' in os.getenv('IMAS_PREFIX'):
+            if os.getenv('IMAS_PREFIX') is not None and 'IMAS' in os.getenv('IMAS_PREFIX'):
                 # Set the export command
                 command2 = "self.data_entries[" + str(occurrence) + "]." + idsName + \
-                          ".setExpIdx(exported_ids." + idsName + "._idx)"
+                           ".setExpIdx(exported_ids." + idsName + "._idx)"
             else:
                 command2 = "self.data_entries[" + str(occurrence) + "]." + idsName + \
                            ".setExpIdx(exported_ids." + idsName + ".idx)"

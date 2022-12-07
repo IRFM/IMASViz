@@ -8,7 +8,7 @@
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
 #  E-mail :
-#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#         ludovic.fleury@cea.fr
 #
 # ****************************************************
 #     Copyright(c) 2016- F. Ludovic, L. xinyi, D. Penko
@@ -18,8 +18,7 @@ import os
 from functools import partial
 
 from PySide6.QtCore import Qt, Slot, QObject
-from PySide6.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
-                             QPushButton, QWidget, QSizePolicy, QLabel)
+from PySide6.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout, QPushButton, QWidget, QSizePolicy, QLabel)
 from imasviz.VizUtils import QVizGlobalOperations, GlobalFonts
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
@@ -34,6 +33,8 @@ class QVizConfigurationListsWindow(QDialog):
 
     def __init__(self, parent=None):
         super(QVizConfigurationListsWindow, self).__init__(parent)
+        self.tabSignalListConf = None
+        self.tabPlotConf = None
         self.DTVFrame = parent
         self.setWindowTitle("Apply Configurations")
         self.tabWidget = None
@@ -124,14 +125,13 @@ class CommonConfigurationRoutines(QObject):
     @Slot(str)
     def removeConfiguration(self, configType):
         """Remove configuration file from the list.
-
         Arguments:
-            configTyle (str) : Configuration file type/extension
-                               ('pcfg' or 'lsp').
+                               :param configType: 
         """
         # Get the selection list (config file name)
         selectedItems = self.parent.listWidget.selectedItems()
-
+        selectedFile = None
+        selectedItem = None
         if len(selectedItems) > 0:
             # Set the first selected item from the list
             # Note: Only one item can be selected at a time, so a list of one
@@ -152,8 +152,7 @@ class CommonConfigurationRoutines(QObject):
         if answer:  # If True
             print('Removing configuration: ' + selectedFile)
             try:
-                # Remove the config file from the system directory, containing
-                # containing all config files
+                # Remove the config file from the system directory containing all config files
                 os.remove(selectedFile)
                 # Remove the config file from the list
                 self.parent.listWidget.removeItemWidget(selectedItem)

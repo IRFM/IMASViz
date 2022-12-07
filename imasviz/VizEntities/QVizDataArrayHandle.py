@@ -7,17 +7,14 @@
 #  E-mail :
 #         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
 #
-#*******************************************************************************
+# *******************************************************************************
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
-#*******************************************************************************
-
-import pyqtgraph as pg
-import numpy as np
-import logging
+# *******************************************************************************
 
 class QVizDataArrayHandle:
     """QVizDataArrayHandle for handling IMAS arrays.
     """
+
     def __init__(self, arrayCoordinates, arrayValues, name, label, itimeValue=None):
         self.arrayCoordinates = arrayCoordinates
         self.arrayValues = arrayValues
@@ -51,6 +48,7 @@ class QVizDataArrayHandle:
     def getLabel(self):
         return self.label
 
+
 class ArrayCoordinates:
     def __init__(self, coordinatesPath=[], coordinatesValues=[],
                  timeCoordinateDim=None, coordinates_labels=[]):
@@ -59,9 +57,8 @@ class ArrayCoordinates:
         self.timeCoordinateDim = timeCoordinateDim
         self.coordinates_labels = coordinates_labels
 
+
 class QVizTimedDataArrayHandle:
     def __init__(self, arrayValues, timeArray):
         self.arrayValues = arrayValues
         self.timeArray = timeArray
-
-

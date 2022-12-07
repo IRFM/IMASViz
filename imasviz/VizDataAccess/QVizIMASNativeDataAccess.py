@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 from imasviz.VizUtils import QVizGlobalOperations, PlotTypes
-from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates, QVizTimedDataArrayHandle
+from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
 
 
 class QVizIMASNativeDataAccess:
@@ -64,7 +64,6 @@ class QVizIMASNativeDataAccess:
         if treeNode.is1D():
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
-            xData = None
             if plotWidget is not None:
                 if plotWidget.getType() == PlotTypes.STACKED_PLOT or \
                         plotWidget.getType() == PlotTypes.TABLE_PLOT:
@@ -97,7 +96,6 @@ class QVizIMASNativeDataAccess:
             data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             arrayPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
             r_val = eval(arrayPath)
-            coordinateValues = None
             coordinates_labels = []
             label = ''
             quantityName = ''
@@ -145,7 +143,6 @@ class QVizIMASNativeDataAccess:
                 return
 
             data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
-            t = None
             signalPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
             # print("signalPath=", signalPath)
             r_val = eval(signalPath)
@@ -169,7 +166,7 @@ class QVizIMASNativeDataAccess:
                     # print("path=", path)
                     e = eval(path)
                     if len(e) == 0:
-                        path1 = treeNode.getIDSName() + "." + coordinate1
+                        # path1 = treeNode.getIDSName() + "." + coordinate1
                         raise ValueError("Coordinate1 has no values.")
                     if len(e) != len(r_val):
                         path1 = treeNode.getIDSName() + "." + coordinate1
@@ -244,9 +241,9 @@ class QVizIMASNativeDataAccess:
                         "' has no explicit dependency on coordinate1 dimension.")
         data_path_list = []
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
-        imas_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
+        data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
         data_path = aos_vs_itime.replace("[itime]", "[" + str(itimeValue) + "]")
-        value = eval('imas_entry.' + data_path)
+        value = eval('data_entry.' + data_path)
         for i in range(0, len(xData)):  # constant 1D array
             data_path_list.append(value)
         r_array = np.array([np.array(data_path_list)])

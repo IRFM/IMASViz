@@ -1,26 +1,18 @@
-#  Name   :IDSTree
-#
-#          Container to handle data loading.
-#          Note: The wxPython predecessor of this Python file is
-#          LoadDataHandling.py
+#          Commands to handle data loading.
 #
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
 #  E-mail :
-#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#         ludovic.fleury@cea.fr
 #
 # *****************************************************************************
-#  TODO:
-#
-#    - Function definitions (from LoadDataHandling class)
-#       def popUpMenuHandler
-#
+
 # *****************************************************************************
 #     Copyright(c) 2016- L. Fleury,X. Li, D. Penko
 # *****************************************************************************
 
 from functools import partial
-
+import logging
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QInputDialog
 
@@ -32,14 +24,10 @@ class QVizLoadDataHandling(QObject):
     """
 
     def __init__(self):
-        """
-        Arguments:
-            dataTreeView (QTreeWidget) : DataTreeView object of the QTreeWidget.
-        """
         super(QVizLoadDataHandling, self).__init__()
 
     def updateMenu(self, rootNode, dataTreeView, subMenu, viewLoadingStrategy=None):
-        """Show the pop up menu for loading IDS.
+        """Show the pop-up menu for loading IDS.
 
         Arguments:
             rootNode    (QVizTreeNode) : selected node
@@ -71,7 +59,7 @@ class QVizLoadDataHandling(QObject):
                                                               rootNode.getIDSName(), i, viewLoadingStrategy, True))
 
     def buildingViewMenu(self, rootNode, dataTreeView, subMenu):
-        """Show the pop up menu for building a new view to the IDS data.
+        """Show the pop-up menu for building a new view to the IDS data.
 
         Arguments:
             rootNode    (QVizTreeNode) : selected node
@@ -79,7 +67,6 @@ class QVizLoadDataHandling(QObject):
             subMenu : menu to update
         """
         from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
-        api = dataTreeView.imas_viz_api
         viewLoadingStrategies = QVizViewLoadingStrategy.getAllStrategies()
         for viewLoadingStrategy in viewLoadingStrategies:
             action_GET_IDS_OCC_DATA = \
@@ -100,6 +87,11 @@ class QVizLoadDataHandling(QObject):
         Arguments:
             occurrence     (int) : IDS occurrence number (0-9).
             threadingEvent ()    : Event.
+            :param threadingEvent:
+            :param viewLoadingStrategy:
+            :param occurrence:
+            :param IDSName:
+            :param dataTreeView:
         """
         from imasviz.VizGUI.VizTreeView.QVizViewLoadingStrategy import QVizViewLoadingStrategy
         if viewLoadingStrategy is None:
