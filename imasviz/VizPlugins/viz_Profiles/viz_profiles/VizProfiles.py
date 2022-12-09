@@ -206,7 +206,7 @@ class VizProfiles(QMainWindow):
         slices_aos_name = self.getCurrentTab().slices_aos_name
         nb_tabs_to_add_max = self.total_undisplayed_tabs[slices_aos_name][filter_index]
         nb_tabs_to_add, ok = user_input.getInt(None, "Number of tab(s) to add:", "Number of tabs:",
-                                               value=nb_tabs_to_add_max, min=1, max=nb_tabs_to_add_max)
+                                               value=nb_tabs_to_add_max, minValue=1, maxValue=nb_tabs_to_add_max)
         if not ok:
             logging.error('Bad input from user.')
             return
