@@ -40,6 +40,7 @@ class QVizIMASDataSource:
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
 
+        load_data = True
         if self.data_entries.get(occurrence) is None:
             self.data_entries[occurrence] = imas.ids(self.shotNumber, self.runNumber,
                                             0, 0)
@@ -51,12 +52,10 @@ class QVizIMASDataSource:
                 raise ValueError("Can not open shot " + str(self.shotNumber) +
                                  " from data base " + self.imasDbName +
                                  " of user " + self.userName)
-
-        if IDSName in self.loaded_ids:
-            self.generatedDataTree.loadData = False #Do not call IMAS GET(), data are already loaded in memory
         else:
-            self.generatedDataTree.loadData = True
+            load_data = False
 
+        self.generatedDataTree.loadData = load_data # Do not call IMAS GET(), data are already loaded in memory
         self.generatedDataTree.ids = self.data_entries[occurrence]
 
         if asynch:

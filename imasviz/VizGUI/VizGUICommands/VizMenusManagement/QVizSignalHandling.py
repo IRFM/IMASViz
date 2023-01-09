@@ -246,7 +246,7 @@ class QVizSignalHandling(QObject):
         action_plotNewFigure = QAction(icon_new, 'New', self)
         api = self.dataTreeView.imas_viz_api
         action_plotNewFigure.triggered.connect(
-            partial(api.plot0D_DataVsTimeCommand, self.dataTreeView))
+            partial(api.plot0D_DataVsTimeCommand, self.dataTreeView, None))
 
         menu_figure = menu.addMenu('Figure')
         menu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))

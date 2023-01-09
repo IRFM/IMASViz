@@ -82,7 +82,7 @@ class QVizTreeNode(QTreeWidgetItem):
         self.occurrenceEntry = value
 
     def isOccurrenceEntry(self):
-        return self.occurrenceEntry == True
+        return self.occurrenceEntry is True
 
     def setParameterValue(self, aos_indice_name, value):
         self.parameters_values[aos_indice_name] = value
