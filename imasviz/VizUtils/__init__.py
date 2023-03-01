@@ -12,6 +12,6 @@ from .QVizGlobalValues import (FigureTypes,
                                PlotTypes,
                                QVizGlobalValues,
                                QVizPreferences)
-from .QVizLogger import QVizLogger
+from .QVizLoggerSingleton import QVizLoggerSingleton
 from .QVizWindowUtils import (getScreenGeometry,
                               getWindowSize)

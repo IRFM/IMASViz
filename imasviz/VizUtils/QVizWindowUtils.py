@@ -5,14 +5,15 @@
 #  Author :
 #         Ludovic Fleury, Xinyi Li, Dejan Penko
 #  E-mail :
-#         ludovic.fleury@cea.fr, xinyi.li@cea.fr, dejan.penko@lecad.fs.uni-lj.si
+#         ludovic.fleury@cea.fr
 #
 #
-#****************************************************
-#     Copyright(c) 2016- L. Fleury, D. Penko
-#****************************************************
+# ****************************************************
+#     Copyright(c) 2022 - L. Fleury, D. Penko
+# ****************************************************
 
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
+
 
 def getWindowSize(window):
     """ Get Size of the QT window. Returns width, height.
@@ -25,6 +26,7 @@ def getWindowSize(window):
     height = window.height()
 
     return width, height
+
 
 def getWindowPosition(window):
     """ Get position of the QT window. Returns pos_x, pos_y.
@@ -39,10 +41,9 @@ def getWindowPosition(window):
 
     return pos_x, pos_y
 
+
 def getScreenGeometry():
     """Return screen resolution (width and height).
     """
-    screenGeometry=QApplication.instance().desktop().screenGeometry()
-    screenWidth = screenGeometry.width()
-    screenHeight = screenGeometry.height()
+    screenWidth, screenHeight = QApplication.instance().primaryScreen().size().toTuple()
     return screenWidth, screenHeight

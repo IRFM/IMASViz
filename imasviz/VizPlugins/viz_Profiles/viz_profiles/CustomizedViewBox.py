@@ -16,8 +16,9 @@ import numpy as np
 from functools import partial
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 import logging
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QAction, QMenu
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QMenu
+from PySide6.QtGui import QAction
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI import QVizPlotConfigUI
 from imasviz.VizUtils import FigureTypes
 
@@ -295,7 +296,7 @@ class CustomizedViewBox(pg.ViewBox):
 
         if step == 0 or useLatestSettings == 0:
             user_input = QInputDialog()
-            step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", value=10, min=1)
+            step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", value=10, minValue=1)
             if not ok:
                 logging.error("Bad input from user.")
                 return

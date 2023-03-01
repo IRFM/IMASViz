@@ -15,10 +15,10 @@ import pyqtgraph as pg
 import numpy as np
 import logging
 import itertools
-from PyQt5.QtCore import Qt, QMetaObject, QRectF
-from PyQt5.QtWidgets import QWidget, QGridLayout, QHBoxLayout
-from PyQt5.QtGui import QColor
-import PyQt5.QtWidgets as QtWidgets
+from PySide6.QtCore import Qt, QMetaObject, QRectF
+from PySide6.QtWidgets import QWidget, QGridLayout, QHBoxLayout
+from PySide6.QtGui import QColor
+import PySide6.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \

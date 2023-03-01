@@ -2,8 +2,8 @@ import numpy as np
 import logging
 from imasviz.VizUtils import (QVizGlobalOperations, QVizGlobalValues,
                               QVizPreferences, GlobalColors)
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QTreeWidgetItem
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QTreeWidgetItem
 
 
 class QVizTreeNode(QTreeWidgetItem):

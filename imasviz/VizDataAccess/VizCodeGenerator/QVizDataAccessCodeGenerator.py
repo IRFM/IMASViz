@@ -73,8 +73,8 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('#This class has been generated -- DO NOT MODIFY MANUALLY !!! --', -1)
                 self.printCode('import xml.etree.ElementTree as ET', -1)
                 self.printCode('import os, logging', -1)
-                self.printCode('from PyQt5.QtCore import QThread', -1)
-                self.printCode('from PyQt5.QtWidgets import QApplication, QInputDialog', -1)
+                self.printCode('from PySide6.QtCore import QThread', -1)
+                self.printCode('from PySide6.QtWidgets import QApplication, QInputDialog', -1)
                 self.printCode('import imas', -1)
                 self.printCode('import time', -1)
                 self.printCode('from imasviz.VizGUI.VizTreeView.QVizResultEvent import QVizResultEvent', -1)
@@ -133,8 +133,9 @@ class QVizDataAccessCodeGenerator:
                     self.printCode('if self.asynch:', 3)
 
                     self.printCode(
-                        'QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId))',
-                        4)
+                        'QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, '
+                        'idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId), '
+                        '1)', 4)
                     self.printCode("print ('waiting for view update...')" + '\n', 4)
                     self.printCode('else:', 3)
                     self.printCode(

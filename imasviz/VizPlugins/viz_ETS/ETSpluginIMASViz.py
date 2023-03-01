@@ -17,7 +17,7 @@ sys.path.append(os.getenv('VIZ_HOME')+'/imasviz/VizPlugins/viz_ETS/ets-viz')
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_ETS.ets_viz.ETSViz import ETSViz
 import logging
-from PyQt5.QtWidgets import QMdiSubWindow
+from PySide6.QtWidgets import QMdiSubWindow
 import traceback
 
 

@@ -11,8 +11,8 @@
 #     Copyright(c) 2016- L. Fleury, X. Li, D. Penko
 # *****************************************************************************
 
-# from PyQt5 import QtGui, QtCore
-from PyQt5.QtCore import Qt
+# from PySide6 import QtGui, QtCore
+from PySide6.QtCore import Qt
 import pyqtgraph as pg
 from pyqtgraph import mkPen
 

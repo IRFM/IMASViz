@@ -25,21 +25,19 @@ import argparse
 from datetime import datetime
 import getpass
 import matplotlib
+# matplotlib.use('Qt5Agg')
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import \
-    FigureCanvasQTAgg as FigCanvas
-from matplotlib.backends.backend_qt5agg import \
-    NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.ticker as tick
 import numpy as np
 import os
 import sys, logging
-from PyQt5.QtWidgets import QDockWidget, QMenuBar, QAction
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, \
-                            QWidget, QGridLayout, QVBoxLayout, QLineEdit, \
-                            QSlider, QPushButton, QHBoxLayout, QLabel, QMessageBox
-from PyQt5 import QtGui
-from PyQt5 import QtCore
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, QTreeWidget, \
+    QTreeWidgetItem, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout,  \
+    QLabel, QMessageBox, QStatusBar, QCheckBox
+from PySide6 import QtCore
 
 # Local python modules
 import imas
@@ -447,7 +445,7 @@ class PlotFrame(QMainWindow):
             return
 
         # Set main widget
-        self.mainWidget = QtGui.QWidget(self)
+        self.mainWidget = QWidget(self)
 
         self.dataTimes = [round(0.5*(self.timeEquiIDS[0]+self.timeEquiIDS[-1]), 1)]
         self.dataTimes_old = self.dataTimes
@@ -565,7 +563,7 @@ class PlotFrame(QMainWindow):
         self.axes[13] = self.fig.add_subplot(grid_subp[5, 2])
 
         # Set checkbox to enable/disable grid in plots
-        self.cb_grid = QtGui.QCheckBox('Grid', self.panel)
+        self.cb_grid = QCheckBox('Grid', self.panel)
         self.cb_grid.setChecked(False)
         self.cb_grid.setObjectName("GridCheckBox")
         self.cb_grid.setText("Enable Grid")
@@ -632,7 +630,7 @@ class PlotFrame(QMainWindow):
 
     def create_status_bar(self):
         # self.statusBar = self.CreateStatusBar()
-        self.statusBar = QtGui.QStatusBar()
+        self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
 
     def draw_figure(self):
@@ -1250,7 +1248,7 @@ if (__name__ == '__main__'):
     # manipulate different parts of the Python runtime environment.
     import sys
     # PyQt library imports
-    from PyQt5.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     # IMASViz source imports
     from imasviz.Viz_API import Viz_API
     from imasviz.VizDataSource.QVizDataSourceFactory import \

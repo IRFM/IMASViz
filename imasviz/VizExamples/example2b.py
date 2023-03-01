@@ -17,7 +17,7 @@
 # manipulate different parts of the Python runtime environment.
 import sys
 # PyQt library imports
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 # IMASViz source imports
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
@@ -103,4 +103,4 @@ else:
         f[1].show()
 
         # Keep the application running
-        app.exec()
+        app.exec_()

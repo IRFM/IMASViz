@@ -16,7 +16,7 @@
 
 import pyqtgraph as pg
 import logging
-from PyQt5 import QtCore, QtGui
+from PySide6 import QtCore, QtGui
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
     import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry

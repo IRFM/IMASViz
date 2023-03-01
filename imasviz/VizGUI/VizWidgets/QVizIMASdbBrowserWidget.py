@@ -12,9 +12,9 @@
 # *****************************************************************************
 
 
-from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
-from PyQt5.QtWidgets import QProgressBar
+from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
+from PySide6.QtCore import Signal, QObject, QThread
+from PySide6.QtWidgets import QProgressBar
 import sys
 import os
 import getpass
@@ -29,7 +29,7 @@ class QVizIMASdbBrowserWidget(QTreeWidget):
     """Set and populate QTreeWidget.
     """
 
-    onItemDoubleClick = pyqtSignal()
+    onItemDoubleClick = Signal()
 
     def __init__(self, parent):
         """
@@ -155,8 +155,8 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
 class Worker(QObject):
     
-    finished = pyqtSignal()
-    progress = pyqtSignal(int)
+    finished = Signal()
+    progress = Signal(int)
     
     def __init__(self, username, presentUserNameList):
        super(Worker, self).__init__()
@@ -367,7 +367,7 @@ class Worker(QObject):
 if __name__ == '__main__':
     """Test.
     """
-    from PyQt5.QtWidgets import QApplication, QMainWindow
+    from PySide6.QtWidgets import QApplication, QMainWindow
 
     app = QApplication(sys.argv)
     mainWin = QMainWindow()

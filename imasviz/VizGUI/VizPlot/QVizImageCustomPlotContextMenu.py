@@ -12,8 +12,9 @@
 # *****************************************************************************
 
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtWidgets import QAction, QMenu
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QMenu
+from PySide6.QtGui import QAction
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu import QVizCustomPlotContextMenu
 from imasviz.VizGUI.VizPlot.QVizImageSlicesPlotConfigUI \
     import QVizImageSlicesPlotConfigUI

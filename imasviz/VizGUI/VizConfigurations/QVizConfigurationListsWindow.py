@@ -17,8 +17,8 @@
 import os
 from functools import partial
 
-from PyQt5.QtCore import Qt, pyqtSlot, QObject
-from PyQt5.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
+from PySide6.QtCore import Qt, Slot, QObject
+from PySide6.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout,
                              QPushButton, QWidget, QSizePolicy, QLabel)
 from imasviz.VizUtils import QVizGlobalOperations, GlobalFonts
 
@@ -89,7 +89,7 @@ class CommonConfigurationRoutines(QObject):
         super(CommonConfigurationRoutines, self).__init__()
         self.parent = parent
 
-    @pyqtSlot()
+    @Slot()
     def applySignalSelection(self):
         """Apply signal selection from the config file - select signals (
         list of IDS paths) only.
@@ -121,7 +121,7 @@ class CommonConfigurationRoutines(QObject):
         else:
             pass
 
-    @pyqtSlot(str)
+    @Slot(str)
     def removeConfiguration(self, configType):
         """Remove configuration file from the list.
 
