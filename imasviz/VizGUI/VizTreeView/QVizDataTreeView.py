@@ -296,7 +296,7 @@ class QVizDataTreeView(QTreeWidget):
         """
         global cv
         if idsData is not None:
-            self.IDSRoots[idsName].setOccurrence(occurrence)
+            # self.IDSRoots[idsName].setOccurrence(occurrence)
             nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.data_entries)
             thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData,
                                                                         viewLoadingStrategy))
@@ -337,6 +337,7 @@ class QVizDataTreeView(QTreeWidget):
         
         ids_root_occ = QVizTreeNode(ids_root_node, [root_node_label], ids_root_node.getData())
         ids_root_occ.setOccurrenceEntry(True)
+        ids_root_occ.setOccurrence(occurrence)
         if viewLoadingStrategy is not None:
             ids_root_occ.setIDSIsDynamic(viewLoadingStrategy.isIDSDynamic())
         ids_root_occ.setStyleWhenContainingData()
@@ -354,7 +355,7 @@ class QVizDataTreeView(QTreeWidget):
 
     def createIDSRootNode(self, idsName, idsDocumentation, DTVRoot, root_node_ori=None):
         if root_node_ori is not None:
-            itemDataDict = root_node_ori.getData()
+            itemDataDict = root_node_ori.getData().copy()
         else:
             itemDataDict = {}
         itemDataDict['IDSName'] = idsName
