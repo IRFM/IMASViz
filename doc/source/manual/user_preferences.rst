@@ -22,7 +22,9 @@ the following content:
 
 #Ignore_GGD=1
 
-These are the default values of the 4 currently available options.
+#Max_handled_occurrences=5
+
+These are the default values of the 5 currently available options.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -60,5 +62,10 @@ Colour_of_data_nodes_containing_data option
 Change Colour_of_data_nodes_containing_data option value to change the color of nodes which contain data. Some available
 colors are listed above.
 
+Max_handled_occurrences
+~~~~~~~~~~~~~~~~~~~~~~~
 
-
+Set the maximum number of handled IDS occurrences by the application. Viz currently checks the occurrence(s) which are not empty and 
+suggests to load one (or several) of them from a contextual menu. The number of searched occurrences is currently 
+limited to 'Max_handled_occurrences'. This feature will be replaced in the future when the number of available occurrences will be available
+from the Access Layer API.

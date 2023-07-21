@@ -322,7 +322,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def hasAvailableData(self):
         if self.isIDSRoot():
-            for occurrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+            for occurrence in range(0, QVizPreferences.Max_handled_occurrences):
                 if self.hasIDSAvailableData(occurrence):
                     return True
             return False

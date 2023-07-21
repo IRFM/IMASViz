@@ -86,10 +86,12 @@ class QVizPreferences:
             from PySide6.QtGui import QBrush, QColor
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
             QVizPreferences.SelectionColor = GlobalColors.RED
+            QVizPreferences.Max_handled_occurrences = 5
             option1 = "Colour_of_data_nodes_containing_data="
             option2 = "Nodes_selection_colour="
             option3 = "Allow_data_to_be_plotted_with_different_units="
             option4 = "Ignore_GGD="
+            option5 = "Max_handled_occurrences="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 logging.info("No user preferences file found.")
@@ -107,6 +109,9 @@ class QVizPreferences:
                         elif line.startswith(option4):
                             value = line[len(option4):]
                             QVizPreferences.Ignore_GGD = int(value)
+                        elif line.startswith(option5):
+                            value = line[len(option5):]
+                            QVizPreferences.Max_handled_occurrences = int(value)
 
                 userPreferencesInitialized = True
 
@@ -116,9 +121,6 @@ class QVizGlobalValues:
     IMAS_VIZ_VERSION = ''
     if "IMAS_VIZ_VERSION" in os.environ:
         IMAS_VIZ_VERSION = os.environ["IMAS_VIZ_VERSION"]
-
-    # Default maximum number of IDS occurences
-    MAX_NUMBER_OF_IDS_OCCURRENCES = 5
 
     indices = {'1': 'i', '2': 'j', '3': 'k', '4': 'l', '5': 'q', '6': 'r', '7': 't'}
     max_indices = {'1': 'N', '2': 'M', '3': 'K', '4': 'L', '5': 'Q', '6': 'R', '7': 'T'}

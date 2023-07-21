@@ -525,7 +525,7 @@ class Viz_API:
             return False
 
     def GetNextOccurrenceUnloadedWithAvailableData(self, dataTreeView, node):
-        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+        for i in range(0, QVizPreferences.Max_handled_occurrences):
             if not self.IDSDataAlreadyFetched(dataTreeView, node.getIDSName(), i):
                 if node.hasIDSAvailableData(i):
                     return i
@@ -533,14 +533,14 @@ class Viz_API:
 
     def GetAllOccurrencesWithAvailableData(self, node):
         availableOccurrences = []
-        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+        for i in range(0, QVizPreferences.Max_handled_occurrences):
             if node.hasIDSAvailableData(i):
                 availableOccurrences.append(i)
         return availableOccurrences
 
     def GetAllOccurrencesUnloadedWithAvailableData(self, dataTreeView, node):
         availableOccurrences = []
-        for i in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+        for i in range(0, QVizPreferences.Max_handled_occurrences):
             if node.hasIDSAvailableData(i) and \
                     not self.IDSDataAlreadyFetched(dataTreeView,
                                                    node.getIDSName(), i):

@@ -3,7 +3,7 @@ import logging
 import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
-from imasviz.VizUtils import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 
 
 class QVizIMASDataSource:
@@ -118,7 +118,7 @@ class QVizIMASDataSource:
         ret = False
         logging.info("Searching available data in all occurrences of " +
                      node.getIDSName() + " IDS...")
-        for occurrence in range(0, QVizGlobalValues.MAX_NUMBER_OF_IDS_OCCURRENCES):
+        for occurrence in range(0, QVizPreferences.Max_handled_occurrences):
             logging.info("Searching for occurrence: " + str(occurrence) +
                          "...")
             node.setAvailableIDSData(occurrence, 0)
