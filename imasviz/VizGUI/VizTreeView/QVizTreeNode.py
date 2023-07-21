@@ -116,7 +116,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
         if plotWidget is None:
             return self.hasTimeAxis()
-
+        #print('isPlotToPerformAlongTimeAxis::plotWidget.getPlotAxis()=', plotWidget.getPlotAxis())
         if plotWidget.getPlotAxis() == "TIME":
             return self.hasTimeAxis()
         elif plotWidget.getPlotAxis() == "DEFAULT" or plotWidget.getPlotAxis() == "COORDINATE1":

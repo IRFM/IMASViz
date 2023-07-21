@@ -411,9 +411,13 @@ class QVizSignalHandling(QObject):
             # plot - This DTV
             action_TPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
                                          self)
+            commonPlotAxis = 'TIME'
+            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
+                commonPlotAxis = plotAxis
+
             action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=False,
-                        configFile=None, plotAxis='TIME'))
+                        configFile=None, plotAxis=commonPlotAxis))
             # Add to submenu
             subMenu_TPV_new.addAction(action_TPV_thisDTV)
 
@@ -469,8 +473,13 @@ class QVizSignalHandling(QObject):
             # plot - This DTV
             action_SPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
                                          self)
+
+            commonPlotAxis = 'TIME'
+            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
+                commonPlotAxis = plotAxis
+
             action_SPV_thisDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, False, 'TIME'))
+                partial(self.onPlotToStackedPlotView, False, commonPlotAxis))
             # Add to submenu
             subMenu_SPV_new.addAction(action_SPV_thisDTV)
 
@@ -806,7 +815,8 @@ class QVizSignalHandling(QObject):
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=None,  # passing figureKey=None means we want
                                                       # a new plotWidget
-                                                      plotAxis=plotAxis)
+                                                      plotAxis=plotAxis,
+                                                      treeNode=self.treeNode)
             self.addPlotWidgetToMDI(plotWidget)
             # Get the signal data for plot widget
             p = QVizPlotSignal(plotWidget=plotWidget,
@@ -848,6 +858,9 @@ class QVizSignalHandling(QObject):
         # value 'Figure 3' will be returned)
         try:
             # figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
+            if len(self.dataTreeView.selectedSignalsDict) == 0:
+                logging.error("No selection found.")
+                return
             first_key = list(self.dataTreeView.selectedSignalsDict.keys())[0]
             v = self.dataTreeView.selectedSignalsDict[first_key]
 
@@ -937,29 +950,9 @@ class QVizSignalHandling(QObject):
         Arguments:
             numFig (int) : Number identification of the existing figure.
         """
-        # try:
-
-            # label = None
-            # title = None
-
-            # # Get figure key (e.g. 'Figure:0' string)
-            # figureKey = self.imas_viz_api. \
-                # GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
-            # # Get widget linked to this figure
-            # api = self.dataTreeView.imas_viz_api
-            # figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                      # figureKey=figureKey)
-
-            # QVizPlotSignal(dataTreeView=self.dataTreeView,
-                           # label=label,
-                           # title=title,
-                           # vizTreeNode=self.treeNode,
-                           # plotWidget=plotWidget).execute(figureKey=figureKey,
-                                                          # update=0)
-        # except ValueError as e:
-            # logging.error(str(e))
-        # api = self.dataTreeView.imas_viz_api
         api = self.dataTreeView.imas_viz_api
+        logging.debug("QVizSignalHandling::addSignalPlotToFig:treeNode=" + self.treeNode.getName())
+        print(id(self.treeNode))
         api.AddPlot1DToFig(numFig, self.treeNode)
 
     def addPlotWidgetToMDI(self, plotWidget):
@@ -1004,7 +997,7 @@ class QVizSignalHandling(QObject):
             for si in selectedNodeList:
                 if figureKey is not None:
                     figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                              figureKey=figureKey)
+                                                              figureKey=figureKey, treeNode=vizTreeNode)
                     # Following check on coordinates is performed only if the current plot axis is not the time axis
                     if plotWidget.getPlotAxis() != 'TIME':
                         if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):

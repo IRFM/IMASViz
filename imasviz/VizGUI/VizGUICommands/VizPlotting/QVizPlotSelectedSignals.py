@@ -136,7 +136,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
                             ti = t[0]
                             # Creating plot
                             # Setting range manually (see IMAS-3658)
-                            self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+                            try:
+                                self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+                            except:
+                                pass
                             self.plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, title='', xlabel=xlabel,
                                                  ylabel=ylabel, label=label)
                     else:
@@ -152,7 +155,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
                             # Note: do not pass again title, xlabel and ylabel
                             #       arguments if those attributes from the first
                             #       plot are to be kept.
-                            self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+                            try:
+                                self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+                            except:
+                                pass
                             self.plotWidget.plot(vizTreeNode=vizTreeNode, x=ti, y=u, label=label)
 
                     if vizTreeNode.embedded_in_time_dependent_aos() and vizTreeNode.is1DAndDynamic():

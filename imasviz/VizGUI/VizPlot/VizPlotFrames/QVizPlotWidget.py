@@ -89,7 +89,7 @@ class QVizPlotWidget(QWidget):
              xlabel='', ylabel='',
              pen=None, update=1, preview=0):
         """Add plot.
-
+        
         Arguments:
             x      (1D array) : 1D array of X-axis values.
             y      (1D array) : 1D array of Y-axis values.
@@ -137,7 +137,8 @@ class QVizPlotWidget(QWidget):
                 x = np.append(x, [x[0]])
                 y = np.append(y, [y[0]])
         except:
-            print('closed attribute not found')
+            logging.error('closed attribute not found')
+
         plotDataItem = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
         # Set only when adding the first plot. All additionally added plots
@@ -260,7 +261,7 @@ class QVizPlotWidget(QWidget):
             self.indexLabel = self.sliderGroupDict['indexLabel']
             self.sliderValueIndicator = self.sliderGroupDict['sliderValueIndicator']
 
-            self.setSliderComponentsDisabled(True)
+            self.setSliderComponentsDisabled(False)
 
             self.gridLayout.addWidget(self.separatorLine, 2, 0, 1, 10)
             # Add time slider label
@@ -321,18 +322,15 @@ class QVizPlotWidget(QWidget):
         self.pgPlotWidget.setMouseEnabled(x=enabled, y=enabled)
 
     def updateSlider(self, treeNode):
+        logging.debug("updateSlider called")
         nodesList = self.pgPlotWidget.getViewBox().vizTreeNodesList
         if len(nodesList) == 1 and treeNode.embedded_in_time_dependent_aos() and treeNode.is1DAndDynamic():
             self.setSliderComponentsDisabled(False)
 
         if not (treeNode.is2DOrLarger()):
             if self.sliderGroup.slider.isEnabled():
+                logging.debug("updateSlider::setSlider called")
                 self.sliderGroup.setSlider()
-
-                if self.addTimeSlider:
-                    time_index = treeNode.timeValue()
-                    self.sliderGroup.slider.setValue(int(time_index))
-                    self.sliderGroup.updateTimeValues(int(time_index))
 
 
 class sliderGroup():
@@ -346,6 +344,7 @@ class sliderGroup():
         self.slider = QtWidgets.QSlider(Qt.Horizontal, self.parent)
         self.slider.setMinimum(0)
         self.slider.setMaximum(0)
+        logging.debug("setting slider to 0")
         self.slider.setValue(0)
         # Set slider press variable as false
         self.sliderPress = False
@@ -394,13 +393,15 @@ class sliderGroup():
 
     def updateTimeValues(self, indexValue):
 
+        logging.debug("updateTimeValues called")
         if not self.slider.isEnabled():
+            logging.debug("updateTimeValues() returns without action")
             return
 
         if self.isTimeSlider:
             self.sliderFieldLabel = self.setLabel(text='Time:')
             nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
-            i = 0;
+            i = 0
             for node in nodesList:
                 label = node.setLabelForFigure(node.getDataTreeView().dataSource)
                 if node.globalTime is None:
@@ -419,7 +420,7 @@ class sliderGroup():
                     self.parent.sliderFieldLabel.setText("Undefined IDS global time.")
         else:
             nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
-            i = 0;
+            i = 0
             self.sliderFieldLabel = self.setLabel(text='Coordinate1:')
             for node in nodesList:
                 if node.is1DAndDynamic() and node.embedded_in_time_dependent_aos():
@@ -443,13 +444,14 @@ class sliderGroup():
         """Set slider.
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
-
+        logging.debug("setSlider called")
         minValue = self.slider.minimum()
         maxValue = self.slider.maximum()
 
         if self.isTimeSlider:
             # Set index slider using coordinates as index (e.g. psi)
             # Set minimum and maximum value
+            logging.debug("setSlider:: isTimeSlider=True")
             minValue = 0
             nodesList = self.parent.pgPlotWidget.getViewBox().vizTreeNodesList
             for node in nodesList:
@@ -460,6 +462,7 @@ class sliderGroup():
                     if newMaxValue < self.slider.maximum() or maxValue == 0:
                         maxValue = newMaxValue
         else:
+            logging.debug("setSlider:: isTimeSlider=False")
             # Set minimum and maximum value
             minValue = 0
             # - Get maximum value by getting the length of the array
@@ -564,8 +567,7 @@ class sliderGroup():
         i = 0
         api = self.dataTreeView.imas_viz_api
         for node in self.parent.pgPlotWidget.getViewBox().vizTreeNodesList:
-            if self.isTimeSlider:
-
+            if self.isTimeSlider:           
                 api.plotVsCoordinate1AtGivenTime(
                     dataTreeView=node.getDataTreeView(),
                     currentFigureKey=currentFigureKey,

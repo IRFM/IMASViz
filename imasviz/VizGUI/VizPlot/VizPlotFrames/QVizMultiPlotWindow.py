@@ -67,8 +67,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.imas_viz_api = self.dataTreeView.imas_viz_api
 
         if self.getNumSignals(all_DTV=all_DTV) < 1:
-            logging.warning('QVizMultiPlotWindow: No nodes selected! Aborting '
-                            'MultiPlotView creation.')
+            logging.error('No selection found.')
             return
 
         # Get screen resolution (width and height)
@@ -251,7 +250,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         options = menuBar.addMenu('Options')
         # ---------------------------------------------------------------------
         # Set new menu item for saving plot configuration
-        action_onSavePlotConf = QtWidgets.QAction('Save Plot Configuration',
+        action_onSavePlotConf = QtGui.QAction('Save Plot Configuration',
                                                   self)
         action_onSavePlotConf.triggered.connect(self.onSavePlotConf)
         options.addAction(action_onSavePlotConf)

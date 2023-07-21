@@ -237,7 +237,8 @@ class QVizDataTreeView(QTreeWidget):
             # If the node holds an 1D array of values (1D_FLT) then its
             # isSignal attribute equals 1 (isSignal = 1)
             # Set and show preview panel
-            QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self)
+            logging.debug('QVizDataTreeView::onLeftClickItem::calling plotPreviewSignalCommand')
+            QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self, treeNode=item)
             QVizSignalHandlingObj.plotPreviewSignalCommand()
 
     def contextMenuEvent(self, event):

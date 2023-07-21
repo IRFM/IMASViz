@@ -14,21 +14,27 @@ class QVizIMASNativeDataAccess:
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
                   coordinate_index=0, time_index=None):
 
+        logging.debug("QVizIMASNativeDataAccess::treeNode=" + treeNode.getName())
         if as_function_of_time is None:
             as_function_of_time = \
                 treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
 
         if time_index is None:
             time_index = treeNode.timeValue()
+            logging.debug("calling timeValue(), time_index:" + str(time_index))
+            
+        logging.debug("time_index=" + str(time_index))
 
         if plotWidget is not None and plotWidget.addTimeSlider:
-            if plotWidget.sliderGroup is not None:
-                time_index = plotWidget.sliderGroup.slider.value()
+            time_index = plotWidget.sliderGroup.slider.value()
+            logging.debug("calling slider.value(), time_index:" + str(time_index))
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
             coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if as_function_of_time:
+
+            logging.debug("time dependent 1D data...")
 
             if treeNode.is0DAndDynamic():
                 return self.GetSignalVsTime(treeNode, coordinate_index)
@@ -50,10 +56,12 @@ class QVizIMASNativeDataAccess:
                     raise ValueError("Unable to get time dependent signal " +
                                      "for node: " + treeNode.getPath())
         else:
+            logging.debug("time independent 1D data...")
+
             if treeNode.is0DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is1D():
-                # print("calling GetSignalAt ", time_index)
+                logging.debug("calling GetSignalAt @ time_index= " + str(time_index))
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
             elif treeNode.is2DAndDynamic():
                 return self.GetSignalAt(treeNode, time_index, plotWidget)
@@ -62,6 +70,7 @@ class QVizIMASNativeDataAccess:
         if treeNode.is2DAndDynamic():
             return self.GetSignal2DAt(treeNode, itimeValue, plotWidget)
         if treeNode.is1D():
+            logging.debug("calling GetSignalAt @ time_ivalue= " + str(itimeValue))
             return self.GetSignal1DAt(treeNode, itimeValue)
         elif treeNode.is0DAndDynamic():
             if plotWidget is not None:
@@ -106,16 +115,20 @@ class QVizIMASNativeDataAccess:
                 coordinatesPaths.append(coordinate)
 
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=dim):
+                    logging.debug("cooordinate of node '" + treeNode.getName() + "' is time dependent")
                     # coordinate for dimension dim is a function of time
                     coordinateValues = QVizGlobalOperations.getCoordinate_array(data_entry,
                                                                                 treeNode.getData(),
                                                                                 coordinate)
                     coordinate_of_time = dim
                 else:
+                    logging.debug("cooordinate of node '" + treeNode.getName() + "' is not time dependent")
                     if "1.." in treeNode.getCoordinate(coordinateNumber=dim):
+                        logging.debug("cooordinate of node '" + treeNode.getName() + "' is 1..N")
                         N = len(r_val)
                         coordinateValues = np.asarray(range(0, N))
                     else:
+                        logging.debug("cooordinate of node '" + treeNode.getName() + "' is not 1..N")
                         path = "data_entry." + treeNode.getIDSName() + "." + coordinate
                         coordinateValues = eval(path)
                         if len(coordinateValues) == 0:
@@ -144,7 +157,7 @@ class QVizIMASNativeDataAccess:
 
             data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             signalPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
-            # print("signalPath=", signalPath)
+            logging.debug("signalPath=" + signalPath)
             r_val = eval(signalPath)
             r = np.array([r_val])
             coordinate1 = treeNode.evaluateCoordinateAt(coordinateNumber=1,
@@ -152,23 +165,26 @@ class QVizIMASNativeDataAccess:
 
             if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                 # coordinate1 is a function of time
+                logging.debug("cooordinate1 of node '" + treeNode.getName() + "' is time dependent")
                 t = QVizGlobalOperations.getCoordinate_array(data_entry,
                                                              treeNode.getData(),
                                                              coordinate1)
                 t = np.array([t])
             else:
+                logging.debug("cooordinate1 of node '" + treeNode.getName() + "' is not time dependent")
                 if "1.." in treeNode.getCoordinate(coordinateNumber=1):
+                    logging.debug("cooordinate1 of node '" + treeNode.getName() + "' is 1..N")
                     N = len(r[0])
                     t = np.array([range(0, N)])
                 else:
+                    logging.debug("cooordinate1 of node '" + treeNode.getName() + "' is not 1..N")
                     path = "data_entry." + treeNode.getIDSName() + "." + \
                            coordinate1
-                    # print("path=", path)
+                    logging.debug("path=" + path)
                     e = eval(path)
                     if len(e) == 0:
-                        # path1 = treeNode.getIDSName() + "." + coordinate1
-                        raise ValueError("Coordinate1 has no values.")
-                    if len(e) != len(r_val):
+                        logging.error("Coordinate1 has no values.")
+                    if len(e) != 0 and len(e) != len(r_val):
                         path1 = treeNode.getIDSName() + "." + coordinate1
                         raise ValueError(
                             "Coordinate1 (" + path1 + ") array has not the same length than the signal you want to "
@@ -201,11 +217,18 @@ class QVizIMASNativeDataAccess:
             time_slices_count = len(data_path_list)
             v = []
             data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
-            for i in range(0, time_slices_count):
-                # Get values of the array at index
-                value_at_index = eval('data_entry.' + data_path_list[i] + '[' +
-                                      str(coordinate_index) + ']')
-                v.append(value_at_index)
+            bad_time_values = []
+            for i in range(time_slices_count):
+                try:
+                    # Get values of the array at index
+                    value_at_index = eval('data_entry.' + data_path_list[i] + '[' +
+                                        str(coordinate_index) + ']')
+                    v.append(value_at_index)
+                except:
+                     bad_time_values.append(i)
+
+            if len(bad_time_values) > 0:
+                time = np.delete(time, bad_time_values)
             r_array = np.array([np.array(v)])
             t_array = np.array([time])
             return t_array, r_array
@@ -228,10 +251,16 @@ class QVizIMASNativeDataAccess:
                 treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataSource)
         time = treeNode.globalTime
         # Get values of the 0D scalar at each time slice
+        bad_time_values = []
         for i in range(time_slices_count):
-            value_at_index = eval('data_entry.' + data_path_list[i])
-            v.append(value_at_index)
+            try:
+               value_at_index = eval('data_entry.' + data_path_list[i])
+               v.append(value_at_index)
+            except:
+               bad_time_values.append(i)
 
+        if len(bad_time_values) > 0:
+            time = np.delete(time, bad_time_values)
         r_array = np.array([np.array(v)])
         t_array = np.array([time])
         return t_array, r_array

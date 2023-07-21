@@ -53,7 +53,7 @@ class QVizNodesSelectionWindow(QDialog):
         table.setColumnCount(3)
         tableHeader = ["IMAS Path", "IDS Occurrence", "IDS"]
         table.setHorizontalHeaderLabels(tableHeader)
-        table.horizontalHeader().setResizeMode(0, QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         table.setColumnWidth(1, 500)
         table.setColumnWidth(2, 10)
         table.setColumnWidth(3, 50)

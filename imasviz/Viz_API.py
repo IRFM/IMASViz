@@ -561,7 +561,7 @@ class Viz_API:
         else:
             return self.GetDataSource(dataTreeFrame).data_entries[occurrence]
 
-    def CreatePlotWidget(self, dataTreeView, plotAxis="DEFAULT"):
+    def CreatePlotWidget(self, dataTreeView, plotAxis="DEFAULT", treeNode=None):
 
         from imasviz.VizGUI.VizPlot import QVizPlotWidget
 
@@ -569,11 +569,14 @@ class Viz_API:
 
         addTimeSlider = False
         addCoordinateSlider = False
-        # print('Creation of a plot widget')
+        logging.debug('Creation of a plot widget')
         if plotAxis == "COORDINATE1":
+            logging.debug('Creation of a plot widget with addTimeSlider = True')
             addTimeSlider = True
             addCoordinateSlider = False
+            
         elif plotAxis == "TIME":
+            logging.debug('Creation of a plot widget with addTimeSlider = False')
             addTimeSlider = False
             addCoordinateSlider = True
 
@@ -582,16 +585,19 @@ class Viz_API:
                                     dataTreeView=dataTreeView,
                                     addTimeSlider=addTimeSlider,
                                     addCoordinateSlider=addCoordinateSlider)
+        #if treeNode is not None and addTimeSlider:
+        #    plotWidget.sliderGroup.slider.setValue(int(treeNode.timeValue()))
+        
         plotWidget.setPlotAxis(plotAxis)
         self.figureframes[figureKey] = plotWidget
         return figureKey, plotWidget
 
-    def GetPlotWidget(self, dataTreeView, figureKey=0, plotAxis="DEFAULT"):
+    def GetPlotWidget(self, dataTreeView, figureKey=0, plotAxis="DEFAULT", treeNode=None):
         if figureKey in self.figureframes:
             plotWidget = self.figureframes[figureKey]
         else:
             figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=dataTreeView,
-                                                          plotAxis=plotAxis)
+                                                          plotAxis=plotAxis, treeNode=treeNode)
         return figureKey, plotWidget
 
     def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
@@ -777,7 +783,8 @@ class Viz_API:
             currentFigureKey, plotWidget = \
                 self.GetPlotWidget(dataTreeView=dataTreeView,
                                    figureKey=currentFigureKey,
-                                   plotAxis='TIME')
+                                   plotAxis='TIME',
+                                   treeNode=treeNode)
 
             # Add plot window to subwindow and to MDI only if the plotWidget
             # with the given figurekey does not exist yet
@@ -816,7 +823,8 @@ class Viz_API:
             currentFigureKey, plotWidget = \
                 self.GetPlotWidget(dataTreeView=dataTreeView,
                                    figureKey=currentFigureKey,
-                                   plotAxis='COORDINATE1')
+                                   plotAxis='COORDINATE1',
+                                   treeNode=treeNode)
             # Add plot window to subwindow and to MDI only if the plotWidget
             # with the given figurekey does not exist yet
             if currentFigureKey not in self.figureframes:

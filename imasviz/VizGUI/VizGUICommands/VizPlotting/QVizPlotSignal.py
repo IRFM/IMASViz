@@ -64,12 +64,13 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
             api = self.dataTreeView.imas_viz_api
 
             if signal is None:
+                logging.debug("calling api.GetSignal() for node:" + self.treeNode.getName())
                 self.signal = api.GetSignal(self.dataTreeView, self.treeNode, plotWidget=self.plotWidget)
             else:
                 self.signal = signal
 
             if len(self.signal) == 2:
-
+                logging.debug("calling api.get1DSignalValue() for node:" + self.treeNode.getName())
                 t = QVizPlotSignal.getXAxisValues(self.signal)
                 v = QVizPlotSignal.get1DSignalValue(self.signal)
 
@@ -156,6 +157,9 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                     # pgPlotItem = self.plotWidget.pgPlotWidget.plotItem
                     pgPlotItem = self.plotWidget.getPlotItem()
                     pgCentralWidget = self.plotWidget.pgPlotWidget.centralWidget
+                    #print('dataset_to_update=', dataset_to_update)
+                    #if dataset_to_update < 0 or dataset_to_update >= len(pgPlotItem.items):
+                    #    return  
                     pgPlotItem.items[dataset_to_update].setData(x=ti, y=u)
                     # Update x-axis label
                     x_axis = pgPlotItem.getAxis('bottom')
@@ -173,9 +177,11 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                     ti = t[0]
 
                     # Setting range manually (see IMAS-3658)
-                    self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+                    try:
+                        self.plotWidget.getPlotItem().setRange(xRange=(min(ti), max(ti)), yRange=(min(u), max(u)))
+                    except:
+                        pass
                     pm = self.plotWidget.getPlotItem()
-
                     if i == 0:
                         # New plot
                         self.plotWidget.plot(vizTreeNode=self.treeNode,
@@ -193,7 +199,12 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
 
         except:
             traceback.print_exc(file=sys.stdout)
+            #self.plotWidget.pgPlotWidget.getViewBox().addVizTreeNode(self.treeNode, preview=0)
+            #self.plotWidget.updateSlider(self.treeNode)
             raise
+        finally:
+            pass
+            #self.plotWidget.show()
 
     def onHide(self, api, figureKey):
         self.dataTreeView.imas_viz_api.figureframes[figureKey].hide()

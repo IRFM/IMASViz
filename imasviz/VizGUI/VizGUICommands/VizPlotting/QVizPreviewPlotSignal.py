@@ -59,6 +59,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
 
     def execute(self):
         try:
+            self.getPlotWidget().setPlotAxis(self.treeNode.getPlotAxisForDefaultPlotting())
             data = self.getData()
             
             if self.treeNode.getDataType() == 'STR_1D':
@@ -74,8 +75,6 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
                 v = data[1]
                 if len(t[0]) !=len(v[0]):
                     raise ValueError("Data can not be previewed, x and y shapes are different.")
-
-                self.getPlotWidget().setPlotAxis(self.treeNode.getPlotAxisForDefaultPlotting())
                 self.plot1DSignal(shotNumber=self.dataTreeView.shotNumber,
                                   t=t, v=v, title=self.title,
                                   label=self.label, xlabel=self.xlabel)
