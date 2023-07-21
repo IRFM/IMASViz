@@ -57,10 +57,9 @@ class QVizIMASDataSource:
                                  " of user " + self.userName)
 
         if IDSName in self.loaded_ids:
-            logging.info("Not loading data...")
-            self.generatedDataTree.loadData = False  # Do not call IMAS GET(), data are already loaded in memory
-        #else:
-        #    load_data = False
+            load_data = False
+        else:
+            load_data = True
 
         self.generatedDataTree.loadData = load_data # Do not call IMAS GET(), data are already loaded in memory
         self.generatedDataTree.ids = self.data_entries[occurrence]
