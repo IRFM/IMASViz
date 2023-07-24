@@ -86,7 +86,7 @@ class QVizPreferences:
             from PySide6.QtGui import QBrush, QColor
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
             QVizPreferences.SelectionColor = GlobalColors.RED
-            QVizPreferences.Max_handled_occurrences = 5
+            QVizPreferences.Max_handled_occurrences = 10
             option1 = "Colour_of_data_nodes_containing_data="
             option2 = "Nodes_selection_colour="
             option3 = "Allow_data_to_be_plotted_with_different_units="
