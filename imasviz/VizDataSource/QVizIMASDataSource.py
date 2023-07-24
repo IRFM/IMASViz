@@ -117,7 +117,10 @@ class QVizIMASDataSource:
         ret = False
         logging.info("Searching available data in all occurrences of " +
                      node.getIDSName() + " IDS...")
-        for occurrence in range(0, QVizPreferences.Max_handled_occurrences):
+
+        maxOccurrences = eval("imas_entry." + node.getIDSName() + ".getMaxOccurrences()")
+
+        for occurrence in range(0, maxOccurrences):
             logging.info("Searching for occurrence: " + str(occurrence) +
                          "...")
             node.setAvailableIDSData(occurrence, 0)

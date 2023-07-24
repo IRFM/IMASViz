@@ -337,6 +337,7 @@ class QVizDataTreeView(QTreeWidget):
                root_node_label += " [" + label + "]"
         
         ids_root_occ = QVizTreeNode(ids_root_node, [root_node_label], ids_root_node.getData())
+        ids_root_occ.dataTreeView = self
         ids_root_occ.setOccurrenceEntry(True)
         ids_root_occ.setOccurrence(occurrence)
         if viewLoadingStrategy is not None:

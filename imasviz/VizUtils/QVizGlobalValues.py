@@ -86,12 +86,10 @@ class QVizPreferences:
             from PySide6.QtGui import QBrush, QColor
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
             QVizPreferences.SelectionColor = GlobalColors.RED
-            QVizPreferences.Max_handled_occurrences = 10
             option1 = "Colour_of_data_nodes_containing_data="
             option2 = "Nodes_selection_colour="
             option3 = "Allow_data_to_be_plotted_with_different_units="
             option4 = "Ignore_GGD="
-            option5 = "Max_handled_occurrences="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 logging.info("No user preferences file found.")
@@ -109,9 +107,6 @@ class QVizPreferences:
                         elif line.startswith(option4):
                             value = line[len(option4):]
                             QVizPreferences.Ignore_GGD = int(value)
-                        elif line.startswith(option5):
-                            value = line[len(option5):]
-                            QVizPreferences.Max_handled_occurrences = int(value)
 
                 userPreferencesInitialized = True
 

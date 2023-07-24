@@ -102,6 +102,7 @@ class QVizDataTreeViewBuilder:
                 parentItemDataDict['Path'] = arrayParentPath
                 # Add tree item
                 parentNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict)
+                parentNode.dataTreeView = dataTreeView
                 self.arrayParentNodes[arrayParentPath] = parentNode
                 parentNode.setStyleForAOSContainingData()
             else:
@@ -153,6 +154,7 @@ class QVizDataTreeViewBuilder:
             elif dataElement.tag is not None:
                 itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag, dataElement)
                 viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes) # Add tree item
+
         else:
             if dataElement.text is not None and dataElement.text.strip() != '':
                 itemNodeName = self.addUnitsAndDataTypeToItemNodeName(dataElement.tag + '=' + str(dataElement.text), dataElement)
