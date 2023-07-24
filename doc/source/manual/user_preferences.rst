@@ -22,7 +22,7 @@ the following content:
 
 #Ignore_GGD=1
 
-#Max_handled_occurrences=5
+#Max_handled_occurrences=10
 
 These are the default values of the 5 currently available options.
 
