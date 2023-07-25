@@ -13,6 +13,24 @@ Release notes
 =============
 
 -------------
+Version 2.7.1
+-------------
+Released 07/25/2023
+
+- IMAS-4655: data availability (missing time slices)
+- IMAS-4808: handling max handled occurrences
+- Fixing non reported bugs
+
+-------------
+Version 2.7.0
+-------------
+Released 07/20/2023
+
+- IMAS-4325 : Refactor Viz to use PySide6 rather than PyQt5
+- IMAS-4470: fix
+- Replacing map by a stack in code generator
+
+-------------
 Version 2.6.1
 -------------
 Released 11/29/2022
