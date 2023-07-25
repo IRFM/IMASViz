@@ -22,7 +22,7 @@ the following content:
 
 #Ignore_GGD=1
 
-These are the default values of the 5 currently available options.
+These are the default values of the 4 currently available options.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
