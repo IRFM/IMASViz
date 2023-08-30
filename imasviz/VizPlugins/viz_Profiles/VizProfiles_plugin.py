@@ -45,7 +45,10 @@ class VizProfiles_plugin(VizPlugin):
 
             idd = dataSource.createImasDataEntry()
             maxOccurrences = eval("idd." + selected_ids + ".getMaxOccurrences()")
-            occurrence = self.askForOccurrence(maxOccurrences)
+
+            occurrence = 0
+            if maxOccurrences > 1:
+                occurrence = self.askForOccurrence(maxOccurrences)
 
 
             # Check if the IDS data is already loaded in IMASviz. If it is not,
