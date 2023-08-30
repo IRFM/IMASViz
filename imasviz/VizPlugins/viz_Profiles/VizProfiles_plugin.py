@@ -40,12 +40,17 @@ class VizProfiles_plugin(VizPlugin):
             run = dataSource.runNumber
             device = dataSource.imasDbName
             user = dataSource.userName
-            occurrence = 0
+
+            selected_ids = self.selectedTreeNode.getIDSName()
+
+            idd = dataSource.createImasDataEntry()
+            maxOccurrences = eval("idd." + selected_ids + ".getMaxOccurrences()")
+            occurrence = self.askForOccurrence(maxOccurrences)
+
 
             # Check if the IDS data is already loaded in IMASviz. If it is not,
             # load it (LoadListOfIDSs contains this IDS check strategy)
-
-            selected_ids = self.selectedTreeNode.getIDSName()
+            
             ids_list = [selected_ids]
             vizAPI.LoadListOfIDSs(self.dataTreeView, ids_list, occurrence)
             self.data_entry = dataSource.getImasEntry(occurrence)
@@ -179,6 +184,15 @@ class VizProfiles_plugin(VizPlugin):
             logging.error("ERROR! (%s)" % err, exc_info=True)
             traceback.print_exc()
             logging.error(traceback.format_exc())
+
+    def askForOccurrence(self, maxOccurrences):
+        user_input = QInputDialog()
+        occ, ok = user_input.getInt(None, "IDS occurrence:", "Occurrence:",
+                                               value=0, minValue=0, maxValue=maxOccurrences)
+        if not ok:
+            logging.error('Bad input from user. Taking occurrence 0.')
+            return 0
+        return occ
 
     def data_found(self, data_entry, ids_name, dynamic_aos_name):
         time_slices_count = eval("len(data_entry." + ids_name + "." + dynamic_aos_name + ")")

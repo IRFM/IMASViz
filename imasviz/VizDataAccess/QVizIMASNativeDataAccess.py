@@ -26,11 +26,13 @@ class QVizIMASNativeDataAccess:
         logging.debug("time_index=" + str(time_index))
 
         if plotWidget is not None and plotWidget.addTimeSlider:
-            time_index = plotWidget.sliderGroup.slider.value()
+            if plotWidget.sliderGroup is not None:
+                time_index = plotWidget.sliderGroup.slider.value()
             logging.debug("calling slider.value(), time_index:" + str(time_index))
 
         if plotWidget is not None and plotWidget.addCoordinateSlider:
-            coordinate_index = plotWidget.sliderGroup.slider.value()
+            if plotWidget.sliderGroup is not None:
+                coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if as_function_of_time:
 

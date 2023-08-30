@@ -107,6 +107,7 @@ class QVizDataTreeViewBuilder:
                 parentNode.setStyleForAOSContainingData()
             else:
                 parentNode = self.arrayParentNodes[arrayParentPath]
+                parentNode.dataTreeView = dataTreeView
 
 
             itemDataDict, extra_attributes = \

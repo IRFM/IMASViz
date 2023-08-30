@@ -322,9 +322,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def hasAvailableData(self):
         if self.isIDSRoot():
-            if self.dataTreeView is None:
+            if self.getDataTreeView() is None:
                 return False
-            idd = self.dataTreeView.dataSource.createImasDataEntry()
+            idd = self.getDataTreeView().dataSource.createImasDataEntry()
             maxOccurrences = eval("idd." + self.getIDSName() + ".getMaxOccurrences()")
             for occurrence in range(0, maxOccurrences):
                 if self.hasIDSAvailableData(occurrence):

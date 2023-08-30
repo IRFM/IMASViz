@@ -110,13 +110,11 @@ class VizProfiles(QMainWindow):
         self.pb.close()
 
     def setTabs(self):
-
         no_result = True
         for key in self.worker.results_map:
             if len(self.worker.results_map[key]) != 0:
                 no_result = False
                 break
-
         if no_result:
             self.close()
             logging.info("No data available for plotting.")
@@ -127,8 +125,10 @@ class VizProfiles(QMainWindow):
         self.tabWidget = QTabWidget(parent=self)
 
         self.tabWidget.currentChanged.connect(self.disableOrEnabledAddNewTabsIfRequired)
-
-        self.addTabs()
+        success = self.addTabs()
+        if success == 0:
+            logging.error("An error has occurred.")
+            return
         self.setUI()
         self.disableOrEnabledAddNewTabsIfRequired()
 
@@ -137,7 +137,7 @@ class VizProfiles(QMainWindow):
         self.total_undisplayed_tabs = {}
         self.total_tabs = {}
         self.signals_last_index = {}
-
+        success = 0
         for key in self.worker.slices_aos_names:
             self.total_undisplayed_tabs[key] = []
             self.total_tabs[key] = []
@@ -162,9 +162,9 @@ class VizProfiles(QMainWindow):
                 n_tabs = int((len(plottable_signals) / self.n_curves_per_page)) + remaining_page
                 self.total_tabs[key][filter_index] = n_tabs
                 self.total_undisplayed_tabs[key][filter_index] = n_tabs - nb_tabs_count
-                # print("-->key=", key)
-                # print("-->filter_index=", filter_index)
-                # print("-->self.total_undisplayed_tabs[filter_index]=", self.total_undisplayed_tabs[filter_index])
+                #print("-->key=", key)
+                #print("-->filter_index=", filter_index)
+                #print("-->self.total_undisplayed_tabs[filter_index]=", self.total_undisplayed_tabs[filter_index])
                 for i in range(nb_tabs_count):
                     start_index = i * self.n_curves_per_page + self.signals_last_index[key][filter_index]
                     last_index = start_index + self.n_curves_per_page
@@ -185,11 +185,11 @@ class VizProfiles(QMainWindow):
                                    signals=plottable_signals[start_index:last_index],
                                    plotWidget=w,
                                    plotAxis=self.plotAxis)
+                    success = 1
+        return success
 
     def disableOrEnabledAddNewTabsIfRequired(self):
         if self.addNewTabsButton is None or self.askForAddingNewTabsButton is None:
-            return
-        if self.getCurrentTab() is None:
             return
         filter_index = self.getCurrentTab().filter_index
         slices_aos_name = self.getCurrentTab().slices_aos_name
@@ -487,6 +487,8 @@ class VizProfiles(QMainWindow):
     def updateTimeSliderTminTmaxLabel(self):
         """ Update tmin and tmax label/values.
         """
+        if self.getCurrentTab() is None:
+            return
         slices_aos_name = self.getCurrentTab().slices_aos_name
         ntimevalues = eval("len(self.data_entry." + self.ids_related + "." + slices_aos_name + ")")
         tmin = -9e+40
@@ -669,7 +671,6 @@ class Worker(QObject):
             for str_filter in request.list_of_filters:
                 j = j + 1
                 self.progressBar.emit(j)
-                # print("str_filter-->", str_filter)
                 nodes_id, dtv_nodes = self.imas_viz_api.getAll_0D_1D_Nodes(
                     self.dataTreeView.IDSRoots[self.ids_name],
                     errorBars=False,
