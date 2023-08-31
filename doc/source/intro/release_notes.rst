@@ -13,6 +13,14 @@ Release notes
 =============
 
 -------------
+Version 2.7.2
+-------------
+Released 08/31/2023
+
+- IMAS-4838: Plugin feature broken in version 2.7.1
+- Improving the Profiles plugin to work on any IDS occurrence
+
+-------------
 Version 2.7.1
 -------------
 Released 07/25/2023
