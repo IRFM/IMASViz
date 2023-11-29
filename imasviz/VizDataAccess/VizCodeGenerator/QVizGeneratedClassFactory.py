@@ -40,6 +40,8 @@ class QVizGeneratedClassFactory:
         if QVizGlobalValues.TESTING:
             dd_version = QVizGlobalValues.TESTING_IMAS_VERSION
 
+        generated_code_folder = os.environ['HOME'] + "/.imasviz/VizGeneratedCode/"
+
         if QVizPreferences.Ignore_GGD == 0:
 
             className = "IDSDef_XMLParser_Full_Generated_" + \
@@ -49,8 +51,9 @@ class QVizGeneratedClassFactory:
             if not os.path.exists(path_user_gencode):
                 os.makedirs(path_user_gencode)
 
-            IDSDef_parser_path = os.environ['HOME'] + "/.imasviz/VizGeneratedCode/" + className + ".py"
-            print("IDSDef parser path: ", IDSDef_parser_path)
+
+            IDSDef_parser_path = generated_code_folder + className + ".py"
+            #print("IDSDef parser path: ", IDSDef_parser_path)
             self.removeParserIfTooOld(IDSDef_parser_path)
 
             if not os.path.exists(IDSDef_parser_path):
@@ -82,8 +85,8 @@ class QVizGeneratedClassFactory:
             if not os.path.exists(path_user_gencode):
                 os.makedirs(path_user_gencode)
 
-            IDSDef_parser_path = os.environ['HOME'] + "/.imasviz/VizGeneratedCode/" + className + ".py"
-            print("IDSDef parser path: ", IDSDef_parser_path)
+            IDSDef_parser_path = generated_code_folder + className + ".py"
+            #print("IDSDef parser path: ", IDSDef_parser_path)
             self.removeParserIfTooOld(IDSDef_parser_path)
 
             if not os.path.exists(IDSDef_parser_path):
@@ -114,7 +117,7 @@ class QVizGeneratedClassFactory:
 
     def removeParserIfTooOld(self, IDSDef_parser_path):
         from datetime import datetime
-        dt_obj = datetime.strptime('10.12.2022 00:00:00,00',
+        dt_obj = datetime.strptime('28.11.2023 00:00:00,00',
                                    '%d.%m.%Y %H:%M:%S,%f')
         millisec = dt_obj.timestamp() * 1000
         if os.path.exists(IDSDef_parser_path):
