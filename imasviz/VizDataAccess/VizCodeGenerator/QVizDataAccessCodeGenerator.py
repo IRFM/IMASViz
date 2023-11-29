@@ -80,13 +80,13 @@ class QVizDataAccessCodeGenerator:
 
                 self.printCode("class " + className + "(QThread):", -1)
                 self.printCode(
-                    "def __init__(self, userName, imasDbName, shotNumber, runNumber, view, IDSName, occurrence=0, "
+                    "def __init__(self, uri, view, IDSName, occurrence=0, "
                     "viewLoadingStrategy=None, asynch=True):",
                     0)
                 self.printCode("super(" + className + ", self).__init__()", 1)
                 self.printCode("self.occurrence = occurrence", 1)
                 self.printCode("self.view = view", 1)
-                self.printCode("self.ids = None", 1)
+                self.printCode("self.dataSource = None", 1)
                 self.printCode("self.idsName = IDSName", 1)
                 self.printCode("self.view.IDSNameSelected[occurrence] = IDSName", 1)
                 self.printCode("self.loadData = True", 1)
@@ -113,32 +113,32 @@ class QVizDataAccessCodeGenerator:
                         continue
                     # print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 2)
-                    self.printCode("if self.loadData:", 3)
+                    #self.printCode("if self.loadData:", 3)
                     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
-                                   "'" + name_att2 + "' +  ' IDS'", 4)
-                    self.printCode("logging.info(message)", 4)
-                    self.printCode("t1 = time.time()", 4)
-                    self.printCode("self.ids." + name_att2 + ".get(self.occurrence)",
-                                   4)  # get ids data from the database
-                    self.printCode("t2 = time.time()", 4)
-                    self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')", 4)
-                    self.printCode("else:", 3)
-                    self.printCode("t2 = time.time()", 4)
-
+                                   "'" + name_att2 + "' +  ' IDS'", 3)
+                    self.printCode("logging.info(message)", 3)
+                    #self.printCode("t1 = time.time()", 3)
+                    #self.printCode(name_att2 + " = self.ids.get('"  + name_att2 + "', self.occurrence)",
+                    #               4)  # get ids data from the database
+                    #self.printCode("t2 = time.time()", 4)
+                    #self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')", 4)
+                    #self.printCode("else:", 3)
+                    #self.printCode("t2 = time.time()", 4)
+                    
                     # self.printCode("print ('Get operation ended')", 2)
-                    self.printCode('idsData = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
-                    self.printCode("t3 = time.time()", 3)
-                    self.printCode("print('in memory xml object creation took ' + str(t3 - t2) + ' seconds')", 3)
+                    self.printCode('idsData, ids_instance = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
+                    #self.printCode("t3 = time.time()", 3)
+                    #self.printCode("print('in memory xml object creation took ' + str(t3 - t1) + ' seconds')", 3)
                     self.printCode('if self.asynch:', 3)
 
                     self.printCode(
-                        'QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName, self.occurrence, '
-                        'idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId), '
+                        'QApplication.postEvent(self.view.parent, QVizResultEvent((self.idsName,ids_instance, self.occurrence, ' +
+                        'idsData, self.progressBar, self.viewLoadingStrategy, self), self.view.parent.eventResultId), ' +
                         '1)', 4)
                     self.printCode("print ('waiting for view update...')" + '\n', 4)
                     self.printCode('else:', 3)
                     self.printCode(
-                        'self.view.updateView(self.idsName, self.occurrence, idsData, self.viewLoadingStrategy)', 4)
+                        'self.view.updateView(self.idsName, ids_instance, self.occurrence, idsData, self.viewLoadingStrategy)', 4)
                     self.printCode("self.progressBar.hide()", 4)
 
                 self.printCode('except AttributeError as att_error:', 1)
@@ -158,13 +158,16 @@ class QVizDataAccessCodeGenerator:
                 self.printCode('\n', -1)
 
             self.printCode('def load_' + name_att + "(self, IDSName, occurrence):" + '\n', 0)
+            self.printCode("self.dataSource.open()", 1)
+            self.printCode(name_att + " = self.dataSource.get('" + name_att + "', occurrence)" , 1)
+            #self.printCode(name_att + " = self.ids.get('"  + name_att + "', occurrence);", 1)  # get ids data from the database
             self.printCode("IDSName = '" + name_att + "'", 1)
             self.printCode("parents = []", 1)
             self.printCode('parent = ET.Element(' + "'" + ids.text + "'" + ')', 1)
             self.printCode('root = parent', 1)
             self.printCode('parents.append(parent)', 1)
             self.generateCodeForIDS(None, ids, 1, {}, [], '', 0, name_att)
-            self.printCode("return root", 1)
+            self.printCode("return (root, " + name_att + ")", 1)
             self.printCode('', -1)
             i += 1
 
@@ -243,7 +246,7 @@ class QVizDataAccessCodeGenerator:
                 m = QVizGlobalValues.max_indices[str(level)]
 
                 ids_child_element.text = code.replace('(:)', '[' + s + ']')
-                code_parameter = "len(self.ids." + child.text + "." + \
+                code_parameter = "len(" + child.text + "." + \
                                  ids_child_element.get('name') + ')'
 
                 parameter = m + ' = ' + code_parameter + '\n'
@@ -288,7 +291,7 @@ class QVizDataAccessCodeGenerator:
 
             elif data_type == 'STR_0D' or data_type == 'INT_0D' or data_type == 'FLT_0D':
 
-                ids_child_element.text = "self.ids." + child.text + "." \
+                ids_child_element.text = child.text + "." \
                                          + ids_child_element.get('name')
                 name_att = ids_child_element.get('name') + '_att_' + str(index)
                 affect = name_att + '='
@@ -386,7 +389,7 @@ class QVizDataAccessCodeGenerator:
             elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type' or data_type == 'STR_1D':
 
                 # self.generateParentsCode(level, child.text)
-                ids_child_element.text = "self.ids." + child.text + "." \
+                ids_child_element.text = child.text + "." \
                                          + ids_child_element.get('name')
                 name = ids_child_element.get('name')
                 name_att = name + '_att_' + str(index)
@@ -506,7 +509,7 @@ class QVizDataAccessCodeGenerator:
 
                 # self.generateParentsCode(level, child.text)
 
-                ids_child_element.text = "self.ids." + child.text + "." \
+                ids_child_element.text = child.text + "." \
                                          + ids_child_element.get('name')
                 name = ids_child_element.get('name')
                 name_att = name + '_att_' + str(index)

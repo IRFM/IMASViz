@@ -4,26 +4,53 @@ import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
+from imas import _al_lowlevel as ll
 
 
 class QVizIMASDataSource:
 
-    def __init__(self, name, userName, imasDbName, shotNumber, runNumber, machineName=None):
+    def __init__(self, name, uri):
         self.generatedDataTree = None
         self.progressBar = None
         self.name = name
-        self.userName = userName
-        self.imasDbName = imasDbName
-        self.shotNumber = int(shotNumber)
-        self.runNumber = int(runNumber)
-        self.machineName = machineName
-        self.data_entries = {}  # key = occurrence, value = IMAS data entry object
+        self.uri = uri
+        self.data_entries = {}  # key = IDSName/occurrence, value = IDS data instance
         # data_dictionary_version will be initialized only when loading
         # the first IDS (currently, it is not possible to get the DD version
         # from the AL at the data entry level, see IMAS-2835 for details
 
-        self.loaded_ids = []  # list of names of IDS already fetched
+        self.db_entry = None
         self.data_dictionary_version = None
+
+    @staticmethod
+    def defaultBackend():
+        backend = os.getenv('IMAS_AL_DEFAULT_BACKEND')
+        if backend is None:
+            return imas.imasdef.MDSPLUS_BACKEND
+        return int(backend)
+
+    @staticmethod
+    def fallbackBackend():
+        backend = os.getenv('IMAS_AL_FALLBACK_BACKEND')
+        if backend is None:
+            return NO_BACKEND
+        return int(backend)
+
+    @staticmethod
+    def build_legacy_uri(backend_id, shot, run, user_name, 
+    db_name, data_version, options):
+        status, uri = ll.al_build_uri_from_legacy_parameters(
+            backend_id,
+            shot,
+            run,
+            user_name,
+            db_name,
+            data_version,
+            options,
+        )
+        if status != 0:
+            raise ValueError("Error calling al_build_uri_from_legacy_parameters(...)")
+        return uri
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
@@ -43,90 +70,77 @@ class QVizIMASDataSource:
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
 
-        load_data = True
-        if self.data_entries.get(occurrence) is None:
-            self.data_entries[occurrence] = imas.ids(self.shotNumber, self.runNumber,
-                                                     0, 0)
-            major_version = os.environ["IMAS_MAJOR_VERSION"]
-            self.data_entries[occurrence].open_env(self.userName,
-                                                   self.imasDbName,
-                                                   major_version)
-            if self.data_entries[occurrence].expIdx == -1:
-                raise ValueError("Can not open shot " + str(self.shotNumber) +
-                                 " from data base " + self.imasDbName +
-                                 " of user " + self.userName)
+        # load_data = True
+        # if self.data_entries.get(occurrence) is None:
+        #     major_version = os.environ["IMAS_MAJOR_VERSION"]
+        #     self.data_entries[occurrence] = imas.DBEntry(self.uri, 'r')
+        #     status, idx = self.data_entries[occurrence].open()
+        #     if status != 0:
+        #         raise valueError("Unable to open pulse file with URI: " + uri)
 
-        if IDSName in self.loaded_ids:
-            load_data = False
-        else:
-            load_data = True
+        # if IDSName in self.loaded_ids:
+        #     load_data = False
+        # else:
+        #     load_data = True
 
-        self.generatedDataTree.loadData = load_data # Do not call IMAS GET(), data are already loaded in memory
-        self.generatedDataTree.ids = self.data_entries[occurrence]
+        #self.generatedDataTree.loadData = load_data # Do not call IMAS GET(), data are already loaded in memory
+        self.generatedDataTree.dataSource = self
 
         if asynch:
-            # This will call asynchroneously the get() operation for fetching
-            # IMAS data
+            # This will call asynchroneously the get() operation for fetching IMAS data
             self.generatedDataTree.start()
         else:
             # This will call the get() operation for fetching IMAS data
             self.generatedDataTree.run()
 
-        self.loaded_ids.append(IDSName)
+        #self.loaded_ids.append(IDSName)
 
     @staticmethod
-    def try_to_open(imasDbName, userName, shotNumber, runNumber,
-                    imas_major_version='3'):
-        ids = imas.ids(shotNumber, runNumber, 0, 0)
-        try:
-            ids.open_env(userName, imasDbName, imas_major_version)
-            ids.close()
-        except Exception:
-            raise ValueError("Can not open shot " + str(shotNumber) +
-                             "  from data base " + imasDbName + " of user " +
-                             userName + ".")
+    def try_to_open(uri):
+        db_entry = imas.DBEntry(uri, 'r')
+        status, idx = db_entry.open()
+        db_entry.close()
+        return status
 
-    @staticmethod
-    def try_to_open_uda_datasource(machineName, shotNumber, runNumber):
-        ids = imas.ids(shotNumber, runNumber, 0, 0)
-        ids.open_public(machineName)
-        if ids.expIdx == -1:
-            raise ValueError("Can not open shot " + str(shotNumber) +
-                             "  from " + machineName)
-        else:
-            ids.close()
+    def open(self):
+        if self.db_entry is None:
+            self.db_entry = imas.DBEntry(self.uri, 'r')
+        status, idx = self.db_entry.open()
+        return status
+
+    def get(self, IDSName, occurrence):
+        key = IDSName + "/" + str(occurrence)
+        if not key in self.data_entries:
+            logging.info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
+            ids_instance = self.db_entry.get(IDSName, occurrence)
+            self.data_entries[key] = ids_instance
+        return self.data_entries[key]
+        
+    def remove_entry(self, IDSName, occurrence):
+        key = IDSName + "/" + str(occurrence)
+        if self.data_entries.get(key) is not None:
+            del self.data_entries[key]
+
+    def close(self):
+        if self.db_entry is not None:
+            self.db_entry.close()
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName=None):
         return True
 
-    def createImasDataEntry(self):
-        return imas.ids(self.shotNumber, self.runNumber, 0, 0)
-
-    def open(self, imas_entry):
-        imas_major_version = os.environ['IMAS_MAJOR_VERSION']
-        imas_entry.open_env(self.userName, self.imasDbName, imas_major_version)
-
-    def close(self, data_entry):
-        data_entry.close()
-
-    def getImasEntry(self, occurrence):
-        return self.data_entries.get(occurrence)
-
-    def containsData(self, node, imas_entry):
+    def containsData(self, node, data_entry):
         ret = False
-        logging.info("Searching available data in all occurrences of " +
-                     node.getIDSName() + " IDS...")
+        #logging.info("Searching available data in all occurrences of " +
+        #             node.getIDSName() + " IDS...")
 
-        maxOccurrences = eval("imas_entry." + node.getIDSName() + ".getMaxOccurrences()")
+        maxOccurrences = eval("imas." + node.getIDSName() + "().getMaxOccurrences()")
 
         for occurrence in range(0, maxOccurrences):
-            logging.info("Searching for occurrence: " + str(occurrence) +
-                         "...")
+            #logging.info("Searching for occurrence: " + str(occurrence) + "...")
             node.setAvailableIDSData(occurrence, 0)
             try:
-                ids_properties = eval("imas_entry." + node.getIDSName() +
-                                      ".partialGet('ids_properties', occurrence)")
+                ids_properties = eval("data_entry.partial_get('" + node.getIDSName() + "', 'ids_properties', occurrence)")
                 ht = ids_properties.homogeneous_time
                 if ht == 0 or ht == 1 or ht == 2:
                     logging.info("Found data for occurrence " +
@@ -139,29 +153,26 @@ class QVizIMASDataSource:
                 # elif occurrence == 0:
                 # break the loop as soon as occurrence 0 is empty
                 #    break
-            except:
-                pass
-        logging.info("Data search ended.")
+            except Exception as e:
+                print(e)
+        #logging.info("Data search ended.")
         return ret
 
     def dataKey(self, vizTreeNode):
         """Defines the unique key attached to each data which can be plotted.
         """
-        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + \
-               str(self.runNumber) + '::' + vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
+        return self.name + "::" + self.uri + '::' + vizTreeNode.getPath() + '::' + str(vizTreeNode.getOccurrence())
 
     def dataKey2(self, figureKey):
         """Defines the unique key attached to a figure
         """
-        return self.name + "::" + self.imasDbName + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + \
-               str(figureKey)
+        return self.name + "::" + self.uri + '::' + str(figureKey)
 
     def getShortLabel(self):
-        return self.userName + ":" + self.imasDbName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+        return self.uri
 
     def getLongLabel(self):
-        return "User:" + self.userName + " Database:" + self.imasDbName + \
-               " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
+        return "URI:" + self.uri
 
     def getKey(self):
         return self.getLongLabel()
@@ -169,38 +180,24 @@ class QVizIMASDataSource:
     def getName(self):
         return self.getShortLabel()
 
-    def exportToLocal(self, dataTreeView, exported_ids):
+    def exportToLocal(self, dataTreeView, exported_db_entry):
         """Export specified IDS to a new separate IDS.
 
         Arguments:
 
             dataTreeView (QTreeWidget) :
-            exported_ids (object)      : IDS object (A new IDS to which the
-                                         export is to be done)
+            exported_db_entry (object) : imas.DBEntry object
         """
-
-        # List of loaded IDS roots with occurrences included (in form
-        # 'magnetics/0')
-        # list = dataTreeView.ids_roots_occurrence
 
         for db in dataTreeView.ids_roots_occurrence:
             # Extract IDS name and occurrence
             idsName, occurrence = db.split("/")
-
-            if os.getenv('IMAS_PREFIX') is not None and 'IMAS' in os.getenv('IMAS_PREFIX'):
-                # Set the export command
-                command2 = "self.data_entries[" + str(occurrence) + "]." + idsName + \
-                           ".setExpIdx(exported_ids." + idsName + "._idx)"
-            else:
-                command2 = "self.data_entries[" + str(occurrence) + "]." + idsName + \
-                           ".setExpIdx(exported_ids." + idsName + ".idx)"
+            ids_instance = dataTreeView.ids_roots_occurrence[db]
 
             # Run the export command
-            eval(command2)
             logging.info("Calling IMAS put() for IDS " + idsName +
                          " occurrence " + str(occurrence) + ".")
             # Putting to occurrence
-            eval("self.data_entries[" + str(occurrence) + "]." + idsName +
-                 ".put(" + str(occurrence) + ")")
+            exported_db_entry.put(ids_instance, occurrence)
 
-        exported_ids.close()
+        exported_db_entry.close()

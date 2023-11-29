@@ -33,6 +33,8 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 # import module providing IMAS and IDS-related parameters, functions etc.
 import imas
 
+from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+
 class exampleWidget(QWidget):
     """A widget for opening magnetics IDS, extracting the flux loop or
     poloidal probe quantities and plotting them to matplotlib figure canvas.
@@ -127,13 +129,21 @@ class exampleWidget(QWidget):
         """Open magnetics IDS.
         """
         # Open IDS
-        self.ids = imas.ids(int(self.idsParameters['shot']),
-                            int(self.idsParameters['run']))
-        self.ids.open_env(self.idsParameters['user'],
-                          self.idsParameters['device'],
-                          self.idsParameters['IMAS major version'])
+
+        uri = QVizIMASDataSource.build_legacy_uri(
+                        backend_id=13, 
+                        shot=int(self.idsParameters['shot'], 
+                        run=int(self.idsParameters['run']), 
+                        user_name=self.idsParameters['user'], 
+                        db_name=self.idsParameters['device'], 
+                        data_version=self.idsParameters['IMAS major version'], 
+                        options='')
+
+        self.ids = imas.DBEntry(uri, 'r')
+        self.ids.open()
+        
         # Get magnetics IDS
-        self.ids.magnetics.get()
+        self.ids.get('magnetics')
 
     def setIDS(self, ids):
         self.ids = ids

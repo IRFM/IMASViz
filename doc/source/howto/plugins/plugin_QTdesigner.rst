@@ -604,16 +604,14 @@ The code can now be run from the terminal with the next command:
   :width: 550px
 
   **exampleWidget.py**: Plotting all **magnetics IDS** arrays (17) of AoS
-  **flux_loop** found in IDS (on GateWay HPC) shot: 52344;   run: 0;
-  user: g2penkod; device: viztest.
+  **flux_loop** found in IDS (on GateWay HPC)
 
 .. figure:: images/exampleWidget_standalone_run_bpol_probe.png
   :align: center
   :width: 550px
 
   **exampleWidget.py**: Plotting all **magnetics IDS** arrays (ABOUT 130) of AoS
-  **bpol_probe** found in IDS (on GateWay HPC) shot: 52344;   run: 0;
-  user: g2penkod; device: viztest.
+  **bpol_probe** found in IDS (on GateWay HPC)
 
 .. _exampleWidget_code:
 
@@ -1025,7 +1023,7 @@ To edit **signals/slots**, in menubar, navigate to **Edit** ->
 
 Link **Line Edit** widgets (located in the top :guilabel:`Group Box`) signals to
 **exampleWidget** slots. This is done by clicking on one of the **Line Edit**
-widgets (in this case that one which holds the **Shot** value), holding and
+widgets (in this case that one which holds the **URI** value), holding and
 dragging the shown arrow to **exampleWidget**, as shown in the figure below.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_3.png
@@ -1048,7 +1046,7 @@ in the **exampleWidget** source code (done in section
 In this case, when editing the text in **Line Edit** and applying the changes
 (pressing ``enter`` key etc.) the changed value must be passed to the
 **exampleWidget**. This is done by selecting the suitable signal and slot from
-the lists: **textEdited** and **setShot**, and pressing the
+the lists: **textEdited** and **setURI**, and pressing the
 :guilabel:`OK` button.
 
 .. figure:: images/QtDesigner_examplePlugin_signalSlots_5.png
@@ -1056,7 +1054,7 @@ the lists: **textEdited** and **setShot**, and pressing the
   :width: 500px
 
   Selection of **Line Edit** signal **textEdited** and **exampleWidget** slot
-  **setShot**
+  **setURI**
 
 After that, while in the **Edit Signals/Slots**, the start and the end point
 of the red arrow will indicate which signal and slot are linked.
@@ -1090,13 +1088,7 @@ of their **object name** (used in the Qt Designer list of signal/slots).
 +---------------+-------------+---------------------+-----------------+--------------------+
 | Type          | Label/Value | Signal              | Type            | Signal             |
 +---------------+-------------+---------------------+-----------------+--------------------+
-| Line Edit     | 52344       | textEdited(QString) | exampleWidget   | setShot(QString)   |
-+---------------+-------------+---------------------+-----------------+--------------------+
-| Line Edit     | 0           | textEdited(QString) | exampleWidget   | setRun(QString)    |
-+---------------+-------------+---------------------+-----------------+--------------------+
-| Line Edit     | g2penkod    | textEdited(QString) | exampleWidget   | setUser(QString)   |
-+---------------+-------------+---------------------+-----------------+--------------------+
-| Line Edit     | viztest     | textEdited(QString) | exampleWidget   | setDevice(QString) |
+| Line Edit     | URI         | textEdited(QString) | exampleWidget   | setURI(QString)   |
 +---------------+-------------+---------------------+-----------------+--------------------+
 | Push Button   | Open IDS    | clicked()           | exampleWidget   | openIDS()          |
 +---------------+-------------+---------------------+-----------------+--------------------+
@@ -1142,8 +1134,7 @@ the plot panel is populated as shown in the figure below.
   :width: 200px
 
   Plotting all **Flux loop** plots from the **magnetics IDS** with parameters
-  (on GateWay HPC!) **Shot:** 52344, **Run:** 0, **user**: g2penkod,
-  **device**: viztest.
+  (on GateWay HPC!)
 
 Saving the Qt Designer form
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1337,5 +1328,4 @@ are plotted.
   :width: 500px
 
   **Magnetics IDS Overview Plugin** with plotted all **Flux loop** data from
-  the **magnetics IDS** (parameters (on GateWay HPC!) **Shot:** 52344,
-  **Run:** 0, **user**: g2penkod, **device**: viztest.
+  the **magnetics IDS** (parameters (on GateWay HPC!)

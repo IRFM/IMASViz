@@ -36,22 +36,13 @@ class ToFuPlugin(VizPlugin):
         vizNode = self.selectedTreeNode
         dataSource = vizAPI.GetDataSource(view)
 
-        dargs = {'shot':dataSource.shotNumber,
-                'user':dataSource.userName,
-                'database':dataSource.machineName,
-                'run':dataSource.runNumber}
+        dargs = {'uri':dataSource.uri}
         ids = vizNode.getIDSName()
 
         if ids not in self.lidsok:
             msg = ids + " IDS not supported by tofu plugin\n"
             warnings.warn(msg)
             return None
-
-        """
-        idssByNames (dict) # key = IDS name, value = IDS object
-        """
-        # idssByNames = vizAPI.LoadListOfIDSs(view, [vizNode.getIDSName(), 'wall'])
-        # dids = {key: {'ids': val, 'isget':True} for key, val in idssByNames.items()}
 
         try:
             print('ToFuPlugin to be executed...')

@@ -11,17 +11,8 @@ class QVizGlobalOperations:
 
     # Check if data source is available
     @staticmethod
-    def check(dataSourceName, shotNumber):
-        if dataSourceName == QVizGlobalValues.TORE_SUPRA:
-            shotMin = 28764  # TODO
-            shotMax = 100000  # TODO
-            if shotNumber < shotMin:
-                raise ValueError("Shot number should be larger than "
-                                 + str(shotMin))
-            if shotNumber > shotMax:
-                raise ValueError("Shot number should be smaller than "
-                                 + str(shotMax))
-        elif dataSourceName == QVizGlobalValues.IMAS_NATIVE:
+    def check(dataSourceName):
+        if dataSourceName == QVizGlobalValues.IMAS_NATIVE:
             return
         elif dataSourceName == QVizGlobalValues.IMAS_UDA:
             return
@@ -29,26 +20,26 @@ class QVizGlobalOperations:
             raise ValueError("Unknow data source " + dataSourceName + ".")
 
     @staticmethod
-    def isTimeHomogeneous(ids, selectedNodeData):
-        to_eval = "ids." + selectedNodeData['IDSName'] \
-            + ".ids_properties.homogeneous_time"
-        homogeneous_time = eval(to_eval)
+    def isTimeHomogeneous(selectedNode):
+        selectedNodeData = selectedNode.getData()
+        to_eval = selectedNodeData['IDSName'] + ".ids_properties.homogeneous_time"
+        homogeneous_time = selectedNode.evalPath(to_eval)
         if homogeneous_time == 0:
             return False
         return True
 
     @staticmethod
-    def getCoordinate_array(ids, selectedNodeData, coordinate):
+    def getCoordinate_array(selectedNode, coordinate):
         if coordinate is None:
             return None
-        homogeneous_time = QVizGlobalOperations.isTimeHomogeneous(ids, selectedNodeData)
+        selectedNodeData = selectedNode.getData()
+        homogeneous_time = QVizGlobalOperations.isTimeHomogeneous(selectedNode)
         t = None
         try:
             if not homogeneous_time:
-                t = np.array(eval("ids." + selectedNodeData['IDSName'] + "." + coordinate))
+                t = np.array(selectedNode.evalPath(selectedNodeData['IDSName'] + "." + coordinate))
             else:
-                t = np.array(eval("ids." + selectedNodeData['IDSName']
-                             + ".time"))
+                t = np.array(selectedNode.evalPath(selectedNodeData['IDSName'] + ".time"))
             return t
         except ValueError:
             return None
@@ -422,30 +413,7 @@ class QVizGlobalOperations:
 
     @staticmethod
     def askForShot():
-        shotNumber = None
-        runNumber = None
-        userName = None
-        database = None
-        shotNumber, ok = QInputDialog.getInt(None, "Shot number",
-                                             "enter a shot number")
-        if not ok:
-            return (ok, shotNumber, runNumber, userName, database)
-        else:
-            runNumber, ok = QInputDialog.getInt(None, "Run number",
-                                                "enter the run number of shot " + str(shotNumber))
-            if not ok:
-                return (ok, shotNumber, runNumber, userName, database)
-            else:
-                userName, ok = QInputDialog.getText(None, 'User name',
-                                                    "enter user name",
-                                                    QLineEdit.Normal, "")
-                if not ok:
-                    return (ok, shotNumber, runNumber, userName, database)
-                else:
-                    database, ok = QInputDialog.getText(None, 'database',
-                                                        "enter database",
-                                                        QLineEdit.Normal, "")
-                    if not ok:
-                        return (ok, shotNumber, runNumber, userName, database)
-
-        return (ok, shotNumber, runNumber, userName, database)
+        uri = None
+        uri, ok = QInputDialog.getText(None, "URI",
+                                             "enter an URI")
+        return (ok, uri)

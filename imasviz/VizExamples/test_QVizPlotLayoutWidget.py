@@ -37,23 +37,14 @@ root.addHandler(handler)
 
 api = Viz_API()  # Creating IMASViz Application Programming Interface
 selection_api = Viz_DataSelection_API()
-ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()  #  Asking for a shot
+ok, uri = QVizGlobalOperations.askForShot()  #  Asking for a shot
 
 if not ok:
     logging.error("User input has failed. Test not executed.")
     exit()
 
-#shotNumber = 54178
-#runNumber = 0
-#userName= 'fleuryl'
-#database = 'west'
-
 # Creating IMASViz data source for this shot
-dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                      shotNumber=shotNumber,
-                                      runNumber=runNumber,
-                                      userName=userName,
-                                      imasDbName=database)
+dataSource = QVizDataSourceFactory().create(dataSourceName=QVizGlobalValues.IMAS_NATIVE, uri=uri)
 
 f = api.CreateDataTree(dataSource) # Build the data tree view frame
 

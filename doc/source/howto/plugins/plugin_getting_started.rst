@@ -159,19 +159,13 @@ In your :file:`myPlugin.py` file add:
     # Get dataSource from the VizAPI (IMASViz Application Program Interface)
     # Note: dataTreeView attribute (self.dataTreeView) is inherited from VizPlugin
     dataSource = vizAPI.GetDataSource(self.dataTreeView)
-    # Get case parameters (shot, run, machine user) from the dataSource
-    shot = dataSource.shotNumber
-    run = dataSource.runNumber
-    machine = dataSource.imasDbName
-    user = dataSource.userName
+    # Get URI from the dataSource
+    uri = dataSource.uri
     occurrence = 0
 
     # Displaying basic case information
     print('Reading data...')
-    print('Shot    =', shot)
-    print('Run     =', run)
-    print('User    =', user)
-    print('Machine =', machine)
+    print('URI    =', uri)
 
 **2. Checking if the IDS data was already fetched**
 
@@ -358,11 +352,8 @@ steps in the previous subsections.
             # Note: instance of "self.datatreeView" is provided by the VizPlugins
             # through inheritance
             dataSource = vizAPI.GetDataSource(self.dataTreeView)
-            # Get case parameters (shot, run, machine user) from the dataSource
-            shot = dataSource.shotNumber
-            run = dataSource.runNumber
-            machine = dataSource.imasDbName
-            user = dataSource.userName
+            # Get URI from the dataSource
+            uri = dataSource.uri
             occurrence = 0
 
             # Check if the IDS data is already loaded in IMASviz. If it is not,
@@ -376,10 +367,7 @@ steps in the previous subsections.
 
             # Displaying basic information
             print('Reading data...')
-            print('Shot    =', shot)
-            print('Run     =', run)
-            print('User    =', user)
-            print('Machine =', machine)
+            print('URI    =', uri)
 
             # Get some data from the IDS and pass it to plot (using matplotlib)
             # - Set subplot

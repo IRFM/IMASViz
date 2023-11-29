@@ -38,7 +38,7 @@ from imasviz.VizPlugins.viz_Profiles.viz_profiles.tabQt import QVizTab
 class VizProfiles(QMainWindow):
     updateProgressBar = Signal()
 
-    def __init__(self, viz_api, IDS_parameters, data_entry,
+    def __init__(self, viz_api, IDS_parameters, selectedTreeNode,
                  dataTreeView, requests_list, ids_name, plotAxis):
         """
         Arguments:
@@ -81,7 +81,7 @@ class VizProfiles(QMainWindow):
         figureKey = viz_api.GetNextKeyForProfilesPlotView()
 
         self.setWindowTitle(title + ' [' + str(figureKey) + ']')
-        self.data_entry = data_entry
+        self.selectedTreeNode = selectedTreeNode
 
         self.IDS_parameters = IDS_parameters
         self.dataTreeView = dataTreeView
@@ -91,7 +91,7 @@ class VizProfiles(QMainWindow):
         self.time_index = 0
 
         key = dataTreeView.dataSource.dataKey2(figureKey)
-        tup = (dataTreeView.dataSource.shotNumber, None)
+        tup = (dataTreeView.dataSource.uri, None)
         viz_api.AddNodeToFigure(figureKey, key, tup)
         viz_api.figureframes[figureKey] = self
 
@@ -101,6 +101,7 @@ class VizProfiles(QMainWindow):
         # Set user interface of the main window
         self.plotAxis = plotAxis
         self.ids_related = ids_name
+        self.dataSource = dataTreeView.dataSource
         self.buildUI_in_separate_thread(requests_list)
 
     def getLogger(self):
@@ -430,7 +431,8 @@ class VizProfiles(QMainWindow):
         """ Get time value for given time index.
         """
         slices_aos_name = self.getCurrentTab().slices_aos_name
-        time_slices_count = eval("len(self.data_entry." + self.ids_related + "." + slices_aos_name + ")")
+        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
+        time_slices_count = len(eval(self.ids_related + "." + slices_aos_name))
 
         if time_slices_count == 0:
             message = "No time slice found for " + self.ids_related + "."
@@ -442,11 +444,10 @@ class VizProfiles(QMainWindow):
             message = "Time index=" + str(time_index) + " exceeds the number of slices."
             raise ValueError(message)
 
-        time_value = eval(
-            "self.data_entry." + self.ids_related + "." + slices_aos_name + "[time_index].time")
+        time_value = eval(self.ids_related + "." + slices_aos_name + "[time_index].time")
 
         if time_value == -9e+40:
-            time_value = eval("self.data_entry." + self.ids_related + ".time[time_index]")
+            time_value = eval(self.ids_related + ".time[time_index]")
         return time_value
 
     def getCurrentTab(self):
@@ -474,7 +475,8 @@ class VizProfiles(QMainWindow):
         slider_time = QSlider(Qt.Horizontal, self)
         slider_time.setValue(0)
         slider_time.setMinimum(0)
-        time_slices_count = eval("len(self.data_entry." + self.ids_related + ".time)")
+        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
+        time_slices_count = len(eval(self.ids_related + ".time"))
         slider_time.setMaximum(time_slices_count - 1)
         # self.slider_time.adjustSize()
         # self.slider_time.setMinimumWidth(600)
@@ -490,20 +492,21 @@ class VizProfiles(QMainWindow):
         if self.getCurrentTab() is None:
             return
         slices_aos_name = self.getCurrentTab().slices_aos_name
-        ntimevalues = eval("len(self.data_entry." + self.ids_related + "." + slices_aos_name + ")")
+        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
+        ntimevalues = eval("len(" + self.ids_related + "." + slices_aos_name + ")")
         tmin = -9e+40
         tmax = -9e+40
 
         if ntimevalues > 0:
-            tmin = eval("self.data_entry." + self.ids_related + "." + slices_aos_name + "[0].time")
-            tmax = eval("self.data_entry." + self.ids_related + "." + slices_aos_name + "[-1].time")
+            tmin = eval(self.ids_related + "." + slices_aos_name + "[0].time")
+            tmax = eval(self.ids_related + "." + slices_aos_name + "[-1].time")
 
-        n = eval("len(self.data_entry." + self.ids_related + ".time)")
+        n = eval("len(" + self.ids_related + ".time)")
         # Check if empty time values were read
         # (-9e+40 is default value == empty)
         if n > 0 and (tmin == -9e+40 or tmax == -9e+40):
-            tmin = eval("self.data_entry." + self.ids_related + ".time[0]")
-            tmax = eval("self.data_entry." + self.ids_related + ".time[-1]")
+            tmin = eval(self.ids_related + ".time[0]")
+            tmax = eval(self.ids_related + ".time[-1]")
 
         self.label_slider_tmin.setText(f"n<sub>t</sub> = {ntimevalues}; "
                                        f"t<sub>min</sub> = {tmin:.2f}")
@@ -513,7 +516,8 @@ class VizProfiles(QMainWindow):
         spinBox_timeIndex = QSpinBox(parent=self)
         spinBox_timeIndex.setValue(0)
         spinBox_timeIndex.setMinimum(0)
-        maxIndex = eval("len(self.data_entry." + self.ids_related + ".time) - 1")
+        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
+        maxIndex = eval("len(" + self.ids_related + ".time) - 1")
         spinBox_timeIndex.setMaximum(maxIndex)
         spinBox_timeIndex.setFixedWidth(65)
         spinBox_timeIndex.valueChanged.connect(self.onSpinBoxChange)
@@ -573,11 +577,12 @@ class VizProfiles(QMainWindow):
             idx = (np.abs(array - value)).argmin()
             return array[idx], idx
 
+        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
         value = float(self.lineEdit_timeValue.text())
         slices_aos_name = self.getCurrentTab().slices_aos_name
-        time_profiles0 = eval("self.data_entry." + self.ids_related + "." + slices_aos_name + "[0].time")
-        time = eval("self.data_entry." + self.ids_related + ".time")
-        ntimevalues = len(eval("self.data_entry." + self.ids_related + "." + slices_aos_name))
+        time_profiles0 = eval(self.ids_related + "." + slices_aos_name + "[0].time")
+        time = eval(self.ids_related + ".time")
+        ntimevalues = len(eval(self.ids_related + "." + slices_aos_name))
         time_values = None
 
         if time_profiles0 == -9e+40:
@@ -585,7 +590,7 @@ class VizProfiles(QMainWindow):
         else:
             time_values = [0] * ntimevalues
             for i in range(len(time_values)):
-                time_values[i] = eval("self.data_entry." + self.ids_related + "." +
+                time_values[i] = eval(self.ids_related + "." +
                                       slices_aos_name + "[i].time")
 
         closest_value, index = find_nearest(time_values, value)
@@ -605,10 +610,8 @@ class VizProfiles(QMainWindow):
 
     def setStatusBarTexts(self, text=" "):
 
-        self.statusBar().showMessage(f"USER={self.IDS_parameters['user']}; "
-                                     f"DATABASE={self.IDS_parameters['database']}; "
-                                     f"SHOT={self.IDS_parameters['shot']}; "
-                                     f"RUN={self.IDS_parameters['run']} ")
+        self.statusBar().showMessage(f"URI={self.IDS_parameters['uri']}; " 
+                                     f"OCCURRENCE={self.IDS_parameters['occurrence']} ")
         self.statusBar_text_1.setText(text)
 
 
@@ -744,11 +747,11 @@ if __name__ == "__main__":
     # database = 'ITER'
     # occurrence = 0
 
-    shotNumber = 130012
-    runNumber = 4
-    userName = 'public'
-    database = 'ITER_SCENARIOS'
-    occurrence = 0
+    # shotNumber = 130012
+    # runNumber = 4
+    # userName = 'public'
+    # database = 'ITER_SCENARIOS'
+    # occurrence = 0
 
     # shotNumber = 134174
     # runNumber = 117
@@ -762,17 +765,12 @@ if __name__ == "__main__":
     # database = 'west'
     # occurrence = 0
 
-    IDS_parameters = {"shot": shotNumber,
-                      "run": runNumber,
-                      "user": userName,
-                      "database": database}
+    uri = ''
+
+    IDS_parameters = {"uri": uri}
 
     dataSource = dataSourceFactory.create(
-        dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-        shotNumber=shotNumber,
-        runNumber=runNumber,
-        userName=userName,
-        imasDbName=database)
+        uri=uri)
 
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)

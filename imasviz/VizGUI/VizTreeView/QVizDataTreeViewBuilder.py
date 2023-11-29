@@ -15,9 +15,8 @@ from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizUtils import QVizGlobalValues
 
 class QVizDataTreeViewBuilder:
-    def __init__(self, ids):
+    def __init__(self):
         self.arrayParentNodes = {}
-        self.ids = ids
         self.signalsList = []
         self.ids_root_node = None
 
@@ -41,8 +40,6 @@ class QVizDataTreeViewBuilder:
             parentNode   (QTreeWidgetItem) : Parent of the new-to-be tree view item.
             dataTreeView (QTreeWidget) : QVizDataTreeView object.
         """
-
-        imas_entry = dataTreeView.dataSource.data_entries[occurrence]
 
         itemDataDict = {}
         itemDataDict['IDSName'] = idsName
@@ -90,7 +87,7 @@ class QVizDataTreeViewBuilder:
             viewerNode = self.build_nodes(dataTreeView, dataElement,
                                           parentNode, itemDataDict,
                                           extra_attributes,
-                                          path, imas_entry)
+                                          path, ids_root_occ)
 
 
         else:
@@ -118,7 +115,7 @@ class QVizDataTreeViewBuilder:
                                        occurrence)
 
             viewerNode = self.build_nodes(dataTreeView, dataElement, parentNode, itemDataDict,
-                                          extra_attributes, path, imas_entry)
+                                          extra_attributes, path, ids_root_occ)
 
 
         self.setPath(viewerNode, path)
@@ -129,7 +126,7 @@ class QVizDataTreeViewBuilder:
         return viewerNode
 
     def build_nodes(self, dataTreeView, dataElement, parentNode, itemDataDict,
-                    extra_attributes, path, imas_entry):
+                    extra_attributes, path, ids_root_occ):
         global cv
         viewerNode = None
 
@@ -166,7 +163,8 @@ class QVizDataTreeViewBuilder:
                 # Add tree item
                 viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
-        viewerNode.updateStyle(imas_entry)
+        viewerNode.idsRef = ids_root_occ.idsRef
+        viewerNode.updateStyle()
         # Adding coordinate and documentation nodes
         self.addQtNodes(itemDataDict, viewerNode)
         viewerNode.dataTreeView = dataTreeView

@@ -5,13 +5,9 @@ from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGen
 
 class QVizIMASPublicDataSource(QVizIMASDataSource):
 
-    def __init__(self, name, machineName, shotNumber, runNumber):
+    def __init__(self, name, uri):
 
-        super(QVizIMASPublicDataSource, self).__init__(name, userName=None,
-                                                       imasDbName=None,
-                                                       shotNumber=shotNumber,
-                                                       runNumber=runNumber,
-                                                       machineName=machineName)
+        super(QVizIMASPublicDataSource, self).__init__(name, uri)
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
@@ -27,13 +23,8 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
                                                            IDSName,
                                                            occurrence,
                                                            asynch).create(self.progressBar)
-        # print("*: self.ids: ", self.ids)
-        if self.data_entries.get(occurrence) is None:
-            self.data_entries[occurrence] = imas.ids(self.shotNumber, self.runNumber,
-                                                     0, 0)
-            self.data_entries[occurrence].open_public(self.machineName)
 
-        self.generatedDataTree.ids = self.data_entries.get(occurrence)
+        self.generatedDataTree.dataSource = self
 
         if asynch:
             self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
@@ -42,17 +33,16 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, vizTreeNode):
-        return self.name + "::" + self.machineName + "::" + str(self.shotNumber) + "::" + str(
-            self.runNumber) + '::' + vizTreeNode.getPath()
+        return self.name + "::" + self.uri +  '::' + vizTreeNode.getPath()
 
     def getShortLabel(self):
-        return "UDA: " + self.machineName + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+        return self.uri
 
     def getLongLabel(self):
-        return "(UDA) Database:" + self.machineName + " Shot:" + str(self.shotNumber) + " Run:" + str(self.runNumber)
+        return "UDA URI:" + self.uri
 
     def open(self, data_entry):
-        data_entry.open_public(self.machineName)
+        data_entry.open()
 
     def containsData(self, node, data_entry):
         node.setAvailableIDSData(0, True)

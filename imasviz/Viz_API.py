@@ -95,7 +95,7 @@ class Viz_API:
 
         :param figureKey: (str) figure key
         :param key: (str)    dtv.dataSource.dataKey(vizTreeNode)
-        :param tup: (tuple) (dtv.dataSource.shotNumber, vizTreeNode)
+        :param tup: (tuple) (dtv.dataSource.uri, vizTreeNode)
         """
         if figureKey not in self.figToNodes:
             self.figToNodes[figureKey] = {}
@@ -525,8 +525,8 @@ class Viz_API:
             return False
 
     def GetNextOccurrenceUnloadedWithAvailableData(self, dataTreeView, node):
-        idd = dataTreeView.dataSource.createImasDataEntry()
-        maxOccurrences = eval("idd." + node.getIDSName() + ".getMaxOccurrences()")
+        import imas
+        maxOccurrences = eval("imas." + node.getIDSName() + "().getMaxOccurrences()")
         for i in range(0, maxOccurrences):
             if not self.IDSDataAlreadyFetched(dataTreeView, node.getIDSName(), i):
                 if node.hasIDSAvailableData(i):
@@ -534,8 +534,8 @@ class Viz_API:
         return None
 
     def GetAllOccurrencesWithAvailableData(self, node):
-        idd = dataTreeView.dataSource.createImasDataEntry()
-        maxOccurrences = eval("idd." + node.getIDSName() + ".getMaxOccurrences()")
+        import imas
+        maxOccurrences = eval("imas." + node.getIDSName() + "().getMaxOccurrences()")
         availableOccurrences = []
         for i in range(0, maxOccurrences):
             if node.hasIDSAvailableData(i):
@@ -543,8 +543,8 @@ class Viz_API:
         return availableOccurrences
 
     def GetAllOccurrencesUnloadedWithAvailableData(self, dataTreeView, node):
-        idd = dataTreeView.dataSource.createImasDataEntry()
-        maxOccurrences = eval("idd." + node.getIDSName() + ".getMaxOccurrences()")
+        import imas
+        maxOccurrences = eval("imas." + node.getIDSName() + "().getMaxOccurrences()")
         availableOccurrences = []
         for i in range(0, maxOccurrences):
             if node.hasIDSAvailableData(i) and \
@@ -560,7 +560,7 @@ class Viz_API:
         else:
             return dataTreeFrame.dataSource
 
-    def GetIMASDataEntry(self, dataTreeFrame, occurrence):
+    def GetIDSInstance(self, dataTreeFrame, occurrence):
         from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
         if isinstance(dataTreeFrame, QVizDataTreeViewFrame):
             return self.GetDataSource(dataTreeFrame.parent).data_entries[occurrence]
@@ -870,18 +870,12 @@ class Viz_API:
             namesOfIDSs  (list)  : List of IDS names (strings)
             occurrence   (int)   : IDS occurrence
         """
-        idssByNames = {}
 
         for idsName in namesOfIDSs:
             if not self.IDSDataAlreadyFetched(dataTreeView=dataTreeView,
                                               IDSName=idsName,
                                               occurrence=occurrence):
                 self.LoadIDSData(dataTreeView, idsName, occurrence)
-
-            idd = dataTreeView.dataSource.getImasEntry(occurrence)
-            idssByNames[idsName] = eval("idd." + idsName)
-
-        return idssByNames
 
     def getAll_0D_1D_Nodes(self, node, errorBars=False, str_filter=None, plotAxis=None):
         children_id, children = self.getChildren_(node, set(), [], str_filter, errorBars, plotAxis)

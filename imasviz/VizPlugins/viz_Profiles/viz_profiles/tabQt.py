@@ -24,7 +24,6 @@ class QVizTab(QWidget):
         self.parent = parent
         self.tab_page_name = tab_page_name
         self.filter_index = filter_index
-        self.data_entry = self.parent.data_entry
         self.dataTreeView = self.parent.dataTreeView
         self.tab_index = None
         self.signals = None

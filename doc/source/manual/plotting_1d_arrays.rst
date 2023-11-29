@@ -249,7 +249,7 @@ Comparing plots between two IDS databases
 -----------------------------------------
 
 :guilabel:`IMASViz` allows comparing of FLT_1D arrays between two different
-IDS databases (different shots too). The procedure is very similar to the one
+IDS URIs. The procedure is very similar to the one
 presented in the section :ref:`add_plot_to_existing_figure`:
 
 1. Open another IMAS database, same as shown in section :ref:`loading_IDS`.

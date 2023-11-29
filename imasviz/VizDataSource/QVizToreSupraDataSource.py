@@ -12,11 +12,9 @@ connectionURL = 'altair.partenaires.cea.fr:8000'
 
 class ToreSupraDataSource:
 
-    def __init__(self, name, shotNumber, runNumber):
+    def __init__(self, name, uri):
             self.name = name
-            self.shotNumber = shotNumber
-            self.runNumber = runNumber
-            self.imasDbName = name
+            self.uri = uri
             self.conn = Connection(connectionURL)
             self.mappingFilesDirectory = os.environ["TS_MAPPINGS_DIR"]
 
@@ -69,7 +67,7 @@ class ToreSupraDataSource:
 
     #This defines the unique key attached to each data which can be plotted
     def dataKey(self, vizTreeNode):
-        return self.name + "::" + str(self.shotNumber) + "::" + str(self.runNumber) + '::' + vizTreeNode.getPath()
+        return self.name + "::" + self.uri + '::' + vizTreeNode.getPath()
 
     def getShortLabel(self):
-        return self.name + ":" + str(self.shotNumber) + ":" + str(self.runNumber)
+        return self.name + ":" + self.uri

@@ -83,7 +83,7 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
                 if len(t[0]) != len(v[0]):
                     raise ValueError("1D data can not be plotted, x and y shapes are different.")
 
-                self.__plot1DSignal(self.dataTreeView.shotNumber, t, v,
+                self.__plot1DSignal(self.dataTreeView.uri, t, v,
                                     figureKey, self.title, self.label,
                                     self.xlabel, update, dataset_to_update)
             else:
@@ -98,21 +98,21 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
     @staticmethod
     def get1DSignalValue(oneDimensionSignal):
         """Returns the signal values of a 1D signal returned by
-           get1DSignal(signalName, shotNumber)
+           get1DSignal(signalName, uri)
         """
         return oneDimensionSignal[1]
 
-    def __plot1DSignal(self, shotNumber, t, v, figureKey=0, title='', label=None,
+    def __plot1DSignal(self, uri, t, v, figureKey=0, title='', label=None,
                        xlabel=None, update=0, dataset_to_update=0):
         """Plot a 1D signal as a function of time.
 
         Arguments:
-            shotnumber (int) : IDS database parameter - shot number of the case.
+            uri              : URI of the shot
             t     (2D array) : 2D array of time values.
             v     (2D array) : 2D array of physical quantity values.
             figureKey  (str) : Label for the figure frame window.
             title      (str) : Plot title.
-            label      (str) : Label describing IMAS database (device, shot) and
+            label      (str) : Label describing IMAS database (URI) and
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
             update     (int) : Plot update parameter (0 or 1). Set to 1 when
@@ -124,13 +124,11 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
             # Set IMASViz api
             api = self.dataTreeView.imas_viz_api
 
-            ids = self.dataTreeView.dataSource.data_entries[self.treeNode.getOccurrence()]
-
             # Get time
-            self.treeNode.globalTime = self.treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
+            self.treeNode.globalTime = self.treeNode.getGlobalTimeForArraysInDynamicAOS()
 
             key = self.dataTreeView.dataSource.dataKey(self.treeNode)
-            tup = (self.dataTreeView.dataSource.shotNumber, self.treeNode)
+            tup = (self.dataTreeView.dataSource.uri, self.treeNode)
             api.AddNodeToFigure(figureKey, key, tup)
 
             # Shape of the signal

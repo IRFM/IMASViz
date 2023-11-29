@@ -59,12 +59,11 @@ class QVizPreviewPlotWidget(QVizPlotWidget):
         """Add plot.
 
         Arguments:
-            shotnumber  (int) : IDS database parameter - shot number of the
-                                case.
+            uri               : URI of the shot.
             x      (1D array) : 1D array of X-axis values.
             y      (1D array) : 1D array of Y-axis values.
             title       (str) : Plot title.
-            label       (str) : Label describing IMAS database (device, shot)
+            label       (str) : Label describing IMAS database (URI)
                                 and path to signal/node in IDS database
                                 structure.
             xlabel      (str) : Plot X-axis label.

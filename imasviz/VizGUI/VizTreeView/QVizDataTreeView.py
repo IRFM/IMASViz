@@ -106,21 +106,17 @@ class QVizDataTreeView(QTreeWidget):
         self.dataSource = dataSource
         self.idsNamesList = []
         self.selectedItem = None
-        self.shotNumber = dataSource.shotNumber
-        self.runNumber = dataSource.runNumber
+        self.uri = dataSource.uri
         self.mappingFilesDirectory = mappingFilesDirectory
 
-        # Create a IDS root node with each shotnumber
-        self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + str(dataSource.shotNumber) + ')'])
+        # Create a IDS root node with each URI
+        self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + dataSource.uri + ')'])
         self.DTVRoot.dataTreeView = self
         # #Dictionary where each element is also a dictionary containing
         # self.dataTreeView.selectedSignalsDict[key] = \
         #     {'index': index,
         #      'QTreeWidgetItem': self.dataTreeView.selectedItem,
-        #      'shotNumber': self.dataTreeView.dataSource.shotNumber,
-        #      'runNumber': self.dataTreeView.dataSource.runNumber,
-        #      'imasDbName': self.dataTreeView.dataSource.imasDbName,
-        #      'userName': self.dataTreeView.dataSource.userName}
+        #      'uri': self.dataTreeView.dataSource.uri}
         self.selectedSignalsDict = {}
 
         # List of all nodes which contain a signal (all FLT_1D nodes etc.)
@@ -151,12 +147,13 @@ class QVizDataTreeView(QTreeWidget):
         self.popupmenu = None
 
     def createEmptyIDSsTree(self, IDSDefFile):
-        """The tree is created from CPODef.xml or IDSDef.xml file.
+        """The tree is created from IDSDef.xml file.
         """
+        import imas
         idsNode = None
         xmlTree = ET.parse(IDSDefFile)
-        imas_entry = self.dataSource.createImasDataEntry()
-        self.dataSource.open(imas_entry)
+        imas_entry = imas.DBEntry(self.uri, 'r')
+        imas_entry.open()
 
         for child in xmlTree.getroot():
             if child.tag == 'IDS':
@@ -177,7 +174,7 @@ class QVizDataTreeView(QTreeWidget):
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
 
-        self.dataSource.close(imas_entry)
+        imas_entry.close()
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
@@ -282,24 +279,24 @@ class QVizDataTreeView(QTreeWidget):
             QVizHandleRightClick().execute(treeNode, self)
 
 
-    def updateView(self, idsName, occurrence, idsData=None, viewLoadingStrategy=None):
+    def updateView(self, idsName, idsInstance, occurrence, idsData=None, viewLoadingStrategy=None):
         """ Update QVizDataTreeViewFrame.
         Arguments:
             idsName        (str) : Name of the IDS e.g. 'magnetics'.
             occurrence     (int) : IDS occurrence number (0-9).
             idsData        (obj) : Object (element) holding IDS data.
         """
-        self.update_view(idsName, occurrence, idsData, viewLoadingStrategy)
+        self.update_view(idsName, idsInstance, occurrence, idsData, viewLoadingStrategy)
 
 
-    def update_view(self, idsName, occurrence, idsData, viewLoadingStrategy=None):
+    def update_view(self, idsName, idsInstance, occurrence, idsData, viewLoadingStrategy=None):
         """ Update the tree view with the data.
         """
         global cv
+
         if idsData is not None:
-            # self.IDSRoots[idsName].setOccurrence(occurrence)
-            nodeBuilder = QVizDataTreeViewBuilder(ids=self.dataSource.data_entries)
-            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, occurrence, idsData,
+            nodeBuilder = QVizDataTreeViewBuilder()
+            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, idsInstance, occurrence, idsData,
                                                                         viewLoadingStrategy))
             cv.acquire()
             thread1.start()
@@ -308,7 +305,7 @@ class QVizDataTreeView(QTreeWidget):
             nodeBuilder.endBuildView(idsName, occurrence, self)
 
 
-    def buildTreeView(self, nodeBuilder, idsName, occurrence, idsData, viewLoadingStrategy):
+    def buildTreeView(self, nodeBuilder, idsName, idsInstance,occurrence, idsData, viewLoadingStrategy):
         """ Build the data tree view by adding a set of available IDS nodes as
             an items to it.
 
@@ -325,10 +322,12 @@ class QVizDataTreeView(QTreeWidget):
                      + " of " + idsName
                      + " IDS in memory, building "
                      + " view...")
+
         idsDocumentation = self.IDSRoots[idsName].getDocumentation()
         root_node_ori = self.IDSRoots[idsName]
         ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
+        ids_root_node.idsRef = idsInstance
         root_node_label = 'occurrence ' + str(int(occurrence))
 
         if viewLoadingStrategy is not None:
@@ -337,6 +336,7 @@ class QVizDataTreeView(QTreeWidget):
                root_node_label += " [" + label + "]"
         
         ids_root_occ = QVizTreeNode(ids_root_node, [root_node_label], ids_root_node.getData())
+        ids_root_occ.idsRef = idsInstance
         ids_root_occ.dataTreeView = self
         ids_root_occ.setOccurrenceEntry(True)
         ids_root_occ.setOccurrence(occurrence)
@@ -384,6 +384,7 @@ class QVizDataTreeView(QTreeWidget):
         """
         element_node = nodeBuilder.addNewNode(idsName, element, parent,
                                               occurrence, self, ids_root_occ)
+
         if element_node is not None:
             for child in element:
                 self.addChildren(nodeBuilder, child, element_node, idsName,
@@ -453,18 +454,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.setObjectName('DTV Window')
 
         # Set title (QMainWindow)
-        publicStr = ''
-        if dataSource.name == QVizGlobalValues.IMAS_UDA:
-            publicStr = "UDA "
-            self.setWindowTitle("Database: " + dataSource.machineName + " "
-                                + "(from UDA), shot: "
-                                + str(dataSource.shotNumber) + ", run: "
-                                + str(dataSource.runNumber))
-        else:
-            self.setWindowTitle("Database: " + dataSource.imasDbName + ", "
-                                + "user: " + dataSource.userName + ", shot: "
-                                + str(dataSource.shotNumber) + ", run: "
-                                + str(dataSource.runNumber))
+        self.setWindowTitle("URI: " + dataSource.uri)
 
         # Set Qt TreeView
         self.dataTreeView = \
@@ -516,12 +506,13 @@ class QVizDataTreeViewFrame(QMainWindow):
             logging.info(message)
         else:
             idsName = event.data[0]
-            occurrence = event.data[1]
-            idsData = event.data[2]
-            progressBar = event.data[3]
+            idsInstance =  event.data[1]
+            occurrence = event.data[2]
+            idsData = event.data[3]
+            progressBar = event.data[4]
             progressBar.setWindowTitle("Updating view...")
-            viewLoadingStrategy = event.data[4]
-            self.dataTreeView.updateView(idsName, occurrence, idsData, viewLoadingStrategy)
+            viewLoadingStrategy = event.data[5]
+            self.dataTreeView.updateView(idsName, idsInstance, occurrence, idsData, viewLoadingStrategy)
             progressBar.hide()
 
 
@@ -790,17 +781,33 @@ class QVizDataTreeViewFrame(QMainWindow):
                                        databaseBox.text() + ', shot: ' +
                                        shotBox.text() +
                                        ', run: ' + runBox.text() + '.')
-            exported_ids = imas.ids(int(shotBox.text()), int(runBox.text()))
+
+            backend_id = dataSource.defaultBackend()
+            major_version = os.environ["IMAS_MAJOR_VERSION"]
+            uri = dataSource.build_legacy_uri(self, backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(),
+            databaseBox.text(), major_version, '')
+            exported_db_entry = imas.DBEntry(uri, 'w')
 
             # Patch: In case IDS database or user do not exist
             try:
-                exported_ids.create_env(userBox.text(), databaseBox.text(), '3')
+                logging.info("Creating pulse file with URI: " + uri + " ...")
+                status, idx = exported_db_entry.open()
+                
+                if status != 0:
+                    logging.error("Unable to create pulse file with URI: " + uri + " using backend "  + str(backend_id) + ". Trying fallback backend.")
+                    backend_id = dataSource.fallbackBackend()
+                    uri = dataSource.build_legacy_uri(self, backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(),
+                    databaseBox.text(), major_version, '')
+                    exported_db_entry = imas.DBEntry(uri, 'w')
+                    status, idx = exported_db_entry.open()
+                    if status != 0:
+                        logging.error("Unable to create pulse file with URI: " + uri + " using backend "  + str(backend_id) + ".")
+                    return
+
             except:
-                logging.info('The specified database ' +
-                                           databaseBox.text() + ' for user ' +
-                                           userBox.text() + ' not found.')
+                logging.info('Unable to create pulse file with URI: ' + uri)
                 return
-            dataSource.exportToLocal(self.dataTreeView, exported_ids)
+            dataSource.exportToLocal(self.dataTreeView, exported_db_entry)
 
             logging.info('Export finished.')
 

@@ -75,7 +75,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
                 v = data[1]
                 if len(t[0]) !=len(v[0]):
                     raise ValueError("Data can not be previewed, x and y shapes are different.")
-                self.plot1DSignal(shotNumber=self.dataTreeView.shotNumber,
+                self.plot1DSignal(uri=self.dataTreeView.uri,
                                   t=t, v=v, title=self.title,
                                   label=self.label, xlabel=self.xlabel)
 
@@ -109,16 +109,16 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             traceback.print_exc(file=sys.stdout)
             raise
 
-    def plot1DSignal(self, shotNumber, t, v, title='', label=None,
+    def plot1DSignal(self, uri, t, v, title='', label=None,
                      xlabel=None):
         """Plot a 1D signal as a function of time.
 
         Arguments:
-            shotnumber (int) : IDS database parameter - shot number of the case.
+            uri              : URI of the shot
             t     (2D array) : 2D array of time values.
             v     (2D array) : 2D array of physical quantity values.
             title      (str) : Plot title.
-            label      (str) : Label describing IMAS database (device, shot) and
+            label      (str) : Label describing IMAS database (URI) and
                                path to signal/node in IDS database structure.
             xlabel     (str) : Plot X-axis label.
         """

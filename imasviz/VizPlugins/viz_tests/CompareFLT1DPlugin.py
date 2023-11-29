@@ -16,7 +16,7 @@ class CompareFLT1DPlugin(VizPlugin):
             logging.info('Comparing current node to sibling node from another shot...')
             logging.info('Data :' + self.selectedTreeNode.getDataName())
 
-            ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+            ok, uri = QVizGlobalOperations.askForShot()
             if not ok:
                 return
 
@@ -36,11 +36,7 @@ class CompareFLT1DPlugin(VizPlugin):
 
             # Load IMAS database
             dataSource = dataSourceFactory.create(
-                dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                shotNumber=shotNumber,
-                runNumber=runNumber,
-                userName=userName,
-                imasDbName=database)
+                uri=uri)
 
             logging.info('Creating datasource:' + dataSource.getLongLabel())
 

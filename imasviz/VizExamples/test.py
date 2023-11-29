@@ -29,18 +29,14 @@ api = Viz_API()
 dataSourceFactory = QVizDataSourceFactory()
 
 
-shotNumber, ok = QInputDialog.getInt(None, "Shot number", "enter a shot number for tokamak='test', run=0 ")
+URI, ok = QInputDialog.getText(None, "Shot number", "enter an URI")
 
 if not ok:
     print("User input has failed. Test not executed.")
 else:
 
     # Load IMAS database
-    dataSource = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                          shotNumber=shotNumber,
-                                          runNumber=0,
-                                          userName=os.environ['USER'],
-                                          imasDbName='test')
+    dataSource = dataSourceFactory.create(uri=uri)
 
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)

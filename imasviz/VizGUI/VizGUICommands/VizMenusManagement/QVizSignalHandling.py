@@ -1017,7 +1017,7 @@ class QVizSignalHandling(QObject):
         figureNodesList = []
         for k in figureDataList:
             v = figureDataList[k]
-            figureNodesList.append(v[1])  # v[0] = shot number, v[1] = vizNode
+            figureNodesList.append(v[1])  # v[0] = uri, v[1] = vizNode
         return self.nodeDataShareSameCoordinatesAs(figureNodesList, vizTreeNode,
                                                    figureKey)
 

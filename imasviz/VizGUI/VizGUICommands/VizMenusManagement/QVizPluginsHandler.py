@@ -112,27 +112,11 @@ class QVizPluginsHandler:
             qdw = pluginsObject.findChild(QWidget, 'mainPluginWidget')
 
             # Get IDS object from IMASViz DTV
-            # - Get data source
-            dataSource = dataTreeView.dataSource
-            # - get IDS object
-            try:
-                ids = dataSource.data_entries[pluginsObject.targetOccurrence]
-            except:
-                ids = None
-            if ids is None:
-                # -Get IDS object for target IDS root and target occurrence
-                # Note: This will also populate and update the IDS tree view
-                #       structure
-                dataSource.load(dataTreeView,
-                                IDSName=pluginsObject.targetIDSroot,
-                                occurrence=pluginsObject.targetOccurrence,
-                                asynch=False)
-                # Set IDS
-                ids = dataSource.data_entries[pluginsObject.targetOccurrence]
-
-            # Set IDS object for the main Qt designer widget
-            qdw.setIDS(ids)
-
+            dataTreeView.dataSource.load(dataTreeView,
+                            IDSName=pluginsObject.targetIDSroot,
+                            occurrence=pluginsObject.targetOccurrence,
+                            asynch=False)
+            
             # Show the plugin user interface
             pluginsObject.show()
         elif 'execute' in dir(pluginsObject):

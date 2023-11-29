@@ -57,19 +57,15 @@ fontsize_title     = 11  # Font size for title
 def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
     dataSource = vizAPI.GetDataSource(dataTreeView)
-    shot = dataSource.shotNumber
-    run = dataSource.runNumber
-    machine = dataSource.imasDbName
-    user = dataSource.userName
+    uri = dataSource.uri
+    
     status = 0
 
-    print('shot    =', shot)
-    print('run     =', run)
-    print('user    =', user)
-    print('machine =', machine)
+    print('uri    =', uri)
+
     print('Reading data...')
 
-    # Open shot and run of machine
+    # Open URI
     occurrence = 0 # default occurrence
     
     #root = logging.getLogger()
@@ -117,35 +113,33 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         logging.info('Loading equilibrium IDS...')
         vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
 
-    idd = dataSource.getImasEntry(occurrence)
-    ht = idd.equilibrium.ids_properties.homogeneous_time
+    equilibrium = dataSource.get('equilibrium', occurrence)
+    ht = equilibrium.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
         logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS is empty.')
         status = -1
 
-    elif len(idd.equilibrium.time_slice) == 0:
+    elif len(equilibrium.time_slice) == 0:
         logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS has no time slices.')
         status = -1
 
-    # elif len(idd.equilibrium.time_slice[0].ggd) == 0:
+    # elif len(equilibrium.time_slice[0].ggd) == 0:
     #     logging.info('Unable to start the Equilibrium plugin; GGD is empty.')
     #     status = -1
 
     # Get wall geometry
-    if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
-        logging.info('Loading wall IDS...')
-        vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
+    #if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
+    #    logging.info('Loading wall IDS...')
+    #    vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
 
-
-    idd = vizAPI.GetIMASDataEntry(dataTreeView, occurrence)
-
-    ht = idd.wall.ids_properties.homogeneous_time
+    wall_ids = dataSource.get('wall', occurrence)
+    ht = wall_ids.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
         logging.error('Unable to start the Equilibrium plugin; ''Wall'' IDS is empty.')
         status = -1
 
     if status == -1:
-        return shot, run, machine, user, \
+        return uri, \
                    None, None, \
                    None, None, None, None, None, None, None, \
                    None, None, None, None, None, \
@@ -153,18 +147,18 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
                    None, None, None, None, None, None, -1
 
     # Array with all times requested
-    lenArrTimes = len(idd.equilibrium.time)
-    if lenArrTimes != len(idd.equilibrium.time_slice):
+    lenArrTimes = len(equilibrium.time)
+    if lenArrTimes != len(equilibrium.time_slice):
         logging.error('ERROR: length time and time_slice differ')
         return
 
     logging.info('Equilibrium plugin: preparing data...')
 
     timeEquiIDS = np.zeros(lenArrTimes)
-    timeEquiIDS = idd.equilibrium.time
+    timeEquiIDS = equilibrium.time
     #print('timeEquiIDS    =', timeEquiIDS)
-    print('len idd.equilibrium.time       =', len(idd.equilibrium.time))
-    print('len idd.equilibrium.time_slice =', len(idd.equilibrium.time_slice))
+    print('len equilibrium.time       =', len(equilibrium.time))
+    print('len equilibrium.time_slice =', len(equilibrium.time_slice))
 
     # Declaration of arrays time traces
     Ip       = np.zeros(lenArrTimes)
@@ -177,19 +171,19 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     NbrPoints = 0
     triKnots = []
 
-    equi_tSlice = idd.equilibrium.time_slice[0]
+    equi_tSlice = equilibrium.time_slice[0]
 
-    num_ggd_slices = len(idd.equilibrium.time_slice[0].ggd)
-    num_grids_ggd_slices = len(idd.equilibrium.grids_ggd)
+    num_ggd_slices = len(equilibrium.time_slice[0].ggd)
+    num_grids_ggd_slices = len(equilibrium.grids_ggd)
     num_grid_slices = 0
 
     if num_grids_ggd_slices > 0:
-        num_grid_slices = len(idd.equilibrium.grids_ggd[0].grid)
+        num_grid_slices = len(equilibrium.grids_ggd[0].grid)
 
     print(f"Number of GGD slices: {num_ggd_slices}")
     if num_ggd_slices > 0:
         print("Searching for grid in ggd node")
-        equi_space  = idd.equilibrium.time_slice[0].ggd[0]
+        equi_space  = equilibrium.time_slice[0].ggd[0]
 
         if len(equi_space.grid.space) != 0:
             NbrPoints   = len(equi_space.grid.space[0].objects_per_dimension[0].object)
@@ -218,7 +212,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
         elif (num_grids_ggd_slices > 0) and (num_grid_slices > 0):
             print("Searching for grid in grids_ggd node")
-            equi_grid = idd.equilibrium.grids_ggd[0].grid[0]
+            equi_grid = equilibrium.grids_ggd[0].grid[0]
             NbrPoints = len(equi_grid.space[0].objects_per_dimension[0].object)
             print('NbrPoints (number of grid points) =', NbrPoints)
             # Declaration of arrays 2d plots
@@ -246,19 +240,19 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     # If GGD is empty
     else:
         print("GGD is empty. Searching for grid in profiles_2d node")
-        print("Number of progiles_2d slices: ", len(idd.equilibrium.time_slice[0].profiles_2d))
-        for j in range(len(idd.equilibrium.time_slice[0].profiles_2d)):
-            if idd.equilibrium.time_slice[0].profiles_2d[j].grid_type.index == 1:
+        print("Number of progiles_2d slices: ", len(equilibrium.time_slice[0].profiles_2d))
+        for j in range(len(equilibrium.time_slice[0].profiles_2d)):
+            if equilibrium.time_slice[0].profiles_2d[j].grid_type.index == 1:
                 print("profiles_2D for grid type index 1 found.")
-                NbrPoints = len(idd.equilibrium.time_slice[0].profiles_2d[j].r)
+                NbrPoints = len(equilibrium.time_slice[0].profiles_2d[j].r)
                 print('NbrPoints (number of grid points) =', NbrPoints)
                 # Declaration of arrays 2d plots
                 RNodes = []
                 ZNodes = []
 
                 for i in range(NbrPoints):
-                    RNodes = idd.equilibrium.time_slice[0].profiles_2d[j].r
-                    ZNodes = idd.equilibrium.time_slice[0].profiles_2d[j].z
+                    RNodes = equilibrium.time_slice[0].profiles_2d[j].r
+                    ZNodes = equilibrium.time_slice[0].profiles_2d[j].z
 
                 break
 
@@ -276,7 +270,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     xPoint  = np.zeros((lenArrTimes, 2))
 
     wall = np.zeros((2, \
-           len(idd.wall.description_2d[0].limiter.unit[0].outline.r)))
+           len(wall_ids.description_2d[0].limiter.unit[0].outline.r)))
 
     b0 = np.zeros(lenArrTimes)
 
@@ -290,14 +284,14 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     status = -1
         
     try:
-        wall[0, :] = idd.wall.description_2d[0].limiter.unit[0].outline.r
-        wall[1, :] = idd.wall.description_2d[0].limiter.unit[0].outline.z
+        wall[0, :] = wall_ids.description_2d[0].limiter.unit[0].outline.r
+        wall[1, :] = wall_ids.description_2d[0].limiter.unit[0].outline.z
         status = 0
     except Exception as e:
         logging.error(e)
         
     if status == -1:
-        return shot, run, machine, user, \
+        return uri, \
                    None, None, \
                    None, None, None, None, None, None, None, \
                    None, None, None, None, None, \
@@ -305,8 +299,8 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
                    None, None, None, None, None, None, -1
 
     # b0 vacuum toroidal field and r0
-    b0 = idd.equilibrium.vacuum_toroidal_field.b0
-    r0 = idd.equilibrium.vacuum_toroidal_field.r0
+    b0 = equilibrium.vacuum_toroidal_field.b0
+    r0 = equilibrium.vacuum_toroidal_field.r0
 
     # Organise quantities for plot
     for timeit in range(lenArrTimes):
@@ -315,7 +309,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         print('-----')
         print('It:', timeit, ', time in equilibrium IDS =', timeEquiIDS[timeit])
 
-        equi_tSlice = idd.equilibrium.time_slice[timeit]
+        equi_tSlice = equilibrium.time_slice[timeit]
 
         status = -1
         
@@ -332,17 +326,17 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
             logging.error(e)
             
         if status == -1:
-            return shot, run, machine, user, \
+            return uri, \
                        None, None, \
                        None, None, None, None, None, None, None, \
                        None, None, None, None, None, \
                        None, None, \
                        None, None, None, None, None, None, -1
 
-        num_ggd_slices = len(idd.equilibrium.time_slice[0].ggd)
+        num_ggd_slices = len(equilibrium.time_slice[0].ggd)
         if num_ggd_slices > 0:
             print("Getting psi values from GGD")
-            equi_space  = idd.equilibrium.time_slice[timeit].ggd[0]
+            equi_space  = equilibrium.time_slice[timeit].ggd[0]
             # Psi and plasma boundary
             Psi_val[timeit, :] = equi_space.psi[0].values
 
@@ -354,7 +348,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         # else:
         #    print("Getting psi values from profiles_2d")
 
-            # psi = idd.equilibrium.time_slice[timeit].profiles_2d[0].psi # 2D array
+            # psi = equilibrium.time_slice[timeit].profiles_2d[0].psi # 2D array
             # Psi_val[timeit, :] = np.sqrt( abs( psi[:, - min(psi) ] ))
 
             # min_Psi_val[timeit] = np.min(Psi_val[timeit, :])
@@ -413,7 +407,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     logging.info('Equilibrium plugin: data ready.')
 
 
-    return shot, run, machine, user, \
+    return uri, \
            timeEquiIDS, lenArrTimes, \
            Ip, q95, q_axis, li_3, w_mhd, mag_ax_R, mag_ax_Z, \
            Psi_val, RNodes, ZNodes, triKnots, levels1_requested, \
@@ -430,8 +424,7 @@ class PlotFrame(QMainWindow):
 
         super(PlotFrame, self).__init__(parent)
 
-        self.shot,          self.run,               self.machine, \
-        self.user,          self.timeEquiIDS,       self.lenArrTimes,\
+        self.uri,          self.timeEquiIDS,       self.lenArrTimes,\
         self.Ip,            self.q95,               self.q_axis, \
         self.li_3,          self.w_mhd,             self.mag_ax_R, \
         self.mag_ax_Z,      self.Psi_val,           self.RNodes, \
@@ -507,9 +500,8 @@ class PlotFrame(QMainWindow):
                                  wspace=0.3, hspace=0.0)
 
         self.fig.suptitle('Equilibrium' \
-                        + '       ' + 'Shot ' + str(self.shot) + '     Run ' \
-                        + str(self.run) + '     ' + 'Machine ' + self.machine \
-                        + '     User '  + self.user, fontsize=fontsize_title)
+                        + '       ' + 'URI ' + self.uri \
+                        , fontsize=fontsize_title)
 
         # Since we have only one plot, we can use add_axes
         # instead of add_subplot, but then the subplot
@@ -1201,16 +1193,6 @@ class equilibriumcharts(VizPlugin):
         else:
             return []
 
-    # def getPluginsConfiguration(self):
-    #     return [{
-    #                                         'time_i': 31.880, \
-    #                                         'time_e': 32.020, \
-    #                                         'delta_t': 0.02, \
-    #                                         'shot': 50642, \
-    #                                         'run': 0, \
-    #                                         'machine': 'west_equinox', \
-    #                                         'user': 'imas_private'}]
-
     def getAllEntries(self):
         return [(0, 'Equilibrium overview...')]
 
@@ -1269,10 +1251,7 @@ if (__name__ == '__main__'):
     dataSourceFactory = QVizDataSourceFactory()
 
     # Load IMAS database and build the data tree view frame
-    f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
-                                                     runNumber=0,
-                                                     userName='g2penkod',
-                                                     imasDbName='viztest'))
+    f1 = api.CreateDataTree(dataSourceFactory.create(uri=uri))
 
     # Get equilibrium treeWidget item (QVizTreeNode)
     eq_item = f1.dataTreeView.IDSRoots['equilibrium']

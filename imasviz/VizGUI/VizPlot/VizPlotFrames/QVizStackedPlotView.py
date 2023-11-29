@@ -242,7 +242,7 @@ class StackedPlotWindow(pg.GraphicsLayoutWidget):
                 signalNode = dtv_selectedSignals[signalKey]['QTreeWidgetItem']
 
                 key = dtv.dataSource.dataKey(signalNode)
-                tup = (dtv.dataSource.shotNumber, signalNode)
+                tup = (dtv.dataSource.uri, signalNode)
                 self.imas_viz_api.AddNodeToFigure(self.figureKey, key, tup)
 
                 # Get signal properties and values

@@ -22,7 +22,7 @@ def get_name_ids(input_tuple):
     idsName, shot, run, user, machine = input_tuple
     idd = imas.ids(shot, run)
     idd.open_env(user, machine, '3')
-    eval('idd.' + idsName + '.get()')
+    #TODO eval("idd." + idsName + ".get(" + idsName + ")")
     return idd, input_tuple
 
 def ids_read_multiprocess(tuple_list):
@@ -38,8 +38,8 @@ def ids_read_multiprocess(tuple_list):
 
 if __name__ == '__main__':
     # Init
-    inp_tup1 = ('interfero_polarimeter', 52203, 0, 'imas_public', 'west')
-    inp_tup2 = ('interfero_polarimeter', 52202, 0, 'imas_public', 'west')
+    inp_tup1 = ('interfero_polarimeter', 52203, 0, 'imas_public', 'west', 13)
+    inp_tup2 = ('interfero_polarimeter', 52202, 0, 'imas_public', 'west', 13)
     print('(inp_tup1, inp_tup2) =', (inp_tup1, inp_tup2))
     
     # Call function

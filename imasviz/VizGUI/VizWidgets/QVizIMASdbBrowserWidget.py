@@ -123,6 +123,7 @@ then the available <b>IDS cases for that user will be shown too</b>.
         # (last in tree hierarchy -> 0 children)
         if item.childCount() == 0:
             self.setActiveUsername(item.parent().parent().parent().parent().text(0))
+            self.setActiveBackend(item.parent().parent().parent().text(0))
             self.setActiveDatabase(item.parent().parent().text(0))
             self.setActiveShot(item.parent().text(0))
             self.setActiveRun(item.text(0))
@@ -131,6 +132,13 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
     def setActiveUsername(self, username):
         self.activeUsername = username
+
+    def setActiveBackend(self, backend_name):
+        if backend_name=='HDF5':
+            backend = 13
+        elif backend_name=='MDS+':
+            backend = 12
+        self.backend = backend
 
     def setActiveDatabase(self, db):
         self.activeDatabase = db
@@ -143,6 +151,9 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
     def getActiveUsername(self):
         return self.activeUsername
+
+    def getActiveBackend(self):
+        return self.backend
 
     def getActiveDatabase(self):
         return self.activeDatabase

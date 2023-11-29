@@ -202,6 +202,7 @@ class TabLineProperties(QWidget):
         self.legendItem = self.parent.legendItem
 
         # self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.eventsData = {}
 
         # Set up the QWidget contents
         self.setContents()
@@ -286,7 +287,9 @@ class TabLineProperties(QWidget):
 
             # ------------------------------------------------------------------
             # Configuring plot pen color
+            #penColorButton = pg.sigColorChanging()
             penColorButton = pg.ColorButton()
+
             # - Set current plot pen color (takes QColor)
             penColorButton.setColor(pdItem.opts['pen'].color())
             # - Add penColorButton to layout
@@ -295,15 +298,13 @@ class TabLineProperties(QWidget):
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
             # -- While selecting color
-            penColorButton.sigColorChanging.connect(partial(
-                self.updatePDItemColor,
-                pdItem=pdItem,
-                colorButton=penColorButton))
-            # -- When done selecting color
-            # penColorButton.sigColorChanged.connect(partial(
-            #     self.updatePDItemColor,
-            #     pdItem=pdItem,
-            #     colorButton=penColorButton))
+            #sigColorChanging = penColorButton.sigColorChanging()
+            self.eventsData['pdItem'] = pdItem
+
+            self.eventsData['penColorButton'] = penColorButton
+            penColorButton.sigColorChanging.connect(self.updatePDItemColor)
+            #penColorButton.sigColorChanging.connect(self.partial(self.updatePDItemColor, penColorButton, pdItem))
+
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring plot pen style
@@ -316,11 +317,10 @@ class TabLineProperties(QWidget):
             # - Add list of styles to comboBox
             styleComboBox.addItems(stylesList)
 
+            self.eventsData['styleComboBox'] = styleComboBox
+
             # - Update plot pen style on value change
-            styleComboBox.currentIndexChanged.connect(partial(
-                self.updatePDItemStyle,
-                pdItem=pdItem,
-                comboBox=styleComboBox))
+            styleComboBox.currentIndexChanged.connect(self.updatePDItemStyle)
 
             # - Add comboBox to layout
             scrollLayout.addWidget(styleComboBox, row + 1, col, 1, 1)
@@ -334,11 +334,10 @@ class TabLineProperties(QWidget):
             # - Add spinBox to layout
             scrollLayout.addWidget(widthSpinBox, row + 1, col, 1, 1)
 
+            self.eventsData['spinBox'] = widthSpinBox
+
             # - Update plot pen width/thickness on value change
-            widthSpinBox.valueChanged.connect(partial(
-                self.updatePDItemWidth,
-                pdItem=pdItem,
-                spinBox=widthSpinBox))
+            widthSpinBox.valueChanged.connect(self.updatePDItemWidth)
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol type
@@ -358,11 +357,10 @@ class TabLineProperties(QWidget):
                     index(pdItem.opts['symbol'])]
             symbolComboBox.setCurrentText(currentQtStyle)
 
+            self.eventsData['symbolComboBox'] = symbolComboBox
+
             # - Update plot pen style on value change
-            symbolComboBox.currentIndexChanged.connect(partial(
-                self.updatePDItemSymbol,
-                pdItem=pdItem,
-                comboBox=symbolComboBox))
+            symbolComboBox.currentIndexChanged.connect(self.updatePDItemSymbol)
 
             # - Add comboBox to layout
             scrollLayout.addWidget(symbolComboBox, row + 1, col, 1, 1)
@@ -376,11 +374,10 @@ class TabLineProperties(QWidget):
             # - Add spinBox to layout
             scrollLayout.addWidget(symbolSizeSpinBox, row + 1, col, 1, 1)
 
+            self.eventsData['symbolSizeSpinBox'] = symbolSizeSpinBox
+
             # - Update plot pen width/thickness on value change
-            symbolSizeSpinBox.valueChanged.connect(partial(
-                self.updatePDItemSymbolSize,
-                pdItem=pdItem,
-                spinBox=symbolSizeSpinBox))
+            symbolSizeSpinBox.valueChanged.connect(self.updatePDItemSymbolSize)
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol fill color
@@ -393,15 +390,11 @@ class TabLineProperties(QWidget):
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
             # -- While selecting color
-            symbolColorButton.sigColorChanging.connect(partial(
-                self.updatePDItemSymbolColor,
-                pdItem=pdItem,
-                colorButton=symbolColorButton))
-            # -- When done selecting color
-            # symbolColorButton.sigColorChanged.connect(partial(
-            #     self.updatePDItemSymbolColor,
-            #     pdItem=pdItem,
-            #     colorButton=symbolColorButton))
+
+            self.eventsData['symbolColorButton'] = symbolColorButton
+
+            symbolColorButton.sigColorChanging.connect(self.updatePDItemSymbolColor)
+
             col += 1  # go to next column
             # ------------------------------------------------------------------
             # Configuring symbol outline color
@@ -414,15 +407,8 @@ class TabLineProperties(QWidget):
             #   Note: Better to work with only one signal, either
             #   sigColorChanging or sigColorChanged
             # -- While selecting color
-            symbolOColorButton.sigColorChanging.connect(partial(
-                self.updatePDItemSymbolOutlineColor,
-                pdItem=pdItem,
-                colorButton=symbolOColorButton))
-            # -- When done selecting color
-            # symbolOColorButton.sigColorChanged.connect(partial(
-            #     self.updatePDItemSymbolOutlineColor,
-            #     pdItem=pdItem,
-            #     colorButton=symbolOColorButton))
+            self.eventsData['symbolOColorButton'] = symbolOColorButton
+            symbolOColorButton.sigColorChanging.connect(self.updatePDItemSymbolOutlineColor)
 
             itemID += 1
             row += 1
@@ -439,8 +425,7 @@ class TabLineProperties(QWidget):
 
         return scrollArea
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
-    def updatePDItemColor(self, pdItem, colorButton):
+    def updatePDItemColor(self):
         """Update plotDataItem pen color.
         Note: instant update (no apply required).
 
@@ -450,11 +435,13 @@ class TabLineProperties(QWidget):
                                              color is set.
         """
         # Change pen color
+        pdItem = self.eventsData['pdItem']
+        colorButton = self.eventsData['penColorButton']
         pdItem.opts['pen'].setColor(colorButton.color())
         pdItem.updateItems()
+        #self.eventsData.clear()
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
-    def updatePDItemStyle(self, pdItem, comboBox):
+    def updatePDItemStyle(self):
         """Update plotDataItem pen style.
         Note: instant update (no apply required).
 
@@ -464,11 +451,14 @@ class TabLineProperties(QWidget):
                                          set.
         """
         # Change item pen style
+        pdItem = self.eventsData['pdItem']
+        comboBox = self.eventsData['styleComboBox']
         pdItem.opts['pen'].setStyle(GlobalQtStyles.stylesDict[comboBox.currentText()])
         pdItem.updateItems()
+        #self.eventsData.clear()
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
-    def updatePDItemWidth(self, pdItem, spinBox):
+
+    def updatePDItemWidth(self):
         """Update plotDataItem pen width.
         Note: instant update (no apply required).
 
@@ -477,13 +467,14 @@ class TabLineProperties(QWidget):
             spinBox (QDoubleSpinBox)  : SpinBox with which the new width is
                                         set.
         """
-
+        pdItem = self.eventsData['pdItem']
+        spinBox = self.eventsData['spinBox']
         # Change item pen width
         pdItem.opts['pen'].setWidth(spinBox.value())
         pdItem.updateItems()
+        #self.eventsData.clear()
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QComboBox)
-    def updatePDItemSymbol(self, pdItem, comboBox):
+    def updatePDItemSymbol(self):
         """Update plotDataItem pen width.
         Note: instant update (no apply required).
 
@@ -494,11 +485,13 @@ class TabLineProperties(QWidget):
         """
 
         # Change item symbol type
+        pdItem = self.eventsData['pdItem']
+        comboBox = self.eventsData['symbolComboBox']
         pdItem.opts['symbol'] = GlobalPgSymbols.symbolsDict[comboBox.currentText()]
         pdItem.updateItems()
+        #self.eventsData.clear()
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, QDoubleSpinBox)
-    def updatePDItemSymbolSize(self, pdItem, spinBox):
+    def updatePDItemSymbolSize(self):
         """Update plotDataItem symbol size.
         Note: instant update (no apply required).
 
@@ -508,11 +501,13 @@ class TabLineProperties(QWidget):
         """
 
         # Change item symbol size
+        pdItem = self.eventsData['pdItem']
+        spinBox = self.eventsData['symbolSizeSpinBox']
         pdItem.opts['symbolSize'] = spinBox.value()
         pdItem.updateItems()
+        #self.eventsData.clear()
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
-    def updatePDItemSymbolColor(self, pdItem, colorButton):
+    def updatePDItemSymbolColor(self):
         """Update plotDataItem symbol color.
         Note: instant update (no apply required).
 
@@ -522,11 +517,14 @@ class TabLineProperties(QWidget):
                                              color is set.
         """
         # Change symbol color
+        pdItem = self.eventsData['pdItem']
+        colorButton = self.eventsData['symbolColorButton']
         pdItem.opts['symbolBrush'] = colorButton.color().getRgb()
         pdItem.updateItems()
+        #self.eventsData.clear()
 
-    @Slot(pg.graphicsItems.PlotDataItem.PlotDataItem, pg.ColorButton)
-    def updatePDItemSymbolOutlineColor(self, pdItem, colorButton):
+
+    def updatePDItemSymbolOutlineColor(self):
         """Update plotDataItem symbol outline color.
         Note: instant update (no apply required).
 
@@ -536,8 +534,11 @@ class TabLineProperties(QWidget):
                                              color is set.
         """
         # Change symbol outline color
+        pdItem = self.eventsData['pdItem']
+        colorButton = self.eventsData['symbolOColorButton']
         pdItem.opts['symbolPen'] = colorButton.color().getRgb()
         pdItem.updateItems()
+        #self.eventsData.clear()
 
 
 class TabTextProperties(QWidget):

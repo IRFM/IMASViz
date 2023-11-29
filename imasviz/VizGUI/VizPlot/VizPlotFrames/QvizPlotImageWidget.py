@@ -101,6 +101,9 @@ class QvizPlotImageWidget(QWidget):
         viewBox.displayMenu1D = False
         viewBox.setRange(xRange=(0, len(data[:, 0])))
         viewBox.setLimits(xMin=0, xMax=len(data[:, 0]), yMin=0, yMax=len(data[0, :]))
+        if self.vizTreeNode is not None:
+            print('adding node in PlotImageWidget')
+            viewBox.addVizTreeNode(self.vizTreeNode)
 
         self.plotImageItem = firstLayout.addPlot(row=0, col=0, rowSpan=1, colSpan=2, viewBox=viewBox)
         self.plotImageItem.addItem(imageItem)
@@ -199,11 +202,17 @@ class SlicesPlotItem:
         roi = self.addSegmentROI(plotImageItem)  # add a ROI to the image
         # Creation of the slice plot item at 1, 0 of the pgw layout
         viewBox = self.createViewBox()
+        if parent.vizTreeNode is not None:
+            print('adding node in SlicesPlotItem')
+            viewBox.addVizTreeNode(parent.vizTreeNode)
         self.slice_plotItem = parent.pgw.addPlot(row=self.axis, col=0, rowSpan=1, colSpan=2, viewBox=viewBox)
         self.slice_plotItem.addLegend()
         self.setupSliceImageAxes()  # setup plot axis
-        roi.sigPositionChangeFinished.connect(partial(self.roiChanged, roi, imageItem))
-        self.roiChanged(roi, imageItem)
+        self.eventsData = {}
+        self.eventsData['roi'] = roi
+        self.eventsData['imageItem'] = imageItem
+        roi.sigPositionChangeFinished.connect(self.roiChanged)
+        self.roiChanged()
         self.roi = roi  # the ROI selecting the slice
         self.vline = self.createInfLine()
         self.slice_plotItem.addItem(self.vline)
@@ -267,7 +276,10 @@ class SlicesPlotItem:
     Create/update the plot of the current selected slice when the roi change
     """
 
-    def roiChanged(self, roi, imageItem):
+    def roiChanged(self):
+
+        roi = self.eventsData['roi']
+        imageItem = self.eventsData['imageItem']
         data = self.parent.dataArrayHandle.arrayValues
 
         if self.transpose:

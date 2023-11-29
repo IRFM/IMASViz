@@ -44,7 +44,7 @@ dataSourceFactory = QVizDataSourceFactory()
 # Set user (get current user)
 userName = os.environ['USER']
 
-ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+ok, uri = QVizGlobalOperations.askForShot()
 
 if not ok:
     print("User input has failed. Example3 not executed.")
@@ -52,11 +52,7 @@ else:
 
     # Load IMAS database
     dataSource = dataSourceFactory.create(
-        dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-        shotNumber=shotNumber,
-        runNumber=runNumber,
-        userName=userName,
-        imasDbName=database)
+        uri=uri)
 
     # Build the data tree view frame
     f = api.CreateDataTree(dataSource)

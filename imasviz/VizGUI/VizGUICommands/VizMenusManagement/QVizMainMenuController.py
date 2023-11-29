@@ -27,7 +27,7 @@ class QVizMainMenuController:
     def menuAddPublicDB(self, menu, listenerWidget):
         action_addPublicDB = QAction('Add public databases', listenerWidget)
         #action_addPublicDB.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'publicdbs'))
-        action_addPublicDB.triggered.connect(partial(self.addPublicDB))
+        action_addPublicDB.triggered.connect(self.addPublicDB)
         # Add to menu
         menu.addAction(action_addPublicDB)
         
@@ -36,7 +36,7 @@ class QVizMainMenuController:
         if username == "":
             return
         action_addSpecificUserDB = QAction('Add databases from user ' + username, listenerWidget)
-        action_addSpecificUserDB.triggered.connect(partial(self.addSpecificUserDB))
+        action_addSpecificUserDB.triggered.connect(self.addSpecificUserDB)
         # Add to menu
         menu.addAction(action_addSpecificUserDB)
         
@@ -90,8 +90,7 @@ class QVizMainMenuController:
             # Add menu item to delete all existing figures
             # Set action
             action_deleteAll_views = QAction('All', listenerWidget)
-            action_deleteAll_views.triggered.connect(partial(
-                self.deleteAllViews))
+            action_deleteAll_views.triggered.connect(self.deleteAllViews)
             # Add to submenu
             subMenu_deleteView.addAction(action_deleteAll_views)
             # Bitmap icon

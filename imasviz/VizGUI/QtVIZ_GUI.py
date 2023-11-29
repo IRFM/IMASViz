@@ -31,6 +31,7 @@ from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
 from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
                               QVizGlobalOperations, QVizLoggerSingleton, UserInputs)
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
+from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
 
 class GUIFrame(QTabWidget):
@@ -41,8 +42,8 @@ class GUIFrame(QTabWidget):
         self.tab1 = QWidget()
         self.tab2 = QWidget()
 
-        self.addTab(self.tab1, "Local data source")
-        self.addTab(self.tab2, "Experiment data source")
+        self.addTab(self.tab1, "Legacy parameters")
+        self.addTab(self.tab2, "URI")
 
         self.tabOne()
         self.tabTwo()
@@ -102,6 +103,9 @@ class GUIFrame(QTabWidget):
         self.IMASdbBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
         self.userName.editingFinished.connect(self.onUserNameEditFinished)
 
+        self.backend = QLineEdit('13') #default to HDF5 backend
+        vboxLayout.addRow('Backend', self.backend)
+
         button_open1 = QPushButton('Open', self)
         button_open1.setStatusTip("Open the case for the given parameters.")
         button_open1.setToolTip("Open the case for the given parameters.")
@@ -120,7 +124,7 @@ class GUIFrame(QTabWidget):
         try:
             if UserInputs.enable:
                 try:
-                    opts, args = getopt.getopt(UserInputs.inputs[1:], 'u:d:s:r:')
+                    opts, args = getopt.getopt(UserInputs.inputs[1:], 'u:d:s:r:b:')
                     for opt, arg in opts:
                         if opt == '-u':
                             self.userName.setText(arg)
@@ -130,6 +134,8 @@ class GUIFrame(QTabWidget):
                             self.shotNumber.setText(arg)
                         elif opt in ("-r"):
                             self.runNumber.setText(arg)
+                        elif opt in ("-b"):
+                            self.backend.setText(arg)
                 except getopt.GetoptError:
                     logging.error("bad user input")
                     sys.exit(-1)
@@ -141,17 +147,20 @@ class GUIFrame(QTabWidget):
             tokens = self.shotNumber.text().split()
             try:
                 for shotNumber in tokens:
-                    val = int(shotNumber)
 
                     """Check if data source is available"""
-                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE,
-                                               val)
+                    QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE)
 
-                    self.mainMenuController.openShotView.Open(evt, dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                                              imasDbName=self.imasDbName.text(),
-                                                              userName=self.userName.text(),
-                                                              runNumber=self.runNumber.text(),
-                                                              shotNumber=str(val))
+                    uri = QVizIMASDataSource.build_legacy_uri(
+                        backend_id=int(self.backend.text()), 
+                        shot=int(shotNumber), 
+                        run=int(self.runNumber.text()), 
+                        user_name=self.userName.text(), 
+                        db_name=self.imasDbName.text(), 
+                        data_version='3', 
+                        options='')
+
+                    self.mainMenuController.openShotView.Open(evt, uri)
 
             except Exception as e:
                 raise ValueError(str(e))
@@ -177,6 +186,7 @@ class GUIFrame(QTabWidget):
         self.imasDbName.setText(self.IMASdbBrowserWidget.getActiveDatabase())
         self.shotNumber.setText(self.IMASdbBrowserWidget.getActiveShot())
         self.runNumber.setText(self.IMASdbBrowserWidget.getActiveRun())
+        self.backend.setText(str(self.IMASdbBrowserWidget.getActiveBackend()))
 
     def onUserNameEditFinished(self):
         self.IMASdbBrowserWidget.setActiveUsername(self.userName.text())
@@ -186,33 +196,8 @@ class GUIFrame(QTabWidget):
         layout = QVBoxLayout()
         vboxlayout = QFormLayout()
         """Set static text for each GUI box (left from the box itself) """
-        self.shotNumber2 = QLineEdit()
-        vboxlayout.addRow('Shot number', self.shotNumber2)
-        default_user_name, default_machine, default_run = QVizDefault().getGUIEntries()
-        self.runNumber2 = QLineEdit(default_run)
-        vboxlayout.addRow('Run number', self.runNumber2)
-
-        publicDatabases = []
-
-        if os.environ.get('UDA_DISABLED') != '1':
-            udaConfigFilePath = Path(os.environ['VIZ_HOME'] + '/config/UDA_machines')
-            if udaConfigFilePath.is_file():
-                udaConfigFile = open(udaConfigFilePath)
-                UDAmachines = udaConfigFile.readline()
-                udaConfigFile.close()
-                publicDatabases = UDAmachines.split()
-            else:
-                logging.warning("Missing UDA_machines file in /config directory. UDA will be disabled!")
-                os.environ.get['UDA_DISABLED'] = '1'
-                self.tab2.setDisabled(True)
-        else:
-            print('UDA will be disabled (UDA_DISABLED=1)')
-            self.tab2.setDisabled(True)
-
-        self.cb = QComboBox()
-        self.cb.addItems(publicDatabases)
-        vboxlayout.addRow('Unified Data Access', self.cb)
-        # self.cb.currentIndexChanged.connect(self.cbSelectionchange)
+        self.URI = QLineEdit()
+        vboxlayout.addRow('URI', self.URI)
 
         button_open2 = QPushButton('Open', self)
         button_open2.clicked.connect(self.OpenDataSourceFromTab2)
@@ -222,19 +207,14 @@ class GUIFrame(QTabWidget):
         vboxLayout2.addWidget(button_open2)
         layout.addLayout(vboxLayout2)
         self.tab2.setLayout(layout)
-        # self.tab2.setDisabled(True)
 
     def OpenDataSourceFromTab2(self, evt):
+        import imas
         try:
             try:
                 self.CheckInputsFromTab2()
-                self.mainMenuController.openShotView.Open(evt,
-                                                          dataSourceName=QVizGlobalValues.IMAS_UDA,
-                                                          imasDbName='',
-                                                          userName='',
-                                                          runNumber=self.runNumber2.text(),
-                                                          shotNumber=self.shotNumber2.text(),
-                                                          UDAMachineName=self.cb.currentText())
+                self.mainMenuController.openShotView.Open(evt, self.URI.text())
+
             except Exception as e:
                 raise ValueError(str(e))
 
@@ -243,20 +223,10 @@ class GUIFrame(QTabWidget):
                           str(e))
 
     def CheckInputsFromTab2(self):
-        machineName = \
-            self.cb.currentText()
 
-        if machineName == '':
-            raise ValueError("'UDA name' field is empty.")
+        if self.URI.text() == '':
+            raise ValueError("'URI' field is empty.")
 
-        if self.shotNumber2.text() == '':
-            raise ValueError("'Shot number' field is empty.")
-
-        if self.runNumber2.text() == '':
-            raise ValueError("'Run number' field is empty.")
-
-        QVizGlobalOperations.check(QVizGlobalValues.IMAS_UDA,
-                                   int(self.shotNumber2.text()))
 
     def contextMenuEvent(self, event):
 
@@ -272,7 +242,7 @@ class GUIFrame(QTabWidget):
         self.mainMenuController.updateMenu(self.contextMenu, self)
 
         # Map the menu (in order to show it)
-        self.contextMenu.exec_(self.mapToGlobal(self.pos))
+        self.contextMenu.exec(self.mapToGlobal(self.pos))
         return 1
 
     def getMDI(self):
@@ -419,8 +389,8 @@ def help():
                 print("")
                 print("Help:")
                 print("")
-                print("1. Options for specifying user, database, shot and run numbers at startup time:")
-                print("viz -u <user> -d <database> -s <shot> -r <run>")
+                print("1. Options for specifying user, database, shot, run numbers and backend at startup time:")
+                print("viz -u <user> -d <database> -s <shot> -r <run> -b <backend>")
                 print("")
                 print("2. User guide for IMASViz:")
                 print ("viz_doc")
@@ -428,7 +398,7 @@ def help():
                 print("")
                 sys.exit(0)
     except getopt.GetoptError:
-        print("usage: viz -u <user> -d <database> -s <shot> -r <run>")
+        print("usage: viz -u <user> -d <database> -s <shot> -r <run> -b <backend>")
         print ("or: viz --help")
         sys.exit(-1)
 

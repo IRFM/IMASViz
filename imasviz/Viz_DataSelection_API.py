@@ -41,7 +41,7 @@ class Viz_DataSelection_API:
             vizTreeNode = v['QTreeWidgetItem']
 
             key = dataTreeView.dataSource.dataKey(vizTreeNode)
-            tup = (dataTreeView.dataSource.shotNumber, vizTreeNode)
+            tup = (dataTreeView.dataSource.uri, vizTreeNode)
             #self.api.AddNodeToFigure(self.figureKey, key, tup)
 
              # Get signal properties and values
@@ -52,7 +52,7 @@ class Viz_DataSelection_API:
                 data_features.append(s)
 
             elif len(s) == 2:
-                label, xlabel, ylabel, title = vizTreeNode.plotOptions(dataTreeView, vizTreeNode.getShotNumber(),
+                label, xlabel, ylabel, title = vizTreeNode.plotOptions(dataTreeView, vizTreeNode.getURI(),
                                                         plotWidget=None)
                 x = s[0] #coordinate
                 y = s[1] #1D array

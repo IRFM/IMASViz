@@ -209,11 +209,7 @@ class Ui_MainWindow(object):
     def initialize_data(self):
         dataSourceFactory = QVizDataSourceFactory()
         dataSource = dataSourceFactory.create(
-            dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-            shotNumber=shotNumber,
-            runNumber=runNumber,
-            userName=userName,
-            imasDbName=database)
+            dataSourceName=QVizGlobalValues.IMAS_NATIVE,uri)
 
         if self.api is None:
             self.api = Viz_API()
@@ -399,13 +395,14 @@ if __name__ == "__main__":
 
     profiles_count = {}
 
-    shotNumber = 130012
-    runNumber = 4
-    userName = 'public'
-    database = 'ITER_SCENARIOS'
+    # shotNumber = 130012
+    # runNumber = 4
+    # userName = 'public'
+    # database = 'ITER_SCENARIOS'
+    uri = ''
     occurrence = 0
 
-    data_entry = imas.DBEntry(imasdef.MDSPLUS_BACKEND, database, shotNumber, runNumber, userName)
+    data_entry = imas.DBEntry(uri, 'r')
     data_entry.open()
 
     supported_idss = ['core_sources', 'core_transport', 'core_profiles', 'edge_profiles', 'equilibrium']

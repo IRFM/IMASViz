@@ -94,7 +94,7 @@ class QVizPlotWidget(QWidget):
             x      (1D array) : 1D array of X-axis values.
             y      (1D array) : 1D array of Y-axis values.
             title       (str) : Plot title.
-            label       (str) : Label describing IMAS database (device, shot)
+            label       (str) : Label describing IMAS database (URI)
                                 and path to signal/node in IDS database
                                 structure.
             xlabel      (str) : Plot X-axis label.
@@ -406,7 +406,7 @@ class sliderGroup():
                 label = node.setLabelForFigure(node.getDataTreeView().dataSource)
                 if node.globalTime is None:
                     node.globalTime = \
-                        node.getGlobalTimeForArraysInDynamicAOS(self.dataTreeView.dataSource)
+                        node.getGlobalTimeForArraysInDynamicAOS()
                 if node.globalTime is not None:
                     time = "{:.6f}".format(float(node.globalTime[indexValue]))
                     if i == 0:

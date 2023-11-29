@@ -433,7 +433,7 @@ class CustomizedViewBox(pg.ViewBox):
         node = self.vizTreeNodesList[0]
         currentFigureKey = 0
         key = node.dataTreeView.dataSource.dataKey(node)
-        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        tup = (node.dataTreeView.dataSource.uri, node)
         figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
         self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
         self.imas_viz_api.plotVsCoordinate1AtGivenTime(node.dataTreeView, figureKey, node, 0)
@@ -443,7 +443,7 @@ class CustomizedViewBox(pg.ViewBox):
         node = self.vizTreeNodesList[0]
         currentFigureKey = 0
         key = node.dataTreeView.dataSource.dataKey(node)
-        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        tup = (node.dataTreeView.dataSource.uri, node)
         figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
         self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
         self.imas_viz_api.plotVsTimeAtGivenCoordinate1(node.dataTreeView, 0, figureKey, node, 0, 0)

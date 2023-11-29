@@ -104,9 +104,8 @@ class QVizIMASNativeDataAccess:
             coordinatesValues = []
             coordinate_of_time = None
 
-            data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
-            arrayPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
-            r_val = eval(arrayPath)
+            arrayPath = treeNode.evaluateDataPath(itimeValue)
+            r_val = treeNode.evalPath(arrayPath)
             coordinates_labels = []
             label = ''
             quantityName = ''
@@ -119,8 +118,7 @@ class QVizIMASNativeDataAccess:
                 if treeNode.isCoordinateTimeDependent(coordinateNumber=dim):
                     logging.debug("cooordinate of node '" + treeNode.getName() + "' is time dependent")
                     # coordinate for dimension dim is a function of time
-                    coordinateValues = QVizGlobalOperations.getCoordinate_array(data_entry,
-                                                                                treeNode.getData(),
+                    coordinateValues = QVizGlobalOperations.getCoordinate_array(treeNode,
                                                                                 coordinate)
                     coordinate_of_time = dim
                 else:
@@ -131,8 +129,8 @@ class QVizIMASNativeDataAccess:
                         coordinateValues = np.asarray(range(0, N))
                     else:
                         logging.debug("cooordinate of node '" + treeNode.getName() + "' is not 1..N")
-                        path = "data_entry." + treeNode.getIDSName() + "." + coordinate
-                        coordinateValues = eval(path)
+                        path = treeNode.getIDSName() + "." + coordinate
+                        coordinateValues = treeNode.evalPath(path)
                         if len(coordinateValues) == 0:
                             raise ValueError("Coordinate array for dimension " + str(dim) + " has no values.")
 
@@ -157,10 +155,9 @@ class QVizIMASNativeDataAccess:
             if treeNode.getData() is None:
                 return
 
-            data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
-            signalPath = 'data_entry.' + treeNode.evaluateDataPath(itimeValue)
+            signalPath = treeNode.evaluateDataPath(itimeValue)
             logging.debug("signalPath=" + signalPath)
-            r_val = eval(signalPath)
+            r_val = treeNode.evalPath(signalPath)
             r = np.array([r_val])
             coordinate1 = treeNode.evaluateCoordinateAt(coordinateNumber=1,
                                                         itimeValue=itimeValue)
@@ -168,8 +165,7 @@ class QVizIMASNativeDataAccess:
             if treeNode.isCoordinateTimeDependent(coordinateNumber=1):
                 # coordinate1 is a function of time
                 logging.debug("cooordinate1 of node '" + treeNode.getName() + "' is time dependent")
-                t = QVizGlobalOperations.getCoordinate_array(data_entry,
-                                                             treeNode.getData(),
+                t = QVizGlobalOperations.getCoordinate_array(treeNode,
                                                              coordinate1)
                 t = np.array([t])
             else:
@@ -180,10 +176,10 @@ class QVizIMASNativeDataAccess:
                     t = np.array([range(0, N)])
                 else:
                     logging.debug("cooordinate1 of node '" + treeNode.getName() + "' is not 1..N")
-                    path = "data_entry." + treeNode.getIDSName() + "." + \
+                    path = treeNode.getIDSName() + "." + \
                            coordinate1
                     logging.debug("path=" + path)
-                    e = eval(path)
+                    e = treeNode.evalPath(path)
                     if len(e) == 0:
                         logging.error("Coordinate1 has no values.")
                     if len(e) != 0 and len(e) != len(r_val):
@@ -207,7 +203,7 @@ class QVizIMASNativeDataAccess:
         """
 
         # Set global time
-        time = treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataSource)
+        time = treeNode.getGlobalTimeForArraysInDynamicAOS()
         treeNode.globalTime = time
 
         if treeNode.is0DAndDynamic():
@@ -218,13 +214,12 @@ class QVizIMASNativeDataAccess:
             # parametrizedPath[itime], ...
             time_slices_count = len(data_path_list)
             v = []
-            data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
+            #data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
             bad_time_values = []
             for i in range(time_slices_count):
                 try:
                     # Get values of the array at index
-                    value_at_index = eval('data_entry.' + data_path_list[i] + '[' +
-                                        str(coordinate_index) + ']')
+                    value_at_index = treeNode.evalPath(data_path_list[i] + '[' + str(coordinate_index) + ']')
                     v.append(value_at_index)
                 except:
                      bad_time_values.append(i)
@@ -244,19 +239,19 @@ class QVizIMASNativeDataAccess:
         # Get list of paths of arrays through time slices
         data_path_list = treeNode.getDataTimeSlices()  # parametrizedPath[0], parametrizedPath[1], ... ,
         # parametrizedPath[itime], ...
-        data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
+        #data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
         time_slices_count = len(data_path_list)
         # print "time_slices_count " + str(time_slices_count)
         v = []
         if treeNode.globalTime is None:
             treeNode.globalTime = \
-                treeNode.getGlobalTimeForArraysInDynamicAOS(self.dataSource)
+                treeNode.getGlobalTimeForArraysInDynamicAOS()
         time = treeNode.globalTime
         # Get values of the 0D scalar at each time slice
         bad_time_values = []
         for i in range(time_slices_count):
             try:
-               value_at_index = eval('data_entry.' + data_path_list[i])
+               value_at_index = treeNode.evalPath(data_path_list[i])
                v.append(value_at_index)
             except:
                bad_time_values.append(i)
@@ -272,9 +267,8 @@ class QVizIMASNativeDataAccess:
                         "' has no explicit dependency on coordinate1 dimension.")
         data_path_list = []
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())
-        data_entry = self.dataSource.data_entries[treeNode.getOccurrence()]
         data_path = aos_vs_itime.replace("[itime]", "[" + str(itimeValue) + "]")
-        value = eval('data_entry.' + data_path)
+        value = treeNode.evalPath(data_path)
         for i in range(0, len(xData)):  # constant 1D array
             data_path_list.append(value)
         r_array = np.array([np.array(data_path_list)])

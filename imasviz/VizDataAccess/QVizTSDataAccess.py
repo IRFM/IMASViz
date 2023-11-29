@@ -8,7 +8,7 @@ class QVizTSDataAccess:
 
     def GetSignal(self, treeNode):
         signalName = treeNode.getDataName()
-        shotNumber = treeNode.getShotNumber()
+        uri = treeNode.getURI()
 
         try:
             if signalName is None:
@@ -17,11 +17,11 @@ class QVizTSDataAccess:
             if signalName.startswith("'") and signalName.endswith("'"):
                 signalName = signalName[1:-1]
             signalName.strip()
-            expr = 'gettsbase(' + str(shotNumber) + ', "' + signalName + '")'
+            expr = 'gettsbase(' + uri + ', "' + signalName + '")'
             # print expr
             r = self.conn.get('execute($)', expr).data()
             # print r
-            expr = 'dim_of(gettsbase(' + str(shotNumber) + ', "' + \
+            expr = 'dim_of(gettsbase(' + uri + ', "' + \
                    signalName + '"))'
             # print expr
             t = self.conn.get('execute($)', expr).data()
@@ -39,7 +39,7 @@ class QVizTSDataAccess:
             raise ValueError("Error while getting the shape of signal " +
                              signalName + " - signal not found ?")
 
-    def GetShapeofSignal(self, selectedNodeData, shotNumber):
+    def GetShapeofSignal(self, selectedNodeData, uri):
         try:
             signalName = selectedNodeData['dataName']  # name of the signal
             signalName.strip()

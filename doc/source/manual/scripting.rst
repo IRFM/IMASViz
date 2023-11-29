@@ -108,10 +108,7 @@ in project GIT repository
 
     .. code-block:: Python
 
-        f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
-                                                 runNumber=0,
-                                                 userName='g2penkod',
-                                                 imasDbName='viztest'))
+        f1 = api.CreateDataTree(dataSourceFactory.create(uri)
 
 7. Add the build data tree view (DTV) to a list (!)
 
@@ -197,10 +194,7 @@ The final script is available below.
         dataSourceFactory = QVizDataSourceFactory()
 
         # Load IMAS database and build the data tree view
-        f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
-                                                        runNumber=0,
-                                                        userName='g2penkod',
-                                                        imasDbName='viztest'))
+        f1 = api.CreateDataTree(dataSourceFactory.create(uri))
 
         # Add data tree view frame to list (!)
         f = [f1]

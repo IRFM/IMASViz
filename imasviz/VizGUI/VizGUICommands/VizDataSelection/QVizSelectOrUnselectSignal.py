@@ -49,7 +49,4 @@ class QVizSelectOrUnselectSignal(QVizAbstractCommand):
             self.dataTreeView.selectedSignalsDict[key] = \
                 {'index'            : index,
                  'QTreeWidgetItem'  : self.dataTreeView.selectedItem,
-                 'shotNumber'       : self.dataTreeView.dataSource.shotNumber,
-                 'runNumber'        : self.dataTreeView.dataSource.runNumber,
-                 'imasDbName'       : self.dataTreeView.dataSource.imasDbName,
-                 'userName'         : self.dataTreeView.dataSource.userName}
+                 'uri'              : self.dataTreeView.dataSource.uri}

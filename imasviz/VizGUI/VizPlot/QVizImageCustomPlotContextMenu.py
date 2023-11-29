@@ -56,6 +56,7 @@ class QVizImageCustomPlotContextMenu(QVizCustomPlotContextMenu):
 
         self.plotConfDialog.show()
 
+
     def addCustomMenu(self):
 
         super().addCustomMenu()

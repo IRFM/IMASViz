@@ -40,27 +40,21 @@ api = Viz_API()
 # Set data source retriever/factory
 dataSourceFactory = QVizDataSourceFactory()
 
-ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+ok, uri = QVizGlobalOperations.askForShot()
 
 if not ok:
     print("User input has failed on first shot. Example2 not executed.")
 
 else:
-    f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=shotNumber,
-                                                     runNumber=runNumber,
-                                                     userName=userName,
-                                                     imasDbName=database))
+    f1 = api.CreateDataTree(dataSourceFactory.create(uri=uri))
 
-    ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+    ok, uri = QVizGlobalOperations.askForShot()
 
     if not ok:
         print("User input has failed on second shot. Example2 not executed.")
     else:
 
-        f2 = api.CreateDataTree(dataSourceFactory.create(shotNumber=shotNumber,
-                                                         runNumber=runNumber,
-                                                         userName=userName,
-                                                         imasDbName=database))
+        f2 = api.CreateDataTree(dataSourceFactory.create(uri=uri))
 
 
         # Add data tree view frames to list (!)

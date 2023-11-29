@@ -12,6 +12,7 @@
 
 import sys
 import os
+import imas
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.VizProfiles import VizProfiles, Request
@@ -36,15 +37,8 @@ class VizProfiles_plugin(VizPlugin):
             # Note: instance of "self.datatreeView" is provided by the VizPlugins
             # through inheritance
             dataSource = vizAPI.GetDataSource(self.dataTreeView)
-            shot = dataSource.shotNumber
-            run = dataSource.runNumber
-            device = dataSource.imasDbName
-            user = dataSource.userName
-
             selected_ids = self.selectedTreeNode.getIDSName()
-
-            idd = dataSource.createImasDataEntry()
-            maxOccurrences = eval("idd." + selected_ids + ".getMaxOccurrences()")
+            maxOccurrences = eval("imas." + selected_ids + "().getMaxOccurrences()")
 
             occurrence = 0
             if maxOccurrences > 1:
@@ -56,12 +50,10 @@ class VizProfiles_plugin(VizPlugin):
             
             ids_list = [selected_ids]
             vizAPI.LoadListOfIDSs(self.dataTreeView, ids_list, occurrence)
-            self.data_entry = dataSource.getImasEntry(occurrence)
 
-            self.IDS_parameters["shot"] = shot
-            self.IDS_parameters["run"] = run
-            self.IDS_parameters["user"] = user
-            self.IDS_parameters["database"] = device
+            self.data_entry = imas.DBEntry(dataSource.uri, 'r')
+
+            self.IDS_parameters["uri"] = dataSource.uri
             self.IDS_parameters["occurrence"] = occurrence
 
             if pluginEntry == 0:  # user has selected the first entry, so we call the first feature provided by the
@@ -94,7 +86,7 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/e_field', 'profiles_1d/q',
                              'profiles_1d/rotation', 'profiles_1d/phi_potential', 'profiles_1d/magnetic_shear']
 
-                if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
+                if self.data_found(dataSource=dataSource, treeNode=self.selectedTreeNode, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
                     request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
 
@@ -115,7 +107,7 @@ class VizProfiles_plugin(VizPlugin):
                              'profiles_1d/conductivity_parallel', 'profiles_1d/e_field', 'profiles_1d/rotation',
                              'profiles_1d/q', 'profiles_1d/magnetic_shear', 'profiles_1d/phi_potential']
 
-                if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
+                if self.data_found(dataSource=dataSource, treeNode=self.selectedTreeNode, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
                     request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
 
@@ -128,7 +120,8 @@ class VizProfiles_plugin(VizPlugin):
                              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
                              'time_slice/convergence']
 
-                if self.data_found(data_entry=self.data_entry, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
+                
+                if self.data_found(dataSource=dataSource, treeNode=self.selectedTreeNode, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
                     request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
 
@@ -146,7 +139,7 @@ class VizProfiles_plugin(VizPlugin):
                         list_of_filters.append('source(' + str(source_index) + ')/profiles_1d(0)')
                         tab_names.append('source(' + str(source_index) + ')/profiles_1d')
 
-                    if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
+                    if self.data_found(dataSource=dataSource, treeNode=self.selectedTreeNode, ids_name=selected_ids,
                                        dynamic_aos_name=slices_aos_name):
                         request = Request(selected_ids, tab_names, list_of_filters,
                                           slices_aos_name, plotAxis, source_index)
@@ -169,14 +162,14 @@ class VizProfiles_plugin(VizPlugin):
                                      tab_name + '/total_ion', tab_name + '/momentum', tab_name + '/e_field',
                                      tab_name + '/ion', tab_name + '/neutral']
 
-                    if self.data_found(data_entry=self.data_entry, ids_name=selected_ids,
+                    if self.data_found(dataSource=dataSource, treeNode=self.selectedTreeNode, ids_name=selected_ids,
                                        dynamic_aos_name=slices_aos_name):
                         request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name,
                                           plotAxis, model_index)
                         requests_list.append(request)
 
             if len(requests_list) > 0:
-                self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.data_entry,
+                self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.selectedTreeNode,
                                                              self.dataTreeView, requests_list, selected_ids, plotAxis)
             else:
                 message = "No profiles found for " + selected_ids + " IDS."
@@ -197,8 +190,9 @@ class VizProfiles_plugin(VizPlugin):
             return 0
         return occ
 
-    def data_found(self, data_entry, ids_name, dynamic_aos_name):
-        time_slices_count = eval("len(data_entry." + ids_name + "." + dynamic_aos_name + ")")
+    def data_found(self, dataSource, treeNode, ids_name, dynamic_aos_name):
+        exec(ids_name + " = dataSource.get(ids_name, self.IDS_parameters['occurrence'])")
+        time_slices_count = len(eval(ids_name + "." + dynamic_aos_name))
         return time_slices_count != 0
 
     def getEntries(self):

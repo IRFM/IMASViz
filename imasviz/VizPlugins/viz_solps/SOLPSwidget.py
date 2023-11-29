@@ -116,7 +116,7 @@ class SOLPSwidget(QWidget):
 
         logging.info('Getting IDS')
         # Read edge_profiles IDS
-        self.ids.edge_profiles.get()
+        self.ids.get('edge_profiles')
 
     @Slot()
     def setGGDdata(self):

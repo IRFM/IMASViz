@@ -344,10 +344,9 @@ class QVizNodeDocumentationWidget(QWidget):
             if item.isDynamicData():
 
                 # - Set node contents
-                expression = 'dataTreeView.dataSource.data_entries[' + str(item.getOccurrence()) + '].' + str(item.getPath())
-                expression = QVizGlobalOperations.makePythonPath(expression)
+                expression = QVizGlobalOperations.makePythonPath(item.getPath())
                 # Get the array of values
-                node_array_contents = eval(expression)
+                node_array_contents = item.evalPath(expression)
 
                 if item.is1D():
 
@@ -416,10 +415,9 @@ class QVizNodeDocumentationWidget(QWidget):
             elif item.isStaticData():
 
                 # - Set node contents
-                expression = 'dataTreeView.dataSource.data_entries[' + str(item.getOccurrence()) + '].' + str(item.getPath())
-                expression = QVizGlobalOperations.makePythonPath(expression)
+                expression = QVizGlobalOperations.makePythonPath(item.getPath())
                 # Get the array of values
-                node_array_contents = eval(expression)
+                node_array_contents = item.evalPath(expression)
 
                 if item.is1D():
                     # TODO: same procedure is used under
@@ -458,10 +456,9 @@ class QVizNodeDocumentationWidget(QWidget):
 
             elif item.getDataType() == 'STR_1D':
                 # - Set node contents
-                expression = 'dataTreeView.dataSource.data_entries[' + str(item.getOccurrence()) + '].' + str(item.getPath())
-                expression = QVizGlobalOperations.makePythonPath(expression)
+                expression = QVizGlobalOperations.makePythonPath(item.getPath())
                 # Get the array of values
-                node_array_contents = eval(expression)
+                node_array_contents = item.evalPath(expression)
                 self.showFieldsForContents()
                 node_contents_dict = {}
                 node_contents_dict['name'] = node_label

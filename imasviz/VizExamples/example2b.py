@@ -41,31 +41,23 @@ f = []
 # Set list of shots
 #n_shot = [52702, 52703]
 
-ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+ok, uri = QVizGlobalOperations.askForShot()
 if not ok:
     print("User input has failed on first shot. Example2b not executed.")
 else:
     # Set first data source
-    dataSource1 = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                          shotNumber=shotNumber,
-                                          runNumber=runNumber,
-                                          userName=userName,
-                                          imasDbName=database)
+    dataSource1 = dataSourceFactory.create(uri=uri)
 
     # Append data tree view frame to list
     f.append(api.CreateDataTree(dataSource1))
 
     # set second data source
-    dataSource2 = dataSourceFactory.create(dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                          shotNumber=shotNumber,
-                                          runNumber=runNumber,
-                                          userName=userName,
-                                          imasDbName=database)
+    dataSource2 = dataSourceFactory.create(uri=uri)
 
     # Append data tree view frame to list
     f.append(api.CreateDataTree(dataSource2))
 
-    ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+    ok, uri = QVizGlobalOperations.askForShot()
 
     if not ok:
         print("User input has failed on second shot. Example2b not executed.")

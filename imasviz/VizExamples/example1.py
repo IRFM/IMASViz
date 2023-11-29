@@ -41,18 +41,15 @@ api = Viz_API()
 # Set data source retriever/factory
 dataSourceFactory = QVizDataSourceFactory()
 
-ok, shotNumber, runNumber, userName, database = QVizGlobalOperations.askForShot()
+ok, uri = QVizGlobalOperations.askForShot()
 
 if not ok:
     print("User input has failed. Example1 not executed.")
 else:
     # Load IMAS database
     dataSource = dataSourceFactory.create(
-                                     dataSourceName=QVizGlobalValues.IMAS_NATIVE,
-                                     shotNumber=shotNumber,
-                                     runNumber=runNumber,
-                                     userName=userName,
-                                     imasDbName=database)
+                                     uri=uri,
+                                     dataSourceName=QVizGlobalValues.IMAS_NATIVE)
 
 
     # Build the data tree view frame

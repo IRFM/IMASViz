@@ -35,10 +35,7 @@ class ETSpluginIMASViz(VizPlugin):
         # Note: instance of "self.datatreeView" is provided by the VizPlugins
         # through inheritance
         dataSource = vizAPI.GetDataSource(self.dataTreeView)
-        shot = dataSource.shotNumber
-        run = dataSource.runNumber
-        device = dataSource.imasDbName
-        user = dataSource.userName
+        uri = dataSource.uri
         ts = 2.0
         occurrence = 0
 
@@ -49,13 +46,10 @@ class ETSpluginIMASViz(VizPlugin):
         vizAPI.LoadListOfIDSs(self.dataTreeView, ids_list, occurrence)
 
         # Get IDS
-        self.ids = dataSource.getImasEntry(occurrence)
+        #self.ids = dataSource.getImasEntry(occurrence)
 
-        self.IDS_parameters["shot"] = shot
-        self.IDS_parameters["run"] = run
-        self.IDS_parameters["user"] = user
-        self.IDS_parameters["database"] = device
-
+        self.IDS_parameters["uri"] = uri
+       
         self.ets = ETSViz(self.IDS_parameters, self.ids)
         if self.dataTreeView.window().objectName() == "IMASViz root window":
 

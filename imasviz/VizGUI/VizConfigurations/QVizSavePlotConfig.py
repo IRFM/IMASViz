@@ -121,10 +121,7 @@ class QVizSavePlotConfig():
             # Save plot source information
             sa(sourceInfoEl, 'path', nodeData['Path'])
             sa(sourceInfoEl, 'occurrence', nodeData['occurrence'])
-            sa(sourceInfoEl, 'shotNumber', plotItem.signalData['shotNumber'])
-            sa(sourceInfoEl, 'runNumber', plotItem.signalData['runNumber'])
-            sa(sourceInfoEl, 'imasDbName', plotItem.signalData['imasDbName'])
-            sa(sourceInfoEl, 'userName', plotItem.signalData['userName'])
+            sa(sourceInfoEl, 'uri', plotItem.signalData['uri'])
 
             # ------------------------------------------------------------------
             # Set new subelement for holding plot opts configuration

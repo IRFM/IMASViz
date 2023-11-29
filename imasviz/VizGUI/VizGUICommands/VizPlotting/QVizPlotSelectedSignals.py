@@ -108,7 +108,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
                         return
 
                     key = dtv.dataSource.dataKey(vizTreeNode)
-                    tup = (dtv.dataSource.shotNumber, vizTreeNode)
+                    tup = (dtv.dataSource.uri, vizTreeNode)
                     self.api.AddNodeToFigure(self.figureKey, key, tup)
                     # Get signal properties and values
                     s = self.api.GetSignal(dtv, vizTreeNode, plotWidget=self.plotWidget)
@@ -121,7 +121,7 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
 
                     # Set plot labels and title
                     label, xlabel, ylabel, title = \
-                        vizTreeNode.plotOptions(dtv, vizTreeNode.getShotNumber(),
+                        vizTreeNode.plotOptions(dtv, vizTreeNode.getURI(),
                                                 plotWidget=self.plotWidget)
 
                     if i == 0 and update == 0:

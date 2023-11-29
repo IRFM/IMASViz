@@ -67,10 +67,7 @@ class QVizGeneratedClassFactory:
 
             # raise ValueError("IMAS dictionary version not supported:" + dd_version)
             XMLParser = IDSDef_XMLParser_Full_Generated(
-                userName=self.IMASDataSource.userName,
-                imasDbName=self.IMASDataSource.imasDbName,
-                shotNumber=self.IMASDataSource.shotNumber,
-                runNumber=self.IMASDataSource.runNumber,
+                uri=self.IMASDataSource.uri,
                 view=self.view,
                 IDSName=self.IDSName,
                 occurrence=self.occurrence,
@@ -104,10 +101,7 @@ class QVizGeneratedClassFactory:
             # raise ValueError("IMAS dictionary version not supported:" + dd_version)
 
             XMLParser = IDSDef_XMLParser_Partial_Generated(
-                userName=self.IMASDataSource.userName,
-                imasDbName=self.IMASDataSource.imasDbName,
-                shotNumber=self.IMASDataSource.shotNumber,
-                runNumber=self.IMASDataSource.runNumber,
+                uri=self.IMASDataSource.uri,
                 view=self.view,
                 IDSName=self.IDSName,
                 occurrence=self.occurrence,

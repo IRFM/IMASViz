@@ -188,7 +188,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                 # - Add to main menu
                 self.menu.addAction(actionPlotVsTimeToNewFigure)
             else:
-                raise ValueError("Unknow plot strategy")
+                #raise ValueError("Unknow plot strategy")
+                pass
 
     def buildContextMenu(self):
         node = self.vizTreeNodesList[0]
@@ -212,7 +213,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
     def plotVsCoordinate1ToNewFigure(self):
         node = self.vizTreeNodesList[0]
         key = node.dataTreeView.dataSource.dataKey(node)
-        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        tup = (node.dataTreeView.dataSource.uri, node)
         viz_api = node.dataTreeView.imas_viz_api
         figureKey = viz_api.GetNextKeyForFigurePlots()
         viz_api.AddNodeToFigure(figureKey, key, tup)
@@ -221,7 +222,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
     def plotVsTimeToNewFigure(self):
         node = self.vizTreeNodesList[0]
         key = node.dataTreeView.dataSource.dataKey(node)
-        tup = (node.dataTreeView.dataSource.shotNumber, node)
+        tup = (node.dataTreeView.dataSource.uri, node)
         viz_api = node.dataTreeView.imas_viz_api
         figureKey = viz_api.GetNextKeyForFigurePlots()
         viz_api.AddNodeToFigure(figureKey, key, tup)

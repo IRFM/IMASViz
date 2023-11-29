@@ -30,10 +30,7 @@ api = Viz_API()
 dataSourceFactory = QVizDataSourceFactory()
 
 # Load IMAS database and build the data tree view frame
-f1 = api.CreateDataTree(dataSourceFactory.create(shotNumber=52344,
-                                                 runNumber=0,
-                                                 userName='g2penkod',
-                                                 imasDbName='viztest'))
+f1 = api.CreateDataTree(dataSourceFactory.create(uri=uri))
 
 # Get equilibrium treeWidget item (QVizTreeNode)
 eq_item = f1.dataTreeView.IDSRoots['equilibrium']
