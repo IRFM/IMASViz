@@ -1088,7 +1088,7 @@ of their **object name** (used in the Qt Designer list of signal/slots).
 +---------------+-------------+---------------------+-----------------+--------------------+
 | Type          | Label/Value | Signal              | Type            | Signal             |
 +---------------+-------------+---------------------+-----------------+--------------------+
-| Line Edit     | URI         | textEdited(QString) | exampleWidget   | setURI(QString)   |
+| Line Edit     | URI         | textEdited(QString) | exampleWidget   | setURI(QString)    |
 +---------------+-------------+---------------------+-----------------+--------------------+
 | Push Button   | Open IDS    | clicked()           | exampleWidget   | openIDS()          |
 +---------------+-------------+---------------------+-----------------+--------------------+
