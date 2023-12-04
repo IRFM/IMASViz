@@ -111,24 +111,11 @@ class QVizDataAccessCodeGenerator:
                     name_att2 = ids2.get('name')
                     if name_att2 is None:
                         continue
-                    # print('name_att2')
                     self.printCode("if self.idsName == '" + name_att2 + "':", 2)
-                    #self.printCode("if self.loadData:", 3)
                     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
                                    "'" + name_att2 + "' +  ' IDS'", 3)
                     self.printCode("logging.info(message)", 3)
-                    #self.printCode("t1 = time.time()", 3)
-                    #self.printCode(name_att2 + " = self.ids.get('"  + name_att2 + "', self.occurrence)",
-                    #               4)  # get ids data from the database
-                    #self.printCode("t2 = time.time()", 4)
-                    #self.printCode("print('imas get() took ' + str(t2 - t1) + ' seconds')", 4)
-                    #self.printCode("else:", 3)
-                    #self.printCode("t2 = time.time()", 4)
-                    
-                    # self.printCode("print ('Get operation ended')", 2)
                     self.printCode('idsData, ids_instance = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
-                    #self.printCode("t3 = time.time()", 3)
-                    #self.printCode("print('in memory xml object creation took ' + str(t3 - t1) + ' seconds')", 3)
                     self.printCode('if self.asynch:', 3)
 
                     self.printCode(
@@ -166,19 +153,20 @@ class QVizDataAccessCodeGenerator:
             self.printCode('parent = ET.Element(' + "'" + ids.text + "'" + ')', 1)
             self.printCode('root = parent', 1)
             self.printCode('parents.append(parent)', 1)
-            self.generateCodeForIDS(None, ids, 1, {}, [], '', 0, name_att)
+            self.generateCodeForIDS(ids, 1, [], '', 0)
             self.printCode("return (root, " + name_att + ")", 1)
             self.printCode('', -1)
             i += 1
 
-    def generateCodeForIDS(self, parent_AOS, child, level, previousLevel,
-                           parents, s, index, idsName):
+    def generateCodeForIDS(self, child, level, parents, s, index):
+
         for ids_child_element in child:
             index += 1
             data_type = ids_child_element.get('data_type')
 
             if data_type == 'structure':
                 ids_child_element.text = child.text + '.' + ids_child_element.get('name')
+
                 parentCode = "parent = ET.SubElement(parent, " + "'" + ids_child_element.get('name') + "'" + ")"
                 self.printCode(parentCode, level)
                 self.printCode('parents.append(parent)', level)
@@ -219,9 +207,7 @@ class QVizDataAccessCodeGenerator:
                     code = "parent.set(" + "'lifecycle_status', '" + lifecycle_status + "')"
                     self.printCode(code, level)
 
-                self.generateCodeForIDS(parent_AOS, ids_child_element, level,
-                                        previousLevel, parents, s, index,
-                                        idsName)
+                self.generateCodeForIDS(ids_child_element, level, parents, s, index)
 
                 code = "parents.pop() #remove the parent from the stack"
                 self.printCode(code, level)
@@ -286,13 +272,18 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("self.viewLoadingStrategy.setIDSIsDynamic(True)", level + 2)
 
                 self.printCode('for ' + s + ' in range(minLimit,' + maxLimit + ',' + step + '):' + '\n', level)
-                self.loop_content_for_struct_array(ids_child_element, s, previousLevel, level, dim, time_slices,
-                                                   data_type, parents, parent_AOS, index, idsName)
+                self.loop_content_for_struct_array(ids_child_element, s, level, dim, time_slices,
+                                                   data_type, parents, index)
 
-            elif data_type == 'STR_0D' or data_type == 'INT_0D' or data_type == 'FLT_0D':
+            elif data_type == 'STR_0D' or data_type == 'str_type' or data_type == 'INT_0D' or \
+            data_type == 'int_type' or data_type == 'FLT_0D' or data_type == 'flt_type' or \
+            data_type == 'CPX_0D' or data_type == 'cpx_type':
 
+                
                 ids_child_element.text = child.text + "." \
                                          + ids_child_element.get('name')
+
+
                 name_att = ids_child_element.get('name') + '_att_' + str(index)
                 affect = name_att + '='
                 self.printCode(affect + ids_child_element.text + '\n', level)
@@ -386,9 +377,10 @@ class QVizDataAccessCodeGenerator:
                        + ", str(" + str(level - 1) + "))"
                 self.printCode(code, level)
 
-            elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'flt_1d_type' or data_type == 'STR_1D':
+            elif data_type == 'FLT_1D' or data_type == 'INT_1D' or data_type == 'int_1d_type' or \
+            data_type == 'flt_1d_type' or data_type == 'STR_1D' or \
+            data_type == 'CPX_1D' or data_type == 'cplx_1d_type': 
 
-                # self.generateParentsCode(level, child.text)
                 ids_child_element.text = child.text + "." \
                                          + ids_child_element.get('name')
                 name = ids_child_element.get('name')
@@ -498,6 +490,7 @@ class QVizDataAccessCodeGenerator:
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
+
             elif data_type == 'FLT_2D' or data_type == 'INT_2D' \
                     or data_type == 'flt_2d_type' or data_type == 'FLT_3D' \
                     or data_type == 'INT_3D' or data_type == 'flt_3d_type' \
@@ -505,7 +498,10 @@ class QVizDataAccessCodeGenerator:
                     or data_type == 'flt_4d_type' or data_type == 'FLT_5D' \
                     or data_type == 'INT_5D' or data_type == 'flt_5d_type' \
                     or data_type == 'FLT_6D' or data_type == 'INT_6D' \
-                    or data_type == 'flt_6d_type':
+                    or data_type == 'flt_6d_type' \
+                    or  data_type == 'CPX_2D' or data_type == 'CPX_3D' \
+                    or  data_type == 'CPX_4D' or data_type == 'CPX_5D' \
+                    or  data_type == 'CPX_6D':
 
                 # self.generateParentsCode(level, child.text)
 
@@ -629,8 +625,13 @@ class QVizDataAccessCodeGenerator:
                 code = "nameNode.text = " + "'" + value + "'"
                 self.printCode(code, level)
 
-    def loop_content_for_struct_array(self, ids_child_element, s, previousLevel, level, dim, time_slices, data_type,
-                                      parents, parent_AOS, index, idsName):
+            else:
+                print("datatype=", ids_child_element.get('data_type'))
+                print('unrecognized node...', ids_child_element.attrib['name'])
+
+
+    def loop_content_for_struct_array(self, ids_child_element, s, level, dim, time_slices, data_type,
+                                      parents, index):
         parentCode = "parent = ET.SubElement(parent, " + "'" \
                      + ids_child_element.get('name') + "'" + ")"
         self.printCode(parentCode, level + 1)
@@ -674,13 +675,10 @@ class QVizDataAccessCodeGenerator:
             code = "parent.set(" + "'name', '" + parentName + "')"
             self.printCode(code, level + 1)
 
-        if '(i' in ids_child_element.get('path_doc'):  # this is an array of
-            parent_AOS = ids_child_element
+        self.generateCodeForIDS(ids_child_element,
+                                level + 1, parents, s,
+                                index)
 
-        previousLevel[level] = s
-        self.generateCodeForIDS(parent_AOS, ids_child_element,
-                                level + 1, previousLevel, parents, s,
-                                index, idsName)
         code = "parents.pop() #remove the parent from the stack"
         self.printCode(code, level + 1)
         self.printCode("parent = parents[-1]", level + 1)
@@ -731,19 +729,22 @@ class QVizDataAccessCodeGenerator:
 
 if __name__ == "__main__":
 
-    print("Starting code generation")
+    # print("Starting code generation")
+    # QVizGlobalOperations.checkEnvSettings_generator()
+    # imas_versions = ["3.23.3", "3.24.0", "3.25.0", "3.26.0", "3.27.0"]
+
+    # print("Generating full parsers...")
+    # for v in imas_versions:
+    #     QVizPreferences.Ignore_GGD = 0
+    #     dag = QVizDataAccessCodeGenerator(v)
+
+    # print("Generating parsers ignoring GGD structures...")
+    # for v in imas_versions:
+    #     QVizPreferences.Ignore_GGD = 1
+    #     dag = QVizDataAccessCodeGenerator(v)
     QVizGlobalOperations.checkEnvSettings_generator()
-    imas_versions = ["3.23.3", "3.24.0", "3.25.0", "3.26.0", "3.27.0"]
-
-    print("Generating full parsers...")
-    for v in imas_versions:
-        QVizPreferences.Ignore_GGD = 0
-        dag = QVizDataAccessCodeGenerator(v)
-
-    print("Generating parsers ignoring GGD structures...")
-    for v in imas_versions:
-        QVizPreferences.Ignore_GGD = 1
-        dag = QVizDataAccessCodeGenerator(v)
+    QVizPreferences.Ignore_GGD = 1
+    dag = QVizDataAccessCodeGenerator('3.39.0')
 
     print("End of code generation")
     # Note: Do not forget to declare new code in the QVizGeneratedClassFactory

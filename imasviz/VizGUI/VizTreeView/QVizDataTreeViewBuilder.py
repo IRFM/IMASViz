@@ -140,7 +140,7 @@ class QVizDataTreeViewBuilder:
 
             viewerNode = QVizTreeNode(parentNode, [itemNodeName], itemDataDict, extra_attributes)
 
-        elif dataElement.get('data_type') in ['FLT_0D', 'STR_0D', 'INT_0D', 'xs:integer']:
+        elif dataElement.get('data_type') in ['FLT_0D', 'STR_0D', 'INT_0D', 'flt_type', 'str_type', 'int_type']:
             itemDataDict['0D_content'] = dataElement.get('content')
             if dataElement.text is not None:
                 tag = ''

@@ -412,15 +412,18 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def is0D(self):
         return self.getDataType() == 'FLT_0D' or self.getDataType() == 'INT_0D' or self.getDataType() == 'STR_0D' or \
-               self.getDataType() == 'flt_0d_type' or self.getDataType() == 'int_0d_type'
+               self.getDataType() == 'flt_type' or self.getDataType() == 'int_type' or \
+               self.getDataType() == 'CPX_0D' or self.getDataType() == 'cpx_type'
 
     def is1D(self):
         return self.getDataType() == 'FLT_1D' or self.getDataType() == 'INT_1D' or self.getDataType() == 'STR_1D' or \
-               self.getDataType() == 'flt_1d_type' or self.getDataType() == 'int_1d_type'
+               self.getDataType() == 'flt_1d_type' or self.getDataType() == 'int_1d_type' or \
+               self.getDataType() == 'CPX_1D' or self.getDataType() == 'cplx_1d_type'
 
     def is2D(self):
         return self.getDataType() == 'FLT_2D' or self.getDataType() == 'INT_2D' or \
-               self.getDataType() == 'flt_2d_type' or self.getDataType() == 'int_2d_type'
+               self.getDataType() == 'flt_2d_type' or self.getDataType() == 'int_2d_type' or \
+               self.getDataType() == 'CPX_2D' or self.getDataType() == 'cplx_2d_type'
 
     def is0DString(self):
         return self.getDataType() == 'STR_0D'
@@ -534,15 +537,15 @@ class QVizTreeNode(QTreeWidgetItem):
             e = self.evalPath(self.getDataName())
 
             emptyField = False
-            if self.getDataType() == 'FLT_0D' or self.getDataType() == 'flt_0d_type':
+            if self.getDataType() == 'FLT_0D' or self.getDataType() == 'flt_type':
                 if e == -9.0E40:
                     emptyField = True
 
-            elif self.getDataType() == 'INT_0D' or self.getDataType() == 'int_0d_type':
+            elif self.getDataType() == 'INT_0D' or self.getDataType() == 'int_type':
                 if e == -999999999:
                     emptyField = True
 
-            elif self.getDataType() == 'STR_0D':
+            elif self.getDataType() == 'STR_0D' or self.getDataType() == 'str_type':
                 if e == '':
                     emptyField = True
 
