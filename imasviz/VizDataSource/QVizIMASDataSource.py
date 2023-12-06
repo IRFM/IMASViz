@@ -19,20 +19,6 @@ class QVizIMASDataSource:
         self.data_dictionary_version = None
 
     @staticmethod
-    def defaultBackend():
-        backend = os.getenv('IMAS_AL_DEFAULT_BACKEND')
-        if backend is None:
-            return imas.imasdef.MDSPLUS_BACKEND
-        return int(backend)
-
-    @staticmethod
-    def fallbackBackend():
-        backend = os.getenv('IMAS_AL_FALLBACK_BACKEND')
-        if backend is None:
-            return NO_BACKEND
-        return int(backend)
-
-    @staticmethod
     def build_legacy_uri(backend_id, shot, run, user_name, 
     db_name, data_version, options):
         status, uri = ll.al_build_uri_from_legacy_parameters(
@@ -66,20 +52,6 @@ class QVizIMASDataSource:
         if self.generatedDataTree is None:
             raise ValueError("Code generation issue detected !!")
 
-        # load_data = True
-        # if self.data_entries.get(occurrence) is None:
-        #     major_version = os.environ["IMAS_MAJOR_VERSION"]
-        #     self.data_entries[occurrence] = imas.DBEntry(self.uri, 'r')
-        #     status, idx = self.data_entries[occurrence].open()
-        #     if status != 0:
-        #         raise valueError("Unable to open pulse file with URI: " + uri)
-
-        # if IDSName in self.loaded_ids:
-        #     load_data = False
-        # else:
-        #     load_data = True
-
-        #self.generatedDataTree.loadData = load_data # Do not call IMAS GET(), data are already loaded in memory
         self.generatedDataTree.dataSource = self
 
         if asynch:
@@ -89,28 +61,27 @@ class QVizIMASDataSource:
             # This will call the get() operation for fetching IMAS data
             self.generatedDataTree.run()
 
-        #self.loaded_ids.append(IDSName)
-
-    @staticmethod
-    def try_to_open(uri):
-        db_entry = imas.DBEntry(uri, 'r')
-        status, idx = db_entry.open()
-        db_entry.close()
-        return status
-
     def open(self):
-        if self.db_entry is None:
-            self.db_entry = imas.DBEntry(self.uri, 'r')
-        status, idx = self.db_entry.open()
-        return status
+        try:
+            if self.db_entry is None:
+                self.db_entry = imas.DBEntry(self.uri, 'r')
+            status, idx = self.db_entry.open()
+            if status != 0:
+                raise ValueError("An error has occured while opening URI: " + self.uri)
+            return status
+        except BaseException as e:
+            logging.getLogger("logPanel").error(str(e))
 
     def get(self, IDSName, occurrence):
-        key = IDSName + "/" + str(occurrence)
-        if not key in self.data_entries:
-            logging.getLogger(self.uri).info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
-            ids_instance = self.db_entry.get(IDSName, occurrence)
-            self.data_entries[key] = ids_instance
-        return self.data_entries[key]
+        try:
+            key = IDSName + "/" + str(occurrence)
+            if not key in self.data_entries:
+                logging.getLogger(self.uri).info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
+                ids_instance = self.db_entry.get(IDSName, occurrence)
+                self.data_entries[key] = ids_instance
+            return self.data_entries[key]
+        except BaseException as e:
+            logging.getLogger("logPanel").error(str(e))
         
     def remove_entry(self, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
