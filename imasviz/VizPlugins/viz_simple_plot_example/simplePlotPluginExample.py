@@ -68,7 +68,7 @@ class simplePlotPluginExample(VizPlugin):
         # Check if the IDS data is already loaded in IMASviz. If it is not,
         # load it
         if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'magnetics', occurrence):
-            logging.info('Loading magnetics IDS...')
+            logging.getLogger(dataSource.uri).info('Loading magnetics IDS...')
             vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
         # Get IDS object

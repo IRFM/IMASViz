@@ -181,7 +181,7 @@ class QVizIMASNativeDataAccess:
                     logging.debug("path=" + path)
                     e = treeNode.evalPath(path)
                     if len(e) == 0:
-                        logging.error("Coordinate1 has no values.")
+                        logging.getLogger(treeNode.dataTreeView.uri).error("Coordinate1 has no values.")
                     if len(e) != 0 and len(e) != len(r_val):
                         path1 = treeNode.getIDSName() + "." + coordinate1
                         raise ValueError(
@@ -263,7 +263,7 @@ class QVizIMASNativeDataAccess:
         return t_array, r_array
 
     def Get0DSignalVsOtherCoordinate(self, treeNode, itimeValue, xData):
-        logging.warning("Data node '" + treeNode.getName() +
+        logging.getLogger(treeNode.dataTreeView.uri).warning("Data node '" + treeNode.getName() +
                         "' has no explicit dependency on coordinate1 dimension.")
         data_path_list = []
         aos_vs_itime = treeNode.evaluatePath(treeNode.getParametrizedDataPath())

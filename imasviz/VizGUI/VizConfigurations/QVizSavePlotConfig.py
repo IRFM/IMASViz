@@ -251,7 +251,7 @@ class QVizSavePlotConfig():
             sa(penEl, 'miterLimit', pen.miterLimit())
         else:
             # Print warning to DTV log
-            logging.warning('savePenAttributes: Pen variable is not properly '
+            logging.getLogger(self.dataTreeView.uri).warning('savePenAttributes: Pen variable is not properly '
                             'defined.')
 
     def saveAxisAttributes(self, panelElement, axisType, plotItem):
@@ -317,7 +317,7 @@ class QVizSavePlotConfig():
 
         else:
             # Print warning to DTV log
-            logging.warning('saveAxisAttributes: AxisItem variable is not '
+            logging.getLogger(self.dataTreeView.uri).warning('saveAxisAttributes: AxisItem variable is not '
                             'properly defined.')
 
     def printCode(self, text, level):

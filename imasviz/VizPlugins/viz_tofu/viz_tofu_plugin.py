@@ -71,7 +71,7 @@ class ToFuPlugin(VizPlugin):
             figure.show()
         except :
             traceback.print_exc()
-            logging.error(traceback.format_exc())
+            logging.getLogger(self.dataTreeView.dataSource.uri).error(traceback.format_exc())
 
 
     def getEntries(self):

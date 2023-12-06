@@ -86,7 +86,7 @@ class QVizSaveSignalSelection(QVizAbstractCommand):
             # Set subelement attribute 'path'
             self.saveAttribute(pathElement, 'path', vizTreeNode.getPath())
             self.saveAttribute(pathElement, 'occurrence', vizTreeNode.getOccurrence())
-            self.saveAttribute(pathElement, 'uri', nodeData['uri'])
+            self.saveAttribute(pathElement, 'uri', self.dataTreeView.dataSource.uri)
             n += 1
 
         self.indent(root)

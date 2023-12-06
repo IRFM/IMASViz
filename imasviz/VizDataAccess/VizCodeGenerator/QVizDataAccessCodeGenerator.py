@@ -114,7 +114,7 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("if self.idsName == '" + name_att2 + "':", 2)
                     self.printCode("message = 'Loading occurrence ' + str(int(self.occurrence)) + ' of ' +" +
                                    "'" + name_att2 + "' +  ' IDS'", 3)
-                    self.printCode("logging.info(message)", 3)
+                    self.printCode("logging.getLogger(self.dataSource.uri).info(message)", 3)
                     self.printCode('idsData, ids_instance = self.load_' + name_att2 + "(self.idsName, self.occurrence)" + '\n', 3)
                     self.printCode('if self.asynch:', 3)
 
@@ -129,9 +129,9 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("self.progressBar.hide()", 4)
 
                 self.printCode('except AttributeError as att_error:', 1)
-                self.printCode('logging.error(att_error, exc_info=True)', 2)
+                self.printCode('logging.getLogger(self.dataSource.uri).error(att_error, exc_info=True)', 2)
                 self.printCode(
-                    'logging.error("An attribute error has occurred. This means that IMASViz is using a wrong data '
+                    'logging.getLogger(self.dataSource.uri).error("An attribute error has occurred. This means that IMASViz is using a wrong data '
                     'parser ' +
                     'for the current IMAS data entry. This error can occur for IMAS data entries created with an old '
                     'version of the Access Layer.' +
@@ -140,7 +140,7 @@ class QVizDataAccessCodeGenerator:
                     ' ")', 2)
                 self.printCode("self.progressBar.hide()", 2)
                 self.printCode('except Exception as exception:', 1)
-                self.printCode('logging.error(exception, exc_info=True)', 2)
+                self.printCode('logging.getLogger(self.dataSource.uri).error(exception, exc_info=True)', 2)
                 self.printCode("self.progressBar.hide()", 2)
                 self.printCode('\n', -1)
 
@@ -221,8 +221,8 @@ class QVizDataAccessCodeGenerator:
                             or ids_child_element.get('name').endswith("_ggd"):
                         self.printCode("if self.ggd_warning_done == 0:", level)
                         self.printCode("self.ggd_warning_done = 1", level + 1)
-                        self.printCode("logging.warning('GGD structures have been ignored')", level + 1)
-                        self.printCode("logging.warning('Enable GGD structures parsing using a user preferences file. "
+                        self.printCode("logging.getLogger(self.dataSource.uri).warning('GGD structures have been ignored')", level + 1)
+                        self.printCode("logging.getLogger(self.dataSource.uri).warning('Enable GGD structures parsing using a user preferences file. "
                                        "See Viz documentation for details, 2.9. "
                                        "Setting user preferences.')", level + 1)
                         continue
@@ -265,7 +265,7 @@ class QVizDataAccessCodeGenerator:
                     self.printCode("elif self.viewLoadingStrategy.getIdentifier() == 4:", level + 1)
                     self.printCode("minLimit = self.viewLoadingStrategy.getTimeIndex()", level + 2)
                     self.printCode("if minLimit >= " + maxLimit + ":", level + 2)
-                    self.printCode("logging.error('Bad input from user: time index too large.')", level + 3)
+                    self.printCode("logging.getLogger(self.dataSource.uri).error('Bad input from user: time index too large.')", level + 3)
                     self.printCode("return", level + 3)
                     self.printCode(maxLimit + " = minLimit + 1", level + 2)
                     self.printCode("if self.viewLoadingStrategy is not None:", level + 1)

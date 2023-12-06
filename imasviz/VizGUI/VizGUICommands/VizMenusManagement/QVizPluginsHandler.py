@@ -106,7 +106,7 @@ class QVizPluginsHandler:
             # If pluginsObject is QMainWindow type (indicating that the
             # plugin was provided as an instance of the user interface
             # (.ui file)
-            logging.info('Running plugin through instance of the use interface'
+            logging.getLogger(dataTreeView.uri).info('Running plugin through instance of the use interface'
                          '(.ui) file.')
             # Find the main Qt designer widget (by widget object name)
             qdw = pluginsObject.findChild(QWidget, 'mainPluginWidget')
@@ -121,11 +121,11 @@ class QVizPluginsHandler:
             pluginsObject.show()
         elif 'execute' in dir(pluginsObject):
             try:
-                logging.info('Executing plugin: ' + pluginsName)
+                logging.getLogger(dataTreeView.uri).info('Executing plugin: ' + pluginsName)
                 pluginsObject.execute(dataTreeView.imas_viz_api, entry)
             except:
                 traceback.print_exc()
-                logging.error(traceback.format_exc())
+                logging.getLogger(dataTreeView.uri).error(traceback.format_exc())
         else:
             print("Unable to execute plugin: " + pluginsName +
                   ". Bad implementation provided by the plugin!")

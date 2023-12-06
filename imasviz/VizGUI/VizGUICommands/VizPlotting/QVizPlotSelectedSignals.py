@@ -62,8 +62,8 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
         if treeNode.is1D() or treeNode.is0DAndDynamic():
             plotDimension = "1D"
         else:
-            logging.warning('Plots dimension larger than 1D are currently not supported.')
-            logging.warning('Unsupported data type. Aborting!')
+            logging.getLogger(treeNode.dataTreeView.uri).warning('Plots dimension larger than 1D are currently not supported.')
+            logging.getLogger(treeNode.dataTreeView.uri).warning('Unsupported data type. Aborting!')
             return False
         return plotDimension
 
@@ -173,10 +173,10 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
             self.plotWidget.show()
 
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
         except Exception as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def onHide(self, api, figureKey):
         if figureKey in api.GetFiguresKeys():

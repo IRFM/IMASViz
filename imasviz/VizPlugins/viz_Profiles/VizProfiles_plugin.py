@@ -173,20 +173,20 @@ class VizProfiles_plugin(VizPlugin):
                                                              self.dataTreeView, requests_list, selected_ids, plotAxis)
             else:
                 message = "No profiles found for " + selected_ids + " IDS."
-                logging.warning(message)
+                logging.getLogger(self.dataTreeView.uri).warning(message)
             # self.edge_profiles_main_window.show()
 
         except Exception as err:
-            logging.error("ERROR! (%s)" % err, exc_info=True)
+            logging.getLogger(self.dataTreeView.uri).getLogger(self.dataTreeView.dataSource.uri).error("ERROR! (%s)" % err, exc_info=True)
             traceback.print_exc()
-            logging.error(traceback.format_exc())
+            logging.getLogger(self.dataTreeView.uri).getLogger(self.dataTreeView.dataSource.uri).error(traceback.format_exc())
 
     def askForOccurrence(self, maxOccurrences):
         user_input = QInputDialog()
         occ, ok = user_input.getInt(None, "IDS occurrence:", "Occurrence:",
                                                value=0, minValue=0, maxValue=maxOccurrences)
         if not ok:
-            logging.error('Bad input from user. Taking occurrence 0.')
+            logging.getLogger(self.dataTreeView.dataSource.uri).error('Bad input from user. Taking occurrence 0.')
             return 0
         return occ
 

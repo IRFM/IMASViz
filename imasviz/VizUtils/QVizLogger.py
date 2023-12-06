@@ -1,14 +1,9 @@
 from PySide6.QtCore import Signal, QObject
 import logging
 
-class QVizLoggerSingleton( logging.Handler ):
+class QVizLogger( logging.Handler ):
     """ Logger for handling passing the information and error messages to logWidget.
     """
-
-    def __new__(cls):
-      if not hasattr(cls, 'instance'):
-        cls.instance = super(QVizLoggerSingleton, cls).__new__(cls)
-      return cls.instance	    
 
     def __init__(self, use_rich_text=True):
         super().__init__()

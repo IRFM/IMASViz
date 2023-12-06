@@ -15,10 +15,6 @@ class QVizIMASDataSource:
         self.name = name
         self.uri = uri
         self.data_entries = {}  # key = IDSName/occurrence, value = IDS data instance
-        # data_dictionary_version will be initialized only when loading
-        # the first IDS (currently, it is not possible to get the DD version
-        # from the AL at the data entry level, see IMAS-2835 for details
-
         self.db_entry = None
         self.data_dictionary_version = None
 
@@ -111,7 +107,7 @@ class QVizIMASDataSource:
     def get(self, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
         if not key in self.data_entries:
-            logging.info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
+            logging.getLogger(self.uri).info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
             ids_instance = self.db_entry.get(IDSName, occurrence)
             self.data_entries[key] = ids_instance
         return self.data_entries[key]
@@ -143,7 +139,7 @@ class QVizIMASDataSource:
                 ids_properties = eval("data_entry.partial_get('" + node.getIDSName() + "', 'ids_properties', occurrence)")
                 ht = ids_properties.homogeneous_time
                 if ht == 0 or ht == 1 or ht == 2:
-                    logging.info("Found data for occurrence " +
+                    logging.getLogger(self.uri).info("Found data for occurrence " +
                                  str(occurrence) + " of " + node.getIDSName() +
                                  " IDS...")
                     node.setHomogeneousTime(ht)
@@ -180,24 +176,17 @@ class QVizIMASDataSource:
     def getName(self):
         return self.getShortLabel()
 
-    def exportToLocal(self, dataTreeView, exported_db_entry):
+    def exportToLocal(self, exported_db_entry):
         """Export specified IDS to a new separate IDS.
 
         Arguments:
-
-            dataTreeView (QTreeWidget) :
             exported_db_entry (object) : imas.DBEntry object
         """
-
-        for db in dataTreeView.ids_roots_occurrence:
-            # Extract IDS name and occurrence
-            idsName, occurrence = db.split("/")
-            ids_instance = dataTreeView.ids_roots_occurrence[db]
-
-            # Run the export command
-            logging.info("Calling IMAS put() for IDS " + idsName +
-                         " occurrence " + str(occurrence) + ".")
-            # Putting to occurrence
+        i = 0
+        for key in self.data_entries:
+            splits = key.split("/")
+            #IDSName = splits[0]
+            occurrence = int(splits[1])
+            ids_instance = self.data_entries[key]
             exported_db_entry.put(ids_instance, occurrence)
-
-        exported_db_entry.close()
+            i+=1

@@ -17,7 +17,7 @@ from PySide6.QtGui import QScreen
 
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin import VizProfiles_plugin
-from imasviz.VizUtils import QVizGlobalValues, QVizGlobalOperations, QVizLoggerSingleton
+from imasviz.VizUtils import QVizGlobalValues, QVizGlobalOperations, QVizLogger
 from imasviz.Viz_API import Viz_API
 
 
@@ -391,7 +391,7 @@ if __name__ == "__main__":
     QVizGlobalOperations.checkEnvSettings()
 
     logging.getLogger().setLevel(logging.INFO)
-    handler = QVizLoggerSingleton()
+    #handler = QVizLogger()
 
     profiles_count = {}
 
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     mw = Ui_MainWindow()
     mw.setupUi(MainWidow)
     mw.disableButtonsIfRequired(profiles_count)
-    handler.new_signal_emiter.new_signal.connect(mw.statusbar.showMessage)
+    #handler.new_signal_emiter.new_signal.connect(mw.statusbar.showMessage)
     MainWidow.setWindowTitle("Core/edge profiles visualization found in IMAS data structures")
 
     qtRectangle = MainWidow.frameGeometry()

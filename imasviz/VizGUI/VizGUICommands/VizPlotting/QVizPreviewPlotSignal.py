@@ -84,7 +84,7 @@ class QVizPreviewPlotSignal(QVizAbstractCommand):
             else:
                 raise ValueError("Warning! Only 1D and 2D plots are currently supported.")
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     # @staticmethod
     def getPlotWidget(self):

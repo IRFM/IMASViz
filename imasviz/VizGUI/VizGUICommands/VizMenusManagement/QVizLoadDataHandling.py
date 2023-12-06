@@ -102,7 +102,7 @@ class QVizLoadDataHandling(QObject):
             minLimit, ok = user_input.getInt(None, 'Enter time slice index value to be displayed', 'Time slice index:',
                                              value=0, minValue=0)
             if not ok:
-                logging.error('Bad input from user.')
+                logging.getLogger(dataTreeView.uri).error('Bad input from user.')
                 return
             viewLoadingStrategy.setTimeIndex(minLimit)
 

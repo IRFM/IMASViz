@@ -61,7 +61,7 @@ class viz_example_plugin(VizPlugin):  # The plugin has to inherit from VizPlugin
 
         except :
             traceback.print_exc()
-            logging.error(traceback.format_exc())
+            logging.getLogger(self.dataTreeView.dataSource.uri).error(traceback.format_exc())
 
     #Implementation of the first feature provided by this plugin
     #This feature prints some informations in the log window using the IMASViz API.

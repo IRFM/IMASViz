@@ -349,7 +349,7 @@ class CustomizedViewBox(pg.ViewBox):
             self.addItem(fbitem)
 
         else:
-            logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+            logging.getLogger(vizTreeNode.dataTreeView.dataSource.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
 
     def addErrorBars(self, step, beam=0.5):
 
@@ -411,7 +411,7 @@ class CustomizedViewBox(pg.ViewBox):
             error.setData(x=x, y=y, top=top, bottom=bottom)
             self.addItem(error)
         else:
-            logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+            logging.getLogger(vizTreeNode.dataTreeView.dataSource.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
 
     def updateExportersList(self):
         """Update/Modify list of available exporters (in order to remove the

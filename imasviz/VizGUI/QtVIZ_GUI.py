@@ -28,8 +28,7 @@ sys.path.append((os.environ['VIZ_HOME']))
 
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
-from imasviz.VizUtils import (QVizGlobalValues, QVizPreferences,
-                              QVizGlobalOperations, QVizLoggerSingleton, UserInputs)
+from imasviz.VizUtils import QVizGlobalValues, QVizPreferences,QVizGlobalOperations, QVizLogger, UserInputs
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
@@ -59,18 +58,18 @@ class GUIFrame(QTabWidget):
 
         self.contextMenu = None
 
-    def logPanel(self):
-        #LOG WIDGET
-        self.logWidget = QPlainTextEdit(parent=self)
-        #self.logWidget.resize(QSize(500, 300))
-        self.logWidget.setReadOnly(True)
-        logging.getLogger().setLevel(logging.INFO)
-        handler = QVizLoggerSingleton()
-        logging.getLogger().addHandler(handler)
-        handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
-        layout = QVBoxLayout()
-        layout.addWidget(self.logWidget)
-        return layout
+    # def logPanel(self):
+    #     #LOG WIDGET
+    #     self.logWidget = QPlainTextEdit(parent=self)
+    #     #self.logWidget.resize(QSize(500, 300))
+    #     self.logWidget.setReadOnly(True)
+    #     logging.getLogger('logPanel').setLevel(logging.INFO)
+    #     handler = QVizLogger()
+    #     logging.getLogger('logPanel').addHandler(handler)
+    #     handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
+    #     layout = QVBoxLayout()
+    #     layout.addWidget(self.logWidget)
+    #     return layout
 
     def tabOne(self):
         layout = QVBoxLayout()
@@ -103,8 +102,11 @@ class GUIFrame(QTabWidget):
         self.IMASdbBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
         self.userName.editingFinished.connect(self.onUserNameEditFinished)
 
-        self.backend = QLineEdit('13') #default to HDF5 backend
-        vboxLayout.addRow('Backend', self.backend)
+        self.backend = 13 #first item
+        self.backendCombo = QComboBox()
+        vboxLayout.addRow('Backend', self.backendCombo)
+        self.backendCombo.addItems(['HDF5', 'MDS+'])
+        self.backendCombo.activated.connect(self.onActivated)
 
         button_open1 = QPushButton('Open', self)
         button_open1.setStatusTip("Open the case for the given parameters.")
@@ -119,6 +121,12 @@ class GUIFrame(QTabWidget):
 
         layout.addLayout(vboxLayout2)
         self.tab1.setLayout(layout)
+
+    def onActivated(self, index):
+        if index == 0:
+            self.backend = 13
+        elif index == 1:
+            self.backend = 12
 
     def OpenDataSourceFromTab1(self, evt):
         try:
@@ -135,7 +143,13 @@ class GUIFrame(QTabWidget):
                         elif opt in ("-r"):
                             self.runNumber.setText(arg)
                         elif opt in ("-b"):
-                            self.backend.setText(arg)
+                            self.backend = int(arg)
+                            if self.backend == 13:
+                                self.backendCombo.setCurrentIndex(0)
+                            elif self.backend == 12:
+                                self.backendCombo.setCurrentIndex(1)
+                            else:
+                                raise ValueError("Backend id should be 12 or 13")
                 except getopt.GetoptError:
                     logging.error("bad user input")
                     sys.exit(-1)
@@ -152,7 +166,7 @@ class GUIFrame(QTabWidget):
                     QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE)
 
                     uri = QVizIMASDataSource.build_legacy_uri(
-                        backend_id=int(self.backend.text()), 
+                        backend_id=self.backend, 
                         shot=int(shotNumber), 
                         run=int(self.runNumber.text()), 
                         user_name=self.userName.text(), 
@@ -166,7 +180,7 @@ class GUIFrame(QTabWidget):
                 raise ValueError(str(e))
 
         except ValueError as e:
-            logging.error(str(e))
+            logging(str(e))
 
     def CheckInputsFromTab1(self):
         """Display warning message if the required parameter was not specified"""
@@ -186,7 +200,13 @@ class GUIFrame(QTabWidget):
         self.imasDbName.setText(self.IMASdbBrowserWidget.getActiveDatabase())
         self.shotNumber.setText(self.IMASdbBrowserWidget.getActiveShot())
         self.runNumber.setText(self.IMASdbBrowserWidget.getActiveRun())
-        self.backend.setText(str(self.IMASdbBrowserWidget.getActiveBackend()))
+        self.backend = self.IMASdbBrowserWidget.getActiveBackend()
+        if self.backend == 13:
+            self.backendCombo.setCurrentIndex(0)
+        elif self.backend == 12:
+            self.backendCombo.setCurrentIndex(1)
+        else:
+            raise ValueError("Unexpected backend id provided by the database browser.")
 
     def onUserNameEditFinished(self):
         self.IMASdbBrowserWidget.setActiveUsername(self.userName.text())
@@ -219,8 +239,7 @@ class GUIFrame(QTabWidget):
                 raise ValueError(str(e))
 
         except ValueError as e:
-            logging.error('Unable to open UDA data source, the reason is: ' +
-                          str(e))
+            logging.getLogger('logPanel').error('Unable to open URI ' + self.URI.text() + ': ' + str(e))
 
     def CheckInputsFromTab2(self):
 
@@ -284,10 +303,11 @@ class QVizStartWindow(QMainWindow):
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
 
         self.addDockWidget(Qt.DockWidgetArea(8), self.dockWidget_log)
-        logging.getLogger().setLevel(logging.INFO)
-        handler = QVizLoggerSingleton()
-        logging.getLogger().addHandler(handler)
+        logging.getLogger('logPanel').setLevel(logging.INFO)
+        handler = QVizLogger()
+        logging.getLogger('logPanel').addHandler(handler)
         handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
+        
 
     def closeEvent(self, event):
         """Modify close event to request confirmation trough dialog. If
@@ -409,6 +429,8 @@ def main():
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()
     window = QVizMainWindow()
+    logging.getLogger('logPanel').info("Welcome to Viz!")
+    logging.getLogger('logPanel').info("Please report any issue to ITER JIRA: https://jira.iter.org/")
     window.show()
     sys.exit(app.exec())
 

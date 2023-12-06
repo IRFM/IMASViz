@@ -13,8 +13,8 @@ class CompareFLT1DPlugin(VizPlugin):
 
         try:
             print('CompareFLT1DPlugin to be executed...')
-            logging.info('Comparing current node to sibling node from another shot...')
-            logging.info('Data :' + self.selectedTreeNode.getDataName())
+            logging.getLogger(self.dataTreeView.uri).info('Comparing current node to sibling node from another shot...')
+            logging.getLogger(self.dataTreeView.uri).info('Data :' + self.selectedTreeNode.getDataName())
 
             ok, uri = QVizGlobalOperations.askForShot()
             if not ok:
@@ -22,7 +22,7 @@ class CompareFLT1DPlugin(VizPlugin):
 
             dataSource = self.dataTreeView.dataSource
 
-            logging.info('Plotting data from current node...')
+            logging.getLogger(self.dataTreeView.uri).info('Plotting data from current node...')
             figureKey, plotWidget = vizAPI.CreatePlotWidget(dataTreeView=self.dataTreeView, plotAxis="DEFAULT")
             ps = QVizPlotSignal(dataTreeView=self.dataTreeView,
                                 vizTreeNode=self.selectedTreeNode,
@@ -38,7 +38,7 @@ class CompareFLT1DPlugin(VizPlugin):
             dataSource = dataSourceFactory.create(
                 uri=uri)
 
-            logging.info('Creating datasource:' + dataSource.getLongLabel())
+            logging.getLogger(self.dataTreeView.uri).info('Creating datasource:' + dataSource.getLongLabel())
 
             # Build the data tree view frame
             f = vizAPI.CreateDataTree(dataSource)
@@ -61,7 +61,7 @@ class CompareFLT1DPlugin(VizPlugin):
 
         except:
             traceback.print_exc()
-            logging.error(traceback.format_exc())
+            logging.getLogger(self.dataTreeView.dataSource.uri).error(traceback.format_exc())
 
     def getEntries(self):
         if self.selectedTreeNode.is1DAndDynamic():

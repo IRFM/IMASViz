@@ -40,8 +40,7 @@ from PySide6.QtWidgets import QDockWidget, QMenuBar, QMenu
 from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
 from PySide6.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
-from imasviz.VizUtils import (QVizLoggerSingleton, QVizGlobalValues, GlobalIDs,
-                              getWindowSize)
+from imasviz.VizUtils import QVizLogger, QVizGlobalValues, GlobalIDs,getWindowSize
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
     import QVizConfigurationListsWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
@@ -227,7 +226,6 @@ class QVizDataTreeView(QTreeWidget):
         else:
             error = 'Node Documentation Widget not found. Update not possible'
             raise ValueError(error)
-            logging.error(str(error))
 
         # UPDATE PLOT PREVIEW WIDGET
         if item.hasAvailableData() and (item.isDynamicData() or item.is1D()) and (not item.isIDSRoot()) and item.getName() is not None:
@@ -317,7 +315,7 @@ class QVizDataTreeView(QTreeWidget):
         cv.acquire()
         import time
         t1 = time.time()
-        logging.info("Occurrence "
+        logging.getLogger(self.uri).info("Occurrence "
                      + str(int(occurrence))
                      + " of " + idsName
                      + " IDS in memory, building "
@@ -348,9 +346,9 @@ class QVizDataTreeView(QTreeWidget):
             self.addChildren(nodeBuilder, child, ids_root_occ, idsName, occurrence, ids_root_occ)
 
         t2 = time.time()
-        logging.info("Building tree view took " + str(t2 - t1) + ' seconds.')
+        logging.getLogger(self.uri).info("Building tree view took " + str(t2 - t1) + ' seconds.')
         nodeBuilder.setIDSRootNode(ids_root_node)
-        logging.info("View update ended.")
+        logging.getLogger(self.uri).info("View update ended.")
 
         cv.notify()
         cv.release()
@@ -503,7 +501,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         arg = event.data[0]
         if arg == 1:
             message = event.data[1]
-            logging.info(message)
+            logging.getLogger(self.uri).info(message)
         else:
             idsName = event.data[0]
             idsInstance =  event.data[1]
@@ -699,8 +697,10 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.gridLayout_log.addWidget(self.logWidget, 0, 0, 1, 1)
         self.dockWidget_log.setWidget(self.dockWidgetContents_log)
         self.addDockWidget(Qt.BottomDockWidgetArea, self.dockWidget_log)
-        handler = QVizLoggerSingleton()
+        handler = QVizLogger()
         handler.new_signal_emiter.new_signal.connect(self.logWidget.appendHtml)
+        logging.getLogger(self.dataTreeView.uri).addHandler(handler)
+        logging.getLogger(self.dataTreeView.uri).setLevel(logging.INFO)
 
         # Set first docked widget minimum width
         self.dockWidget_ppw.setMinimumWidth(400)
@@ -755,6 +755,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         databaseLabel = QLabel('Database: ', self)
         shotLabel = QLabel('Shot: ', self)
         runLabel = QLabel('Run: ', self)
+        backendLabel = QLabel('Backend: ', self)
 
         noteLabel1 = QLabel('Note 1: Only IDSs, that are CURRENTLY OPENED in '
                            'the tree view, will be exported!',
@@ -771,45 +772,42 @@ class QVizDataTreeViewFrame(QMainWindow):
         shotBox.setText('1')
         runBox = QLineEdit(self)
         runBox.setText('1')
+        backendBox = QLineEdit(self)
+        backendBox.setText('13')
+
 
         def onOk():
             import imas
             # Execute the export to local IDS
-            logging.info('Starting to export opened IDSs to ' +
+            logging.getLogger(dataSource.uri).info('Starting to export opened IDSs to ' +
                                        ' IDS with user: ' +
                                        userBox.text() + ', database: ' +
                                        databaseBox.text() + ', shot: ' +
                                        shotBox.text() +
                                        ', run: ' + runBox.text() + '.')
 
-            backend_id = dataSource.defaultBackend()
             major_version = os.environ["IMAS_MAJOR_VERSION"]
-            uri = dataSource.build_legacy_uri(self, backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(),
-            databaseBox.text(), major_version, '')
-            exported_db_entry = imas.DBEntry(uri, 'w')
+            backend_id = int(backendBox.text())
+            uri = dataSource.build_legacy_uri(backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(), databaseBox.text(), major_version, '')
 
             # Patch: In case IDS database or user do not exist
             try:
-                logging.info("Creating pulse file with URI: " + uri + " ...")
+                logging.getLogger(dataSource.uri).info("Creating pulse file with URI: " + uri + " ...")
+                exported_db_entry = imas.DBEntry(uri, 'w')
                 status, idx = exported_db_entry.open()
                 
                 if status != 0:
-                    logging.error("Unable to create pulse file with URI: " + uri + " using backend "  + str(backend_id) + ". Trying fallback backend.")
-                    backend_id = dataSource.fallbackBackend()
-                    uri = dataSource.build_legacy_uri(self, backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(),
-                    databaseBox.text(), major_version, '')
-                    exported_db_entry = imas.DBEntry(uri, 'w')
-                    status, idx = exported_db_entry.open()
-                    if status != 0:
-                        logging.error("Unable to create pulse file with URI: " + uri + " using backend "  + str(backend_id) + ".")
+                    logging.getLogger(dataSource.uri).error("Unable to create pulse file with URI: " + uri + ".")
                     return
 
             except:
-                logging.info('Unable to create pulse file with URI: ' + uri)
+                logging.getLogger(dataSource.uri).info('Unable to create pulse file with URI: ' + uri + ".")
                 return
-            dataSource.exportToLocal(self.dataTreeView, exported_db_entry)
 
-            logging.info('Export finished.')
+            dataSource.exportToLocal(exported_db_entry)
+            exported_db_entry.close()
+            logging.getLogger(dataSource.uri).info('Export finished.')
+           
 
         def onCancel():
             # Close the dialog
@@ -846,6 +844,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         r += 1
         layout.addWidget(runLabel,      r, 0, 1, 1)
         layout.addWidget(runBox,        r, 1, 1, 1)
+        r += 1
+        layout.addWidget(backendLabel,  r, 0, 1, 1)
+        layout.addWidget(backendBox,    r, 1, 1, 1)
         r += 1
         layout.addWidget(okButton,      r, 0, 1, 2)
         r += 1

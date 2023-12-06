@@ -118,7 +118,7 @@ class VizProfiles(QMainWindow):
                 break
         if no_result:
             self.close()
-            logging.info("No data available for plotting.")
+            logging.getLogger(self.dataSource.uri).error("No data available for plotting.")
             return
 
         self.mainWidget = QWidget(parent=self)
@@ -128,7 +128,7 @@ class VizProfiles(QMainWindow):
         self.tabWidget.currentChanged.connect(self.disableOrEnabledAddNewTabsIfRequired)
         success = self.addTabs()
         if success == 0:
-            logging.error("An error has occurred.")
+            logging.getLogger(self.dataSource.uri).error("An error has occurred.")
             return
         self.setUI()
         self.disableOrEnabledAddNewTabsIfRequired()
@@ -209,7 +209,7 @@ class VizProfiles(QMainWindow):
         nb_tabs_to_add, ok = user_input.getInt(None, "Number of tab(s) to add:", "Number of tabs:",
                                                value=nb_tabs_to_add_max, minValue=1, maxValue=nb_tabs_to_add_max)
         if not ok:
-            logging.error('Bad input from user.')
+            logging.getLogger(self.dataSource.uri).error('Bad input from user.')
             return
         for i in range(nb_tabs_to_add):
             self.addNewTab()
@@ -260,7 +260,7 @@ class VizProfiles(QMainWindow):
         if len(self.worker.results_map) != 0:
             self.show()
         else:
-            logging.warning("No data found.")
+            logging.getLogger(self.dataTreeView.uri).warning("No data found.")
 
     def buildUI_in_separate_thread(self, requests_list):
         # Create a QThread object
@@ -436,7 +436,7 @@ class VizProfiles(QMainWindow):
 
         if time_slices_count == 0:
             message = "No time slice found for " + self.ids_related + "."
-            logging.error(message)
+            logging.getLogger(self.dataSource.uri).error(message)
             self.close()
             raise ValueError(message)
 

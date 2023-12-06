@@ -31,4 +31,4 @@ class QVizLoadSelectedData(QVizAbstractCommand):
         except:
             QVizLoadSelectedData.Lock[self.IDSName] = False
             traceback.print_exc()
-            logging.error(traceback.format_exc())
+            logging.getLogger(self.dataTreeView.uri).error(traceback.format_exc())

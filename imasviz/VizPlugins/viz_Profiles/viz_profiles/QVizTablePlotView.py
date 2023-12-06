@@ -111,7 +111,7 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             if len(u) != len(ti):
                 mess = 'x,y shapes are different, ignoring plot with label:' + label
                 print(mess)
-                logging.error(mess)
+                logging.getLogger(self.dataTreeView.dataSource.uri).error(mess)
                 continue
 
             currentPlotItem = self.plot(n=n, x=ti, y=u, label=label, xlabel=xlabel,

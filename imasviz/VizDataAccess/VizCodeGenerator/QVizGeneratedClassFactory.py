@@ -31,7 +31,7 @@ class QVizGeneratedClassFactory:
 
         if (ids_dd_version is not None and ids_dd_version != '') and ids_dd_version < '3.26.0':
             if dd_version > ids_dd_version:
-                logging.warning("Non backward compatible change infos are not available for"
+                logging.getLogger(self.view.uri).warning("Non backward compatible change infos are not available for"
                                 " IDSs created with DD version prior to 3.26.0. You should use"
                                 " an older version of IMAS Access Layer to access data for DD "
                                 "fields that have been renamed. If it is the case, quit IMASViz and load an older "
@@ -123,5 +123,5 @@ class QVizGeneratedClassFactory:
         if os.path.exists(IDSDef_parser_path):
             parser_age = 1000 * os.stat(IDSDef_parser_path).st_mtime
             if parser_age < millisec:
-                logging.info("Removing obsolete parser: " + IDSDef_parser_path + ".")
+                logging.getLogger(self.view.uri).info("Removing obsolete parser: " + IDSDef_parser_path + ".")
                 os.remove(IDSDef_parser_path)

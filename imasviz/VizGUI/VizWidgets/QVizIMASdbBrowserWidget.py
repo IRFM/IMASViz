@@ -206,9 +206,6 @@ class Worker(QObject):
         shotList.sort()
     
         for shot in shotList:
-    
-            if len(shot) < 5:
-                continue
             
             runList = []
             runList = glob.glob1(shotPath + "/" + shot, "*")
@@ -298,26 +295,27 @@ class Worker(QObject):
 
         # Shot list to take care the shot entries do no repeat
         shotList = []
-        shotItemList = []
 
         # Get shots directories
         shotList = glob.glob1(shotPath, "*")
         shotList.sort()
 
         for shot in shotList:
-
-            if len(shot) < 5:
-                continue
-            
-            shotItem = QTreeWidgetItem(databaseItem)
-            shotItem.setText(0, shot)
             
             runList = []
             runList = glob.glob1(shotPath + "/" + shot, "*")
-            
+        
+            shotItem = None
             for run in runList:
-                runItem = QTreeWidgetItem(shotItem)
-                runItem.setText(0, run) 
+
+                filesList = glob.glob1(shotPath + "/" + shot + "/" + run, "*.h5")
+                
+                if len(filesList) > 0:
+                    if shotItem is None:
+                        shotItem = QTreeWidgetItem(databaseItem)
+                        shotItem.setText(0, shot)
+                    runItem = QTreeWidgetItem(shotItem)
+                    runItem.setText(0, run) 
         
     def addContentsForUsername(self):
         """Set treeWidget items based on imasdb for given user.

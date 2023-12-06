@@ -67,7 +67,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         self.imas_viz_api = self.dataTreeView.imas_viz_api
 
         if self.getNumSignals(all_DTV=all_DTV) < 1:
-            logging.error('No selection found.')
+            logging.getLogger(self.dataTreeView.uri).error('No selection found.')
             return
 
         # Get screen resolution (width and height)
@@ -128,11 +128,11 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """Check if figure key was properly defined and if it is fully defined.
         """
         if figureKey == None:
-            logging.warning('QVizMultiPlotWindow: FigureKey not provided!')
+            logging.getLogger(self.dataTreeView.uri).warning('QVizMultiPlotWindow: FigureKey not provided!')
             return
         elif 'TablePlotView' not in figureKey != 'StackedPlotView' not in figureKey:
             # If neither required strings are not found
-            logging.warning('QVizMultiPlotWindow: Proper figureKey not '
+            logging.getLogger(self.dataTreeView.uri).warning('QVizMultiPlotWindow: Proper figureKey not '
                             'provided! See class constructor figureKey '
                             'variable description for more information.')
             return
@@ -163,7 +163,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         elif mpType == 'StackedPlotView':
             mpView = QVizStackedPlotView(parent=self, plotAxis=plotAxis)
         else:
-            logging.error('QVizMultiPlotWindow: proper multiPlot type was not '
+            logging.getLogger(self.dataTreeView.uri).error('QVizMultiPlotWindow: proper multiPlot type was not '
                           'provided!')
 
         # Get a list of viewBoxes each plot has its own associated viewbox)
@@ -331,7 +331,7 @@ class QVizMultiPlotWindow(QtWidgets.QMainWindow):
         """
         from ast import literal_eval
 
-        logging.info('Applying plot configuration after plotting to plot '
+        logging.getLogger(self.dataTreeView.uri).info('Applying plot configuration after plotting to plot '
                      'view column ' + str(plotItem.column) + ' row ' +
                      str(plotItem.row))
 

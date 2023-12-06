@@ -89,7 +89,7 @@ class QVizPlotSignal(QVizAbstractCommand, QVizAbstractPlot):
             else:
                 raise ValueError("only 1D plots are currently supported.")
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @staticmethod
     def getXAxisValues(oneDimensionSignal):

@@ -1,5 +1,5 @@
 import os
-
+import logging
 from imasviz.Viz_API import Viz_API
 from imasviz.VizUtils import QVizGlobalValues
 
@@ -9,16 +9,21 @@ class QVizOpenShotView:
         self.api = Viz_API(parent)
 
     def Open(self, evt, uri):
-                 
+                
         from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
         from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+
+        try:
         
-        dataSource = QVizDataSourceFactory().create(uri)
+            dataSource = QVizDataSourceFactory().create(uri)
 
-        dtv = None
-        if self.api.isDataSourceAlreadyOpened(dataSource):
-            dtv = self.api.GetDTVFor(dataSource.getKey())
-        else:
-            dtv = self.api.CreateDataTree(dataSource)
+            dtv = None
+            if self.api.isDataSourceAlreadyOpened(dataSource):
+                dtv = self.api.GetDTVFor(dataSource.getKey())
+            else:
+                dtv = self.api.CreateDataTree(dataSource)
 
-        self.api.ShowDataTree(dtv)
+            self.api.ShowDataTree(dtv)
+            
+        except ValueError as e :
+            logging.getLogger('logPanel').error(str(e))

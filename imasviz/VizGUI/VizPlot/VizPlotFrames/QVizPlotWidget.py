@@ -137,7 +137,7 @@ class QVizPlotWidget(QWidget):
                 x = np.append(x, [x[0]])
                 y = np.append(y, [y[0]])
         except:
-            logging.error('closed attribute not found')
+            logging.getLogger(vizTreeNode.dataTreeView.uri).error('closed attribute not found')
 
         plotDataItem = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
 
@@ -220,7 +220,7 @@ class QVizPlotWidget(QWidget):
                     sameCoordinate1 = False
                     break
             if not sameCoordinate1:
-                logging.error("Could not add plot for: " + vizTreeNode.getPath() +
+                logging.getLogger(vizTreeNode.dataTreeView.uri).error("Could not add plot for: " + vizTreeNode.getPath() +
                               ". Existing plot(s) has/have not the same coordinate1 values.")
                 return False
             else:

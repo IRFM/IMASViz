@@ -828,7 +828,7 @@ class QVizSignalHandling(QObject):
             p.execute(figureKey=figureKey, update=0)
 
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def plotPreviewSignalCommand(self):
         """Show preview plot.
@@ -842,7 +842,7 @@ class QVizSignalHandling(QObject):
             p.execute()
 
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     # @Slot(bool)
     def plotSelectedSignals(self, all_DTV=True, plotAxis='TIME'):
@@ -859,7 +859,7 @@ class QVizSignalHandling(QObject):
         try:
             # figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
             if len(self.dataTreeView.selectedSignalsDict) == 0:
-                logging.error("No selection found.")
+                logging.getLogger(self.dataTreeView.uri).error(str(e)).error("No selection found.")
                 return
             first_key = list(self.dataTreeView.selectedSignalsDict.keys())[0]
             v = self.dataTreeView.selectedSignalsDict[first_key]
@@ -877,7 +877,7 @@ class QVizSignalHandling(QObject):
                                     plotAxis=plotAxis).execute()
 
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @Slot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None,
@@ -911,7 +911,7 @@ class QVizSignalHandling(QObject):
                                     all_DTV=True,
                                     plotAxis=plotAxis)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @Slot(bool)
     def onPlotToStackedPlotView(self, all_DTV=False, plotAxis="TIME"):
@@ -941,7 +941,7 @@ class QVizSignalHandling(QObject):
                                     all_DTV=True,
                                     plotAxis=plotAxis)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @Slot(int)
     def addSignalPlotToFig(self, numFig):
@@ -985,7 +985,7 @@ class QVizSignalHandling(QObject):
                                     update=0,
                                     all_DTV=all_DTV).execute()
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def nodeDataShareSameCoordinatesAs(self, selectedNodeList, vizTreeNode,
                                        figureKey=None):
@@ -1086,7 +1086,7 @@ class QVizSignalHandling(QObject):
                 GetFigureKey(str(numFig), figureType)
             self.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def getMDI(self):
         if self.parent().getMDI() is not None:

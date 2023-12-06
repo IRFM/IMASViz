@@ -58,84 +58,74 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
     dataSource = vizAPI.GetDataSource(dataTreeView)
     uri = dataSource.uri
-    
     status = 0
-
     print('uri    =', uri)
-
     print('Reading data...')
-
     # Open URI
     occurrence = 0 # default occurrence
-    
-    #root = logging.getLogger()
-    #root.setLevel(logging.DEBUG)
+    log = logging.getLogger(uri)
 
-    #handler = logging.StreamHandler(sys.stdout)
-    #handler.setLevel(logging.DEBUG)
-    #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    #handler.setFormatter(formatter)
-    #root.addHandler(handler)
+    log.warning("----->Here are the requirements for the ''Equilibrium'' plugin:")
 
-    logging.info("Here are the requirements for the ''Equilibrium'' plugin:"
-                 "non empty equilibrium IDS with time slices,"
-                 "non empty GGD (equilibrium.time_slice[:].ggd),"
-                 "non empty IDS Wall.")
-    logging.info("-------------------")             
-    logging.info("Here are the required data for the 'equilibrium' IDS for all time slices:")
-    logging.info("--> time_slice[itime].profiles_1d.q")
-    logging.info("--> time_slice[itime].profiles_1d.elongation")
-    logging.info("--> time_slice([itime].profiles_1d.triangularity_upper")
-    logging.info("--> time_slice[itime].profiles_1d.triangularity_lower")
-    logging.info("--> time_slice[itime].profiles_1d.j_tor")
-    logging.info("--> time_slice[itime].profiles_1d.pressure")
-    logging.info("--> time_slice[itime].profiles_1d.f_df_dpsi")
-    logging.info("--> time_slice[itime].profiles_1d.dpressure_dpsi")
-    logging.info("--> time_slice[itime].global_quantities.ip")
-    logging.info("--> time_slice[itime].global_quantities.q_95")
-    logging.info("--> time_slice[itime].global_quantities.q_axis")
-    logging.info("--> time_slice[itime].global_quantities.li_3")
-    logging.info("--> time_slice[itime].global_quantities.w_mhd")
-    logging.info("--> time_slice[itime].global_quantities.magnetic_axis.r")
-    logging.info("--> time_slice[itime].global_quantities.magnetic_axis.z")
-    logging.info("--> time_slice[itime].boundary.outline.r")
-    logging.info("--> time_slice[itime].boundary.outline.z")
-    logging.info("--> time_slice[itime].ggd[0]")
-    logging.info("--> grids_ggd[0]")
+    log.info("--> non empty equilibrium IDS with time slices")
+    log.info("--> non empty GGD (equilibrium.time_slice[:].ggd")
+    log.info("--> non empty IDS Wall")
+    log.info("---------------------------------------------------------")  
+
+    log.warning("----->Here are the required data for the 'equilibrium' IDS for all time slices:")
+    log.info("--> time_slice[itime].profiles_1d.q")
+    log.info("--> time_slice[itime].profiles_1d.elongation")
+    log.info("--> time_slice([itime].profiles_1d.triangularity_upper")
+    log.info("--> time_slice[itime].profiles_1d.triangularity_lower")
+    log.info("--> time_slice[itime].profiles_1d.j_tor")
+    log.info("--> time_slice[itime].profiles_1d.pressure")
+    log.info("--> time_slice[itime].profiles_1d.f_df_dpsi")
+    log.info("--> time_slice[itime].profiles_1d.dpressure_dpsi")
+    log.info("--> time_slice[itime].global_quantities.ip")
+    log.info("--> time_slice[itime].global_quantities.q_95")
+    log.info("--> time_slice[itime].global_quantities.q_axis")
+    log.info("--> time_slice[itime].global_quantities.li_3")
+    log.info("--> time_slice[itime].global_quantities.w_mhd")
+    log.info("--> time_slice[itime].global_quantities.magnetic_axis.r")
+    log.info("--> time_slice[itime].global_quantities.magnetic_axis.z")
+    log.info("--> time_slice[itime].boundary.outline.r")
+    log.info("--> time_slice[itime].boundary.outline.z")
+    log.info("--> time_slice[itime].ggd[0]")
+    log.info("--> grids_ggd[0]")
+    log.info("---------------------------------------------------------") 
     
-    logging.info("") 
-    logging.info("Here are the required data for the 'wall' IDS:")
-    logging.info("--> description_2d[0].limiter.unit[0].outline.r")
-    logging.info("--> description_2d[0].limiter.unit[0].outline.z")
-    logging.info("-------------------") 
+    log.warning("----->Here are the required data for the 'wall' IDS:")
+    log.info("--> description_2d[0].limiter.unit[0].outline.r")
+    log.info("--> description_2d[0].limiter.unit[0].outline.z")
+    log.info("---------------------------------------------------------") 
 
     if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'equilibrium', occurrence):
-        logging.info('Loading equilibrium IDS...')
+        log.info('Loading equilibrium IDS...')
         vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
 
     equilibrium = dataSource.get('equilibrium', occurrence)
     ht = equilibrium.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
-        logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS is empty.')
+        log.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS is empty.')
         status = -1
 
     elif len(equilibrium.time_slice) == 0:
-        logging.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS has no time slices.')
+        log.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS has no time slices.')
         status = -1
 
     # elif len(equilibrium.time_slice[0].ggd) == 0:
-    #     logging.info('Unable to start the Equilibrium plugin; GGD is empty.')
+    #     log.info('Unable to start the Equilibrium plugin; GGD is empty.')
     #     status = -1
 
     # Get wall geometry
     #if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
-    #    logging.info('Loading wall IDS...')
+    #    log.info('Loading wall IDS...')
     #    vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
 
     wall_ids = dataSource.get('wall', occurrence)
     ht = wall_ids.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
-        logging.error('Unable to start the Equilibrium plugin; ''Wall'' IDS is empty.')
+        log.error('Unable to start the Equilibrium plugin; ''Wall'' IDS is empty.')
         status = -1
 
     if status == -1:
@@ -149,10 +139,10 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     # Array with all times requested
     lenArrTimes = len(equilibrium.time)
     if lenArrTimes != len(equilibrium.time_slice):
-        logging.error('ERROR: length time and time_slice differ')
+        log.error('ERROR: length time and time_slice differ')
         return
 
-    logging.info('Equilibrium plugin: preparing data...')
+    log.info('Equilibrium plugin: preparing data...')
 
     timeEquiIDS = np.zeros(lenArrTimes)
     timeEquiIDS = equilibrium.time
@@ -288,7 +278,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         wall[1, :] = wall_ids.description_2d[0].limiter.unit[0].outline.z
         status = 0
     except Exception as e:
-        logging.error(e)
+        log.error(e)
         
     if status == -1:
         return uri, \
@@ -323,7 +313,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
             mag_ax_Z[timeit] = equi_tSlice.global_quantities.magnetic_axis.z
             status = 0
         except Exception as e:
-            logging.error(e)
+            log.error(e)
             
         if status == -1:
             return uri, \
@@ -404,7 +394,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         # Print time of the loop
         #print('Time loop', timeit, '=', datetime.now() - startTime)
         #print('In DataDen id(Psi_val) =', id(Psi_val))
-    logging.info('Equilibrium plugin: data ready.')
+    log.info('Equilibrium plugin: data ready.')
 
 
     return uri, \

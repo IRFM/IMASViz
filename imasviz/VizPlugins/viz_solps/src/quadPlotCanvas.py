@@ -21,7 +21,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 import numpy as np
-
+import logging
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QSizePolicy
 

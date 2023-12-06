@@ -134,7 +134,7 @@ class QVizDataTreeViewBuilder:
             index = int(dataElement.get('index')) + 1
 
             if index % 5 == 0:
-                logging.info("Building node for " + path + "...")
+                logging.getLogger(dataTreeView.uri).info("Building node for " + path + "...")
 
             itemNodeName = dataElement.tag + ' ' + str(index) + '/' + dataElement.get('dim')
 

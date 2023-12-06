@@ -125,7 +125,7 @@ class Viz_API:
                                       IDSDefFile=QVizGlobalOperations.getIDSDefFile(IMAS_VERSION),
                                       imas_viz_api=self)
 
-        frame.dataTreeView.dataSource = dataSource  # update the dataSource
+        #frame.dataTreeView.dataSource = dataSource  # update the dataSource
         # attached to the view
 
         # Add created data tree view (DTV) frame to a list of DTV frames
@@ -637,6 +637,7 @@ class Viz_API:
             numFig (int) : Number identification of the existing figure.
         """
         from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
+
         try:
 
             label = None
@@ -655,7 +656,7 @@ class Viz_API:
                            plotWidget=plotWidget).execute(figureKey=figureKey,
                                                           update=0)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(vizTreeNode.dataTreeView.uri).error(str(e))
 
     def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
         figureDataList = self.figToNodes.get(figureKey)
@@ -727,7 +728,7 @@ class Viz_API:
                                plotWidget=plotWidget)
             p.execute(figureKey=figureKey, update=0)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(dataTreeView.uri).error(str(e))
 
     def plot0D_DataVsTimeCommand(self, dataTreeView, treeNode=None):
         """Plotting of 0D data nodes, found within timed AOS
@@ -747,7 +748,7 @@ class Viz_API:
                                plotWidget=plotWidget)
             p.execute(figureKey=figureKey, update=0)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(dataTreeView.uri).error(str(e))
 
     def plotVsTimeAtGivenCoordinate1(self, dataTreeView, coordinateIndex,
                                      currentFigureKey, treeNode, update,
@@ -783,7 +784,7 @@ class Viz_API:
                 return
 
             else:
-                logging.error("plotVsTimeAtGivenCoordinate1() supports only nodes with dimension <= 1D.")
+                logging.getLogger(treeNode.dataTreeView.uri).error("plotVsTimeAtGivenCoordinate1() supports only nodes with dimension <= 1D.")
                 return
 
             currentFigureKey, plotWidget = \
@@ -807,7 +808,7 @@ class Viz_API:
                                                           update=update,
                                                           dataset_to_update=dataset_to_update)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(treeNode.dataTreeView.uri).error(str(e))
 
     def plotVsCoordinate1AtGivenTime(self, dataTreeView, currentFigureKey,
                                      treeNode, update, dataset_to_update=0):
@@ -842,7 +843,7 @@ class Viz_API:
                                                           update=update,
                                                           dataset_to_update=dataset_to_update)
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(dataTreeView.uri)(str(e))
 
     def getMDI(self):
         if self.parent is not None:
@@ -998,4 +999,4 @@ class Viz_API:
                                plotWidget=plotWidget).execute(figureKey=figureKey, signal=sig)
                 i += 1
         except ValueError as e:
-            logging.error(str(e))
+            logging.getLogger(dataTreeView.uri).error(str(e))

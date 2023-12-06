@@ -370,7 +370,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             self.addItem(self.fbitem)
 
         else:
-            logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+            logging.getLogger(vizTreeNode.dataTreeView.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
 
     def addErrorBars(self, step, beam=0.5):
 
@@ -432,7 +432,7 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
             self.error.setData(x=x, y=y, top=top, bottom=bottom)
             self.addItem(self.error)
         else:
-            logging.error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+            logging.getLogger(vizTreeNode.dataTreeView.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
 
     def updateExportersList(self):
         """Update/Modify list of available exporters (in order to remove the
