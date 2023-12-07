@@ -151,7 +151,7 @@ class GUIFrame(QTabWidget):
                             else:
                                 raise ValueError("Backend id should be 12 or 13")
                 except getopt.GetoptError:
-                    logging.error("bad user input")
+                    logging.getLogger('logPanel').error('Bad user input.')
                     sys.exit(-1)
                     pass
 
@@ -180,7 +180,7 @@ class GUIFrame(QTabWidget):
                 raise ValueError(str(e))
 
         except ValueError as e:
-            logging(str(e))
+            logging.getLogger('logPanel').error(str(e))
 
     def CheckInputsFromTab1(self):
         """Display warning message if the required parameter was not specified"""

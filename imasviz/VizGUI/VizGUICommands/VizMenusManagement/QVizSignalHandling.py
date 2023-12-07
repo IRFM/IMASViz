@@ -235,6 +235,7 @@ class QVizSignalHandling(QObject):
 
         return menu
 
+
     def menuPlotCurrentSignal0DNode(self):
         """Set menu for plotting current (under the mouse selected) signal node.
         """
@@ -951,8 +952,8 @@ class QVizSignalHandling(QObject):
             numFig (int) : Number identification of the existing figure.
         """
         api = self.dataTreeView.imas_viz_api
-        logging.debug("QVizSignalHandling::addSignalPlotToFig:treeNode=" + self.treeNode.getName())
-        print(id(self.treeNode))
+        #logging.debug("QVizSignalHandling::addSignalPlotToFig:treeNode=" + self.treeNode.getName())
+        #print(id(self.treeNode))
         api.AddPlot1DToFig(numFig, self.treeNode)
 
     def addPlotWidgetToMDI(self, plotWidget):

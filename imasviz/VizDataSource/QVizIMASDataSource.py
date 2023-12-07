@@ -67,10 +67,11 @@ class QVizIMASDataSource:
                 self.db_entry = imas.DBEntry(self.uri, 'r')
             status, idx = self.db_entry.open()
             if status != 0:
-                raise ValueError("An error has occured while opening URI: " + self.uri)
+                raise ValueError("An error has occured while opening URI: " + self.uri + ".")
             return status
         except BaseException as e:
-            logging.getLogger("logPanel").error(str(e))
+            #logging.getLogger("logPanel").error(str(e))
+            raise ValueError(e)
 
     def get(self, IDSName, occurrence):
         try:
@@ -96,33 +97,24 @@ class QVizIMASDataSource:
     def exists(self, IDSName=None):
         return True
 
-    def containsData(self, node, data_entry):
+    def containsData(self, node):
         ret = False
-        #logging.info("Searching available data in all occurrences of " +
-        #             node.getIDSName() + " IDS...")
 
         maxOccurrences = eval("imas." + node.getIDSName() + "().getMaxOccurrences()")
 
         for occurrence in range(0, maxOccurrences):
-            #logging.info("Searching for occurrence: " + str(occurrence) + "...")
             node.setAvailableIDSData(occurrence, 0)
             try:
-                ids_properties = eval("data_entry.partial_get('" + node.getIDSName() + "', 'ids_properties', occurrence)")
+                ids_properties = eval("self.db_entry.partial_get('" + node.getIDSName() + "', 'ids_properties', occurrence)")
                 ht = ids_properties.homogeneous_time
                 if ht == 0 or ht == 1 or ht == 2:
-                    logging.getLogger(self.uri).info("Found data for occurrence " +
-                                 str(occurrence) + " of " + node.getIDSName() +
-                                 " IDS...")
+                    logging.getLogger(self.uri).info("Found data for occurrence " + str(occurrence) + " of " + node.getIDSName() + " IDS...")
                     node.setHomogeneousTime(ht)
                     node.setAvailableIDSData(occurrence, 1)
                     self.data_dictionary_version = ids_properties.version_put.data_dictionary
                     ret = True
-                # elif occurrence == 0:
-                # break the loop as soon as occurrence 0 is empty
-                #    break
             except Exception as e:
                 print(e)
-        #logging.info("Data search ended.")
         return ret
 
     def dataKey(self, vizTreeNode):

@@ -149,10 +149,10 @@ class QVizDataTreeView(QTreeWidget):
         """The tree is created from IDSDef.xml file.
         """
         import imas
-        idsNode = None
+
+        self.dataSource.open()
+
         xmlTree = ET.parse(IDSDefFile)
-        imas_entry = imas.DBEntry(self.uri, 'r')
-        imas_entry.open()
 
         for child in xmlTree.getroot():
             if child.tag == 'IDS':
@@ -167,13 +167,14 @@ class QVizDataTreeView(QTreeWidget):
                 IDSRootNode = self.createIDSRootNode(idsName=idsName,
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)
-                IDSContainsData = self.dataSource.containsData(IDSRootNode, imas_entry)
+
+                IDSContainsData = self.dataSource.containsData(IDSRootNode)
                 IDSRootNode.updateIDSNode(IDSContainsData)
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
 
-        imas_entry.close()
+        #imas_entry.close()
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.

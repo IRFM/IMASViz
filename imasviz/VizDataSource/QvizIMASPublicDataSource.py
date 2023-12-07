@@ -44,6 +44,6 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
     def open(self, data_entry):
         data_entry.open()
 
-    def containsData(self, node, data_entry):
+    def containsData(self, node):
         node.setAvailableIDSData(0, True)
         return True

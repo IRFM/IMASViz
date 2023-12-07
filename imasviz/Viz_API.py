@@ -941,7 +941,7 @@ class Viz_API:
             try:
                 node = s[0]
                 coordinate1_index = 0
-                closest_value = 0
+                #closest_value = 0
                 if node.is1D() and plotWidget.plotAxis == 'TIME' and profile_center:
                     coordinate1_values = node.coordinateValues(coordinateNumber=1, dataTreeView=node.dataTreeView)
                     # print(node.getParametrizedDataPath() + '=', len(coordinate1_values))

@@ -68,6 +68,7 @@ class QVizTreeNode(QTreeWidgetItem):
         self.parameters_max_values = {}
         self.coordinates = []
         self.coordinates_explicitly_time_dependent = {}  # key = coordinate number, value = 0 or 1
+        self.default_coordinates = {} #index = coordinate number, value = value extracted from DD
 
     def initAttributes(self, vizTreeNode):
         self.createAttributes()
@@ -77,6 +78,7 @@ class QVizTreeNode(QTreeWidgetItem):
         self.parameters_values = vizTreeNode.parameters_values  # key = index name ('i', 'j', ...)
         self.parameters_max_values = vizTreeNode.parameters_max_values
         self.coordinates = vizTreeNode.coordinates
+        #self.default_coordinates = self.coordinates
         self.coordinates_explicitly_time_dependent = vizTreeNode.coordinates_explicitly_time_dependent
 
     def setOccurrenceEntry(self, value):
@@ -576,13 +578,12 @@ class QVizTreeNode(QTreeWidgetItem):
         else:
             pass
 
-        if self.hasAvailableData() and self.isDynamicData():  # update parents
+        if self.hasAvailableData():  # update parents
             parent = self.parent()
             while parent is not None and not (parent.isIDSRoot()):
-                if not (parent.hasAvailableData()):
-                    parent.setAvailableData(True)
-                    parent.setStyleWhenContainingData()
-                    parent.updateStyle()
+                parent.setAvailableData(True)
+                parent.setStyleWhenContainingData()
+                parent.updateStyle()
                 parent = parent.parent()
 
     def plotOptions(self, dataTreeView, title='', label=None, xlabel=None,
