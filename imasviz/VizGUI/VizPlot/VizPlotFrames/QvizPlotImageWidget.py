@@ -102,7 +102,6 @@ class QvizPlotImageWidget(QWidget):
         viewBox.setRange(xRange=(0, len(data[:, 0])))
         viewBox.setLimits(xMin=0, xMax=len(data[:, 0]), yMin=0, yMax=len(data[0, :]))
         if self.vizTreeNode is not None:
-            print('adding node in PlotImageWidget')
             viewBox.addVizTreeNode(self.vizTreeNode)
 
         self.plotImageItem = firstLayout.addPlot(row=0, col=0, rowSpan=1, colSpan=2, viewBox=viewBox)
@@ -203,7 +202,6 @@ class SlicesPlotItem:
         # Creation of the slice plot item at 1, 0 of the pgw layout
         viewBox = self.createViewBox()
         if parent.vizTreeNode is not None:
-            print('adding node in SlicesPlotItem')
             viewBox.addVizTreeNode(parent.vizTreeNode)
         self.slice_plotItem = parent.pgw.addPlot(row=self.axis, col=0, rowSpan=1, colSpan=2, viewBox=viewBox)
         self.slice_plotItem.addLegend()

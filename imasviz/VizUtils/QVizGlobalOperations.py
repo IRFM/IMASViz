@@ -94,6 +94,12 @@ class QVizGlobalOperations:
         return stringToReplace.replace(".", "_")
 
     @staticmethod  # replace '[' by '(' and ']' by ')'
+    def replaceDashesByUnderScores(stringToReplace):
+        if stringToReplace is None:
+            return None
+        return stringToReplace.replace("-", "_")
+
+    @staticmethod  # replace '[' by '(' and ']' by ')'
     def replaceSpacesByUnderScores(stringToReplace):
         if stringToReplace is None:
             return None

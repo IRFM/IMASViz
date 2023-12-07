@@ -47,6 +47,8 @@ class QVizGeneratedClassFactory:
             className = "IDSDef_XMLParser_Full_Generated_" + \
                         QVizGlobalOperations.replaceDotsByUnderScores(dd_version)
 
+            className = QVizGlobalOperations.replaceDashesByUnderScores(className)
+
             path_user_gencode = os.environ['HOME'] + "/.imasviz/VizGeneratedCode/"
             if not os.path.exists(path_user_gencode):
                 os.makedirs(path_user_gencode)
@@ -80,6 +82,8 @@ class QVizGeneratedClassFactory:
         else:  # If QVizPreferences.Ignore_GGD == 1
             className = "IDSDef_XMLParser_Partial_Generated_" + \
                         QVizGlobalOperations.replaceDotsByUnderScores(dd_version)
+
+            className = QVizGlobalOperations.replaceDashesByUnderScores(className)
 
             path_user_gencode = os.environ['HOME'] + "/.imasviz/VizGeneratedCode/"
             if not os.path.exists(path_user_gencode):
@@ -117,7 +121,7 @@ class QVizGeneratedClassFactory:
 
     def removeParserIfTooOld(self, IDSDef_parser_path):
         from datetime import datetime
-        dt_obj = datetime.strptime('07.12.2023 00:00:00,00',
+        dt_obj = datetime.strptime('07.12.2023 11:00:00,00',
                                    '%d.%m.%Y %H:%M:%S,%f')
         millisec = dt_obj.timestamp() * 1000
         if os.path.exists(IDSDef_parser_path):
