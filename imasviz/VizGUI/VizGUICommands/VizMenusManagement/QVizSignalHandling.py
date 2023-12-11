@@ -99,6 +99,7 @@ class QVizSignalHandling(QObject):
             #   signal node
             if self.treeNode.is1D():
                 self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
+                self.contextMenu.addMenu(self.menuSetCoordinate1DNode())
             elif self.treeNode.is0DAndDynamic():
                 self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
 
@@ -194,6 +195,35 @@ class QVizSignalHandling(QObject):
         # Set bitmap to menu item
 
         return action
+
+    def menuSetCoordinate1DNode(self):
+        """Set menu for setting the coordinate1 (under the mouse selected) 1D node.
+        """
+        # - Add action for setting new coordinate1
+        menu = QMenu('Set coordinate1 of ' + self.signalNodeName + ' to ', self.contextMenu)
+        #menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
+        coordinateNumber = 1
+        default_coordinate = self.treeNode.default_coordinates.get(coordinateNumber - 1)
+
+        if default_coordinate is not None:
+            action_setDefaultCoordinate = QAction(default_coordinate, self)
+            action_setDefaultCoordinate.triggered.connect(self.default_setCoordinate1)
+            menu.addAction(action_setDefaultCoordinate)
+
+        alternative_coordinate = '1..N'
+        action_setCoordinate = QAction(alternative_coordinate, self)
+        action_setCoordinate.triggered.connect(partial(self.setCoordinate1, alternative_coordinate))
+
+        menu.addAction(action_setCoordinate)
+        return menu
+
+    def default_setCoordinate1(self):
+        self.treeNode.setDefaultCoordinate(1)
+        self.plotPreviewSignalCommand()
+
+    def setCoordinate1(self, alternative_coordinate):
+        self.treeNode.setCoordinate(1, alternative_coordinate)
+        self.plotPreviewSignalCommand()
 
     def menuPlotCurrentSignalNode(self):
         """Set menu for plotting current (under the mouse selected) signal node.
@@ -988,28 +1018,6 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
-    def nodeDataShareSameCoordinatesAs(self, selectedNodeList, vizTreeNode,
-                                       figureKey=None):
-        """Check if data already in figure and next to be added signal plot
-        share the same coordinates and other conditions for a meaningful plot.
-        """
-        if vizTreeNode.is1DAndDynamic():
-            api = self.dataTreeView.imas_viz_api
-            for si in selectedNodeList:
-                if figureKey is not None:
-                    figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                              figureKey=figureKey, treeNode=vizTreeNode)
-                    # Following check on coordinates is performed only if the current plot axis is not the time axis
-                    if plotWidget.getPlotAxis() != 'TIME':
-                        if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
-                            return False
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
-                    return False
-        elif vizTreeNode.is0DAndDynamic():
-            for si in selectedNodeList:
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and vizTreeNode.getUnits() != si.getUnits():
-                    return False
-        return True
 
     def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
         figureDataList = self.imas_viz_api.figToNodes.get(figureKey)
@@ -1019,8 +1027,7 @@ class QVizSignalHandling(QObject):
         for k in figureDataList:
             v = figureDataList[k]
             figureNodesList.append(v[1])  # v[0] = uri, v[1] = vizNode
-        return self.nodeDataShareSameCoordinatesAs(figureNodesList, vizTreeNode,
-                                                   figureKey)
+        return vizTreeNode.nodeDataShareSameCoordinatesAs(figureNodesList, figureKey)
 
     def currentSelectionShareSameCoordinates(self, figureKey):
         for k in self.dataTreeView.selectedSignalsDict:
@@ -1046,7 +1053,7 @@ class QVizSignalHandling(QObject):
         """Check if data share the same coordinates.
         """
         for node in selectedNodesList:
-            if not self.nodeDataShareSameCoordinatesAs(selectedNodesList, node):
+            if not node.nodeDataShareSameCoordinatesAs(selectedNodesList):
                 return False
         return True
 

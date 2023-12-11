@@ -166,36 +166,36 @@ class QVizDataTreeViewBuilder:
         viewerNode.idsRef = ids_root_occ.idsRef
         viewerNode.updateStyle()
         # Adding coordinate and documentation nodes
-        #self.addQtNodes(itemDataDict, viewerNode)
+        self.addQtNodes(itemDataDict, viewerNode)
         viewerNode.dataTreeView = dataTreeView
         return viewerNode
 
-    # def addQtNodes(self, itemDataDict, viewerNode):
-    #     """ Add new nodes to the tree view.
+    def addQtNodes(self, itemDataDict, viewerNode):
+        """ Add new nodes to the tree view.
 
-    #     Arguments:
-    #         itemDataDict (obj)             : Data dictionary of the tree item.
-    #         viewerNode   (QTreeWidgetItem) : tree parent item to which new items will be added to the
-    #                                          dataTreeView
-    #     """
+        Arguments:
+            itemDataDict (obj)             : Data dictionary of the tree item.
+            viewerNode   (QTreeWidgetItem) : tree parent item to which new items will be added to the
+                                             dataTreeView
+        """
 
-    #     coordinate_display = None
+        coordinate_display = None
 
-    #     for i in range(1,7):
-    #         coordinate = "coordinate" + str(i)
-    #         coordinate_same_as = "coordinate" + str(i) + "_same_as"
-    #         if viewerNode.getCoordinate(coordinateNumber=i) is not None:
-    #             coordinate_display = coordinate + "=" + viewerNode.getCoordinate(coordinateNumber=i)
-    #             QVizTreeNode(viewerNode, [coordinate_display])
-    #         if itemDataDict.get(coordinate_same_as) is not None:
-    #             coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
-    #             QVizTreeNode(viewerNode, [coordinate_display])
+        for i in range(1,7):
+            coordinate = "coordinate" + str(i)
+            coordinate_same_as = "coordinate" + str(i) + "_same_as"
+            if viewerNode.getCoordinate(coordinateNumber=i) is not None:
+                coordinate_display = coordinate + "=" + viewerNode.getCoordinate(coordinateNumber=i)
+                QVizTreeNode(viewerNode, [coordinate_display])
+            if itemDataDict.get(coordinate_same_as) is not None:
+                coordinate_display = coordinate_same_as + "=" + itemDataDict[coordinate_same_as]
+                QVizTreeNode(viewerNode, [coordinate_display])
 
-    #     doc_display = None
+        doc_display = None
 
-    #     if itemDataDict.get('documentation') is not None:
-    #         doc_display = "documentation= " + itemDataDict['documentation']
-    #         QVizTreeNode(viewerNode, [doc_display])
+        if itemDataDict.get('documentation') is not None:
+            doc_display = "documentation= " + itemDataDict['documentation']
+            QVizTreeNode(viewerNode, [doc_display])
 
     def addUnitsAndDataTypeToItemNodeName(self, itemNodeName, dataElement):
         if dataElement.get('units') is not None:

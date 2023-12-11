@@ -673,24 +673,7 @@ class Viz_API:
         """Check if data already in figure and next to be added signal plot
         share the same coordinates and other conditions for a meaningful plot.
         """
-        if vizTreeNode.is1DAndDynamic():
-            for si in selectedNodeList:
-                if figureKey is not None:
-                    figureKey, plotWidget = self.GetPlotWidget(dataTreeView=vizTreeNode.dataTreeView,
-                                                               figureKey=figureKey)
-                    # Following check on coordinates is performed only if the current plot axis is not the time axis
-                    if plotWidget.getPlotAxis() != 'TIME':
-                        if vizTreeNode.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
-                            return False
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and \
-                        vizTreeNode.getUnits() != si.getUnits():
-                    return False
-        elif vizTreeNode.is0DAndDynamic():
-            for si in selectedNodeList:
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and \
-                        vizTreeNode.getUnits() != si.getUnits():
-                    return False
-        return True
+        return vizTreeNode.nodeDataShareSameCoordinatesAs(selectedNodeList, figureKey)
 
     def plotSignalVsTimeCommand(self, dataTreeView):
         """Plotting of signal node, found within the 'time_slice[:]' array of
