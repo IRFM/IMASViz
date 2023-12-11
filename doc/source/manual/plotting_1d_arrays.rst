@@ -464,6 +464,28 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
 
 .. _multiplot_features:
 
+Plotting 1D arrays as a function of the '1..N' coordinate
+---------------------------------------------------------
+Any 1D array can be plotted against the values of its indices (the so-called '1..N' coordinate).
+
+As an example, the procedure is described below for the **magnetics.flux_loop[0].flux.data (FLT_1D)** node:
+
+1. Load the 'magnetics' IDS from an existing URI.
+
+2. Right-click on the **magnetics.flux_loop[0].flux.data (FLT_1D)** node.
+
+3. Select 'Set coordinate1 of magnetics flux_loop[0].flux.data to' from the popup menu.
+
+   .. figure:: images/set_coordinate1.png
+     :align: center
+     :width: 550px
+
+4. Select the '1..N' coordinate. The preview should be updated, plotting now the node against the '1..N' coordinate.
+
+.. Note:: After this change, all subsequent plots will be performed along the '1..N' coordinate. To restore the
+          defaut value of coordinate1, step 3 should be repeated by selecting 'flux_loop(i1).flux.time'. 
+
+
 
 Displaying error bars and/or confidence bands
 ---------------------------------------------
