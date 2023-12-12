@@ -223,6 +223,10 @@ class GUIFrame(QTabWidget):
         button_open2.clicked.connect(self.OpenDataSourceFromTab2)
         layout.addLayout(vboxlayout)
 
+        if QVizIMASDataSource.getVersion() == 4:
+            self.URI.setEnabled(False)
+            button_open2.setEnabled(False)
+
         vboxLayout2 = QVBoxLayout()
         vboxLayout2.addWidget(button_open2)
         layout.addLayout(vboxLayout2)
@@ -431,6 +435,12 @@ def main():
     window = QVizMainWindow()
     logging.getLogger('logPanel').info("Welcome to Viz!")
     logging.getLogger('logPanel').info("Please report any issue to ITER JIRA: https://jira.iter.org/")
+
+    if QVizIMASDataSource.getVersion() == 4:
+        logging.getLogger("logPanel").warning("You are using IMAS AL4. URI input are not available:")
+        logging.getLogger("logPanel").warning("--> URI input are not available for this version of the AL")
+        logging.getLogger("logPanel").warning("--> UDA is not available for this version of the AL")
+
     window.show()
     sys.exit(app.exec())
 
