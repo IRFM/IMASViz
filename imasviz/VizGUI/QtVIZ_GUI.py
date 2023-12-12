@@ -165,7 +165,7 @@ class GUIFrame(QTabWidget):
                     """Check if data source is available"""
                     QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE)
 
-                    uri = QVizIMASDataSource.build_legacy_uri(
+                    uri, legacy_attributes = QVizIMASDataSource.build_uri(
                         backend_id=self.backend, 
                         shot=int(shotNumber), 
                         run=int(self.runNumber.text()), 
@@ -173,8 +173,8 @@ class GUIFrame(QTabWidget):
                         db_name=self.imasDbName.text(), 
                         data_version='3', 
                         options='')
-
-                    self.mainMenuController.openShotView.Open(evt, uri)
+                    print("QtVizGui::legacy_attributes=", legacy_attributes)
+                    self.mainMenuController.openShotView.Open(evt, uri, legacy_attributes)
 
             except Exception as e:
                 raise ValueError(str(e))

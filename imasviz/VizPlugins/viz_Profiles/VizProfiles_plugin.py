@@ -25,7 +25,7 @@ class VizProfiles_plugin(VizPlugin):
 
     def __init__(self):
         self.edge_profiles_main_window = None
-        self.data_entry = None
+        #self.data_entry = None
         self.IDS_parameters = {}
         self.supported_idss = ['edge_profiles', 'core_profiles', 'equilibrium', 'core_sources', 'core_transport']
 
@@ -51,7 +51,7 @@ class VizProfiles_plugin(VizPlugin):
             ids_list = [selected_ids]
             vizAPI.LoadListOfIDSs(self.dataTreeView, ids_list, occurrence)
 
-            self.data_entry = imas.DBEntry(dataSource.uri, 'r')
+            #self.data_entry = imas.DBEntry(dataSource.uri, 'r')
 
             self.IDS_parameters["uri"] = dataSource.uri
             self.IDS_parameters["occurrence"] = occurrence
@@ -126,7 +126,7 @@ class VizProfiles_plugin(VizPlugin):
                     requests_list.append(request)
 
             elif selected_ids == 'core_sources':
-                source_index_max = len(self.data_entry.core_sources.source) - 1
+                source_index_max = len(dataSource.data_entry.core_sources.source) - 1
                 for source_index in range(source_index_max):
                     list_of_filters = []
                     tab_names = []
@@ -146,7 +146,7 @@ class VizProfiles_plugin(VizPlugin):
                         requests_list.append(request)
 
             elif selected_ids == 'core_transport':
-                model_index_max = len(self.data_entry.core_transport.model) - 1
+                model_index_max = len(dataSource.data_entry.core_transport.model) - 1
                 list_of_filters = []
                 tab_names = []
                 for model_index in range(model_index_max):

@@ -130,7 +130,7 @@ class exampleWidget(QWidget):
         """
         # Open IDS
 
-        uri = QVizIMASDataSource.build_legacy_uri(
+        uri,legacy_attributes = QVizIMASDataSource.build_uri(
                         backend_id=13, 
                         shot=int(self.idsParameters['shot'], 
                         run=int(self.idsParameters['run']), 

@@ -4,7 +4,6 @@ import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
-from imas import _al_lowlevel as ll
 
 
 class QVizIMASDataSource:
@@ -17,10 +16,25 @@ class QVizIMASDataSource:
         self.data_entries = {}  # key = IDSName/occurrence, value = IDS data instance
         self.db_entry = None
         self.data_dictionary_version = None
+        self.al_version = self.getVersion()
+        self.legacy_attributes = {} #used only for AL4
+
+    @staticmethod
+    def getVersion():
+        imas_prefix = os.environ.get('IMAS_PREFIX')
+        if imas_prefix is None:
+           raise ValueError('Unable to set the version used by the IMAS Access Layer')
+        splits = imas_prefix.split("-")
+        full_al_version = splits[1]
+        splits2 = full_al_version.split(".")
+        major_version = splits2[0]
+        #print('major_version=', major_version)
+        return int(major_version)
 
     @staticmethod
     def build_legacy_uri(backend_id, shot, run, user_name, 
     db_name, data_version, options):
+        from imas import _al_lowlevel as ll
         status, uri = ll.al_build_uri_from_legacy_parameters(
             backend_id,
             shot,
@@ -29,10 +43,39 @@ class QVizIMASDataSource:
             db_name,
             data_version,
             options,
-        )
+            )
         if status != 0:
             raise ValueError("Error calling al_build_uri_from_legacy_parameters(...)")
         return uri
+
+    
+    @staticmethod
+    def build_uri(backend_id, shot, run, user_name, 
+    db_name, data_version, options):
+        legacy_attributes = {}
+        if QVizIMASDataSource.getVersion()==4:
+            backend = ''
+            if backend_id == 13:
+                backend = 'hdf5'
+            elif backend_id == 12:
+                backend = 'mdsplus'
+            else:
+                raise ValueError("Unknown backend")
+
+            legacy_attributes['user'] = user_name
+            legacy_attributes['shot'] = int(shot)
+            legacy_attributes['run'] = int(run)
+            legacy_attributes['database'] = db_name
+            legacy_attributes['version'] = str(data_version)
+            legacy_attributes['backend_id'] = backend_id
+            legacy_uri = "imas:" + backend + "?" + "user=" + user_name + ";shot=" + str(shot) + ";run=" + str(run) + ";database=" + db_name + ";version=" + data_version
+            return (legacy_uri, legacy_attributes)
+        elif QVizIMASDataSource.getVersion()==5:
+            uri = QVizIMASDataSource.build_legacy_uri(backend_id, shot, run, user_name, db_name, data_version, options)
+            return (uri, {})
+        else:
+            raise ValueError("Unknown Access Layer version")
+        
 
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
@@ -61,15 +104,44 @@ class QVizIMASDataSource:
             # This will call the get() operation for fetching IMAS data
             self.generatedDataTree.run()
 
+
+    def createDBEntry(self, mode=None):
+        if QVizIMASDataSource.getVersion()==4:
+            if self.legacy_attributes is None or len(self.legacy_attributes) == 0:
+                raise ValueError('No legacy parameters available.')
+
+            user_name = self.legacy_attributes['user']
+            shot = self.legacy_attributes['shot']
+            run = self.legacy_attributes['run']
+            db_name = self.legacy_attributes['database']
+            data_version = self.legacy_attributes['version']
+            backend_id = self.legacy_attributes['backend_id']
+
+            self.db_entry = imas.DBEntry(backend_id, db_name, shot, run, user_name, data_version)
+        elif QVizIMASDataSource.getVersion()==5:
+            if mode is None:
+                raise ValueError("Unspecified mode argument for createDBEntry()")
+            self.db_entry = imas.DBEntry(self.uri, mode)
+        else:
+            raise ValueError("Unknown Access Layer version")
+
     def open(self):
         try:
-            if self.db_entry is None:
-                self.db_entry = imas.DBEntry(self.uri, 'r')
+            if QVizIMASDataSource.getVersion()==4:
+                if self.db_entry is None:
+                    self.createDBEntry()
+
+            elif QVizIMASDataSource.getVersion()==5:
+                if self.db_entry is None:
+                    self.createDBEntry('r')
+
             status, idx = self.db_entry.open()
+            
             if status != 0:
                 raise ValueError("An error has occured while opening URI: " + self.uri + ".")
             return status
         except BaseException as e:
+            print(e)
             #logging.getLogger("logPanel").error(str(e))
             raise ValueError(e)
 
@@ -80,6 +152,7 @@ class QVizIMASDataSource:
                 logging.getLogger(self.uri).info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
                 ids_instance = self.db_entry.get(IDSName, occurrence)
                 self.data_entries[key] = ids_instance
+
             return self.data_entries[key]
         except BaseException as e:
             logging.getLogger("logPanel").error(str(e))

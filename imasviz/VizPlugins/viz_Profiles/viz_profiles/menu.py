@@ -206,10 +206,9 @@ class Ui_MainWindow(object):
         self.pushButton_11.setDisabled(switch)
         self.pushButton_12.setDisabled(switch)
 
-    def initialize_data(self):
+    def initialize_data(self, uri):
         dataSourceFactory = QVizDataSourceFactory()
-        dataSource = dataSourceFactory.create(
-            dataSourceName=QVizGlobalValues.IMAS_NATIVE,uri)
+        dataSource = dataSourceFactory.create(uri)
 
         if self.api is None:
             self.api = Viz_API()
@@ -424,7 +423,7 @@ if __name__ == "__main__":
 
     MainWidow.show()
     mw.statusbar.showMessage("Checking available data...")
-    mw.initialize_data()
+    mw.initialize_data(uri)
     mw.launch_thread(data_entry, profiles_count, occurrence)
 
     sys.exit(app.exec_())

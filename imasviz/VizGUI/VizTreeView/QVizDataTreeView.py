@@ -789,12 +789,25 @@ class QVizDataTreeViewFrame(QMainWindow):
 
             major_version = os.environ["IMAS_MAJOR_VERSION"]
             backend_id = int(backendBox.text())
-            uri = dataSource.build_legacy_uri(backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(), databaseBox.text(), major_version, '')
+            uri, legacy_attributes = dataSource.build_uri(backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(), databaseBox.text(), major_version, '')
 
             # Patch: In case IDS database or user do not exist
             try:
                 logging.getLogger(dataSource.uri).info("Creating pulse file with URI: " + uri + " ...")
-                exported_db_entry = imas.DBEntry(uri, 'w')
+                #exported_db_entry = imas.DBEntry(uri, 'w')
+                exported_db_entry = None
+
+                if len(legacy_attributes) == 0:
+                    exported_db_entry = imas.DBEntry(uri, 'w')
+                else:
+                    user_name = legacy_attributes['user']
+                    shot = legacy_attributes['shot']
+                    run = legacy_attributes['run']
+                    db_name = legacy_attributes['database']
+                    data_version = legacy_attributes['version']
+                    backend_id = legacy_attributes['backend_id']
+                    exported_db_entry = imas.DBEntry(backend_id, db_name, shot, run, user_name, data_version)
+
                 status, idx = exported_db_entry.open()
                 
                 if status != 0:

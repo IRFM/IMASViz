@@ -8,14 +8,14 @@ class QVizOpenShotView:
     def __init__(self, parent=None):
         self.api = Viz_API(parent)
 
-    def Open(self, evt, uri):
+    def Open(self, evt, uri, legacy_attributes=None):
                 
         from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
         from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
         try:
-        
-            dataSource = QVizDataSourceFactory().create(uri)
+            print("QVizOpenShotView::legacy_attributes=", legacy_attributes)
+            dataSource = QVizDataSourceFactory(legacy_attributes).create(uri)
 
             dtv = None
             if self.api.isDataSourceAlreadyOpened(dataSource):
