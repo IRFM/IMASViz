@@ -13,6 +13,17 @@ Release notes
 =============
 
 -------------
+Version 2.8.0
+-------------
+Released 12/15/2023
+
+- IMAS-4887: Update AL API usage in VIZ (fix)
+- IMAS-4996: equilibrium.time_slice[i].time not written out (fix)
+- IMAS-5025: Allow viz install without access to submodules (ETS-VIZ) (fix)
+- IMAS-4974: Incorrect plotting of wall thickness (feature)
+
+
+-------------
 Version 2.7.2
 -------------
 Released 08/31/2023
