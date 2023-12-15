@@ -4,7 +4,8 @@ import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
-
+from PySide6.QtCore import QRunnable, Slot, QThreadPool
+from PySide6.QtCore import QObject, Slot, Signal, QThread
 
 class QVizIMASDataSource:
 
@@ -80,6 +81,8 @@ class QVizIMASDataSource:
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
 
+        
+
         self.progressBar = QProgressBar()
         self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
 
@@ -87,7 +90,7 @@ class QVizIMASDataSource:
         self.progressBar.setMinimum(0)
         self.progressBar.setGeometry(100, 150, 500, 25)
         self.progressBar.show()
-
+        asynch = False
         self.generatedDataTree = \
             QVizGeneratedClassFactory(self, dataTreeView, IDSName,
                                       occurrence, viewLoadingStrategy,
@@ -97,13 +100,10 @@ class QVizIMASDataSource:
 
         self.generatedDataTree.dataSource = self
 
-        if asynch:
-            # This will call asynchroneously the get() operation for fetching IMAS data
-            self.generatedDataTree.start()
-        else:
-            # This will call the get() operation for fetching IMAS data
-            self.generatedDataTree.run()
+        worker = Worker('Loading', self.generatedDataTree)
 
+        self.threadpool = QThreadPool()
+        self.threadpool.start(worker)
 
     def createDBEntry(self, mode=None):
         if QVizIMASDataSource.getVersion()==4:
@@ -226,3 +226,19 @@ class QVizIMASDataSource:
             ids_instance = self.data_entries[key]
             exported_db_entry.put(ids_instance, occurrence)
             i+=1
+
+class Worker(QRunnable):
+    
+    finished = Signal()
+    progress = Signal(int)
+    
+    def __init__(self, name, generatedDataTree):
+       super(Worker, self).__init__()
+
+       self.name = name
+       self.generatedDataTree = generatedDataTree
+
+    def run(self):
+        """Long-running task."""
+        self.generatedDataTree.run()
+        #self.finished.emit()
