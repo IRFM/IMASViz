@@ -64,8 +64,9 @@ class QVizGeneratedClassFactory:
                 QVizDataAccessCodeGenerator. \
                     QVizDataAccessCodeGenerator(dd_version)
                 print("End of code generation")
-            # full_module_name = className
+
             moduleName = className
+
 
             IDSDef_XMLParser_Full_Generated = \
                 getattr(importlib.import_module(moduleName), className)
@@ -94,18 +95,16 @@ class QVizGeneratedClassFactory:
             self.removeParserIfTooOld(IDSDef_parser_path)
 
             if not os.path.exists(IDSDef_parser_path):
-                print("Generating full parsers for IMAS "
+                print("Generating partial parsers for IMAS "
                       f"{dd_version}")
                 QVizDataAccessCodeGenerator. \
                     QVizDataAccessCodeGenerator(dd_version)
                 print("End of code generation")
-            # full_module_name = className
+
             moduleName = className
 
             IDSDef_XMLParser_Partial_Generated = \
                 getattr(importlib.import_module(moduleName), className)
-
-            # raise ValueError("IMAS dictionary version not supported:" + dd_version)
 
             XMLParser = IDSDef_XMLParser_Partial_Generated(
                 uri=self.IMASDataSource.uri,

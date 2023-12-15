@@ -19,12 +19,14 @@ class QVizDataAccessCodeGenerator:
         self.time_step = 10
         path_generated_code = None
 
+        className = QVizGlobalOperations.replaceDashesByUnderScores(dd_version)
+        className = QVizGlobalOperations.replaceDotsByUnderScores(className)
+
         if QVizPreferences.Ignore_GGD == 1:
-            className = "IDSDef_XMLParser_Partial_Generated_" + \
-                        QVizGlobalOperations.replaceDotsByUnderScores(dd_version)
+
+            className = "IDSDef_XMLParser_Partial_Generated_" + className
         else:
-            className = "IDSDef_XMLParser_Full_Generated_" + \
-                        QVizGlobalOperations.replaceDotsByUnderScores(dd_version)
+            className = "IDSDef_XMLParser_Full_Generated_" + className
 
         self.IDSDefFile = QVizGlobalOperations.getIDSDefFile(dd_version)
 
