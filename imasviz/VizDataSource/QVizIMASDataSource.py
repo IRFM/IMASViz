@@ -81,8 +81,6 @@ class QVizIMASDataSource:
     # Load IMAS data using IMAS api
     def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
 
-        
-
         self.progressBar = QProgressBar()
         self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
 

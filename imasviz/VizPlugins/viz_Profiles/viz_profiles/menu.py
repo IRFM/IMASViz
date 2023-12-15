@@ -425,5 +425,5 @@ if __name__ == "__main__":
     mw.statusbar.showMessage("Checking available data...")
     mw.initialize_data(uri)
     mw.launch_thread(data_entry, profiles_count, occurrence)
-
+    data_entry.close()
     sys.exit(app.exec_())

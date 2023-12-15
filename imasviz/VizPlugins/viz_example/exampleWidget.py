@@ -145,6 +145,8 @@ class exampleWidget(QWidget):
         # Get magnetics IDS
         self.ids.get('magnetics')
 
+        self.ids.close()
+
     def setIDS(self, ids):
         self.ids = ids
         # Emit signal indicating that the IDS object is set

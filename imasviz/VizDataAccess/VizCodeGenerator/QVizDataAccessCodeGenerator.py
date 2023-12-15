@@ -156,6 +156,7 @@ class QVizDataAccessCodeGenerator:
             self.printCode('root = parent', 1)
             self.printCode('parents.append(parent)', 1)
             self.generateCodeForIDS(ids, 1, [], '', 0)
+            self.printCode("self.dataSource.close()", 1)
             self.printCode("return (root, " + name_att + ")", 1)
             self.printCode('', -1)
             i += 1

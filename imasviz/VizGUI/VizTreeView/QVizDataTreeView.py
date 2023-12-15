@@ -174,8 +174,6 @@ class QVizDataTreeView(QTreeWidget):
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
 
-        #imas_entry.close()
-
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
         Optional: Beside setting the base selected item, set selected item
