@@ -14,7 +14,11 @@ all: default doc
 default:
 	# Note that IMAS is required!
 	# In case the VIZ repository was cloned, update the submodules (e.g. ETSViz)
-	$(if ${GITREPO},git submodule init && git submodule update) && echo "submodules updated" || echo "could not obtain all submodules, Viz may miss some plugins" 
+	@if [ -n "${GITREPO}" ]; then \
+		git submodule init && git submodule update && echo "submodules updated" || echo "could not obtain all submodules, Viz may miss some plugins"; \
+	else \
+		echo "could not obtain all submodules, Viz may miss some plugins"; \
+	fi
 
 doc:
 	# Generate PDF and HTML documentation
