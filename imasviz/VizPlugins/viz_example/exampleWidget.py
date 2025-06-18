@@ -1,19 +1,7 @@
-#  Name   : exampleWidget
-#
-#          A PyQt5 widget to serve as an example of how to create custom widgets
-#          that can be used within Qt designer.
-#          This widget embeds Matplotlib canvas (plot space). It contains also
-#          defined PyQt5 slots for setting the magnetics IDS parameters and
-#          a slot (function) for executing the plot procedure,
-#          populating/filling the Matplotlib canvas.
-#
-#  Author :
-#         Dejan Penko
-#  E-mail :
-#         dejan.penko@lecad.fs.uni-lj.si
-#
-#****************************************************
-#     Copyright(c) 2019- D. Penko
+# Copyright holders : Commissariat à l’Energie Atomique et aux Energies Alternatives (CEA), France;
+# and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
+# CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
+# The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
 
 # import module providing system-specific parameters and functions
 import sys
