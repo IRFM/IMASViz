@@ -15,3 +15,4 @@ Introduction
 
    description.rst
    release_notes.rst
+   licensing.rst
