@@ -4,6 +4,10 @@
 # The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
 # *****************************************************************************
 
+# ****************************************************
+#     Authors L. Fleury, X. Li, D. Penko
+# ****************************************************
+
 import pyqtgraph as pg
 import logging
 from PySide6 import QtCore, QtGui

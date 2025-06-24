@@ -3,6 +3,10 @@
 # CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
 # The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
 
+# ****************************************************
+#     Authors L. Fleury, X. Li, D. Penko
+# ****************************************************
+
 import logging
 from threading import Thread, Condition
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode

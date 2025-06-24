@@ -3,6 +3,10 @@
 # CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
 # The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
 
+# ****************************************************
+#     Author J. Morales
+# ****************************************************
+
 """This example demonstrates the procedure of directly running equilibrium
 plugin for specified database using script.
 Note: Script is adjusted to use IMAS database found on the GateWay.

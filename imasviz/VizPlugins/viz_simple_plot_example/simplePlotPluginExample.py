@@ -1,30 +1,12 @@
-#  Name   : simplePlotPluginExample
-#
-#           A minimal plugin example for running it inside IMASViz that
-#           can serve as a basic template for new plugins.
-#           This plugin demonstrates also how to plot basic data/signals found
-#           in the IDSs using matplotlib Python library.
-#
-#           Important: Every plugin must be registered in IMASViz. This is done
-#           by adding the plugin in the "RegisteredPlugins" in top part of the
-#           "imasviz.VizPlugins.VizPlugin.py" file. The entry format is is
-#           "<Plugin main class name>: <plugin_dir/plugin_py_file>".
-#
-#           The <Plugin main class name> and <plugin_py_file> must be the same!
-#
-#           In this case would be:
-#           'simplePlotPluginExample' : 'viz_minimal_example.simplePlotPluginExample'
-#
-#           Use of Python version 3.7 is recommended, as IMASViz does not
-#           support Python2 anymore.
-#
-#  Author :
-#         Dejan Penko
-#  E-mail :
-#         dejan.penko@lecad.fs.uni-lj.si
-#
+
+# Copyright holders : Commissariat à l’Energie Atomique et aux Energies Alternatives (CEA), France;
+# and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
+# CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
+# The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
+
 # ****************************************************
-#     Copyright(c) 2019- D. Penko
+#     Authors L. Fleury, X. Li, D. Penko
+# ****************************************************
 
 # modules for event logging system and for operating system dependent
 # functionality
