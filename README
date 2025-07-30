@@ -5,7 +5,7 @@
 visualizing static and dynamic IMAS data, stored within IMAS
 **Interface Data Structures** (**IDSs**).
 
-Copyright holders : Commissariat à l’Energie Atomique et aux Energies Alternatives (CEA), France;
+Copyright holders : Commissariat ï¿½ lï¿½Energie Atomique et aux Energies Alternatives (CEA), France;
 and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
 CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html  
 The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
@@ -31,13 +31,9 @@ IMASViz requires the following libraries:
 
 ### Obtaining the source code
 
-Clone the IMASViz repository from **git.iter.org**.
+Clone the IMASViz repository from **https://github.com/IRFM/IMASViz.git**.
 
-[VIS]: <https://git.iter.org/projects/VIS/repos/viz/browse>
-
-Direct link to the **IMASViz** git.iter repository: [VIS].
-
-By default, the master branch will be created.
+By default, the main branch will be created.
 
 To switch to the develop branch:
 
