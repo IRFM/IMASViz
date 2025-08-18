@@ -15,6 +15,10 @@ The terms and conditions of the CeCILL-C license are deemed to be accepted upon 
 
 ### Requirements
 
+IMASViz is only compatible with the python HLI hosted at ssh://git@git.iter.org/imas/al-python.git
+
+IMASViz is NOT compatible with IMAS-python hosted at https://github.com/iterorganization/IMAS-Python.git 
+
 IMASViz requires the following libraries:
 
 - IMAS
