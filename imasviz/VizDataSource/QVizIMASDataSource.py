@@ -30,7 +30,7 @@ class QVizIMASDataSource:
 
     @staticmethod
     def getVersion():
-        imas_prefix = os.environ.get('UAL_VERSION')
+        imas_prefix = os.environ.get('AL_VERSION')
         if imas_prefix is None:
            raise ValueError('Unable to set the version used by the IMAS Access Layer')
         splits = imas_prefix.split("-")
