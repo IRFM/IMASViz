@@ -101,7 +101,6 @@ class QVizPreferences:
             option4 = "Ignore_GGD="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
-                logging.info("No user preferences file found.")
                 with open(userPreferencesFile) as f:
                     for line in f:
                         if line.startswith(option1):
@@ -117,7 +116,9 @@ class QVizPreferences:
                             value = line[len(option4):]
                             QVizPreferences.Ignore_GGD = int(value)
 
-                userPreferencesInitialized = True
+                QVizPreferences.userPreferencesInitialized = True
+            else:
+                logging.info("No user preferences file found.")
 
 
 class QVizGlobalValues:
@@ -152,7 +153,7 @@ class QVizGlobalValues:
         if "VIZ_HOME" in os.environ:
             TESTING_VIZ_HOME = os.environ["VIZ_HOME"]
         else:
-            os.environ["VIZ_HOME"] = os.environ["HOME"] + "viz"
+            os.environ["VIZ_HOME"] = os.environ["HOME"] + "/viz"
 
         if os.getenv("DATABASE_NAME") is None:
             os.environ["DATABASE_NAME"] = os.uname()[1]
@@ -172,8 +173,14 @@ class QVizGlobalValues:
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
         TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        TESTING_IMAS_VERSION = os.environ["IMAS_VERSION"]
-        TESTING_IMAS_MAJOR_VERSION = "3"
+        if "IMAS_VERSION" not in os.environ and "AL_VERSION" in os.environ:
+            os.environ["IMAS_VERSION"] = os.environ["AL_VERSION"]
+            print ("IMAS_VERSION not defined in environment, using AL_VERSION instead.")
+        TESTING_IMAS_VERSION = os.environ.get("IMAS_VERSION", '')
+        if TESTING_IMAS_VERSION == '':
+            print ("IMAS_VERSION environment variable not defined. Load the IMAS module or export IMAS_VERSION. Exiting.")
+            sys.exit(-1)
+        TESTING_IMAS_MAJOR_VERSION = TESTING_IMAS_VERSION[:1]
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
         print("TESTING_IMAS_VERSION:" + TESTING_IMAS_VERSION)
@@ -183,8 +190,13 @@ class QVizGlobalValues:
         if IMAS_VIZ_VERSION == '':
             print("IMAS_VIZ_VERSION not defined in environment. Please report to admin!")
             IMAS_VIZ_VERSION = 'Undefined (please report to admin)'
-        os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
-        os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
+        if "TS_MAPPINGS_DIR" not in os.environ:
+            os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
+        if "IMAS_DATA_DICTIONARIES_DIR" not in os.environ:
+            os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
+        if "IMAS_VERSION" not in os.environ and "AL_VERSION" in os.environ:
+            os.environ["IMAS_VERSION"] = os.environ["AL_VERSION"]
+            print ("IMAS_VERSION not defined in environment, using AL_VERSION instead.")
         if "IMAS_VERSION" in os.environ:
             os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
         else:

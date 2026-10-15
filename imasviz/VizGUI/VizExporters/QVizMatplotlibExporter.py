@@ -8,7 +8,7 @@
 # ****************************************************
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QMainWindow
+from PySide6.QtWidgets import QMainWindow
 
 from pyqtgraph.exporters.Matplotlib import Exporter
 from pyqtgraph.parametertree import Parameter

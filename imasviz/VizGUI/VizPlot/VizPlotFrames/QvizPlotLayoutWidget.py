@@ -11,7 +11,7 @@ import pyqtgraph as pg
 import numpy as np
 import logging
 from PySide6.QtCore import Qt, QMetaObject, QRect
-from PySide6.QtGui import QWidget, QGridLayout
+from PySide6.QtWidgets import QWidget, QGridLayout
 import PySide6.QtWidgets as QtWidgets
 from imasviz.VizUtils import (QVizGlobalOperations, getRGBColorList,
                               GlobalFonts, PlotTypes)

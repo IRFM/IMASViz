@@ -21,10 +21,10 @@ IMASViz is NOT compatible with IMAS-python hosted at https://github.com/iterorga
 
 IMASViz requires the following libraries:
 
-- IMAS
+- IMAS (the IMAS Python HLI, provided by the IMAS-Python module)
 
 - Python3.x and the following Python libraries:
-   - PyQt5
+   - PySide6 (Qt for Python — the sources import PySide6, not PyQt5)
    - pyqtgraph
    - matplotlib
    - Sphinx
@@ -45,15 +45,23 @@ To switch to the develop branch:
 
 ### Setting the environment
 
-To set the environment, go to **viz** directory and set **VIZ_HOME**
-and **VIZ_PRODUCTION** environment variables by executing the following
-commands:
+To set the environment, load the modules providing IMAS, PySide6, pyqtgraph,
+numpy and matplotlib, then go to the **repository root** (the top-level package
+is **imasviz/**) and set **VIZ_HOME**, **VIZ_PRODUCTION**,
+**IMAS_VIZ_VERSION** and **UDA_DISABLED** environment variables by executing
+the following commands:
 
-    cd viz
+    module load ach-modules
+    module load PySide6/6.6.2-GCCcore-13.2.0
+    module load IMAS-Python/2.3.0-foss-2023b
+    module load PyQtGraph/0.13.7-foss-2023b
+
+    cd IMASViz
 
     # bash
     export VIZ_PRODUCTION=1
     export VIZ_HOME=$PWD
+    export IMAS_VIZ_VERSION=2.3.7
     export UDA_DISABLED=1 #disable UDA
 
     # csh
@@ -61,11 +69,17 @@ commands:
     setenv VIZ_HOME $PWD
     setenv UDA_DISABLED 1 #disable UDA
 
-IMASViz requires generated Python files parsers built from the IMAS Data Dictionary.
+IMASViz needs the IMAS Data Dictionary to build its generated Python parsers
 (these files are generated to folder $HOME/.imasviz/VizGeneratedCode/).
-This is done by executing make command from the $VIZ_HOME directory:
+The directory holding IDSDef_<version>.xml is given by the
+**IMAS_DATA_DICTIONARIES_DIR** environment variable; when it is not already
+defined it defaults to $VIZ_HOME/imas_data_dictionaries, which is not present
+in this repository — export it explicitly if the IMAS module does not provide
+it.
 
-        # Main command
+The repository Makefile builds the documentation only:
+
+        # Main command (documentation)
         make
 
 ### Configuring UDA
@@ -80,7 +94,9 @@ Please refers to the documentation for the required prerequisites for accessing 
 
 ### Running IMASViz from sources
 
-    module load IMAS
+The modules loaded in **Setting the environment** already provide the IMAS
+Python HLI, PySide6, pyqtgraph and matplotlib, so no additional module load is
+required. A graphical display (X) is needed to show the window:
 
     python $VIZ_HOME/imasviz/VizGUI/QtVIZ_GUI.py
 

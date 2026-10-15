@@ -4,7 +4,7 @@ import sys
 import os
 import logging
 
-from PySide6.QtCore import Slot, QThread, Signal, pyqtProperty
+from PySide6.QtCore import Slot, QThread, Signal
 from PySide6.QtWidgets import (QApplication, QDialog, QLineEdit, QPushButton,
                              QGridLayout, QDialogButtonBox, QWidget,
                              QFormLayout, QLabel)
@@ -153,7 +153,7 @@ class GetIDS(QWidget):
     def getUser(self):
         return self.vars[GetIDSVars.user]
 
-    user = pyqtProperty(str, getUser, setUser)
+    user = property(fget=getUser, fset=setUser)
 
     @Slot(str)
     def setDevice(self, device):
@@ -162,7 +162,7 @@ class GetIDS(QWidget):
     def getDevice(self):
         return self.vars[GetIDSVars.device]
 
-    device = pyqtProperty(str, getDevice, setDevice)
+    device = property(fget=getDevice, fset=setDevice)
 
     @Slot(str)
     def setVersion(self, version):
@@ -171,7 +171,7 @@ class GetIDS(QWidget):
     def getVersion(self):
         return self.vars[GetIDSVars.device]
 
-    version = pyqtProperty(str, getVersion, setVersion)
+    version = property(fget=getVersion, fset=setVersion)
 
     @Slot(str)
     def setRun(self, run):
@@ -180,7 +180,7 @@ class GetIDS(QWidget):
     def getRun(self):
         return self.vars[GetIDSVars.run]
 
-    runNumber = pyqtProperty(str, getRun, setRun)
+    runNumber = property(fget=getRun, fset=setRun)
 
     @Slot(str)
     def setShot(self, shot):
@@ -189,7 +189,7 @@ class GetIDS(QWidget):
     def getShot(self):
         return self.vars[GetIDSVars.shot]
 
-    shotNumber = pyqtProperty(str, getShot, setShot)
+    shotNumber = property(fget=getShot, fset=setShot)
 
     def checkParameters(self):
         state = True

@@ -9,7 +9,7 @@ GITREPO := $(wildcard .git)
 
 .PHONY: doc default
 
-all: default doc
+all: doc
 
 default:
 	# Note that IMAS is required!

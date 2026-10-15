@@ -7,7 +7,7 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-from PySide6.QtCore import Qt, QAbstractTableModel, QVariant
+from PySide6.QtCore import Qt, QAbstractTableModel
 
 
 class TableModel(QAbstractTableModel):
@@ -29,21 +29,21 @@ class TableModel(QAbstractTableModel):
 
     def data(self, index, role):
         if not index.isValid():
-            return QVariant()
+            return None
         elif role != Qt.DisplayRole:
-            return QVariant()
+            return None
 
         column = index.column()
         if column < len(self.items):
-            return QVariant(self.items[column])
+            return self.items[column]
         else:
-            return QVariant()
+            return None
 
     def headerData(self, column, orientation, role=Qt.DisplayRole):
         # if role != Qt.DisplayRole:
-        #     return QVariant()
+        #     return None
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return QVariant(self.headerItems[column])
+            return self.headerItems[column]
 
 
 if __name__ == '__main__':
