@@ -68,3 +68,23 @@ class FakeTreeNode:
 
     def timeValue(self):
         return 0
+
+
+class FakeTreeView:
+    """Enough of QVizDataTreeView for the view parser contract.
+
+    The parser writes into IDSNameSelected, reads parent.eventResultId when
+    asynchronous, and delivers the tree through updateView.
+    """
+
+    class _Parent:
+        eventResultId = 999
+
+    def __init__(self, uri=''):
+        self.IDSNameSelected = {}
+        self.parent = FakeTreeView._Parent()
+        self.uri = uri
+        self.roots = {}
+
+    def updateView(self, idsName, ids_instance, occurrence, idsData, strategy):
+        self.roots[(idsName, occurrence)] = idsData
