@@ -9,7 +9,8 @@
 
 import imas
 from PySide6.QtWidgets import QProgressBar
-from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, QVizGeneratedClassFactory
+from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
+from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
 
 class QVizIMASPublicDataSource(QVizIMASDataSource):
@@ -28,11 +29,13 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
         self.progressBar.setMinimum(0)
         self.progressBar.setGeometry(100, 150, 500, 25)
         self.progressBar.show()
-        self.generatedDataTree = QVizGeneratedClassFactory(self, dataTreeView,
-                                                           IDSName,
-                                                           occurrence,
-                                                           asynch).create(self.progressBar)
-
+        # The previous call passed asynch into the factory's viewLoadingStrategy
+        # slot, so the UDA path sent a boolean as loading strategy and always
+        # ran asynchronously.
+        self.generatedDataTree = QVizIDSViewParser(self.uri, dataTreeView, IDSName,
+                                                   occurrence, viewLoadingStrategy,
+                                                   asynch)
+        self.generatedDataTree.setProgressBar(self.progressBar)
         self.generatedDataTree.dataSource = self
 
         if asynch:

@@ -29,5 +29,4 @@ doc:
 	#make latexpdf
 
 clean:
-	rm -rf ${HOME}/.imasviz/VizGeneratedCode
 	rm -rf ${VIZ_HOME}/doc/build

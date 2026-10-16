@@ -52,7 +52,7 @@ class QVizDataTreeViewBuilder:
         dataElementName = dataElement.find('name')
 
         if dataElementName is not None:
-            itemDataDict['dataName'] = dataElementName.text  # this is the name set by QVizDataAccessCodeGenerator (IMAS data full path)
+            itemDataDict['dataName'] = dataElementName.text  # set by QVizIDSViewParser (IMAS data full path)
 
         if name is None:
             if dataElementName is not None:

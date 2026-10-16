@@ -1,7 +1,6 @@
 /.project
 /.pydevproject
 /doc/build/
-/imasviz/VizDataAccess/VizGeneratedCode/
 __pycache__/
 .pytest_cache/
 .coverage

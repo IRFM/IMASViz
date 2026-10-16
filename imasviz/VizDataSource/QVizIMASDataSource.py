@@ -10,7 +10,7 @@ import os
 import logging
 import imas
 from PySide6.QtWidgets import QProgressBar
-from imasviz.VizDataAccess.VizCodeGenerator.QVizGeneratedClassFactory import QVizGeneratedClassFactory
+from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 from PySide6.QtCore import QRunnable, Slot, QThreadPool
 from PySide6.QtCore import QObject, Slot, Signal, QThread
@@ -25,6 +25,9 @@ class QVizIMASDataSource:
         self.data_entries = {}  # key = IDSName/occurrence, value = IDS data instance
         self.db_entry = None
         self.data_dictionary_version = None
+        # Pins the data dictionary used to open the entry, for cases written
+        # with another version than the one the Access Layer loads by default.
+        self.dd_version = None
         self.al_version = self.getVersion()
         self.legacy_attributes = {} #used only for AL4
 
@@ -97,13 +100,10 @@ class QVizIMASDataSource:
         self.progressBar.setGeometry(100, 150, 500, 25)
         self.progressBar.show()
         asynch = False
-        self.generatedDataTree = \
-            QVizGeneratedClassFactory(self, dataTreeView, IDSName,
-                                      occurrence, viewLoadingStrategy,
-                                      asynch).create(self.progressBar)
-        if self.generatedDataTree is None:
-            raise ValueError("Code generation issue detected !!")
-
+        self.generatedDataTree = QVizIDSViewParser(self.uri, dataTreeView, IDSName,
+                                                   occurrence, viewLoadingStrategy,
+                                                   asynch)
+        self.generatedDataTree.setProgressBar(self.progressBar)
         self.generatedDataTree.dataSource = self
 
         worker = Worker('Loading', self.generatedDataTree)
@@ -127,12 +127,20 @@ class QVizIMASDataSource:
         elif QVizIMASDataSource.getVersion()==5:
             if mode is None:
                 raise ValueError("Unspecified mode argument for createDBEntry()")
-            self.db_entry = imas.DBEntry(self.uri, mode)
+            # A case may have been written with a data dictionary other than the
+            # one the Access Layer loads by default; IMAS-Python refuses to read
+            # an IDS across a DD major version, so the pin has to be given here.
+            if self.dd_version:
+                self.db_entry = imas.DBEntry(self.uri, mode,
+                                             dd_version=self.dd_version)
+            else:
+                self.db_entry = imas.DBEntry(self.uri, mode)
         else:
             raise ValueError("Unknown Access Layer version")
 
     def open(self):
         try:
+            entryAlreadyOpen = False
             if QVizIMASDataSource.getVersion()==4:
                 if self.db_entry is None:
                     self.createDBEntry()
@@ -140,9 +148,14 @@ class QVizIMASDataSource:
             elif QVizIMASDataSource.getVersion()==5:
                 if self.db_entry is None:
                     self.createDBEntry('r')
+                    # imas.DBEntry(uri, mode) opens the entry on construction, so a
+                    # second open() raises "This DBEntry is already open".
+                    entryAlreadyOpen = True
 
-            status, idx = self.db_entry.open()
-            
+            status = 0
+            if not entryAlreadyOpen:
+                status, idx = self.db_entry.open()
+
             if status != 0:
                 raise ValueError("An error has occured while opening URI: " + self.uri + ".")
             return status
