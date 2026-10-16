@@ -48,9 +48,10 @@ print warnings and take fallback paths.
 | `HOSTNAME`, `HOME`, `USER`, `WEST`, `DATABASE_NAME` | Used in testing-mode path resolution. |
 
 Runtime state lives under **`$HOME/.imasviz/`**, not in the repo:
-`preferences`, `VizGeneratedCode/` (generated data-access classes), and `*.pcfg`
-plot-configuration files (`Viz_API.GetPlotConfigurationPath`). Never assume the repo-level
+`preferences` and `*.pcfg` plot-configuration files
+(`Viz_API.GetPlotConfigurationPath`). Never assume the repo-level
 `config/preferences` is the file the app reads — it is not; `$HOME/.imasviz/preferences` is.
+The former `VizGeneratedCode/` folder is gone: the data dictionary is walked at run time.
 
 ## Build / run / test commands
 
@@ -67,7 +68,7 @@ export UDA_DISABLED=1          # optional: no remote UDA servers
 | --- | --- |
 | `make` | Default is now `all: doc` — builds docs only. The `default` target (submodule fetch) still exists for explicit `make default`, but no submodule is configured any more (see ETSViz note). |
 | `make doc` / `make -C doc html` | Sphinx route (`cd doc && make html`). **Sphinx is not on the ACH module stack** — `sphinx-build: command not found` here until `pip3 install sphinx sphinx_rtd_theme` is done. `doc/build/` is gitignored. |
-| `make clean` | Deletes `$HOME/.imasviz/VizGeneratedCode` **and** `doc/build`. Destructive on generated user state — do not run it reflexively. |
+| `make clean` | Deletes `doc/build` only. It used to delete `$HOME/.imasviz/VizGeneratedCode` as well; that folder is gone with the reflection based parser. |
 | `make -C doc html` / `-M latexpdf` | Direct Sphinx route; `doc/Makefile` adds a custom `latexpdf` rule copying `source/_static/*.mp4` next to the LaTeX output. |
 
 Running the GUI requires the IMAS HLI, which is **not vendored here** — on this ACH/Gateway
@@ -90,8 +91,8 @@ and loses `MODULEPATH` — load it in the same shell as the consuming command.
 Sphinx is **not** provided by that module stack (`sphinx-build: command not found`); `pip3 install
 sphinx sphinx_rtd_theme` is still required for `make doc`.
 
-There is **no test runner, CI config, linter config, or packaging manifest** in this repo.
-Nothing to run for automated verification — see the Testing section below.
+There is a pytest suite (see Testing below), but **no CI config, linter config, or
+packaging manifest** in this repo.
 
 ## Architecture map
 
@@ -100,7 +101,7 @@ imasviz/
 ├── Viz_API.py                 # Viz_API: scripting API + central session state
 ├── VizUtils/                  # global constants, prefs, logging, window geometry
 ├── VizDataSource/             # opens a case: URI building, DBEntry, Tore-Supra, factory
-├── VizDataAccess/             # code generator + factory for data-dictionary parsers
+├── VizDataAccess/             # QVizIDSViewParser: walks the dictionary through imas reflection
 ├── VizEntities/               # data-array handles
 ├── VizGUI/
 │   ├── QtVIZ_GUI.py           # entry point: QVizMainWindow, MDI area, start window
@@ -179,7 +180,8 @@ without the full GUI.
 - `ts_mapping_files/*_v1.xml` are Time-Series mapping resources; `resources/VizIcons/` holds the
   `.svg`/`.png`/`.ico` icon set (the `README.txt` there documents the ImageMagick/Inkscape
   regeneration commands). Icons are resolved at runtime through `$VIZ_HOME` in `GlobalIcons`.
-- `.gitignore` excludes IDE project files, `doc/build/`, and `imasviz/VizDataAccess/VizGeneratedCode/`.
+- `.gitignore` excludes IDE project files, `doc/build/`, and the test artefacts
+  (`__pycache__/`, `.pytest_cache/`, `.coverage`, `/htmlcov/`).
 
 ## Testing
 
@@ -188,7 +190,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 159 passed, 8 xfailed, ~8 s, offscreen
+python3 -m pytest tests/ -q     # 165 passed, 8 xfailed, ~11 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -252,9 +254,9 @@ artifacts of this codebase, and several are load-bearing:
 - `eval`/`exec` on IMAS symbol names (`eval("imas." + node.getIDSName() + "().getMaxOccurrences()")`)
   is the established idiom for reaching the generated HLI bindings. Keep the pattern rather than
   inventing a new accessor API.
-- `sys.path.append(os.environ['VIZ_HOME'])` and `sys.path.append(os.environ['HOME'] + "/.imasviz/VizGeneratedCode")`
-  are done for side effects at import time. Import order matters; `VizGeneratedCode` must exist
-  (generated via `make`) before the factory can use it.
+- `sys.path.append(os.environ['VIZ_HOME'])` is done for side effects at import time, so import
+  order matters. It used to append `$HOME/.imasviz/VizGeneratedCode` too, for the generated
+  parser classes: that folder is gone with the reflection based parser.
 - Mutating `os.environ` as module state in `QVizGlobalValues` means import order and repeated
   imports have visible effects.
 - `QVizGlobalOperations.check(...)` / `checkEnvSettings()` print and exit rather than raising

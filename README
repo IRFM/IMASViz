@@ -69,13 +69,13 @@ the following commands:
     setenv VIZ_HOME $PWD
     setenv UDA_DISABLED 1 #disable UDA
 
-IMASViz needs the IMAS Data Dictionary to build its generated Python parsers
-(these files are generated to folder $HOME/.imasviz/VizGeneratedCode/).
-The directory holding IDSDef_<version>.xml is given by the
-**IMAS_DATA_DICTIONARIES_DIR** environment variable; when it is not already
-defined it defaults to $VIZ_HOME/imas_data_dictionaries, which is not present
-in this repository — export it explicitly if the IMAS module does not provide
-it.
+IMASViz reads the IMAS Data Dictionary at run time through the Access Layer
+Python bindings (imas.ids_metadata), so no parser code is generated any more.
+The dictionary itself is still required: the directory holding
+IDSDef_<version>.xml is given by the **IMAS_DATA_DICTIONARIES_DIR** environment
+variable; when it is not already defined it defaults to
+$VIZ_HOME/imas_data_dictionaries, which is not present in this repository —
+export it explicitly if the IMAS module does not provide it.
 
 The repository Makefile builds the documentation only:
 

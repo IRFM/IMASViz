@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 159 passed, 8 xfailed, ~8 s
+python3 -m pytest tests/ -q       # 165 passed, 8 xfailed, ~11 s
 ```
 
 Useful variants:
@@ -87,6 +87,7 @@ dialog or a remote backend.
 | `test_01_entities.py` | `VizEntities` array handles | one-based coordinates, time coordinate, no-copy values |
 | `test_02_data_source.py` | `VizDataSource` | AL major version, URI/DBEntry lifecycle |
 | `test_03_case_integration.py` | real WEST case | occurrences, filled paths, cross-DD-version reading |
+| `test_04_view_parser.py` | `VizDataAccess` view parser | dictionary reflection; pins the shadow-tree node counts measured on the parsers it replaced |
 | `test_10_plot_image_widget.py` | image plot widget | synthetic array, no case and no data dictionary |
 | `test_11_layout_and_table.py` | layout widget, IDS table model | locks the Qt6 migration (`QVariant` is gone) |
 | `test_20_plugins.py` | `VizPlugins` framework | registration table, `VizPlugin` contract |
