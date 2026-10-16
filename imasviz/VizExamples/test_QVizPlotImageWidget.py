@@ -78,7 +78,7 @@ name='test'
 label='label of the test'
 dataArrayHandle = QVizDataArrayHandle(arrayCoordinates, arrayValues, name, label)
 
-plotWidget = QvizPlotImageWidget(dataTreeView=None, plotSliceFromROI=True, showImageTitle=False)
+plotWidget = QvizPlotImageWidget(vizTreeNode=None, plotSliceFromROI=True, showImageTitle=False)
 plotWidget.plot(dataArrayHandle)
 plotWidget.show()
 
