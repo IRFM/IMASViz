@@ -85,6 +85,10 @@ class Viz_API:
         """
         self.DTVframeList.remove(frame)
         self.DTVlist.remove(frame.dataTreeView)
+        # The frame was the last one displaying this case: let go of the IDSs
+        # that were loaded for it, as the per-source cache used to go away with
+        # the source it owned.
+        frame.dataTreeView.dataSource.forget_case()
 
     def AddNodeToFigure(self, figureKey, key, tup):
         """Adds an entry to the figToNodes[figureKey] dictionary.
