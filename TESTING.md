@@ -170,3 +170,49 @@ because the work it removes grows with the node count, and
 `test_04_view_parser.py` pins that count below 64 on the 7 203-node
 `equilibrium` tree — a bound no machine timing could offer.
 
+## 7. How many leaves are more than 2D
+
+Rank here is the number of dimensions a plot would have to draw, not the data
+dictionary `data_type`: **rank = enclosing arrays of structures + ndim of the
+leaf**. The shadow tree already carries both (`buildLeaf` sets
+`aos_parents_count`, and the walk only grows its level when it enters a
+`struct_array`).
+
+Counted over every IDS that holds data in the reference case — 26 at
+occurrence 0, 24 walked:
+
+| rank | leaves, GGD pruned |
+| --- | --- |
+| 0 | 1 747 |
+| 1 | 83 371 |
+| 2 | 69 697 |
+| 3 | 34 819 |
+| 4 | 1 843 |
+| 5 | 6 |
+| **total** | **191 483** |
+
+**36 668 leaves — 19 % of the case — are rank 3 or larger.** Today none of them
+can be plotted: `QVizIMASNativeDataAccess.GetSignal` matches no branch and
+returns `None` without a word. Real examples of each rank:
+
+- rank 3: `calorimetry.group[i].component[j].power.data`
+- rank 4: `core_profiles.profiles_1d[i].ion[j].state[k].z_average_1d`
+- rank 5: `equilibrium.time_slice[i].coordinate_system.tensor_covariant`
+
+With the GGD structures kept, `equilibrium` alone adds rank 5 (105 459 leaves)
+and rank 6 (84 348): 189 913 of its leaves are rank 3 or larger, under five
+nested arrays of structures (`grids_ggd[i].grid[j].space[k]
+.objects_per_dimension[l].object[q]`). Any rank policy has to assume 8 axes,
+not 6: the dictionary caps the leaf at 6D and the arrays of structures at 7
+nested levels.
+
+Two IDSs, `hard_x_rays` and `langmuir_probes`, do not walk at all: the AL
+cannot open their `time` dataset (`al_plugin_read_data: Unable to open HDF5
+dataset: time`), and the walk surfaces that as an `AttributeError`. That is a
+pre-existing hole, not a new one, and whatever reads data on the new path has
+to survive it rather than propagate it.
+
+Walking 24 IDSs took 337.8 s, again dominated by `db_entry.get`: the rank
+question is about what can be plotted, not about how long it takes.
+
+
