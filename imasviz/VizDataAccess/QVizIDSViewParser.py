@@ -17,6 +17,7 @@ are the contract consumed by QVizDataTreeViewBuilder and QVizTreeNode.
 """
 
 import logging
+import re
 import xml.etree.ElementTree as ET
 
 from imas.ids_data_type import IDSDataType
@@ -69,6 +70,41 @@ def cleanDocumentation(documentation):
     quotes. Assigning the attribute directly drops the artefact.
     """
     return documentation.replace('&#34;', '"').replace('\n', '')
+
+
+def metadataForPath(rootMetaData, segments):
+    """Descends the dictionary by child name.
+
+    IDSMetadata item lookup rejects the relative spelling the coordinates use,
+    while child iteration always works, which is what the walk relies on.
+    """
+    metaData = rootMetaData
+    for segment in segments:
+        for child in metaData:
+            if child.name == segment:
+                metaData = child
+                break
+        else:
+            return None
+    return metaData
+
+
+def coordinateSegments(coordinate):
+    """Splits a data dictionary coordinate into the names to descend through.
+
+    A coordinate is a path whose steps may each carry a parenthesised name:
+    'time_slice(itime)/profiles_1d/psi' descends through time_slice,
+    profiles_1d and psi. A parenthesised index placeholder (itime, i1, ...)
+    names no node, and the unbounded '1..N' spelling names nothing at all.
+    """
+    segments = []
+    for step in str(coordinate).split('/'):
+        name, _, rest = step.partition('(')
+        inside = rest.rstrip(')')
+        segments.extend(part for part in name.split('.') if part)
+        if inside and not re.fullmatch(r'i(time|[0-9]+)', inside):
+            segments.extend(part for part in inside.split('.') if part)
+    return segments
 
 
 class QVizIDSViewParser(QThread):
@@ -126,6 +162,10 @@ class QVizIDSViewParser(QThread):
     def loadIDS(self, IDSName, occurrence):
         self.dataSource.open()
         idsInstance = self.dataSource.get(IDSName, occurrence)
+
+        # Coordinates are named relative to the IDS root, so resolving their
+        # units needs the root metadata, not the metadata of the current branch.
+        self.rootMetaData = idsInstance.metadata
 
         root = ET.Element(IDSName)
         parents = [root]
@@ -199,11 +239,29 @@ class QVizIDSViewParser(QThread):
         element.set('itime_index', str(itimeIndex))
         element.set('type', getattr(childMeta.type, 'value', str(childMeta.type)))
 
+        element.set('path_doc', pathDoc if pathDoc is not None else '')
+
         for dimension in range(childMeta.ndim):
+            number = str(dimension + 1)
             coordinate = childMeta.coordinates[dimension]
-            if str(coordinate):
-                element.set('coordinate' + str(dimension + 1),
-                            QVizGlobalOperations.makeIMASPath(str(coordinate)))
+            if not str(coordinate):
+                continue
+            element.set('coordinate' + number,
+                        QVizGlobalOperations.makeIMASPath(str(coordinate)))
+
+            # The view builds axis labels from the coordinate; its unit comes
+            # from the dictionary node it names, which was never carried over
+            # before, leaving every non-time axis without an unit.
+            coordinateMetaData = metadataForPath(self.rootMetaData,
+                                                 coordinateSegments(coordinate))
+            if coordinateMetaData is not None and coordinateMetaData.units:
+                element.set('coordinate' + number + '_units',
+                            coordinateMetaData.units)
+
+            sameAs = getattr(childMeta, 'coordinates_same_as', None)
+            if sameAs and str(sameAs[dimension]):
+                element.set('coordinate' + number + '_same_as',
+                            QVizGlobalOperations.makeIMASPath(str(sameAs[dimension])))
 
         nameNode = ET.SubElement(element, 'name')
         nameNode.set('data_type', 'STR_0D')
