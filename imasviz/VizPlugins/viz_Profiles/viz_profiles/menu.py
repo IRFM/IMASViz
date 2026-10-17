@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QProgressBar, QVBoxLayout, QWidget
 from PySide6.QtGui import QScreen
 
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
 from imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin import VizProfiles_plugin
 from imasviz.VizUtils import QVizGlobalValues, QVizGlobalOperations, QVizLogger
 from imasviz.Viz_API import Viz_API
@@ -405,8 +406,10 @@ if __name__ == "__main__":
     uri = ''
     occurrence = 0
 
-    data_entry = imas.DBEntry(uri, 'r')
-    data_entry.open()
+    # Read through the registry so this case is never opened a second time
+    # beside the shot view. An entry built from an URI is already usable.
+    data_entry = QVizDBEntryRegistry.acquire(
+        uri, 'r', None, build=lambda: imas.DBEntry(uri, 'r'))
 
     supported_idss = ['core_sources', 'core_transport', 'core_profiles', 'edge_profiles', 'equilibrium']
     for ids_name in supported_idss:
@@ -429,5 +432,5 @@ if __name__ == "__main__":
     mw.statusbar.showMessage("Checking available data...")
     mw.initialize_data(uri)
     mw.launch_thread(data_entry, profiles_count, occurrence)
-    data_entry.close()
+    QVizDBEntryRegistry.release(uri, 'r', None)
     sys.exit(app.exec_())

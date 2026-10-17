@@ -26,6 +26,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import imas
 
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
 
 class exampleWidget(QWidget):
     """A widget for opening magnetics IDS, extracting the flux loop or
@@ -131,13 +132,15 @@ class exampleWidget(QWidget):
                         data_version=self.idsParameters['IMAS major version'], 
                         options='')
 
-        self.ids = imas.DBEntry(uri, 'r')
-        self.ids.open()
-        
+        # Read through the registry so this case is never opened a second time
+        # beside the shot view. An entry built from an URI is already usable.
+        self.ids = QVizDBEntryRegistry.acquire(
+            uri, 'r', None, build=lambda: imas.DBEntry(uri, 'r'))
+
         # Get magnetics IDS
         self.ids.get('magnetics')
 
-        self.ids.close()
+        QVizDBEntryRegistry.release(uri, 'r', None)
 
     def setIDS(self, ids):
         self.ids = ids
