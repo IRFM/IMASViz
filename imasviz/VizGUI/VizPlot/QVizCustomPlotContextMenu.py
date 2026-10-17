@@ -68,6 +68,11 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
         self.displayMenu1D = True
 
     def addVizTreeNode(self, node, preview=0):
+        # QVizPlotWidget.plot() takes vizTreeNode=None as its default, and the
+        # legend/preview paths call it without a node: a node-less curve is drawn
+        # but is not registered for the context menu.
+        if node is None:
+            return
         if preview != 1:
             paths = []
             for node2 in self.vizTreeNodesList:
@@ -81,6 +86,8 @@ class QVizCustomPlotContextMenu(pg.ViewBox):
                 self.vizTreeNodesList[0] = node
 
     def addVizTreeNodeDataItem(self, node, plotDataItem):
+        if node is None:
+            return
         plotDataItems = self.vizNodeToPlotDataItems.get(node.getDataTreeView().dataSource.dataKey(node))
         if plotDataItems is None:
             plotDataItems = []

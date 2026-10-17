@@ -15,6 +15,47 @@ from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 from PySide6.QtCore import QRunnable, Slot, QThreadPool
 from PySide6.QtCore import QObject, Slot, Signal, QThread
 
+
+def caseLabel(uri, legacy_attributes=None):
+    """Short human readable name for the case a source points to.
+
+    Used in curve legends, where the whole IMAS URI used to be embedded and made
+    the legend unreadable. Both URI spellings are understood: the parameter form
+    (database=…;shot=…;run=…) and the path form (…/<db>/<dd>/<shot>/<run>).
+    Falls back to the URI itself when neither can be read, so nothing is lost.
+    """
+    attributes = legacy_attributes or {}
+    database = attributes.get('database_name') or attributes.get('database')
+    shot = attributes.get('shot')
+    run = attributes.get('run')
+
+    if database is None or shot is None:
+        database, shot, run = _readCaseFromUri(uri)
+
+    if database is None or shot is None:
+        return uri
+    return '{} {}.{}'.format(database, shot, 0 if run is None else run)
+
+
+def _readCaseFromUri(uri):
+    parameters = {}
+    question = uri.find('?')
+    if question != -1:
+        for term in uri[question + 1:].split(';'):
+            if '=' in term:
+                key, value = term.split('=', 1)
+                parameters[key] = value
+
+    if 'path' in parameters:
+        parts = [part for part in parameters['path'].rstrip('/').split('/') if part]
+        if len(parts) >= 4:
+            return parts[-4], parts[-2], parts[-1]
+        return None, None, None
+
+    return (parameters.get('database'), parameters.get('shot'),
+            parameters.get('run'))
+
+
 class QVizIMASDataSource:
 
     def __init__(self, name, uri):
@@ -220,7 +261,7 @@ class QVizIMASDataSource:
         return self.name + "::" + self.uri + '::' + str(figureKey)
 
     def getShortLabel(self):
-        return self.uri
+        return caseLabel(self.uri, getattr(self, 'legacy_attributes', None))
 
     def getLongLabel(self):
         return "URI:" + self.uri

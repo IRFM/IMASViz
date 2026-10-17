@@ -82,7 +82,7 @@ class QVizPlotWidget(QWidget):
         return self.plotAxis
 
     def plot(self, vizTreeNode=None, x=None, y=None, title='', label='',
-             xlabel='', ylabel='',
+             xlabel='', ylabel='', xunits='', yunits='',
              pen=None, update=1, preview=0):
         """Add plot.
         
@@ -135,26 +135,32 @@ class QVizPlotWidget(QWidget):
         except:
             logging.getLogger(vizTreeNode.dataTreeView.uri).error('closed attribute not found')
 
-        plotDataItem = self.pgPlotWidget.plot(x, y, title=title, pen=pen, name=label)
+        firstPlot = len(self.getPlotList()) == 0
+        plotDataItem = self.pgPlotWidget.plot(x, y, pen=pen, name=label)
 
-        # Set only when adding the first plot. All additionally added plots
-        # should correspond to the same xlabel, ylabel and grid and thus
-        # should NOT change it.
+        # Title and axis labels used to be applied to the first curve only, and
+        # the title was then overwritten with an empty string: a real title never
+        # showed up, and a figure mixing signals plotted against different
+        # coordinates kept the axis label of the first one.
 
-        if len(self.getPlotList()) == 1:
-            # - Set title
-            # Note: dummy empty title, otherwise title updates in plot
-            #       configuration will not work)
-            self.pgPlotWidget.setTitle("")
-            # - Set x-axis label
-            self.pgPlotWidget.setLabel('left', ylabel, units='')
-            # - Set y-axis label
-            self.pgPlotWidget.setLabel('bottom', xlabel, units='')
+        # - Set title. An empty one is still set, otherwise title updates coming
+        #   from the plot configuration would not work.
+        self.pgPlotWidget.setTitle(title)
+
+        if firstPlot:
             # - Set top and right axis default labels
             self.pgPlotWidget.setLabel('top', '', units='')
             self.pgPlotWidget.setLabel('right', '', units='')
             # - Enable grid
             self.pgPlotWidget.showGrid(x=True, y=True)
+
+        # - Set axis labels: 'left' is the ordinate, 'bottom' the abscissa.
+        #   Units go in their own slot so pyqtgraph renders them itself instead
+        #   of having them glued into the label text.
+        if ylabel:
+            self.pgPlotWidget.setLabel('left', ylabel, units=yunits)
+        if xlabel:
+            self.pgPlotWidget.setLabel('bottom', xlabel, units=xunits)
 
         self.pgPlotWidget.getViewBox().addVizTreeNode(vizTreeNode, preview=preview)
         self.pgPlotWidget.getViewBox().addVizTreeNodeDataItem(vizTreeNode, plotDataItem)
@@ -319,6 +325,10 @@ class QVizPlotWidget(QWidget):
 
     def updateSlider(self, treeNode):
         logging.debug("updateSlider called")
+        # plot() accepts vizTreeNode=None: such a curve is drawn, but there is
+        # nothing to drive a slice slider from.
+        if treeNode is None:
+            return
         nodesList = self.pgPlotWidget.getViewBox().vizTreeNodesList
         if len(nodesList) == 1 and treeNode.embedded_in_time_dependent_aos() and treeNode.is1DAndDynamic():
             self.setSliderComponentsDisabled(False)

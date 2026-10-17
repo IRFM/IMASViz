@@ -10,7 +10,7 @@
 import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
-from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, caseLabel
 
 
 class QVizIMASPublicDataSource(QVizIMASDataSource):
@@ -48,7 +48,7 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
         return self.name + "::" + self.uri +  '::' + vizTreeNode.getPath()
 
     def getShortLabel(self):
-        return self.uri
+        return caseLabel(self.uri, getattr(self, 'legacy_attributes', None))
 
     def getLongLabel(self):
         return "UDA URI:" + self.uri
