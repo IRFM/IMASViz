@@ -131,6 +131,12 @@ class QVizIDSViewParser(QThread):
         # structures: position 0 is the outermost one (loop variable 'i').
         self.indexStack = []
         self.maxStack = []
+        # Coordinate spelling -> dictionary node, for the IDS being walked.
+        # Set up in loadIDS, where the root metadata is known.
+        self._coordinateMetaData = {}
+        # How many times the dictionary was actually descended, for the test
+        # that keeps the walk from growing with the node count.
+        self.metadataDescents = 0
 
     def setProgressBar(self, progressBar):
         self.progressBar = progressBar
@@ -174,6 +180,9 @@ class QVizIDSViewParser(QThread):
             # Coordinates are named relative to the IDS root, so resolving their
             # units needs the root metadata, not the metadata of the current branch.
             self.rootMetaData = idsInstance.metadata
+            # Resolutions belong to this IDS: a new root invalidates them.
+            self._coordinateMetaData = {}
+            self.metadataDescents = 0
 
             root = ET.Element(IDSName)
             parents = [root]
@@ -181,6 +190,22 @@ class QVizIDSViewParser(QThread):
             return (root, idsInstance)
         finally:
             self.dataSource.close()
+
+    def coordinateMetaData(self, coordinate):
+        """The dictionary node a coordinate names, resolved once per spelling.
+
+        The same spelling repeats for every element of an array of structures:
+        walking equilibrium occurrence 0 with the GGD structures kept descended
+        the dictionary 84 708 times for 16 distinct coordinate spellings. A
+        spelling that resolves to nothing is cached as well, so the unbounded
+        '1..N' ones stop costing after the first.
+        """
+        key = str(coordinate)
+        if key not in self._coordinateMetaData:
+            self.metadataDescents += 1
+            self._coordinateMetaData[key] = metadataForPath(
+                self.rootMetaData, coordinateSegments(key))
+        return self._coordinateMetaData[key]
 
     def walkIDS(self, metaData, idsObject, parent, parents, pathText, level):
         """Walks one dictionary level, mirroring the shadow tree of the parsers.
@@ -269,8 +294,7 @@ class QVizIDSViewParser(QThread):
             # The view builds axis labels from the coordinate; its unit comes
             # from the dictionary node it names, which was never carried over
             # before, leaving every non-time axis without an unit.
-            coordinateMetaData = metadataForPath(self.rootMetaData,
-                                                 coordinateSegments(coordinate))
+            coordinateMetaData = self.coordinateMetaData(coordinate)
             if coordinateMetaData is not None and coordinateMetaData.units:
                 element.set('coordinate' + number + '_units',
                             coordinateMetaData.units)

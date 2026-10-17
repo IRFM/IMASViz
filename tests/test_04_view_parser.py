@@ -134,6 +134,27 @@ def test_every_element_carries_its_data_path_as_text(dataSource, qapp):
 
 
 @pytest.mark.case
+def test_the_dictionary_is_descended_once_per_coordinate(dataSource, qapp):
+    # Every element of an array of structures repeats the same coordinate
+    # spelling, so resolving it through the dictionary has to be paid once per
+    # spelling and not once per node. Measured before any caching, on this very
+    # tree: 305 descents for 10 distinct coordinates, and 84 708 for 16 when the
+    # GGD structures are kept. The bound stays far below the node count, so it
+    # fails if the walk ever goes back to descending per node.
+    from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
+    from imasviz.VizUtils import QVizPreferences
+
+    QVizPreferences.Ignore_GGD = 1
+    view = FakeTreeView(uri=dataSource.uri)
+    parser = QVizIDSViewParser(dataSource.uri, view, 'equilibrium', 0, None, False)
+    parser.dataSource = dataSource
+    root, _ = parser.loadIDS('equilibrium', 0)
+
+    assert countNodes(root) == 7203
+    assert parser.metadataDescents <= 64, parser.metadataDescents
+
+
+@pytest.mark.case
 def test_an_array_of_structures_keeps_the_loop_placeholder(dataSource, qapp):
     # The generated parsers wrote the unsubstituted loop variable into the path
     # ('tf.coil[i]', not 'tf.coil[0]'), leaving the view to substitute it per
