@@ -68,7 +68,6 @@ class QVizIMASDataSource:
         self.progressBar = None
         self.name = name
         self.uri = uri
-        self.db_entry = None
         self.data_dictionary_version = None
         # Pins the data dictionary used to open the entry, for cases written
         # with another version than the one the Access Layer loads by default.
@@ -77,11 +76,22 @@ class QVizIMASDataSource:
         self.legacy_attributes = {} #used only for AL4
 
     @property
+    def db_entry(self):
+        """The entry open for this case, None while nobody holds one.
+
+        Read through the registry instead of owned here: an entry built from an
+        URI cannot be re-opened once closed, so a source keeping its own
+        reference around ends up handing out a handle nobody can use.
+        """
+        return QVizDBEntryRegistry.entry(self.uri, self.MODE, self.dd_version)
+
+    @property
     def data_entries(self):
         """IDS instances loaded from this case, shared with its other users.
 
-        Keyed IDSName/occurrence. The dictionary belongs to the registry entry,
-        so it survives this source and disappears when the case is closed.
+        Keyed IDSName/occurrence. The dictionary belongs to the registry record,
+        so it outlives both this source and the entry it was read through: an
+        entry loads whole IDSs in memory. forget_case() drops it.
         """
         return QVizDBEntryRegistry.ids_cache(self.uri, self.MODE, self.dd_version)
 
@@ -166,6 +176,7 @@ class QVizIMASDataSource:
         self.threadpool.start(worker)
 
     def createDBEntry(self, mode=None):
+        """Builds an entry on this case and returns it; it is not kept here."""
         if QVizIMASDataSource.getVersion()==4:
             if self.legacy_attributes is None or len(self.legacy_attributes) == 0:
                 raise ValueError('No legacy parameters available.')
@@ -177,7 +188,7 @@ class QVizIMASDataSource:
             data_version = self.legacy_attributes['version']
             backend_id = self.legacy_attributes['backend_id']
 
-            self.db_entry = imas.DBEntry(backend_id, db_name, shot, run, user_name, data_version)
+            entry = imas.DBEntry(backend_id, db_name, shot, run, user_name, data_version)
         elif QVizIMASDataSource.getVersion()==5:
             if mode is None:
                 raise ValueError("Unspecified mode argument for createDBEntry()")
@@ -185,19 +196,20 @@ class QVizIMASDataSource:
             # one the Access Layer loads by default; IMAS-Python refuses to read
             # an IDS across a DD major version, so the pin has to be given here.
             if self.dd_version:
-                self.db_entry = imas.DBEntry(self.uri, mode,
-                                             dd_version=self.dd_version)
+                entry = imas.DBEntry(self.uri, mode,
+                                     dd_version=self.dd_version)
             else:
-                self.db_entry = imas.DBEntry(self.uri, mode)
+                entry = imas.DBEntry(self.uri, mode)
         else:
             raise ValueError("Unknown Access Layer version")
+        return entry
 
     def open(self):
         """Takes a reference on the entry for this case, opening the case when
         nobody holds it yet. Must be paired with close().
         """
         try:
-            self.db_entry = QVizDBEntryRegistry.acquire(
+            QVizDBEntryRegistry.acquire(
                 self.uri, self.MODE, self.dd_version, build=self.buildEntry)
             return 0
         except BaseException as e:
@@ -214,15 +226,15 @@ class QVizIMASDataSource:
         """
         version = QVizIMASDataSource.getVersion()
         if version == 4:
-            self.createDBEntry()
-            status, idx = self.db_entry.open()
+            entry = self.createDBEntry()
+            status, idx = entry.open()
             if status != 0:
                 raise ValueError("An error has occured while opening URI: " + self.uri + ".")
         elif version == 5:
-            self.createDBEntry(self.MODE)
+            entry = self.createDBEntry(self.MODE)
         else:
             raise ValueError("Unknown Access Layer version")
-        return self.db_entry
+        return entry
 
     def get(self, IDSName, occurrence):
         try:
@@ -244,18 +256,19 @@ class QVizIMASDataSource:
     def close(self):
         """Hands our reference back; whoever drops the last one closes the case.
 
-        The entry reference is always dropped, open or not: keeping a closed
-        entry around made the next open() try to re-open it, and a case that is
-        closed releases the IDS instances read from it.
+        Nothing is remembered here: db_entry reads the registry, so the entry
+        disappears from this source as soon as the last reference is gone.
+        Keeping a closed entry around made the next open() try to re-open it,
+        which IMAS-Python refuses for an entry built from an URI.
         """
         QVizDBEntryRegistry.release(self.uri, self.MODE, self.dd_version)
-        self.db_entry = None
 
     def forget_case(self):
         """Forgets this case and the IDS instances loaded from it.
 
-        A shot view calls it when it goes away. Until then the loaded IDSs stay
-        in memory, as they did when each data source owned its own cache.
+        A shot view calls it when it goes away, releasing the reference it held
+        on the case. Until then the loaded IDSs stay in memory, as they did when
+        each data source owned its own cache.
         """
         return QVizDBEntryRegistry.drop(self.uri, self.MODE, self.dd_version)
 

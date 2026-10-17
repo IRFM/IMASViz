@@ -57,9 +57,10 @@ def test_the_reference_case_is_reachable():
 
 
 @pytest.mark.case
-def test_create_dbentry_opens_the_case_from_its_uri():
+def test_create_dbentry_builds_a_usable_entry_from_its_uri():
+    # createDBEntry only builds: the entry it returns is not kept on the source,
+    # which reads whatever the registry holds (see test_16).
     dataSource = QVizIMASDataSource('west 54924', CASE_URI)
-    dataSource.createDBEntry('r')
-    assert dataSource.db_entry is not None
-    assert dataSource.db_entry.mode == 'r'
-    dataSource.db_entry.close()
+    entry = dataSource.createDBEntry('r')
+    assert entry.mode == 'r'
+    entry.close()

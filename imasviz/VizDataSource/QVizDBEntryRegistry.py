@@ -118,6 +118,19 @@ class QVizDBEntryRegistry:
             return record['count'] if record is not None else 0
 
     @staticmethod
+    def entry(uri, mode='r', dd_version=None):
+        """The entry open for this case, None when nobody holds one.
+
+        The only way to reach an entry without taking a reference: a caller that
+        reads through it has to hold one, otherwise the entry it reads can be
+        closed underneath it.
+        """
+        key = QVizDBEntryRegistry._key(uri, mode, dd_version)
+        with QVizDBEntryRegistry._lock:
+            record = QVizDBEntryRegistry._records.get(key)
+            return record['entry'] if record is not None else None
+
+    @staticmethod
     def live_entries():
         """The entries currently open, one per case."""
         with QVizDBEntryRegistry._lock:

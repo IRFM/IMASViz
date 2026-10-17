@@ -89,7 +89,6 @@ def test_the_app_layer_opens_the_case_from_its_uri(case_uri):
     from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
     dataSource = QVizIMASDataSource('west 54924', case_uri)
-    dataSource.createDBEntry('r')
-    assert dataSource.db_entry is not None
-    assert dataSource.db_entry.list_all_occurrences('equilibrium') == [0, 1, 2, 3]
-    dataSource.db_entry.close()
+    entry = dataSource.createDBEntry('r')
+    assert entry.list_all_occurrences('equilibrium') == [0, 1, 2, 3]
+    entry.close()
