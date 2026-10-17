@@ -133,3 +133,40 @@ The URI cannot carry the pin (`path=…;dd_version=…` is ignored), and
 `QVizIMASDataSource.createDBEntry()` does not pass that keyword, so the
 application itself cannot read this case on an AL5 stack until it forwards a DD
 version. The suite documents this in `test_03_case_integration.py`.
+
+## 6. What the reflection walk costs
+
+Measured on the reference case (WEST 54924, DD 3.35.0), both arms on the same
+data source with the same GGD setting, so the node counts are comparable. The
+emitted arm runs the parsers still on disk under `~/.imasviz/VizGeneratedCode`
+(494 885 lines for the GGD-pruned one, 634 001 for the full one). The generator
+left the repository in `01d6f8d`, so only already-generated code can be timed:
+its one-off generation cost is not included, which favours that arm.
+
+| IDS, GGD ignored | nodes | reflection walk | emitted walk |
+| --- | --- | --- | --- |
+| `tf` | 77 | 0.001 s | 0.002 s |
+| `magnetics` | 18 142 | 0.052 s | 0.031 s |
+| `interferometer` | 2 053 | 0.006 s | 0.002 s |
+| `pulse_schedule` | 7 196 | 0.020 s | 0.007 s |
+| `equilibrium` | 7 203 | 0.038 s | 0.152 s |
+| `equilibrium`, GGD kept | 408 043 | 2.45 s | 1.62 s |
+
+Two things those numbers say:
+
+- **Reading the IDS costs more than walking it.** `equilibrium` occurrence 0
+  takes 4.1 s in `db_entry.get` against 0.038 s to build its 7 203 shadow-tree
+  nodes. Importing the generated module costs 0.13 s with a cached `.pyc`.
+- **The reflection tree is bigger.** It carries `path_doc`,
+  `coordinateN_same_as` and `coordinateN_units`: 92.6 MB of text and attributes
+  against 59.1 MB for the same 408 043-node GGD tree. That is the deliberate
+  price of the attributes the plot labels now read.
+
+Coordinate spellings are resolved through the dictionary once per IDS walk
+(`QVizIDSViewParser.coordinateMetaData`), which took the descent count from
+84 708 for 16 distinct spellings down to 16. That bought 8 % of the walk: the
+descents were not the hotspot, building the elements is. The cache stays
+because the work it removes grows with the node count, and
+`test_04_view_parser.py` pins that count below 64 on the 7 203-node
+`equilibrium` tree — a bound no machine timing could offer.
+
