@@ -103,30 +103,31 @@ class QVizTreeNode(QTreeWidgetItem):
         self.parameters_max_values[aos_indice_name] = value
 
     def setCoordinate(self, coordinateNumber, value):
-        self.coordinates[coordinateNumber - 1] = value
-        if value.endswith('/time') or value.endswith('.time') or value == 'time':
-            self.coordinates_explicitly_time_dependent[coordinateNumber] = 1
-        else:        
-            self.coordinates_explicitly_time_dependent[1] = 0
-        for i in range(self.childCount()):
-            child = self.child(i)
-            if child.text(0).startswith('coordinate1'):
-                child.setText(0, 'coordinate1=' + value)
-                break
+        self.applyCoordinate(coordinateNumber, value)
 
     def setDefaultCoordinate(self, coordinateNumber):
         coordinate = self.default_coordinates.get(coordinateNumber - 1)
         if coordinate is not None:
-            self.coordinates[coordinateNumber - 1] = coordinate
-            if coordinate.endswith('/time') or coordinate.endswith('.time') or coordinate == 'time':
-                self.coordinates_explicitly_time_dependent[coordinateNumber] = 1
-            else:
-                self.coordinates_explicitly_time_dependent[1] = 0
-            for i in range(self.childCount()):
-                child = self.child(i)
-                if child.text(0).startswith('coordinate1'):
-                    child.setText(0, 'coordinate1=' + coordinate)
-                    break
+            self.applyCoordinate(coordinateNumber, coordinate)
+
+    def applyCoordinate(self, coordinateNumber, value):
+        """Record the coordinate the user picked, with the time flag it carries.
+
+        The flag and the renamed child belong to coordinateNumber: writing them
+        under coordinate 1 leaves a stale flag on the coordinate being changed
+        and relabels the wrong child.
+        """
+        self.coordinates[coordinateNumber - 1] = value
+        if value.endswith('/time') or value.endswith('.time') or value == 'time':
+            self.coordinates_explicitly_time_dependent[coordinateNumber] = 1
+        else:
+            self.coordinates_explicitly_time_dependent[coordinateNumber] = 0
+        coordinateLabel = 'coordinate' + str(coordinateNumber)
+        for i in range(self.childCount()):
+            child = self.child(i)
+            if child.text(0).startswith(coordinateLabel):
+                child.setText(0, coordinateLabel + '=' + value)
+                break
 
     def isCoordinateTimeDependent(self, coordinateNumber):
         return self.coordinates_explicitly_time_dependent.get(coordinateNumber) == 1
