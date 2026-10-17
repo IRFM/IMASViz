@@ -272,6 +272,10 @@ class QVizDataTreeViewBuilder:
                 if dataElement.get(coordinateSameAs) is not None:
                     itemDataDict[coordinateSameAs] = dataElement.get(coordinateSameAs)
 
+                coordinateUnits = coordinateName + "_units"
+                if dataElement.get(coordinateUnits) is not None:
+                    itemDataDict[coordinateUnits] = dataElement.get(coordinateUnits)
+
                 if dataElement.get('parametrizedPath') is not None:
 
                     itemDataDict['itime_index'] = dataElement.get('itime_index')

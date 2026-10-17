@@ -380,6 +380,10 @@ class QVizTreeNode(QTreeWidgetItem):
     def getUnits(self):
         return self.infoDict.get('units')
 
+    def getCoordinateUnits(self, coordinateNumber):
+        """Unit of the coordinateN named by the dictionary for this node."""
+        return self.infoDict.get('coordinate' + str(coordinateNumber) + '_units')
+
     def getPathDoc(self):
         return self.infoDict.get('path_doc')
 
@@ -657,6 +661,10 @@ class QVizTreeNode(QTreeWidgetItem):
         if plotWidget is not None:
             plotAxis = plotWidget.getPlotAxis()
 
+        # The unit of whatever ends up on the abscissa, set where the label is
+        # picked rather than where it is printed.
+        xunits = None
+
         if self.is0DAndDynamic() or (self.is1DAndDynamic() and (plotAxis is not None and plotAxis == 'TIME')):
             label = None
             xlabel = 'time'
@@ -701,11 +709,23 @@ class QVizTreeNode(QTreeWidgetItem):
 
             label = QVizGlobalOperations.makeIMASPath(label)
 
+            if xlabel2 != 'time' and xlabel2 != "1..N":
+                xunits = self.getCoordinateUnits(coordinateNumber)
+
             if xlabel is None:
                 xlabel = xlabel2
+            else:
+                # The caller picked the abscissa (a plot configuration, a
+                # plugin): its unit is not ours to guess.
+                xunits = None
 
+        # A time axis is always in seconds. The coordinate an array is indexed
+        # by can name something else entirely (the r of an outline paired with
+        # the z being drawn), so its unit must not be used for that axis.
         if xlabel == 'time' or xlabel.endswith('.time'):
-            xlabel = xlabel + '[s]'
+            xunits = 's'
+        if xunits:
+            xlabel += '[' + xunits + ']'
 
         xlabel = xlabel.replace('itime', str(time_index))
 
@@ -745,8 +765,13 @@ class QVizTreeNode(QTreeWidgetItem):
 
         label = QVizGlobalOperations.makeIMASPath(label)
 
+        xunits = None
         if xlabel == 'time' or xlabel.endswith('.time'):
-            xlabel += '[s]'
+            xunits = 's'
+        elif xlabel != "1..N":
+            xunits = self.getCoordinateUnits(coordinateNumber)
+        if xunits:
+            xlabel += '[' + xunits + ']'
 
         xlabel = xlabel.replace('itime', str(time_index))
 
