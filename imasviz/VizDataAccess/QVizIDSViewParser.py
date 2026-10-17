@@ -160,18 +160,27 @@ class QVizIDSViewParser(QThread):
             self.progressBar.hide()
 
     def loadIDS(self, IDSName, occurrence):
+        """Walks one IDS occurrence, holding a reference on the case for the
+        duration of the walk.
+
+        The reference goes back whatever the walk does: run() only logs what is
+        raised in here, and a reference left behind would keep the case open,
+        and the IDSs loaded from it, for the rest of the session.
+        """
         self.dataSource.open()
-        idsInstance = self.dataSource.get(IDSName, occurrence)
+        try:
+            idsInstance = self.dataSource.get(IDSName, occurrence)
 
-        # Coordinates are named relative to the IDS root, so resolving their
-        # units needs the root metadata, not the metadata of the current branch.
-        self.rootMetaData = idsInstance.metadata
+            # Coordinates are named relative to the IDS root, so resolving their
+            # units needs the root metadata, not the metadata of the current branch.
+            self.rootMetaData = idsInstance.metadata
 
-        root = ET.Element(IDSName)
-        parents = [root]
-        self.walkIDS(idsInstance.metadata, idsInstance, root, parents, IDSName, 1)
-        self.dataSource.close()
-        return (root, idsInstance)
+            root = ET.Element(IDSName)
+            parents = [root]
+            self.walkIDS(idsInstance.metadata, idsInstance, root, parents, IDSName, 1)
+            return (root, idsInstance)
+        finally:
+            self.dataSource.close()
 
     def walkIDS(self, metaData, idsObject, parent, parents, pathText, level):
         """Walks one dictionary level, mirroring the shadow tree of the parsers.

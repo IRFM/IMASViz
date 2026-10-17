@@ -22,6 +22,7 @@ import pytest
 from conftest import CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
 
 from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
+from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
 PATH_URI = 'imas:hdf5?path=/afs/eufus.eu/g2itmdev/user/g2lfleur/public/imasdb/west/3/54924/0'
 
@@ -158,6 +159,19 @@ def test_the_loaded_idss_are_shared_between_users_of_one_uri():
     assert QVizDBEntryRegistry.ids_cache(PATH_URI) is cache
 
 
+def test_a_source_entry_tracks_the_registry():
+    # A source must not own a handle of its own: whatever it hands out is what
+    # the registry currently holds, or nothing at all.
+    source = QVizIMASDataSource('west 54924', PATH_URI)
+    assert source.db_entry is None
+
+    entry = acquire()
+    assert source.db_entry is entry
+
+    QVizDBEntryRegistry.release(PATH_URI)
+    assert source.db_entry is None
+
+
 def makeSource(uri):
     from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
     source = QVizDataSourceFactory().create(uri)
@@ -231,3 +245,39 @@ def test_a_shot_view_going_away_forgets_the_case_it_loaded(qapp):
     assert source.forget_case() is True
     assert source.data_entries == {}
     assert QVizDBEntryRegistry.known_cases() == []
+
+
+@pytest.mark.case
+def test_a_failed_walk_gives_back_the_reference_it_took(qapp):
+    # The walk is all that stands between the parser's open() and its close().
+    # run() (:139-157) logs the failure and leaves without closing, so the
+    # reference stayed held and the case was never released again.
+    uri = case_uri_or_skip()
+    source = makeSource(uri)
+
+    # An IDS this case does not hold: get() logs the error and returns None, so
+    # reading its metadata raises AttributeError -- the failure run() catches.
+    with pytest.raises(AttributeError):
+        loadIDS(source, 'no_such_ids')
+
+    assert QVizDBEntryRegistry.count(uri, source.MODE, source.dd_version) == 0
+    assert QVizDBEntryRegistry.live_entries() == []
+
+
+@pytest.mark.case
+def test_the_view_reference_keeps_one_entry_for_the_whole_view(qapp):
+    # createEmptyIDSsTree opens for the view and holds that reference until
+    # RemoveDTVFrame. The parser's own open() and close() then only move the
+    # count, so nothing is closed and rebuilt between two IDSs.
+    uri = case_uri_or_skip()
+    source = makeSource(uri)
+    source.open()
+    try:
+        loadIDS(source, 'tf')
+        entry = source.db_entry
+        loadIDS(source, 'pulse_schedule')
+
+        assert source.db_entry is entry
+        assert QVizDBEntryRegistry.count(uri, source.MODE, source.dd_version) == 1
+    finally:
+        source.close()

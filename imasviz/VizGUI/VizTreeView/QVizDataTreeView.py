@@ -153,10 +153,11 @@ class QVizDataTreeView(QTreeWidget):
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
 
-        # The scan above is the only thing this view needs the case for: the
-        # tree it built holds no data handle. Pairing the open() at :132 lets
-        # the entry close once the last user is done with the case.
-        self.dataSource.close()
+        # The open() above is this view's own reference on the case, held for as
+        # long as the view lives and given back by Viz_API.RemoveDTVFrame. As
+        # long as it is held the parser can open and close once per IDS without
+        # ever closing and rebuilding the entry, and containsData() reads
+        # through an entry that is genuinely open.
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
