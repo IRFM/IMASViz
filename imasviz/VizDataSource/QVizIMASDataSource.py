@@ -11,6 +11,7 @@ import logging
 import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
+from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 from PySide6.QtCore import QRunnable, Slot, QThreadPool
 from PySide6.QtCore import QObject, Slot, Signal, QThread
@@ -58,12 +59,15 @@ def _readCaseFromUri(uri):
 
 class QVizIMASDataSource:
 
+    # A source only ever reads a case; writing one happens through a separate
+    # entry of its own (QVizDataTreeView.exportToLocal).
+    MODE = 'r'
+
     def __init__(self, name, uri):
         self.generatedDataTree = None
         self.progressBar = None
         self.name = name
         self.uri = uri
-        self.data_entries = {}  # key = IDSName/occurrence, value = IDS data instance
         self.db_entry = None
         self.data_dictionary_version = None
         # Pins the data dictionary used to open the entry, for cases written
@@ -71,6 +75,15 @@ class QVizIMASDataSource:
         self.dd_version = None
         self.al_version = self.getVersion()
         self.legacy_attributes = {} #used only for AL4
+
+    @property
+    def data_entries(self):
+        """IDS instances loaded from this case, shared with its other users.
+
+        Keyed IDSName/occurrence. The dictionary belongs to the registry entry,
+        so it survives this source and disappears when the case is closed.
+        """
+        return QVizDBEntryRegistry.ids_cache(self.uri, self.MODE, self.dd_version)
 
     @staticmethod
     def getVersion():
@@ -180,30 +193,36 @@ class QVizIMASDataSource:
             raise ValueError("Unknown Access Layer version")
 
     def open(self):
+        """Takes a reference on the entry for this case, opening the case when
+        nobody holds it yet. Must be paired with close().
+        """
         try:
-            entryAlreadyOpen = False
-            if QVizIMASDataSource.getVersion()==4:
-                if self.db_entry is None:
-                    self.createDBEntry()
-
-            elif QVizIMASDataSource.getVersion()==5:
-                if self.db_entry is None:
-                    self.createDBEntry('r')
-                    # imas.DBEntry(uri, mode) opens the entry on construction, so a
-                    # second open() raises "This DBEntry is already open".
-                    entryAlreadyOpen = True
-
-            status = 0
-            if not entryAlreadyOpen:
-                status, idx = self.db_entry.open()
-
-            if status != 0:
-                raise ValueError("An error has occured while opening URI: " + self.uri + ".")
-            return status
+            self.db_entry = QVizDBEntryRegistry.acquire(
+                self.uri, self.MODE, self.dd_version, build=self.buildEntry)
+            return 0
         except BaseException as e:
             print(e)
             #logging.getLogger("logPanel").error(str(e))
             raise ValueError(e)
+
+    def buildEntry(self):
+        """Builds the entry the registry will share, already usable.
+
+        An AL5 entry opens at construction and refuses a second open(); an AL4
+        entry has to be opened explicitly. This runs once per case, not once
+        per IDS, which is what used to make the second IDS of a shot view fail.
+        """
+        version = QVizIMASDataSource.getVersion()
+        if version == 4:
+            self.createDBEntry()
+            status, idx = self.db_entry.open()
+            if status != 0:
+                raise ValueError("An error has occured while opening URI: " + self.uri + ".")
+        elif version == 5:
+            self.createDBEntry(self.MODE)
+        else:
+            raise ValueError("Unknown Access Layer version")
+        return self.db_entry
 
     def get(self, IDSName, occurrence):
         try:
@@ -216,15 +235,29 @@ class QVizIMASDataSource:
             return self.data_entries[key]
         except BaseException as e:
             logging.getLogger("logPanel").error(str(e))
-        
+
     def remove_entry(self, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
         if self.data_entries.get(key) is not None:
             del self.data_entries[key]
 
     def close(self):
-        if self.db_entry is not None:
-            self.db_entry.close()
+        """Hands our reference back; whoever drops the last one closes the case.
+
+        The entry reference is always dropped, open or not: keeping a closed
+        entry around made the next open() try to re-open it, and a case that is
+        closed releases the IDS instances read from it.
+        """
+        QVizDBEntryRegistry.release(self.uri, self.MODE, self.dd_version)
+        self.db_entry = None
+
+    def forget_case(self):
+        """Forgets this case and the IDS instances loaded from it.
+
+        A shot view calls it when it goes away. Until then the loaded IDSs stay
+        in memory, as they did when each data source owned its own cache.
+        """
+        return QVizDBEntryRegistry.drop(self.uri, self.MODE, self.dd_version)
 
     # Check if the data for the given IDS exists
     def exists(self, IDSName=None):
