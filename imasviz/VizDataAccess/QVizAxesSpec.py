@@ -10,9 +10,11 @@ import re
 
 from imasviz.VizUtils import QVizGlobalValues
 
-# The view spells an unbounded coordinate 1..N, 1...N or 1..M; none of them
-# names a node in the dictionary, so they describe an axis of ranks only.
-UNBOUNDED_COORDINATES = ('1..N', '1...N', '1..M', '1...M')
+# The data dictionary spells an unbounded coordinate 1..N; the shadow tree
+# rewrites every dot in a coordinate as a slash, so it reaches the view as
+# 1///N. Neither one names a node in the dictionary: they describe an axis of
+# ranks only.
+UNBOUNDED_COORDINATE = re.compile(r'^1[./]+[NM]$')
 
 PLACEHOLDER = re.compile(r'\[([a-z]+)\]')
 
@@ -148,7 +150,7 @@ class QVizAxesSpec:
         for dimension in range(leafDataDimension(element.get('data_type')) or 0):
             number = str(dimension + 1)
             coordinate = element.get('coordinate' + number)
-            if coordinate in UNBOUNDED_COORDINATES:
+            if coordinate is not None and UNBOUNDED_COORDINATE.match(coordinate):
                 coordinate = None
             axes.append(QVizAxis(
                 origin=QVizAxis.LEAF,
@@ -172,6 +174,10 @@ class QVizAxesSpec:
 
     def aosAxes(self):
         return [axis for axis in self.axes if axis.origin == QVizAxis.AOS]
+
+    def aosCount(self):
+        """How many arrays of structures enclose the leaf."""
+        return len(self.aosAxes())
 
     def leafAxes(self):
         return [axis for axis in self.axes if axis.origin == QVizAxis.LEAF]
