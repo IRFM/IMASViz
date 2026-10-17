@@ -1,0 +1,235 @@
+# Copyright holders : Commissariat à l’Energie Atomique et aux Energies Alternatives (CEA), France;
+# and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
+# CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
+# The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
+
+# ****************************************************
+#     Authors L. Fleury, X. Li, D. Penko
+# ****************************************************
+import re
+
+import numpy as np
+
+from imas.ids_struct_array import IDSStructArray
+
+from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
+from imasviz.VizDataAccess.QVizIDSViewParser import coordinateSegments
+
+# One step of a parametrized path: a node name and, for an array of
+# structures, the loop placeholder the view wrote in front of it.
+SEGMENT = re.compile(r'^([A-Za-z_][A-Za-z0-9_]*)(?:\[([a-z]+)\])?$')
+
+
+def pathSegments(path):
+    """Splits a parametrized path into (name, placeholder) steps.
+
+    'equilibrium.time_slice[itime].boundary.r_0' becomes five steps, the second
+    carrying 'itime'. The view turns the same path into Python source and hands
+    it to eval, which works while the rank is known in advance (patchIndices
+    writes [i1] as [i], [i2] as [j], and so on) but needs one spelled expression
+    per rank, and only reports a mistake once the string is executed. Walking
+    the names instead keeps the rank a number.
+    """
+    segments = []
+    for step in str(path).split('.'):
+        match = SEGMENT.match(step)
+        if match is None:
+            raise ValueError('Cannot read the path step %r in %r' % (step, path))
+        segments.append((match.group(1), match.group(2)))
+    return segments
+
+
+class QVizTensor:
+    """A quantity read whole, with what each of its axes means.
+
+    axesValues holds one entry per axis of the spec, in the same order: an
+    array when the axis has values (a time base, a coordinate), None when the
+    dictionary leaves it unbounded (1..N) or this case holds no values for it.
+    """
+
+    def __init__(self, values, axesValues, axesSpec, timeAxisPosition=None):
+        self.values = values
+        self.axesValues = axesValues
+        self.axesSpec = axesSpec
+        self.timeAxisPosition = timeAxisPosition
+
+    @property
+    def rank(self):
+        return self.values.ndim
+
+    def timeAxisValues(self):
+        if self.timeAxisPosition is None:
+            return None
+        return self.axesValues[self.timeAxisPosition]
+
+    def alongTime(self):
+        """The time axis and the values laid along it.
+
+        For a scalar inside a dynamic array of structures that is the whole
+        curve, which is what the view calls "0D and dynamic".
+        """
+        if self.timeAxisPosition is None:
+            return None, None
+        return (self.axesValues[self.timeAxisPosition],
+                self.values[self.timeAxisPosition])
+
+    def atTime(self, position):
+        """The tensor with its time axis reduced to one index."""
+        if self.timeAxisPosition is None:
+            return self.values
+        return np.take(self.values, position, axis=self.timeAxisPosition)
+
+
+class QVizTensorExtractor:
+    """Reads a leaf out of the runtime IDS object as one tensor.
+
+    The path is walked one attribute at a time, so the rank is a number rather
+    than a shape the caller has to know: a leaf inside three arrays of
+    structures and 1D of its own comes back rank 4 without any new branch.
+
+    Where the time base lives is decided by ids_properties.homogeneous_time.
+    When it is 1, IDS.time is the time base of every dynamic quantity of the
+    IDS. When it is 0, each array of structures carries times of its own under
+    <aos>[i].time: those of the dynamic array make up the same base as IDS.time,
+    while a quantity under a static array is timed by that array's own times.
+    An IDS with homogeneous_time 0 need not carry IDS.time at all (the reference
+    case's pulse_schedule does not), which is why the array is read first.
+    """
+
+    def __init__(self, idsInstance):
+        self.idsInstance = idsInstance
+
+    def homogeneousTime(self):
+        try:
+            return int(self.idsInstance.ids_properties.homogeneous_time)
+        except Exception:
+            return 1
+
+    def extract(self, axesSpec, aosIndices=None):
+        """Reads one leaf into a tensor.
+
+        aosIndices maps an array-of-structures level to the element to keep.
+        A level left out stays a tensor axis -- leaving the dynamic (time) level
+        out is what makes the time curve exist at all.
+        """
+        if aosIndices is None:
+            aosIndices = {}
+        segments = pathSegments(axesSpec.dataPath)[1:]  # the IDS name is the object
+        timePosition = self._timeAxisPosition(axesSpec)
+
+        keptLevels = [level for level in range(1, axesSpec.aosCount() + 1)
+                      if level not in aosIndices]
+        values = np.array(self._read(segments, self.idsInstance, 0, aosIndices),
+                          dtype=float)
+        if values.dtype == object:
+            raise ValueError('%s does not hold the same shape in every slice of %s'
+                             % (axesSpec.dataPath, ', '.join(
+                                 'level %d' % level for level in keptLevels)))
+
+        axesValues = []
+        for position, axis in enumerate(axesSpec.axes):
+            if axis.is_time and position == timePosition:
+                axesValues.append(self._timeValues(axesSpec, timePosition))
+            else:
+                axesValues.append(self._axisValues(axesSpec, axis, aosIndices))
+        return QVizTensor(values, axesValues, axesSpec, timePosition)
+
+    def _timeAxisPosition(self, axesSpec):
+        for position, axis in enumerate(axesSpec.axes):
+            if axis.is_time and axis.origin == QVizAxis.AOS:
+                return position
+        return None
+
+    def _read(self, steps, holder, level, aosIndices):
+        """Descends the path, keeping every unindexed array as a list axis.
+
+        The name is read first, always: an array of structures is reached by its
+        name and indexed only afterwards. Iterating a structure that was never
+        reached by name walks its fields instead of its elements, which looks
+        like a path step that worked on the wrong object.
+        """
+        for index, (name, placeholder) in enumerate(steps):
+            holder = getattr(holder, name)
+            if placeholder is None:
+                continue
+            level += 1
+            rest = steps[index + 1:]
+            if level in aosIndices:
+                return self._read(rest, holder[aosIndices[level]], level, aosIndices)
+            return [self._read(rest, element, level, aosIndices) for element in holder]
+        return holder
+
+    def _timeValues(self, axesSpec, timePosition):
+        """The time base, placed by ids_properties.homogeneous_time."""
+        if timePosition is None:
+            return None
+        if self.homogeneousTime() == 0:
+            # Times are held by the array that carries the quantity: walk down
+            # to it and collect one time per element.
+            arrayTimes = self._arrayTimes(axesSpec, timePosition)
+            if arrayTimes is not None:
+                return arrayTimes
+        try:
+            return np.asarray(self.idsInstance.time, dtype=float)
+        except Exception:
+            return None
+
+    def _arrayTimes(self, axesSpec, timePosition):
+        """The per-element time of the dynamic array itself."""
+        axis = axesSpec.axes[timePosition]
+        if axis.placeholder is None:
+            return None
+        steps = pathSegments(axesSpec.dataPath)[1:]
+        for index, (name, placeholder) in enumerate(steps):
+            if placeholder == axis.placeholder:
+                try:
+                    # Reading through the array name lands on the array itself,
+                    # so its elements are the holders of the time.
+                    holder = self._read(steps[:index + 1], self.idsInstance, 0, {})
+                    return np.asarray([element.time for element in holder], dtype=float)
+                except Exception:
+                    return None
+        return None
+
+    def _axisValues(self, axesSpec, axis, aosIndices):
+        """The values of one leaf coordinate, read under the same indices.
+
+        An axis whose coordinate names a time base does not read that path:
+        with homogeneous_time 1 the time of the whole IDS is the base, which is
+        what the current path does and what the data forces -- on this case
+        tf.b_field_tor_vacuum_r.time holds no values at all while IDS.time
+        holds 17 344, so reading the spelled coordinate would draw nothing.
+        """
+        if axis.coordinate is None:
+            return None
+        if axis.is_time and self.homogeneousTime() == 1:
+            return self._idsTime()
+        holder = self.idsInstance
+        level = 0
+        segments = coordinateSegments(axis.coordinate)
+        if segments and segments[0] == axesSpec.idsName:
+            segments = segments[1:]  # the coordinate was spelled from the IDS
+        for segment in segments:
+            if segment.isdigit():
+                continue
+            # A coordinate is spelled relative to the IDS, and a step of it may
+            # be an array of structures the quantity sits in: descend it with
+            # the index the leaf was read at, or the first element when the
+            # caller kept that array as an axis. Iterating such an array without
+            # indexing it first walks the fields of its elements instead.
+            holder = getattr(holder, segment)
+            if isinstance(holder, IDSStructArray):
+                level += 1
+                holder = holder[aosIndices.get(level, 0)]
+        try:
+            values = np.asarray(holder, dtype=float)
+        except (TypeError, ValueError):
+            return None
+        return values if values.size else self._idsTime()
+
+    def _idsTime(self):
+        try:
+            values = np.asarray(self.idsInstance.time, dtype=float)
+        except Exception:
+            return None
+        return values if values.size else None
