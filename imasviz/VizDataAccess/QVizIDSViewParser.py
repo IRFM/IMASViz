@@ -186,6 +186,7 @@ class QVizIDSViewParser(QThread):
 
             if dataType is IDSDataType.STRUCTURE:
                 element = ET.SubElement(parent, name)
+                element.text = pathText + '.' + name
                 parents.append(element)
                 self.setCommonAttributes(element, childMeta, 'structure')
                 self.walkIDS(childMeta, self.childOf(idsObject, name), element,
@@ -207,6 +208,7 @@ class QVizIDSViewParser(QThread):
                 for index in range(minLimit, maxLimit, step):
                     self.indexStack[level - 1] = index
                     element = ET.SubElement(parent, name)
+                    element.text = pathText + '.' + name + '[' + indexVar + ']'
                     parents.append(element)
                     element.set('index', str(index))
                     element.set('dim', str(length))
@@ -231,6 +233,12 @@ class QVizIDSViewParser(QThread):
             element.set('content', value)
         else:
             element = ET.SubElement(parent, name)
+
+        # The element text carries the accumulated data path. QVizDataTreeViewBuilder
+        # builds every tree item name from it (tag + '=' + text), so leaving it out
+        # strips the path suffix from the whole shot view. The loop placeholders
+        # ([i], [j], ...) stay unsubstituted here, as the generated parsers left them.
+        element.text = pathText + '.' + name
 
         self.setCommonAttributes(element, childMeta, spelling)
 
