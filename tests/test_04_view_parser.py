@@ -105,3 +105,52 @@ def test_the_shadow_tree_keeps_the_generated_shape(dataSource, qapp,
     root, _ = parser.loadIDS(idsName, 0)
 
     assert countNodes(root) == expectedNodes
+
+
+@pytest.mark.case
+def test_every_element_carries_its_data_path_as_text(dataSource, qapp):
+    # QVizDataTreeViewBuilder names every tree item as tag + '=' + text
+    # (:142-148 for 0D, :155-160 for the others). Without the accumulated path
+    # the whole shot view loses that suffix.
+    from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
+    from imasviz.VizUtils import QVizPreferences
+
+    QVizPreferences.Ignore_GGD = 1
+    view = FakeTreeView(uri=dataSource.uri)
+    parser = QVizIDSViewParser(dataSource.uri, view, 'tf', 0, None, False)
+    parser.dataSource = dataSource
+    root, _ = parser.loadIDS('tf', 0)
+
+    elements = list(root.iter())
+
+    # Only the IDS root carries no path: the generated parsers seeded the
+    # accumulation with the IDS name and wrote it onto the children.
+    assert [element for element in elements if not element.text] == [root]
+
+    for element in elements:
+        if element is root or element.tag == 'name':
+            continue
+        assert element.text.startswith('tf.'), (element.tag, element.text)
+
+
+@pytest.mark.case
+def test_an_array_of_structures_keeps_the_loop_placeholder(dataSource, qapp):
+    # The generated parsers wrote the unsubstituted loop variable into the path
+    # ('tf.coil[i]', not 'tf.coil[0]'), leaving the view to substitute it per
+    # element. tf holds no populated array of structures in this case, so
+    # equilibrium is used here.
+    from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
+    from imasviz.VizUtils import QVizPreferences
+
+    QVizPreferences.Ignore_GGD = 1
+    view = FakeTreeView(uri=dataSource.uri)
+    parser = QVizIDSViewParser(dataSource.uri, view, 'equilibrium', 0, None, False)
+    parser.dataSource = dataSource
+    root, _ = parser.loadIDS('equilibrium', 0)
+
+    arrayElements = [element for element in root.iter()
+                     if element.attrib.get('index') is not None]
+    assert arrayElements, 'equilibrium is expected to hold arrays of structures'
+    for element in arrayElements:
+        assert element.text.endswith(']'), (element.tag, element.text)
+        assert element.tag + '[' in element.text
