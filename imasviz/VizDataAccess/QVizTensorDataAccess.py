@@ -51,6 +51,13 @@ class QVizTensorDataAccess:
         extractor = QVizTensorExtractor(treeNode.getIDSRef())
         if time_index is None:
             time_index = int(treeNode.timeValue())
+        if slices is None:
+            # A plot frame that carries slice controls decides them; the axes
+            # those controls offer are the ones this read fixes, because both
+            # come out of _plan.
+            controls = getattr(plotWidget, 'sliceControls', None)
+            if controls is not None:
+                slices = controls.indices()
         if plotWidget is not None and plotWidget.addTimeSlider:
             if plotWidget.sliderGroup is not None:
                 time_index = plotWidget.sliderGroup.slider.value()
