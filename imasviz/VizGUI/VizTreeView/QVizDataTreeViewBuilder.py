@@ -265,6 +265,14 @@ class QVizDataTreeViewBuilder:
         if documentation is not None:
             itemDataDict['documentation'] = documentation
 
+        # The walk already carries the data dictionary's own verdict on the node
+        # -- required, optional, experimental, alpha, obsolescent. Without it the
+        # shot view shows a quantity the dictionary is retiring exactly like one
+        # it mandates, and the panel that exists to inform the choice says nothing.
+        lifecycleStatus = dataElement.get('lifecycle_status')
+        if lifecycleStatus is not None:
+            itemDataDict['lifecycle_status'] = lifecycleStatus
+
         if name is not None:
 
             for i in range(1, 7):

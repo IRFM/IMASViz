@@ -90,6 +90,78 @@ class FakeTreeView:
         self.roots[(idsName, occurrence)] = idsData
 
 
+class FakeDocItem:
+    """Enough of QVizTreeNode for the node documentation panel.
+
+    The panel reads a node's name, its documentation, which kind of data it
+    holds, and the dictionary attributes it displays. Driving it through a real
+    node means building a real tree, which means a case and a data dictionary;
+    the panel's own contract -- what it shows, and what it hides when the
+    dictionary says nothing -- is the same either way.
+    """
+
+    def __init__(self, name='rho_tor', dataName='rho_tor', documentation='doc',
+                 dataType='FLT_0D', content='2.42', lifecycleStatus=None,
+                 is0D=True, is1D=False, is2DOrLarger=False, isDynamic=False,
+                 isStatic=False, isIDSRoot=False, path='tf.rho_tor'):
+        self._name = name
+        self._dataName = dataName
+        self._documentation = documentation
+        self._dataType = dataType
+        self._is0D = is0D
+        self._is1D = is1D
+        self._is2DOrLarger = is2DOrLarger
+        self._isDynamic = isDynamic
+        self._isStatic = isStatic
+        self._isIDSRoot = isIDSRoot
+        self._path = path
+        self.infoDict = {'0D_content': content}
+        if lifecycleStatus is not None:
+            self.infoDict['lifecycle_status'] = lifecycleStatus
+
+    def getName(self):
+        return self._name
+
+    def getDataName(self):
+        return self._dataName
+
+    def getDocumentation(self):
+        return self._documentation
+
+    def getDataType(self):
+        return self._dataType
+
+    def getPath(self):
+        return self._path
+
+    def getData(self):
+        return self.infoDict
+
+    def getInfoDict(self):
+        return self.infoDict
+
+    def isIDSRoot(self):
+        return self._isIDSRoot
+
+    def isDynamicData(self):
+        return self._isDynamic
+
+    def isStaticData(self):
+        return self._isStatic
+
+    def is0D(self):
+        return self._is0D
+
+    def is1D(self):
+        return self._is1D
+
+    def is2DOrLarger(self):
+        return self._is2DOrLarger
+
+    def evalPath(self, expression):
+        return None
+
+
 class FakeAxesNode:
     """Enough of QVizTreeNode for the axes model and a data access.
 

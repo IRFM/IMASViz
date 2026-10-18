@@ -253,6 +253,34 @@ class QVizNodeDocumentationWidget(QWidget):
         # Set label text as selectable by mouse
         self.lNodeContentsText.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
+        # - Set node lifecycle status title
+        # The data dictionary says whether a node is required, optional,
+        # experimental, alpha or obsolescent. A quantity the dictionary is
+        # retiring has to look different from one it mandates, and this panel is
+        # where a user picking a signal would find out.
+        self.lNodeLifecycleTitle = QLabel()
+        self.lNodeLifecycleTitle.setText('Data dictionary status: ')
+        self.lNodeLifecycleTitle.setAlignment(Qt.AlignLeft)
+        self.lNodeLifecycleTitle.setWordWrap(True)
+        self.lNodeLifecycleTitle.setMinimumHeight(25)
+        self.lNodeLifecycleTitle.setMinimumWidth(340)
+        self.lNodeLifecycleTitle.setFont(GlobalFonts.TITLE_MEDIUM)
+        # Set label text as selectable by mouse
+        self.lNodeLifecycleTitle.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
+        # - Set node lifecycle status text
+        self.lNodeLifecycleText = QLabel()
+        self.lNodeLifecycleText.setText('')
+        self.lNodeLifecycleText.setAlignment(Qt.AlignLeft)
+        self.lNodeLifecycleText.setWordWrap(True)
+        self.lNodeLifecycleText.setMinimumHeight(25)
+        self.lNodeLifecycleText.setMinimumWidth(340)
+        self.lNodeLifecycleText.setFont(GlobalFonts.TEXT_MEDIUM)
+        # Set label text as selectable by mouse
+        self.lNodeLifecycleText.setTextInteractionFlags(
+            Qt.TextSelectableByMouse)
+
         # Set scrollable area
         scrollArea = QScrollArea(self)
         scrollArea.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -281,6 +309,8 @@ class QVizNodeDocumentationWidget(QWidget):
         scrollLayout.setWidget(15, QFormLayout.LabelRole, self.lNodeArrayInfsText)
         scrollLayout.setWidget(16, QFormLayout.LabelRole, self.lNodeContentsTitle)
         scrollLayout.setWidget(17, QFormLayout.LabelRole, self.lNodeContentsText)
+        scrollLayout.setWidget(18, QFormLayout.LabelRole, self.lNodeLifecycleTitle)
+        scrollLayout.setWidget(19, QFormLayout.LabelRole, self.lNodeLifecycleText)
 
         scrollContent.setLayout(scrollLayout)
         scrollArea.setWidget(scrollContent)
@@ -513,6 +543,29 @@ class QVizNodeDocumentationWidget(QWidget):
         else:
             self.lNodeArrayInfsText.setText('')
 
+        # The lifecycle status is shown for any node the dictionary gives one,
+        # whatever kind of data it holds: it says how the node may be used, not
+        # what shape its values have. A node the dictionary does not classify
+        # shows no row at all, rather than an empty one the user reads as
+        # something the dictionary left blank.
+        self.showLifecycleStatus(item)
+
+    def showLifecycleStatus(self, item):
+        status = None
+        try:
+            status = item.getData().get('lifecycle_status')
+        except AttributeError:
+            pass
+
+        if status:
+            self.lNodeLifecycleTitle.setVisible(True)
+            self.lNodeLifecycleText.setVisible(True)
+            self.lNodeLifecycleText.setText(str(status))
+        else:
+            self.lNodeLifecycleTitle.setVisible(False)
+            self.lNodeLifecycleText.setVisible(False)
+            self.lNodeLifecycleText.setText('')
+
 
     def initialize_dict(self, node_label=None, node_doc=None):
         node_contents_dict = {}
@@ -546,6 +599,8 @@ class QVizNodeDocumentationWidget(QWidget):
         self.lNodeArrayInfsText.setVisible(False)
         self.lNodeContentsTitle.setVisible(False)
         self.lNodeContentsText.setVisible(False)
+        self.lNodeLifecycleTitle.setVisible(False)
+        self.lNodeLifecycleText.setVisible(False)
 
     def showFieldsForArrays(self):
         self.showAllFields()

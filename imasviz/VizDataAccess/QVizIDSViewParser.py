@@ -272,9 +272,9 @@ class QVizIDSViewParser(QThread):
         spelling = dataTypeName(childMeta)
 
         if childMeta.ndim == 0:
-            value = self.childOf(idsObject, name)
-            element = ET.SubElement(parent, name + '=' + str(value))
-            element.set('content', value)
+            content = self.scalarContent(self.childOf(idsObject, name))
+            element = ET.SubElement(parent, name + '=' + content)
+            element.set('content', content)
         else:
             element = ET.SubElement(parent, name)
 
@@ -391,6 +391,25 @@ class QVizIDSViewParser(QThread):
             return getattr(idsObject, name)
         except (AttributeError, KeyError):
             return None
+
+    @staticmethod
+    def scalarContent(value):
+        """A 0D value as the text the tree can carry.
+
+        The Access Layer wraps every scalar in an object of its own. Keeping that
+        object in the element makes the shadow tree impossible to serialise --
+        ElementTree refuses an attribute that is not text, which on the reference
+        case is 3 618 of one IDS's elements -- and it is also what the
+        documentation panel ends up showing for a scalar, where the wrapper says
+        nothing about the value. The plain Python value sits under .value; a
+        string arrives as bytes on some back ends.
+        """
+        if value is None:
+            return ''
+        plain = getattr(value, 'value', value)
+        if isinstance(plain, bytes):
+            return plain.decode('utf-8', 'replace')
+        return str(plain)
 
     @staticmethod
     def elementOf(array, index):
