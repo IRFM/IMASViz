@@ -36,6 +36,10 @@ from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from support.fakes import FakeAxesNode
 
 AOS, LEAF = 'AOS', 'LEAF'
+ION = (AOS, 'foo', 'ion')
+PROFILES = (AOS, 'foo', 'profiles_1d')
+RADIAL = (LEAF, 'foo', 'dimension 1')
+RHO_TOR = (LEAF, 'foo', 'foo.rho_tor')
 
 # Two time slices, two ions each, three radial points each: profiles_1d is the
 # dynamic array, ion a static one, z_ion_1d the leaf. Rank 3.
@@ -78,7 +82,7 @@ def test_the_axes_that_need_a_control_are_the_axes_the_plot_leaves_out():
 
     produced = slicesFor(axesSpec, plottedPositions=(0,))
 
-    assert [sl.key for sl in produced] == [(AOS, 2), (LEAF, 1)]
+    assert [sl.key for sl in produced] == [ION, RADIAL]
 
 
 def test_a_control_names_its_axis_the_way_the_tree_names_it():
@@ -98,7 +102,7 @@ def test_a_control_knows_the_length_of_what_it_moves():
     # the values that were read.
     produced = slicesFor(QVizAxesSpec.fromTreeNode(_rank3Node()),
                          plottedPositions=(0,),
-                         lengths={(AOS, 2): 2, (LEAF, 1): 3})
+                         lengths={ION: 2, RADIAL: 3})
 
     assert [sl.length for sl in produced] == [2, 3]
     # The ion index the tree carries becomes the control's starting point, so
@@ -115,7 +119,7 @@ def test_the_access_asks_for_one_control_per_axis_it_fixes():
     produced = QVizTensorDataAccess(None).slicesFor(node)
 
     assert [(sl.key, sl.label, sl.length, sl.index) for sl in produced] == \
-           [((AOS, 2), 'ion', 2, 1), ((LEAF, 1), 'dimension 1', 3, 0)]
+           [(ION, 'ion', 2, 1), (RADIAL, 'dimension 1', 3, 0)]
 
 
 def test_a_curve_needs_no_control_for_the_axis_it_draws():
@@ -162,7 +166,47 @@ def test_a_curve_plot_offers_a_control_for_the_leaf_axis_it_pins():
     produced = QVizTensorDataAccess(None).slicesFor(node)
 
     assert [(sl.key, sl.label, sl.length) for sl in produced] == \
-           [((LEAF, 1), 'rho_tor', 3)]
+           [(RHO_TOR, 'rho_tor', 3)]
+
+
+def test_two_arrays_at_the_same_level_are_not_the_same_control():
+    # A figure holds several curves. Keying an axis by its nesting level alone
+    # gives the ion array of one quantity and the channel array of another the
+    # same key, so moving one slider moves a curve the user never touched -- and
+    # the read then pins the wrong element of both.
+    def nodeIn(arrayName):
+        ids = type(str('StubIds'), (), {})()
+        ids.ids_properties = type(str('Props'), (), {})()
+        ids.ids_properties.homogeneous_time = 1
+        return FakeAxesNode(ids, 'foo', 'foo.profiles_1d[itime].' + arrayName + '[j]',
+                            'FLT_1D', name='value', itimeIndex=0,
+                            coordinates=('1..N',), indices={'i': '0', 'j': '0'},
+                            lengths={'i': '2', 'j': '2'})
+
+    byIon = slicesFor(QVizAxesSpec.fromTreeNode(nodeIn('ion')), plottedPositions=(0,))
+    byChannel = slicesFor(QVizAxesSpec.fromTreeNode(nodeIn('channel')),
+                          plottedPositions=(0,))
+
+    assert byIon[0].key != byChannel[0].key
+    assert byIon[0].label == 'ion'
+    assert byChannel[0].label == 'channel'
+
+
+def test_the_same_array_under_two_quantities_is_one_control():
+    # The other half of the rule: two curves out of the same array share one
+    # control, because the index that pins one pins the other too.
+    def nodeNamed(leaf):
+        ids = type(str('StubIds'), (), {})()
+        ids.ids_properties = type(str('Props'), (), {})()
+        ids.ids_properties.homogeneous_time = 1
+        return FakeAxesNode(ids, 'foo', 'foo.profiles_1d[itime].ion[j]', 'FLT_1D',
+                            name=leaf, itimeIndex=0, coordinates=('1..N',),
+                            indices={'i': '0', 'j': '0'}, lengths={'i': '2', 'j': '2'})
+
+    assert slicesFor(QVizAxesSpec.fromTreeNode(nodeNamed('z_ion')),
+                     plottedPositions=(0,))[0].key == \
+           slicesFor(QVizAxesSpec.fromTreeNode(nodeNamed('density')),
+                     plottedPositions=(0,))[0].key
 
 
 def test_moving_an_array_slice_moves_the_curve():
@@ -174,7 +218,7 @@ def test_moving_an_array_slice_moves_the_curve():
 
     atIon1 = access.GetSignal(treeNode=node, plotWidget=None)
     atIon0 = access.GetSignal(treeNode=node, plotWidget=None,
-                              slices={(AOS, 2): 0})
+                              slices={ION: 0})
 
     np.testing.assert_allclose(atIon1[1][0], [10., 40.])
     np.testing.assert_allclose(atIon0[1][0], [1., 4.])
@@ -185,9 +229,9 @@ def test_moving_a_leaf_slice_moves_the_curve_too():
     node = _rank3Node()
 
     atPoint0 = access.GetSignal(treeNode=node, plotWidget=None,
-                                slices={(LEAF, 1): 0})
+                                slices={RADIAL: 0})
     atPoint2 = access.GetSignal(treeNode=node, plotWidget=None,
-                                slices={(LEAF, 1): 2})
+                                slices={RADIAL: 2})
 
     np.testing.assert_allclose(atPoint0[1][0], [10., 40.])
     np.testing.assert_allclose(atPoint2[1][0], [30., 60.])
@@ -199,7 +243,7 @@ def test_a_slice_index_out_of_range_names_the_axis_it_is_about():
     with pytest.raises(ValueError) as raised:
         QVizTensorDataAccess(None).GetSignal(treeNode=_rank3Node(),
                                              plotWidget=None,
-                                             slices={(AOS, 2): 5})
+                                             slices={ION: 5})
 
     assert 'ion' in str(raised.value)
 
@@ -226,11 +270,11 @@ def test_a_slice_also_applies_when_the_plot_is_one_slice_at_a_time():
                                   as_function_of_time=False, time_index=0)
     atElement1 = access.GetSignal(treeNode=node, plotWidget=None,
                                   as_function_of_time=False, time_index=0,
-                                  slices={(AOS, 1): 1})
+                                  slices={PROFILES: 1})
 
     # One row per curve, the same contract the along-time branch keeps.
     np.testing.assert_allclose(atElement0[1][0], [1., 2., 3.])
     np.testing.assert_allclose(atElement1[1][0], [7., 8., 9.])
     # The plot draws the leaf axis, so only the array of structures is a slice.
     assert [(sl.key, sl.label) for sl in
-            access.slicesFor(node, as_function_of_time=False)] == [((AOS, 1), 'profiles_1d')]
+            access.slicesFor(node, as_function_of_time=False)] == [(PROFILES, 'profiles_1d')]

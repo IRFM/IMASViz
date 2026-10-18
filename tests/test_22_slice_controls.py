@@ -31,6 +31,8 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceCont
 from support.fakes import FakeAxesNode
 
 AOS, LEAF = 'AOS', 'LEAF'
+ION = (AOS, 'foo', 'ion')
+RADIAL = (LEAF, 'foo', 'dimension 1')
 
 
 def _rank3Axes():
@@ -47,7 +49,7 @@ def _rank3Axes():
 def _slicesThePlotFixes(lengths=None):
     """The two axes a time curve leaves out: the ion array and the radial point."""
     return slicesFor(_rank3Axes(), plottedPositions=(0,),
-                     lengths=lengths or {(AOS, 2): 2, (LEAF, 1): 3})
+                     lengths=lengths or {ION: 2, RADIAL: 3})
 
 
 @pytest.fixture
@@ -61,7 +63,7 @@ def controls(qtbot):
 def test_one_control_per_axis_the_plot_fixes(controls):
     controls.setSlices(_slicesThePlotFixes())
 
-    assert controls.keys() == [(AOS, 2), (LEAF, 1)]
+    assert controls.keys() == [ION, RADIAL]
 
 
 @pytest.mark.ui
@@ -81,7 +83,7 @@ def test_a_control_says_which_axis_it_moves_and_where_in_it(controls):
 def test_the_values_come_back_as_the_mapping_a_read_takes(controls):
     controls.setSlices(_slicesThePlotFixes())
 
-    assert controls.indices() == {(AOS, 2): 1, (LEAF, 1): 0}
+    assert controls.indices() == {ION: 1, RADIAL: 0}
 
 
 @pytest.mark.ui
@@ -93,7 +95,7 @@ def test_moving_a_control_says_so_and_changes_the_mapping(controls, qtbot):
     with qtbot.waitSignal(controls.changed, timeout=1000):
         controls.rows()[0].slider.setValue(0)
 
-    assert controls.indices() == {(AOS, 2): 0, (LEAF, 1): 0}
+    assert controls.indices() == {ION: 0, RADIAL: 0}
     assert controls.rows()[0].indexLabel.text() == '0 / 1'
 
 
@@ -102,11 +104,11 @@ def test_a_rebuild_keeps_the_choice_for_an_axis_that_is_still_there(controls):
     # A time slice redraw calls setSlices again. Resetting the user to index 0
     # each time would move a plot they were comparing from under their hand.
     controls.setSlices(_slicesThePlotFixes())
-    controls.setIndex((LEAF, 1), 2)
+    controls.setIndex(RADIAL, 2)
 
     controls.setSlices(_slicesThePlotFixes())
 
-    assert controls.indices() == {(AOS, 2): 1, (LEAF, 1): 2}
+    assert controls.indices() == {ION: 1, RADIAL: 2}
 
 
 @pytest.mark.ui
@@ -114,48 +116,48 @@ def test_a_kept_choice_is_clamped_when_the_axis_got_shorter(controls):
     # The usual reason a length shrinks is another quantity in the same array.
     # Keeping index 2 of a 1-value axis would hand the read an index it rejects.
     controls.setSlices(_slicesThePlotFixes())
-    controls.setIndex((LEAF, 1), 2)
+    controls.setIndex(RADIAL, 2)
 
-    controls.setSlices(_slicesThePlotFixes(lengths={(AOS, 2): 2, (LEAF, 1): 1}))
+    controls.setSlices(_slicesThePlotFixes(lengths={ION: 2, RADIAL: 1}))
 
-    assert controls.indices() == {(AOS, 2): 1, (LEAF, 1): 0}
+    assert controls.indices() == {ION: 1, RADIAL: 0}
 
 
 @pytest.mark.ui
 def test_an_axis_that_gone_away_does_not_carry_its_old_index(controls):
-    # A curve then an image: (AOS, 2) is fixed for the curve and drawn for the
+    # A curve then an image: ION is fixed for the curve and drawn for the
     # image. Carrying its index over would pin an unrelated axis with the same
     # key shape on a quantity that no longer has it.
     controls.setSlices(_slicesThePlotFixes())
-    controls.setIndex((AOS, 2), 1)
+    controls.setIndex(ION, 1)
 
     controls.setSlices(slicesFor(_rank3Axes(), plottedPositions=(0, 1),
-                                 lengths={(LEAF, 1): 3}))
+                                 lengths={RADIAL: 3}))
 
-    assert controls.keys() == [(LEAF, 1)]
-    assert controls.indices() == {(LEAF, 1): 0}
+    assert controls.keys() == [RADIAL]
+    assert controls.indices() == {RADIAL: 0}
 
 
 @pytest.mark.ui
 def test_a_single_value_axis_is_still_named_and_not_movable(controls):
     # One ion in the array: nothing to move, but the curve still belongs to that
     # ion, and saying so is half of what the control is for.
-    controls.setSlices(_slicesThePlotFixes(lengths={(AOS, 2): 1, (LEAF, 1): 3}))
+    controls.setSlices(_slicesThePlotFixes(lengths={ION: 1, RADIAL: 3}))
 
-    assert controls.keys() == [(AOS, 2), (LEAF, 1)]
+    assert controls.keys() == [ION, RADIAL]
     assert not controls.rows()[0].slider.isEnabled()
     assert controls.rows()[0].nameLabel.text() == 'ion:'
 
 
 @pytest.mark.ui
 def test_an_axis_of_unknown_length_offers_no_range_but_stays_visible(controls):
-    controls.setSlices(_slicesThePlotFixes(lengths={(AOS, 2): None, (LEAF, 1): 3}))
+    controls.setSlices(_slicesThePlotFixes(lengths={ION: None, RADIAL: 3}))
 
     assert not controls.rows()[0].slider.isEnabled()
     # Still the index the read uses, so the plot says where it is even when
     # there is no range to move it through.
     assert controls.rows()[0].indexLabel.text() == '1'
-    assert controls.indices() == {(AOS, 2): 1, (LEAF, 1): 0}
+    assert controls.indices() == {ION: 1, RADIAL: 0}
 
 
 @pytest.mark.ui
@@ -174,4 +176,4 @@ def test_setting_an_index_the_axis_does_not_have_is_refused(controls):
     controls.setSlices(_slicesThePlotFixes())
 
     assert not controls.setIndex((LEAF, 7), 0)
-    assert controls.indices() == {(AOS, 2): 1, (LEAF, 1): 0}
+    assert controls.indices() == {ION: 1, RADIAL: 0}

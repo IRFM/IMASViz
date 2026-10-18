@@ -83,7 +83,7 @@ class QVizAxis:
 
     def __init__(self, origin, level, placeholder=None, coordinate=None,
                  units=None, length=None, is_time=False, index=None,
-                 same_as=None, name=None):
+                 same_as=None, name=None, idsName=None):
         self.origin = origin
         # 1-based position among the enclosing arrays of structures for an AOS
         # axis, among the leaf coordinates for the other kind.
@@ -92,6 +92,7 @@ class QVizAxis:
         # The array's own name for an AOS axis ('ion' in '...ion[j]...'), which
         # is how a control should name the axis it lets the user move.
         self.name = name
+        self.idsName = idsName
         self.coordinate = coordinate
         self.units = units
         self.length = length
@@ -100,8 +101,25 @@ class QVizAxis:
         self.same_as = same_as
 
     def key(self):
-        """A stable handle on this axis, to carry a control's value back to it."""
-        return (self.origin, self.level)
+        """A stable handle on this axis, to carry a control's value back to it.
+
+        Named by the IDS and by the array or coordinate, never by the nesting
+        level alone: one figure holds curves from several quantities, and two of
+        them can sit in different arrays at the same level. A control keyed by
+        the level moves one and is then read back for the other, which shows up
+        as a curve changing that the user never touched. The level stays what
+        the read indexes by -- it is the identity of the axis that changes.
+
+        The coordinate is spelled with a slash by the shadow tree and with a dot
+        by the tree node, so it is normalised here: the same axis read either way
+        has to be the same control.
+        """
+        if self.origin == QVizAxis.AOS:
+            return (self.origin, self.idsName, self.name or self.placeholder
+                    or self.level)
+        if self.coordinate:
+            return (self.origin, self.idsName, self.coordinate.replace('/', '.'))
+        return (self.origin, self.idsName, 'dimension %d' % self.level)
 
     def isUnbounded(self):
         """True when the dictionary names no node for this axis."""
@@ -158,7 +176,8 @@ class QVizAxesSpec:
                 units='s' if level == timeLevel else None,
                 length=_intOrNone(element.get(QVizGlobalValues.max_indices[str(level)])),
                 is_time=(level == timeLevel),
-                index=_intOrNone(element.get(QVizGlobalValues.indices[str(level)]))))
+                index=_intOrNone(element.get(QVizGlobalValues.indices[str(level)])),
+                idsName=idsName))
 
         for dimension in range(leafDataDimension(element.get('data_type')) or 0):
             number = str(dimension + 1)
@@ -171,7 +190,8 @@ class QVizAxesSpec:
                 coordinate=coordinate,
                 units=element.get('coordinate' + number + '_units'),
                 same_as=element.get('coordinate' + number + '_same_as'),
-                is_time=isTimeSpelling(coordinate)))
+                is_time=isTimeSpelling(coordinate),
+                idsName=idsName))
 
         return QVizAxesSpec(axes, idsName=idsName,
                             dataPath=element.text,
@@ -219,7 +239,8 @@ class QVizAxesSpec:
                 units='s' if level == timeLevel else None,
                 length=_intOrNone(node.parameters_max_values.get(letter)),
                 is_time=(level == timeLevel),
-                index=_intOrNone(node.parameters_values.get(letter))))
+                index=_intOrNone(node.parameters_values.get(letter)),
+                idsName=node.getIDSName()))
 
         for dimension in range(leafDataDimension(node.getDataType()) or 0):
             coordinate = (node.coordinates[dimension]
@@ -233,7 +254,8 @@ class QVizAxesSpec:
                 coordinate=coordinate,
                 units=node.getCoordinateUnits(dimension + 1),
                 same_as=node.getInfoDict().get('coordinate' + number + '_same_as'),
-                is_time=isTimeSpelling(coordinate)))
+                is_time=isTimeSpelling(coordinate),
+                idsName=node.getIDSName()))
 
         return QVizAxesSpec(axes, idsName=node.getIDSName(),
                             dataPath=node.getParametrizedDataPath(),
