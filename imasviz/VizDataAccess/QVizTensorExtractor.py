@@ -13,7 +13,11 @@ import numpy as np
 from imas.ids_struct_array import IDSStructArray
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
-from imasviz.VizDataAccess.QVizIDSViewParser import coordinateSegments
+
+# coordinateSegments comes from QVizIDSViewParser, whose module imports reach the
+# whole VizGUI package -- and the GUI's plotting commands import the data access
+# factory, which imports this module. Importing it here closes that cycle, so it
+# is imported where it is used, as Viz_API does for the factory itself.
 
 # One step of a parametrized path: a node name and, for an array of
 # structures, the loop placeholder the view wrote in front of it.
@@ -220,6 +224,7 @@ class QVizTensorExtractor:
             return None
         if axis.is_time and self.homogeneousTime() == 1:
             return self._idsTime()
+        from imasviz.VizDataAccess.QVizIDSViewParser import coordinateSegments
         holder = self.idsInstance
         level = 0
         segments = coordinateSegments(axis.coordinate)

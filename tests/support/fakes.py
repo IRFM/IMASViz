@@ -88,3 +88,75 @@ class FakeTreeView:
 
     def updateView(self, idsName, ids_instance, occurrence, idsData, strategy):
         self.roots[(idsName, occurrence)] = idsData
+
+
+class FakeAxesNode:
+    """Enough of QVizTreeNode for the axes model and a data access.
+
+    A quantity held by arrays of structures needs what QVizDataTreeViewBuilder
+    copies onto a real node: the parametrized path, the index of the dynamic
+    array, the current index and length of each enclosing array, the leaf
+    coordinates and the data type. Nothing Qt, and no case to open -- which is
+    how a rank 3 quantity gets tested at all, when no reference case holds one
+    with values in it.
+    """
+
+    def __init__(self, idsRef, idsName, parametrizedPath, dataType, name='value',
+                 itimeIndex=-1, coordinates=(), indices=None, lengths=None,
+                 units='', coordinateUnits=None, infoDict=None, timeIndex=0,
+                 alongTime=True):
+        self._idsRef = idsRef
+        self._idsName = idsName
+        self._parametrizedPath = parametrizedPath
+        self._dataType = dataType
+        self._name = name
+        self._itimeIndex = itimeIndex
+        self._units = units
+        self._coordinateUnits = coordinateUnits or {}
+        self._infoDict = infoDict or {}
+        self._timeIndex = timeIndex
+        self._alongTime = alongTime
+        self.coordinates = list(coordinates)
+        self.parameters_values = dict(indices or {})
+        self.parameters_max_values = dict(lengths or {})
+
+    def getIDSRef(self):
+        return self._idsRef
+
+    def getIDSName(self):
+        return self._idsName
+
+    def getName(self):
+        return self._name
+
+    getDataName = getName
+
+    def getParametrizedPath(self):
+        return self._parametrizedPath
+
+    def getParametrizedDataPath(self):
+        return self._parametrizedPath + '.' + self._name
+
+    def getItimeIndex(self):
+        return self._itimeIndex
+
+    def getDataType(self):
+        return self._dataType
+
+    def getUnits(self):
+        return self._units
+
+    def getCoordinateUnits(self, coordinateNumber):
+        return self._coordinateUnits.get(coordinateNumber)
+
+    def getInfoDict(self):
+        return self._infoDict
+
+    def getDataSource(self):
+        return None
+
+    def timeValue(self):
+        return self._timeIndex
+
+    def isPlotToPerformAlongTimeAxis(self, plotWidget=None):
+        return self._alongTime

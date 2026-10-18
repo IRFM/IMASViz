@@ -165,6 +165,67 @@ class QVizAxesSpec:
                             dataType=element.get('data_type'),
                             units=element.get('units'))
 
+    @staticmethod
+    def fromTreeNode(node):
+        """The same axes, read off the QVizTreeNode the widgets hold.
+
+        A data access is handed a tree node, never a shadow tree element, and
+        the builder copied onto the node exactly what the axes need: the
+        parametrized path, the time index, the current index and the length of
+        every enclosing array of structures, the coordinates and their units.
+
+        Reading from the node is also the only reading that sees what the user
+        did. An array index picked in the tree or a coordinate changed from the
+        right-click menu lives on the node and nowhere else, so a plot built
+        from the dictionary's spelling would ignore the choice the user just
+        made.
+
+        The coordinate spelling differs from the shadow tree by one separator:
+        buildNamedDataElement rewrites every '/' as a '.'. The model accepts
+        both (isTimeSpelling, UNBOUNDED_COORDINATE and coordinateSegments all
+        do), so the two readings are compared after normalising the separator
+        rather than by rewriting one of them here.
+        """
+        parametrizedPath = node.getParametrizedPath() or ''
+        timeLevel = node.getItimeIndex() + 1
+        axes = []
+
+        for position, variable in enumerate(PLACEHOLDER.findall(parametrizedPath),
+                                            start=1):
+            level = timeLevel if variable == 'itime' else position
+            # The node keys the index and the length of an array by its loop
+            # letter, and the dynamic level carries a letter too -- it is the
+            # parametrized path that renames that one to 'itime'.
+            letter = QVizGlobalValues.indices.get(str(level))
+            axes.append(QVizAxis(
+                origin=QVizAxis.AOS,
+                level=level,
+                placeholder=variable,
+                coordinate=(node.getIDSName() + '.time' if level == timeLevel else None),
+                units='s' if level == timeLevel else None,
+                length=_intOrNone(node.parameters_max_values.get(letter)),
+                is_time=(level == timeLevel),
+                index=_intOrNone(node.parameters_values.get(letter))))
+
+        for dimension in range(leafDataDimension(node.getDataType()) or 0):
+            coordinate = (node.coordinates[dimension]
+                          if dimension < len(node.coordinates) else None)
+            if coordinate is not None and UNBOUNDED_COORDINATE.match(coordinate):
+                coordinate = None
+            number = str(dimension + 1)
+            axes.append(QVizAxis(
+                origin=QVizAxis.LEAF,
+                level=dimension + 1,
+                coordinate=coordinate,
+                units=node.getCoordinateUnits(dimension + 1),
+                same_as=node.getInfoDict().get('coordinate' + number + '_same_as'),
+                is_time=isTimeSpelling(coordinate)))
+
+        return QVizAxesSpec(axes, idsName=node.getIDSName(),
+                            dataPath=node.getParametrizedDataPath(),
+                            dataType=node.getDataType(),
+                            units=node.getUnits())
+
     @property
     def rank(self):
         return len(self.axes)

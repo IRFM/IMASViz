@@ -20,68 +20,18 @@ nothing.
 import numpy as np
 import pytest
 
-from conftest import CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
-
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
-from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
 from imasviz.VizDataAccess.QVizIMASNativeDataAccess import QVizIMASNativeDataAccess
 from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
-from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
-from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 
+from support.caseTrees import loadCaseTrees, leafByText, nodeAsTheBuilderBuildsIt
 from support.fakes import FakeTreeView
 
 
 @pytest.fixture(scope='module')
 def case(qapp):
-    """The shadow trees and the runtime objects, walked once for all tests.
-
-    The reference case is read once: its equilibrium alone costs over four
-    seconds to load. The runtime object comes from loadIDS itself, so the two
-    paths below read the very same object, not two copies of it.
-    """
-    uri = case_uri_or_skip()
-    if uri is None:
-        pytest.skip('reference case not reachable')
-
-    from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
-    from imasviz.VizUtils import QVizPreferences
-
-    QVizPreferences.Ignore_GGD = 1
-    trees = {}
-    runtime = {}
-    for idsName in ('tf', 'equilibrium', 'core_profiles'):
-        source = QVizIMASDataSource('west 54924', uri)
-        source.dd_version = CASE_DATA_DICTIONARY_VERSION
-        view = FakeTreeView(uri=uri)
-        parser = QVizIDSViewParser(uri, view, idsName, 0, None, False)
-        parser.dataSource = source
-        trees[idsName], runtime[idsName] = parser.loadIDS(idsName, 0)
-    yield {'uri': uri, 'trees': trees, 'runtime': runtime}
-
-
-def leafByText(root, text):
-    for element in root.iter():
-        if element.text == text:
-            return element
-    raise AssertionError('no leaf %r in the shadow tree' % text)
-
-
-def nodeAsTheBuilderBuildsIt(element, idsName, idsInstance, treeView):
-    """The QVizTreeNode QVizDataTreeViewBuilder would put on the screen."""
-    itemDataDict = {'IDSName': idsName, 'occurrence': 0, 'Tag': element.tag,
-                    'isSignal': 1, 'isIDSRoot': 0, 'isSelected': 0}
-    nameChild = element.find('name')
-    if nameChild is not None:
-        itemDataDict['dataName'] = nameChild.text
-    if 'name' in element.attrib:
-        itemDataDict['name'] = element.attrib['name']
-    itemDataDict, extraAttributes = QVizDataTreeViewBuilder().buildNamedDataElement(
-        element.text, element, itemDataDict, idsName, 0)
-    node = QVizTreeNode(None, [element.tag], itemDataDict, extraAttributes)
-    node.idsRef = idsInstance
-    node.dataTreeView = treeView
-    return node
+    """The shadow trees and the runtime objects, walked once for all tests."""
+    return loadCaseTrees(qapp, ('tf', 'equilibrium', 'core_profiles'))
 
 
 @pytest.fixture
