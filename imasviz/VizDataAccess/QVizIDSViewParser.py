@@ -398,11 +398,12 @@ class QVizIDSViewParser(QThread):
 
         The Access Layer wraps every scalar in an object of its own. Keeping that
         object in the element makes the shadow tree impossible to serialise --
-        ElementTree refuses an attribute that is not text, which on the reference
-        case is 3 618 of one IDS's elements -- and it is also what the
-        documentation panel ends up showing for a scalar, where the wrapper says
-        nothing about the value. The plain Python value sits under .value; a
-        string arrives as bytes on some back ends.
+        ElementTree refuses an attribute that is not text, and on the reference
+        case that is every scalar of the IDSs walked, 3 620 of them across tf,
+        equilibrium and core_profiles -- and it is also what the documentation
+        panel ends up showing for a scalar, where the wrapper says nothing about
+        the value. The plain Python value sits under .value; a string arrives as
+        bytes on some back ends.
         """
         if value is None:
             return ''
