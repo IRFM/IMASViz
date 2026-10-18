@@ -96,14 +96,24 @@ def coordinateSegments(coordinate):
     'time_slice(itime)/profiles_1d/psi' descends through time_slice,
     profiles_1d and psi. A parenthesised index placeholder (itime, i1, ...)
     names no node, and the unbounded '1..N' spelling names nothing at all.
+
+    The same coordinate reaches this helper spelled two ways. The shadow tree
+    keeps the dictionary's slashes; the tree node carries the form
+    buildNamedDataElement wrote after replacing every '/' with a '.', where the
+    steps after a closing parenthesis are no longer separated -- cutting
+    'time_slice(itime).grid.dim1' on slashes alone yields an 'itime)' step and
+    drops the rest of the path.
     """
     segments = []
     for step in str(coordinate).split('/'):
         name, _, rest = step.partition('(')
-        inside = rest.rstrip(')')
         segments.extend(part for part in name.split('.') if part)
+        if not rest:
+            continue
+        inside, _, tail = rest.partition(')')
         if inside and not re.fullmatch(r'i(time|[0-9]+)', inside):
             segments.extend(part for part in inside.split('.') if part)
+        segments.extend(part for part in tail.lstrip('.').split('.') if part)
     return segments
 
 
