@@ -16,6 +16,7 @@ from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPreviewPlotSignal import QVizPreviewPlotSignal
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
@@ -407,6 +408,29 @@ class QVizSignalHandling(QObject):
                     partial(self.addSelectedSignalsPlotToFig, id_Fig, True))
                 # Add to submenu
                 subMenu_figure_existing.addAction(action_figure_ex_allDTV)
+
+            # ------------------------------------------------------------------
+
+            # Curves drawn through the tensor read: any rank, and a named
+            # control for every axis the curve does not draw. Not gated on
+            # shareSameCoordinates the way the figure entries above are -- that
+            # gate keeps one slider group from mixing quantities with different
+            # coordinates on one figure, and here each quantity carries its own
+            # controls.
+            subMenu_slices = menu.addMenu('Curves with slice controls')
+            subMenu_slices.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
+
+            action_slices_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
+                                            self)
+            action_slices_thisDTV.triggered.connect(
+                partial(self.plotAsSlices, False))
+            subMenu_slices.addAction(action_slices_thisDTV)
+
+            action_slices_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
+                                           self)
+            action_slices_allDTV.triggered.connect(
+                partial(self.plotAsSlices, True))
+            subMenu_slices.addAction(action_slices_allDTV)
 
             # ------------------------------------------------------------------
 
@@ -892,6 +916,29 @@ class QVizSignalHandling(QObject):
                                     all_DTV=all_DTV,
                                     plotAxis=plotAxis).execute()
 
+        except ValueError as e:
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
+
+    # @Slot(bool)
+    def plotAsSlices(self, all_DTV=True):
+        """Plot the selection through the tensor read, one control per pinned axis.
+
+        Unlike plotSelectedSignals, no figure key and no plot widget are asked
+        from the api: the command creates its frame and keeps its own key
+        namespace, so the 'Figure:' entries built above cannot offer a frame the
+        old path does not know how to fill.
+
+        Arguments:
+            all_DTV (bool) : Whether to consider the current or all DTVs.
+        """
+        if len(self.dataTreeView.selectedSignalsDict) == 0:
+            logging.getLogger(self.dataTreeView.uri).error("No selection found.")
+            return
+        try:
+            command = QVizPlotAsSlices(dataTreeView=self.dataTreeView,
+                                       all_DTV=all_DTV)
+            self.addPlotWidgetToMDI(command.plotWidget)
+            command.execute()
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
