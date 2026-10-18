@@ -9,10 +9,11 @@
 
 """The plot command that goes through the tensor read, from selection to figure.
 
-The curve figure and the read each have their own tests; what is checked here is
-what only the command does: create a frame the api knows about, walk the
-selection of one view or of all of them, keep a refusal from costing the user the
-curves that did read, and leave nothing behind when nothing could be drawn.
+The curve figure, the image figure and the read each have their own tests; what is
+checked here is what only the command does: build a frame the api knows about, walk
+the selection of one view or of all of them, keep a refusal from costing the user
+the curves that did read, and leave nothing behind when nothing could be drawn.
+Which frame a quantity is sent to is the subject of test_27.
 
 A rank 3 quantity is in the selection on purpose. The legacy command refuses
 anything the dictionary does not rank 0 or 1, so that case is the difference
@@ -25,6 +26,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotA
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 
 from support.fakes import FakeAxesNode
+from support.plotting import FakeView, FakeApi, plotCommand, plotted
 
 AOS, LEAF = 'AOS', 'LEAF'
 ION = (AOS, 'foo', 'ion')
@@ -88,73 +90,25 @@ def _scalarInTime():
                         itimeIndex=0, coordinates=(), lengths={'i': '2'})
 
 
-class FakeSource:
-    def __init__(self, uri):
-        self.uri = uri
-
-    def dataKey(self, treeNode):
-        return treeNode.getParametrizedDataPath()
-
-
-class FakeView:
-    """Enough of QVizDataTreeView for the command: a selection and a source."""
-
-    def __init__(self, uri, nodes):
-        self.uri = uri
-        self.dataSource = FakeSource(uri)
-        self.selectedItem = None
-        self.selectedSignalsDict = {node.getParametrizedDataPath():
-                                    {'QTreeWidgetItem': node} for node in nodes}
-        self.imas_viz_api = None
-
-
-class FakeApi:
-    """The figure bookkeeping the command uses, without the window machinery."""
-
-    def __init__(self, views):
-        self.figureframes = {}
-        self.figToNodes = {}
-        self.DTVlist = list(views)
-        for view in views:
-            view.imas_viz_api = self
-
-    def AddNodeToFigure(self, figureKey, key, tup):
-        self.figToNodes.setdefault(figureKey, {})[key] = tup
-
-    def DeleteFigure(self, figureKey):
-        frame = self.figureframes.pop(figureKey, None)
-        if frame is not None:
-            frame.close()
-        self.figToNodes.pop(figureKey, None)
-
-    def GetFiguresKeys(self, figureType='Figure:'):
-        return sorted(key for key in self.figureframes if key.startswith(figureType))
-
-
-def _command(*nodes, all_DTV=True, otherViews=()):
-    """A command over one view holding `nodes`, plus any number of other views."""
-    view = FakeView('imas:hdf5?case=1', list(nodes))
-    api = FakeApi([view] + list(otherViews))
-    return QVizPlotAsSlices(dataTreeView=view, all_DTV=all_DTV)
-
-
-def plotted(frame, index=0):
-    x, y = frame.curves()[index].getData()
-    return list(x), list(y)
+def _curve(*nodes, **kwargs):
+    """Run the command and hand back its single curve figure."""
+    figures = plotCommand(*nodes, **kwargs).execute()
+    assert [type(frame) for frame in figures] == [QVizCurvePlot]
+    return figures[0]
 
 
 @pytest.mark.ui
 def test_the_command_builds_a_curve_figure_the_api_knows_about(qtbot):
-    command = _command(_scalarInTime())
-    frame = command.execute()
+    command = plotCommand(_scalarInTime())
+    figures = command.execute()
 
-    assert isinstance(frame, QVizCurvePlot)
-    assert command.api.figureframes[command.figureKey] is frame
+    assert isinstance(figures[0], QVizCurvePlot)
+    assert command.api.figureframes[command.curveFigure.figureKey] is figures[0]
 
 
 @pytest.mark.ui
 def test_every_selected_node_of_the_view_is_drawn(qtbot):
-    frame = _command(_scalarInTime(), _rankThreeLeaf()).execute()
+    frame = _curve(_scalarInTime(), _rankThreeLeaf())
 
     assert frame.curveCount() == 2
     assert plotted(frame, 0) == ([0., 1.], [100., 200.])
@@ -165,7 +119,7 @@ def test_every_selected_node_of_the_view_is_drawn(qtbot):
 def test_a_rank_three_selection_is_not_refused(qtbot):
     # The legacy command logs 'Plots dimension larger than 1D are currently not
     # supported.' and stops here.
-    frame = _command(_rankThreeLeaf()).execute()
+    frame = _curve(_rankThreeLeaf())
 
     assert frame.curveCount() == 1
     assert frame.sliceControls.keys() == [ION, RADIAL]
@@ -176,7 +130,7 @@ def test_a_rank_three_selection_is_not_refused(qtbot):
 @pytest.mark.ui
 def test_the_curve_still_answers_its_controls_after_the_command_is_done(qtbot):
     # The command is gone by then; the frame holds the loop on its own.
-    frame = _command(_rankThreeLeaf()).execute()
+    frame = _curve(_rankThreeLeaf())
 
     frame.sliceControls.setIndex(ION, 0)
 
@@ -185,9 +139,9 @@ def test_the_curve_still_answers_its_controls_after_the_command_is_done(qtbot):
 
 @pytest.mark.ui
 def test_the_nodes_are_registered_under_the_figure(qtbot):
-    command = _command(_scalarInTime(), _rankThreeLeaf())
+    command = plotCommand(_scalarInTime(), _rankThreeLeaf())
     command.execute()
-    registered = command.api.figToNodes[command.figureKey]
+    registered = command.api.figToNodes[command.curveFigure.figureKey]
 
     assert sorted(registered) == ['foo.profiles_1d[itime].gap',
                                   'foo.profiles_1d[itime].ion[j].z_ion']
@@ -196,7 +150,7 @@ def test_the_nodes_are_registered_under_the_figure(qtbot):
 
 @pytest.mark.ui
 def test_one_unreadable_node_does_not_cost_the_other_curves(qtbot):
-    frame = _command(_emptyRankThreeLeaf(), _scalarInTime()).execute()
+    frame = _curve(_emptyRankThreeLeaf(), _scalarInTime())
 
     assert frame.curveCount() == 1
     assert plotted(frame) == ([0., 1.], [100., 200.])
@@ -204,7 +158,7 @@ def test_one_unreadable_node_does_not_cost_the_other_curves(qtbot):
 
 @pytest.mark.ui
 def test_a_figure_with_nothing_on_it_is_not_left_behind(qtbot):
-    command = _command(_emptyRankThreeLeaf())
+    command = plotCommand(_emptyRankThreeLeaf())
 
     with pytest.raises(ValueError):
         command.execute()
@@ -215,7 +169,7 @@ def test_a_figure_with_nothing_on_it_is_not_left_behind(qtbot):
 
 @pytest.mark.ui
 def test_no_selection_raises_and_leaves_no_frame(qtbot):
-    command = _command()
+    command = plotCommand()
 
     with pytest.raises(ValueError):
         command.execute()
@@ -226,7 +180,7 @@ def test_no_selection_raises_and_leaves_no_frame(qtbot):
 @pytest.mark.ui
 def test_the_selections_of_all_views_are_drawn_on_one_figure(qtbot):
     other = FakeView('imas:hdf5?case=2', [_rankThreeLeaf()])
-    frame = _command(_scalarInTime(), otherViews=[other]).execute()
+    frame = _curve(_scalarInTime(), otherViews=[other])
 
     assert frame.curveCount() == 2
 
@@ -234,7 +188,7 @@ def test_the_selections_of_all_views_are_drawn_on_one_figure(qtbot):
 @pytest.mark.ui
 def test_this_view_only_leaves_the_other_selections_alone(qtbot):
     other = FakeView('imas:hdf5?case=2', [_rankThreeLeaf()])
-    frame = _command(_scalarInTime(), all_DTV=False, otherViews=[other]).execute()
+    frame = _curve(_scalarInTime(), all_DTV=False, otherViews=[other])
 
     assert frame.curveCount() == 1
 
@@ -253,7 +207,7 @@ def test_the_figure_keys_do_not_collide_with_the_legacy_figures(qtbot):
     second = QVizPlotAsSlices(dataTreeView=view)
     second.execute()
 
-    assert first.figureKey == 'SlicesPlot1'
-    assert second.figureKey == 'SlicesPlot2'
+    assert first.curveFigure.figureKey == 'SlicesPlot1'
+    assert second.curveFigure.figureKey == 'SlicesPlot2'
     assert api.GetFiguresKeys('Figure:') == ['Figure:1', 'Figure:2']
     assert api.GetFiguresKeys('SlicesPlot') == ['SlicesPlot1', 'SlicesPlot2']

@@ -155,6 +155,9 @@ class QVizImagePlot(QWidget):
     def imageCount(self):
         return 0 if self.imageItem is None else 1
 
+    def isDrawing(self):
+        return self.imageItem is not None
+
     def images(self):
         return [] if self.imageItem is None else [self.imageItem]
 

@@ -130,6 +130,9 @@ class QVizCurvePlot(QWidget):
     def curveCount(self):
         return len(self._curves)
 
+    def isDrawing(self):
+        return bool(self._curves)
+
     def curves(self):
         return [curve for _, _, curve, _ in self._curves]
 

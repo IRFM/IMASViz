@@ -411,13 +411,14 @@ class QVizSignalHandling(QObject):
 
             # ------------------------------------------------------------------
 
-            # Curves drawn through the tensor read: any rank, and a named
-            # control for every axis the curve does not draw. Not gated on
+            # Curves and images drawn through the tensor read: any rank, the
+            # frame picked by how many axes the read draws, and a named control
+            # for every axis that frame leaves out. Not gated on
             # shareSameCoordinates the way the figure entries above are -- that
             # gate keeps one slider group from mixing quantities with different
             # coordinates on one figure, and here each quantity carries its own
             # controls.
-            subMenu_slices = menu.addMenu('Curves with slice controls')
+            subMenu_slices = menu.addMenu('Curves and images with slice controls')
             subMenu_slices.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
 
             action_slices_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
@@ -924,9 +925,12 @@ class QVizSignalHandling(QObject):
         """Plot the selection through the tensor read, one control per pinned axis.
 
         Unlike plotSelectedSignals, no figure key and no plot widget are asked
-        from the api: the command creates its frame and keeps its own key
-        namespace, so the 'Figure:' entries built above cannot offer a frame the
-        old path does not know how to fill.
+        from the api: the command builds its own frames in its own key namespace,
+        so the 'Figure:' and 'Image:' entries built above cannot offer a frame the
+        old path does not know how to fill. How many frames it builds is whatever
+        the selection needs -- one curve figure and one figure per image -- so they
+        are embedded after the read, which also keeps an empty window off the
+        screen when nothing could be read.
 
         Arguments:
             all_DTV (bool) : Whether to consider the current or all DTVs.
@@ -937,8 +941,8 @@ class QVizSignalHandling(QObject):
         try:
             command = QVizPlotAsSlices(dataTreeView=self.dataTreeView,
                                        all_DTV=all_DTV)
-            self.addPlotWidgetToMDI(command.plotWidget)
-            command.execute()
+            for plotWidget in command.execute():
+                self.addPlotWidgetToMDI(plotWidget)
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
