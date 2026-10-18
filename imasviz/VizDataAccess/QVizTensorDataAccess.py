@@ -141,11 +141,36 @@ class QVizTensorDataAccess:
             if axis.origin != QVizAxis.AOS:
                 continue
             if timeAxis is not None and axis.level == timeAxis.level:
-                if timeIndex is not None:
-                    indices[axis.level] = timeIndex
+                index = self._effectiveTimeIndex(axesSpec, timeAxis, timeIndex,
+                                                 slices)
+                if index is not None:
+                    indices[axis.level] = index
                 continue
             indices[axis.level] = self._sliceIndex(axis, slices, axis.index)
         return indices
+
+    def _effectiveTimeIndex(self, axesSpec, timeAxis, timeIndex, slices):
+        """Which element of the dynamic array this read takes.
+
+        A slice control wins over the index the caller passes. A curve along time
+        draws that array, so it offers no control for it and the caller's index
+        stands; an image does not draw it, so its control is where the user picks
+        the time slice, and a read that ignored the control would leave the
+        picture alone while its control moved.
+
+        None means nothing decides it, which is the curve-along-time case: the
+        array stays an axis of the tensor.
+        """
+        if timeAxis is None:
+            return timeIndex
+        # Read the control off the mapping rather than through _sliceIndex: that
+        # one turns a missing index into 0, which would fix the dynamic array at
+        # its first element on a curve that draws it -- collapsing the curve to a
+        # point, silently.
+        chosen = None if slices is None else slices.get(timeAxis.key())
+        if chosen is None:
+            return timeIndex
+        return self._sliceIndex(timeAxis, slices, chosen)
 
     def _sliceIndex(self, axis, slices, default):
         """Where to read one axis: the slice control wins over the tree.
@@ -210,6 +235,11 @@ class QVizTensorDataAccess:
         axes in order.
         """
         timeAxis = self._timeAxis(axesSpec)
+        # The labels are built below from the time index, so they have to be
+        # told the index the read used: a picture taken at slice 1 and labelled
+        # '[0]' is the drift this path exists to remove.
+        time_index = self._effectiveTimeIndex(axesSpec, timeAxis, time_index,
+                                              slices)
         tensor = extractor.extract(
             axesSpec,
             self._fixedIndices(axesSpec, timeIndex=time_index, timeAxis=timeAxis,
@@ -254,8 +284,12 @@ class QVizTensorDataAccess:
             axis = axesSpec.axes[position]
             if coordinateValues is None:
                 # The dictionary names no node for this axis (1..N): the axis is
-                # the element rank, as the current path makes it.
-                coordinateValues = np.arange(values.shape[dim - 1])
+                # the element rank, as the current path makes it. A quantity that
+                # holds nothing has no rank to take either, so the axis is empty
+                # and the caller reports that on the path it asked for rather than
+                # through an IndexError about a numpy shape.
+                rank = values.shape[dim - 1] if dim - 1 < values.ndim else 0
+                coordinateValues = np.arange(rank)
             elif len(coordinateValues) == 0:
                 raise ValueError("Coordinate array for dimension " + str(dim) +
                                  " has no values.")

@@ -16,6 +16,7 @@ the widgets through these instead.
 
 import numpy as np
 
+from imasviz.VizUtils import QVizGlobalValues
 from imasviz.VizEntities.QVizDataArrayHandle import ArrayCoordinates, QVizDataArrayHandle
 
 
@@ -228,7 +229,40 @@ class FakeAxesNode:
         return None
 
     def timeValue(self):
-        return self._timeIndex
+        """The index the tree carries for the dynamic array, as QVizTreeNode does.
+
+        The read takes this as the time slice while the axes model takes
+        parameters_values for the same array, so a stub where the two disagree
+        would hide a drift the real node cannot have.
+        """
+        letter = QVizGlobalValues.indices.get(str(self.getItimeIndex() + 1))
+        value = self.parameters_values.get(letter)
+        return self._timeIndex if value is None else value
 
     def isPlotToPerformAlongTimeAxis(self, plotWidget=None):
         return self._alongTime
+
+    def evaluateCoordinateAt(self, coordinateNumber, itimeValue):
+        """The coordinate path, spelled from the IDS.
+
+        A real node substitutes the loop placeholders of a coordinate that moves
+        with time; a stub spells its coordinates from the IDS level and holds
+        arrays of the same name there, so there is nothing to substitute.
+        """
+        return self._idsName + '.' + self.coordinates[coordinateNumber - 1]
+
+    def labels(self, plotWidget, coordinateNumber, coordinate_index, time_index):
+        """(quantity, figure label, coordinate label) as QVizTreeNode spells them.
+
+        Reading a two-dimension leaf takes its numbers from the tensor and its
+        words from the node, so a stub that reaches that path has to answer.
+        """
+        quantity = self._name
+        if self._units:
+            quantity += '[' + self._units + ']'
+        coordinate = self.coordinates[coordinateNumber - 1]
+        units = self.getCoordinateUnits(coordinateNumber)
+        coordinateLabel = self._idsName + '.' + coordinate
+        if units:
+            coordinateLabel += '[' + units + ']'
+        return quantity, self.getParametrizedDataPath(), coordinateLabel
