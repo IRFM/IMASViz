@@ -194,11 +194,16 @@ class QVizTensorExtractor:
     def _axisValues(self, axesSpec, axis, aosIndices):
         """The values of one leaf coordinate, read under the same indices.
 
-        An axis whose coordinate names a time base does not read that path:
-        with homogeneous_time 1 the time of the whole IDS is the base, which is
-        what the current path does and what the data forces -- on this case
-        tf.b_field_tor_vacuum_r.time holds no values at all while IDS.time
-        holds 17 344, so reading the spelled coordinate would draw nothing.
+        A coordinate spelled as a time base is resolved by
+        ids_properties.homogeneous_time and by nothing else. When it is 1 the
+        base is IDS.time for every dynamic quantity of the IDS -- which is what
+        the reference case needs, since tf.b_field_tor_vacuum_r.time holds no
+        values there while IDS.time holds 17 344. When it is 0 the spelled
+        coordinate is the base: it sits under the element carrying the quantity
+        (b_field_tor_vacuum_r/time, ic/antenna(i1)/power/reference/time), and
+        nothing stands in for it. An empty one leaves the axis without values
+        rather than borrowing the IDS clock, which would plot the values
+        against a time they were never taken on.
         """
         if axis.coordinate is None:
             return None
@@ -225,7 +230,7 @@ class QVizTensorExtractor:
             values = np.asarray(holder, dtype=float)
         except (TypeError, ValueError):
             return None
-        return values if values.size else self._idsTime()
+        return values if values.size else None
 
     def _idsTime(self):
         try:
