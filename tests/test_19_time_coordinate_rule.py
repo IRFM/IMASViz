@@ -96,3 +96,45 @@ def test_a_homogeneous_ids_still_takes_the_ids_time_when_its_own_is_filled():
     ids = makeIds(1, [0., 1., 2.], [100., 101., 102.])
     tensor = QVizTensorExtractor(ids).extract(leafSpec())
     np.testing.assert_allclose(tensor.axesValues[0], [0., 1., 2.])
+
+
+def makeIdsInDynamicArray(homogeneousTime, idsTime, arrayTimes):
+    """A quantity directly under the dynamic array: one element per time."""
+    ids = type(str('StubIds'), (), {})()
+    ids.ids_properties = type(str('Props'), (), {})()
+    ids.ids_properties.homogeneous_time = homogeneousTime
+    ids.time = idsTime
+    ids.slice = [type(str('Element'), (), {})() for _ in arrayTimes]
+    for element, time in zip(ids.slice, arrayTimes):
+        element.time = time
+        element.value = 1.
+    return ids
+
+
+def dynamicArraySpec():
+    """One axis, the dynamic array of structures -- spelled as the view spells it.
+
+    The parametrized path names the dynamic level [itime] while the data path
+    names the same level by its loop letter ([i]): that is what
+    QVizIDSViewParser.buildLeaf does, replacing the letter of the time level
+    with 'itime'. Comparing the two spellings to find the time level therefore
+    never matches, and the array's own times go unread.
+    """
+    return QVizAxesSpec(
+        [QVizAxis(origin=QVizAxis.AOS, level=1, placeholder='itime',
+                  coordinate='foo.slice/time', units='s', length=3, is_time=True)],
+        idsName='foo', dataPath='foo.slice[i].value', dataType='FLT_0D')
+
+
+def test_the_dynamic_array_times_of_its_own_when_the_ids_is_not_homogeneous():
+    # The other half of the rule: with homogeneous_time 0 the base of a
+    # quantity held by the dynamic array is that array's own <aos>[i].time.
+    ids = makeIdsInDynamicArray(0, [0., 1., 2.], [100., 101., 102.])
+    tensor = QVizTensorExtractor(ids).extract(dynamicArraySpec())
+    np.testing.assert_allclose(tensor.timeAxisValues(), [100., 101., 102.])
+
+
+def test_a_homogeneous_array_of_structures_takes_the_ids_time():
+    ids = makeIdsInDynamicArray(1, [0., 1., 2.], [100., 101., 102.])
+    tensor = QVizTensorExtractor(ids).extract(dynamicArraySpec())
+    np.testing.assert_allclose(tensor.timeAxisValues(), [0., 1., 2.])

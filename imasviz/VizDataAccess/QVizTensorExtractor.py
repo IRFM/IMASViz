@@ -175,20 +175,31 @@ class QVizTensorExtractor:
             return None
 
     def _arrayTimes(self, axesSpec, timePosition):
-        """The per-element time of the dynamic array itself."""
+        """The per-element time of the dynamic array itself.
+
+        The level names the array, not the spelling. buildLeaf rewrites the
+        placeholder of the time level as [itime] in parametrizedPath while the
+        data path keeps the loop letter ([i] for the first level), so comparing
+        the two spellings never lands on the dynamic array and its own times go
+        unread -- which only shows on an IDS whose homogeneous_time is 0, and
+        not at all when the array's times happen to equal IDS.time.
+        """
         axis = axesSpec.axes[timePosition]
-        if axis.placeholder is None:
-            return None
         steps = pathSegments(axesSpec.dataPath)[1:]
+        level = 0
         for index, (name, placeholder) in enumerate(steps):
-            if placeholder == axis.placeholder:
-                try:
-                    # Reading through the array name lands on the array itself,
-                    # so its elements are the holders of the time.
-                    holder = self._read(steps[:index + 1], self.idsInstance, 0, {})
-                    return np.asarray([element.time for element in holder], dtype=float)
-                except Exception:
-                    return None
+            if placeholder is None:
+                continue
+            level += 1
+            if level != axis.level:
+                continue
+            try:
+                # Reading through the array name lands on the array itself,
+                # so its elements are the holders of the time.
+                holder = self._read(steps[:index + 1], self.idsInstance, 0, {})
+                return np.asarray([element.time for element in holder], dtype=float)
+            except Exception:
+                return None
         return None
 
     def _axisValues(self, axesSpec, axis, aosIndices):
