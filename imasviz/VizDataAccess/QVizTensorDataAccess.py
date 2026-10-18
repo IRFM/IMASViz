@@ -47,14 +47,14 @@ class QVizTensorDataAccess:
         indices give.
         """
         axesSpec, timeAxis, alongTime, _ = \
-            self._plan(treeNode, plotWidget, as_function_of_time)
+            self.plan(treeNode, plotWidget, as_function_of_time)
         extractor = QVizTensorExtractor(treeNode.getIDSRef())
         if time_index is None:
             time_index = int(treeNode.timeValue())
         if slices is None:
             # A plot frame that carries slice controls decides them; the axes
             # those controls offer are the ones this read fixes, because both
-            # come out of _plan.
+            # come out of plan().
             controls = getattr(plotWidget, 'sliceControls', None)
             if controls is not None:
                 slices = controls.indices()
@@ -71,13 +71,14 @@ class QVizTensorDataAccess:
         return self._sliceAtTime(treeNode, axesSpec, extractor, plotWidget,
                                  coordinate_index, time_index, slices)
 
-    def _plan(self, treeNode, plotWidget, as_function_of_time):
+    def plan(self, treeNode, plotWidget=None, as_function_of_time=None):
         """What this plot draws, and therefore which axes must be fixed.
 
-        One place decides it, because the read and the slice controls have to
-        agree: a control for an axis the plot already draws, or no control for
-        an axis the read silently fixes, both look right until the numbers move
-        under the user.
+        One place decides it, because the read, the slice controls and the axis
+        labels all have to agree: a control for an axis the plot already draws,
+        no control for an axis the read silently fixes, or a label naming a
+        different axis than the one the numbers came off, all look right until
+        the numbers move under the user.
         """
         axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
         timeAxis = self._timeAxis(axesSpec)
@@ -106,7 +107,7 @@ class QVizTensorDataAccess:
         means anything is the length of what was read.
         """
         axesSpec, timeAxis, alongTime, plotted = \
-            self._plan(treeNode, plotWidget, as_function_of_time)
+            self.plan(treeNode, plotWidget, as_function_of_time)
         aosIndices = self._fixedIndices(axesSpec, timeAxis=timeAxis,
                                         timeIndex=None, slices=None)
         tensor = QVizTensorExtractor(treeNode.getIDSRef()).extract(axesSpec,
