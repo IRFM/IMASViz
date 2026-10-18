@@ -13,8 +13,15 @@ from imasviz.VizUtils import QVizGlobalValues
 # The data dictionary spells an unbounded coordinate 1..N; the shadow tree
 # rewrites every dot in a coordinate as a slash, so it reaches the view as
 # 1///N. Neither one names a node in the dictionary: they describe an axis of
-# ranks only.
-UNBOUNDED_COORDINATE = re.compile(r'^1[./]+[NM]$')
+# ranks only. The count is spelled as a letter most of the time and as a number
+# for a handful of arrays (spectroscopy's channel[i1].spectrum[i2].data runs
+# 1..9), which names an axis no more than 1..N does.
+UNBOUNDED_COORDINATE = re.compile(r'^1[./]+(?:[NM]|\d+)$')
+
+
+def isUnboundedCoordinate(spelling):
+    """Whether a coordinate spelling -- dictionary or shadow tree -- names no node."""
+    return bool(spelling) and bool(UNBOUNDED_COORDINATE.match(str(spelling)))
 
 PLACEHOLDER = re.compile(r'\[([a-z]+)\]')
 

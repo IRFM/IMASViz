@@ -24,6 +24,7 @@ from imas.ids_data_type import IDSDataType
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
+from imasviz.VizDataAccess.QVizAxesSpec import isUnboundedCoordinate
 from imasviz.VizGUI.VizTreeView.QVizResultEvent import QVizResultEvent
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues, QVizPreferences
 
@@ -89,6 +90,57 @@ def metadataForPath(rootMetaData, segments):
     return metaData
 
 
+def structureCoordinates(metaData):
+    """The coordinates a structure declares for the arrays it holds.
+
+    IDSMetadata leaves .coordinates empty on a structure and answers the
+    declaration on coordinate1 / coordinate2 attributes instead, so a walk that
+    reads only .coordinates never sees it. hard_x_rays.channel[i1].radiance
+    declares (channel(i1)/energy_band, channel(i1)/radiance/time) and its array
+    spells (1..N, channel(i1)/radiance/time): the leaf keeps the axis it shares
+    and leaves the other one anonymous, and the name of the anonymous one is
+    here and nowhere else on the leaf.
+
+    Trailing blanks end the declaration: what a structure spells is how many
+    dimensions it describes arrays for, which is what makes the declaration
+    usable or not for a given leaf -- see inheritCoordinates.
+    """
+    declared = []
+    for number in range(1, 7):
+        spelling = getattr(metaData, 'coordinate%d' % number, None)
+        if spelling is None or not str(spelling):
+            break
+        declared.append(str(spelling))
+    return declared
+
+
+def inheritCoordinates(own, donors):
+    """Fills the anonymous dimensions of a leaf from the structures around it.
+
+    A declaration only describes the leaf if it counts as many dimensions as the
+    leaf has: radiance declares two coordinates and holds both a 2D 'data' and a
+    1D 'time', so handing 'time' the first of the two calls a time axis an energy
+    band. On the 3.35.0 dictionary the two counts agree for 1 570 dimensions and
+    disagree for 7 556, and only the first set is carried over.
+
+    The closest declaration wins each dimension, and a further structure may
+    still name one the closest one left blank. A declaration naming no node
+    ('1..N', '1..9') is carried over as well: it names nothing, but it is what
+    the dictionary says about that axis.
+    """
+    filled = list(own)
+    for donor in donors:
+        if len(donor) != len(own):
+            continue
+        for position, spelling in enumerate(donor):
+            if not spelling:
+                continue
+            if filled[position] and not isUnboundedCoordinate(filled[position]):
+                continue
+            filled[position] = spelling
+    return filled
+
+
 def coordinateSegments(coordinate):
     """Splits a data dictionary coordinate into the names to descend through.
 
@@ -147,6 +199,11 @@ class QVizIDSViewParser(QThread):
         # How many times the dictionary was actually descended, for the test
         # that keeps the walk from growing with the node count.
         self.metadataDescents = 0
+        # Coordinates declared by the structures currently being walked,
+        # outermost first. A leaf spells the axes it shares with its siblings
+        # and leaves the others anonymous; the name of an anonymous one lives on
+        # the structure, so the walk has to remember it on the way down.
+        self._structureCoordinates = []
 
     def setProgressBar(self, progressBar):
         self.progressBar = progressBar
@@ -192,6 +249,7 @@ class QVizIDSViewParser(QThread):
             self.rootMetaData = idsInstance.metadata
             # Resolutions belong to this IDS: a new root invalidates them.
             self._coordinateMetaData = {}
+            self._structureCoordinates = []
             self.metadataDescents = 0
 
             root = ET.Element(IDSName)
@@ -233,8 +291,10 @@ class QVizIDSViewParser(QThread):
                 element.text = pathText + '.' + name
                 parents.append(element)
                 self.setCommonAttributes(element, childMeta, 'structure')
+                self._structureCoordinates.append(structureCoordinates(childMeta))
                 self.walkIDS(childMeta, self.childOf(idsObject, name), element,
                              parents, pathText + '.' + name, level)
+                self._structureCoordinates.pop()
                 parents.pop()
                 parent = parents[-1]
 
@@ -293,13 +353,20 @@ class QVizIDSViewParser(QThread):
 
         element.set('path_doc', pathDoc if pathDoc is not None else '')
 
+        # A leaf spells the axes it shares with its siblings and writes 1..N for
+        # the ones it does not; the name of those lives on the structure that
+        # holds it. The closest declaration wins each dimension.
+        ownCoordinates = [str(coordinate) for coordinate in childMeta.coordinates]
+        coordinates = inheritCoordinates(ownCoordinates,
+                                         reversed(self._structureCoordinates))
+
         for dimension in range(childMeta.ndim):
             number = str(dimension + 1)
-            coordinate = childMeta.coordinates[dimension]
-            if not str(coordinate):
+            coordinate = coordinates[dimension] if dimension < len(coordinates) else ''
+            if not coordinate:
                 continue
             element.set('coordinate' + number,
-                        QVizGlobalOperations.makeIMASPath(str(coordinate)))
+                        QVizGlobalOperations.makeIMASPath(coordinate))
 
             # The view builds axis labels from the coordinate; its unit comes
             # from the dictionary node it names, which was never carried over

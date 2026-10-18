@@ -30,7 +30,8 @@ import pytest
 from conftest import (RANK3_CASE_DATA_DICTIONARY_VERSION, RANK3_CASE_URI,
                       rank3_case_uri_or_skip)
 
-from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis, QVizAxesSpec
+from imasviz.VizDataAccess.QVizAxesSpec import (QVizAxis, QVizAxesSpec,
+                                                isUnboundedCoordinate)
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle
@@ -98,6 +99,24 @@ def test_the_shot_holds_the_quantity_the_suite_thinks_it_holds(case):
 
 
 @pytest.mark.case
+def test_the_shadow_tree_carries_the_coordinate_the_structure_declares(case):
+    leaf = leafByText(case['trees'][IDS_NAME], LEAF)
+
+    assert isUnboundedCoordinate(leaf.get('coordinate1').replace('/', '.')) is False
+    assert leaf.get('coordinate1').replace('/', '.').endswith('channel(i1).energy_band')
+
+
+@pytest.mark.case
+def test_the_one_dimension_sibling_of_the_array_is_left_anonymous(case):
+    # radiance declares two coordinates and holds a 2D 'data' and a 1D 'time'.
+    # Naming time's axis with the first of the two would call it an energy band.
+    timeLeaf = leafByText(case['trees'][IDS_NAME],
+                          'hard_x_rays.channel[i].radiance.time')
+
+    assert isUnboundedCoordinate(timeLeaf.get('coordinate1'))
+
+
+@pytest.mark.case
 def test_the_axes_are_one_static_array_and_two_axes_of_the_leaf(radiance):
     axesSpec = QVizAxesSpec.fromTreeNode(radiance)
 
@@ -107,7 +126,11 @@ def test_the_axes_are_one_static_array_and_two_axes_of_the_leaf(radiance):
     assert channel.length == 38 and channel.index == 0
     assert not channel.is_time
     bands, time = axesSpec.leafAxes()[0], axesSpec.leafAxes()[1]
-    assert bands.isUnbounded()
+    # The dictionary spells this dimension 1..N on the leaf and names it
+    # channel(i1)/energy_band on the structure that holds the array -- see
+    # tests/test_29_inherited_coordinates.py for the rule that carries it over.
+    assert not bands.isUnbounded()
+    assert bands.coordinate.endswith('energy_band')
     assert time.is_time and time.coordinate.endswith('radiance.time')
     assert time.units == 's'
 
@@ -195,7 +218,9 @@ def test_the_time_axis_lies_horizontal_under_the_picture(qapp, radiance, case):
 
         assert axis('bottom').labelText == 'time'
         assert axis('bottom').labelUnits == 's'
-        assert axis('left').labelText == 'dimension 1'
+        # Named by the structure that holds the array, not left anonymous: the
+        # rows of data are the elements of channel[i1].energy_band.
+        assert axis('left').labelText == 'energy_band'
 
         rect = frame.images()[0].mapRectToParent(frame.images()[0].boundingRect())
         time = timeOf(case['runtime'][IDS_NAME], 0)
