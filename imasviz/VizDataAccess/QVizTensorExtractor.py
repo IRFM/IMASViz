@@ -51,11 +51,17 @@ class QVizTensor:
     dictionary leaves it unbounded (1..N) or this case holds no values for it.
     """
 
-    def __init__(self, values, axesValues, axesSpec, timeAxisPosition=None):
+    def __init__(self, values, axesValues, axesSpec, timeAxisPosition=None,
+                 indexAxes=None):
         self.values = values
         self.axesValues = axesValues
         self.axesSpec = axesSpec
         self.timeAxisPosition = timeAxisPosition
+        # Axis position -> how many elements the array of structures that names
+        # that axis holds. The axis itself is left without values, because its
+        # values are its own ranks; the count is what lets the caller notice a
+        # dictionary whose array and whose values disagree.
+        self.indexAxes = indexAxes or {}
 
     @property
     def rank(self):
@@ -131,12 +137,14 @@ class QVizTensorExtractor:
                                  'level %d' % level for level in keptLevels)))
 
         axesValues = []
+        indexAxes = {}
         for position, axis in enumerate(axesSpec.axes):
             if axis.is_time and position == timePosition:
                 axesValues.append(self._timeValues(axesSpec, timePosition))
             else:
-                axesValues.append(self._axisValues(axesSpec, axis, aosIndices))
-        return QVizTensor(values, axesValues, axesSpec, timePosition)
+                axesValues.append(self._axisValues(axesSpec, axis, aosIndices,
+                                                  position, indexAxes))
+        return QVizTensor(values, axesValues, axesSpec, timePosition, indexAxes)
 
     def _timeAxisPosition(self, axesSpec):
         for position, axis in enumerate(axesSpec.axes):
@@ -206,7 +214,7 @@ class QVizTensorExtractor:
                 return None
         return None
 
-    def _axisValues(self, axesSpec, axis, aosIndices):
+    def _axisValues(self, axesSpec, axis, aosIndices, position, indexAxes):
         """The values of one leaf coordinate, read under the same indices.
 
         A coordinate spelled as a time base is resolved by
@@ -219,6 +227,12 @@ class QVizTensorExtractor:
         nothing stands in for it. An empty one leaves the axis without values
         rather than borrowing the IDS clock, which would plot the values
         against a time they were never taken on.
+
+        A coordinate that is an array of structures itself names its axis
+        without holding values for it: the rows of the quantity are the
+        elements of that array, so the axis is their rank and its extent is the
+        length of the array. Indexing it -- as a step of a longer path is --
+        would descend one element and answer a whole axis with one number.
         """
         if axis.coordinate is None:
             return None
@@ -230,18 +244,21 @@ class QVizTensorExtractor:
         segments = coordinateSegments(axis.coordinate)
         if segments and segments[0] == axesSpec.idsName:
             segments = segments[1:]  # the coordinate was spelled from the IDS
-        for segment in segments:
-            if segment.isdigit():
-                continue
+        named = [segment for segment in segments if not segment.isdigit()]
+        for step, segment in enumerate(named):
             # A coordinate is spelled relative to the IDS, and a step of it may
             # be an array of structures the quantity sits in: descend it with
             # the index the leaf was read at, or the first element when the
             # caller kept that array as an axis. Iterating such an array without
             # indexing it first walks the fields of its elements instead.
             holder = getattr(holder, segment)
-            if isinstance(holder, IDSStructArray):
-                level += 1
-                holder = holder[aosIndices.get(level, 0)]
+            if not isinstance(holder, IDSStructArray):
+                continue
+            if step + 1 == len(named):
+                indexAxes[position] = len(holder)
+                return None
+            level += 1
+            holder = holder[aosIndices.get(level, 0)]
         try:
             values = np.asarray(holder, dtype=float)
         except (TypeError, ValueError):

@@ -7,6 +7,8 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
+import logging
+
 import numpy as np
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
@@ -290,6 +292,8 @@ class QVizTensorDataAccess:
                 # through an IndexError about a numpy shape.
                 rank = values.shape[dim - 1] if dim - 1 < values.ndim else 0
                 coordinateValues = np.arange(rank)
+                self._sayIndexAxis(axesSpec, axis, rank,
+                                   tensor.indexAxes.get(position))
             elif len(coordinateValues) == 0:
                 raise ValueError("Coordinate array for dimension " + str(dim) +
                                  " has no values.")
@@ -306,6 +310,23 @@ class QVizTensorDataAccess:
         return QVizDataArrayHandle(arrayCoordinates, np.asarray(values),
                                    label=label, name=quantityName,
                                    itimeValue=time_index)
+
+    def _sayIndexAxis(self, axesSpec, axis, rank, elements):
+        """Say out loud when the array a coordinate names is not the axis.
+
+        An axis named by an array of structures is drawn as element ranks,
+        because its values are those ranks. WEST 55799 declares one energy band
+        and holds eight rows of radiance: the picture is right and the base it
+        was written on is not, and a label cannot show both numbers -- so the
+        shot's log panel is told the two counts to reconcile.
+        """
+        if elements is None or elements == rank:
+            return
+        logging.getLogger(getattr(self.dataSource, 'uri', None) or 'IMASViz').warning(
+            "Coordinate '" + str(axis.coordinate) + "' names an array of "
+            "structures of " + str(elements) + " element(s), where '" +
+            axesSpec.dataPath + "' holds " + str(rank) + " along that axis: "
+            "the axis is drawn as element ranks")
 
     def _fixLeafAxes(self, axesSpec, keptAxes, values, coordinate_index,
                      slices=None):

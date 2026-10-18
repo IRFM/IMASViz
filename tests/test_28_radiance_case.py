@@ -24,6 +24,8 @@ one that says the model meets a dictionary written by someone else.
 Skipped when the shot's pulse files are not mounted.
 """
 
+import logging
+
 import numpy as np
 import pytest
 
@@ -114,6 +116,31 @@ def test_the_one_dimension_sibling_of_the_array_is_left_anonymous(case):
                           'hard_x_rays.channel[i].radiance.time')
 
     assert isUnboundedCoordinate(timeLeaf.get('coordinate1'))
+
+
+@pytest.mark.case
+def test_an_axis_named_by_an_array_of_structures_keeps_element_ranks(radiance, case):
+    # energy_band is an array of structures, not a set of values: the rows of
+    # data are its elements, so the axis is their index. Reading values out of
+    # the array would put one number where there are eight rows.
+    handle = QVizTensorDataAccess(radiance.getDataSource()).GetSignal(
+        treeNode=radiance, as_function_of_time=False)
+
+    np.testing.assert_array_equal(np.asarray(handle.getCoordinateValues(1)),
+                                  np.arange(BANDS))
+    assert len(case['runtime'][IDS_NAME].channel[0].energy_band) == 1
+
+
+@pytest.mark.case
+def test_the_disagreement_between_the_array_and_the_axis_is_said(radiance, caplog):
+    # The shot declares one energy band and holds eight rows: the picture is
+    # right and the base is inconsistent, and only the log can say so.
+    with caplog.at_level(logging.WARNING):
+        QVizTensorDataAccess(radiance.getDataSource()).GetSignal(
+            treeNode=radiance, as_function_of_time=False)
+
+    assert 'energy_band' in caplog.text
+    assert '1' in caplog.text and str(BANDS) in caplog.text
 
 
 @pytest.mark.case
