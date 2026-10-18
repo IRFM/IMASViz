@@ -10,6 +10,7 @@
 import numpy as np
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
+from imasviz.VizDataAccess.QVizSlices import sliceLabel, slicesFor
 from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
 
@@ -36,10 +37,18 @@ class QVizTensorDataAccess:
         self.dataSource = dataSource
 
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  coordinate_index=0, time_index=None):
-        if as_function_of_time is None:
-            as_function_of_time = \
-                treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
+                  coordinate_index=0, time_index=None, slices=None):
+        """The quantity, read whole and reduced to what this plot draws.
+
+        slices is {axis key: index}: the index to read each axis the plot does
+        not draw at. It overrides the index the tree carries for an array of
+        structures and the coordinate_index for a leaf axis, which is what a
+        slice control is for. Left alone, the answer is the one the tree's own
+        indices give.
+        """
+        axesSpec, timeAxis, alongTime, _ = \
+            self._plan(treeNode, plotWidget, as_function_of_time)
+        extractor = QVizTensorExtractor(treeNode.getIDSRef())
         if time_index is None:
             time_index = int(treeNode.timeValue())
         if plotWidget is not None and plotWidget.addTimeSlider:
@@ -49,15 +58,60 @@ class QVizTensorDataAccess:
             if plotWidget.sliderGroup is not None:
                 coordinate_index = plotWidget.sliderGroup.slider.value()
 
-        axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
-        extractor = QVizTensorExtractor(treeNode.getIDSRef())
-        timeAxis = self._timeAxis(axesSpec)
-
-        if as_function_of_time and timeAxis is not None:
+        if alongTime:
             return self._curveAlongTime(treeNode, axesSpec, extractor, timeAxis,
-                                        coordinate_index)
+                                        coordinate_index, slices)
         return self._sliceAtTime(treeNode, axesSpec, extractor, plotWidget,
-                                 coordinate_index, time_index)
+                                 coordinate_index, time_index, slices)
+
+    def _plan(self, treeNode, plotWidget, as_function_of_time):
+        """What this plot draws, and therefore which axes must be fixed.
+
+        One place decides it, because the read and the slice controls have to
+        agree: a control for an axis the plot already draws, or no control for
+        an axis the read silently fixes, both look right until the numbers move
+        under the user.
+        """
+        axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
+        timeAxis = self._timeAxis(axesSpec)
+        if as_function_of_time is None:
+            as_function_of_time = \
+                treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
+        alongTime = bool(as_function_of_time) and timeAxis is not None
+        return axesSpec, timeAxis, alongTime, self._plottedPositions(axesSpec,
+                                                                     timeAxis,
+                                                                     alongTime)
+
+    def _plottedPositions(self, axesSpec, timeAxis, alongTime):
+        if alongTime:
+            for position, axis in enumerate(axesSpec.axes):
+                if axis is timeAxis:
+                    return (position,)
+        return tuple(position for position, axis in enumerate(axesSpec.axes)
+                     if axis.origin == QVizAxis.LEAF)
+
+    def slicesFor(self, treeNode, plotWidget=None, as_function_of_time=None,
+                  coordinate_index=0):
+        """The axes this plot does not draw, ready for a control.
+
+        A leaf axis length comes from the values themselves: the dictionary
+        often names no node for it (the 1..N spelling), so the only length that
+        means anything is the length of what was read.
+        """
+        axesSpec, timeAxis, alongTime, plotted = \
+            self._plan(treeNode, plotWidget, as_function_of_time)
+        aosIndices = self._fixedIndices(axesSpec, timeAxis=timeAxis,
+                                        timeIndex=None, slices=None)
+        tensor = QVizTensorExtractor(treeNode.getIDSRef()).extract(axesSpec,
+                                                                   aosIndices)
+        lengths = {}
+        for valueAxis, position in enumerate(self._keptAxes(axesSpec, aosIndices)):
+            if valueAxis < tensor.values.ndim:
+                lengths[axesSpec.axes[position].key()] = tensor.values.shape[valueAxis]
+        for axis in axesSpec.axes:
+            if axis.origin == QVizAxis.AOS and axis.length is not None:
+                lengths.setdefault(axis.key(), axis.length)
+        return slicesFor(axesSpec, plotted, lengths)
 
     def _timeAxis(self, axesSpec):
         """The array of structures carrying the time index, if there is one."""
@@ -66,7 +120,7 @@ class QVizTensorDataAccess:
                 return axis
         return None
 
-    def _fixedIndices(self, axesSpec, timeIndex=None, timeAxis=None):
+    def _fixedIndices(self, axesSpec, timeIndex=None, timeAxis=None, slices=None):
         """The index every array of structures is read at.
 
         An array of structures is not an axis of the plot: the tree already
@@ -82,20 +136,42 @@ class QVizTensorDataAccess:
                 if timeIndex is not None:
                     indices[axis.level] = timeIndex
                 continue
-            indices[axis.level] = axis.index if axis.index is not None else 0
+            indices[axis.level] = self._sliceIndex(axis, slices, axis.index)
         return indices
 
+    def _sliceIndex(self, axis, slices, default):
+        """Where to read one axis: the slice control wins over the tree.
+
+        Validated against the length the tree carries, because a slice index
+        comes from a control the user moves: out of range it must say which
+        axis is out, not raise an IndexError about a numpy axis.
+        """
+        index = default
+        if slices is not None:
+            chosen = slices.get(axis.key())
+            if chosen is not None:
+                index = chosen
+        if index is None:
+            index = 0
+        index = int(index)
+        if axis.length is not None and not 0 <= index < int(axis.length):
+            raise ValueError("Slice index " + str(index) + " for '" +
+                             sliceLabel(axis) + "' is out of the " +
+                             str(axis.length) + " elements of that axis.")
+        return index
+
     def _curveAlongTime(self, treeNode, axesSpec, extractor, timeAxis,
-                        coordinate_index):
+                        coordinate_index, slices=None):
         """The quantity read along the dynamic array, one point per time slice.
 
         The leaf's own axes are read at coordinate_index, which is what the
         current path does by appending [coordinate_index] to each slice path.
         """
-        aosIndices = self._fixedIndices(axesSpec, timeIndex=None, timeAxis=timeAxis)
+        aosIndices = self._fixedIndices(axesSpec, timeIndex=None, timeAxis=timeAxis,
+                                        slices=slices)
         tensor = extractor.extract(axesSpec, aosIndices)
         values = self._fixLeafAxes(axesSpec, self._keptAxes(axesSpec, aosIndices),
-                                   tensor.values, coordinate_index)
+                                   tensor.values, coordinate_index, slices)
         if values.size == 0:
             # The leaf's own axis holds no value in this case, so there is no
             # point per time slice either. Dropping the time axis with it is
@@ -117,7 +193,7 @@ class QVizTensorDataAccess:
                 if axis.origin == QVizAxis.LEAF or axis.level not in aosIndices]
 
     def _sliceAtTime(self, treeNode, axesSpec, extractor, plotWidget,
-                     coordinate_index, time_index):
+                     coordinate_index, time_index, slices=None):
         """One slice of the quantity, taken at the index the plot is on.
 
         Every array of structures is read at the index the tree carries (the
@@ -126,9 +202,10 @@ class QVizTensorDataAccess:
         axes in order.
         """
         timeAxis = self._timeAxis(axesSpec)
-        tensor = extractor.extract(axesSpec,
-                                   self._fixedIndices(axesSpec, timeIndex=time_index,
-                                                      timeAxis=timeAxis))
+        tensor = extractor.extract(
+            axesSpec,
+            self._fixedIndices(axesSpec, timeIndex=time_index, timeAxis=timeAxis,
+                               slices=slices))
         leafAxes = [position for position, axis in enumerate(axesSpec.axes)
                     if axis.origin == QVizAxis.LEAF]
 
@@ -188,7 +265,8 @@ class QVizTensorDataAccess:
                                    label=label, name=quantityName,
                                    itimeValue=time_index)
 
-    def _fixLeafAxes(self, axesSpec, keptAxes, values, coordinate_index):
+    def _fixLeafAxes(self, axesSpec, keptAxes, values, coordinate_index,
+                     slices=None):
         """Take one element of the leaf's own axes, highest axis first.
 
         Taking from the last axis down keeps the earlier axes valid. The numpy
@@ -197,11 +275,14 @@ class QVizTensorDataAccess:
         spec and none in the values.
         """
         for valueAxis, position in reversed(list(enumerate(keptAxes))):
-            if axesSpec.axes[position].origin != QVizAxis.LEAF:
+            axis = axesSpec.axes[position]
+            if axis.origin != QVizAxis.LEAF:
                 continue
             if valueAxis >= values.ndim:
                 continue
             if values.shape[valueAxis] == 0:
                 return np.asarray([])
-            values = np.take(values, coordinate_index, axis=valueAxis)
+            values = np.take(values, self._sliceIndex(axis, slices,
+                                                      coordinate_index),
+                             axis=valueAxis)
         return values

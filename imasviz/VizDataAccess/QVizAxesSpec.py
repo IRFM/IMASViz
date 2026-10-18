@@ -18,6 +18,11 @@ UNBOUNDED_COORDINATE = re.compile(r'^1[./]+[NM]$')
 
 PLACEHOLDER = re.compile(r'\[([a-z]+)\]')
 
+# An array of structures in a parametrized path, with the name of the array in
+# front of its loop placeholder: 'ion[j]', 'time_slice[itime]'. The name is what
+# a control labels that axis with -- a user knows 'ion', not 'level 2'.
+AOS_STEP = re.compile(r'([A-Za-z_][A-Za-z0-9_]*)\[([a-z]+)\]')
+
 
 def isTimeSpelling(coordinate):
     """Whether a coordinate spelling names a time base.
@@ -78,18 +83,25 @@ class QVizAxis:
 
     def __init__(self, origin, level, placeholder=None, coordinate=None,
                  units=None, length=None, is_time=False, index=None,
-                 same_as=None):
+                 same_as=None, name=None):
         self.origin = origin
         # 1-based position among the enclosing arrays of structures for an AOS
         # axis, among the leaf coordinates for the other kind.
         self.level = level
         self.placeholder = placeholder
+        # The array's own name for an AOS axis ('ion' in '...ion[j]...'), which
+        # is how a control should name the axis it lets the user move.
+        self.name = name
         self.coordinate = coordinate
         self.units = units
         self.length = length
         self.is_time = is_time
         self.index = index
         self.same_as = same_as
+
+    def key(self):
+        """A stable handle on this axis, to carry a control's value back to it."""
+        return (self.origin, self.level)
 
     def isUnbounded(self):
         """True when the dictionary names no node for this axis."""
@@ -126,8 +138,8 @@ class QVizAxesSpec:
         parametrizedPath = element.get('parametrizedPath') or ''
         axes = []
 
-        for position, variable in enumerate(PLACEHOLDER.findall(parametrizedPath),
-                                            start=1):
+        for position, (arrayName, variable) in enumerate(AOS_STEP.findall(parametrizedPath),
+                                                         start=1):
             # The walk builds pathText outermost array first, so the order the
             # placeholders appear in is their nesting level. Reading the level
             # off the loop letter instead would tie this to
@@ -138,6 +150,7 @@ class QVizAxesSpec:
                 origin=QVizAxis.AOS,
                 level=level,
                 placeholder=variable,
+                name=arrayName,
                 # An array of structures carries no coordinate of its own; when
                 # it is the dynamic one, the time base of the whole IDS is what
                 # indexes it -- which is how QVizTreeNode already resolves it.
@@ -190,8 +203,8 @@ class QVizAxesSpec:
         timeLevel = node.getItimeIndex() + 1
         axes = []
 
-        for position, variable in enumerate(PLACEHOLDER.findall(parametrizedPath),
-                                            start=1):
+        for position, (arrayName, variable) in enumerate(AOS_STEP.findall(parametrizedPath),
+                                                         start=1):
             level = timeLevel if variable == 'itime' else position
             # The node keys the index and the length of an array by its loop
             # letter, and the dynamic level carries a letter too -- it is the
@@ -201,6 +214,7 @@ class QVizAxesSpec:
                 origin=QVizAxis.AOS,
                 level=level,
                 placeholder=variable,
+                name=arrayName,
                 coordinate=(node.getIDSName() + '.time' if level == timeLevel else None),
                 units='s' if level == timeLevel else None,
                 length=_intOrNone(node.parameters_max_values.get(letter)),
