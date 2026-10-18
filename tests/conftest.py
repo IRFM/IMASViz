@@ -36,6 +36,19 @@ IMAS_TEST_VERSION = os.environ.get('IMASVIZ_TEST_IMAS_VERSION', '3.23.3')
 # to read an IDS across a DD major version, so reading that case needs a pin.
 CASE_DATA_DICTIONARY_VERSION = os.environ.get('IMASVIZ_TEST_CASE_DD_VERSION', '3.35.0')
 
+# A second case, chosen because it holds a two-dimension leaf inside a static
+# array of structures with values in it: hard_x_rays.channel[i1].radiance.data,
+# eight energy bands by 808 time samples in every one of 38 channels. The
+# reference case has rank 3 leaves and none of them filled, so everything that
+# reads a rank 3 quantity off a real case reads this one. Its run 0 holds the
+# IDS through links to the runs that carry the data, which is how a case is
+# normally opened.
+RANK3_CASE_URI = os.environ.get(
+    'IMASVIZ_TEST_RANK3_URI',
+    'imas:hdf5?path=/afs/eufus.eu/g2itmdev/user/g2lfleur/public/imasdb/west/3/55799/0')
+RANK3_CASE_DATA_DICTIONARY_VERSION = os.environ.get(
+    'IMASVIZ_TEST_RANK3_DD_VERSION', '3.35.0')
+
 os.environ['VIZ_PRODUCTION'] = '1'
 os.environ['VIZ_HOME'] = REPO_ROOT
 os.environ['IMAS_VIZ_VERSION'] = os.environ.get('IMAS_VIZ_VERSION', 'test-suite')
@@ -55,7 +68,20 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 
+def caseOnDisk(uri):
+    """Whether a case's pulse files are where the URI says they are.
+
+    A case is a directory of HDF5 files, not something the suite can synthesise,
+    so a test that needs one skips rather than fails when it is not mounted.
+    """
+    return os.path.exists(os.path.join(uri.split('path=', 1)[-1], 'master.h5'))
+
+
 def case_uri_or_skip():
     """Return the reference case URI, or None when the case is not reachable."""
-    path = CASE_URI.split('path=', 1)[-1]
-    return CASE_URI if os.path.exists(os.path.join(path, 'master.h5')) else None
+    return CASE_URI if caseOnDisk(CASE_URI) else None
+
+
+def rank3_case_uri_or_skip():
+    """Return the rank 3 case URI, or None when that shot is not reachable."""
+    return RANK3_CASE_URI if caseOnDisk(RANK3_CASE_URI) else None

@@ -27,18 +27,25 @@ from imasviz.VizUtils import QVizPreferences
 from support.fakes import FakeTreeView
 
 
-def loadCaseTrees(qapp, idsNames):
-    """{idsName: (shadow tree, runtime object)} for the reference case."""
-    uri = case_uri_or_skip()
+def loadCaseTrees(qapp, idsNames, uri=None, dd_version=None, label='west 54924'):
+    """{idsName: (shadow tree, runtime object)} for one case.
+
+    Two cases are walked by the suite: the reference shot, and the shot whose
+    hard_x_rays holds a filled two-dimension leaf inside a static array of
+    structures. Both are named by argument so a test can ask for the one that
+    has the shape it needs, and both skip when their pulse files are absent.
+    """
+    uri = uri or case_uri_or_skip()
     if uri is None:
         pytest.skip('reference case not reachable')
+    dd_version = dd_version or CASE_DATA_DICTIONARY_VERSION
 
     QVizPreferences.Ignore_GGD = 1
     trees = {}
     runtime = {}
     for idsName in idsNames:
-        source = QVizIMASDataSource('west 54924', uri)
-        source.dd_version = CASE_DATA_DICTIONARY_VERSION
+        source = QVizIMASDataSource(label, uri)
+        source.dd_version = dd_version
         view = FakeTreeView(uri=uri)
         parser = QVizIDSViewParser(uri, view, idsName, 0, None, False)
         parser.dataSource = source
@@ -47,6 +54,14 @@ def loadCaseTrees(qapp, idsNames):
 
 
 def leafByText(root, text):
+    """The shadow tree leaf whose text is `text`.
+
+    A leaf under an array of structures is spelled with the loop letters the walk
+    assigns, so a rank 3 quantity is found as
+    'hard_x_rays.channel[i].radiance.data'. Its parametrizedPath attribute stops
+    one step short, at the structure that holds the leaf, which is what the axes
+    model reads -- the text is what identifies the leaf itself.
+    """
     for element in root.iter():
         if element.text == text:
             return element
@@ -70,4 +85,8 @@ def nodeAsTheBuilderBuildsIt(element, idsName, idsInstance, treeView):
     node = QVizTreeNode(None, [element.tag], itemDataDict, extraAttributes)
     node.idsRef = idsInstance
     node.dataTreeView = treeView
+    # The builder walks the parents to spell this (getPath,
+    # QVizDataTreeViewBuilder.py:216), and a data source's dataKey concatenates
+    # it -- a node without one cannot be registered under a figure.
+    node.setPath(idsName + '/' + element.text)
     return node
