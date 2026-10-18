@@ -52,6 +52,9 @@ class QVizImagePlot(QWidget):
         self.plotAxis = 'DEFAULT'
         self._treeNode = None
         self._levels = None
+        # Which axis of the read lies horizontal, decided when the picture is
+        # drawn and reused by every slice after it.
+        self._xAxis, self._yAxis = 1, 2
 
         self.pgPlotWidget = pg.GraphicsLayoutWidget(self)
         self.pgPlotWidget.setObjectName('imagePlot')
@@ -107,7 +110,8 @@ class QVizImagePlot(QWidget):
                              '": no values in the image.')
 
         self._treeNode = treeNode
-        self.imageItem = pg.ImageItem(values)
+        self._setScreenAxes(axesSpec, plotted)
+        self.imageItem = pg.ImageItem(self._forScreen(values))
         self.plotItem.addItem(self.imageItem)
         self.setExtent(handle)
         self.setAxisLabels(axesSpec, plotted)
@@ -144,7 +148,7 @@ class QVizImagePlot(QWidget):
             # up answers a question the user never asked.
             self.imageItem.clear()
         else:
-            self.imageItem.setImage(values)
+            self.imageItem.setImage(self._forScreen(values))
             if self._levels is not None:
                 self.imageItem.setLevels(self._levels)
             # A different element of a static array can carry a grid of its own,
@@ -181,7 +185,7 @@ class QVizImagePlot(QWidget):
         image on its ranks, which is what the numbers actually are then.
         """
         extents = []
-        for dim in (1, 2):
+        for dim in (self._xAxis, self._yAxis):
             try:
                 values = np.asarray(handle.getCoordinateValues(dim), dtype=float)
             except (TypeError, ValueError):
@@ -199,13 +203,33 @@ class QVizImagePlot(QWidget):
     def setAxisLabels(self, axesSpec, plotted):
         """Label both image axes from the axes the read actually drew.
 
-        Dimension 1 of the handle is the first axis the read plotted and lies
-        horizontal, dimension 2 the second and lies vertical: the order the values
-        were shaped in, so a label cannot end up naming the other axis.
+        The read shapes its values in dictionary order and the frame may lay that
+        order out the other way round; both the labels and the picture go through
+        the same mapping, so a label cannot end up naming the other axis.
         """
-        for side, position in zip(('bottom', 'left'), plotted):
-            axis = axesSpec.axes[position]
+        for side, dim in zip(('bottom', 'left'), (self._xAxis, self._yAxis)):
+            axis = axesSpec.axes[plotted[dim - 1]]
             self.plotItem.setLabel(side, self.axisName(axis), units=axis.units or '')
+
+    def _setScreenAxes(self, axesSpec, plotted):
+        """Which axis of the read lies horizontal.
+
+        The dictionary order stands, unless one of the two axes drawn is a time
+        axis: a picture of a signal against time is read along time, so the
+        samples go horizontal wherever the dictionary places that axis. A radiance
+        is stored (bands, samples) and read as time on the abscissa.
+        """
+        self._xAxis, self._yAxis = 1, 2
+        if len(plotted) == 2 and axesSpec.axes[plotted[1]].is_time:
+            self._xAxis, self._yAxis = 2, 1
+
+    def _forScreen(self, values):
+        """The array as pyqtgraph wants it: its first index lies horizontal.
+
+        Contiguous on purpose: an ImageItem handed the transposed view of a
+        re-read array pays for the strides on every repaint.
+        """
+        return values if self._xAxis == 1 else np.ascontiguousarray(values.T)
 
     def accessFor(self, treeNode):
         return QVizTensorDataAccess(treeNode.getDataSource())
