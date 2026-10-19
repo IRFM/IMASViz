@@ -7,20 +7,25 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The tensor access must sit behind a switch and answer like the current one.
+"""One reader for the IMAS sources, and the shape it answers with.
 
-Nothing here is new behaviour either. The widgets call one factory to get a data
-access, and that access answers GetSignal with a pair of arrays (a curve) or a
-QVizDataArrayHandle (an image). With the preference off -- the default -- the
-factory must hand back exactly what it hands back today. With it on, the tensor
-access must hand back the same numbers for the quantities the application plots
-today, so that switching can be tried without a plot changing under the user's
-hand.
+The widgets call one factory to get a data access, and that access answers
+GetSignal with a pair of arrays (a curve) or a QVizDataArrayHandle (an image).
+Which of the two a node gets follows from its axes, so what is pinned here is the
+contract the frames index -- [0] and [1], or the handle a frame can lay out -- and
+not the numbers: those are frozen for these same leaves in
+test_18_case_readings.py, where they stand on their own rather than beside
+another reader.
+
+The axes model is checked from both sides too, since the frames hand the read a
+tree node while the parser walks a shadow element: if the two disagree about the
+rank or the coordinates, the shape asserted here would be the shape of a
+different quantity than the one on screen.
 
 Two things are deliberately not asserted. The 2D handle is checked for shape and
-labels, not number by number: the 2D parity pass was dropped on purpose. And the
-rank 3 case asserts a raised error where the current path returns two empty
-arrays -- the one place the new path answers differently, on purpose.
+labels, not number by number. And the rank 3 case asserts the two rows a frame
+indexes even when the case leaves them empty -- what matters is that the read
+reaches the leaf instead of discarding it.
 """
 
 import numpy as np
@@ -28,7 +33,6 @@ import pytest
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
 from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
-from imasviz.VizDataAccess.QVizIMASNativeDataAccess import QVizIMASNativeDataAccess
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
@@ -136,26 +140,27 @@ def test_the_axes_read_on_the_node_are_the_axes_read_on_the_shadow_element(case,
     ('equilibrium', 'equilibrium.time_slice[i].boundary.psi_norm'),
     ('core_profiles', 'core_profiles.profiles_1d[i].grid.rho_tor_norm'),
 ])
-def test_the_tensor_access_plots_what_the_current_access_plots(case, treeView,
-                                                               idsName, leafText):
+def test_a_curve_comes_back_as_two_rows_of_one_length(case, treeView,
+                                                      idsName, leafText):
+    # What a frame needs, rather than what a second reader used to answer: [0] is
+    # the abscissa and [1] the values, each one row per quantity drawn. The
+    # numbers themselves are frozen in test_18_case_readings.py, where they stand
+    # on their own instead of being checked against another reader.
     node = nodeForLeaf(case, treeView, idsName, leafText)
+    signal = QVizTensorDataAccess(treeView.dataSource).GetSignal(
+        treeNode=node, plotWidget=None)
 
-    current = QVizIMASNativeDataAccess(treeView.dataSource).GetSignal(treeNode=node,
-                                                                      plotWidget=None)
-    tensor = QVizTensorDataAccess(treeView.dataSource).GetSignal(treeNode=node,
-                                                                 plotWidget=None)
-
-    assert isinstance(tensor, tuple) and len(tensor) == 2, \
-        'a curve must come back as (time, values) like the current access'
-    np.testing.assert_allclose(current[0], tensor[0])
-    np.testing.assert_allclose(current[1], tensor[1])
+    assert isinstance(signal, tuple) and len(signal) == 2, \
+        'a curve comes back as (abscissa, values)'
+    assert signal[0].ndim == 2 and signal[1].ndim == 2
+    assert signal[0].shape == signal[1].shape
 
 
 @pytest.mark.case
 def test_a_two_dimension_leaf_comes_back_as_a_data_array_handle(case, treeView):
-    # The image widgets consume a QVizDataArrayHandle, not a pair of arrays.
-    # Checked for what the handle must carry; its numbers are not compared with
-    # the current access -- the 2D parity pass was dropped on purpose.
+    # The image widgets consume a QVizDataArrayHandle, not a pair of arrays: the
+    # two kinds of answer are told apart by type, so a curve shape on a 2D leaf
+    # would reach a frame that cannot read it.
     node = nodeForLeaf(case, treeView, 'equilibrium',
                        'equilibrium.time_slice[i].coordinate_system.r')
     handle = QVizTensorDataAccess(treeView.dataSource).GetSignal(
@@ -170,26 +175,19 @@ def test_a_two_dimension_leaf_comes_back_as_a_data_array_handle(case, treeView):
 @pytest.mark.case
 def test_a_rank_three_leaf_keeps_the_two_row_contract_when_it_holds_nothing(case,
                                                                            treeView):
-    # Two arrays of structures plus a 1D leaf. The current path has no branch
-    # for that shape: it substitutes the time index into the path and leaves the
-    # static array's placeholder alone, so every slice fails to evaluate, every
-    # time slice is dropped as bad, and it hands back two empty arrays -- a
-    # caller draws that as an empty curve and nothing is said about why. The
-    # tensor path finds the index the tree carries for the static array and
-    # reads the leaf, but this leaf's own axis is empty in this case, so the
-    # answer stays two rows of the same length rather than a third axis.
+    # Two arrays of structures plus a 1D leaf: the read finds the index the tree
+    # carries for the static array and reaches the leaf, but this leaf's own axis
+    # is empty in this case. The answer therefore stays two rows of one length
+    # instead of growing a third axis -- which is the shape a frame indexing [0]
+    # and [1] can still draw, empty as it is.
     node = nodeForLeaf(case, treeView, 'core_profiles',
                        'core_profiles.profiles_1d[i].ion[j].z_ion_1d')
 
-    current = QVizIMASNativeDataAccess(treeView.dataSource).GetSignal(treeNode=node,
-                                                                      plotWidget=None)
-    assert current[0].size == 0 and current[1].size == 0
-
-    tensor = QVizTensorDataAccess(treeView.dataSource).GetSignal(treeNode=node,
-                                                                 plotWidget=None)
-    assert len(tensor) == 2
-    assert tensor[0].ndim == 2 and tensor[1].ndim == 2
-    assert tensor[0].shape == tensor[1].shape
+    signal = QVizTensorDataAccess(treeView.dataSource).GetSignal(
+        treeNode=node, plotWidget=None)
+    assert len(signal) == 2
+    assert signal[0].ndim == 2 and signal[1].ndim == 2
+    assert signal[0].shape == signal[1].shape
 
 
 def test_a_quantity_in_two_arrays_inside_the_time_slices_becomes_a_curve():

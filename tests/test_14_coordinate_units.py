@@ -171,8 +171,9 @@ def test_a_caller_supplied_label_is_left_alone(treeView):
 
 
 def test_the_labels_helper_agrees_with_plotOptions(treeView):
-    # QVizIMASNativeDataAccess.py:147 builds the axis text of table and stacked
-    # plots through labels(), which duplicated the same hardcoded seconds.
+    # QVizTensorDataAccess._dataArrayHandle builds the axis text of table and
+    # stacked plots through labels(), which duplicated the same hardcoded seconds:
+    # two producers of one label had to be made to agree.
     node = makeLeaf([X_COORDINATE], X_UNITS)
     # labels() takes no dataTreeView argument: it walks up to getDataTreeView().
     node.dataTreeView = treeView
