@@ -225,6 +225,14 @@ class FakeAxesNode:
     def getInfoDict(self):
         return self._infoDict
 
+    def getData(self):
+        """The dictionary spelling the node carries, as QVizTreeNode hands it.
+
+        The command base reads it for every node a gesture names, so a stub
+        handed to a command has to answer even when the command ignores it.
+        """
+        return self._infoDict
+
     def getDataSource(self):
         return None
 
