@@ -107,20 +107,31 @@ class QVizPlotAsSlices(QVizAbstractCommand):
         return self.curveFigure
 
     def plottedAxes(self, treeNode):
-        """How many axes of the quantity a read would draw.
+        """How many axes of the quantity a picture would show.
 
         Asked with the time axis pinned, which is the image's rule: if that read
         still has two axes to draw, the quantity is a picture and its time slice
         becomes one of its controls. Asked with time left open, every quantity in
         a dynamic array would answer one axis -- time -- and be called a curve.
+
+        One axis leaves the picture for the space between pictures: the axis the
+        figure reads across its images is displayed, not pinned, so it counts as
+        drawn here and gets no control. That is what makes a leaf of three axes
+        plottable at all, where the frame used to have nothing to do with it.
         """
-        plotted = QVizTensorDataAccess(treeNode.getDataSource()).plan(
-            treeNode, plotWidget=None, as_function_of_time=False)[3]
-        if len(plotted) > 2:
+        access = QVizTensorDataAccess(treeNode.getDataSource())
+        plotted = access.plan(treeNode, plotWidget=None,
+                              as_function_of_time=False)[3]
+        frames = access.framesFor(treeNode, plotWidget=None,
+                                  as_function_of_time=False)
+        drawn = [position for position in plotted
+                 if frames is None or position != frames.position]
+        if len(drawn) > 2:
             raise ValueError('"' + self.dataPathOf(treeNode) + '" has ' +
-                             str(len(plotted)) + ' axes to draw: no frame shows '
-                             'more than two, and its controls cannot pin the rest.')
-        return len(plotted)
+                             str(len(drawn)) + ' axes to draw: no frame shows '
+                             'more than two in one picture, and the axis read '
+                             'between pictures is taken.')
+        return len(drawn)
 
     def newCurveFigure(self):
         return self.newFigure(self.CURVE_FIGURE_TYPE, QVizCurvePlot)

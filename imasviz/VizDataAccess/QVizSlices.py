@@ -25,19 +25,22 @@ quantity with more than two axes, so nothing here is derived from it.
 
 
 class QVizSlice:
-    """One axis the plot fixes, with what a control needs to show it.
+    """One axis the plot does not draw inside a picture.
 
     key identifies the axis in the spec, so a control's value can be read back
     as the index of that axis; label names it the way the tree names it (an
-    array of structures by its own name, a leaf axis by its coordinate).
+    array of structures by its own name, a leaf axis by its coordinate);
+    position is its place in the spec, which is what tells a figure which of its
+    two axes is *not* this one.
     """
 
-    def __init__(self, axis, length=None, index=0):
+    def __init__(self, axis, length=None, index=0, position=None):
         self.axis = axis
         self.key = axis.key()
         self.label = sliceLabel(axis)
         self.length = length
         self.index = index
+        self.position = position
 
     def __repr__(self):
         return '<QVizSlice %s length=%s index=%s>' % (self.key, self.length,
@@ -60,19 +63,44 @@ def sliceLabel(axis):
     return 'dimension %d' % axis.level
 
 
-def slicesFor(axesSpec, plottedPositions=(), lengths=None):
+def slicesFor(axesSpec, plottedPositions=(), lengths=None, frames=None):
     """One slice per axis the plot leaves out, in the order the spec lists them.
 
     lengths comes from the values just read: the dictionary does not always know
     how long a leaf axis is (an unbounded 1..N coordinate), and the length the
     control needs is the length of what was actually read.
+
+    frames is the axis the figure reads across its images rather than pinning. It
+    is drawn -- three pictures are its three elements -- so it needs no control,
+    and a slider for it would ask the user for something already on screen.
     """
     lengths = lengths or {}
+    drawn = set(plottedPositions)
+    if frames is not None:
+        drawn.add(frames)
     slices = []
     for position, axis in enumerate(axesSpec.axes):
-        if position in plottedPositions:
+        if position in drawn:
             continue
         slices.append(QVizSlice(axis,
                                 length=lengths.get(axis.key(), axis.length),
-                                index=axis.index if axis.index is not None else 0))
+                                index=axis.index if axis.index is not None else 0,
+                                position=position))
     return slices
+
+
+def frameLabel(axis, index, values=None):
+    """Which element of the axis one of the images stands for.
+
+    The element number always, because that is what the read indexed. The value
+    the axis carries at that element when it carries values, because a slice
+    number is not a time: three pictures whose titles say when they were taken
+    can be read in order, and three that say only 0, 1, 2 cannot.
+    """
+    label = '%s %d' % (sliceLabel(axis), index)
+    if values is not None and 0 <= index < len(values):
+        spelled = '%g' % float(values[index])
+        if axis.units:
+            spelled += ' ' + axis.units
+        label += ' (%s)' % (('t = ' + spelled) if axis.is_time else spelled)
+    return label

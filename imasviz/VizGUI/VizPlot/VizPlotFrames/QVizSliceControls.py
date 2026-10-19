@@ -184,3 +184,120 @@ class QVizSliceControls(QWidget):
 
     def __repr__(self):
         return '<QVizSliceControls %s>' % ([row.key for row in self._rows],)
+
+
+class QVizFramesWindow(QWidget):
+    """Where a figure's window of pictures sits along the axis it reads across.
+
+    That axis needs no slider: its elements are the pictures on screen. What it
+    needs is a way to move on when the axis is longer than the figure holds, and
+    a saying of which elements are up -- the same reason the slice rows spell
+    their index out instead of leaving it to a handle's position.
+
+    setWindow keeps the start the user moved to when the same axis comes back
+    (a pinned control moved, a re-plot of the same quantity), because the whole
+    point of the window is to keep two sets of pictures comparable.
+    """
+
+    moved = Signal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._key = None
+        self._label = ''
+        self._start = 0
+        self._count = 0
+        self._length = None
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.nameLabel = QLabel(self)
+        self.nameLabel.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+
+        self.slider = QSlider(Qt.Horizontal, self)
+        self.slider.setPageStep(1)
+        self.slider.setEnabled(False)
+
+        layout.addWidget(self.nameLabel)
+        layout.addWidget(self.slider, 1)
+
+        self.slider.valueChanged.connect(self._onValueChanged)
+        self.setVisible(False)
+
+    def setWindow(self, sl, count):
+        """The axis read across the images, and how many images it feeds."""
+        if sl is None:
+            self._key = None
+            self._count = 0
+            self._length = None
+            self.slider.blockSignals(True)
+            self.slider.setEnabled(False)
+            self.slider.blockSignals(False)
+            self.setVisible(False)
+            return
+
+        count = int(count)
+        length = sl.length
+        start = self._start if self._key == sl.key else sl.index
+        self._key = sl.key
+        self._label = sl.label
+        self._count = count
+        self._length = length
+
+        self.slider.blockSignals(True)
+        if length is None:
+            self.slider.setEnabled(False)
+            self.slider.setToolTip('Number of values in this axis is unknown')
+        else:
+            last = max(int(length) - count, 0)
+            self.slider.setRange(0, last)
+            self.slider.setEnabled(last > 0)
+            if last == 0:
+                self.slider.setToolTip('This axis holds fewer elements than the '
+                                       'figure has images')
+        self._start = self._clamp(start)
+        self.slider.setValue(self._start)
+        self.slider.blockSignals(False)
+
+        self._showLabel()
+        self.setVisible(True)
+
+    def start(self):
+        return self._start if self._key is not None else 0
+
+    def setStart(self, index):
+        if self._key is None:
+            return False
+        self._start = self._clamp(index)
+        self.slider.setValue(self._start)
+        self._showLabel()
+        return True
+
+    def count(self):
+        return self._count
+
+    def labelText(self):
+        if self._key is None:
+            return ''
+        return '%s: %d-%d / %d' % (self._label, self.start(),
+                                   self.start() + self._count - 1,
+                                   max(int(self._length), 1) - 1)
+
+    def _clamp(self, index):
+        index = int(index if index is not None else 0)
+        if self._length is None:
+            return max(0, index)
+        return max(0, min(index, max(int(self._length) - self._count, 0)))
+
+    def _showLabel(self):
+        self.nameLabel.setText(self.labelText())
+
+    def _onValueChanged(self, value):
+        self._start = int(value)
+        self._showLabel()
+        self.moved.emit()
+
+    def __repr__(self):
+        return '<QVizFramesWindow %s start=%s count=%s length=%s>' % (
+            self._key, self.start(), self._count, self._length)

@@ -115,6 +115,16 @@ class QVizTensorExtractor:
         except Exception:
             return 1
 
+    def timeBase(self, axesSpec):
+        """The time base of the dynamic array, without reading the leaf.
+
+        A figure that draws several elements of that array has to say which one
+        each picture is, and reading the leaf once per element answers for the
+        elements in the window only. This is the same walk the tensor does, for
+        the axis alone.
+        """
+        return self._timeValues(axesSpec, self._timeAxisPosition(axesSpec))
+
     def extract(self, axesSpec, aosIndices=None):
         """Reads one leaf into a tensor.
 

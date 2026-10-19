@@ -12,9 +12,16 @@ import logging
 import numpy as np
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
-from imasviz.VizDataAccess.QVizSlices import sliceLabel, slicesFor
+from imasviz.VizDataAccess.QVizSlices import (QVizSlice, frameLabel, sliceLabel,
+                                              slicesFor)
 from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle, ArrayCoordinates
+
+
+# How many pictures one image figure holds. Three is what stays readable next to
+# a colour bar on one screen; the axis they are taken from is often longer, which
+# is why the window moves rather than the count growing.
+FRAMES = 3
 
 
 class QVizTensorDataAccess:
@@ -101,15 +108,28 @@ class QVizTensorDataAccess:
                      if axis.origin == QVizAxis.LEAF)
 
     def slicesFor(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  coordinate_index=0):
+                  coordinate_index=0, frames=None):
         """The axes this plot does not draw, ready for a control.
 
         A leaf axis length comes from the values themselves: the dictionary
         often names no node for it (the 1..N spelling), so the only length that
         means anything is the length of what was read.
+
+        frames is the position of the axis the figure reads across its images;
+        it is on screen, so it gets no control. See framesFor.
         """
         axesSpec, timeAxis, alongTime, plotted = \
             self.plan(treeNode, plotWidget, as_function_of_time)
+        lengths = self._readLengths(treeNode, axesSpec, timeAxis)
+        return slicesFor(axesSpec, plotted, lengths, frames=frames)
+
+    def _readLengths(self, treeNode, axesSpec, timeAxis):
+        """How long each axis of the quantity is, as far as anything knows.
+
+        From the values when they were read, from the tree when the axis is an
+        array of structures: the dictionary states those lengths and the shot
+        need not be opened to ask.
+        """
         aosIndices = self._fixedIndices(axesSpec, timeAxis=timeAxis,
                                         timeIndex=None, slices=None)
         tensor = QVizTensorExtractor(treeNode.getIDSRef()).extract(axesSpec,
@@ -121,7 +141,91 @@ class QVizTensorDataAccess:
         for axis in axesSpec.axes:
             if axis.origin == QVizAxis.AOS and axis.length is not None:
                 lengths.setdefault(axis.key(), axis.length)
-        return slicesFor(axesSpec, plotted, lengths)
+        return lengths
+
+    def framesFor(self, treeNode, plotWidget=None, as_function_of_time=False):
+        """The axis a figure reads across its images, or None when nothing to spread.
+
+        An image draws two axes and pins the rest with a control each. One pinned
+        axis is better read between the pictures than under a slider: three
+        elements of the dynamic array side by side are the only way to compare
+        time slices, and a leaf with more axes than a picture draws has to put
+        one of them somewhere the user can see it.
+
+        The dynamic array wins when the quantity has one -- a picture never runs
+        along time, so that axis is already outside the picture. Otherwise it is
+        an axis the figure would otherwise pin: one of the leaf's own when there
+        are more than two to draw, else the outermost of the pinned ones.
+        """
+        axesSpec, timeAxis, _, plotted = \
+            self.plan(treeNode, plotWidget, as_function_of_time)
+        position = self._framesPosition(axesSpec, timeAxis, plotted)
+        if position is None:
+            return None
+        axis = axesSpec.axes[position]
+        # An array of structures carries its length on the tree, and that is the
+        # length the read validates a slice index against -- so answering it needs
+        # no shot open. Only an axis the dictionary leaves unbounded has to be
+        # measured on the values, and measuring it means leaving it open: reading
+        # a whole axis to answer a question the tree already answers would be paid
+        # once per selected node, on the way to deciding where to draw it.
+        length = axis.length
+        if length is None:
+            length = self._readLengths(treeNode, axesSpec,
+                                       timeAxis).get(axis.key())
+        return QVizSlice(axis, length=length,
+                         index=axis.index if axis.index is not None else 0,
+                         position=position)
+
+    def GetFrames(self, treeNode, plotWidget=None, start=0, count=FRAMES,
+                  as_function_of_time=False):
+        """The pictures of one figure: the same quantity at successive elements.
+
+        Answers [(handle, index, label), ...], one per image. Each element is
+        read on its own, which is cheaper than it looks: the extractor indexes
+        the array of structures before descending into it, so a window of three
+        reads three elements and not the whole axis.
+
+        The indices of the axes the figure pins come from its controls, so the
+        pictures differ only by the axis they are spread over.
+        """
+        axesSpec, timeAxis, _, plotted = \
+            self.plan(treeNode, plotWidget, as_function_of_time)
+        position = self._framesPosition(axesSpec, timeAxis, plotted)
+        if position is None:
+            raise ValueError('Nothing to spread over images: nothing around "' +
+                             self._pathOf(treeNode) + '" is pinned.')
+        axis = axesSpec.axes[position]
+
+        slices = {}
+        controls = getattr(plotWidget, 'sliceControls', None)
+        if controls is not None:
+            slices.update(controls.indices())
+
+        values = None
+        if timeAxis is not None and axis is timeAxis:
+            values = QVizTensorExtractor(treeNode.getIDSRef()).timeBase(axesSpec)
+
+        frames = []
+        for index in range(int(start), int(start) + int(count)):
+            slices[axis.key()] = index
+            frames.append((self.GetSignal(treeNode=treeNode, plotWidget=None,
+                                          as_function_of_time=False, slices=slices),
+                           index, frameLabel(axis, index, values)))
+        return frames
+
+    def _framesPosition(self, axesSpec, timeAxis, plotted):
+        if timeAxis is not None:
+            return axesSpec.axes.index(timeAxis)
+        if len(plotted) > 2:
+            return plotted[0]
+        pinned = [position for position in range(len(axesSpec.axes))
+                  if position not in plotted]
+        return pinned[0] if pinned else None
+
+    def _pathOf(self, treeNode):
+        path = treeNode.getParametrizedDataPath()
+        return path if path else treeNode.getName()
 
     def _timeAxis(self, axesSpec):
         """The array of structures carrying the time index, if there is one."""
@@ -253,25 +357,51 @@ class QVizTensorDataAccess:
             raise ValueError("Data node '" + treeNode.getName() +
                              "' has no explicit dependency on current X axis.")
 
+        # A leaf axis can be the axis a figure reads across its images: the
+        # pictures then differ by one element of that coordinate, which has to
+        # come out of the values before anything is labelled.
+        leafAxes, values = self._reducePinnedLeafAxes(axesSpec, leafAxes,
+                                                      tensor.values, slices)
+
         if len(leafAxes) == 1:
-            values = tensor.values
             coordinate = tensor.axesValues[leafAxes[0]]
             if coordinate is None:
                 coordinate = np.arange(values.shape[0])
             return np.array([coordinate]), np.array([values])
 
-        return self._dataArrayHandle(treeNode, axesSpec, tensor, leafAxes,
+        return self._dataArrayHandle(treeNode, axesSpec, tensor, leafAxes, values,
                                      plotWidget, coordinate_index, time_index)
 
-    def _dataArrayHandle(self, treeNode, axesSpec, tensor, leafAxes, plotWidget,
-                         coordinate_index, time_index):
+    def _reducePinnedLeafAxes(self, axesSpec, leafAxes, values, slices):
+        """Take out the leaf axes the plot fixes, and the axes they leave.
+
+        Highest position first, so the axes below it keep the place they had. The
+        axes left over are the value axes of the answer in order, which is what
+        the image labels walk -- keeping the removed one in that list would put
+        the second coordinate's name under the first axis of the picture.
+        """
+        kept = list(leafAxes)
+        for position in reversed(leafAxes):
+            axis = axesSpec.axes[position]
+            if slices is None or axis.key() not in slices:
+                continue
+            valueAxis = kept.index(position)
+            if valueAxis >= values.ndim:
+                continue
+            values = np.take(values,
+                             self._sliceIndex(axis, slices, axis.index),
+                             axis=valueAxis)
+            kept.remove(position)
+        return kept, values
+
+    def _dataArrayHandle(self, treeNode, axesSpec, tensor, leafAxes, values,
+                         plotWidget, coordinate_index, time_index):
         """A two-dimension leaf, shaped for the image widgets.
 
         Numbers come from the tensor, words from the node: paths and labels are
         the node's own, so a plot configured before the switch keeps the legend
         and the axis label it had.
         """
-        values = tensor.values
         coordinatesPaths = []
         coordinatesValues = []
         coordinatesLabels = []
