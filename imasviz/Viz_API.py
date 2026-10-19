@@ -23,6 +23,23 @@ def getNodePath(node):
     return node.getParametrizedDataPath()
 
 
+class QVizMdiSubWindow(QMdiSubWindow):
+    """The MDI window a figure frame is embedded in.
+
+    The window is what the user closes to get rid of a figure when no command is
+    involved, so it is what tells the api the key is free again. PySide6 6.6 does
+    not expose QMdiSubWindow.aboutToClose, hence the close event.
+    """
+
+    def __init__(self, imas_viz_api):
+        super(QVizMdiSubWindow, self).__init__()
+        self.imas_viz_api = imas_viz_api
+
+    def closeEvent(self, event):
+        super(QVizMdiSubWindow, self).closeEvent(event)
+        self.imas_viz_api.ForgetFigureOf(self.widget())
+
+
 class Viz_API:
 
     def __init__(self, parent=None):
@@ -239,40 +256,65 @@ class Viz_API:
             else:
                 frame.show()
 
+    def GetFiguresCount(self, figureType=FigureTypes.FIGURETYPE):
+        """How many figures of one kind are open.
+
+        :param figureType: (str) a FigureTypes prefix
+        :returns: (int)
+        """
+        return len(self.GetFiguresKeys(figureType))
+
     def GetFigurePlotsCount(self):
         """Returns the next figure number available for plotting.
 
         :returns: (int) The number of the next figure
         """
-        return len(self.GetFiguresKeys())
+        return self.GetFiguresCount()
 
     def GetImagePlotsCount(self):
         """Returns the next number of image plots.
 
         :returns: (int) The next number of image plots
         """
-        return len(self.GetFiguresKeys(FigureTypes.IMAGETYPE))
+        return self.GetFiguresCount(FigureTypes.IMAGETYPE)
 
     def GetTablePlotViewsCount(self):
         """Returns the next table plot number available for plotting.
 
         :returns: (int) The number of the next table plot
         """
-        return len(self.GetFiguresKeys(FigureTypes.TABLEPLOTTYPE))
+        return self.GetFiguresCount(FigureTypes.TABLEPLOTTYPE)
 
     def GetStackedPlotViewsCount(self):
         """Returns the next table plot number available for plotting.
 
         :returns: (int) The number of the next table plot
         """
-        return len(self.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE))
+        return self.GetFiguresCount(FigureTypes.STACKEDPLOTTYPE)
 
     def GetProfilesPlotViewsCount(self):
         """Returns the next plots table number available.
 
         :returns: (int) The number of the next plots table
         """
-        return len(self.GetFiguresKeys(FigureTypes.PROFILESPLOTTYPE))
+        return self.GetFiguresCount(FigureTypes.PROFILESPLOTTYPE)
+
+    def GetNextKeyForFigure(self, figureType=FigureTypes.FIGURETYPE):
+        """The key of the next figure of one kind: one past the highest number
+        still in use.
+
+        Counting the open figures instead -- what this did when every kind had
+        its own accessor -- hands back a number that is already taken as soon as
+        one of the lower figures was deleted. Two figures then share a key, and
+        the key is how show/hide and delete address a figure: one of the two
+        becomes unreachable.
+
+        :param figureType: (str) a FigureTypes prefix
+        :returns: (str) the key of the next figure of that kind
+        """
+        numbers = [self.getFigureKeyNum(key, figureType)
+                   for key in self.GetFiguresKeys(figureType)]
+        return figureType + str(max(numbers) + 1 if numbers else 1)
 
     def GetNextKeyForTablePlotView(self):
         """Returns the key of the next table plot (e.g. if 'TablePlot i' is the
@@ -281,7 +323,7 @@ class Viz_API:
 
         :returns: (str) The key of the next table plot
         """
-        return FigureTypes.TABLEPLOTTYPE + str(self.GetTablePlotViewsCount())
+        return self.GetNextKeyForFigure(FigureTypes.TABLEPLOTTYPE)
 
     def GetNextKeyForFigurePlots(self):
         """Returns the key of the next figure plot (e.g. if 'Figure i' is the
@@ -290,7 +332,7 @@ class Viz_API:
 
         :returns: (str) The key of the next figure (plot)
         """
-        return FigureTypes.FIGURETYPE + str(self.GetFigurePlotsCount())
+        return self.GetNextKeyForFigure(FigureTypes.FIGURETYPE)
 
     def GetNextKeyForImagePlots(self):
         """Returns the key of the next 2D plot (e.g. if 'Image i' is the
@@ -299,7 +341,7 @@ class Viz_API:
 
         :returns: (str) The key of the next 2D plot
         """
-        return FigureTypes.IMAGETYPE + str(self.GetImagePlotsCount())
+        return self.GetNextKeyForFigure(FigureTypes.IMAGETYPE)
 
     def GetNextKeyForStackedPlotView(self):
         """Returns the key of the next stacked plot (e.g. if 'StackedPlot i'
@@ -308,13 +350,13 @@ class Viz_API:
 
         :returns: (str) The key of the next stacked plot
         """
-        return FigureTypes.STACKEDPLOTTYPE + str(self.GetStackedPlotViewsCount())
+        return self.GetNextKeyForFigure(FigureTypes.STACKEDPLOTTYPE)
 
     def GetNextKeyForProfilesPlotView(self):
         """Returns the key of the next table of profiles plot
         :returns: (str) The key of the next plots table
         """
-        return FigureTypes.PROFILESPLOTTYPE + str(self.GetProfilesPlotViewsCount())
+        return self.GetNextKeyForFigure(FigureTypes.PROFILESPLOTTYPE)
 
     def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
         """Returns the list of all figure keys.
@@ -326,6 +368,31 @@ class Viz_API:
             if key.startswith(figureType):
                 figureKeys.append(key)
         return sorted(figureKeys)
+
+    def ForgetFigure(self, figureKey):
+        """Take a figure out of the bookkeeping, leaving its window alone.
+
+        The window is already going away: this is what the user closing it does.
+        A frame left registered stays in the show/hide and delete menus as a
+        figure that is not there, and keeps a number the next figure of that kind
+        is then not entitled to.
+
+        :param figureKey: A figure key (e.g. 'Figure:1')
+        """
+        self.figureframes.pop(figureKey, None)
+        self.figToNodes.pop(figureKey, None)
+
+    def GetFigureKeyOf(self, frame):
+        """The key a frame is registered under, or None if it is not registered.
+
+        The kind of a figure is spelled in its key rather than carried on the
+        frame, so a caller holding the widget and needing the key has to ask the
+        registry.
+        """
+        for figureKey, registered in self.figureframes.items():
+            if registered is frame:
+                return figureKey
+        return None
 
     def DeleteFigure(self, figureKey):
         """Deletes the specified figure.
@@ -339,9 +406,7 @@ class Viz_API:
                 frame.parent().deleteLater()
             else:
                 frame.close()
-            del self.figureframes[figureKey]
-        if figureKey in self.figToNodes:
-            del self.figToNodes[figureKey]
+        self.ForgetFigure(figureKey)
 
     def GetFigureKey(self, userKey, figureType=FigureTypes.FIGURETYPE):
         """Get the figure key.
@@ -833,12 +898,22 @@ class Viz_API:
             return self.parent
         return None
 
+    def ForgetFigureOf(self, plotWidget):
+        """Take a frame out of the bookkeeping under whichever key holds it.
+
+        Closing the window is not going through DeleteFigure: no command sees it,
+        so without this the frame stays in the registry, keeps a number the next
+        figure of that kind is not entitled to, and stays in the menus as a
+        figure that is not there any more.
+        """
+        figureKey = self.GetFigureKeyOf(plotWidget)
+        if figureKey is not None:
+            self.ForgetFigure(figureKey)
+
     def addPlotWidgetToMDI(self, plotWidget):
         """Embeds the plotWidget inside MDI subwindow.
         """
-        from PySide6.QtWidgets import QMdiSubWindow
-
-        subWindow = QMdiSubWindow()
+        subWindow = QVizMdiSubWindow(self)
         subWindow.setWidget(plotWidget)
         subWindow.resize(plotWidget.width(), plotWidget.height())
         if self.getMDI() is not None:

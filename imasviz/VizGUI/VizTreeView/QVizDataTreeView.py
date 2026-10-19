@@ -574,13 +574,8 @@ class QVizDataTreeViewFrame(QMainWindow):
 
     def updateMenuNodePlotWindows(self, vizFiguresManagement):
         QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self.dataTreeView)
-        numFig = self.dataTreeView.imas_viz_api.GetFigurePlotsCount()
-        numTPV = self.dataTreeView.imas_viz_api.GetTablePlotViewsCount()
-        numSPV = self.dataTreeView.imas_viz_api.GetStackedPlotViewsCount()
-        numImg = self.dataTreeView.imas_viz_api.GetImagePlotsCount()
-        numPro = self.dataTreeView.imas_viz_api.GetProfilesPlotViewsCount()
         vizFiguresManagement.clear()
-        QVizSignalHandlingObj.menusShowHideAndDelete(numFig, numTPV, numSPV, numImg, numPro, vizFiguresManagement)
+        QVizSignalHandlingObj.menusShowHideAndDelete(vizFiguresManagement)
 
     def updateMenuNodeSelection(self, menu):
         """Update menu handling node selection.

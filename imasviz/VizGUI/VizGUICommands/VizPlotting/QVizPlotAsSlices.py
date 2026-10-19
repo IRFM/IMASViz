@@ -22,14 +22,17 @@ has a time axis and two axes to draw, so it is a picture with time pinned, while
 the same quantity read along time is a curve. The read answers that, so the choice
 of frame and the numbers on it cannot come apart.
 
-The figure keys are allocated here rather than through Viz_API. The legacy
-'Figure:' and 'Image:' keys are listed by the "add to an existing figure" menu
-entries, which build their curves through the old path and would be handed frames
-they do not know how to fill, so the two paths keep separate key namespaces.
+The figure keys keep their own namespaces, declared with the other kinds in
+FigureTypes. The legacy "Figure:" and "Image:" keys are listed by the "add to an
+existing figure" menu entries, which build their curves through the old path and
+would be handed frames they do not know how to fill. The keys are still handed out
+by the api, because the Show/Hide and Delete menus read the same bookkeeping and
+two ways of numbering it is how a key gets reused under a live window.
 """
 
 import logging
 
+from imasviz.VizUtils import FigureTypes
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
@@ -43,8 +46,8 @@ class QVizPlotAsSlices(QVizAbstractCommand):
     frames it draws is whatever the selection needs.
     """
 
-    CURVE_FIGURE_TYPE = 'SlicesPlot'
-    IMAGE_FIGURE_TYPE = 'SlicesImage'
+    CURVE_FIGURE_TYPE = FigureTypes.CURVEPLOTTYPE
+    IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
     def __init__(self, dataTreeView, all_DTV=True):
         self.api = dataTreeView.imas_viz_api
@@ -142,7 +145,7 @@ class QVizPlotAsSlices(QVizAbstractCommand):
         return figure
 
     def newFigure(self, figureType, frameClass):
-        figureKey = self.nextFigureKey(figureType)
+        figureKey = self.api.GetNextKeyForFigure(figureType)
         frame = frameClass(title=figureKey)
         frame.figureKey = figureKey
         self.api.figureframes[figureKey] = frame
@@ -170,10 +173,6 @@ class QVizPlotAsSlices(QVizAbstractCommand):
     @staticmethod
     def selectedNodes(dtv):
         return [entry['QTreeWidgetItem'] for entry in dtv.selectedSignalsDict.values()]
-
-    def nextFigureKey(self, figureType):
-        taken = [key for key in self.api.figureframes if key.startswith(figureType)]
-        return figureType + str(len(taken) + 1)
 
     @staticmethod
     def dataPathOf(treeNode):

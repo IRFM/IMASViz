@@ -20,6 +20,25 @@ class FigureTypes:
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
     PROFILESPLOTTYPE = "PlotView:"
+    # The frames drawn through the axes model keep their own prefixes: the
+    # "add to this figure" entries build their curves through another path and
+    # would be handed a frame they do not know how to fill. Separate namespace,
+    # same registry.
+    CURVEPLOTTYPE = "SlicesPlot"
+    IMAGEPLOTTYPE = "SlicesImage"
+
+    # Every kind of figure the commands can draw, in menu order: the label the
+    # user reads (it is the prefix the window title shows), the icon named in
+    # GlobalIcons, and the prefix its key carries. The Show/Hide and Delete
+    # menus iterate this, because a kind missing here is a window the user has
+    # no way left to close.
+    MENU_ORDER = (('Figure', 'Figure', FIGURETYPE),
+                  ('Image', 'Image', IMAGETYPE),
+                  ('TablePlotView', 'TPV', TABLEPLOTTYPE),
+                  ('StackedPlotView', 'SPV', STACKEDPLOTTYPE),
+                  ('Profiles', 'Profiles', PROFILESPLOTTYPE),
+                  ('SlicesPlot', 'Figure', CURVEPLOTTYPE),
+                  ('SlicesImage', 'Image', IMAGEPLOTTYPE))
 
 class UserInputs:
     inputs = None

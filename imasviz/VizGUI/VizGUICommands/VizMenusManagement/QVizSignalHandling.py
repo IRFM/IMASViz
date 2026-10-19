@@ -54,13 +54,6 @@ class QVizSignalHandling(QObject):
 
         self.signalNodeName = signalNode.getDataName()
 
-        # Get total count of figures, tablePlotViews, stackedPlotViews etc.
-        numFig = self.imas_viz_api.GetFigurePlotsCount()
-        numTPV = self.imas_viz_api.GetTablePlotViewsCount()
-        numSPV = self.imas_viz_api.GetStackedPlotViewsCount()
-        numImg = self.imas_viz_api.GetImagePlotsCount()
-        numPro = self.imas_viz_api.GetProfilesPlotViewsCount()
-
         # Set new popup menu
         self.contextMenu = QMenu()
 
@@ -98,9 +91,8 @@ class QVizSignalHandling(QObject):
                 self.contextMenu.addMenu(
                     self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
 
-        # - Add menu for handling show/hide if figures, TablePlotViews and
-        #   StackedPlotViews.
-        self.menusShowHideAndDelete(numFig, numTPV, numSPV, numImg, numPro, self.contextMenu)
+        # - Add menu for handling show/hide and deletion of the open figures
+        self.menusShowHideAndDelete(self.contextMenu)
         self.menusPlugins()
 
         # TODO:
@@ -556,273 +548,83 @@ class QVizSignalHandling(QObject):
 
         return menu
 
-    def menusShowHideAndDelete(self, numFig, numTPV, numSPV, numImg, numPro, menu):
-        """Set two menus: first  for handling show/hide and second for deleting
-        of existing figures, TablePlotViews and StackedPlotViews.
-        """
+    def menusShowHideAndDelete(self, menu):
+        """Add the Show/Hide and Delete entries for the figures that are open.
 
-        # Create and add empty menu to handle show/hide status of plot views and
-        # figures
+        The kinds of figure are listed once, next to the key prefixes they are
+        registered under (FigureTypes.MENU_ORDER), and the two menus walk that
+        list: a kind left out of the list is a window the user has no way left
+        to close. That is what the five hand-copied branches, and the counts
+        they were fed, bought us.
+
+        :param menu: the QMenu being filled (the tree context menu, or the shot
+                     view's "Plot windows" menu bar entry)
+        """
         menu_showHide = QMenu('Show/Hide', menu)
         menu_showHide.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                          'showHide'))
-
-        menu_showHide.setDisabled(True)
-        # Create and add empty menu to handle deletion of plot views and
-        # figures
         menu_delete = QMenu('Delete', menu)
         menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication,
                                                          QStyle.SP_DialogDiscardButton))
-        menu_delete.setDisabled(True)
 
-        if numFig > 0 or numTPV > 0 or numSPV > 0 or numImg > 0 or numPro >0:
-            menu_showHide.setDisabled(False)
-            menu_delete.setDisabled(False)
+        openFigures = [(label, icon, figureType)
+                       for label, icon, figureType in FigureTypes.MENU_ORDER
+                       if self.imas_viz_api.GetFiguresCount(figureType) > 0]
 
-        # Set handling existing figures
-        if numFig > 0:
+        menu_showHide.setDisabled(not openFigures)
+        menu_delete.setDisabled(not openFigures)
 
-            # Create and add empty submenu to handle figures show/hide
-            submenu_showHideFigure = menu_showHide.addMenu('Figure')
-            submenu_showHideFigure.setIcon(
-                GlobalIcons.getCustomQIcon(QApplication,
-                                           'Figure'))
-            # Create and add empty submenu to handle figures deletion
-            subMenu_deleteFigure = menu_delete.addMenu('Figure')
-            subMenu_deleteFigure.setIcon(
-                GlobalIcons.getCustomQIcon(QApplication,
-                                           'Figure'))
-
-            for figureKey in self.imas_viz_api.GetFiguresKeys(
-                    figureType=FigureTypes.FIGURETYPE):
-                # Get figure number out from the figureKey string
-                # (e.g. 'Figure:0' -> 0)
-                # id_Fig = int(figureKey.split(':')[1])
-                id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                           FigureTypes.FIGURETYPE)
-
-                # --------------------------------------------------------------
-                # Add menu item to show/hide existing figure
-                # Set action
-                action_showHide_figure = QAction(figureKey, self)
-                action_showHide_figure.triggered.connect(
-                    partial(self.showHideFigure, id_Fig,
-                            FigureTypes.FIGURETYPE))
-                # Add to submenu
-                submenu_showHideFigure.addAction(action_showHide_figure)
-
-                # --------------------------------------------------------------
-                # Add menu item to delete existing figure
-                # Set action
-                action_delete_figure = QAction(figureKey, self)
-                action_delete_figure.triggered.connect(
-                    partial(self.deleteFigure, id_Fig, FigureTypes.FIGURETYPE))
-                # Add to submenu
-                subMenu_deleteFigure.addAction(action_delete_figure)
-
-            # ------------------------------------------------------------------
-            # Add menu item to delete all existing figures
-            # Set action
-            action_deleteAll_figure = QAction('All', self)
-            action_deleteAll_figure.triggered.connect(partial(
-                self.deleteAllFigures, figureType=FigureTypes.FIGURETYPE))
-            # Add to submenu
-            subMenu_deleteFigure.addAction(action_deleteAll_figure)
-            # Bitmap icon
-            # TODO
-
-        # Set handling existing TablePlotViews
-        if numTPV > 0:
-            # Create and add empty submenu to handle show/hide tablePlotViews
-            subMenu_showHideTPV = menu_showHide.addMenu('TablePlotView')
-            subMenu_showHideTPV.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                                   'TPV'))
-            # Create and add empty submenu to handle tablePlotViews deletion
-            subMenu_deleteTPV = menu_delete.addMenu('TablePlotView')
-            subMenu_deleteTPV.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                                 'TPV'))
-
-            for figureKey in self.imas_viz_api.GetFiguresKeys(
-                    figureType=FigureTypes.TABLEPLOTTYPE):
-                # Get figure id number out from the figureKey string
-                # (e.g. 'Figure:0' -> 0)
-                id_TPV = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                           FigureTypes.TABLEPLOTTYPE)
-
-                # --------------------------------------------------------------
-                # Add menu item to show/hide existing figure
-                # Set action
-                action_showHide_TPV = QAction(figureKey, self)
-                action_showHide_TPV.triggered.connect(
-                    partial(self.showHideFigure, id_TPV,
-                            figureType=FigureTypes.TABLEPLOTTYPE))
-                # Add to submenu
-                subMenu_showHideTPV.addAction(action_showHide_TPV)
-
-                # --------------------------------------------------------------
-                # Add menu item to delete existing figure
-                # Set action
-                action_delete_TPV = QAction(figureKey, self)
-                action_delete_TPV.triggered.connect(
-                    partial(self.deleteFigure, id_TPV,
-                            figureType=FigureTypes.TABLEPLOTTYPE))
-                # Add to submenu
-                subMenu_deleteTPV.addAction(action_delete_TPV)
-
-            # ------------------------------------------------------------------
-            # Add menu item to delete all existing figures
-            # Set action
-            action_deleteAll_TPV = QAction('All', self)
-            action_deleteAll_TPV.triggered.connect(partial(
-                self.deleteAllFigures, figureType=FigureTypes.TABLEPLOTTYPE))
-            # Add to submenu
-            subMenu_deleteTPV.addAction(action_deleteAll_TPV)
-
-        # Set handling existing StackedPlotViews
-        if numSPV > 0:
-            # Create and add empty submenu to handle show/hide
-            subMenu_showHideSPV = menu_showHide.addMenu('StackedPlotView')
-            subMenu_showHideSPV.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                                   'SPV'))
-            # Create and add empty submenu to handle deletion
-            subMenu_deleteSPV = menu_delete.addMenu('StackedPlotView')
-            subMenu_deleteSPV.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                                 'SPV'))
-
-            for figureKey in self.imas_viz_api.GetFiguresKeys(
-                    figureType=FigureTypes.STACKEDPLOTTYPE):
-                # Get figure id number out from the figureKey string
-                # (e.g. 'Figure:0' -> 0)
-                id_SPV = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                           FigureTypes.STACKEDPLOTTYPE)
-
-                # --------------------------------------------------------------
-                # Add menu item to show/hide existing figure
-                # Set action
-                action_showHide_SPV = QAction(figureKey, self)
-                action_showHide_SPV.triggered.connect(
-                    partial(self.showHideFigure, id_SPV,
-                            figureType=FigureTypes.STACKEDPLOTTYPE))
-                # Add to submenu
-                subMenu_showHideSPV.addAction(action_showHide_SPV)
-
-                # --------------------------------------------------------------
-                # Add menu item to delete existing figure
-                # Set action
-                action_deleteSPV = QAction(figureKey, self)
-                action_deleteSPV.triggered.connect(
-                    partial(self.deleteFigure, id_SPV,
-                            figureType=FigureTypes.STACKEDPLOTTYPE))
-                # Add to submenu
-                subMenu_deleteSPV.addAction(action_deleteSPV)
-
-            # ------------------------------------------------------------------
-            # Add menu item to delete all existing figures
-            # Set action
-            action_deleteAllSPV = QAction('All', self)
-            action_deleteAllSPV.triggered.connect(partial(
-                self.deleteAllFigures, figureType=FigureTypes.TABLEPLOTTYPE))
-            # Add to submenu
-            subMenu_deleteSPV.addAction(action_deleteAllSPV)
-
-        # Set handling existing figures
-        if numImg > 0:
-
-            # Create and add empty submenu to handle figures show/hide
-            submenu_showHideFigure = menu_showHide.addMenu('Image')
-            submenu_showHideFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Image'))
-            # Create and add empty submenu to handle figures deletion
-            subMenu_deleteFigure = menu_delete.addMenu('Image')
-            subMenu_deleteFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Image'))
-
-            for imageKey in self.imas_viz_api.GetFiguresKeys(
-                    figureType=FigureTypes.IMAGETYPE):
-                # Get image number out from the figureKey string
-                # (e.g. 'Image:0' -> 0)
-                # id_Fig = int(figureKey.split(':')[1])
-                id_Fig = self.imas_viz_api.getFigureKeyNum(imageKey, FigureTypes.IMAGETYPE)
-
-                # --------------------------------------------------------------
-                # Add menu item to show/hide existing figure
-                # Set action
-                action_showHide_figure = QAction(imageKey, self)
-                action_showHide_figure.triggered.connect(
-                    partial(self.showHideFigure, id_Fig, FigureTypes.IMAGETYPE))
-                # Add to submenu
-                submenu_showHideFigure.addAction(action_showHide_figure)
-
-                # --------------------------------------------------------------
-                # Add menu item to delete existing figure
-                # Set action
-                action_delete_figure = QAction(imageKey, self)
-                action_delete_figure.triggered.connect(
-                    partial(self.deleteFigure, id_Fig, FigureTypes.IMAGETYPE))
-                # Add to submenu
-                subMenu_deleteFigure.addAction(action_delete_figure)
-
-            # ------------------------------------------------------------------
-            # Add menu item to delete all existing figures
-            # Set action
-            action_deleteAll_figure = QAction('All', self)
-            action_deleteAll_figure.triggered.connect(partial(
-                self.deleteAllFigures, figureType=FigureTypes.IMAGETYPE))
-            # Add to submenu
-            subMenu_deleteFigure.addAction(action_deleteAll_figure)
-            # Bitmap icon
-            # TODO
-            
-        if numPro > 0:
-            self.update_menus(menu_showHide, menu_delete, 'Profiles', figureType=FigureTypes.PROFILESPLOTTYPE)
+        for label, icon, figureType in openFigures:
+            self.figureTypeMenus(menu_showHide, menu_delete, label, icon,
+                                 figureType)
 
         menu.addMenu(menu_showHide)
         menu.addMenu(menu_delete)
 
-    def update_menus(self, menu_showHide, menu_delete, name, figureType):
-        # Create and add empty submenu to handle figures show/hide
-            submenu_showHideFigure = menu_showHide.addMenu(name)
-            if GlobalIcons.getCustomQIcon(QApplication, name) is not None:
-               submenu_showHideFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, name))
-            # Create and add empty submenu to handle figures deletion
-            subMenu_deleteFigure = menu_delete.addMenu(name)
-            if GlobalIcons.getCustomQIcon(QApplication, name) is not None:
-               subMenu_deleteFigure.setIcon(GlobalIcons.getCustomQIcon(QApplication, name))
+    def figureTypeMenus(self, menu_showHide, menu_delete, label, iconLabel,
+                        figureType):
+        """One submenu for one kind of figure, in each of the two menus: an
+        entry per open figure, plus "All" under Delete.
 
-            for key in self.imas_viz_api.GetFiguresKeys(
-                    figureType=figureType):
-                # Get image number out from the figureKey string
-                # (e.g. 'Image:0' -> 0)
-                # id_Fig = int(figureKey.split(':')[1])
-                id_Fig = self.imas_viz_api.getFigureKeyNum(key, figureType)
+        Arguments:
+            label      (str) : what the user reads, and the prefix the window
+                               title shows
+            iconLabel  (str) : the GlobalIcons name; None leaves it uniconed
+            figureType (str) : the key prefix the kind is registered under
+        """
+        # Built parented rather than with addMenu(label): PySide6 keeps the menu
+        # that call creates under Python, so it is deleted when the local variable
+        # goes out of scope here and the entry the user clicks on dangles.
+        submenu_showHide = QMenu(label, menu_showHide)
+        subMenu_delete = QMenu(label, menu_delete)
+        menu_showHide.addMenu(submenu_showHide)
+        menu_delete.addMenu(subMenu_delete)
+        icon = GlobalIcons.getCustomQIcon(QApplication, iconLabel)
+        if icon is not None:
+            submenu_showHide.setIcon(icon)
+            subMenu_delete.setIcon(icon)
 
-                # --------------------------------------------------------------
-                # Add menu item to show/hide existing figure
-                # Set action
-                action_showHide_figure = QAction(key, self)
-                action_showHide_figure.triggered.connect(
-                    partial(self.showHideFigure, id_Fig, figureType))
-                # Add to submenu
-                submenu_showHideFigure.addAction(action_showHide_figure)
+        for figureKey in self.imas_viz_api.GetFiguresKeys(
+                figureType=figureType):
+            # Get figure number out of the key string (e.g. 'Figure:0' -> 0),
+            # which is what the show/hide and delete actions are keyed on
+            figureNum = self.imas_viz_api.getFigureKeyNum(figureKey, figureType)
 
-                # --------------------------------------------------------------
-                # Add menu item to delete existing figure
-                # Set action
-                action_delete_figure = QAction(key, self)
-                action_delete_figure.triggered.connect(
-                    partial(self.deleteFigure, id_Fig, figureType))
-                # Add to submenu
-                subMenu_deleteFigure.addAction(action_delete_figure)
+            action_showHide = QAction(figureKey, self)
+            action_showHide.triggered.connect(
+                partial(self.showHideFigure, figureNum, figureType))
+            submenu_showHide.addAction(action_showHide)
 
-            # ------------------------------------------------------------------
-            # Add menu item to delete all existing figures
-            # Set action
-            action_deleteAll_figure = QAction('All', self)
-            action_deleteAll_figure.triggered.connect(partial(
-                self.deleteAllFigures, figureType=figureType))
-            # Add to submenu
-            subMenu_deleteFigure.addAction(action_deleteAll_figure)
-            # Bitmap icon
-            # TODO
-        
+            action_delete = QAction(figureKey, self)
+            action_delete.triggered.connect(
+                partial(self.deleteFigure, figureNum, figureType))
+            subMenu_delete.addAction(action_delete)
+
+        action_deleteAll = QAction('All', self)
+        action_deleteAll.triggered.connect(
+            partial(self.deleteAllFigures, figureType=figureType))
+        subMenu_delete.addAction(action_deleteAll)
+
     def selectSignal(self):
         QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
 
@@ -858,7 +660,7 @@ class QVizSignalHandling(QObject):
                                                       # a new plotWidget
                                                       plotAxis=plotAxis,
                                                       treeNode=self.treeNode)
-            self.addPlotWidgetToMDI(plotWidget)
+            api.addPlotWidgetToMDI(plotWidget)
             # Get the signal data for plot widget
             p = QVizPlotSignal(plotWidget=plotWidget,
                                dataTreeView=self.dataTreeView,
@@ -910,7 +712,7 @@ class QVizSignalHandling(QObject):
             figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
                                                       figureKey=None,
                                                       plotAxis=plotAxis)
-            self.addPlotWidgetToMDI(plotWidget)
+            api.addPlotWidgetToMDI(plotWidget)
             # Plot the selected signals
             QVizPlotSelectedSignals(dataTreeView=self.dataTreeView,
                                     figureKey=figureKey,
@@ -942,7 +744,7 @@ class QVizSignalHandling(QObject):
             command = QVizPlotAsSlices(dataTreeView=self.dataTreeView,
                                        all_DTV=all_DTV)
             for plotWidget in command.execute():
-                self.addPlotWidgetToMDI(plotWidget)
+                self.imas_viz_api.addPlotWidgetToMDI(plotWidget)
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
@@ -1021,19 +823,6 @@ class QVizSignalHandling(QObject):
         #logging.debug("QVizSignalHandling::addSignalPlotToFig:treeNode=" + self.treeNode.getName())
         #print(id(self.treeNode))
         api.AddPlot1DToFig(numFig, self.treeNode)
-
-    def addPlotWidgetToMDI(self, plotWidget):
-        """Embeds the plotWidget inside MDI subwindow.
-        """
-        from PySide6.QtWidgets import QMdiSubWindow
-
-        subWindow = QMdiSubWindow()
-        subWindow.setWidget(plotWidget)
-        subWindow.resize(plotWidget.width(), plotWidget.height())
-        if self.getMDI() is not None:
-           self.getMDI().addSubWindow(subWindow)
-        else:
-            self.subWindow = subWindow
 
     @Slot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -1131,9 +920,3 @@ class QVizSignalHandling(QObject):
             self.imas_viz_api.DeleteFigure(figureKey)
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
-
-    def getMDI(self):
-        if self.parent().getMDI() is not None:
-            return self.parent().getMDI()
-        else:
-            return None

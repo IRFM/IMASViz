@@ -59,6 +59,11 @@ class FakeApi:
     def GetFiguresKeys(self, figureType='Figure:'):
         return sorted(key for key in self.figureframes if key.startswith(figureType))
 
+    def GetNextKeyForFigure(self, figureType):
+        numbers = [int(key[len(figureType):])
+                   for key in self.GetFiguresKeys(figureType)]
+        return figureType + str(max(numbers) + 1 if numbers else 1)
+
 
 def plotCommand(*nodes, all_DTV=True, otherViews=()):
     """A command over one view holding `nodes`, plus any number of other views."""
