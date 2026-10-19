@@ -58,34 +58,39 @@ class StubSource:
         self.conn = None
 
 
-def test_the_factory_hands_back_the_current_access_by_default():
-    assert QVizPreferences.Tensor_based_reading == 0
-    access = QVizDataAccessFactory(StubSource()).create()
-    assert type(access) is QVizIMASNativeDataAccess
-
-
-def test_the_factory_hands_back_the_tensor_access_when_the_preference_is_on(monkeypatch):
-    monkeypatch.setattr(QVizPreferences, 'Tensor_based_reading', 1)
+def test_the_factory_hands_back_the_tensor_access_for_an_imas_source():
+    # One reader for both IMAS sources: the switch that used to choose between
+    # two is gone, so nothing here can ask for the old one.
     access = QVizDataAccessFactory(StubSource()).create()
     assert type(access) is QVizTensorDataAccess
 
 
-def test_the_tore_supra_source_still_gets_its_own_access(monkeypatch):
-    monkeypatch.setattr(QVizPreferences, 'Tensor_based_reading', 1)
+def test_a_remote_imas_source_reads_the_same_way_as_a_local_one():
+    access = QVizDataAccessFactory(
+        StubSource(QVizGlobalValues.IMAS_UDA)).create()
+    assert type(access) is QVizTensorDataAccess
+
+
+def test_the_tore_supra_source_still_gets_its_own_access():
     from imasviz.VizDataAccess.QVizTSDataAccess import QVizTSDataAccess
     access = QVizDataAccessFactory(
         StubSource(QVizGlobalValues.TORE_SUPRA)).create()
     assert type(access) is QVizTSDataAccess
 
 
-def test_the_reading_preference_is_read_from_the_preferences_file(tmp_path, monkeypatch):
+def test_a_preferences_file_naming_the_retired_reading_key_is_still_read(tmp_path,
+                                                                        monkeypatch):
+    # Files already on disk carry the key the switch used to read. Its reader is
+    # gone, so the line has to be passed over without a word -- and the options
+    # that remain have to keep being read.
     (tmp_path / '.imasviz').mkdir()
-    (tmp_path / '.imasviz' / 'preferences').write_text('Tensor_based_reading=1\n')
+    (tmp_path / '.imasviz' / 'preferences').write_text(
+        'Tensor_based_reading=1\nIgnore_GGD=0\n')
     monkeypatch.setenv('HOME', str(tmp_path))
     monkeypatch.setattr(QVizPreferences, 'userPreferencesInitialized', False)
-    monkeypatch.setattr(QVizPreferences, 'Tensor_based_reading', 0)
+    monkeypatch.setattr(QVizPreferences, 'Ignore_GGD', 1)
     QVizPreferences().build()
-    assert QVizPreferences.Tensor_based_reading == 1
+    assert QVizPreferences.Ignore_GGD == 0
 
 
 def nodeForLeaf(case, treeView, idsName, leafText):
