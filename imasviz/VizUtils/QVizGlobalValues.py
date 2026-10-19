@@ -89,11 +89,6 @@ class QVizPreferences:
     ColorOfNodesContainingData = None
     Allow_data_to_be_plotted_with_different_units = 0
     Ignore_GGD = 1
-    # Read a plotted quantity as one tensor along its axes (QVizTensorDataAccess)
-    # instead of one evaluated expression per time slice. Off by default: both
-    # paths are kept so a plot can be compared against the other, and the tensor
-    # path is not yet equal to the current one for leaves of three axes or more.
-    Tensor_based_reading = 0
 
     def build(self):
         if not QVizPreferences.userPreferencesInitialized:
@@ -104,7 +99,6 @@ class QVizPreferences:
             option2 = "Nodes_selection_colour="
             option3 = "Allow_data_to_be_plotted_with_different_units="
             option4 = "Ignore_GGD="
-            option5 = "Tensor_based_reading="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -121,9 +115,6 @@ class QVizPreferences:
                         elif line.startswith(option4):
                             value = line[len(option4):]
                             QVizPreferences.Ignore_GGD = int(value)
-                        elif line.startswith(option5):
-                            value = line[len(option5):]
-                            QVizPreferences.Tensor_based_reading = int(value)
 
                 QVizPreferences.userPreferencesInitialized = True
             else:

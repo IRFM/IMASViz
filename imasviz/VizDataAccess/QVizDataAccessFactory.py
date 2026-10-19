@@ -9,9 +9,8 @@
 
 from imasviz.VizDataAccess.QVizTSDataAccess import QVizTSDataAccess
 
-from imasviz.VizDataAccess.QVizIMASNativeDataAccess import QVizIMASNativeDataAccess
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
-from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
+from imasviz.VizUtils import QVizGlobalValues
 
 
 class QVizDataAccessFactory:
@@ -25,9 +24,10 @@ class QVizDataAccessFactory:
 
         elif self.dataSource.name == QVizGlobalValues.IMAS_NATIVE or \
                 self.dataSource.name == QVizGlobalValues.IMAS_UDA:
-            # Both IMAS paths answer the same GetSignal contract, so the switch
-            # is invisible to the widgets: it changes how many reads a plot
-            # costs, not what a plot draws.
-            if QVizPreferences.Tensor_based_reading:
-                return QVizTensorDataAccess(self.dataSource)
-            return QVizIMASNativeDataAccess(self.dataSource)
+            # Both IMAS sources answer the same GetSignal contract, local or
+            # remote. A preference used to choose a second reader here so a plot
+            # could be compared between the two; that one read the path to a
+            # quantity by evaluating it as an expression, and answered nothing at
+            # all for a quantity of three axes or more. The comparison is over
+            # and the reader with it.
+            return QVizTensorDataAccess(self.dataSource)
