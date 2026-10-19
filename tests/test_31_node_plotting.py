@@ -207,17 +207,17 @@ def test_the_time_axis_is_read_from_the_axes_not_from_the_leaf_rank(qapp):
 # the frames, not of the quantity: one slider group per figure, so a curve frame
 # only ever drew a one-dimension leaf and an image frame a two-dimension one.
 
-@pytest.mark.parametrize('dataType,path,coordinates,asCurve,asScalar', [
+@pytest.mark.parametrize('dataType,path,coordinates,asCurve,asImage', [
     ('FLT_1D', 'time_slice[itime]', ('rho_tor_norm',), True, False),
-    ('FLT_0D', 'time_slice[itime]', (), False, True),
+    ('FLT_0D', 'time_slice[itime]', (), False, False),
     ('FLT_0D', 'constant_0d', (), False, False),
-    ('FLT_2D', 'time_slice[itime].profiles_1d', ('rho_tor_norm', 'z'), False, False),
+    ('FLT_2D', 'time_slice[itime].profiles_1d', ('rho_tor_norm', 'z'), False, True),
 ])
 def test_what_the_legacy_frames_can_still_draw(qapp, dataType, path, coordinates,
-                                               asCurve, asScalar):
+                                               asCurve, asImage):
     node = makeNode(dataType, path=path, coordinates=coordinates,
                     itimeIndex=0 if 'itime' in path else -1,
                     indices={'i': '0'}, lengths={'i': 10})
     plotting = QVizNodePlotting(node)
     assert plotting.legacyCanDrawAsCurve() is asCurve
-    assert plotting.legacyCanDrawScalarAgainstTime() is asScalar
+    assert plotting.legacyCanDrawAsImage() is asImage
