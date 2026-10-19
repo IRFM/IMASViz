@@ -83,6 +83,26 @@ def _scalarInTime():
                         itimeIndex=0, coordinates=(), lengths={'i': '2'})
 
 
+def _scalarInAoS():
+    """A scalar held by a static array: no axis of its own to run along.
+
+    The figure it is plotted on decides its abscissa, so the read has nothing to
+    spread the value over until something else is drawn.
+    """
+    ids = type(str('StubIds'), (), {})()
+    ids.ids_properties = type(str('Props'), (), {})()
+    ids.ids_properties.homogeneous_time = 1
+    ids.time = [0., 1.]
+    ids.ion = []
+    for gap in (7., 9.):
+        ion = type(str('Ion'), (), {})()
+        ion.gap = gap
+        ids.ion.append(ion)
+    return FakeAxesNode(ids, 'foo', 'foo.ion[j]', 'FLT_0D', name='gap',
+                        coordinates=(), indices={'j': '1'}, lengths={'j': '2'},
+                        alongTime=False)
+
+
 @pytest.fixture
 def figure(qtbot):
     widget = QVizCurvePlot(title='Figure:1')
@@ -177,6 +197,44 @@ def test_moving_the_radial_slice_moves_both_curves(figure):
 
     assert plotted(figure, 0)[1] == [30., 60.]
     assert plotted(figure, 1)[1] == [90., 160.]
+
+
+@pytest.mark.ui
+def test_a_scalar_is_spread_over_the_axis_already_drawn(figure):
+    # A scalar held by a static array has no axis of its own. On a figure where
+    # something else already runs along an axis, the honest reading is the same
+    # value at every point of that axis -- which is what the table and the
+    # stacked figure have always shown, and what this read used to refuse.
+    figure.plot(_leaf('z_ion'))
+
+    assert figure.plot(_scalarInAoS()) == 1
+    x, y = plotted(figure, 1)
+
+    assert x == [0., 1.]
+    assert y == [9., 9.]
+
+
+@pytest.mark.ui
+def test_the_spread_scalar_says_so_in_the_shot_log(figure, caplog):
+    # A flat line is one value, not a measurement along the axis: the shot's log
+    # panel has to carry that, or a flat line reads as a flat quantity.
+    figure.plot(_leaf('z_ion'))
+    caplog.clear()
+
+    figure.plot(_scalarInAoS())
+
+    warnings = [record.getMessage() for record in caplog.records
+                if record.levelname == 'WARNING']
+    assert any('gap' in message for message in warnings)
+
+
+@pytest.mark.ui
+def test_a_scalar_with_nothing_to_run_along_says_so(figure):
+    with pytest.raises(ValueError) as raised:
+        figure.plot(_scalarInAoS())
+
+    assert 'gap' in str(raised.value)
+    assert figure.curveCount() == 0
 
 
 @pytest.mark.ui
