@@ -354,8 +354,8 @@ class QVizTensorDataAccess:
                     if axis.origin == QVizAxis.LEAF]
 
         if not leafAxes:
-            raise ValueError("Data node '" + treeNode.getName() +
-                             "' has no explicit dependency on current X axis.")
+            return self._scalarVsPlottedAxis(treeNode, plotWidget,
+                                             tensor.values)
 
         # A leaf axis can be the axis a figure reads across its images: the
         # pictures then differ by one element of that coordinate, which has to
@@ -393,6 +393,37 @@ class QVizTensorDataAccess:
                              axis=valueAxis)
             kept.remove(position)
         return kept, values
+
+    def _scalarVsPlottedAxis(self, treeNode, plotWidget, values):
+        """One scalar, drawn at every point of the axis another quantity opened.
+
+        A scalar held by a static array has no axis of its own, so a figure that
+        shows it borrows the abscissa of whatever is already drawn -- which is
+        what the table and the stacked figure have always done, and what this read
+        refused until now. A flat line reads as a quantity that does not vary, so
+        the shot's log panel is told the line is one value.
+        """
+        axisValues = plottedXValues(plotWidget)
+        if axisValues is None or len(axisValues) == 0:
+            raise ValueError("Data node '" + treeNode.getName() +
+                             "' has no explicit dependency on current X axis.")
+
+        scalar = np.asarray(values).reshape(-1)
+        if scalar.size != 1:
+            raise ValueError('Nothing to plot for "' + treeNode.getName() +
+                             '": the quantity holds ' + str(scalar.size) +
+                             ' values where one was expected.')
+
+        self._uriLogger().warning(
+            "Data node '" + treeNode.getName() + "' has no explicit dependency "
+            "on coordinate1 dimension: its value is repeated along the plotted "
+            "axis")
+        return np.array([np.asarray(axisValues, dtype=float)]), \
+               np.full((1, len(axisValues)), float(scalar[0]))
+
+    def _uriLogger(self):
+        """The log panel of the shot view this read came from."""
+        return logging.getLogger(getattr(self.dataSource, 'uri', None) or 'IMASViz')
 
     def _dataArrayHandle(self, treeNode, axesSpec, tensor, leafAxes, values,
                          plotWidget, coordinate_index, time_index):
@@ -452,7 +483,7 @@ class QVizTensorDataAccess:
         """
         if elements is None or elements == rank:
             return
-        logging.getLogger(getattr(self.dataSource, 'uri', None) or 'IMASViz').warning(
+        self._uriLogger().warning(
             "Coordinate '" + str(axis.coordinate) + "' names an array of "
             "structures of " + str(elements) + " element(s), where '" +
             axesSpec.dataPath + "' holds " + str(rank) + " along that axis: "
@@ -479,3 +510,30 @@ class QVizTensorDataAccess:
                                                       coordinate_index),
                              axis=valueAxis)
         return values
+
+
+def plottedXValues(plotWidget):
+    """The abscissa a figure already holds, taken from the plot showing it.
+
+    A single-plot frame keeps one plot item; a table or a stacked figure keeps
+    several and says which one is current. Both are asked through their own
+    accessor instead of by widget type, which is how the current path decided it:
+    a frame gains the scalar without having to be named here, and a frame that
+    carries no plot at all answers None instead of raising.
+    """
+    if plotWidget is None:
+        return None
+
+    current = getattr(plotWidget, 'getCurrentPlotItem', None)
+    if current is not None:
+        plotItem = current()
+    else:
+        plotItem = getattr(getattr(plotWidget, 'pgPlotWidget', None), 'plotItem',
+                           None)
+    if plotItem is None:
+        return None
+
+    dataItems = getattr(plotItem, 'dataItems', None)
+    if not dataItems:
+        return None
+    return dataItems[0].xData
