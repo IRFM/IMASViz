@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 165 passed, 8 xfailed, ~11 s
+python3 -m pytest tests/ -q       # 366 passed, 8 xfailed, ~25 s
 ```
 
 Useful variants:
@@ -90,7 +90,25 @@ dialog or a remote backend.
 | `test_04_view_parser.py` | `VizDataAccess` view parser | dictionary reflection; pins the shadow-tree node counts measured on the parsers it replaced |
 | `test_10_plot_image_widget.py` | image plot widget | synthetic array, no case and no data dictionary |
 | `test_11_layout_and_table.py` | layout widget, IDS table model | locks the Qt6 migration (`QVariant` is gone) |
+| `test_12_plot_labels.py` | legends, axis labels, units, title | case label instead of the URI; labels set per curve |
+| `test_13_plot_axes.py` | `QVizPlotWidget` axes | `xunits`/`yunits` reach the axis labels |
+| `test_14_coordinate_units.py` | coordinate units → X axis label | the unit of the coordinate an array is indexed by |
+| `test_15_node_coordinates.py` | `QVizTreeNode` coordinates | which coordinate a node records when asked to change one |
+| `test_16_db_entry_registry.py` | IMAS entry registry | one entry per URI, references counted |
+| `test_17_axes_spec.py` | `QVizAxesSpec` | the axes a leaf has to be plotted along; unbounded `1..N` spelling |
+| `test_18_case_readings.py` | reference case, through the axes model | readings frozen as numbers: 17 344 samples, 49 slices, 1 642 × 101 grid |
+| `test_19_time_coordinate_rule.py` | `homogeneous_time` | where a time coordinate gets its values |
 | `test_20_plugins.py` | `VizPlugins` framework | registration table, `VizPlugin` contract |
+| `test_20_tensor_data_access.py` | the IMAS reader and the factory | one reader for both IMAS sources; the (arrays, handle) contract |
+| `test_21_slice_sliders.py` | the axes a plot does not draw | each one fixed in front of the user, not silently |
+| `test_22_slice_controls.py` | `QVizSliceControls` | controls driven from the axes model rather than a flag |
+| `test_23_scalar_content_and_lifecycle.py` | shot view, scalars | a scalar's value, and `lifecycle_status` |
+| `test_24_curve_plot.py` | `QVizCurvePlot` end to end | a rank 3 quantity becomes a curve whose slices move; a scalar spread along the drawn axis |
+| `test_25_plot_as_slices.py` | `QVizPlotAsSlices` | selection to figure through the tensor read |
+| `test_26_image_plot.py` | `QVizImagePlot` end to end | pictures read along one axis, a window on it, one colour scale |
+| `test_27_plot_routing.py` | routing a selection | a curve draws one axis, an image two; refusal names the quantity |
+| `test_28_radiance_case.py` | WEST 55799 | a rank 3 quantity a real shot holds values for (`hard_x_rays`) |
+| `test_29_inherited_coordinates.py` | parser, inherited coordinates | the coordinates a structure declares, carried down to its arrays |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an
@@ -191,9 +209,13 @@ occurrence 0, 24 walked:
 | 5 | 6 |
 | **total** | **191 483** |
 
-**36 668 leaves — 19 % of the case — are rank 3 or larger.** Today none of them
-can be plotted: `QVizIMASNativeDataAccess.GetSignal` matches no branch and
-returns `None` without a word. Real examples of each rank:
+**36 668 leaves — 19 % of the case — are rank 3 or larger.** The reader the
+application used until now had no branch for that shape: it evaluated one Python
+expression per time slice, left the static array's placeholder unsubstituted,
+watched every slice fail to evaluate, and handed back two empty arrays — an empty
+curve, with nothing said about why. Such a leaf is read whole along its axes now,
+and a quantity with more to draw than a frame can hold is refused by name. Real
+examples of each rank:
 
 - rank 3: `calorimetry.group[i].component[j].power.data`
 - rank 4: `core_profiles.profiles_1d[i].ion[j].state[k].z_average_1d`

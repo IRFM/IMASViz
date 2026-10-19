@@ -27,19 +27,20 @@ FRAMES = 3
 class QVizTensorDataAccess:
     """The widgets' data access, reading a quantity whole instead of slice by slice.
 
-    The surface is QVizIMASNativeDataAccess's on purpose: GetSignal answers
-    either a (t, r) pair -- one row each, the way the plot code indexes them --
-    or a QVizDataArrayHandle for a two-dimension leaf. A widget therefore cannot
-    tell which access it got, and switching the preference cannot change what it
-    draws.
+    GetSignal answers either a (t, r) pair -- one row each, the way the plot code
+    indexes them -- or a QVizDataArrayHandle for a two-dimension leaf. The curve,
+    table and stacked frames consume the pair, the image frames the handle; which
+    of the two a node gets follows from its axes, and a frame handed a shape it
+    cannot read is a wrong routing, not a question for this access.
 
-    What changes is the number of reads. The current access builds one Python
-    expression per time slice and evaluates it (getDataTimeSlices, then evalPath
-    in the loop), and it decides what to build from the leaf's nominal dimension
-    -- is0DAndDynamic, is1DAndDynamic, is2DAndDynamic -- which is why a quantity
-    in three arrays of structures has no branch at all. Here the quantity is
-    read once along all of its axes, and the slice a plot needs is one index
-    into it: the rank stops being a case distinction.
+    What changes against the reader this one replaces is the number of reads. The
+    other built one Python expression per time slice and evaluated it
+    (getDataTimeSlices, then evalPath in the loop), and it decided what to build
+    from the leaf's nominal dimension -- is0DAndDynamic, is1DAndDynamic,
+    is2DAndDynamic -- which is why a quantity in three arrays of structures had
+    no branch at all. Here the quantity is read once along all of its axes, and
+    the slice a plot needs is one index into it: the rank stops being a case
+    distinction.
     """
 
     def __init__(self, dataSource):
