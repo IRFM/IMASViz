@@ -208,28 +208,39 @@ def test_the_quantity_is_routed_to_an_image_with_one_control(qapp, radiance, cas
 
         assert [type(frame) for frame in figures] == [QVizImagePlot]
         assert command.curveFigure is None
-        rows = command.imageFigures[0].sliceControls.rows()
-        assert command.imageFigures[0].sliceControls.keys() == [CHANNEL]
-        assert [row.nameLabel.text() for row in rows] == ['channel:']
-        assert rows[0].slider.maximum() == channels(figure) - 1
-        assert rows[0].indexLabel.text() == '0 / %d' % (channels(figure) - 1)
+        # The radiance has no dynamic array to take the place between pictures,
+        # so its one enclosing array -- the 38 channels -- is what the pictures
+        # are taken along. It therefore keeps no slider.
+        frame = command.imageFigures[0]
+        assert frame.sliceControls.keys() == []
+        assert frame.framesKey() == CHANNEL
+        assert (frame.imageCount(), frame.framesControls.count()) == (3, 3)
+        assert frame.framesControls.start() == 0
+        assert frame.framesControls.labelText() == 'channel: 0-2 / %d' % (
+                channels(figure) - 1)
     finally:
         for frame in command.figures:
             frame.close()
 
 
 @pytest.mark.case
-def test_moving_the_channel_control_draws_that_channel(qapp, radiance, case):
+def test_the_window_reads_three_channels_at_a_time(qapp, radiance, case):
     frame = QVizImagePlot(title='Image:55799')
     try:
         frame.plot(radiance)
 
-        frame.sliceControls.setIndex(CHANNEL, 5)
+        ids = case['runtime'][IDS_NAME]
+        for position, channel in enumerate(range(0, 3)):
+            # The picture is the channel's values laid out the way the frame
+            # draws them, which is transposed here: time horizontal.
+            np.testing.assert_allclose(frame.images()[position].image,
+                                       radianceOf(ids, channel).T)
 
-        # The picture is the channel's values laid out the way the frame draws
-        # them, which is transposed here: time horizontal.
-        np.testing.assert_allclose(frame.images()[0].image,
-                                   radianceOf(case['runtime'][IDS_NAME], 5).T)
+        frame.framesControls.setStart(5)
+
+        for position, channel in enumerate(range(5, 8)):
+            np.testing.assert_allclose(frame.images()[position].image,
+                                       radianceOf(ids, channel).T)
     finally:
         frame.close()
 

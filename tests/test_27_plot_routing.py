@@ -108,14 +108,37 @@ def _oneDimensionInTime(name='z_ion'):
 
 
 def _threeAxesLeaf():
-    """No frame draws three axes yet; the refusal has to name the quantity."""
+    """A leaf with three axes of its own: two drawn, one read between pictures."""
     ids = type(str('StubIds'), (), {})()
     ids.ids_properties = type(str('Props'), (), {})()
     ids.ids_properties.homogeneous_time = 1
     ids.time = [0.]
     ids.cube = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
     return FakeAxesNode(ids, 'foo', 'foo', 'FLT_3D', name='cube',
-                        coordinates=('1..N', '1..M', '1..P'))
+                        coordinates=('1..N', '1..M', '1..7'))
+
+
+def _fourAxesLeaf():
+    """The same leaf inside the dynamic array: rank 4, and no frame holds it.
+
+    The time axis takes the place between the pictures, which leaves the leaf's
+    three axes inside one picture -- more than two is more than a picture shows,
+    and pinning one of them silently is what this path refuses to do.
+    """
+    ids = type(str('StubIds'), (), {})()
+    ids.ids_properties = type(str('Props'), (), {})()
+    ids.ids_properties.homogeneous_time = 1
+    ids.time = list(TIMES)
+    ids.time_slice = []
+    for timeIndex in range(len(TIMES)):
+        timeSlice = type(str('TimeSlice'), (), {})()
+        timeSlice.time = None
+        timeSlice.cube = [[[1., 2.], [3., 4.]], [[5., 6.], [7., 8.]]]
+        ids.time_slice.append(timeSlice)
+    return FakeAxesNode(ids, 'foo', 'foo.time_slice[itime]', 'FLT_3D',
+                        name='cube', itimeIndex=0,
+                        coordinates=('1..N', '1..M', '1..7'),
+                        indices={'i': '1'}, lengths={'i': str(len(TIMES))})
 
 
 @pytest.fixture
@@ -143,7 +166,11 @@ def test_a_two_dimension_quantity_goes_to_an_image_and_not_a_curve(run):
 
     assert command.curveFigure is None
     assert [type(frame) for frame in figures] == [QVizImagePlot]
-    np.testing.assert_array_equal(figures[0].images()[0].image, psi(1))
+    # The dynamic array is the axis read between the pictures, so this figure
+    # holds one picture per time slice -- two here, the shot has two.
+    assert [frame.imageCount() for frame in figures] == [2]
+    np.testing.assert_array_equal(figures[0].images()[0].image, psi(0))
+    np.testing.assert_array_equal(figures[0].images()[1].image, psi(1))
 
 
 @pytest.mark.ui
@@ -176,15 +203,16 @@ def test_the_quantities_that_share_an_axis_share_the_curve_figure(run):
 
 @pytest.mark.ui
 def test_each_two_dimension_quantity_gets_its_own_image(run):
-    # Two pictures on one frame would need one colour scale for two quantities
-    # and one control answering two images.
+    # Two quantities on one frame would need one colour scale for both and one
+    # window answering two axes. The pictures inside one figure are the elements
+    # of one axis of one quantity, never two quantities.
     command, figures = run(_twoDimensionStatic(), _twoDimensionInTime())
     images = [frame.images()[0].image for frame in command.imageFigures]
 
     assert len(command.imageFigures) == 2
-    assert [frame.imageCount() for frame in command.imageFigures] == [1, 1]
+    assert [frame.imageCount() for frame in command.imageFigures] == [1, 2]
     np.testing.assert_array_equal(images[0], np.array([[1., 2., 3.], [4., 5., 6.]]))
-    np.testing.assert_array_equal(images[1], psi(1))
+    np.testing.assert_array_equal(images[1], psi(0))
     assert command.imageFigures[0].figureKey != command.imageFigures[1].figureKey
 
 
@@ -193,12 +221,17 @@ def test_the_image_figure_keeps_its_controls_after_the_command_is_done(run):
     command, figures = run(_twoDimensionInTime())
     frame = figures[0]
 
-    assert frame.sliceControls.keys() == [TIME_SLICE, PROFILES_2D]
+    # Only the static array needs a control: the dynamic one is the axis the
+    # pictures are taken along, so it is on screen and needs a window instead.
+    assert frame.sliceControls.keys() == [PROFILES_2D]
+    assert frame.framesKey() == TIME_SLICE
+    assert frame.sliceControls.rows()[0].slider.maximum() == 1
+    assert (frame.framesControls.count(), frame.framesControls.start()) == (2, 0)
+
     frame.sliceControls.setIndex(PROFILES_2D, 1)
 
-    np.testing.assert_array_equal(frame.images()[0].image, psi(1))
-    frame.sliceControls.setIndex(TIME_SLICE, 0)
     np.testing.assert_array_equal(frame.images()[0].image, psi(0))
+    np.testing.assert_array_equal(frame.images()[1].image, psi(1))
 
 
 @pytest.mark.ui
@@ -212,8 +245,22 @@ def test_both_kinds_are_registered_under_their_own_figure(run):
 
 
 @pytest.mark.ui
+def test_a_leaf_of_three_axes_is_routed_to_an_image_now(run):
+    # This quantity used to be refused outright: three axes to draw, a frame that
+    # shows two. One of the three moved between the pictures, so it has a frame.
+    command, figures = run(_threeAxesLeaf())
+
+    assert [type(frame) for frame in figures] == [QVizImagePlot]
+    assert figures[0].imageCount() == 2
+    np.testing.assert_array_equal(figures[0].images()[0].image,
+                                  [[1., 2.], [3., 4.]])
+    np.testing.assert_array_equal(figures[0].images()[1].image,
+                                  [[5., 6.], [7., 8.]])
+
+
+@pytest.mark.ui
 def test_a_quantity_no_frame_can_draw_is_refused_by_name(plotCommandOf, caplog):
-    command = plotCommandOf(_threeAxesLeaf())
+    command = plotCommandOf(_fourAxesLeaf())
 
     with pytest.raises(ValueError):
         command.execute()
@@ -223,7 +270,7 @@ def test_a_quantity_no_frame_can_draw_is_refused_by_name(plotCommandOf, caplog):
     assert command.api.figToNodes == {}
     # Refusing quietly would leave the user with no figure and no reason; the
     # message goes to the log panel of the shot view it came from.
-    assert 'foo.cube' in caplog.text
+    assert 'foo.time_slice[itime].cube' in caplog.text
     assert '3 axes to draw' in caplog.text
 
 
