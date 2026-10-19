@@ -131,8 +131,10 @@ passed, 8 xfailed** — seven tests in `tests/test_30_figure_registry.py` pin th
 registry and the menus built from it. Since T1: **387 passed, 8 xfailed** —
 thirteen tests in `tests/test_31_node_plotting.py` pin the node model and the menu
 built from it, on real `QVizTreeNode`s with a hand-built `infoDict`, so the legacy
-predicates answer for real and a wrong menu is the menu's fault, not a stub's. The
-`build_uri` xfail can only be lifted by T10; the five Qt Designer modules stay.
+predicates answer for real and a wrong menu is the menu's fault, not a stub's; the
+fourteenth is `tests/test_99_import_sweep.py` counting the new module, which is
+how that sweep earns its keep. The `build_uri` xfail can only be lifted by T10;
+the five Qt Designer modules stay.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new
