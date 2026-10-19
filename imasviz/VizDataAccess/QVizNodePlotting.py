@@ -90,6 +90,29 @@ class QVizNodePlotting:
             return False
         return bool(self.axes.leafAxes()) or self.hasTimeAxis()
 
+    def curveAxisKey(self):
+        """Names the abscissa a curve of this quantity would run along.
+
+        A curve figure has one bottom label, and what it says is the axis of the
+        last curve read -- so a quantity read along another abscissa must not be
+        added to a figure that already holds curves. Two leaf axes is a picture
+        and not a curve: the curve frame draws one and would die unpacking a
+        data-array handle. Nothing around the quantity but a time base is the
+        history case, whose abscissa is time.
+
+        Asked of the axes alone, because the menu that lists the open figures
+        must not pay for a read: plottedAxes() below measures lengths on the
+        values, this does not.
+        """
+        own = self.axes.leafAxes()
+        if len(own) > 1:
+            return None
+        if own:
+            return own[0].key()
+        if self.hasTimeAxis():
+            return 'time'
+        return None
+
     def plottedAxes(self):
         """How many axes a picture of this quantity would show.
 
@@ -128,11 +151,6 @@ class QVizNodePlotting:
     def legacyCanDrawAsCurve(self):
         return (self.isPlottable() and
                 leafDataDimension(self.treeNode.getDataType()) == 1)
-
-    def legacyCanDrawScalarAgainstTime(self):
-        return (self.isPlottable() and
-                leafDataDimension(self.treeNode.getDataType()) == 0 and
-                self.hasTimeAxis())
 
     def legacyCanDrawAsImage(self):
         return (self.isPlottable() and

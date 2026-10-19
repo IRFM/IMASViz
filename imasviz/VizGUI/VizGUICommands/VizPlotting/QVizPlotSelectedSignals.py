@@ -9,7 +9,6 @@
 
 import xml.etree.ElementTree as ET
 import logging
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizAbstractPlot import QVizAbstractPlot
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 
@@ -100,9 +99,9 @@ class QVizPlotSelectedSignals(QVizAbstractCommand, QVizAbstractPlot):
                     # Get signal properties and values
                     s = self.api.GetSignal(dtv, vizTreeNode, plotWidget=self.plotWidget)
                     # Get array of time values
-                    t = QVizPlotSignal.getXAxisValues(s)
+                    t = s[0]
                     # Get array of y-axis values
-                    v = QVizPlotSignal.get1DSignalValue(s)
+                    v = s[1]
                     # Get number of rows of the y-axis array of values
                     nbRows = v.shape[0]
 

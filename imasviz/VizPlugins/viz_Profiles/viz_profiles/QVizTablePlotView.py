@@ -25,7 +25,6 @@ from PySide6.QtWidgets import QWidget, QScrollArea
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from imasviz.Viz_API import Viz_API
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
 from .CustomizedViewBox import CustomizedViewBox
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
@@ -99,10 +98,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
             # print("-->plotting node:" + signalNode.getPath())
 
-            t = QVizPlotSignal.getXAxisValues(signal)
+            t = signal[0]
 
             # Get array of y-axis values
-            v = QVizPlotSignal.get1DSignalValue(signal)
+            v = signal[1]
 
             # Set plot options
             label, xlabel, ylabel, title = \
@@ -266,11 +265,11 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
 
             # print("-->updating node plot:" + signalNode.getPath())
 
-            t = QVizPlotSignal.getXAxisValues(signal)
+            t = signal[0]
             ti = t[0]
 
             # Get array of y-axis values
-            v = QVizPlotSignal.get1DSignalValue(signal)
+            v = signal[1]
             u = v[0]
 
             # dataItem = self.dataItems[i]

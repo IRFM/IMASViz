@@ -11,8 +11,6 @@
 import pyqtgraph as pg
 import logging
 from PySide6 import QtCore, QtGui
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
-    import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
@@ -129,10 +127,10 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
                                                 vizTreeNode=signalNode,
                                                 plotWidget=self)
 
-                t = QVizPlotSignal.getXAxisValues(s)
+                t = s[0]
 
                 # Get array of y-axis values
-                v = QVizPlotSignal.get1DSignalValue(s)
+                v = s[1]
 
                 # Get number of rows of the y-axis array of values
                 # TODO/Note: as it seems the QVizPlotSignal is used for single

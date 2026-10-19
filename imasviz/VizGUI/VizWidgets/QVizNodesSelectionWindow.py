@@ -10,8 +10,6 @@
 from PySide6.QtWidgets import (QTableWidget, QTableWidgetItem, QDialog,
                              QSizePolicy, QGridLayout, QHeaderView)
 
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
-
 
 # class QVizHandleRightClickInNodesSelectionWindow:
 #     """ Handle the mouse right click event on a PyQt5 QTreeWidget.

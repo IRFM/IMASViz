@@ -17,7 +17,7 @@ from imasviz.VizUtils import GlobalIcons, QVizPreferences
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOneNode
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
@@ -38,7 +38,6 @@ class QVizSignalHandling(QObject):
         self.dataTreeView = dataTreeView
         self.imas_viz_api = self.dataTreeView.imas_viz_api
         self.plotFrame = None
-        self.currentFigureKey = None
         # Get signal node (tree item) data
         if self.dataTreeView.selectedItem is not None:
             self.nodeData = self.dataTreeView.selectedItem.getInfoDict()
@@ -48,6 +47,12 @@ class QVizSignalHandling(QObject):
            self.treeNode = treeNode
         else:
            self.treeNode = self.dataTreeView.selectedItem
+        # The menus name the node they act on, so the title belongs to the node,
+        # not to whoever happened to build the context menu: an entry triggered
+        # on its own (the preview panel, a plugin) used to die on an attribute
+        # only buildContextMenu sets.
+        if self.treeNode is not None:
+            self.signalNodeName = self.treeNode.getDataName()
 
     def buildContextMenu(self, signalNode):
         """Build context menu.
@@ -81,20 +86,20 @@ class QVizSignalHandling(QObject):
 
         # SET TOP MENU ITEMS
         # - Add menu for handling plotting using the under-the-mouse selected
-        #   signal node. Each entry stays where its frame can still fill it: the
-        #   legacy curve figure holds one slider group for everything but its
-        #   curve, so it only ever drew a one-dimension leaf, and the legacy
-        #   image frame a leaf with two of its own. What those shapes leave out
-        #   is drawn through the read, where every axis the figure does not draw
-        #   gets a control of its own -- see "Curves and images with slice
-        #   controls" under the selection menu below.
-        if plotting.legacyCanDrawAsCurve():
-            self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
-            if plotting.hasOwnCoordinate():
+        #   signal node. The entry is offered whenever the read has an axis to
+        #   draw along, and the command it triggers picks the frame from the same
+        #   answer: which frame a quantity needs is not something the menu has to
+        #   know, and the legacy curve figure (one slider group for everything
+        #   but its curve, so one-dimension leaves only) and the legacy image
+        #   frame (two of its own) are why there used to be one menu per leaf
+        #   shape. What the read leaves out gets a control of its own -- see
+        #   "Curves and images with slice controls" under the selection menu.
+        if plotting.isPlottable():
+            self.contextMenu.addMenu(
+                self.menuPlotCurrentSignalNode(parentMenu=self.contextMenu))
+            if plotting.legacyCanDrawAsCurve() and plotting.hasOwnCoordinate():
                 self.contextMenu.addMenu(self.menuSetCoordinate1DNode())
-        elif plotting.legacyCanDrawScalarAgainstTime():
-            self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
-        elif plotting.legacyCanDrawAsImage():
+        if plotting.legacyCanDrawAsImage():
             array2DHandling = QViz2DArrayHandling(self.dataTreeView)
             self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode(self))
 
@@ -127,19 +132,23 @@ class QVizSignalHandling(QObject):
                                         sub_menu)
 
     def actionPlotAsFunctionOfTime(self):
-        # Add action to plot the signal data as a function of time
-        # TODO: icon
-        action_plotAsFunctionOfTime = None
-        if self.treeNode.is1DAndDynamic() and self.treeNode.time_dependent(
-                        self.treeNode.parametrizedPath):
-            icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
-            action_plotAsFunctionOfTime = QAction(icon,
-                                                  'Plot as function of time',
-                                                  self)
-            api = self.dataTreeView.imas_viz_api
-            action_plotAsFunctionOfTime.triggered.connect(
-                partial(api.plotSignalVsTimeCommand, self.dataTreeView))
-            action_plotAsFunctionOfTime.setDisabled(False)
+        """The entry for a quantity with a time base to read along.
+
+        Asked of the axes, not of the leaf spelling: the gate used to be
+        is1DAndDynamic() and a string test on the path, which together offered
+        nothing for a number held by the dynamic array -- plainly a history --
+        and offered the entry for shapes whose history was then refused by the
+        command behind it.
+        """
+        plotting = QVizNodePlotting(self.treeNode)
+        if not (plotting.isPlottable() and plotting.hasTimeAxis()):
+            return None
+        icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
+        action_plotAsFunctionOfTime = QAction(icon,
+                                              'Plot as function of time',
+                                              self)
+        action_plotAsFunctionOfTime.triggered.connect(self.plotAlongTimeCommand)
+        action_plotAsFunctionOfTime.setDisabled(False)
 
         return action_plotAsFunctionOfTime
 
@@ -218,18 +227,41 @@ class QVizSignalHandling(QObject):
         self.treeNode.setCoordinate(1, alternative_coordinate)
         self.plotPreviewSignalCommand()
 
-    def menuPlotCurrentSignalNode(self):
-        """Set menu for plotting current (under the mouse selected) signal node.
+    def menuPlotCurrentSignalNode(self, parentMenu=None):
+        """The menu that plots the node the right click was built on.
+
+        One menu for every shape. The command behind 'New' picks the frame from
+        the axes the read would walk, so what used to be three menus -- one per
+        leaf shape the dictionary spells -- is one entry now, and the submenu
+        lists the frames that command can actually fill: the legacy 'Figure:'
+        windows are built and filled by the old path, which cannot read a
+        quantity of two axes, so offering them here is an entry that cannot work.
+
+        Arguments:
+            parentMenu (QMenu) : the menu to hang the "as function of time" entry
+                                 from. It belongs to the context menu, not to this
+                                 submenu -- but it is handed by the caller, because
+                                 reading self.contextMenu made this method work
+                                 only after buildContextMenu had run.
         """
         # - Add action for ploting signal node as a function of time
-        if self.actionPlotAsFunctionOfTime() is not None:
-            self.contextMenu.addAction(self.actionPlotAsFunctionOfTime())
+        action_plotAsFunctionOfTime = self.actionPlotAsFunctionOfTime()
+        if action_plotAsFunctionOfTime is not None and parentMenu is not None:
+            parentMenu.addAction(action_plotAsFunctionOfTime)
 
-        menu = QMenu('Plot ' + self.signalNodeName + ' to', self.contextMenu)
+        menu = QMenu('Plot ' + self.signalNodeName + ' to', parentMenu)
+        if parentMenu is None:
+            # Parentless menus are owned by Python: held here, a caller that
+            # builds this menu on its own still has something to click.
+            self.plotMenu = menu
         menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
 
-        menu_figure = menu.addMenu('Figure')
+        # Built as a child of the menu it belongs to: the QMenu that addMenu()
+        # makes from a title is owned by Python, which is the dangling submenu T0
+        # removed from the Show/Hide menus -- there to look at, gone to click.
+        menu_figure = QMenu('Figure', menu)
         menu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
+        menu.addMenu(menu_figure)
 
         # Add action to plot the signal data to a new figure
         icon_new = GlobalIcons.getCustomQIcon(QApplication, 'new')
@@ -237,62 +269,29 @@ class QVizSignalHandling(QObject):
         action_plotNewFigure.triggered.connect(self.plotSignalCommand)
         menu_figure.addAction(action_plotNewFigure)
 
+        curveAxis = QVizNodePlotting(self.treeNode).curveAxisKey()
         for figureKey in self.imas_viz_api.GetFiguresKeys(
-                figureType=FigureTypes.FIGURETYPE):
+                figureType=FigureTypes.CURVEPLOTTYPE):
+
+            # Add menu item to add plot to specific existing figure. A figure has
+            # one abscissa, so a quantity read along another one does not belong
+            # in it.
+            if curveAxis is None:
+                continue
+            if not self.figureDrawsSameCurveAxis(figureKey, curveAxis):
+                continue
 
             # Get figure number out from the figureKey string
-            # (e.g. 'Figure:0' -> 0)
-            # id_Fig = int(figureKey.split(':')[1])
+            # (e.g. 'SlicesPlot1' -> 1)
             id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                       FigureTypes.FIGURETYPE)
+                                                       FigureTypes.CURVEPLOTTYPE)
+            # Set action
+            action_addSignalPlotToFig = QAction(figureKey, self)
+            action_addSignalPlotToFig.triggered.connect(
+                partial(self.addSignalPlotToFig, id_Fig))
+            # Add to submenu
+            menu_figure.addAction(action_addSignalPlotToFig)
 
-            # Add menu item to add plot to specific existing figure
-            # Check for figures that share the same coordinates
-            if self.nodeDataShareSameCoordinates(figureKey, self.treeNode):
-                # Set action
-                action_addSignalPlotToFig = QAction(figureKey, self)
-                action_addSignalPlotToFig.triggered.connect(
-                    partial(self.addSignalPlotToFig, id_Fig))
-                # Add to submenu
-                menu_figure.addAction(action_addSignalPlotToFig)
-
-        return menu
-
-
-    def menuPlotCurrentSignal0DNode(self):
-        """Set menu for plotting current (under the mouse selected) signal node.
-        """
-        menu = QMenu('Plot ' + self.signalNodeName + ' to', self.contextMenu)
-        menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
-
-        icon_new = GlobalIcons.getCustomQIcon(QApplication, 'new')
-        action_plotNewFigure = QAction(icon_new, 'New', self)
-        api = self.dataTreeView.imas_viz_api
-        action_plotNewFigure.triggered.connect(
-            partial(api.plot0D_DataVsTimeCommand, self.dataTreeView, None))
-
-        menu_figure = menu.addMenu('Figure')
-        menu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
-        menu_figure.addAction(action_plotNewFigure)
-
-        for figureKey in self.imas_viz_api.GetFiguresKeys(
-                figureType=FigureTypes.FIGURETYPE):
-
-            # Get figure number out from the figureKey string
-            # (e.g. 'Figure:0' -> 0)
-            # id_Fig = int(figureKey.split(':')[1])
-            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                       FigureTypes.FIGURETYPE)
-
-            # Add menu item to add plot to specific existing figure
-            # Check for figures that share the same coordinates
-            if self.nodeDataShareSameCoordinates(figureKey, self.treeNode):
-                # Set action
-                action_addSignalPlotToFig = QAction(figureKey, self)
-                action_addSignalPlotToFig.triggered.connect(
-                    partial(self.addSignalPlotToFig, id_Fig))
-                # Add to submenu
-                menu_figure.addAction(action_addSignalPlotToFig)
         return menu
 
     def menuUnselectSignalNodes(self):
@@ -658,35 +657,31 @@ class QVizSignalHandling(QObject):
 
     @Slot()
     def plotSignalCommand(self):
-        """Basic plotting of signal node plottable data command.
+        """Draw the node the menu was built on, in the frame its axes call for."""
+        self.plotNodeCommand()
+
+    def plotAlongTimeCommand(self):
+        """Draw the node the menu was built on as a history along time."""
+        self.plotNodeCommand(alongTime=True)
+
+    def plotNodeCommand(self, alongTime=False, intoFigureKey=None):
+        """Run the one-node command and show what it drew.
+
+        The frame is embedded only once it holds something, so a node the read
+        cannot answer for costs no window; and an open figure is not embedded
+        again, which is how one window ends up inside two subwindows.
         """
-        try:
-
-            # Get next figure label (e.g. 'Figure:0')
-            self.currentFigureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
-            label = None
-            xlabel = None
-
-            plotAxis = self.treeNode.getPlotAxisForDefaultPlotting()
-
-            api = self.dataTreeView.imas_viz_api
-            figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                      figureKey=None,  # passing figureKey=None means we want
-                                                      # a new plotWidget
-                                                      plotAxis=plotAxis,
-                                                      treeNode=self.treeNode)
-            api.addPlotWidgetToMDI(plotWidget)
-            # Get the signal data for plot widget
-            p = QVizPlotSignal(plotWidget=plotWidget,
-                               dataTreeView=self.dataTreeView,
-                               label=label,
-                               xlabel=xlabel,
-                               vizTreeNode=self.treeNode)
-            # Plot signal data to plot widget
-            p.execute(figureKey=figureKey, update=0)
-
-        except ValueError as e:
-            logging.getLogger(self.dataTreeView.uri).error(str(e))
+        command = QVizPlotOneNode(dataTreeView=self.dataTreeView,
+                                  treeNode=self.treeNode,
+                                  intoFigureKey=intoFigureKey,
+                                  alongTime=alongTime)
+        plotWidget = command.execute()
+        if plotWidget is None:
+            # The reason is in the log panel of this shot view already.
+            return
+        if command.builtFigure:
+            self.imas_viz_api.addPlotWidgetToMDI(plotWidget)
+        plotWidget.show()
 
     def plotPreviewSignalCommand(self):
         """Show preview plot.
@@ -827,15 +822,16 @@ class QVizSignalHandling(QObject):
 
     @Slot(int)
     def addSignalPlotToFig(self, numFig):
-        """Add signal plot to existing figure.
+        """Add the node the menu was built on to a figure that is already open.
 
         Arguments:
             numFig (int) : Number identification of the existing figure.
         """
-        api = self.dataTreeView.imas_viz_api
-        #logging.debug("QVizSignalHandling::addSignalPlotToFig:treeNode=" + self.treeNode.getName())
-        #print(id(self.treeNode))
-        api.AddPlot1DToFig(numFig, self.treeNode)
+        # The number is read back in the namespace of the frames this command
+        # fills, which is the namespace the submenu listed them from.
+        self.plotNodeCommand(
+            intoFigureKey=self.imas_viz_api.GetFigureKey(
+                str(numFig), FigureTypes.CURVEPLOTTYPE))
 
     @Slot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
@@ -856,6 +852,19 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
+
+    def figureDrawsSameCurveAxis(self, figureKey, axisKey):
+        """Whether every curve already in the figure runs along this axis.
+
+        A figure has one abscissa, and the label under it is the axis of the last
+        curve read, so a quantity read along another axis does not belong in it.
+        The old check asked the dictionary shape and the legacy frame factory;
+        this asks the axes the read would walk, which costs a right click nothing.
+        """
+        for entry in self.imas_viz_api.figToNodes.get(figureKey, {}).values():
+            if QVizNodePlotting(entry[1]).curveAxisKey() != axisKey:
+                return False
+        return True
 
     def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
         figureDataList = self.imas_viz_api.figToNodes.get(figureKey)

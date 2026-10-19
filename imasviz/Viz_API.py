@@ -740,44 +740,6 @@ class Viz_API:
         """
         return vizTreeNode.nodeDataShareSameCoordinatesAs(selectedNodeList, figureKey)
 
-    def plotSignalVsTimeCommand(self, dataTreeView):
-        """Plotting of signal node, found within the 'time_slice[:]' array of
-        structures in IDS. For certain physical quantities (e.g.
-        equilibrium.time_slice[:].profiles_1d.phi) it plots how it changes
-        through time.
-
-        Example:
-        (e=equilibrium)
-        Index i -> x = array time values (e.time). n = len(e.time)
-                   y = array of values ([e.time_slice[0].profiles_1d.phi[i],
-                                         e.time_slice[1].profiles_1d.phi[i],
-                                         ...
-                                         e.time_slice[n].profiles_1d.phi[i])
-        """
-        # Get currently selected QVizTreeNode (QTreeWidgetItem)
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
-        try:
-            treeNode = dataTreeView.selectedItem
-            # Get signal node index
-            index = treeNode.infoDict['i']
-            # Get label and title
-            label, title, dummy = \
-                treeNode.coordinateLabels(coordinateNumber=1, dtv=dataTreeView,
-                                          index=index)
-            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
-                                                       figureKey=None,
-                                                       plotAxis='TIME')
-            self.addPlotWidgetToMDI(plotWidget)
-            p = QVizPlotSignal(dataTreeView=dataTreeView,
-                               vizTreeNode=treeNode,
-                               title=title,
-                               label=label,
-                               xlabel="time",
-                               plotWidget=plotWidget)
-            p.execute(figureKey=figureKey, update=0)
-        except ValueError as e:
-            logging.getLogger(dataTreeView.uri).error(str(e))
-
     def plot0D_DataVsTimeCommand(self, dataTreeView, treeNode=None):
         """Plotting of 0D data nodes, found within timed AOS
         """
@@ -801,9 +763,8 @@ class Viz_API:
     def plotVsTimeAtGivenCoordinate1(self, dataTreeView, coordinateIndex,
                                      currentFigureKey, treeNode, update,
                                      dataset_to_update=0):
-        """Overwrite/Update the existing plot (done with
-        'plotSignalVsTimeCommand' routine and currently still shown in
-        the plot window labeled as 'currentFigureKey') using the same
+        """Overwrite/Update the existing plot (the one currently shown in the
+        plot window labeled as 'currentFigureKey') using the same
         physical quantity (found in sibling node of the same structure (AOS))
         but with different array positional index.
 

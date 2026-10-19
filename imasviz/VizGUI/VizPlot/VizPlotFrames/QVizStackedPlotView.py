@@ -10,8 +10,6 @@
 import pyqtgraph as pg
 from PySide6.QtCore import Slot, Qt
 from PySide6.QtWidgets import QWidget, QGridLayout, QCheckBox, QMainWindow
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal \
-    import QVizPlotSignal
 from imasviz.VizUtils import getRGBColorList, PlotTypes
 from imasviz.VizGUI.VizPlot.QVizCustomPlotContextMenu \
     import QVizCustomPlotContextMenu
@@ -241,9 +239,9 @@ class StackedPlotWindow(pg.GraphicsLayoutWidget):
                 s = self.imas_viz_api.GetSignal(dtv, signalNode, plotWidget=self)
 
                 # Get array of time values
-                t = QVizPlotSignal.getXAxisValues(s)
+                t = s[0]
                 # Get array of y-axis values
-                v = QVizPlotSignal.get1DSignalValue(s)
+                v = s[1]
 
                 # TODO (idea): create global getSignal(), getTime(),
                 # get1DSignalValue to be used by all plot frame routines

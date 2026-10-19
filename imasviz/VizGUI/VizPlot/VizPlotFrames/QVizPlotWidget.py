@@ -449,7 +449,6 @@ class sliderGroup():
     def setSlider(self):
         """Set slider.
         """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
         logging.debug("setSlider called")
         minValue = self.slider.minimum()
         maxValue = self.slider.maximum()
