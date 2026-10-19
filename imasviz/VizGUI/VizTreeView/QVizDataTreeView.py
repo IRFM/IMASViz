@@ -33,8 +33,8 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement\
     .QVizHandleShiftAndRightClick \
     import QVizHandleShiftAndRightClick
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlotWidget \
-    import QVizPreviewPlotWidget
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot \
+    import QVizPreviewPlot
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
 from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
@@ -212,10 +212,13 @@ class QVizDataTreeView(QTreeWidget):
             raise ValueError(error)
 
         # UPDATE PLOT PREVIEW WIDGET
-        if item.hasAvailableData() and (item.isDynamicData() or item.is1D()) and (not item.isIDSRoot()) and item.getName() is not None:
-            # If the node holds an 1D array of values (1D_FLT) then its
-            # isSignal attribute equals 1 (isSignal = 1)
-            # Set and show preview panel
+        # Every node the click names is handed to the panel, which decides from
+        # the axes the read would walk and says what it refused. The gate that
+        # used to sit here asked the dictionary how big the leaf was
+        # (isDynamicData() or is1D()) and stayed silent for anything it did not
+        # recognise, which is how the panel kept showing the previous node's
+        # curve under the previous node's name.
+        if (not item.isIDSRoot()) and item.getName() is not None:
             logging.debug('QVizDataTreeView::onLeftClickItem::calling plotPreviewSignalCommand')
             QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self, treeNode=item)
             QVizSignalHandlingObj.plotPreviewSignalCommand()
@@ -630,11 +633,12 @@ class QVizDataTreeViewFrame(QMainWindow):
         # ref_width, ref_height = getWindowSize(self)
 
         # PREVIEW PLOT WIDGET (PPW)
-        # - Set the widget
-        self.previewPlotWidget = QVizPreviewPlotWidget(dataTreeView=self.dataTreeView, parent=self,
-                                                       title='Preview Plot')
-        # - Plot empty
-        self.previewPlotWidget.plot()
+        # - Set the widget. It says what it holds once a node is clicked, so
+        #   there is nothing to draw before the first click -- the empty plot()
+        #   call the legacy panel needed built axes for a quantity nobody had
+        #   asked for.
+        self.previewPlotWidget = QVizPreviewPlot(parent=self,
+                                                 title='Preview Plot')
         # - Dock the widget
         self.dockWidget_ppw = QDockWidget("Preview Plot", self)
 

@@ -58,6 +58,20 @@ the rest are not fixed yet.
   computed the number of axes a picture shows inline, and the node model needed
   the same answer to offer the right entry. Two copies of that rule is how a menu
   entry and the picture it produces come apart.
+- **The preview answered a question nobody asked.** *(fixed by T2)* The left
+  click gated the panel on `hasAvailableData() and (isDynamicData() or is1D())`,
+  so a static `FLT_2D` leaf never reached it; and whatever the gate let through
+  that the command did not recognise (`STR_1D`, `data is None`, a leaf ranking
+  three) made `execute()` return **without clearing** what the last accepted
+  click had drawn. Measured here on real tree nodes: clicking a text leaf after a
+  profile left the profile's curve on the panel (`plot=True, image=False,
+  curves=1`) under the label `No preview available` — showing neither the node
+  clicked nor a reason for not showing it.
+- **The thumbnail's words came from the selection, not from the node.**
+  *(fixed by T2)* `QVizPreviewPlotSignal.plot1DSignal` built its labels through
+  `dataTreeView.selectedItem.plotOptions(...)`, so previewing a node nobody had
+  selected drew its curve under another node's name. It also drew `v[0]`/`t[0]`
+  only, and named no slice on a picture.
 - `QVizSignalHandling.py:903`: `logging.getLogger(...).error(str(e))` outside any
   `except` — a `NameError` where the user asked for a message.
 - ~~`QVizSignalHandling.py:724`: "Delete → StackedPlotView → All" calls
@@ -81,7 +95,7 @@ the rest are not fixed yet.
 | --- | --- | --- | --- | --- |
 | T0 | Manage the open figures — "Show/Hide", "Delete", the *Plot windows* menu | `QVizSignalHandling.menusShowHideAndDelete` (one loop over `FigureTypes.MENU_ORDER`), `Viz_API.GetFiguresCount` / `GetNextKeyForFigure` / `ForgetFigure` / `ForgetFigureOf`, `QVizMdiSubWindow` | the five near-identical branches and the five counts fed to them, `update_menus`, the `:724` bug, the duplicated `addPlotWidgetToMDI` and `getMDI` in `QVizSignalHandling`, the blindness to the new frames, the key a closed window used to keep | fait |
 | T1 | Decide what a node allows — `is0D/is1D/is2D/is2DOrLarger/is0DAndDynamic`, `getPlotAxisForDefaultPlotting`, `plotOptions` | `QVizNodePlotting` (the axes the read would walk, known without opening the shot), answering `buildContextMenu` | the menu's calls to `is2D`/`is2DOrLarger`/`is1D`/`is0DAndDynamic`, its `STR_1D` and `aos_parents_count` tests, the duplicated axis count in `QVizPlotAsSlices` | fait (the predicates themselves survive until the frames that still call them go: T2-T7, T11) |
-| T2 | Preview on left click | `onLeftClickItem` :186 → `QVizPreviewPlotSignal` → `QVizPreviewPlotWidget` (a `QVizPlotWidget` subclass, so it carries `sliderGroup`) | `QVizPreviewPlotSignal.py` (135 l.), `QVizPreviewPlotWidget.py` (202 l.) | to do |
+| T2 | Preview on left click | `onLeftClickItem` :191 → `QVizSignalHandling.plotPreviewSignalCommand` → `QVizPreviewPlot.forView(...).showNode(node)`: decides on `QVizNodePlotting`, reads one slice through `QVizTensorDataAccess.GetSignal(..., plotWidget=None)`, and says which refusal it made when it draws nothing | `QVizPreviewPlotSignal.py` (135 l.), `QVizPreviewPlotWidget.py` (202 l.), the left-click gate (`hasAvailableData`/`isDynamicData`/`is1D`), the panel's own `is0D`/`is1D`/`is2D` branches, the first of the nine `Viz_API.GetSignal` callers | fait (the panel is a plain `QWidget`: no `sliderGroup`; `PlotTypes.PREVIEW_PLOT` and the four `ID_MENU_PREVIEW_PLOT*` constants now have no consumer left — no menu entry ever referred to them) |
 | T3 | Plot one node — "as function of time", "Plot … to → Figure → New/N", 0D vs time | `plotSignalVsTimeCommand`, `plot0D_DataVsTimeCommand`, `plotSignalCommand`, `addSignalPlotToFig` → `QVizPlotSignal` + `QVizPlotWidget` | `QVizPlotSignal.py` (199 l.), `plotVsTimeAtGivenCoordinate1`, `AddPlot1DToFig` | to do |
 | T4 | Plot one 2D array — "Plot … to → Image → New" | `QViz2DArrayHandling` (half commented out) → `Viz_API.Plot2DArray` :622 → `QvizPlotImageWidget` | `QvizPlotImageWidget.py` (409 l.), `QViz2DArrayHandling.py`, `Plot2DArray` | to do |
 | T5 | Plot the selection as curves — "Plot selected nodes to → Figure", This/All, New/N | `plotSelectedSignals`, `addSelectedSignalsPlotToFig` → `QVizPlotSelectedSignals` (refuses rank ≥ 2 at :51-53) | `QVizPlotSelectedSignals.py` (171 l.), `shareSameCoordinates`, `currentSelectionShareSameCoordinates`, most of `figToNodes` | to do |
@@ -133,8 +147,14 @@ thirteen tests in `tests/test_31_node_plotting.py` pin the node model and the me
 built from it, on real `QVizTreeNode`s with a hand-built `infoDict`, so the legacy
 predicates answer for real and a wrong menu is the menu's fault, not a stub's; the
 fourteenth is `tests/test_99_import_sweep.py` counting the new module, which is
-how that sweep earns its keep. The `build_uri` xfail can only be lifted by T10;
-the five Qt Designer modules stay.
+how that sweep earns its keep. Since T2: **398 passed, 8 xfailed** — twelve tests
+in `tests/test_32_preview.py` pin what the thumbnail draws and what it says when
+it draws nothing, driven through `plotPreviewSignalCommand`, the entry point that
+survived; the refusals run on real `QVizTreeNode`s with `idsRef` left `None`, so a
+refusal that read the shot first would crash instead of answering. The sweep went
+one shorter, not one longer: it lost the two deleted modules and gained the panel
+(387 + 12 − 1 = 398). The `build_uri` xfail can only be lifted by T10; the five Qt
+Designer modules stay.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new
@@ -147,7 +167,11 @@ callers of `Viz_API.GetSignal` and of legacy frame classes imported. Starting
 point: nine callers (`QVizPreviewPlotSignal:42`, `QVizPlotSignal:55`,
 `QVizPlotSelectedSignals:101`, `QVizTablePlotView:128`, `QVizStackedPlotView:241`,
 `Viz_API:629/911/934`, `Viz_DataSelection_API:45`). After T7: none in a plotting
-path. T1 changed none of them: it moved the *decision*, not the read.
+path. T1 changed none of them: it moved the *decision*, not the read. T2 took the
+first one out: the panel reads through `QVizTensorDataAccess` itself, handing that
+read no plot widget, because it has no control to be read through. Eight remain
+(`QVizPlotSignal:55`, `QVizPlotSelectedSignals:101`, `QVizTablePlotView:128`,
+`QVizStackedPlotView:241`, `Viz_API:694/986/1009`, `Viz_DataSelection_API:45`).
 
 Frames are tested offscreen, as everywhere else in the suite: no X display is
 assumed.

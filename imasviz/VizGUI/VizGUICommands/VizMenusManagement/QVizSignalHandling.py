@@ -18,7 +18,7 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPl
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSignal import QVizPlotSignal
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPreviewPlotSignal import QVizPreviewPlotSignal
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
@@ -692,12 +692,10 @@ class QVizSignalHandling(QObject):
         """Show preview plot.
         """
         try:
-            # Get the signal data for preview plot update
-            p = QVizPreviewPlotSignal(dataTreeView=self.dataTreeView,
-                                      treeNode=self.treeNode,
-                                      signalHandling=self)
-            # Plot signal data to preview plot widget
-            p.execute()
+            # The panel answers for the node it is handed: it decides from the
+            # axes the read would walk, draws what they allow, and says which
+            # refusal it made. Nothing here has to know how big the leaf is.
+            QVizPreviewPlot.forView(self.dataTreeView).showNode(self.treeNode)
 
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
