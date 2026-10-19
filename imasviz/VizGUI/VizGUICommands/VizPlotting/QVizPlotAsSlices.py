@@ -34,7 +34,7 @@ import logging
 
 from imasviz.VizUtils import FigureTypes
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
-from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
 
@@ -112,29 +112,11 @@ class QVizPlotAsSlices(QVizAbstractCommand):
     def plottedAxes(self, treeNode):
         """How many axes of the quantity a picture would show.
 
-        Asked with the time axis pinned, which is the image's rule: if that read
-        still has two axes to draw, the quantity is a picture and its time slice
-        becomes one of its controls. Asked with time left open, every quantity in
-        a dynamic array would answer one axis -- time -- and be called a curve.
-
-        One axis leaves the picture for the space between pictures: the axis the
-        figure reads across its images is displayed, not pinned, so it counts as
-        drawn here and gets no control. That is what makes a leaf of three axes
-        plottable at all, where the frame used to have nothing to do with it.
+        The read decides this, and the node model is where that decision lives:
+        the menu needs the same answer to offer the right entry, and working it
+        out twice is how the entry and the picture come apart.
         """
-        access = QVizTensorDataAccess(treeNode.getDataSource())
-        plotted = access.plan(treeNode, plotWidget=None,
-                              as_function_of_time=False)[3]
-        frames = access.framesFor(treeNode, plotWidget=None,
-                                  as_function_of_time=False)
-        drawn = [position for position in plotted
-                 if frames is None or position != frames.position]
-        if len(drawn) > 2:
-            raise ValueError('"' + self.dataPathOf(treeNode) + '" has ' +
-                             str(len(drawn)) + ' axes to draw: no frame shows '
-                             'more than two in one picture, and the axis read '
-                             'between pictures is taken.')
-        return len(drawn)
+        return QVizNodePlotting(treeNode).plottedAxes()
 
     def newCurveFigure(self):
         return self.newFigure(self.CURVE_FIGURE_TYPE, QVizCurvePlot)
@@ -173,8 +155,3 @@ class QVizPlotAsSlices(QVizAbstractCommand):
     @staticmethod
     def selectedNodes(dtv):
         return [entry['QTreeWidgetItem'] for entry in dtv.selectedSignalsDict.values()]
-
-    @staticmethod
-    def dataPathOf(treeNode):
-        path = treeNode.getParametrizedDataPath()
-        return path if path else treeNode.getName()

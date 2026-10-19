@@ -24,6 +24,7 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup impor
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QViz2DArrayHandling import QViz2DArrayHandling
+from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizUtils import FigureTypes
 
 
@@ -50,6 +51,14 @@ class QVizSignalHandling(QObject):
 
     def buildContextMenu(self, signalNode):
         """Build context menu.
+
+        What the menu offers is decided by the axes the read would walk along the
+        quantity (QVizNodePlotting), not by the dimension the data dictionary
+        spells on the leaf. The two differ whenever arrays of structures hold the
+        leaf: a three-axes quantity used to answer "nothing to do here" and came
+        out with no entry to select it and no entry to draw it.
+
+        :param signalNode: the node under the mouse
         """
 
         self.signalNodeName = signalNode.getDataName()
@@ -57,39 +66,45 @@ class QVizSignalHandling(QObject):
         # Set new popup menu
         self.contextMenu = QMenu()
 
-        if self.treeNode.is2D():
+        plotting = QVizNodePlotting(self.treeNode)
+        signal = plotting.isPlottable()
+
+        # SET TOP ACTIONS
+        # - Add action for setting signal node select/unselect status
+        if signal:
+            self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
+
+        # - Add action for selection of all signals from the same array of
+        #   structures
+        if signal and plotting.inArrayOfStructures():
+            self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+
+        # SET TOP MENU ITEMS
+        # - Add menu for handling plotting using the under-the-mouse selected
+        #   signal node. Each entry stays where its frame can still fill it: the
+        #   legacy curve figure holds one slider group for everything but its
+        #   curve, so it only ever drew a one-dimension leaf, and the legacy
+        #   image frame a leaf with two of its own. What those shapes leave out
+        #   is drawn through the read, where every axis the figure does not draw
+        #   gets a control of its own -- see "Curves and images with slice
+        #   controls" under the selection menu below.
+        if plotting.legacyCanDrawAsCurve():
+            self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
+            if plotting.hasOwnCoordinate():
+                self.contextMenu.addMenu(self.menuSetCoordinate1DNode())
+        elif plotting.legacyCanDrawScalarAgainstTime():
+            self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
+        elif plotting.legacyCanDrawAsImage():
             array2DHandling = QViz2DArrayHandling(self.dataTreeView)
             self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode(self))
-        elif not self.treeNode.is2DOrLarger() and self.treeNode.getDataType() != 'STR_1D':
 
-            # SET TOP ACTIONS
-            # - Add action for setting signal node select/unselect status
-            if self.treeNode.is0DAndDynamic() or self.treeNode.is1D():
-                self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
-
-            # - Add action for selection of all signals from the same array of
-            #   structures
-            if self.treeNode.is1D():
-                if self.nodeData.get('aos_parents_count') != '0':
-                    self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
-
-            # SET TOP MENU ITEMS
-            # - Add menu for handling plotting using the under-the-mouse selected
-            #   signal node
-            if self.treeNode.is1D():
-                self.contextMenu.addMenu(self.menuPlotCurrentSignalNode())
-                self.contextMenu.addMenu(self.menuSetCoordinate1DNode())
-            elif self.treeNode.is0DAndDynamic():
-                self.contextMenu.addMenu(self.menuPlotCurrentSignal0DNode())
-
+        if signal:
             # - Add menu for handling unselection of signal nodes
-            if self.treeNode.is0DAndDynamic() or self.treeNode.is1D():
-                self.contextMenu.addMenu(self.menuUnselectSignalNodes())
+            self.contextMenu.addMenu(self.menuUnselectSignalNodes())
 
             # - Add menu for handling plotting a selection of signal nodes
-            if self.treeNode.is0DAndDynamic() or self.treeNode.is1D():
-                self.contextMenu.addMenu(
-                    self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
+            self.contextMenu.addMenu(
+                self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
 
         # - Add menu for handling show/hide and deletion of the open figures
         self.menusShowHideAndDelete(self.contextMenu)

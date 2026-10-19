@@ -42,6 +42,22 @@ the rest are not fixed yet.
   the end of `menusShowHideAndDelete` — the entry is there to look at and dangling
   to click. A submenu has to be built as `QMenu(title, parent)` and added with
   `addMenu(submenu)`.
+- **A quantity of three axes got nothing at all.** *(fixed by T1)* The context
+  menu branched on `is2D()` then on `not is2DOrLarger() and data_type !=
+  'STR_1D'`. A leaf the dictionary ranks 3D matches neither, so right clicking
+  `pow_fusion`-shaped data offered no entry to select it and no entry to draw it —
+  while the read walks those axes and draws them. The same hole opened for a
+  *scalar* held by three arrays of structures: rank 3 as a quantity, `FLT_0D` on
+  the leaf.
+- **A static two-dimension leaf could not be selected.** *(fixed by T1)*
+  `is2DOrLarger()` (`QVizTreeNode.py:488`) requires `isDynamicData()` and
+  **returns `None`** when it is not: a static `FLT_2D` node fell into the branch
+  written for curves, where none of the `is0DAndDynamic()` / `is1D()` gates
+  matched it. The user could look at it and do nothing with it.
+- **The frame choice was worked out twice.** *(fixed by T1)* `QVizPlotAsSlices`
+  computed the number of axes a picture shows inline, and the node model needed
+  the same answer to offer the right entry. Two copies of that rule is how a menu
+  entry and the picture it produces come apart.
 - `QVizSignalHandling.py:903`: `logging.getLogger(...).error(str(e))` outside any
   `except` — a `NameError` where the user asked for a message.
 - ~~`QVizSignalHandling.py:724`: "Delete → StackedPlotView → All" calls
@@ -64,7 +80,7 @@ the rest are not fixed yet.
 | # | User command | Implemented today by | Kills | Status |
 | --- | --- | --- | --- | --- |
 | T0 | Manage the open figures — "Show/Hide", "Delete", the *Plot windows* menu | `QVizSignalHandling.menusShowHideAndDelete` (one loop over `FigureTypes.MENU_ORDER`), `Viz_API.GetFiguresCount` / `GetNextKeyForFigure` / `ForgetFigure` / `ForgetFigureOf`, `QVizMdiSubWindow` | the five near-identical branches and the five counts fed to them, `update_menus`, the `:724` bug, the duplicated `addPlotWidgetToMDI` and `getMDI` in `QVizSignalHandling`, the blindness to the new frames, the key a closed window used to keep | fait |
-| T1 | Decide what a node allows — `is0D/is1D/is2D/is2DOrLarger/is0DAndDynamic`, `getPlotAxisForDefaultPlotting`, `plotOptions` | `QVizTreeNode.py:455-490`, `:629`, `:785` | the dictionary-dimension predicates; the `"TIME"/"COORDINATE1"` plot axis | to do |
+| T1 | Decide what a node allows — `is0D/is1D/is2D/is2DOrLarger/is0DAndDynamic`, `getPlotAxisForDefaultPlotting`, `plotOptions` | `QVizNodePlotting` (the axes the read would walk, known without opening the shot), answering `buildContextMenu` | the menu's calls to `is2D`/`is2DOrLarger`/`is1D`/`is0DAndDynamic`, its `STR_1D` and `aos_parents_count` tests, the duplicated axis count in `QVizPlotAsSlices` | fait (the predicates themselves survive until the frames that still call them go: T2-T7, T11) |
 | T2 | Preview on left click | `onLeftClickItem` :186 → `QVizPreviewPlotSignal` → `QVizPreviewPlotWidget` (a `QVizPlotWidget` subclass, so it carries `sliderGroup`) | `QVizPreviewPlotSignal.py` (135 l.), `QVizPreviewPlotWidget.py` (202 l.) | to do |
 | T3 | Plot one node — "as function of time", "Plot … to → Figure → New/N", 0D vs time | `plotSignalVsTimeCommand`, `plot0D_DataVsTimeCommand`, `plotSignalCommand`, `addSignalPlotToFig` → `QVizPlotSignal` + `QVizPlotWidget` | `QVizPlotSignal.py` (199 l.), `plotVsTimeAtGivenCoordinate1`, `AddPlot1DToFig` | to do |
 | T4 | Plot one 2D array — "Plot … to → Image → New" | `QViz2DArrayHandling` (half commented out) → `Viz_API.Plot2DArray` :622 → `QvizPlotImageWidget` | `QvizPlotImageWidget.py` (409 l.), `QViz2DArrayHandling.py`, `Plot2DArray` | to do |
@@ -112,15 +128,24 @@ QT_QPA_PLATFORM=offscreen python3 -m pytest tests/ -q
 
 Reference at the start of this work: **366 passed, 8 xfailed**. Since T0: **373
 passed, 8 xfailed** — seven tests in `tests/test_30_figure_registry.py` pin the
-registry and the menus built from it. The `build_uri` xfail can only be lifted by
-T10; the five Qt Designer modules stay.
+registry and the menus built from it. Since T1: **387 passed, 8 xfailed** —
+thirteen tests in `tests/test_31_node_plotting.py` pin the node model and the menu
+built from it, on real `QVizTreeNode`s with a hand-built `infoDict`, so the legacy
+predicates answer for real and a wrong menu is the menu's fault, not a stub's. The
+`build_uri` xfail can only be lifted by T10; the five Qt Designer modules stay.
+
+A second number T1 owns: **what a right click reads**. The context menu used to
+answer its questions from the dictionary only, which was cheap but wrong; the new
+model answers from `QVizAxesSpec.fromTreeNode`, which is also cheap. `plottedAxes`
+is the one question that needs the shot, and only the command that draws pays for
+it — so a right click still extracts no tensor. Keep it that way when T2-T7 come.
 
 Besides the tests, count what is left of the legacy surface — the number of
 callers of `Viz_API.GetSignal` and of legacy frame classes imported. Starting
 point: nine callers (`QVizPreviewPlotSignal:42`, `QVizPlotSignal:55`,
 `QVizPlotSelectedSignals:101`, `QVizTablePlotView:128`, `QVizStackedPlotView:241`,
 `Viz_API:629/911/934`, `Viz_DataSelection_API:45`). After T7: none in a plotting
-path.
+path. T1 changed none of them: it moved the *decision*, not the read.
 
 Frames are tested offscreen, as everywhere else in the suite: no X display is
 assumed.
