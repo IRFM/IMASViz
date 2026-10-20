@@ -60,9 +60,18 @@ def view(qapp):
     from PySide6.QtCore import QObject
 
     class FakeSource(QObject):
+        name = 'NATIVE'
+
         def __init__(self, uri):
             super().__init__()
             self.uri = uri
+
+        def dataKey(self, treeNode):
+            # As QVizIMASDataSource.dataKey spells it: the selection is keyed by
+            # it, and the menu now asks the selection whether this node is in it
+            # instead of reading a flag the node keeps for itself.
+            return (self.name + '::' + self.uri + '::' + treeNode.getPath() +
+                    '::' + str(treeNode.getOccurrence()))
 
     class FakeView(QObject):
         def __init__(self):

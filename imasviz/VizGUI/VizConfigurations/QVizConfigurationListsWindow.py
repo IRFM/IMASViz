@@ -15,8 +15,8 @@ from PySide6.QtCore import Qt, Slot, QObject
 from PySide6.QtWidgets import (QListWidget, QDialog, QTabWidget, QVBoxLayout, QPushButton, QWidget, QSizePolicy, QLabel)
 from imasviz.VizUtils import QVizGlobalOperations, GlobalFonts
 
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAsTable
 
 
@@ -107,8 +107,8 @@ class CommonConfigurationRoutines(QObject):
             pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
                 configFile=selectedFile)
             # First unselect all signals
-            QVizUnselectAllSignals(
-                dataTreeView=self.parent.DTVFrame.dataTreeView).execute()
+            QVizSelectNodes(
+                dataTreeView=self.parent.DTVFrame.dataTreeView).unselectAll()
             # Select the signals, defined by a path in a list of paths, in the
             # given DataTreeView (DTV) window
             QVizSelectSignals(dataTreeView=self.parent.DTVFrame.dataTreeView,

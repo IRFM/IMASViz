@@ -220,7 +220,7 @@ def view(qapp):
 
 
 def select(view, *nodes):
-    # The shape a real tree gives a selection entry (QVizSelectSignal.py:43): the
+    # The shape a selection entry has (QVizSelectNodes.entryFor): the
     # commands read 'uri' off it, so a stub without it tests a shape no caller
     # produces.
     view.selectedSignalsDict = {n.getParametrizedDataPath():

@@ -43,7 +43,6 @@ class QVizDataTreeViewBuilder:
         itemDataDict['IDSName'] = idsName
         itemDataDict['occurrence'] = occurrence
         itemDataDict['isIDSRoot'] = 0
-        itemDataDict['isSelected'] = 0
         itemDataDict['Tag'] = dataElement.tag
         itemDataDict['isSignal'] = 0
         itemDataDict['homogeneous_time'] = ids_root_occ.getHomogeneousTime()

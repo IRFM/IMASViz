@@ -20,7 +20,7 @@ from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
 from PySide6.QtWidgets import QFileDialog
 
 # Set object managing the PyQt GUI application's control flow and main

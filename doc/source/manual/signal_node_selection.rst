@@ -58,6 +58,15 @@ Repeat that procedure until all wanted nodes are selected.
    At the same time, nodes from other opened IDS databases too can be
    selected.
 
+.. Note::
+   A node coloured red is a node the plotting commands will draw, and a node
+   coloured blue is a node they will not: the colour and the selection are one
+   and the same record, so the tree cannot show a selection different from the
+   one the next plot uses. Selecting a node that is already selected leaves the
+   selection as it was; unselecting a node that is not selected does nothing.
+   The order in which the nodes were picked is kept, and re-selecting a node does
+   not move it.
+
 Select All Nodes of the same Structure (AOS)
 --------------------------------------------
 
@@ -80,6 +89,16 @@ colored to red, indicating that they were added to the selection.
 
    Node colored red -> node is selected. All plottable nodes of the
    same structure/type are selected, in this case, 17 nodes.
+
+.. Note::
+   The structure is the array of structures the node under the mouse belongs to,
+   and the selection covers every element of that array -- in the example above,
+   the 17 probes of one flux loop array. It stays inside the occurrence of the
+   IDS that node was reached through: if the same IDS is loaded at several
+   occurrences in the same view, the nodes of the other occurrences are not
+   selected, and are not selected by a node right-clicked in one of them either.
+   A quantity held by several nested arrays of structures is selected across all
+   of their elements, since the structure it sits in is the same one.
 
 Save Node Selection Configuration
 ---------------------------------
@@ -192,6 +211,14 @@ From the shown pop-up menu, select the command
    :scale: 75%
 
    Unselecting multiple plottable nodes at once.
+
+.. Note::
+   :guilabel:`This IMAS Database` clears the selection of the view the command
+   was asked from; :guilabel:`All IMAS Databases` clears the selection of every
+   opened view. Either clears the whole selection, including a node whose IDS was
+   closed and loaded again since it was selected: what is cleared is the
+   selection, and the label of every node it held goes back to its unselected
+   colour.
 
 
 

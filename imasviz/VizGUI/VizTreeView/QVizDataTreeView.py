@@ -39,8 +39,6 @@ from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewB
 from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
     import QVizNodeDocumentationWidget
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals \
-    import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
 
@@ -349,7 +347,6 @@ class QVizDataTreeView(QTreeWidget):
         itemDataDict['isIDSRoot'] = 1
         itemDataDict['dataName'] = idsName
         itemDataDict['isSignal'] = 0
-        itemDataDict['isSelected'] = 0
         itemDataDict['Tag'] = idsName
         itemDataDict['Path'] = itemDataDict['Tag']
         itemDataDict['documentation'] = idsDocumentation

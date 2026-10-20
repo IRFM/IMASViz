@@ -218,10 +218,48 @@ the rest are not fixed yet.
 - ~~`QVizSignalHandling.py:724`: "Delete → StackedPlotView → All" calls
   `deleteAllFigures(TABLEPLOTTYPE)` — it deletes the tables.~~ *(fixed by T0: the
   five copied branches are gone, and the one loop cannot mix the prefixes up.)*
-- `QVizSelectSignalsFromConfig.py:35` builds `pathsMap = []` and :78 assigns
+- ~~`QVizSelectSignalsFromConfig.py:35` builds `pathsMap = []` and :78 assigns
   `pathsMap['paths'] = …`: a guaranteed `TypeError`. Nothing calls the class
   except its own `__init__.py` — *Apply Configuration* goes through
-  `QVizGlobalOperations.getSignalsPathsFromConfigurationFile`. Dead and broken.
+  `QVizGlobalOperations.getSignalsPathsFromConfigurationFile`. Dead and broken.~~
+  *(fixed by T8: the class is gone. Measured, it died one line earlier still —
+  `AttributeError: 'dict' object has no attribute 'find'` on a dictionary
+  configuration — so the `TypeError` was never even reached.)*
+- **The selection was written twice, and the tree was coloured from the wrong
+  record.** *(fixed by T8)* `selectedSignalsDict` — which every frame built since
+  T3 reads — and `infoDict['isSelected']`, which the menu and the colours read.
+  Measured on real tree items: unselecting `a` while the tree's current item was
+  `b` left `a` **red** and turned `b` **blue** — a selected node shown free and a
+  free one shown selected, because the command recoloured `selectedItem` rather
+  than the node it was asked about. And with the flag set and the dictionary not
+  holding the key, the entry read "Unselect a…" and its slot answered
+  `KeyError`, leaving the flag set: the node could be neither selected nor
+  unselected.
+- **An entry could record the wrong node.** *(fixed by T8)*
+  `QVizSelectSignal` keyed the entry with the asked node and stored
+  `dataTreeView.selectedItem` in it. Measured: selecting `a` while the tree was
+  pointed at `b` left one entry, keyed for `a`, whose `QTreeWidgetItem` was **b** —
+  so a plot of that selection drew b and never a. The node the user clicked was
+  not what the plot commands read.
+- **The AOS entry matched a regular expression over the display path.** *(fixed
+  by T8)* `re.sub("[\(\[].*?[\)\]]", "", path)` removes every bracketed run, so
+  the occurrence is not in the string it compares. Asked on `core/time_slice(0)/a`
+  in a view holding five nodes it selected **three**: the other structure element
+  (right) and `core/time_slice(0)/a` of the **second occurrence of the IDS**,
+  which the user never touched. Asked a second time it re-added what was already
+  selected and overwrote its place — three entries all recorded index `2`. And it
+  wrote `selectedItem` for every node it walked, leaving the tree pointed at
+  whatever its loop touched last.
+- **"Unselect All" deleted by counting on the wrong list.** *(fixed by T8)* It
+  scanned the whole signal list for every selected node comparing dictionaries,
+  then ran `for i in range(len(selectedSignalsDict)): keysToRemove[i]`. Measured
+  with three selected nodes and one the tree no longer listed: `IndexError: list
+  index out of range` after dropping two, leaving the third **selected and red**.
+- **The order of the user's clicks was off by one.** *(fixed by T8)* `index =
+  len(selectedSignalsDict) - 1`, computed before the insertion: three clicks were
+  recorded `-1, 0, 1`. The value is read by nobody in `imasviz/` — no command,
+  frame or plugin indexes on it — so the defect is cosmetic; the entry *shape* is
+  load-bearing, and it is the node object that was wrong.
 - `QVizViewLoadingStrategy` defines `setIdentifier` twice (:26, :29).
 - `QVizDataTreeView.updateMenuNodeSelection` (:575-620) destroys and rebuilds a
   menu on every `aboutToShow`, and writes `dataTreeView.selectedItem` on the way.
@@ -242,7 +280,7 @@ the rest are not fixed yet.
 | T5 | Plot the selection as curves — "Plot selected nodes to → Figure", This/All, New/N | `plotSelectedSignals`, `addSelectedSignalsPlotToFig` → `QVizPlotAsSlices` with an `intoFigureKey`: the command asks `plottedAxes()` per node and picks the frame (one axis → the curve figure, two → one window per picture), reads through the tensor read, and refuses by name what a frame cannot show | `QVizPlotSelectedSignals.py` (171 l.), the second selection entry ("Curves and images with slice controls") and `QVizSignalHandling.plotAsSlices`, the gate `nodeDataShareSameCoordinates`/`currentSelectionShareSameCoordinates`, the `Figure:` listing in the selection menu, one `Viz_API.GetSignal` caller | fait — **correction of the "kills" as first written**: `figToNodes` stays (it is the bookkeeping of the new commands: which node each window answers for, and the menus that list it), and `shareSameCoordinates`/`shareSameCoordinates2` stay until T6/T7, whose frames still ask them. `Viz_API.PlotSelectedSignals` / `PlotSelectedSignalsFrom` (documented in `scripting.rst`) are re-pointed at the new command rather than deleted |
 | T6 | TablePlotView — the four "New (default axis)" / "New ('TIME' axis)" × This/All entries | `onPlotToTablePlotView` → `QVizPlotAsTable` → `QVizTablePlot`: one panel per quantity, each read on the axes it sits on, each carrying the controls for the axes that read pins; the configuration file names the quantities and the place each panel held | `QVizTablePlotView.py` (283 l.), the `shareSameCoordinates` gate on these entries, the `plotItem.column`/`plotItem.row` pair the configuration was keyed by, `QVizMultiPlotWindow.addMenuBar`/`onSavePlotConf` and the two `TablePlotView` branches of `checkFigureKey`/`setMultiPlotView` (43 l.), the second registration of the window's own key | fait — **correction of the "kills" as first written**: the row announced "two duplicate menu entries"; measured, the four entries are four distinct menu items, and what was duplicated is their *wiring* — three of the four asked for `plotAxis='TIME'`. What survives: `QVizMultiPlotWindow` itself (StackedPlotView, T7) with `applyPlotConfigurationAfterPlotting`, now unreachable for the table since its only caller was the deleted frame; `Viz_API.GetNextKeyForTablePlotView`, kept as the documented scripting accessor; the `TablePlotView:` namespace, which T0's Show/Hide/Delete address. The panel is not offered the right-click `Configure Plot` dialog, and the styling a configuration file holds is refused by name in the log — both owned by T9 ("the configuration format: save and style") |
 | T7 | StackedPlotView — the same four entries | `onPlotToStackedPlotView` → `QVizPlotAsStacked` → `QVizStackedPlot`: the T6 panel, moved out of the table into `QVizPanel.py` because both windows lay the same panel out; one panel per quantity in one column, the abscissa the first quantity read fixes, the X and Y ranges of the others linked to it, and two checkboxes that do what their labels say — a quantity read along another abscissa is refused by name, with TablePlotView pointed at | `QVizStackedPlotView.py` (459 l.), `QVizMultiPlotWindow.py` (496 l.), and then `QVizPlotWidget.py` (596 l.) | fait — **correction of the "kills" as first written**: measured, the two window modules are 457 and 463 lines (920 gone), but `QVizPlotWidget.py` (595 l. measured, not 596) does **not** go with them: its consumers outlive the stacked window — `Viz_API.CreatePlotWidget:630/647` and `GetPlotWidget:659`, which `AddPlot1DToFig:696`, `plot0D_DataVsTimeCommand:737` and `plotVsTimeAtGivenCoordinate1:793/831` still call, the menu inside a figure (`QVizCustomPlotContextMenu:213/233`), the registered Profiles plugin (`CustomizedViewBox.py:198/441`), `QVizTreeNode.nodeDataShareSameCoordinatesAs:846`, and `tests/test_13_plot_axes.py` / `test_32_preview.py`. It goes with the scripting surface and the plugin, i.e. T13 and whatever owns `AddPlot1DToFig`. What T7 did kill beyond the two windows: the `menu.addMenu` submenu that died before it could be clicked, and the gate those entries hid behind — `shareSameCoordinates`, `shareSameCoordinates2` and `defaultPlotAxisForSelection` (117 lines out of `QVizSignalHandling`, 50 back). `Viz_API.GetNextKeyForStackedPlotView` and the `StackedPlotView:` namespace stay, as T0's Show/Hide/Delete address them |
-| T8 | Select / unselect — one node, all of the same AOS, everything, This/All | `QVizSelectOrUnselectSignal`, `QVizSelectSignalsGroup` (regex on the path), `QVizUnselectAllSignals` (nested loop, unguarded `keysToRemove[i]`) | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | to do |
+| T8 | Select / unselect — one node, all of the same AOS, everything, This/All | One command, `QVizSelectNodes`: `toggle` for the node entry, `sameAos` for the structure family (read off the parametrized path and the occurrence, not off a display string), `unselectAll(all_DTV)` for This/All, `isSelected` for the label the menu offers — so the menu asks the selection what it holds instead of asking the node a flag it keeps for itself | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | fait — **correction of the "kills" as first written**: measured, five modules go, 285 lines — `QVizSelectOrUnselectSignal` (46), `QVizSelectSignal` (47), `QVizSelectSignalsGroup` (48), `QVizUnselectAllSignals` (58) and the dead `QVizSelectSignalsFromConfig` (86) — not one file plus two habits. `QVizSelectSignals` stays (T9 owns the configuration path) but delegates, and `infoDict['isSelected']` is now written nowhere in the package, so the selection has one record. What was *not* killed, and was measured before removing anything: the toolbar's "Unselect All Nodes" sub-menu survives the commands and keeps both its actions, and `all_DTV` empties every opened view — neither had a defect to claim. Still standing, out of T8's way: `updateMenuNodeSelection`, which rebuilds its menu on every `aboutToShow`, and the `selectedItem` crutch the menu and `QVizPlotOneNode` still read |
 | T9 | "Apply Configuration" / save a configuration | `QVizConfigurationListsWindow` (394 l.), `QVizSavePlotConfig` (335 l.) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | to do |
 | T10 | "Export to IDS" | a 100-line inline dialog in `QVizDataTreeViewFrame.onExportToLocal` + `dataSource.build_uri` (xfail: `ImportError` on `_al_lowlevel`) | the inline dialog, the bare `except:` | to do |
 | T11 | Node documentation on left click | `QVizNodeDocumentationWidget` (651 l., sets `np.set_printoptions(threshold=sys.maxsize)` globally) | — | to do |
@@ -352,6 +390,21 @@ their row in one column, and that closing the window frees its key. The sweep
 gained one again: two window modules gone, one panel module, one frame and one
 command added (451 + 22 − 2 + 3 = 474), and the sweep itself is 116 passed /
 5 xfailed over 121 modules.
+Since T8: **494 passed, 8 xfailed** — twenty-four tests in
+`tests/test_38_selection_entries.py`, driven through the node menu as the click
+fires it (`selectOrUnselectSignal`, `actionSelectOrUnselectSignalNode().text()`,
+`selectAllSignalsFromSameAOS`, `onUnselectSignals`) on real `QVizTreeNode`s built
+with the `itemDataDict` the tree builder writes and a `dataKey` copied verbatim
+from `QVizIMASDataSource`, pinning that an entry holds the node it was asked for
+and not the tree's current item, that unselecting recolours the label it was
+asked about, that the menu's label follows the dictionary rather than a flag the
+node keeps, that the AOS family is the elements of that structure in the clicked
+occurrence, that asking it twice adds nothing and moves nothing, that "Unselect
+All" clears a node the tree no longer lists and recolours every label it
+clears, and that a selection read from a configuration records the same entry.
+The sweep lost four modules: five selection modules gone and the command added
+takes one back, so 121 − 5 + 1 = 117 modules and 112 passed / 5 xfailed
+(474 − 5 + 1 + 24 = 494).
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new

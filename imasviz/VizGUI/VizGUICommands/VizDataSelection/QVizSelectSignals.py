@@ -7,7 +7,7 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignal import QVizSelectSignal
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 from imasviz.VizUtils import QVizGlobalOperations
@@ -76,11 +76,11 @@ class QVizSelectSignals(QVizAbstractCommand):
                 if occurrence != signal.getOccurrence() or s != signal.getPath():
                     continue
 
-                # Tag the signal as current DTV selected item
-                self.dataTreeView.selectedItem = signal
-                # Select the tree item corresponding to the signal
-                QVizSelectSignal(dataTreeView=self.dataTreeView,
-                                 treeNode=signal).execute()
+                # The selection itself is recorded by one command, whichever path
+                # the request came in by: this class only knows how to find a node
+                # from the path a configuration file spells.
+                QVizSelectNodes(dataTreeView=self.dataTreeView,
+                                treeNode=signal).selectNode(signal)
 
     def checkIDSOpen(self):
         """Check if the IDS (or IDSs) root tree item is opened/populated. If

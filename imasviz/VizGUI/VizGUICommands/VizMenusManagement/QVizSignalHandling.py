@@ -19,9 +19,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import QVizPlot
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOneNode
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizUtils import FigureTypes
@@ -150,9 +148,17 @@ class QVizSignalHandling(QObject):
 
     def actionSelectOrUnselectSignalNode(self):
         """Set action to select/unselect signal node.
+
+        Asked of the view's selection, which is what every plot command reads.
+        The flag this used to ask (`infoDict['isSelected']`) was a second record
+        of the same fact, written by the selection commands beside it and never
+        cleared when the selection was: measured, a node the selection had lost
+        was still offered as "Unselect ...", and the entry it triggered answered
+        with a KeyError instead of clearing the flag.
         """
         s = ''
-        if self.nodeData['isSelected'] == 1:
+        if QVizSelectNodes(self.dataTreeView,
+                           self.treeNode).isSelected(self.treeNode):
             # If the node is selected, show unselect menu
             s = 'Unselect '
             # Bitmap icon
@@ -544,20 +550,20 @@ class QVizSignalHandling(QObject):
         subMenu_delete.addAction(action_deleteAll)
 
     def selectSignal(self):
-        QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
+        QVizSelectNodes(self.dataTreeView, self.treeNode).execute()
 
     @Slot()
     def selectOrUnselectSignal(self):
-        QVizSelectOrUnselectSignal(self.dataTreeView, self.treeNode).execute()
+        QVizSelectNodes(self.dataTreeView, self.treeNode).execute()
 
     @Slot(bool)
     def onUnselectSignals(self, all_DTV=False):
         """Unselect all signals (single or all DTVs)."""
-        QVizUnselectAllSignals(self.dataTreeView, all_DTV).execute()
+        QVizSelectNodes(self.dataTreeView, all_DTV=all_DTV).unselectAll()
 
     @Slot()
     def selectAllSignalsFromSameAOS(self):
-        QVizSelectSignalsGroup(self.dataTreeView, self.treeNode).execute()
+        QVizSelectNodes(self.dataTreeView, self.treeNode).sameAos()
 
     @Slot()
     def plotSignalCommand(self):

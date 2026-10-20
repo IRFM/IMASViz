@@ -556,8 +556,9 @@ class Viz_API:
         :param all_DTV: When True, all selected signals from all shot views are
                         unselected
         """
-        from imasviz.VizGUI.VizGUICommands import QVizUnselectAllSignals
-        QVizUnselectAllSignals(dataTreeFrame.dataTreeView, all_DTV=all_DTV).execute()
+        from imasviz.VizGUI.VizGUICommands import QVizSelectNodes
+        QVizSelectNodes(dataTreeFrame.dataTreeView,
+                        all_DTV=all_DTV).unselectAll()
 
     def SelectSignalsGroup(self, dataTreeFrame, occurrence, onePathInTheGroup):
         """Selects nodes for this shot view.
@@ -571,9 +572,17 @@ class Viz_API:
                                       Example:
                                       'magnetics/flux_loop(0)/flux/data'
         """
-        from imasviz.VizGUI.VizGUICommands import QVizSelectSignalsGroup
-        QVizSelectSignalsGroup(dataTreeFrame.dataTreeView,
-                               dataTreeFrame.dataTreeView.selectedItem).execute()
+        # The two arguments are honoured: the body used to ignore both and take
+        # whatever node the tree happened to have as its current item, so the
+        # group selected had nothing to do with the path and occurrence asked for.
+        from imasviz.VizGUI.VizGUICommands import QVizSelectNodes
+        view = dataTreeFrame.dataTreeView
+        path = QVizGlobalOperations.makeIMASPath(onePathInTheGroup)
+        node = next((node for node in view.signalsList
+                     if node.getPath() == path and
+                     node.getOccurrence() == int(occurrence)),
+                    view.selectedItem)
+        QVizSelectNodes(view, node).sameAos()
 
     def IDSDataAlreadyFetched(self, dataTreeView, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)

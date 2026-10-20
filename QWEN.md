@@ -126,10 +126,17 @@ Core concepts, in the vocabulary used by the code and docs:
   Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
-  (`QVizLoadSelectedData`, `QVizSelectSignals`, `QVizPlotOneNode`, `QVizPlotAsSlices`,
-  `QVizPlotAsTable`, `QVizPlotAsStacked`).
+  (`QVizLoadSelectedData`, `QVizSelectNodes`, `QVizSelectSignals`, `QVizPlotOneNode`,
+  `QVizPlotAsSlices`, `QVizPlotAsTable`, `QVizPlotAsStacked`).
   `Viz_API` methods are
   thin wrappers that instantiate one of these and call `.execute()`.
+- **the selection** — one record only: `dataTreeView.selectedSignalsDict`, keyed by
+  `dataSource.dataKey(node)` (name, uri, path, **occurrence**), holding the
+  `QTreeWidgetItem` itself. The node carries no `isSelected` flag of its own, and
+  neither the menu label nor the label colour reads one; both ask the dictionary.
+  The AOS family is `getParametrizedDataPath()` (index *names*, e.g.
+  `core.time_slice[i].a`) plus the occurrence — never a regular expression over the
+  display path, which does not spell the occurrence.
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
   figures and shot views are `QMdiSubWindow`s inside it. Show/hide and delete logic branches on
   whether a frame is MDI-embedded — that string comparison is load-bearing.
@@ -195,7 +202,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 474 passed, 8 xfailed, ~30 s, offscreen
+python3 -m pytest tests/ -q     # 494 passed, 8 xfailed, ~29 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -263,7 +270,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **116/121 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
+  **112/117 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
   chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
   `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`
