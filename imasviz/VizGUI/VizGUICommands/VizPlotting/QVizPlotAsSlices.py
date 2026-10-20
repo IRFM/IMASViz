@@ -23,11 +23,11 @@ the same quantity read along time is a curve. The read answers that, so the choi
 of frame and the numbers on it cannot come apart.
 
 The figure keys keep their own namespaces, declared with the other kinds in
-FigureTypes. The legacy "Figure:" and "Image:" keys are listed by the "add to an
-existing figure" menu entries, which build their curves through the old path and
-would be handed frames they do not know how to fill. The keys are still handed out
-by the api, because the Show/Hide and Delete menus read the same bookkeeping and
-two ways of numbering it is how a key gets reused under a live window.
+FigureTypes. The legacy "Figure:" key is listed by the "add to an existing figure"
+menu entries, which build their curves through the old path and would be handed
+frames they do not know how to fill. The keys are still handed out by the api,
+because the Show/Hide and Delete menus read the same bookkeeping and two ways of
+numbering it is how a key gets reused under a live window.
 """
 
 import logging

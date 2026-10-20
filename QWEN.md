@@ -190,7 +190,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 165 passed, 8 xfailed, ~11 s, offscreen
+python3 -m pytest tests/ -q     # 420 passed, 8 xfailed, ~28 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -207,44 +207,24 @@ auto-loads `UDA/2.9.0` and `IMAS-AL-Core/5.5.1`, which conflict with the
 ### The legacy scripts in VizExamples are demos, not tests
 
 - `imasviz/VizExamples/example{1,2,2b,3,4}.py`, `test.py`, `test_plugin.py`,
-  `test_QVizPlot{Image,Layout}Widget.py`, plus per-plugin `test_*.py` /
+  `test_QVizPlotLayoutWidget.py`, plus per-plugin `test_*.py` /
   `run_plugin_ui_standalone.py` — scripted usage of the `Viz_API` without the GUI.
 - They instantiate a `QApplication`, build a hardcoded datasource dict, and call the class
   directly. To "test" a change, add such a script and run it — but note it needs the IMAS HLI
   and a real case to be meaningful, which is unavailable in most checkouts.
+- They are not self-bootstrapping: they need `$VIZ_HOME` on `sys.path`. Prepend it
+  (`PYTHONPATH=$PWD:$PYTHONPATH`) — assigning `PYTHONPATH=$VIZ_HOME` *replaces* the
+  `PYTHONPATH` the modules export and the `PySide6`/`imas` imports then fail.
 
 ### Why those scripts cannot be automated
 
 Two verified properties make them unusable in automation:
 
 - They end with `app.exec_()`, which **never returns** — wrap them in `timeout` or they hang
-  until you kill the GUI (a `timeout 90` run of `test_QVizPlotImageWidget.py` exits 124).
+  until you kill the GUI (a `timeout 45` run of `test_QVizPlotLayoutWidget.py` exits 124).
 - Most call `QVizGlobalOperations.askForShot()` (`QVizGlobalOperations.py:413`), which is a
   **`QInputDialog`**, not `stdin` — the shot cannot be fed from a pipe, and the process blocks
   on the dialog before doing any work.
-
-### The standalone headless script
-
-`imasviz/VizExamples/test_QVizPlotImageWidget_headless.py` predates the pytest suite and
-remains useful as a zero-dependency smoke check: it drives `QvizPlotImageWidget` with a
-synthetic numpy `QVizDataArrayHandle`, so it needs **no IMAS case and no data dictionary**; it
-sets `sys.argv = […, '-platform', 'offscreen']` before `QApplication` (no X needed), never calls
-`app.exec_()`, and reports its outcome through its exit code:
-
-```bash
-module load ach-modules
-module load PySide6/6.6.2-GCCcore-13.2.0
-module load IMAS-Python/2.3.0-foss-2023b
-module load PyQtGraph/0.13.7-foss-2023b
-export VIZ_PRODUCTION=1 VIZ_HOME=$PWD IMAS_VIZ_VERSION=2.3.7 UDA_DISABLED=1
-python3 imasviz/VizExamples/test_QVizPlotImageWidget_headless.py   # → rc 0, "OK: …"
-```
-
-Verified here: exit code **0** with the configuration above; exit code **1** without it
-(the bootstrap needs `VIZ_HOME`, so it fails at `ModuleNotFoundError: No module named 'imasviz'`).
-Do **not** set `PYTHONPATH=$VIZ_HOME` on the module stack — that *replaces* the
-`PYTHONPATH` the modules export and the `PySide6`/`imas` imports then fail; the script
-bootstraps `sys.path` from `VIZ_HOME` instead.
 
 ## Pitfalls and code smells already present
 

@@ -16,14 +16,15 @@ from PySide6 import QtGui
 
 class FigureTypes:
     FIGURETYPE = "Figure:"
-    IMAGETYPE = "Image:"
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
     PROFILESPLOTTYPE = "PlotView:"
     # The frames drawn through the axes model keep their own prefixes: the
     # "add to this figure" entries build their curves through another path and
     # would be handed a frame they do not know how to fill. Separate namespace,
-    # same registry.
+    # same registry. The legacy image frame's "Image:" prefix is gone with it:
+    # a second namespace for the same kind of window is two Show/Hide entries
+    # and one window the "add to" entries cannot fill.
     CURVEPLOTTYPE = "SlicesPlot"
     IMAGEPLOTTYPE = "SlicesImage"
 
@@ -33,7 +34,6 @@ class FigureTypes:
     # menus iterate this, because a kind missing here is a window the user has
     # no way left to close.
     MENU_ORDER = (('Figure', 'Figure', FIGURETYPE),
-                  ('Image', 'Image', IMAGETYPE),
                   ('TablePlotView', 'TPV', TABLEPLOTTYPE),
                   ('StackedPlotView', 'SPV', STACKEDPLOTTYPE),
                   ('Profiles', 'Profiles', PROFILESPLOTTYPE),

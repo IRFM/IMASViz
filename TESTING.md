@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 366 passed, 8 xfailed, ~25 s
+python3 -m pytest tests/ -q       # 420 passed, 8 xfailed, ~28 s
 ```
 
 Useful variants:
@@ -71,7 +71,7 @@ Useful variants:
 python3 -m pytest tests/ -m 'not case'      # skip the real-case integration
 python3 -m pytest tests/ -m ui -v           # only the widget tests
 python3 -m pytest tests/ --cov=imasviz --cov-report=term-missing
-python3 -m pytest tests/test_10_plot_image_widget.py -v
+python3 -m pytest tests/test_34_one_image.py -v
 ```
 
 Markers declared in `pytest.ini`: `ui` (Qt widgets), `dd` (needs the data
@@ -88,7 +88,6 @@ dialog or a remote backend.
 | `test_02_data_source.py` | `VizDataSource` | AL major version, URI/DBEntry lifecycle |
 | `test_03_case_integration.py` | real WEST case | occurrences, filled paths, cross-DD-version reading |
 | `test_04_view_parser.py` | `VizDataAccess` view parser | dictionary reflection; pins the shadow-tree node counts measured on the parsers it replaced |
-| `test_10_plot_image_widget.py` | image plot widget | synthetic array, no case and no data dictionary |
 | `test_11_layout_and_table.py` | layout widget, IDS table model | locks the Qt6 migration (`QVariant` is gone) |
 | `test_12_plot_labels.py` | legends, axis labels, units, title | case label instead of the URI; labels set per curve |
 | `test_13_plot_axes.py` | `QVizPlotWidget` axes | `xunits`/`yunits` reach the axis labels |
@@ -109,6 +108,7 @@ dialog or a remote backend.
 | `test_27_plot_routing.py` | routing a selection | a curve draws one axis, an image two; refusal names the quantity |
 | `test_28_radiance_case.py` | WEST 55799 | a rank 3 quantity a real shot holds values for (`hard_x_rays`) |
 | `test_29_inherited_coordinates.py` | parser, inherited coordinates | the coordinates a structure declares, carried down to its arrays |
+| `test_34_one_image.py` | the image window, from the tree entry to its slices | the entry names the frame the quantity needs; the ROI lines stand in coordinates, the slice follows the window, kept slices stay; no case |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an

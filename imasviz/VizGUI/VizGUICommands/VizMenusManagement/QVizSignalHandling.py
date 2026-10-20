@@ -23,7 +23,6 @@ from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal i
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignalsGroup import QVizSelectSignalsGroup
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QViz2DArrayHandling import QViz2DArrayHandling
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizUtils import FigureTypes
 
@@ -99,9 +98,6 @@ class QVizSignalHandling(QObject):
                 self.menuPlotCurrentSignalNode(parentMenu=self.contextMenu))
             if plotting.legacyCanDrawAsCurve() and plotting.hasOwnCoordinate():
                 self.contextMenu.addMenu(self.menuSetCoordinate1DNode())
-        if plotting.legacyCanDrawAsImage():
-            array2DHandling = QViz2DArrayHandling(self.dataTreeView)
-            self.contextMenu.addMenu(array2DHandling.menuPlotCurrentArrayNode(self))
 
         if signal:
             # - Add menu for handling unselection of signal nodes
@@ -151,19 +147,6 @@ class QVizSignalHandling(QObject):
         action_plotAsFunctionOfTime.setDisabled(False)
 
         return action_plotAsFunctionOfTime
-
-    def actionPlot2DArray(self):
-        # Add action to plot 2D array data
-        # TODO: icon
-        action_plot2DArray = None
-        if self.treeNode.is2D():
-            icon = GlobalIcons.getCustomQIcon(QApplication, 'plotSingle')
-            action_plot2DArray = QAction(icon, 'Plot 2D image', self)
-            api = self.dataTreeView.imas_viz_api
-            action_plot2DArray.triggered.connect(
-                partial(api.Plot2DArray, self.dataTreeView, self.treeNode))
-            action_plot2DArray.setDisabled(False)
-        return action_plot2DArray
 
     def actionSelectOrUnselectSignalNode(self):
         """Set action to select/unselect signal node.
@@ -259,23 +242,34 @@ class QVizSignalHandling(QObject):
         # Built as a child of the menu it belongs to: the QMenu that addMenu()
         # makes from a title is owned by Python, which is the dangling submenu T0
         # removed from the Show/Hide menus -- there to look at, gone to click.
-        menu_figure = QMenu('Figure', menu)
-        menu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
-        menu.addMenu(menu_figure)
+        #
+        # The submenu is named after the frame the entry is about to open, since
+        # the two frames answer different questions and nothing else in the menu
+        # says which window is coming. A quantity with two axes to draw needs the
+        # image frame, and that frame holds one quantity per figure, so no window
+        # is already open that its axes could join: 'New' is the whole menu. Which
+        # frame it is comes from the axes alone -- curveAxisKey() answers None as
+        # soon as the leaf has more than one axis of its own -- because the answer
+        # that measures values, plottedAxes(), would extract a tensor for a right
+        # click that may never draw anything.
+        curveAxis = QVizNodePlotting(self.treeNode).curveAxisKey()
+        frameType = 'Figure' if curveAxis is not None else 'Image'
+        menu_frame = QMenu(frameType, menu)
+        menu_frame.setIcon(GlobalIcons.getCustomQIcon(QApplication, frameType))
+        menu.addMenu(menu_frame)
 
         # Add action to plot the signal data to a new figure
         icon_new = GlobalIcons.getCustomQIcon(QApplication, 'new')
         action_plotNewFigure = QAction(icon_new, 'New', self)
         action_plotNewFigure.triggered.connect(self.plotSignalCommand)
-        menu_figure.addAction(action_plotNewFigure)
+        menu_frame.addAction(action_plotNewFigure)
 
-        curveAxis = QVizNodePlotting(self.treeNode).curveAxisKey()
         for figureKey in self.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.CURVEPLOTTYPE):
 
             # Add menu item to add plot to specific existing figure. A figure has
             # one abscissa, so a quantity read along another one does not belong
-            # in it.
+            # in it; and a picture has no abscissa at all to share.
             if curveAxis is None:
                 continue
             if not self.figureDrawsSameCurveAxis(figureKey, curveAxis):
@@ -290,7 +284,7 @@ class QVizSignalHandling(QObject):
             action_addSignalPlotToFig.triggered.connect(
                 partial(self.addSignalPlotToFig, id_Fig))
             # Add to submenu
-            menu_figure.addAction(action_addSignalPlotToFig)
+            menu_frame.addAction(action_addSignalPlotToFig)
 
         return menu
 
@@ -736,8 +730,8 @@ class QVizSignalHandling(QObject):
 
         Unlike plotSelectedSignals, no figure key and no plot widget are asked
         from the api: the command builds its own frames in its own key namespace,
-        so the 'Figure:' and 'Image:' entries built above cannot offer a frame the
-        old path does not know how to fill. How many frames it builds is whatever
+        so the 'Figure:' entries built above cannot offer a frame the old path
+        does not know how to fill. How many frames it builds is whatever
         the selection needs -- one curve figure and one figure per image -- so they
         are embedded after the read, which also keeps an empty window off the
         screen when nothing could be read.

@@ -34,12 +34,15 @@ grid. What is exact is the extent, the labels and the slice the colours stand fo
 import numpy as np
 import pyqtgraph as pg
 
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QSizePolicy,
+                               QVBoxLayout, QWidget)
 
 from imasviz.VizDataAccess.QVizTensorDataAccess import FRAMES, QVizTensorDataAccess
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import (
     QVizFramesWindow, QVizSliceControls)
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceLines import (
+    QVizDrawnAxis, QVizSliceLines)
 
 
 class QVizImagePlot(QWidget):
@@ -68,6 +71,11 @@ class QVizImagePlot(QWidget):
         # One entry per picture, in screen order: the plot it lives in and the
         # image drawn in it.
         self._pictures = []
+        # The same pictures as they sit on screen -- first index horizontal --
+        # which is what a slice is cut out of. The images hold them too, but
+        # pyqtgraph keeps them as it drew them and the slice needs the frame's
+        # own orientation.
+        self._screen = []
 
         self.pgPlotWidget = pg.GraphicsLayoutWidget(self)
         self.pgPlotWidget.setObjectName('imagePlot')
@@ -79,6 +87,11 @@ class QVizImagePlot(QWidget):
 
         self.sliceControls = QVizSliceControls(self)
         self.framesControls = QVizFramesWindow(self)
+        # Where the user points on a picture, and the slice that question asks
+        # for. The plots it draws live in the figure's layout, under the
+        # pictures; the buttons below say what to do with them.
+        self.sliceLines = QVizSliceLines(self.pgPlotWidget)
+        self.sliceButtons = self._makeSliceButtons()
         # The read calls these attributes by name, so the controls and the
         # pictures cannot be out of date with respect to each other.
         self.sliceControls.changed.connect(self.refresh)
@@ -87,11 +100,55 @@ class QVizImagePlot(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.pgPlotWidget)
+        layout.addWidget(self.sliceButtons)
         layout.addWidget(self.framesControls)
         layout.addWidget(self.sliceControls)
 
         if title:
             self.setWindowTitle(title)
+
+    def _makeSliceButtons(self):
+        """The commands on the slices, on the figure rather than in a menu.
+
+        The legacy image window hid these in the context menu of its viewBox --
+        'Keep this slice', 'Delete all slices', 'Add a new marker' -- which is
+        code these frames do not use. Each command is named after the line it
+        answers once the quantity is known: a picture carries two lines, and
+        'this slice' says nothing without that.
+        """
+        row = QWidget(self)
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self._keepButtons = {}
+        self._markerButtons = {}
+        self._sliceLabels = {}
+        for side in QVizSliceLines.SIDES:
+            label = QLabel(row)
+            label.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+            keep = QPushButton('Keep this slice', row)
+            keep.clicked.connect(lambda checked=False, side=side:
+                                 self.keepSlice(side))
+            marker = QPushButton('Add a new marker', row)
+            marker.clicked.connect(lambda checked=False, side=side:
+                                   self.addSliceMarker(side))
+            layout.addWidget(label)
+            layout.addWidget(keep)
+            layout.addWidget(marker)
+            self._keepButtons[side] = keep
+            self._markerButtons[side] = marker
+            self._sliceLabels[side] = label
+
+        self.deleteKeptButton = QPushButton('Delete the kept slices', row)
+        self.deleteKeptButton.clicked.connect(self.clearKeptSlices)
+        self.deleteMarkersButton = QPushButton('Delete the markers', row)
+        self.deleteMarkersButton.clicked.connect(self.clearSliceMarkers)
+        layout.addWidget(self.deleteKeptButton)
+        layout.addWidget(self.deleteMarkersButton)
+        layout.addStretch(1)
+
+        row.setVisible(False)
+        return row
 
     def getPlotAxis(self):
         return self.plotAxis
@@ -172,6 +229,7 @@ class QVizImagePlot(QWidget):
                                         as_function_of_time=False,
                                         frames=None if self._frames is None
                                         else self._frames.position))
+        self._poseSliceLines(quantity, axesSpec, drawn, frames[0][0])
         return self._count
 
     def refresh(self):
@@ -192,6 +250,11 @@ class QVizImagePlot(QWidget):
             if position >= len(self._pictures):
                 break
             self._drawPicture(position, handle, axesSpec, drawn)
+        # The lines stay where the user put them and answer the picture that is
+        # up now: the slice is an answer about this picture, not about the one
+        # that was up when the line was dragged.
+        if self.sliceLines.isPosed() and self._screen:
+            self.sliceLines.updateValues(self._screen[0])
         return self.sliceControls.indices()
 
     def imageCount(self):
@@ -233,6 +296,7 @@ class QVizImagePlot(QWidget):
         imageItem = pg.ImageItem()
         plotItem.addItem(imageItem)
         self._pictures.append((plotItem, imageItem))
+        self._screen.append(np.asarray([]))
 
     def _drawPicture(self, position, handle, axesSpec, drawn):
         """Lay one read into one picture: values, extent, axis labels."""
@@ -244,15 +308,96 @@ class QVizImagePlot(QWidget):
             # A slice holding nothing shows nothing. Leaving the previous picture
             # up answers a question the user never asked.
             imageItem.clear()
+            self._screen[position] = np.asarray([])
             return
 
-        imageItem.setImage(self._forScreen(values))
+        screen = self._forScreen(values)
+        imageItem.setImage(screen)
+        # Kept aside for the slices: a slice is cut out of the picture as it sits
+        # on screen, and pyqtgraph stores the image as it drew it.
+        self._screen[position] = screen
         if self._levels is not None:
             imageItem.setLevels(self._levels)
         # A different element of a static array can carry a grid of its own, so
         # the extent belongs to the slice just read, not to the first one.
         self._setExtent(imageItem, handle)
         self._setAxisLabels(plotItem, axesSpec, drawn)
+
+    def _coordinateValues(self, handle, dim):
+        """The values one drawn axis takes on this read, ranks if it has none.
+
+        The same numbers the extent is taken from: the lines, the slice abscissa
+        and the picture have to agree on where an element sits, or the line the
+        user drags answers for a place they are not pointing at.
+        """
+        try:
+            values = np.asarray(handle.getCoordinateValues(dim), dtype=float)
+        except (TypeError, ValueError):
+            values = np.asarray([])
+        if values.size == 0:
+            rank = self._screen[0].shape[dim - 1] if self._screen else 0
+            values = np.arange(rank)
+        return values
+
+    def _sliceAxes(self, axesSpec, drawn, handle):
+        """The two axes a picture draws, named and valued, for the slice lines."""
+        axes = {}
+        for side, dim in zip(QVizSliceLines.SIDES, (self._xAxis, self._yAxis)):
+            axis = axesSpec.axes[drawn[dim - 1]]
+            axes[side] = QVizDrawnAxis(self.axisName(axis), axis.units,
+                                       self._coordinateValues(handle, dim))
+        return axes
+
+    def _poseSliceLines(self, quantity, axesSpec, drawn, handle):
+        """Put the lines on the first picture and name the commands for them.
+
+        The lines answer that picture, and the window control says which picture
+        that is. Each command is named after the axis the line stands on: a
+        picture carries two lines, and 'this slice' says nothing without that.
+        """
+        axes = self._sliceAxes(axesSpec, drawn, handle)
+        self.sliceLines.forQuantity(self._pictures[0][0], quantity, axes,
+                                    self._count)
+        for side, label in self._sliceLabels.items():
+            label.setText(axes[side].spelling() + ':')
+        self.sliceButtons.setVisible(True)
+        self.sliceLines.updateValues(self._screen[0])
+
+    def sliceLine(self, side):
+        return self.sliceLines.line(side)
+
+    def sliceCurve(self, side):
+        return self.sliceLines.curve(side)
+
+    def sliceNumbers(self, side):
+        return self.sliceLines.numbers(side)
+
+    def sliceLabelText(self, side):
+        return self.sliceLines.labelText(side)
+
+    def sliceAxisLabel(self, side):
+        return self.sliceLines.axisLabel(side)
+
+    def keepSlice(self, side):
+        return self.sliceLines.keep(side)
+
+    def keptSlices(self, side):
+        return self.sliceLines.kept(side)
+
+    def clearKeptSlices(self):
+        self.sliceLines.clearKept()
+
+    def addSliceMarker(self, side):
+        return self.sliceLines.addMarker(side)
+
+    def sliceMarkers(self, side):
+        return self.sliceLines.markers(side)
+
+    def sliceMarkerText(self, side, index=0):
+        return self.sliceLines.markerText(side, index)
+
+    def clearSliceMarkers(self):
+        self.sliceLines.clearMarkers()
 
     def _scaleOf(self, valuesList):
         """The span every picture on the figure is drawn against."""

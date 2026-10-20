@@ -233,7 +233,7 @@ The procedure of adding a plot to an already existing figure is as follows:
 
 3. From the pop-up menu, navigate and select
    :guilabel:`Plot <node name> to` |icon_plotSingle| ->
-   :guilabel:`Figure` |icon_Figure| -> :guilabel:`Figure:0`
+   :guilabel:`Figure` |icon_Figure| -> :guilabel:`SlicesPlot1`
 
    .. figure:: images/DTV_popupmenu_plot_to_existing_figure.png
      :align: center
@@ -286,7 +286,7 @@ presented in the section :ref:`add_plot_to_existing_figure`:
 
 5. From the pop-up menu, navigate and select
    :guilabel:`Plot <node name> to` |icon_plotSingle| ->
-   :guilabel:`Figure` |icon_Figure| -> :guilabel:`Figure:0`
+   :guilabel:`Figure` |icon_Figure| -> :guilabel:`SlicesPlot1`
 
 The plot will be added to the existing plot as shown in the image below.
 

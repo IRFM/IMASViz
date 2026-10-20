@@ -271,13 +271,6 @@ class Viz_API:
         """
         return self.GetFiguresCount()
 
-    def GetImagePlotsCount(self):
-        """Returns the next number of image plots.
-
-        :returns: (int) The next number of image plots
-        """
-        return self.GetFiguresCount(FigureTypes.IMAGETYPE)
-
     def GetTablePlotViewsCount(self):
         """Returns the next table plot number available for plotting.
 
@@ -333,15 +326,6 @@ class Viz_API:
         :returns: (str) The key of the next figure (plot)
         """
         return self.GetNextKeyForFigure(FigureTypes.FIGURETYPE)
-
-    def GetNextKeyForImagePlots(self):
-        """Returns the key of the next 2D plot (e.g. if 'Image i' is the
-        latest image on the list of existing 2D plots, value 'Image i+1' is
-        returned).
-
-        :returns: (str) The key of the next 2D plot
-        """
-        return self.GetNextKeyForFigure(FigureTypes.IMAGETYPE)
 
     def GetNextKeyForStackedPlotView(self):
         """Returns the key of the next stacked plot (e.g. if 'StackedPlot i'
@@ -684,17 +668,6 @@ class Viz_API:
         except:
             raise
 
-    def Plot2DArray(self, dataTreeView, vizTreeNode):
-        from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotImageWidget import QvizPlotImageWidget
-        imageKey = self.GetNextKeyForImagePlots()
-        plotWidget = QvizPlotImageWidget(vizTreeNode=vizTreeNode,
-                                         size=(600, 500), plotSliceFromROI=True, title=imageKey, showImageTitle=False)
-        self.figureframes[imageKey] = plotWidget
-        self.addPlotWidgetToMDI(plotWidget)
-        dataArrayHandle = self.GetSignal(dataTreeView, vizTreeNode, plotWidget=None)
-        plotWidget.plot(dataArrayHandle)
-        plotWidget.show()
-
     def AddPlot1DToFig(self, numFig, vizTreeNode):
         """Add signal plot to existing figure.
 
@@ -992,30 +965,3 @@ class Viz_API:
             if index == -1:
                 return title
             return title[index + len(slices_aos_name) + 4:]
-
-    def plot1DInNewFigure(self, x_label, signals_labels, signals, treeNode):
-        """Plot data in a new figure
-        Arguments:
-            figureKey  (str) : Label of the current/relevant figure window.
-            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
-                                      replace the current plot in figure
-                                      window.
-                                      :param signals_labels:
-                                      :param signals: List of tuple (x,y) where x and y are 1D numpy arrays
-                                      :param x_label:
-                                      :param treeNode:
-        """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
-        try:
-            figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=treeNode.dataTreeView)
-            i = 0
-            for sig in signals:
-                QVizPlotSignal(dataTreeView=treeNode.dataTreeView,
-                               title='',
-                               label=signals_labels[i],
-                               xlabel=x_label,
-                               vizTreeNode=treeNode,
-                               plotWidget=plotWidget).execute(figureKey=figureKey, signal=sig)
-                i += 1
-        except ValueError as e:
-            logging.getLogger(dataTreeView.uri).error(str(e))
