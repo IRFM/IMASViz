@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 432 passed, 8 xfailed, ~29 s
+python3 -m pytest tests/ -q       # 451 passed, 8 xfailed, ~29 s
 ```
 
 Useful variants:
@@ -114,6 +114,7 @@ dialog or a remote backend.
 | `test_33_plot_one_node.py` | the entries that plot one node | which frame the quantity lands in; the node under the menu is the node drawn |
 | `test_34_one_image.py` | the image window, from the tree entry to its slices | the entry names the frame the quantity needs; the ROI lines stand in coordinates, the slice follows the window, kept slices stay; no case |
 | `test_35_selection_entries.py` | the entries that draw a selection | the two menu entries as they fire (`plotSelectedSignals`, `addSelectedSignalsPlotToFig`): which frame each quantity lands in, that a refusal costs no window and names the path, one 'Figure' entry listing the open curve figures; no case |
+| `test_36_table_plot_entries.py` | the four `TablePlotView` entries | the four menu entries as they fire (`New (default axis)` / `New ('TIME' axis)` x This/All): the two strategies read along different axes, one panel per quantity with its own abscissa and named slices, a two-axis quantity refused by name, the `(row, column)` keys and the key released at close, a `.pcfg` drawing its paths while refusing its styling; no case |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an

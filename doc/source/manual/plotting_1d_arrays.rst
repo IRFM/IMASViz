@@ -544,13 +544,22 @@ Table Plot View
 :guilabel:`Table Plot View` allows the user to create a multiplot window by
 plotting every array from selection to its own plot display.
 The plots are arranged to resemble a table layout as shown in the figure
-below.
+below. The number of columns follows the number of panels: one panel gets a
+row of its own, up to four panels share two columns, and more than four are
+laid out in three columns.
 
 .. figure:: images/TablePlotView_example.png
     :align: center
     :scale: 50%
 
     MultiPlot - :guilabel:`Table Plot View` Example.
+
+Each panel holds one quantity of the selection. A panel is read on the axes
+that quantity sits on and is labelled from that reading, so a selection mixing
+quantities on different coordinates gives one labelled panel each rather than
+one abscissa label for the whole window. Every panel carries a named control for
+each axis its reading had to fix: the control says which element of that axis the
+panel answers for, and moving it re-reads that panel alone.
 
 Creating New View
 ^^^^^^^^^^^^^^^^^
@@ -567,20 +576,23 @@ To create a new :guilabel:`Table Plot View`, follow the following steps:
 
 3. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
-   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New (default)` |icon_new|->
-   :guilabel:`This IMAS database` |icon_thisDTV| or
-   :guilabel:`All IMAS databases` |icon_allDTV|.
+   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New (default axis)` |icon_new|->
+   :guilabel:`This IMAS Database` |icon_thisDTV| or
+   :guilabel:`All IMAS Databases` |icon_allDTV|.
 
    or
 
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
-   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New ('TIME' plot axis)` |icon_new|->
-   :guilabel:`This IMAS database` |icon_thisDTV| or
-   :guilabel:`All IMAS databases` |icon_allDTV|.
+   :guilabel:`TablePlotView` |icon_TablePlotView| -> :guilabel:`New ('TIME' axis)` |icon_new|->
+   :guilabel:`This IMAS Database` |icon_thisDTV| or
+   :guilabel:`All IMAS Databases` |icon_allDTV|.
 
-   When the selection contains 1D nodes located in dynamic AOS, 'TIME' will plot these nodes along the time axis.
-   Default strategy will plot 1D data in dynamic AOS along the coordinate1 axis. The two strategies give the same results
-   if the selection does not contain nodes located in dynamic AOS.
+   When the selection contains 1D nodes located in dynamic AOS, 'TIME' plots
+   these nodes along the time axis and fixes their coordinate -- which element is
+   fixed is named on the panel and can be moved there. The default strategy plots
+   1D data in dynamic AOS along the coordinate axis and fixes the time slice,
+   again named and movable on the panel. A node with no time base is read the
+   same way by both entries.
 
    .. figure:: images/DTV_plot_selected_nodes_to_TPV_thisDTV2.png
      :align: center
@@ -592,8 +604,19 @@ To create a new :guilabel:`Table Plot View`, follow the following steps:
    The :guilabel:`Table Plot View` window will then be created and shown.
 
 .. note::
-   Each plot can be customized individually by right-clicking to the plot d
-   display and selecting option :guilabel:`Configure Plot`.
+   A quantity that needs two axes to be drawn at once -- a 2D array read along
+   its two coordinates -- is not drawn in a :guilabel:`Table Plot View`: a panel
+   holds one curve, and a picture needs a colour scale and controls of its own.
+   Such a quantity is named in the log panel of the shot view, saying what was
+   refused and why, and the rest of the selection is drawn. To see it as a
+   picture, select only that node and use :guilabel:`Figure` (see
+   :ref:`plotting_2d_arrays`).
+
+.. note::
+   Each panel is drawn from the data and is not customized by hand: the
+   :guilabel:`Configure Plot` dialog other plot windows offer on right-click is
+   not offered on a :guilabel:`Table Plot View` panel. What can be changed is
+   what the panel answers for, through the controls it carries.
 
 .. note::
    Scrolling down the :guilabel:`Table Plot View` window using the middle mouse
@@ -617,8 +640,8 @@ To create MultiPlot configuration, follow the next steps:
 
 2. Create a :guilabel:`Table Plot View`, as described in :ref:`TPV`.
 
-3. In :guilabel:`Table Plot View` menubar navigate to **Options** ->
-   **Save Plot Configuration**
+3. Press the **Save Plot Configuration** button at the top of the
+   :guilabel:`Table Plot View` window.
 
    .. figure:: images/SavePlotConfiguration_dialog.png
      :align: center
@@ -661,6 +684,19 @@ To apply MultiPlot configuration to any IMAS database, follow the next steps:
 
    The :guilabel:`Table Plot View` will be created using the data stored in the
    configuration file.
+
+.. Note::
+   A configuration file holds two things: which quantities were plotted, and how
+   their panels looked. The quantities are taken from the file -- with the place
+   each panel held in the table -- and read again from the database that is open.
+   How the panels looked (pen, symbols, axis ranges) is not applied; the log
+   panel of the shot view says that the file holds styling and how many panels it
+   leaves out, so the difference between the saved window and the new one is
+   stated rather than left to be discovered.
+
+.. Note::
+   A quantity named by the file that this tree does not hold is named in the log
+   panel and skipped: load the IDS it belongs to first.
 
 .. Note::
    Currently this feature will take all plot data from single (currently)

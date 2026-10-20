@@ -446,14 +446,20 @@ class Viz_API:
         """Plots the current selected set of signals of this shot view on a
            new table plot.
 
-        :param plotAxis:
+        :param plotAxis: 'TIME' reads every quantity along time; anything else
+                         lets the read answer per quantity, which is what a
+                         selection mixing coordinates needs -- each quantity then
+                         gets a panel of its own with its own labels.
         :param dataTreeFrame: A QVizDataTreeViewFrame object
         :param all_DTV:       When True, all current selected set of signals
                               on all shot views are plotted
         """
-        from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
-        QVizSignalHandling(dataTreeFrame.dataTreeView). \
-            onPlotToTablePlotView(all_DTV, plotAxis=plotAxis)
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotAsTable
+        frame = QVizPlotAsTable(dataTreeView=dataTreeFrame.dataTreeView,
+                                all_DTV=all_DTV,
+                                plotAxis=plotAxis).execute()
+        if frame is not None:
+            self.addPlotWidgetToMDI(frame)
 
     # Plot the set of signals selected by the user
     def ApplyTablePlotViewConfiguration(self, dataTreeFrame, configFilePath,
@@ -461,17 +467,23 @@ class Viz_API:
         """Selects a set of signals using the selection file and plots of this
         shot view on a new table plot.
 
-        :param plotAxis:
+        The file names the quantities by IDS path and occurrence; what it holds
+        besides the paths (pen, symbols, axis ranges) is not applied, and the log
+        says so.
+
+        :param plotAxis: see PlotSelectedSignalsInTablePlotViewFrame.
         :param dataTreeFrame:  A QVizDataTreeViewFrame object
         :param configFilePath: The path to a data selection file
-        :param all_DTV: When True, all current selected set of signals on all
-                        shot views are plotted
+        :param all_DTV: kept for call compatibility: a configuration file names
+                        its quantities in this shot view, so there is no other
+                        view to take a selection from.
         """
-        from imasviz.VizGUI.VizGUICommands.VizMenusManagement import QVizSignalHandling
-        QVizSignalHandling(dataTreeFrame.dataTreeView).onPlotToTablePlotView(
-            all_DTV=all_DTV,
-            configFile=configFilePath,
-            plotAxis=plotAxis)
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotAsTable
+        frame = QVizPlotAsTable(dataTreeView=dataTreeFrame.dataTreeView,
+                                plotAxis=plotAxis,
+                                configFile=configFilePath).execute()
+        if frame is not None:
+            self.addPlotWidgetToMDI(frame)
 
     def LoadMultipleIDSData(self, dataTreeFrame, IDSNamesList, occurrence=0,
                             threadingEvent=None):

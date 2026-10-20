@@ -6,4 +6,4 @@ from .QVizPlotWidget import *
 from .QVizPreviewPlot import *
 from .QVizSliceControls import *
 from .QVizStackedPlotView import *
-from .QVizTablePlotView import *
+from .QVizTablePlot import *

@@ -16,6 +16,7 @@ from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOneNode
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectOrUnselectSignal import QVizSelectOrUnselectSignal
@@ -399,66 +400,36 @@ class QVizSignalHandling(QObject):
 
             # ------------------------------------------------------------------
 
-            # TablePlotView
-            subMenu_TPV = menu.addMenu('TablePlotView')
+            # TablePlotView: one panel per quantity, each read on the axes it
+            # sits on. Two strategies stay because the user is the one who says
+            # whether a quantity in a dynamic array is followed along time or
+            # along its own coordinate; 'DEFAULT' leaves that answer to the read
+            # per quantity, which is what lets a selection mixing coordinates
+            # come out with one labelled panel each.
+            #
+            # The gate this branch used to hide behind -- do these signals share
+            # coordinates? -- is gone: a panel shares nothing, so there is
+            # nothing to agree on. Measured on the old window, that gate returned
+            # False for a selection it drew correctly anyway.
+            subMenu_TPV = QMenu('TablePlotView', menu)
             subMenu_TPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'TPV'))
+            menu.addMenu(subMenu_TPV)
 
-            subMenu_TPV_new = subMenu_TPV.addMenu('New (default axis)')
-            subMenu_TPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                               'new'))
-
-            subMenu_TPV_new2 = subMenu_TPV.addMenu("New ('TIME' axis)")
-            subMenu_TPV_new2.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                                'new'))
-
-            # -----
-            # Add menu item to plot selected signals to single
-            # plot - This DTV
-            action_TPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
-                                         self)
-            commonPlotAxis = 'TIME'
-            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                commonPlotAxis = self.defaultPlotAxisForSelection()
-
-            action_TPV_thisDTV.triggered.connect(
-                partial(self.onPlotToTablePlotView, all_DTV=False,
-                        configFile=None, plotAxis=commonPlotAxis))
-            # Add to submenu
-            subMenu_TPV_new.addAction(action_TPV_thisDTV)
-
-            # -----
-            # Add menu item to plot selected signals to single
-            # plot - All DTVs
-            # icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
-            action_TPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
-                                        self)
-            action_TPV_allDTV.triggered.connect(
-                partial(self.onPlotToTablePlotView, all_DTV=True,
-                        configFile=None, plotAxis='TIME'))
-            # Add to submenu
-            subMenu_TPV_new.addAction(action_TPV_allDTV)
-
-            # Add menu item to plot selected signals to single
-            # plot - This DTV
-            action_TPV_thisDTV2 = QAction(icon_thisDTV, 'This IMAS Database',
-                                          self)
-            action_TPV_thisDTV2.triggered.connect(
-                partial(self.onPlotToTablePlotView, all_DTV=False,
-                        configFile=None, plotAxis='TIME'))
-            # Add to submenu
-            subMenu_TPV_new2.addAction(action_TPV_thisDTV2)
-
-            # -----
-            # Add menu item to plot selected signals to single
-            # plot - All DTVs
-            # icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
-            action_TPV_allDTV2 = QAction(icon_allDTV, 'All IMAS Databases',
-                                         self)
-            action_TPV_allDTV2.triggered.connect(
-                partial(self.onPlotToTablePlotView, all_DTV=True,
-                        configFile=None, plotAxis='TIME'))
-            # Add to submenu
-            subMenu_TPV_new2.addAction(action_TPV_allDTV2)
+            for title, plotAxis in (("New (default axis)", 'DEFAULT'),
+                                    ("New ('TIME' axis)", 'TIME')):
+                subMenu_TPV_new = QMenu(title, subMenu_TPV)
+                subMenu_TPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
+                                                                   'new'))
+                subMenu_TPV.addMenu(subMenu_TPV_new)
+                for icon, label, all_DTV in ((icon_thisDTV,
+                                              'This IMAS Database', False),
+                                             (icon_allDTV,
+                                              'All IMAS Databases', True)):
+                    action_TPV = QAction(icon, label, self)
+                    action_TPV.triggered.connect(
+                        partial(self.onPlotToTablePlotView, all_DTV=all_DTV,
+                                configFile=None, plotAxis=plotAxis))
+                    subMenu_TPV_new.addAction(action_TPV)
 
             # ------------------------------------------------------------------
             # StackedPlotView
@@ -702,34 +673,30 @@ class QVizSignalHandling(QObject):
     @Slot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None,
                               plotAxis=None):
-        """Plot selected nodes from single/all opened DTVs to MultiPlot
-        TablePlotView.
+        """Plot selected nodes from single/all opened DTVs to a Table Plot View.
+
+        The command reads the quantities first and gives each one a panel of its
+        own, read on the axes it actually sits on; the old path built the window
+        before reading anything, so a selection that could not be read still cost
+        the user a window to close, and a quantity with two axes to draw either
+        died on the read or came back as a curve of one of its elements.
 
         Arguments:
-            all_DTV (bool) : Operator to read selected signals from the
-                             current or all DTVs.
-                             :param all_DTV:
-                             :param configFile:
-                             :param plotAxis:
+            all_DTV (bool) : Whether to consider the current or all DTVs.
+            configFile (str) : a saved plot configuration: it names the
+                               quantities by path instead of taking them from
+                               the selection.
+            plotAxis (str) : 'TIME' to read every quantity along time, anything
+                             else to let the read answer per quantity.
         """
-        # Get next figure key/label
         try:
-            figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForTablePlotView()
-            # Note: figureKey that includes 'TablePlotView' is expected
-            if not all_DTV:
-                QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
-                                    figureKey=figureKey,
-                                    update=0,
-                                    configFile=configFile,
-                                    all_DTV=False,
-                                    plotAxis=plotAxis)
-            else:
-                QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
-                                    figureKey=figureKey,
-                                    update=0,
-                                    configFile=configFile,
-                                    all_DTV=True,
-                                    plotAxis=plotAxis)
+            command = QVizPlotAsTable(dataTreeView=self.dataTreeView,
+                                      all_DTV=all_DTV,
+                                      plotAxis=plotAxis,
+                                      configFile=configFile)
+            frame = command.execute()
+            if frame is not None:
+                self.imas_viz_api.addPlotWidgetToMDI(frame)
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 

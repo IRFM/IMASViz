@@ -19,11 +19,18 @@ class QVizSavePlotConfig():
     Arguments:
         gWin (pyqtgraph.GraphicsWindow) : Window containing the plots
                                           (TablePlotView, StackedPlotView window).
+        dataTreeView (QVizDataTreeViewFrame) : the shot view the window belongs
+                                          to. Plot frames used to be its Qt
+                                          children and were reached through
+                                          'gWin.parent'; a frame that is not one
+                                          has to be named here, because 'parent'
+                                          on a widget is Qt's own method.
     """
 
-    def __init__(self, gWin, nodeData=None):
+    def __init__(self, gWin, nodeData=None, dataTreeView=None):
         self.gWin = gWin
-        self.dataTreeView = gWin.parent.dataTreeView
+        self.dataTreeView = dataTreeView if dataTreeView is not None \
+            else gWin.parent.dataTreeView
         self.nodeData = nodeData
 
     def execute(self):

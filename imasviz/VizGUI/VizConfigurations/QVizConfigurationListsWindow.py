@@ -8,6 +8,7 @@
 # ****************************************************
 
 import os
+import logging
 from functools import partial
 
 from PySide6.QtCore import Qt, Slot, QObject
@@ -16,7 +17,7 @@ from imasviz.VizUtils import QVizGlobalOperations, GlobalFonts
 
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizUnselectAllSignals import QVizUnselectAllSignals
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAsTable
 
 
 class QVizConfigurationListsWindow(QDialog):
@@ -301,14 +302,18 @@ class PlotConfigurationListsTab(QWidget):
                 QVizGlobalOperations.getConfigurationFilesDirectory() + \
                 '/' + selectedItem.text()
 
-            # Get next figurekey (label) for the TablePlotView
-            figureKey = \
-                self.dataTreeView.imas_viz_api.GetNextKeyForTablePlotView()
-            # Set up and show the TablePlotView using the config file
-            QVizMultiPlotWindow(self.dataTreeView,
-                                figureKey=figureKey,
-                                update=0,
-                                configFile=selectedFile)
+            # The file names the quantities by path and occurrence: one panel
+            # each, read on the axes they sit on. What the file holds besides the
+            # paths -- pen, symbols, axis ranges -- is not applied, and the
+            # command says so in the log rather than letting the window look
+            # different from the one that was saved.
+            try:
+                frame = QVizPlotAsTable(self.dataTreeView,
+                                        configFile=selectedFile).execute()
+                if frame is not None:
+                    self.dataTreeView.imas_viz_api.addPlotWidgetToMDI(frame)
+            except ValueError as e:
+                logging.getLogger(self.dataTreeView.uri).error(str(e))
         else:
             pass
 
