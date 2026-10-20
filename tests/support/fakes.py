@@ -274,3 +274,28 @@ class FakeAxesNode:
         if units:
             coordinateLabel += '[' + units + ']'
         return quantity, self.getParametrizedDataPath(), coordinateLabel
+
+    def getPlotAxisForDefaultPlotting(self):
+        """Which abscissa the TablePlotView and StackedPlotView entries would take.
+
+        Those two frames draw one axis for a whole selection, so their menu
+        entries still ask the node this legacy question (T6 and T7 own them). The
+        real node answers from the dictionary and the time dependence of its first
+        coordinate; for the shapes a stub stands for, a quantity with a
+        coordinate of its own runs along that coordinate and a scalar held by a
+        dynamic array runs along time.
+        """
+        return 'COORDINATE1' if self.coordinates else 'TIME'
+
+    def nodeDataShareSameCoordinatesAs(self, selectedNodeList, figureKey=None):
+        """Whether these quantities may share one figure's abscissa.
+
+        Still asked by the same two entries: mixing quantities whose first axis
+        runs along different coordinates makes one wrong plot there, because the
+        frame has no control per axis to tell them apart. The real node asks the
+        legacy frame factory for the figure's own axis when given a figure key;
+        a stub has no frame to ask, so it compares what it declares.
+        """
+        mine = self.evaluateCoordinateAt(1, 0) if self.coordinates else None
+        return all((other.evaluateCoordinateAt(1, 0) if other.coordinates
+                    else None) == mine for other in selectedNodeList)
