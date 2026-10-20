@@ -109,7 +109,6 @@ def subMenuTitles(menu):
 
 @pytest.mark.parametrize('figureType,label', [
     (FigureTypes.FIGURETYPE, 'Figure'),
-    (FigureTypes.IMAGETYPE, 'Image'),
     (FigureTypes.TABLEPLOTTYPE, 'TablePlotView'),
     (FigureTypes.STACKEDPLOTTYPE, 'StackedPlotView'),
 ])
