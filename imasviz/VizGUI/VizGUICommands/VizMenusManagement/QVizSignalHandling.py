@@ -14,8 +14,8 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMenu, QApplication, QStyle
 from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import QVizPlotAsStacked
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOneNode
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
@@ -432,62 +432,37 @@ class QVizSignalHandling(QObject):
                     subMenu_TPV_new.addAction(action_TPV)
 
             # ------------------------------------------------------------------
-            # StackedPlotView
-            subMenu_SPV = menu.addMenu('StackedPlotView')
+            # StackedPlotView: the same panels as the table, stacked in one
+            # column against one abscissa. The two strategies stay for the same
+            # reason as above; what differs is that the abscissa is shared here,
+            # so the command refuses by name a quantity the read would take
+            # along another axis, and sends the user to TablePlotView.
+            #
+            # The gate this branch hid behind -- do these signals share
+            # coordinates? -- is gone. Measured, it answered False for the very
+            # selection the old window drew, and it picked which of the four
+            # entries asked for the time axis: three of them asked for it
+            # whatever the selection was.
+            subMenu_SPV = QMenu('StackedPlotView', menu)
             subMenu_SPV.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'SPV'))
+            menu.addMenu(subMenu_SPV)
 
-            subMenu_SPV_new = subMenu_SPV.addMenu('New (default axis)')
-            subMenu_SPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                               'new'))
-                                                               
-            subMenu_SPV_new2 = subMenu_SPV.addMenu("New ('TIME' axis)")
-            subMenu_SPV_new2.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                               'new'))
+            for title, plotAxis in (("New (default axis)", 'DEFAULT'),
+                                    ("New ('TIME' axis)", 'TIME')):
+                subMenu_SPV_new = QMenu(title, subMenu_SPV)
+                subMenu_SPV_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
+                                                                   'new'))
+                subMenu_SPV.addMenu(subMenu_SPV_new)
+                for icon, label, all_DTV in ((icon_thisDTV,
+                                              'This IMAS Database', False),
+                                             (icon_allDTV,
+                                              'All IMAS Databases', True)):
+                    action_SPV = QAction(icon, label, self)
+                    action_SPV.triggered.connect(
+                        partial(self.onPlotToStackedPlotView, all_DTV=all_DTV,
+                                plotAxis=plotAxis))
+                    subMenu_SPV_new.addAction(action_SPV)
 
-            # -----
-            # Add menu item to plot selected signals to single
-            # plot - This DTV
-            action_SPV_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
-                                         self)
-
-            commonPlotAxis = 'TIME'
-            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                commonPlotAxis = self.defaultPlotAxisForSelection()
-
-            action_SPV_thisDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, False, commonPlotAxis))
-            # Add to submenu
-            subMenu_SPV_new.addAction(action_SPV_thisDTV)
-
-            # -----
-            # Add menu item to plot selected signals to single
-            # plot - All DTVs
-            action_SPV_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
-                                        self)
-            action_SPV_allDTV.triggered.connect(
-                partial(self.onPlotToStackedPlotView, True, 'TIME'))
-            # Add to submenu
-            subMenu_SPV_new.addAction(action_SPV_allDTV)
-            
-            
-            
-            action_SPV_thisDTV2 = QAction(icon_thisDTV, 'This IMAS Database',
-                                         self)
-            action_SPV_thisDTV2.triggered.connect(
-                partial(self.onPlotToStackedPlotView, False, 'TIME'))
-            # Add to submenu
-            subMenu_SPV_new2.addAction(action_SPV_thisDTV2)
-
-            # -----
-            # Add menu item to plot selected signals to single
-            # plot - All DTVs
-            action_SPV_allDTV2 = QAction(icon_allDTV, 'All IMAS Databases',
-                                        self)
-            action_SPV_allDTV2.triggered.connect(
-                partial(self.onPlotToStackedPlotView, True, 'TIME'))
-            # Add to submenu
-            subMenu_SPV_new2.addAction(action_SPV_allDTV2)
-            
 
         return menu
 
@@ -656,20 +631,6 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
-    def defaultPlotAxisForSelection(self):
-        """The abscissa the TablePlotView and StackedPlotView entries ask for.
-
-        Those two frames draw one abscissa for the whole selection, so the menu
-        asks the node it was built on which axis that should be. Built from the
-        shot view's menu bar there is no such node -- the selection menu is built
-        there without one -- and asking for it used to die with an AttributeError
-        before the menu was ever shown. The frames' own default answers instead.
-        T6 and T7 own these two entries.
-        """
-        if self.treeNode is None:
-            return 'TIME'
-        return self.treeNode.getPlotAxisForDefaultPlotting()
-
     @Slot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None,
                               plotAxis=None):
@@ -701,32 +662,31 @@ class QVizSignalHandling(QObject):
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @Slot(bool)
-    def onPlotToStackedPlotView(self, all_DTV=False, plotAxis="TIME"):
-        """Plot selected nodes from single/all opened DTVs to MultiPlot
-        StackedPlotView.
+    def onPlotToStackedPlotView(self, all_DTV=False, plotAxis='TIME'):
+        """Plot selected nodes from single/all opened DTVs to a Stacked Plot View.
+
+        The command reads the quantities first, then stacks one panel per
+        quantity against the abscissa the first one gives: the old path built the
+        window before reading anything, so an unreadable selection still cost the
+        user a registered window with no plot in it, and a quantity the window
+        could not share was drawn against another quantity's abscissa and
+        labelled with it.
+
+        The default stays 'TIME' because that is what the scripting entry has
+        always asked for; the menu says which of the two strategies it wants.
 
         Arguments:
-            all_DTV (bool) : Operator to read selected signals from the
-                             current or all DTVs.
-                             :param all_DTV:
-                             :param plotAxis:
+            all_DTV (bool) : Whether to consider the current or all DTVs.
+            plotAxis (str) : 'TIME' to read every quantity along time, anything
+                             else to let the read answer per quantity.
         """
         try:
-            # Get next figure key/label
-            figureKey = self.dataTreeView.imas_viz_api.GetNextKeyForStackedPlotView()
-            # Note: figureKey that includes 'StackedPlotView' is expected
-            if all_DTV is not True:
-                QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
-                                    figureKey=figureKey,
-                                    update=0,
-                                    all_DTV=False,
-                                    plotAxis=plotAxis)
-            else:
-                QVizMultiPlotWindow(dataTreeView=self.dataTreeView,
-                                    figureKey=figureKey,
-                                    update=0,
-                                    all_DTV=True,
-                                    plotAxis=plotAxis)
+            command = QVizPlotAsStacked(dataTreeView=self.dataTreeView,
+                                        all_DTV=all_DTV,
+                                        plotAxis=plotAxis)
+            frame = command.execute()
+            if frame is not None:
+                self.imas_viz_api.addPlotWidgetToMDI(frame)
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
@@ -772,33 +732,6 @@ class QVizSignalHandling(QObject):
         """
         for entry in self.imas_viz_api.figToNodes.get(figureKey, {}).values():
             if QVizNodePlotting(entry[1]).curveAxisKey() != axisKey:
-                return False
-        return True
-
-    def shareSameCoordinates(self, signalsList):
-        """Check if data already in figure and next to be added signal plot
-        share the same coordinates.
-
-        Only the TablePlotView and StackedPlotView entries still ask this: those
-        two frames draw one abscissa for the whole selection, so mixing quantities
-        whose coordinates differ is a wrong plot rather than two plots. The curve
-        and image entries do not ask it, because each quantity there carries the
-        controls for the axes its frame leaves out. T6 and T7 own those two
-        entries.
-        """
-        selectedNodesList = []
-        for k in signalsList:
-            signal = signalsList[k]
-            vizTreeNode = signal['QTreeWidgetItem']
-            selectedNodesList.append(vizTreeNode)
-        return self.shareSameCoordinates2(selectedNodesList)
-
-
-    def shareSameCoordinates2(self, selectedNodesList):
-        """Check if data share the same coordinates.
-        """
-        for node in selectedNodesList:
-            if not node.nodeDataShareSameCoordinatesAs(selectedNodesList):
                 return False
         return True
 

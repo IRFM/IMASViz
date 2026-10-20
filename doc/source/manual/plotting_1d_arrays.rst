@@ -717,13 +717,34 @@ plotting every array from selection to its own plot display.
 The plot displays are arranged to resemble a stack layout, as shown in figure
 below. All plots displays always share the same X and Y range, even when
 using plot interaction features such as :guilabel:`Zoom in/out`,
-:guilabel:`Pan Mode`, :guilabel:`Area Zoom Mode` etc.
+:guilabel:`Pan Mode`, :guilabel:`Area Zoom Mode` etc.: the ranges of the first
+display are the ranges of the window, and interacting with any display moves all
+of them.
 
 .. figure:: images/StackedPlotView_example.png
     :align: center
     :scale: 50%
 
     MultiPlot - :guilabel:`Stacked Plot View` Example.
+
+What a display holds, and how it is read
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Each display holds one quantity of the selection, with the controls for the axes
+its reading had to fix -- the same display as in a :guilabel:`Table Plot View`
+(see :ref:`TPV`). What differs is that the displays of a
+:guilabel:`Stacked Plot View` are drawn against one abscissa, because the point
+of the window is to compare several quantities over one span. The quantity read
+first fixes that abscissa, and every other quantity is read along it.
+
+Two checkboxes at the top of the window control what the displays share:
+
+* :guilabel:`Group pan mode`, on by default, keeps the X and Y ranges of every
+  display linked to the first one. Turned off, each display pans and zooms on its
+  own; the quantities still come from the same abscissa.
+* :guilabel:`Display X axis of all plots`, off by default, shows the abscissa
+  graduations under every display. Off, they are drawn under the bottom display
+  only, since all displays are scaled the same way.
 
 Creating New View
 ^^^^^^^^^^^^^^^^^
@@ -741,9 +762,23 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
 3. From the pop-up menu, navigate and select
    :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
    :guilabel:`StackedPlotView` |icon_StackedPlotView| ->
-   :guilabel:`New` |icon_new|->
-   :guilabel:`This IMAS database` |icon_thisDTV| or
-   :guilabel:`All IMAS databases` |icon_allDTV| or.
+   :guilabel:`New (default axis)` |icon_new|->
+   :guilabel:`This IMAS Database` |icon_thisDTV| or
+   :guilabel:`All IMAS Databases` |icon_allDTV|.
+
+   or
+
+   :guilabel:`Plot selected nodes to` |icon_plotMultiple| ->
+   :guilabel:`StackedPlotView` |icon_StackedPlotView| ->
+   :guilabel:`New ('TIME' axis)` |icon_new|->
+   :guilabel:`This IMAS Database` |icon_thisDTV| or
+   :guilabel:`All IMAS Databases` |icon_allDTV|.
+
+   The two entries answer the same question as in a :guilabel:`Table Plot View`:
+   :guilabel:`New ('TIME' axis)` reads every quantity along time, which is what
+   puts a scalar and a 1D array of a dynamic AOS on one abscissa;
+   :guilabel:`New (default axis)` leaves the answer to the reading of each
+   quantity, so a 1D array of a dynamic AOS is read along its own coordinate.
 
    .. figure:: images/DTV_plot_selected_nodes_to_SPV_thisDTV.png
      :align: center
@@ -755,6 +790,31 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
    The :guilabel:`Stacked Plot View` window will then be shown.
 
 .. note::
-   Each plot can be customized individually; right click on a node and
-   select 'Configure Plot'.
+   Because the window has one abscissa, a quantity the reading would take along
+   another one is not drawn: the log panel of the shot view names the quantity,
+   says which axis it is read along and which one the window draws everything
+   against, and points at :guilabel:`Table Plot View` -- the window for
+   quantities that do not agree, where each display carries its own abscissa. The
+   rest of the selection is drawn. Selecting the two quantities under
+   :guilabel:`New ('TIME' axis)`, or in a :guilabel:`Table Plot View`, is what
+   shows them both.
+
+.. note::
+   A quantity that needs two axes to be drawn at once -- a 2D array read along
+   its two coordinates -- is not drawn in a :guilabel:`Stacked Plot View` either:
+   a display holds one curve. It is named in the log panel, and the rest of the
+   selection is drawn (see :ref:`plotting_2d_arrays` to see it as a picture).
+
+.. note::
+   Each display is drawn from the data and is not customized by hand: the
+   :guilabel:`Configure Plot` dialog other plot windows offer on right-click is
+   not offered on a :guilabel:`Stacked Plot View` display. What can be changed is
+   what the display answers for, through the controls it carries, and what it
+   shares with its neighbours, through the two checkboxes.
+
+.. note::
+   Scrolling down the :guilabel:`Stacked Plot View` window using the middle mouse
+   button is disabled as the same button is used to interact with the plot
+   display (zoom in and out). Scrolling can be done by clicking the scroll bar
+   on the right and dragging it up and down.
 

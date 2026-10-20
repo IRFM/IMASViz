@@ -17,6 +17,10 @@ selection of quantities sitting on different coordinates -- and it is why the
 gate the old entries hid behind (do these signals share coordinates?) is not
 asked here: nothing is shared, so nothing has to agree.
 
+The panel itself -- the curve, the axis labels, the controls for the axes the
+read pins -- is in `QVizPanel.py`: a Stacked Plot View lays the same panels in
+one column and makes them share one abscissa, and only the layout differs.
+
 Written against the axes model and the tensor read rather than the old
 QVizTablePlotView, which read one abscissa for the whole selection through
 Viz_API.GetSignal and drew whatever came back: a quantity with two axes to draw
@@ -24,155 +28,15 @@ against a coordinate died with ``'QVizDataArrayHandle' object is not
 subscriptable``, and the same quantity read along time came back as a curve of
 one of its elements, titled as the whole quantity and with no word saying that
 one element had been picked.
-
-Each panel carries the controls for the axes the read fixes rather than draws,
-so the element a panel answers for is named and moved on the panel itself.
 """
-
-import pyqtgraph as pg
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QHBoxLayout, QGridLayout, QPushButton,
-                               QScrollArea, QVBoxLayout, QWidget)
+                               QVBoxLayout, QWidget)
 
-from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
-from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig import QVizSavePlotConfig
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
-
-
-class QVizPanelScrollArea(QScrollArea):
-    """The scroll area around the panels, which leaves the wheel to the plot.
-
-    The manual says the wheel zooms a panel and that scrolling is done with the
-    bar: a wheel that did both would zoom whatever happened to be under the
-    pointer while the user was trying to reach the panel below it.
-    """
-
-    def wheelEvent(self, event):
-        event.ignore()
-
-
-class QVizPanel(QWidget):
-    """One quantity: its plot, and the controls for the axes it leaves out.
-
-    Answers what the data access asks of a plot frame, so the read pins the
-    axes this panel does not draw at the indices these controls hold.
-    """
-
-    addTimeSlider = False
-    addCoordinateSlider = False
-    sliderGroup = None
-
-    def __init__(self, frame, parent=None):
-        super().__init__(parent)
-        self._frame = frame
-
-        self.pgPlotWidget = pg.PlotWidget(self)
-        self.pgPlotWidget.showGrid(x=True, y=True)
-        self.sliceControls = QVizSliceControls(self)
-        self.sliceControls.changed.connect(self.refresh)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.pgPlotWidget)
-        layout.addWidget(self.sliceControls)
-
-    def getPlotAxis(self):
-        """The abscissa strategy of the window this panel sits in.
-
-        Asked by the read, through the node, to decide whether a quantity in a
-        dynamic array is drawn along time or along its own first axis.
-        """
-        return self._frame.getPlotAxis()
-
-    def plotItem(self):
-        return self.pgPlotWidget.getPlotItem()
-
-    def plot(self, treeNode, row, as_function_of_time=None):
-        """Draw one quantity here. Returns how many curves were drawn."""
-        self.treeNode = treeNode
-        self.row = row
-        self.asFunctionOfTime = as_function_of_time
-        access = self.accessFor(treeNode)
-        axesSpec, timeAxis, alongTime, plotted = access.plan(treeNode, self,
-                                                             as_function_of_time)
-        if len(plotted) > 1:
-            # A panel draws one axis. Two axes to draw is a picture, and a
-            # picture needs its colour scale and its drawn time axis: the panel
-            # says which, rather than picking an element of the quantity and
-            # drawing it as if it were the whole thing.
-            raise ValueError('"%s" has %d axes to draw: a panel holds a curve, '
-                             'and a picture needs a window of its own.'
-                             % (self._frame.dataPathOf(treeNode), len(plotted)))
-
-        x, y = access.GetSignal(treeNode=treeNode, plotWidget=self,
-                                as_function_of_time=as_function_of_time)
-        if x.size == 0 or y.size == 0:
-            raise ValueError('Nothing to plot for "' +
-                             self._frame.dataPathOf(treeNode) +
-                             '": no values along the plotted axis.')
-
-        self.pgPlotWidget.clear()
-        self._curves = []
-        for index in range(y.shape[0]):
-            self._curves.append(self.pgPlotWidget.plot(x[0], y[index]))
-
-        self.pgPlotWidget.setTitle(self._frame.dataPathOf(treeNode))
-        self.setAxisLabels(treeNode, axesSpec, alongTime)
-        self.sliceControls.setSlices(access.slicesFor(treeNode, plotWidget=self,
-                                                      as_function_of_time=as_function_of_time))
-        return y.shape[0]
-
-    def refresh(self):
-        """Re-read this panel through its own controls."""
-        if not getattr(self, '_curves', None):
-            return
-        for row, curve in enumerate(self._curves):
-            x, y = self.accessFor(self.treeNode).GetSignal(
-                treeNode=self.treeNode, plotWidget=self,
-                as_function_of_time=self.asFunctionOfTime)
-            if y.shape[0] > row and x.shape[0] > 0:
-                curve.setData(x[0], y[row])
-            else:
-                curve.setData([], [])
-
-    def curveCount(self):
-        return len(getattr(self, '_curves', []))
-
-    def curves(self):
-        return list(getattr(self, '_curves', []))
-
-    def setAxisLabels(self, treeNode, axesSpec, alongTime):
-        """Label both axes from the axes the read actually drew.
-
-        The old window took the abscissa label from whichever node the menu had
-        been built on and drew it under every panel, so a selection of quantities
-        on different coordinates came back with one label naming one of them.
-        """
-        if alongTime:
-            self.pgPlotWidget.setLabel('bottom', 'time', units='s')
-        else:
-            plotted = [axis for axis in axesSpec.axes if axis.origin == QVizAxis.LEAF]
-            if plotted:
-                axis = plotted[0]
-                self.pgPlotWidget.setLabel('bottom', self.axisName(axis),
-                                           units=axis.units or '')
-
-        quantity = treeNode.getName() or ''
-        units = treeNode.getUnits()
-        if units:
-            quantity += '[' + units + ']'
-        self.pgPlotWidget.setLabel('left', quantity)
-
-    def accessFor(self, treeNode):
-        return QVizTensorDataAccess(treeNode.getDataSource())
-
-    @staticmethod
-    def axisName(axis):
-        if axis.coordinate:
-            return axis.coordinate.replace('/', '.').rsplit('.', 1)[-1]
-        return 'dimension %d' % axis.level
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import (QVizPanel,
+                                                            QVizPanelScrollArea)
 
 
 class QVizTablePlot(QWidget):

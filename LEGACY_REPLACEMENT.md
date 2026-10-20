@@ -168,17 +168,51 @@ the rest are not fixed yet.
   `applyPlotConfigurationAfterPlotting` compares `(plotItem.column,
   plotItem.row)`: a saved configuration re-applied to a panel only when it sat on
   the diagonal of the table.
-- **The window survived its own close button.** *(fixed by T6, the pattern T0
-  pinned elsewhere)* `QVizMultiPlotWindow` writes `figureframes[self.figureKey]`
+- **The window survived its own close button.** *(fixed by T6 and T7, the pattern
+  T0 pinned elsewhere)* `QVizMultiPlotWindow` writes `figureframes[self.figureKey]`
   twice (:79 and :166) and embeds itself in a plain `QMdiSubWindow` instead of
-  `QVizMdiSubWindow`, so nothing tells the api the key is free: the key stayed
-  registered, kept its number from the next table, and stayed in the *Show/Hide*
-  and *Delete* menus as a window that is not there any more.
+  `QVizMdiSubWindow`, so nothing tells the api the key is free: measured on the
+  stacked window, `figureframes` held `['StackedPlotView:1']` before `close()` and
+  `['StackedPlotView:1']` after it, and the next window was handed
+  `StackedPlotView:2`.
+- **The stacked window's four entries could not be reached.** *(fixed by T7)* The
+  `StackedPlotView` submenu was built with `menu.addMenu('StackedPlotView')`, which
+  hands back a `QMenu` held only by a Python local, so its C++ object died when
+  `menuPlotSelectedSignalNodes` returned: measured, reading the *Figure* and
+  *TablePlotView* submenus of the same menu answers, and asking the
+  `StackedPlotView` one for its actions raises `RuntimeError: Internal C++ object
+  (PySide6.QtWidgets.QMenu) already deleted`. The same dangling-submenu default T0
+  found in the *Show/Hide* branches.
+- **It never shared an abscissa, which is all it is for.** *(fixed by T7)*
+  `StackedPlotWindow.plot` sets `self.plotItemFirst = None` at the top of **every
+  call**, so the `setXLink`/`setYLink(self.plotItemFirst)` that follows links each
+  panel to nothing: measured on two panels, the first was its own link and the
+  second was linked on neither axis — `(False, False)` — while the manual promises
+  "All plots displays always share the same X and Y range, even when using plot
+  interaction features".
+- **Neither of its two checkboxes did what its label says.** *(fixed by T7)*
+  *Group pan mode* read `self.viewBoxes`, an attribute that class never sets (it
+  sets `viewBoxList`): toggling it raised `AttributeError: 'QVizStackedPlotView'
+  object has no attribute 'viewBoxes'`. *Display X axis of all plots* rewrote the
+  tick-label style the linking had already decided and never read a state of its
+  own: measured `[False, True]` — one panel labelled, the other not — in both
+  states. And the titles were the first panel's only: measured, plot 0 carried
+  `StackedPlotView:1` and plot 1 carried `''`.
+- **A quantity it should have refused was drawn, or killed the window.** *(fixed
+  by T7)* A `FLT_2D` leaf in a stacked selection raised
+  `TypeError: 'QVizDataArrayHandle' object is not subscriptable` out of the entry,
+  leaving `figureframes['StackedPlotView:7']` holding a window with **no
+  `multiPlotView`** and `figToNodes` holding both nodes. An empty selection left
+  the same husk. A scalar was drawn along time with no control anywhere on the
+  window to say or move which element the curve answered for.
 - **The menu bar builds that menu with no node.** `QVizDataTreeView.py:623` calls
   `QVizSignalHandling(self.dataTreeView)`, so `self.treeNode` is `None`, and the
-  legacy branch asked that `None` for its plot axis (:350). The selection menu now
-  answers the question itself (`defaultPlotAxisForSelection`) instead of asking a
-  node that may not exist; the node under a right click still answers for itself.
+  legacy branch asked that `None` for its plot axis (:350). Measured with T7, the
+  menu bar reached that line only through `defaultPlotAxisForSelection`, which the
+  stacked branch called behind `shareSameCoordinates`; both are gone, and the
+  branch names its two strategies in the submenu titles instead of asking a node
+  that may not exist. The node under a right click still answers for itself,
+  through the read and not through the menu.
 - `QVizSignalHandling.py:903`: `logging.getLogger(...).error(str(e))` outside any
   `except` — a `NameError` where the user asked for a message.
 - ~~`QVizSignalHandling.py:724`: "Delete → StackedPlotView → All" calls
@@ -207,7 +241,7 @@ the rest are not fixed yet.
 | T4 | Plot one 2D array — "Plot … to → Image → New" | the node menu's 'Image' submenu (`menuPlotCurrentSignalNode`, named after the frame the entry opens) → `QVizPlotOneNode` → `QVizImagePlot`, with the ROI in `QVizSliceLines`: a movable line per drawn axis, placed in the coordinates the picture is laid over and reading the nearest element, the slice drawn against the other axis's values, the slice following the window and the pinned controls, kept slices frozen, and the keep/delete commands as buttons on the frame instead of a viewBox menu | `QvizPlotImageWidget.py` (409 l.), `QViz2DArrayHandling.py` (89 l.), `QVizImageCustomPlotContextMenu.py` (99 l.), `QVizImageSlicesPlotConfigUI.py` (38 l.) — the image window's whole right-click menu went with them, `Viz_API.Plot2DArray` / `plot1DInNewFigure` / `GetNextKeyForImagePlots` / `GetImagePlotsCount` (54 l.), `FigureTypes.IMAGETYPE` and its `MENU_ORDER` entry, `QVizSignalHandling.actionPlot2DArray` and the `legacyCanDrawAsImage` branch, the `QvizPlotImageWidget` branch of `QVizPlotConfigUI.getLegendItem`, `tests/test_10_plot_image_widget.py` (80 l.) and the two `VizExamples` demos that drove the class (85 + 124 l.) | fait — the `Image:` namespace is gone, so `MENU_ORDER` has six entries and one kind of picture window; the 1D-from-ROI path (`plot1DInNewFigure`) died with the widget, which is one of the four consumers `QVizPlotSignal.py` was kept for in T3's row |
 | T5 | Plot the selection as curves — "Plot selected nodes to → Figure", This/All, New/N | `plotSelectedSignals`, `addSelectedSignalsPlotToFig` → `QVizPlotAsSlices` with an `intoFigureKey`: the command asks `plottedAxes()` per node and picks the frame (one axis → the curve figure, two → one window per picture), reads through the tensor read, and refuses by name what a frame cannot show | `QVizPlotSelectedSignals.py` (171 l.), the second selection entry ("Curves and images with slice controls") and `QVizSignalHandling.plotAsSlices`, the gate `nodeDataShareSameCoordinates`/`currentSelectionShareSameCoordinates`, the `Figure:` listing in the selection menu, one `Viz_API.GetSignal` caller | fait — **correction of the "kills" as first written**: `figToNodes` stays (it is the bookkeeping of the new commands: which node each window answers for, and the menus that list it), and `shareSameCoordinates`/`shareSameCoordinates2` stay until T6/T7, whose frames still ask them. `Viz_API.PlotSelectedSignals` / `PlotSelectedSignalsFrom` (documented in `scripting.rst`) are re-pointed at the new command rather than deleted |
 | T6 | TablePlotView — the four "New (default axis)" / "New ('TIME' axis)" × This/All entries | `onPlotToTablePlotView` → `QVizPlotAsTable` → `QVizTablePlot`: one panel per quantity, each read on the axes it sits on, each carrying the controls for the axes that read pins; the configuration file names the quantities and the place each panel held | `QVizTablePlotView.py` (283 l.), the `shareSameCoordinates` gate on these entries, the `plotItem.column`/`plotItem.row` pair the configuration was keyed by, `QVizMultiPlotWindow.addMenuBar`/`onSavePlotConf` and the two `TablePlotView` branches of `checkFigureKey`/`setMultiPlotView` (43 l.), the second registration of the window's own key | fait — **correction of the "kills" as first written**: the row announced "two duplicate menu entries"; measured, the four entries are four distinct menu items, and what was duplicated is their *wiring* — three of the four asked for `plotAxis='TIME'`. What survives: `QVizMultiPlotWindow` itself (StackedPlotView, T7) with `applyPlotConfigurationAfterPlotting`, now unreachable for the table since its only caller was the deleted frame; `Viz_API.GetNextKeyForTablePlotView`, kept as the documented scripting accessor; the `TablePlotView:` namespace, which T0's Show/Hide/Delete address. The panel is not offered the right-click `Configure Plot` dialog, and the styling a configuration file holds is refused by name in the log — both owned by T9 ("the configuration format: save and style") |
-| T7 | StackedPlotView — the same four entries | `onPlotToStackedPlotView` → `QVizStackedPlotView.py:241` | `QVizStackedPlotView.py` (459 l.), `QVizMultiPlotWindow.py` (496 l.), and then `QVizPlotWidget.py` (596 l.) | to do |
+| T7 | StackedPlotView — the same four entries | `onPlotToStackedPlotView` → `QVizPlotAsStacked` → `QVizStackedPlot`: the T6 panel, moved out of the table into `QVizPanel.py` because both windows lay the same panel out; one panel per quantity in one column, the abscissa the first quantity read fixes, the X and Y ranges of the others linked to it, and two checkboxes that do what their labels say — a quantity read along another abscissa is refused by name, with TablePlotView pointed at | `QVizStackedPlotView.py` (459 l.), `QVizMultiPlotWindow.py` (496 l.), and then `QVizPlotWidget.py` (596 l.) | fait — **correction of the "kills" as first written**: measured, the two window modules are 457 and 463 lines (920 gone), but `QVizPlotWidget.py` (595 l. measured, not 596) does **not** go with them: its consumers outlive the stacked window — `Viz_API.CreatePlotWidget:630/647` and `GetPlotWidget:659`, which `AddPlot1DToFig:696`, `plot0D_DataVsTimeCommand:737` and `plotVsTimeAtGivenCoordinate1:793/831` still call, the menu inside a figure (`QVizCustomPlotContextMenu:213/233`), the registered Profiles plugin (`CustomizedViewBox.py:198/441`), `QVizTreeNode.nodeDataShareSameCoordinatesAs:846`, and `tests/test_13_plot_axes.py` / `test_32_preview.py`. It goes with the scripting surface and the plugin, i.e. T13 and whatever owns `AddPlot1DToFig`. What T7 did kill beyond the two windows: the `menu.addMenu` submenu that died before it could be clicked, and the gate those entries hid behind — `shareSameCoordinates`, `shareSameCoordinates2` and `defaultPlotAxisForSelection` (117 lines out of `QVizSignalHandling`, 50 back). `Viz_API.GetNextKeyForStackedPlotView` and the `StackedPlotView:` namespace stay, as T0's Show/Hide/Delete address them |
 | T8 | Select / unselect — one node, all of the same AOS, everything, This/All | `QVizSelectOrUnselectSignal`, `QVizSelectSignalsGroup` (regex on the path), `QVizUnselectAllSignals` (nested loop, unguarded `keysToRemove[i]`) | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | to do |
 | T9 | "Apply Configuration" / save a configuration | `QVizConfigurationListsWindow` (394 l.), `QVizSavePlotConfig` (335 l.) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | to do |
 | T10 | "Export to IDS" | a 100-line inline dialog in `QVizDataTreeViewFrame.onExportToLocal` + `dataSource.build_uri` (xfail: `ImportError` on `_al_lowlevel`) | the inline dialog, the bare `except:` | to do |
@@ -304,6 +338,20 @@ and that the registry releases the key when the window closes, and that a `.pcfg
 draws the paths it names while its styling is refused out loud. The sweep gained
 one: the deleted frame module is one fewer import, the command and the frame are
 two more (432 + 18 − 1 + 2 = 451).
+Since T7: **474 passed, 8 xfailed** — twenty-two tests in
+`tests/test_37_stacked_entries.py`, driven through the four menu entries and
+through one action triggered from the menu itself, pinning that the
+`StackedPlotView` submenu is still alive after the call that built it (the legacy
+one was a deleted C++ object), that the two entries read along different axes,
+that every panel of a window shares the ranges of the first — `linkedView` asked
+of the view boxes, which is where a range lives — that the two checkboxes change
+what they say they change, that a quantity read along another abscissa is refused
+by name with both axes named and the panel not left on screen, that the first
+quantity read is the one that fixes the abscissa, that the panels are keyed by
+their row in one column, and that closing the window frees its key. The sweep
+gained one again: two window modules gone, one panel module, one frame and one
+command added (451 + 22 − 2 + 3 = 474), and the sweep itself is 116 passed /
+5 xfailed over 121 modules.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new
@@ -329,7 +377,11 @@ deleted (`QVizPlotSelectedSignals:100`): **six remain** (`QVizPlotSignal:55`,
 `Viz_DataSelection_API:45`). T6 took the table's one with the frame it deleted:
 **five remain** (`QVizPlotSignal:55`, `QVizStackedPlotView:239`, `Viz_API:929/952`,
 `Viz_DataSelection_API:45`) — `QVizTablePlot` and `QVizPlotAsTable` read through
-`QVizTensorDataAccess` directly, as the other new frames do. The two in `Viz_API` answer
+`QVizTensorDataAccess` directly, as the other new frames do. T7 took the stacked
+window's one with the window: **four remain** (`QVizPlotSignal:55`,
+`Viz_API:929/952`, `Viz_DataSelection_API:45`) — `QVizStackedPlot` draws with the
+same `QVizPanel` as the table, and that panel calls `QVizTensorDataAccess.GetSignal`
+itself. None of the four is a tree gesture any more. The two in `Viz_API` answer
 `getAllPlottable_0D_1D_Signals` / `updateAllPlottable_0D_1D_Signals`, which no tree
 gesture calls: they go with the scripting surface that reaches them.
 

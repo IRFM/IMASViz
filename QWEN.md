@@ -120,14 +120,14 @@ Core concepts, in the vocabulary used by the code and docs:
 - **DTV / shot view** — one `QVizDataTreeViewFrame` per opened case, tracked in
   `Viz_API.DTVframeList` / `DTVlist`.
 - **figure frames** — `Viz_API.figureframes`, keyed by `FigureTypes` prefix + number
-  (`SlicesPlot1`, `SlicesImage1`, `TablePlotView0`, `StackedPlot0`, `ProfilesPlot…`; the
+  (`SlicesPlot1`, `SlicesImage1`, `TablePlotView0`, `StackedPlotView0`, `ProfilesPlot…`; the
   legacy `Figure:` namespace still keys frames those old paths open, the legacy `Image:`
   one is gone with the frame that used it).
   Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
   (`QVizLoadSelectedData`, `QVizSelectSignals`, `QVizPlotOneNode`, `QVizPlotAsSlices`,
-  `QVizPlotAsTable`).
+  `QVizPlotAsTable`, `QVizPlotAsStacked`).
   `Viz_API` methods are
   thin wrappers that instantiate one of these and call `.execute()`.
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
@@ -195,7 +195,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 451 passed, 8 xfailed, ~29 s, offscreen
+python3 -m pytest tests/ -q     # 474 passed, 8 xfailed, ~30 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -263,7 +263,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **115/120 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
+  **116/121 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
   chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
   `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`
