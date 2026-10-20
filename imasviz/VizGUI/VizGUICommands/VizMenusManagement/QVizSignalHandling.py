@@ -15,7 +15,6 @@ from PySide6.QtWidgets import QMenu, QApplication, QStyle
 from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizMultiPlotWindow import QVizMultiPlotWindow
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOneNode
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
@@ -339,99 +338,64 @@ class QVizSignalHandling(QObject):
         if len(self.dataTreeView.selectedSignalsDict) > 0:
             menu.setDisabled(False)
 
-            subMenu_figure = menu.addMenu('Figure')
+            # One entry per intent, not two. This branch built its windows
+            # through the old frame factory and hid them behind
+            # shareSameCoordinates, while a second branch just below drew the
+            # same selection through the tensor read -- two entries, two key
+            # namespaces, two answers for one gesture. A user selects quantities
+            # and not figure types, so the command picks the frame: a curve
+            # figure for what has one axis to draw, one window per picture. And
+            # there is nothing left to gate: the gate kept one slider group from
+            # mixing quantities with different coordinates, and each quantity now
+            # carries the controls for the axes its frame leaves out.
+            #
+            # Submenus built as QMenu(title, parent) -- the dangling submenu T0
+            # removed from the Show/Hide menus.
+            subMenu_figure = QMenu('Figure', menu)
             subMenu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                               'Figure'))
+            menu.addMenu(subMenu_figure)
 
-            subMenu_figure_new = subMenu_figure.addMenu('New')
+            subMenu_figure_new = QMenu('New', subMenu_figure)
             subMenu_figure_new.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                                   'new'))
+            subMenu_figure.addMenu(subMenu_figure_new)
 
-            plotAxis = self.treeNode.getPlotAxisForDefaultPlotting()
-
-            # --------------------------------------------------------------
-            # Add menu item to plot selected signals to single
-            # plot - This DTV
             icon_thisDTV = GlobalIcons.getCustomQIcon(QApplication, 'thisDTV')
             icon_allDTV = GlobalIcons.getCustomQIcon(QApplication, 'allDTV')
-            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                action_figure_thisDTV = QAction(icon_thisDTV,
-                                                'This IMAS Database',
-                                                self)
-                action_figure_thisDTV.triggered.connect(
-                    partial(self.plotSelectedSignals, False, plotAxis=plotAxis))
-                # Add to submenu
-                subMenu_figure_new.addAction(action_figure_thisDTV)
 
             # --------------------------------------------------------------
             # Add menu item to plot selected signals to single
-            # plot - All DTVs
-            action_figure_allDTV = QAction(icon_allDTV,
-                                           'All IMAS Databases',
-                                           self)
-            if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                action_figure_allDTV.triggered.connect(
-                    partial(self.plotSelectedSignals, True, plotAxis=plotAxis))
-                # Add to submenu
-                subMenu_figure_new.addAction(action_figure_allDTV)
+            # plot - This DTV, then all DTVs
+            for icon, label, all_DTV in ((icon_thisDTV, 'This IMAS Database',
+                                          False),
+                                         (icon_allDTV, 'All IMAS Databases',
+                                          True)):
+                action_figure = QAction(icon, label, self)
+                action_figure.triggered.connect(
+                    partial(self.plotSelectedSignals, all_DTV))
+                subMenu_figure_new.addAction(action_figure)
 
             for figureKey in self.imas_viz_api.GetFiguresKeys(
-                    figureType=FigureTypes.FIGURETYPE):
+                    figureType=FigureTypes.CURVEPLOTTYPE):
 
-                # Check for figures that share the same coordinates
-                if not self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                    continue
-
-                if not self.currentSelectionShareSameCoordinates(figureKey):
-                    continue
-
-                # Get figure number id out from the figureKey string
-                # (e.g. 'Figure:0' -> 0)
-                # id_Fig = int(figureKey.split(':')[1])
+                # Only the frames this command can fill. A picture window holds
+                # one quantity, with its colour scale and its controls, so it is
+                # not offered here; and the legacy 'Figure:' keys are not offered
+                # either, because the old path that filled them is gone.
                 id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                           FigureTypes.FIGURETYPE)
-                # Add menu item to add plot to specific figure
-                subMenu_figure_existing = subMenu_figure.addMenu(figureKey)
-                # Add menu item to plot selected signals to existing
-                # plot - This DTV
-                action_figure_ex_thisDTV = \
-                    QAction(icon_thisDTV, 'This IMAS Database', self)
-                action_figure_ex_thisDTV.triggered.connect(
-                    partial(self.addSelectedSignalsPlotToFig, id_Fig, False))
-                # Add to submenu
-                subMenu_figure_existing.addAction(action_figure_ex_thisDTV)
-                # Add menu item to plot selected signals to existing
-                # plot - All DTV
-                action_figure_ex_allDTV = \
-                    QAction(icon_thisDTV, 'All IMAS Databases', self)
-                action_figure_ex_allDTV.triggered.connect(
-                    partial(self.addSelectedSignalsPlotToFig, id_Fig, True))
-                # Add to submenu
-                subMenu_figure_existing.addAction(action_figure_ex_allDTV)
-
-            # ------------------------------------------------------------------
-
-            # Curves and images drawn through the tensor read: any rank, the
-            # frame picked by how many axes the read draws, and a named control
-            # for every axis that frame leaves out. Not gated on
-            # shareSameCoordinates the way the figure entries above are -- that
-            # gate keeps one slider group from mixing quantities with different
-            # coordinates on one figure, and here each quantity carries its own
-            # controls.
-            subMenu_slices = menu.addMenu('Curves and images with slice controls')
-            subMenu_slices.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'new'))
-
-            action_slices_thisDTV = QAction(icon_thisDTV, 'This IMAS Database',
-                                            self)
-            action_slices_thisDTV.triggered.connect(
-                partial(self.plotAsSlices, False))
-            subMenu_slices.addAction(action_slices_thisDTV)
-
-            action_slices_allDTV = QAction(icon_allDTV, 'All IMAS Databases',
-                                           self)
-            action_slices_allDTV.triggered.connect(
-                partial(self.plotAsSlices, True))
-            subMenu_slices.addAction(action_slices_allDTV)
+                                                           FigureTypes.CURVEPLOTTYPE)
+                subMenu_figure_existing = QMenu(figureKey, subMenu_figure)
+                subMenu_figure.addMenu(subMenu_figure_existing)
+                for icon, label, all_DTV in ((icon_thisDTV,
+                                              'This IMAS Database', False),
+                                             (icon_allDTV, 'All IMAS Databases',
+                                              True)):
+                    action_figure_existing = QAction(icon, label, self)
+                    action_figure_existing.triggered.connect(
+                        partial(self.addSelectedSignalsPlotToFig, id_Fig,
+                                all_DTV))
+                    subMenu_figure_existing.addAction(action_figure_existing)
 
             # ------------------------------------------------------------------
 
@@ -454,7 +418,7 @@ class QVizSignalHandling(QObject):
                                          self)
             commonPlotAxis = 'TIME'
             if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                commonPlotAxis = plotAxis
+                commonPlotAxis = self.defaultPlotAxisForSelection()
 
             action_TPV_thisDTV.triggered.connect(
                 partial(self.onPlotToTablePlotView, all_DTV=False,
@@ -517,7 +481,7 @@ class QVizSignalHandling(QObject):
 
             commonPlotAxis = 'TIME'
             if self.shareSameCoordinates(self.dataTreeView.selectedSignalsDict):
-                commonPlotAxis = plotAxis
+                commonPlotAxis = self.defaultPlotAxisForSelection()
 
             action_SPV_thisDTV.triggered.connect(
                 partial(self.onPlotToStackedPlotView, False, commonPlotAxis))
@@ -690,65 +654,50 @@ class QVizSignalHandling(QObject):
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     # @Slot(bool)
-    def plotSelectedSignals(self, all_DTV=True, plotAxis='TIME'):
-        """Plot selected signals from current or all DTV instances.
+    def plotSelectedSignals(self, all_DTV=True, intoFigureKey=None):
+        """Plot the selected nodes, in the frame each quantity needs.
 
-        Arguments:
-            all_DTV (bool) : Boolean operator specifying if current or all DTVs
-                             should be considered.
-                             :param all_DTV:
-                             :param plotAxis:
-        """
-        # Get label for the next figure (e.c. if 'Figure 2' already exists,
-        # value 'Figure 3' will be returned)
-        try:
-            # figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
-            if len(self.dataTreeView.selectedSignalsDict) == 0:
-                logging.getLogger(self.dataTreeView.uri).error(str(e)).error("No selection found.")
-                return
-            first_key = list(self.dataTreeView.selectedSignalsDict.keys())[0]
-            v = self.dataTreeView.selectedSignalsDict[first_key]
-
-            api = self.dataTreeView.imas_viz_api
-            # passing figureKey=None means we want a new plotWidget
-            figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                      figureKey=None,
-                                                      plotAxis=plotAxis)
-            api.addPlotWidgetToMDI(plotWidget)
-            # Plot the selected signals
-            QVizPlotSelectedSignals(dataTreeView=self.dataTreeView,
-                                    figureKey=figureKey,
-                                    all_DTV=all_DTV,
-                                    plotAxis=plotAxis).execute()
-
-        except ValueError as e:
-            logging.getLogger(self.dataTreeView.uri).error(str(e))
-
-    # @Slot(bool)
-    def plotAsSlices(self, all_DTV=True):
-        """Plot the selection through the tensor read, one control per pinned axis.
-
-        Unlike plotSelectedSignals, no figure key and no plot widget are asked
-        from the api: the command builds its own frames in its own key namespace,
-        so the 'Figure:' entries built above cannot offer a frame the old path
-        does not know how to fill. How many frames it builds is whatever
-        the selection needs -- one curve figure and one figure per image -- so they
-        are embedded after the read, which also keeps an empty window off the
-        screen when nothing could be read.
+        The old entry asked the api for a figure and embedded it in the MDI area
+        before anything had been read, so a selection that could not be read still
+        cost the user a window to close -- and an empty selection died on a
+        `str(e)` written outside any except. Here the command reads first and
+        builds whatever the selection needs: one curve figure for the quantities
+        with one axis to draw, one window per picture. Only the frames it built
+        are embedded, so adding to a figure already on screen does not embed it a
+        second time.
 
         Arguments:
             all_DTV (bool) : Whether to consider the current or all DTVs.
+            intoFigureKey (str) : an open curve figure to add the selection to.
         """
         if len(self.dataTreeView.selectedSignalsDict) == 0:
+            # Not an error to report through the exception path: the menu holds
+            # this entry disabled when nothing is selected, so reaching here means
+            # the selection went away between the menu and the click.
             logging.getLogger(self.dataTreeView.uri).error("No selection found.")
             return
         try:
             command = QVizPlotAsSlices(dataTreeView=self.dataTreeView,
-                                       all_DTV=all_DTV)
+                                       all_DTV=all_DTV,
+                                       intoFigureKey=intoFigureKey)
             for plotWidget in command.execute():
                 self.imas_viz_api.addPlotWidgetToMDI(plotWidget)
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
+
+    def defaultPlotAxisForSelection(self):
+        """The abscissa the TablePlotView and StackedPlotView entries ask for.
+
+        Those two frames draw one abscissa for the whole selection, so the menu
+        asks the node it was built on which axis that should be. Built from the
+        shot view's menu bar there is no such node -- the selection menu is built
+        there without one -- and asking for it used to die with an AttributeError
+        before the menu was ever shown. The frames' own default answers instead.
+        T6 and T7 own these two entries.
+        """
+        if self.treeNode is None:
+            return 'TIME'
+        return self.treeNode.getPlotAxisForDefaultPlotting()
 
     @Slot(bool)
     def onPlotToTablePlotView(self, all_DTV=False, configFile=None,
@@ -829,23 +778,22 @@ class QVizSignalHandling(QObject):
 
     @Slot(int)
     def addSelectedSignalsPlotToFig(self, numFig, all_DTV=False):
-        """Add/Plot selected signals to existing figure.
+        """Add the selected nodes to an already open curve figure.
 
         Arguments:
             numFig (int) : Number identification of the existing figure.
+            all_DTV (bool) : Whether to consider the current or all DTVs.
         """
-        # Get figure key (e.g. 'Figure:0' string)
+        # The figure the entry listed is one of the frames this command builds:
+        # the legacy 'Figure:' keys are not offered any more, because the path
+        # that filled them is gone.
         try:
-            figureKey = self.imas_viz_api. \
-                GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
-
-            QVizPlotSelectedSignals(dataTreeView=self.dataTreeView,
-                                    figureKey=figureKey,
-                                    update=0,
-                                    all_DTV=all_DTV).execute()
+            self.plotSelectedSignals(
+                all_DTV=all_DTV,
+                intoFigureKey=self.imas_viz_api.GetFigureKey(
+                    str(numFig), FigureTypes.CURVEPLOTTYPE))
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
-
 
     def figureDrawsSameCurveAxis(self, figureKey, axisKey):
         """Whether every curve already in the figure runs along this axis.
@@ -860,27 +808,16 @@ class QVizSignalHandling(QObject):
                 return False
         return True
 
-    def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
-        figureDataList = self.imas_viz_api.figToNodes.get(figureKey)
-        if figureDataList is None:
-            return False
-        figureNodesList = []
-        for k in figureDataList:
-            v = figureDataList[k]
-            figureNodesList.append(v[1])  # v[0] = uri, v[1] = vizNode
-        return vizTreeNode.nodeDataShareSameCoordinatesAs(figureNodesList, figureKey)
-
-    def currentSelectionShareSameCoordinates(self, figureKey):
-        for k in self.dataTreeView.selectedSignalsDict:
-            signal = self.dataTreeView.selectedSignalsDict[k]
-            vizTreeNode = signal['QTreeWidgetItem']
-            if not self.nodeDataShareSameCoordinates(figureKey, vizTreeNode):  # s[1] refers to node data
-                return False
-        return True
-
     def shareSameCoordinates(self, signalsList):
         """Check if data already in figure and next to be added signal plot
         share the same coordinates.
+
+        Only the TablePlotView and StackedPlotView entries still ask this: those
+        two frames draw one abscissa for the whole selection, so mixing quantities
+        whose coordinates differ is a wrong plot rather than two plots. The curve
+        and image entries do not ask it, because each quantity there carries the
+        controls for the axes its frame leaves out. T6 and T7 own those two
+        entries.
         """
         selectedNodesList = []
         for k in signalsList:

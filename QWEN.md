@@ -120,10 +120,13 @@ Core concepts, in the vocabulary used by the code and docs:
 - **DTV / shot view** — one `QVizDataTreeViewFrame` per opened case, tracked in
   `Viz_API.DTVframeList` / `DTVlist`.
 - **figure frames** — `Viz_API.figureframes`, keyed by `FigureTypes` prefix + number
-  (`Figure:1`, `Image:0`, `TablePlot0`, `StackedPlot0`, `ProfilesPlot…`). Allocate keys through
+  (`SlicesPlot1`, `SlicesImage1`, `TablePlot0`, `StackedPlot0`, `ProfilesPlot…`; the
+  legacy `Figure:` and `Image:` namespaces still key frames those old paths open).
+  Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
-  (`QVizLoadSelectedData`, `QVizSelectSignals`, `QVizPlotSelectedSignals`). `Viz_API` methods are
+  (`QVizLoadSelectedData`, `QVizSelectSignals`, `QVizPlotOneNode`, `QVizPlotAsSlices`).
+  `Viz_API` methods are
   thin wrappers that instantiate one of these and call `.execute()`.
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
   figures and shot views are `QMdiSubWindow`s inside it. Show/hide and delete logic branches on
@@ -190,7 +193,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 420 passed, 8 xfailed, ~28 s, offscreen
+python3 -m pytest tests/ -q     # 432 passed, 8 xfailed, ~29 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,

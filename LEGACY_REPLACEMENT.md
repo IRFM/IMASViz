@@ -117,6 +117,35 @@ the rest are not fixed yet.
   Its ROI lines stood in element ranks — which agreed with its own axis labels, and
   with nothing else — and its slices ran against `range(len(slice))`, so a curve
   two metres wide carried element numbers under a label naming metres.
+- **A selection of three quantities drew one curve, and cost a window on the
+  way.** *(fixed by T5)* Measured on real `QVizTreeNode`s: with a two-axis
+  quantity in the selection, `plot1DSelectedSignals` logged `Plots dimension
+  larger than 1D are currently not supported.` and `return`ed **out of the loop
+  over the selection** — 1 curve out of 3, the node after the refused one never
+  read. The figure is opened by `GetPlotWidget` and embedded in the MDI area
+  before anything is read, so a refusal left a window to close by hand.
+- **Its curve answered an element nothing named.** *(fixed by T5)* A 1D quantity
+  held by a dynamic array came back with the four coordinate values along the
+  abscissa and the time element pinned at the index the tree happened to carry,
+  under `title: ''` and with no control to move it: the numbers on screen were a
+  slice whose position had been decided by an earlier click elsewhere in the tree.
+- **An emptied selection raised out of the menu.** *(fixed by T5)* Emptying the
+  selection between the menu being built and the click — what
+  `updateMenuNodeSelection` rebuilds it against — reached
+  `logging.getLogger(self.dataTreeView.uri).error(str(e)).error("No selection
+  found.")` (`QVizSignalHandling.py:707`), outside any `except`: `UnboundLocalError:
+  cannot access local variable 'e' where it is not associated with a value`.
+- **The gate that hid the entry answered `True` for quantities whose first
+  coordinates differ.** *(fixed by T5)* `shareSameCoordinates` asks the legacy
+  predicates and the legacy frame factory, not the axes: measured `True` for
+  `rho_tor` against `theta_poloidal`. When it answered `False`, the entry was
+  simply absent from the menu, with no reason anywhere — and the two entries drew
+  the same selection anyway, one through the old factory and one through the read.
+- **The menu bar builds that menu with no node.** `QVizDataTreeView.py:623` calls
+  `QVizSignalHandling(self.dataTreeView)`, so `self.treeNode` is `None`, and the
+  legacy branch asked that `None` for its plot axis (:350). The selection menu now
+  answers the question itself (`defaultPlotAxisForSelection`) instead of asking a
+  node that may not exist; the node under a right click still answers for itself.
 - `QVizSignalHandling.py:903`: `logging.getLogger(...).error(str(e))` outside any
   `except` — a `NameError` where the user asked for a message.
 - ~~`QVizSignalHandling.py:724`: "Delete → StackedPlotView → All" calls
@@ -143,7 +172,7 @@ the rest are not fixed yet.
 | T2 | Preview on left click | `onLeftClickItem` :191 → `QVizSignalHandling.plotPreviewSignalCommand` → `QVizPreviewPlot.forView(...).showNode(node)`: decides on `QVizNodePlotting`, reads one slice through `QVizTensorDataAccess.GetSignal(..., plotWidget=None)`, and says which refusal it made when it draws nothing | `QVizPreviewPlotSignal.py` (135 l.), `QVizPreviewPlotWidget.py` (202 l.), the left-click gate (`hasAvailableData`/`isDynamicData`/`is1D`), the panel's own `is0D`/`is1D`/`is2D` branches, the first of the nine `Viz_API.GetSignal` callers | fait (the panel is a plain `QWidget`: no `sliderGroup`; `PlotTypes.PREVIEW_PLOT` and the four `ID_MENU_PREVIEW_PLOT*` constants now have no consumer left — no menu entry ever referred to them) |
 | T3 | Plot one node — "as function of time", "Plot … to → Figure → New/N", 0D vs time | `plotSignalCommand`, `actionPlotAsFunctionOfTime`, `addSignalPlotToFig` → `QVizPlotOneNode`: asks `QVizNodePlotting.plottedAxes()` which frame the quantity needs (two → `QVizImagePlot`, one → `QVizCurvePlot`, a number with only a time base → a curve read along time), opens the window only once the read can answer, keys it in the `SlicesPlot`/`SlicesImage` namespaces, and draws the node the menu was built on at the index the tree carries | `Viz_API.plotSignalVsTimeCommand` (36 l.), `QVizSignalHandling.menuPlotCurrentSignal0DNode` (36 l.) and its gate branch, `QVizNodePlotting.legacyCanDrawScalarAgainstTime`, the `Figure:` listing and the `nodeDataShareSameCoordinates` call in the node menu, `QVizSignalHandling.currentFigureKey`, the 8 call sites of the `getXAxisValues`/`get1DSignalValue` statics, 7 dead `QVizPlotSignal` imports | fait — **but `QVizPlotSignal.py` (199 l.) is still alive**, and the earlier "kills" for this row was wrong: it also engines the legacy slider (`QVizPlotWidget.executePlot:577/584`), the menu *inside* a figure (`QVizCustomPlotContextMenu:213/224/233`), the 1D-from-ROI path (`QvizPlotImageWidget:360 → plot1DInNewFigure`) and the registered Profiles plugin (`CustomizedViewBox.py:198/429-441`). It goes with `QVizPlotWidget` in T7, and so do `AddPlot1DToFig`, `plotVsTimeAtGivenCoordinate1` and `plot0D_DataVsTimeCommand` — none of them reachable from the tree any more |
 | T4 | Plot one 2D array — "Plot … to → Image → New" | the node menu's 'Image' submenu (`menuPlotCurrentSignalNode`, named after the frame the entry opens) → `QVizPlotOneNode` → `QVizImagePlot`, with the ROI in `QVizSliceLines`: a movable line per drawn axis, placed in the coordinates the picture is laid over and reading the nearest element, the slice drawn against the other axis's values, the slice following the window and the pinned controls, kept slices frozen, and the keep/delete commands as buttons on the frame instead of a viewBox menu | `QvizPlotImageWidget.py` (409 l.), `QViz2DArrayHandling.py` (89 l.), `QVizImageCustomPlotContextMenu.py` (99 l.), `QVizImageSlicesPlotConfigUI.py` (38 l.) — the image window's whole right-click menu went with them, `Viz_API.Plot2DArray` / `plot1DInNewFigure` / `GetNextKeyForImagePlots` / `GetImagePlotsCount` (54 l.), `FigureTypes.IMAGETYPE` and its `MENU_ORDER` entry, `QVizSignalHandling.actionPlot2DArray` and the `legacyCanDrawAsImage` branch, the `QvizPlotImageWidget` branch of `QVizPlotConfigUI.getLegendItem`, `tests/test_10_plot_image_widget.py` (80 l.) and the two `VizExamples` demos that drove the class (85 + 124 l.) | fait — the `Image:` namespace is gone, so `MENU_ORDER` has six entries and one kind of picture window; the 1D-from-ROI path (`plot1DInNewFigure`) died with the widget, which is one of the four consumers `QVizPlotSignal.py` was kept for in T3's row |
-| T5 | Plot the selection as curves — "Plot selected nodes to → Figure", This/All, New/N | `plotSelectedSignals`, `addSelectedSignalsPlotToFig` → `QVizPlotSelectedSignals` (refuses rank ≥ 2 at :51-53) | `QVizPlotSelectedSignals.py` (171 l.), `shareSameCoordinates`, `currentSelectionShareSameCoordinates`, most of `figToNodes` | to do |
+| T5 | Plot the selection as curves — "Plot selected nodes to → Figure", This/All, New/N | `plotSelectedSignals`, `addSelectedSignalsPlotToFig` → `QVizPlotAsSlices` with an `intoFigureKey`: the command asks `plottedAxes()` per node and picks the frame (one axis → the curve figure, two → one window per picture), reads through the tensor read, and refuses by name what a frame cannot show | `QVizPlotSelectedSignals.py` (171 l.), the second selection entry ("Curves and images with slice controls") and `QVizSignalHandling.plotAsSlices`, the gate `nodeDataShareSameCoordinates`/`currentSelectionShareSameCoordinates`, the `Figure:` listing in the selection menu, one `Viz_API.GetSignal` caller | fait — **correction of the "kills" as first written**: `figToNodes` stays (it is the bookkeeping of the new commands: which node each window answers for, and the menus that list it), and `shareSameCoordinates`/`shareSameCoordinates2` stay until T6/T7, whose frames still ask them. `Viz_API.PlotSelectedSignals` / `PlotSelectedSignalsFrom` (documented in `scripting.rst`) are re-pointed at the new command rather than deleted |
 | T6 | TablePlotView — the four "New (default axis)" / "New ('TIME' axis)" × This/All entries | `onPlotToTablePlotView` → `QVizMultiPlotWindow` → `QVizTablePlotView.py:128` | `QVizTablePlotView.py` (285 l.), two duplicate menu entries | to do |
 | T7 | StackedPlotView — the same four entries | `onPlotToStackedPlotView` → `QVizStackedPlotView.py:241` | `QVizStackedPlotView.py` (459 l.), `QVizMultiPlotWindow.py` (496 l.), and then `QVizPlotWidget.py` (596 l.) | to do |
 | T8 | Select / unselect — one node, all of the same AOS, everything, This/All | `QVizSelectOrUnselectSignal`, `QVizSelectSignalsGroup` (regex on the path), `QVizUnselectAllSignals` (nested loop, unguarded `keysToRemove[i]`) | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | to do |
@@ -218,6 +247,19 @@ The suite lost the five tests of the deleted image widget and one entry of
 is gone, so there is no Show/Hide entry left to pin for it — and the sweep lost the
 four deleted modules and gained `QVizSliceLines` (408 + 21 − 5 − 1 − 4 + 1 = 420).
 The `build_uri` xfail can only be lifted by T10; the five Qt Designer modules stay.
+Since T5: **432 passed, 8 xfailed** — thirteen tests in
+`tests/test_35_selection_entries.py`, driven through the two entries as the menu
+fires them (`plotSelectedSignals`, `addSelectedSignalsPlotToFig`,
+`menuPlotSelectedSignalNodes`), pinning that a selection of two quantities draws
+two curves read along time, that a two-axis quantity in the selection costs the
+others nothing (one curve figure with 2 curves plus a picture window with 3
+pictures), that an emptied selection and a selection that reads as nothing both
+answer with a reason and leave no window, that the windows land under the
+`SlicesPlot`/`SlicesImage` keys with their nodes in `figToNodes` and no `Figure:`
+key appears, that the pinned coordinate is named and bounded on the figure, and
+that the menu offers one 'Figure' entry whose submenus name the curve figures it
+can fill. The sweep went one shorter: the deleted command module is one fewer
+module to import (420 + 13 − 1 = 432).
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new
@@ -235,9 +277,14 @@ first one out: the panel reads through `QVizTensorDataAccess` itself, handing th
 read no plot widget, because it has no control to be read through. T3 changed none
 either — the command it deleted read through `QVizPlotSignal`, which is still
 counted, while `QVizPlotOneNode` reads through the frames, and they call
-`QVizTensorDataAccess` directly. Eight remain (`QVizPlotSignal:55`,
-`QVizPlotSelectedSignals:100`, `QVizTablePlotView:126`, `QVizStackedPlotView:239`,
-`Viz_API:694/947/970`, `Viz_DataSelection_API:45`).
+`QVizTensorDataAccess` directly. **Correction measured while doing T5**: the list
+above counted three callers inside `Viz_API`; there were two (`920`/`943` at the
+start of T5), so seven remained, not eight. T5 took the one in the command it
+deleted (`QVizPlotSelectedSignals:100`): **six remain** (`QVizPlotSignal:55`,
+`QVizTablePlotView:126`, `QVizStackedPlotView:239`, `Viz_API:917/940`,
+`Viz_DataSelection_API:45`). The two in `Viz_API` answer
+`getAllPlottable_0D_1D_Signals` / `updateAllPlottable_0D_1D_Signals`, which no tree
+gesture calls: they go with the scripting surface that reaches them.
 
 Frames are tested offscreen, as everywhere else in the suite: no X display is
 assumed.

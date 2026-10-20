@@ -423,23 +423,22 @@ class Viz_API:
                             all_DTV=False, plotAxis="TIME"):
         """Plots the current selected set of signals on a figure.
 
-        :param plotAxis:
+        :param plotAxis: kept for call compatibility, and no longer selects
+                         anything: the frame takes its abscissa from the axes the
+                         read walks along each quantity, and carries a named
+                         control for every axis it leaves out.
         :param dataTreeFrame: A QVizDataTreeViewFrame object
-        :param plotWidget: A plot widget
         :param figureKey: A figure key. If None, a new figure is created.
-        :param update: if 1, the current plot is updated otherwise a new plot
-                       is created
+        :param update: kept for call compatibility: adding to the figure named by
+                       figureKey is what the command does, and the figure to
+                       create is what a None figureKey means.
         :param all_DTV: if True, all current selected set of signals on all
                         shot views are plotted
         """
-        # if figureKey is None:
-        #     figureKey = self.GetNextKeyForFigurePlots()
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSelectedSignals
-        QVizPlotSelectedSignals(dataTreeView=dataTreeFrame.dataTreeView,
-                                figureKey=figureKey,
-                                update=update,
-                                all_DTV=all_DTV,
-                                plotAxis=plotAxis).execute()
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotAsSlices
+        QVizPlotAsSlices(dataTreeView=dataTreeFrame.dataTreeView,
+                         all_DTV=all_DTV,
+                         intoFigureKey=figureKey).execute()
 
     def PlotSelectedSignalsInTablePlotViewFrame(self, dataTreeFrame,
                                                 all_DTV=False,
@@ -523,22 +522,20 @@ class Viz_API:
                                 all_DTV=False):
         """Plots current selected signal.
 
+        One command per shot view in the list, each drawing that view's
+        selection. With no figureKey each gets figures of its own, as before; with
+        one, the selection is added to the curve figure it names.
+
         :param dataTreeFramesList:  A list of DTV frames
         :param figureKey: A figure key. If None, a new figure is created.
         :param all_DTV: When True, all current selected set of signals on all
                         shot views are plotted
         """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSelectedSignals
-        i = 0
-        update = 0
+        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotAsSlices
         for f in dataTreeFramesList:
-            if i != 0:
-                update = 1
-            QVizPlotSelectedSignals(dataTreeView=f.dataTreeView,
-                                    figureKey=figureKey,
-                                    update=update,
-                                    all_DTV=all_DTV).execute()
-            i += 1
+            QVizPlotAsSlices(dataTreeView=f.dataTreeView,
+                             all_DTV=all_DTV,
+                             intoFigureKey=figureKey).execute()
 
     def UnSelectAllSignals(self, dataTreeFrame, all_DTV=False):
         """Unselects all previously selected signals for the given shot view.

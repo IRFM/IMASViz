@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 420 passed, 8 xfailed, ~28 s
+python3 -m pytest tests/ -q       # 432 passed, 8 xfailed, ~29 s
 ```
 
 Useful variants:
@@ -108,7 +108,12 @@ dialog or a remote backend.
 | `test_27_plot_routing.py` | routing a selection | a curve draws one axis, an image two; refusal names the quantity |
 | `test_28_radiance_case.py` | WEST 55799 | a rank 3 quantity a real shot holds values for (`hard_x_rays`) |
 | `test_29_inherited_coordinates.py` | parser, inherited coordinates | the coordinates a structure declares, carried down to its arrays |
+| `test_30_figure_registry.py` | the frame registry and the menus built from it | show/hide, delete, and the key a closed window has to lose |
+| `test_31_node_plotting.py` | `QVizNodePlotting`, on real tree nodes | which entries the context menu offers, decided on the axes the read would walk |
+| `test_32_preview.py` | the left-click preview panel | what the thumbnail draws, and what it says when it draws nothing |
+| `test_33_plot_one_node.py` | the entries that plot one node | which frame the quantity lands in; the node under the menu is the node drawn |
 | `test_34_one_image.py` | the image window, from the tree entry to its slices | the entry names the frame the quantity needs; the ROI lines stand in coordinates, the slice follows the window, kept slices stay; no case |
+| `test_35_selection_entries.py` | the entries that draw a selection | the two menu entries as they fire (`plotSelectedSignals`, `addSelectedSignalsPlotToFig`): which frame each quantity lands in, that a refusal costs no window and names the path, one 'Figure' entry listing the open curve figures; no case |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an

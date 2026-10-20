@@ -35,7 +35,6 @@
 #     Copyright(c) 2019- L. Fleury
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotSelectedSignals import QVizPlotSelectedSignals
 #from imasviz.VizPlugins.viz_example_plugin.real_time import Graph
 
 import traceback

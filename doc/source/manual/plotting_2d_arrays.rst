@@ -163,10 +163,19 @@ Drawing a selection
 ~~~~~~~~~~~~~~~~~~~
 
 A selection of nodes is drawn through :guilabel:`Plot selected nodes to`
-|icon_plotMultiple| -> :guilabel:`Curves and images with slice controls` |icon_new|
+|icon_plotMultiple| -> :guilabel:`Figure` |icon_Figure| -> :guilabel:`New` |icon_new|
 -> :guilabel:`This IMAS Database` |icon_thisDTV| (or :guilabel:`All IMAS Databases`
-|icon_allDTV|). Each quantity then gets a window of its own, with the same pictures,
-controls and slices as above.
+|icon_allDTV|). One entry takes curves and pictures: the command gives each quantity
+the window its axes need, so a quantity of one axis joins a curve figure and a
+quantity of two axes gets a window of its own, with the same pictures, controls and
+slices as above. A quantity the window cannot show is refused with a reason in the
+log panel and costs no window; the other quantities of the same selection are drawn
+all the same.
+
+The menu lists the curve figures already open under the key they carry
+(:guilabel:`SlicesPlot1`) to add the selection to one of them instead of opening a
+new one. An image window is not listed: it holds one quantity, with its colour scale
+and its controls, so a second quantity would need a window of its own.
 
 Other features
 ~~~~~~~~~~~~~~

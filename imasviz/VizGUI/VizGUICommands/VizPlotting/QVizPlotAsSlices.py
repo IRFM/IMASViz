@@ -49,33 +49,73 @@ class QVizPlotAsSlices(QVizAbstractCommand):
     CURVE_FIGURE_TYPE = FigureTypes.CURVEPLOTTYPE
     IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
-    def __init__(self, dataTreeView, all_DTV=True):
+    def __init__(self, dataTreeView, all_DTV=True, intoFigureKey=None):
+        """
+        Arguments:
+            all_DTV       (bool) : whether the selection of this view or of every
+                                   opened view is drawn.
+            intoFigureKey  (str) : an already open curve figure to add the
+                                   selection to. A picture frame cannot be given
+                                   one: it shows one quantity, with its colour
+                                   scale and its controls.
+        """
         self.api = dataTreeView.imas_viz_api
         self.all_DTV = all_DTV
+        self.intoFigureKey = intoFigureKey
         self.figures = []
         self.curveFigure = None
         self.imageFigures = []
+        # Tracked apart from self.figures because execute() returns the frames it
+        # built and the caller embeds them in the MDI area: a frame the user
+        # already has on screen must not be embedded a second time.
+        self.targetFigure = None
         QVizAbstractCommand.__init__(self, dataTreeView, None)
 
     def execute(self):
         """Draw every selected node, then show the figures.
 
-        Returns the frames drawn, in creation order, so the caller can embed them.
+        Returns the frames this command built, in creation order, so the caller
+        can embed them.
         """
         selected = [(dtv, node) for dtv in self.views()
                     for node in self.selectedNodes(dtv)]
         if not selected:
             raise ValueError("No signal selected.")
+        if self.intoFigureKey is not None:
+            self.targetFigure = self.figureToJoin(self.intoFigureKey)
 
         for dtv, node in selected:
             self.plotNode(dtv, node)
 
-        if not self.figures:
+        if not self.isDrawing():
             raise ValueError("Nothing to plot: no selected node gave a value.")
 
-        for frame in self.figures:
+        for frame in self.figures + ([self.targetFigure]
+                                     if self.targetFigure else []):
             frame.show()
         return self.figures
+
+    def isDrawing(self):
+        """Whether anything was drawn, in a frame built here or in the joined one.
+
+        Not `self.figures`: a command that added nothing to a figure the user
+        already had drew nothing either, and the caller has to know that to say
+        so.
+        """
+        frames = self.figures + ([self.targetFigure] if self.targetFigure else [])
+        return any(frame.isDrawing() for frame in frames)
+
+    def figureToJoin(self, figureKey):
+        """The open figure the selection is asked for, or the reason it cannot take it."""
+        frame = self.api.figureframes.get(figureKey)
+        if frame is None:
+            raise ValueError('There is no figure "%s" to plot the selection into.'
+                             % figureKey)
+        if isinstance(frame, QVizImagePlot):
+            raise ValueError('"%s" shows a picture: one quantity, with its own '
+                             'colour scale and slice controls. The selection '
+                             'needs a figure of its own.' % figureKey)
+        return frame
 
     def plotNode(self, dtv, treeNode):
         """Add one node to the figure that can show it. Returns what was drawn."""
@@ -102,12 +142,29 @@ class QVizPlotAsSlices(QVizAbstractCommand):
         comparable, which is what a curve figure is for. An image is never shared,
         because two pictures in one frame would need one colour scale for two
         quantities and one control answering two images.
+
+        Asked to join a figure the user already has, the command cannot send a
+        quantity to the frame it needs -- that window is by definition not the one
+        the user opened -- so it says so, naming the quantity. The rest of the
+        selection still lands.
         """
-        if self.plottedAxes(treeNode) == 2:
+        plottedAxes = self.plottedAxes(treeNode)
+        if self.targetFigure is not None:
+            if plottedAxes == 2:
+                raise ValueError('"%s" needs a picture: two axes to draw, and "%s" '
+                                 'holds curves.'
+                                 % (self.dataPathOf(treeNode),
+                                    self.targetFigure.figureKey))
+            return self.targetFigure
+        if plottedAxes == 2:
             return self.newImageFigure()
         if self.curveFigure is None:
             self.curveFigure = self.newCurveFigure()
         return self.curveFigure
+
+    def dataPathOf(self, treeNode):
+        path = treeNode.getParametrizedDataPath()
+        return path if path else treeNode.getName()
 
     def plottedAxes(self, treeNode):
         """How many axes of the quantity a picture would show.
@@ -135,12 +192,15 @@ class QVizPlotAsSlices(QVizAbstractCommand):
         return frame
 
     def discardIfEmpty(self, frame):
-        """Drop a frame that ended up showing nothing.
+        """Drop a frame this command built and ended up showing nothing.
 
         A window holding neither a curve nor a picture says nothing, and the
         reason the node was refused is already in the log panel of its shot view.
+        A figure the user already had is never dropped here: it was on screen
+        before the click, and refusing one node of the selection is not a reason
+        to take the user's window away.
         """
-        if frame is None or frame.isDrawing():
+        if frame is None or frame.isDrawing() or frame not in self.figures:
             return
         self.api.DeleteFigure(figureKey=frame.figureKey)
         self.figures.remove(frame)
