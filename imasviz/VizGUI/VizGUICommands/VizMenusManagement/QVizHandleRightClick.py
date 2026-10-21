@@ -8,7 +8,7 @@
 # ****************************************************
 
 from PySide6.QtWidgets import QMenu
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizLoadDataHandling import QVizLoadDataHandling
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizOccurrenceMenu import QVizOccurrenceMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
 
@@ -47,7 +47,7 @@ class QVizHandleRightClick:
         elif node.isOccurrenceEntry() and node.isIDSDynamic():
              subMenu1 = QMenu('Add a new view for ' + node.getIDSName())
              self.popupmenu.addMenu(subMenu1)
-             QVizLoadDataHandling().buildingViewMenu(node, dataTreeView, subMenu1)
+             QVizOccurrenceMenu().buildViewsMenu(node, dataTreeView, subMenu1)
              showMenu = True
         else:
             # If the node is a IDS node, call showPopMenu for loading IDS data
@@ -55,7 +55,8 @@ class QVizHandleRightClick:
                 subMenu = QMenu('Get ' + node.getIDSName() +
                                 ' data for occurrence')
                 self.popupmenu.addMenu(subMenu)
-                QVizLoadDataHandling().updateMenu(node, dataTreeView, subMenu)
+                QVizOccurrenceMenu().buildOccurrencesMenu(node, dataTreeView,
+                                                          subMenu)
                 self.sub_menu = QMenu('Plugins')
                 self.popupmenu.addMenu(self.sub_menu)
                 QVizPluginsPopUpMenu().upateMenu(node, dataTreeView,

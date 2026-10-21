@@ -128,15 +128,25 @@ the procedure will be shown on a **magnetics IDS**.
       :width: 550px
 
 3. Open the **magnetics IDS** by right-clicking on the **magnetics** node
-   and selecting the command :guilabel:`Get magnetics data` (occurrence 0)
-   as shown in the figure below.
+   and selecting the command :guilabel:`Get magnetics data for occurrence`
+   (occurrence 0) as shown in the figure below.
 
    .. image:: images/DTV_open_magnetics_IDS.png
       :align: center
       :width: 400px
 
-   .. Note:: Alternative: Double-clicking on the **IDS node label** ->
-             **occurrence 0** (default) of the selected IDS will load.
+   The submenu lists one entry per occurrence **this case holds data for** and
+   this window does not display yet; an IDS with no such occurrence left states
+   it instead of offering an empty menu. Which occurrences hold data is answered
+   by the opened case, so the blue colour of an IDS name and that list always
+   agree.
+
+   .. Note:: Alternative: Double-clicking on the **IDS node label** -- or
+             pressing :kbd:`Return` with that node selected -- loads the lowest
+             occurrence of that IDS that is not displayed yet, with the default
+             view described below. When every occurrence the case holds is
+             already on screen, nothing is loaded and the :guilabel:`Log`
+             widget says so.
 
    The magnetics IDS nodes are displayed as new nodes in the tree, as shown in
    the figure below. Nodes of an IDS are organized according to the
@@ -152,17 +162,25 @@ Adding a new view for IDSs containing a dynamic Array Of Structure
 
 By default, Viz opens a view displaying only one time slice, even if
 more time slices have been loaded in memory during IDS loading described
-above. This default view/strategy (called 'one time slice only') 
-ensures to reduce the time to build the IDS tree which is displayed to 
-the user. However, different views of the data can be added by 
-right-clicking in the node 'Occurrence...' of the first view as shown 
-in the image below.
+above. This default view ('First time slice only') ensures to reduce the time
+to build the IDS tree which is displayed to the user. The node that heads the
+view says what it displays, next to the occurrence number:
+
+.. code-block:: text
+
+   equilibrium
+      occurrence 0 [displaying first time slice]
+
+Different views of the same occurrence can be added by right-clicking on that
+node -- the entry :guilabel:`Add a new view for <IDS>` is offered whenever the
+loaded occurrence holds at least one dynamic Array Of Structure, whatever the
+view it was first built with -- as shown in the image below.
 
     .. image:: images/views_menu.png
       :align: center
       :scale: 80%
 
-The different views/strategies are:
+The different views are:
 
 - 'All time slices': all time slices are displayed in the tree
 
@@ -172,7 +190,15 @@ The different views/strategies are:
 
 - 'First time slice only': this is the default view.
 
-Below an example of 2 views of the same occurrence, the view 
+The index asked for by 'Specific time slice only' is limited to the slices the
+occurrence already in memory holds, and the question belongs to the window that
+owns the view. An IDS can hold more than one dynamic Array Of Structure (the
+reference *equilibrium* holds 49 ``time_slice`` and 1 ``grids_ggd``) and one
+index applies to all of them: an index past the end of the narrower one is
+refused, and the :guilabel:`Log` widget names that array and how many elements
+it holds.
+
+Below an example of 2 views of the same occurrence, the view
 'One over 10 time slices' has been added by the user.
 
     .. image:: images/two_views.png

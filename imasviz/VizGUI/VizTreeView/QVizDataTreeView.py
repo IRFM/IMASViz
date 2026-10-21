@@ -10,8 +10,6 @@
 import os, logging
 import xml.etree.ElementTree as ET
 import numpy as np
-import threading
-from threading import Thread, Condition
 from functools import partial
 from PySide6.QtCore import Qt, Slot, QMetaObject
 from PySide6.QtGui import QAction
@@ -20,6 +18,8 @@ from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
 from PySide6.QtWidgets import QApplication
 from imasviz.VizUtils import QVizLogger, QVizGlobalValues, GlobalIDs,getWindowSize
+from imasviz.VizDataSource.QVizCaseOccurrences import QVizCaseOccurrences
+from imasviz.VizDataAccess.VizTimeSlices import FIRST_SLICE
 from imasviz.VizGUI.VizConfigurations.QVizApplyConfigurations \
     import QVizApplyConfigurations
 from imasviz.VizGUI.VizGUICommands.VizDataExport.QVizExportToIDS \
@@ -41,10 +41,8 @@ from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewB
 from imasviz.VizGUI.VizWidgets.VizNodeDocumentation.QVizNodeDocumentationPanel \
     import QVizNodeDocumentationPanel
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
-from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
-
-
-cv = Condition()
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
+    import QVizLoadOccurrence
 
 
 class QVizDataTreeView(QTreeWidget):
@@ -86,6 +84,18 @@ class QVizDataTreeView(QTreeWidget):
         self.selectedItem = None
         self.uri = dataSource.uri
         self.mappingFilesDirectory = mappingFilesDirectory
+
+        # What the opened case holds, asked of the case itself: which
+        # occurrences of an IDS exist is the first question of every load, and
+        # it used to be asked of the data dictionary through an expression that
+        # this IMAS stack cannot evaluate at all (see QVizCaseOccurrences).
+        self.occurrences = QVizCaseOccurrences(dataSource)
+
+        # Loads this view has started and not finished, keyed IDSName/occurrence.
+        # The guard against loading the same occurrence twice in the same view
+        # used to be a class attribute keyed by IDS name only, shared by every
+        # view and reset by the next command object built.
+        self.loadsInProgress = set()
 
         # Create a IDS root node with each URI
         self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + dataSource.uri + ')'])
@@ -131,28 +141,32 @@ class QVizDataTreeView(QTreeWidget):
     def createEmptyIDSsTree(self, IDSDefFile):
         """The tree is created from IDSDef.xml file.
         """
-        import imas
-
         self.dataSource.open()
 
         xmlTree = ET.parse(IDSDefFile)
 
         for child in xmlTree.getroot():
             if child.tag == 'IDS':
-                """Extract IDS properties from IDSDef.xml file"""
-                """Get IDS name"""
                 idsName = child.get('name')
-                """Get IDS documentation"""
                 idsDocumentation = child.get('documentation')
                 self.idsNamesList.append(idsName)
 
-                """Set array holding IDS properties"""
                 IDSRootNode = self.createIDSRootNode(idsName=idsName,
                                                      idsDocumentation=idsDocumentation,
                                                      DTVRoot=self.DTVRoot)
 
-                IDSContainsData = self.dataSource.containsData(IDSRootNode)
-                IDSRootNode.updateIDSNode(IDSContainsData)
+                # Which occurrences hold data is answered by the case: the whole
+                # inventory of the 55 IDS names of this data dictionary costs
+                # 0.10 s, against 336 s for reading every IDS to answer the same
+                # question. An IDS the entry refuses stays in the tree holding
+                # nothing, with the reason in the log -- measured, the old
+                # question was asked as eval("imas.<ids>()"), raised out of this
+                # loop on the first IDS of the reference case (amns_data), and
+                # took the whole shot view down with it.
+                occurrences = self.occurrencesOf(idsName)
+                for occurrence in occurrences:
+                    IDSRootNode.setAvailableIDSData(occurrence, 1)
+                IDSRootNode.updateIDSNode(bool(occurrences))
 
                 # Add the IDS node as a tree item to the tree view
                 self.IDSRoots[idsName] = IDSRootNode
@@ -160,8 +174,50 @@ class QVizDataTreeView(QTreeWidget):
         # The open() above is this view's own reference on the case, held for as
         # long as the view lives and given back by Viz_API.RemoveDTVFrame. As
         # long as it is held the parser can open and close once per IDS without
-        # ever closing and rebuilding the entry, and containsData() reads
-        # through an entry that is genuinely open.
+        # ever closing and rebuilding the entry, and the occurrence inventory
+        # reads through an entry that is genuinely open.
+
+    def occurrencesOf(self, idsName):
+        """The occurrences of `idsName` this case holds, [] when it cannot say.
+
+        The refusal is logged rather than raised: this answers for every IDS of
+        the shot view, and one IDS the back end refuses must not decide what the
+        other 54 look like.
+        """
+        try:
+            return self.occurrences.occurrencesOf(idsName)
+        except ValueError as error:
+            logging.getLogger(self.uri).error(error)
+            return []
+
+    def loadedOccurrences(self, idsName):
+        """The occurrences of `idsName` this view already displays."""
+        prefix = idsName + '/'
+        return [int(key[len(prefix):]) for key in self.ids_roots_occurrence
+                if key.startswith(prefix)]
+
+    def loadedIds(self, idsName):
+        """The IDS instance of an occurrence of `idsName` held in memory.
+
+        Asked by the menu that names a slice: the number of elements a dynamic
+        array holds is free to read from an instance already loaded, and unknown
+        for an occurrence nobody has loaded yet.
+        """
+        for occurrence in self.loadedOccurrences(idsName):
+            entry = self.ids_roots_occurrence.get(idsName + '/' + str(occurrence))
+            if entry is not None and getattr(entry, 'idsRef', None) is not None:
+                return entry.idsRef
+        return None
+
+    def isLoadInFlight(self, idsName, occurrence):
+        """Whether this view is already building this occurrence."""
+        return (idsName, occurrence) in self.loadsInProgress
+
+    def beginLoad(self, idsName, occurrence):
+        self.loadsInProgress.add((idsName, occurrence))
+
+    def endLoad(self, idsName, occurrence):
+        self.loadsInProgress.discard((idsName, occurrence))
 
     def setSelectedItem(self, item, mouseButton=None):
         """Set selected item.
@@ -272,33 +328,38 @@ class QVizDataTreeView(QTreeWidget):
             QVizHandleRightClick().execute(treeNode, self)
 
 
-    def updateView(self, idsName, idsInstance, occurrence, idsData=None, viewLoadingStrategy=None):
+    def updateView(self, idsName, idsInstance, occurrence, idsData=None,
+                   sliceSelection=None):
         """ Update QVizDataTreeViewFrame.
         Arguments:
             idsName        (str) : Name of the IDS e.g. 'magnetics'.
             occurrence     (int) : IDS occurrence number (0-9).
             idsData        (obj) : Object (element) holding IDS data.
         """
-        self.update_view(idsName, idsInstance, occurrence, idsData, viewLoadingStrategy)
+        self.update_view(idsName, idsInstance, occurrence, idsData,
+                         sliceSelection)
 
 
-    def update_view(self, idsName, idsInstance, occurrence, idsData, viewLoadingStrategy=None):
-        """ Update the tree view with the data.
+    def update_view(self, idsName, idsInstance, occurrence, idsData,
+                    sliceSelection=None):
+        """Build the tree this walk produced, in the thread that owns the widget.
+
+        When the load is asynchronous the walk runs in the parser's own thread
+        and hands the shadow tree over with a Qt event, which is delivered in
+        the GUI thread. This method used to start a Python thread of its own and
+        wait on a condition for it, so the items were built in a thread that does
+        not own the widget -- measured: updateView ran in 'Dummy-1' while the
+        main thread sat in cv.wait().
         """
-        global cv
+        if idsData is None:
+            return
+        nodeBuilder = QVizDataTreeViewBuilder()
+        self.buildTreeView(nodeBuilder, idsName, idsInstance, occurrence, idsData,
+                           sliceSelection)
+        nodeBuilder.endBuildView(idsName, occurrence, self)
 
-        if idsData is not None:
-            nodeBuilder = QVizDataTreeViewBuilder()
-            thread1 = threading.Thread(target=self.buildTreeView, args=(nodeBuilder, idsName, idsInstance, occurrence, idsData,
-                                                                        viewLoadingStrategy))
-            cv.acquire()
-            thread1.start()
-            cv.wait()
-            cv.release()
-            nodeBuilder.endBuildView(idsName, occurrence, self)
-
-
-    def buildTreeView(self, nodeBuilder, idsName, idsInstance,occurrence, idsData, viewLoadingStrategy):
+    def buildTreeView(self, nodeBuilder, idsName, idsInstance, occurrence,
+                      idsData, sliceSelection):
         """ Build the data tree view by adding a set of available IDS nodes as
             an items to it.
 
@@ -307,7 +368,6 @@ class QVizDataTreeView(QTreeWidget):
             occurrence    (int)             : IDS occurrence number (0-9).
             idsData       (obj)             : Object (element) holding IDS data.
         """
-        cv.acquire()
         import time
         t1 = time.time()
         logging.getLogger(self.uri).info("Occurrence "
@@ -321,20 +381,28 @@ class QVizDataTreeView(QTreeWidget):
         ids_root_node = self.createIDSRootNode(idsName, idsDocumentation, None, root_node_ori)
         ids_root_node.setOccurrence(occurrence)
         ids_root_node.idsRef = idsInstance
-        root_node_label = 'occurrence ' + str(int(occurrence))
+        selection = FIRST_SLICE if sliceSelection is None else sliceSelection
+        root_node_label = 'occurrence ' + str(int(occurrence)) \
+                          + ' [' + selection.viewLabel() + ']'
 
-        if viewLoadingStrategy is not None:
-            label = viewLoadingStrategy.getLabel()
-            if label is not None:
-               root_node_label += " [" + label + "]"
-        
         ids_root_occ = QVizTreeNode(ids_root_node, [root_node_label], ids_root_node.getData())
         ids_root_occ.idsRef = idsInstance
         ids_root_occ.dataTreeView = self
         ids_root_occ.setOccurrenceEntry(True)
         ids_root_occ.setOccurrence(occurrence)
-        if viewLoadingStrategy is not None:
-            ids_root_occ.setIDSIsDynamic(viewLoadingStrategy.isIDSDynamic())
+        # Whether this occurrence can be looked at another way is what the walk
+        # met, not what the slice choice was: the flag used to be raised only in
+        # the branch of the fourth choice, which left the "Add a new view" entry
+        # of the pop-up menu unreachable for the other three.
+        ids_root_occ.setIDSIsDynamic(idsData.get('dynamic_arrays') == '1')
+        homogeneousTime = getattr(getattr(idsInstance, 'ids_properties', None),
+                                  'homogeneous_time', None)
+        if homogeneousTime is not None:
+            # Where the time base of this IDS lives, needed by every quantity
+            # read out of this view. It used to be written while asking whether
+            # the IDS holds data, which meant reading the IDS to answer a
+            # question the loaded instance answers for free.
+            ids_root_occ.setHomogeneousTime(int(homogeneousTime))
         ids_root_occ.setStyleWhenContainingData()
 
         for child in idsData:
@@ -344,9 +412,6 @@ class QVizDataTreeView(QTreeWidget):
         logging.getLogger(self.uri).info("Building tree view took " + str(t2 - t1) + ' seconds.')
         nodeBuilder.setIDSRootNode(ids_root_node)
         logging.getLogger(self.uri).info("View update ended.")
-
-        cv.notify()
-        cv.release()
 
     def createIDSRootNode(self, idsName, idsDocumentation, DTVRoot, root_node_ori=None):
         if root_node_ori is not None:
@@ -390,26 +455,37 @@ class QVizDataTreeView(QTreeWidget):
 
     def loadDefaultOccurrence(self):
         """Loads the next available occurrence which contains data.
-        """
 
-        # Get currently selected QTreeWidgetItem
-        item = self.selectedItems()[0]
+        The double click and the Return key both land here. Measured, a gesture
+        with nothing selected raised IndexError: list index out of range, and
+        the helper under it -- GetNextOccurrenceUnloadedWithAvailableData --
+        raised AttributeError on the expression eval("imas.<ids>()"), so nothing
+        could be loaded this way on this IMAS stack.
+        """
+        selected = self.selectedItems()
+        if not selected:
+            logging.getLogger(self.uri).info(
+                'Nothing is selected in the shot view: no occurrence to load.')
+            return
+        item = selected[0]
 
         # Continue only if the QTreeWidgetItem is the IDS root
         if not item.isIDSRoot():
             return
 
-        occ = self.imas_viz_api.GetNextOccurrenceUnloadedWithAvailableData(self, item)
-
-        if occ is None:
+        occurrence = self.occurrences.nextUnloaded(
+            item.getIDSName(), self.loadedOccurrences(item.getIDSName()))
+        if occurrence is None:
+            logging.getLogger(self.uri).info(
+                'Every occurrence of the %s IDS this case holds is already '
+                'displayed in this view.' % item.getIDSName())
             return
 
-        # Set class object
-        QVizLoadSelectedData(dataTreeView=self,
-                             IDSName=item.getIDSName(),
-                             occurrence=occ,
-                             viewLoadingStrategy=None,
-                             asynch=True).execute()
+        try:
+            QVizLoadOccurrence(dataTreeView=self, idsName=item.getIDSName(),
+                               occurrence=occurrence).execute()
+        except ValueError as error:
+            logging.getLogger(self.uri).error(error)
 
     def getMDI(self):
         """ Get MDI area through the root IMASViz main window.
@@ -495,7 +571,9 @@ class QVizDataTreeViewFrame(QMainWindow):
         arg = event.data[0]
         if arg == 1:
             message = event.data[1]
-            logging.getLogger(self.uri).info(message)
+            # The frame has no uri of its own; the view it holds does, and this
+            # is the logger of the case, which is what the log panel shows.
+            logging.getLogger(self.dataTreeView.uri).info(message)
         else:
             idsName = event.data[0]
             idsInstance =  event.data[1]
@@ -503,9 +581,13 @@ class QVizDataTreeViewFrame(QMainWindow):
             idsData = event.data[3]
             progressBar = event.data[4]
             progressBar.setWindowTitle("Updating view...")
-            viewLoadingStrategy = event.data[5]
-            self.dataTreeView.updateView(idsName, idsInstance, occurrence, idsData, viewLoadingStrategy)
-            progressBar.hide()
+            sliceSelection = event.data[5]
+            self.dataTreeView.updateView(idsName, idsInstance, occurrence,
+                                         idsData, sliceSelection)
+            # The bar was built for this load: closing it takes it down, where
+            # hide() left a live window stacked behind the next one.
+            progressBar.close()
+            self.dataTreeView.endLoad(idsName, occurrence)
 
 
     def addMenuBar(self):

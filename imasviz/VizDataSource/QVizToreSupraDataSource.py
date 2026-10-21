@@ -28,7 +28,12 @@ class ToreSupraDataSource:
             self.mappingFilesDirectory = os.environ["TS_MAPPINGS_DIR"]
 
     #Load IMAS (meta) data from mapping files
-    def load(self, view, IDSName, occurrence=0, asynch=False):
+    def load(self, view, IDSName, occurrence=0, sliceSelection=None,
+             asynch=False):
+        # A Tore-Supra mapping file holds no array of structures to thin out, so
+        # the slice choice the IMAS path passes has nothing to do here; the
+        # parameter is taken because QVizLoadOccurrence is the one caller of
+        # every source's load().
         idsObject = None
         try:
             tree = ET.parse(self.mappingFilesDirectory + '/' + IDSName + '_v1.xml')

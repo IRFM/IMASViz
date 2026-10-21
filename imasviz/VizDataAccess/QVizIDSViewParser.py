@@ -25,6 +25,7 @@ from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
 from imasviz.VizDataAccess.QVizAxesSpec import isUnboundedCoordinate
+from imasviz.VizDataAccess.VizTimeSlices import FIRST_SLICE
 from imasviz.VizGUI.VizTreeView.QVizResultEvent import QVizResultEvent
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues, QVizPreferences
 
@@ -178,17 +179,23 @@ class QVizIDSViewParser(QThread):
     """
 
     def __init__(self, uri, view, IDSName, occurrence=0,
-                 viewLoadingStrategy=None, asynch=True):
+                 sliceSelection=None, asynch=True):
         super(QVizIDSViewParser, self).__init__()
         self.occurrence = occurrence
         self.view = view
         self.dataSource = None
         self.idsName = IDSName
         self.view.IDSNameSelected[occurrence] = IDSName
-        self.viewLoadingStrategy = viewLoadingStrategy
+        self.sliceSelection = sliceSelection
         self.asynch = asynch
         self.progressBar = None
         self.ggd_warning_done = 0
+        # Whether the walk met a dynamic array of structures, which is what
+        # makes an occurrence worth viewing more than once. The view asks the
+        # shadow tree, not the slice choice: measured, the flag the old menu
+        # gate read was set only in the branch of the fourth choice, so three
+        # of the four slice choices left the "Add a new view" entry unreachable.
+        self.sawDynamicArrays = False
         # Index currently visited, and length, for each enclosing array of
         # structures: position 0 is the outermost one (loop variable 'i').
         self.indexStack = []
@@ -216,21 +223,36 @@ class QVizIDSViewParser(QThread):
                                        QVizResultEvent((self.idsName, ids_instance,
                                                         self.occurrence, idsData,
                                                         self.progressBar,
-                                                        self.viewLoadingStrategy, self),
+                                                        self.sliceSelection, self),
                                                        self.view.parent.eventResultId), 1)
             else:
                 self.view.updateView(self.idsName, ids_instance, self.occurrence,
-                                     idsData, self.viewLoadingStrategy)
-                self.progressBar.hide()
+                                     idsData, self.sliceSelection)
+                self.closeProgressBar()
         except AttributeError as attributeError:
             logging.getLogger(self.dataSource.uri).error(attributeError, exc_info=True)
             logging.getLogger(self.dataSource.uri).error(
                 'An attribute error has occurred: the data dictionary of the data '
                 'entry does not match the fields IMASViz expects.')
-            self.progressBar.hide()
+            self.closeProgressBar()
+        except ValueError as valueError:
+            # A slice index the IDS does not hold, or a selection left without
+            # an index: said as the sentence the object raises, without the
+            # traceback the generic branch below adds to everything else.
+            logging.getLogger(self.dataSource.uri).error(valueError)
+            self.closeProgressBar()
         except Exception as exception:
             logging.getLogger(self.dataSource.uri).error(exception, exc_info=True)
-            self.progressBar.hide()
+            self.closeProgressBar()
+
+    def closeProgressBar(self):
+        """Take the bar of this load down.
+
+        `hide()` left it alive: the source built a new one for every load, so a
+        session that loaded a dozen IDSs kept a dozen closed-but-live windows.
+        """
+        if self.progressBar is not None:
+            self.progressBar.close()
 
     def loadIDS(self, IDSName, occurrence):
         """Walks one IDS occurrence, holding a reference on the case for the
@@ -251,10 +273,16 @@ class QVizIDSViewParser(QThread):
             self._coordinateMetaData = {}
             self._structureCoordinates = []
             self.metadataDescents = 0
+            self.sawDynamicArrays = False
 
             root = ET.Element(IDSName)
             parents = [root]
             self.walkIDS(idsInstance.metadata, idsInstance, root, parents, IDSName, 1)
+            # What the walk met, carried on the shadow tree the view builds on:
+            # an occurrence of an IDS with a dynamic array can be looked at more
+            # than once, and the view says so on the strength of this rather
+            # than of the slice choice that happened to be asked for.
+            root.set('dynamic_arrays', '1' if self.sawDynamicArrays else '0')
             return (root, idsInstance)
         finally:
             self.dataSource.close()
@@ -303,7 +331,7 @@ class QVizIDSViewParser(QThread):
                     continue
                 runtime = self.childOf(idsObject, name)
                 length = len(runtime) if runtime is not None else 0
-                limitedNodes, minLimit, maxLimit, step = self.slicing(childMeta, length)
+                minLimit, maxLimit, step = self.slicing(childMeta, length)
                 indexVar = QVizGlobalValues.indices[str(level)]
                 while len(self.indexStack) < level:
                     self.indexStack.append(0)
@@ -316,7 +344,6 @@ class QVizIDSViewParser(QThread):
                     parents.append(element)
                     element.set('index', str(index))
                     element.set('dim', str(length))
-                    element.set('limited_nodes', limitedNodes)
                     self.setCommonAttributes(element, childMeta, 'struct_array')
                     self.walkIDS(childMeta, self.elementOf(runtime, index), element,
                                  parents, pathText + '.' + name + '[' + indexVar + ']',
@@ -412,29 +439,28 @@ class QVizIDSViewParser(QThread):
             element.set('lifecycle_status', lifecycleStatus)
 
     def slicing(self, childMeta, length):
-        """Which array elements the view keeps, per the loading strategy.
+        """Which elements of a dynamic array of structures this view keeps.
 
-        A dynamic array is reduced to the first slice by default, one slice over
-        ten in mode 2, or a single user picked slice in mode 4.
+        The choice is an object that knows the window it wants out of an array of
+        `length` elements; nothing here compares a name to a number. Measured on
+        the reference case, the old code compared the identifier of the choice to
+        the literals 1, 2 and 4, turned any name it did not recognise into 1 in
+        silence, and refused an index past the end four seconds into the walk.
+        Meeting a dynamic array is recorded on the walk, which is what tells the
+        view that this occurrence can be looked at more than once.
         """
-        minLimit, maxLimit, step = 0, length, 1
-        limitedNodes = '-1'
-        if childMeta.type.is_dynamic:
-            limitedNodes = '1'
-            if length > 0:
-                strategy = self.viewLoadingStrategy
-                identifier = 1 if strategy is None else strategy.getIdentifier()
-                if identifier == 1:
-                    maxLimit = 1
-                elif identifier == 2:
-                    step = 10
-                elif identifier == 4:
-                    minLimit = strategy.getTimeIndex()
-                    if minLimit >= maxLimit:
-                        raise ValueError('Bad input from user: time index too large.')
-                    maxLimit = minLimit + 1
-                    strategy.setIDSIsDynamic(True)
-        return limitedNodes, minLimit, maxLimit, step
+        if not childMeta.type.is_dynamic:
+            return 0, length, 1
+        self.sawDynamicArrays = True
+        selection = FIRST_SLICE if self.sliceSelection is None else self.sliceSelection
+        try:
+            return selection.window(length)
+        except ValueError as error:
+            # Named for the array it is about: one IDS can hold several dynamic
+            # arrays and the choice is a single index for all of them, so the
+            # refusal says which one cannot take it -- measured, equilibrium
+            # occurrence 0 holds 49 time_slice and 1 grids_ggd.
+            raise ValueError('%s: %s' % (childMeta.name, error))
 
     def ignoreGGD(self, name):
         if QVizPreferences.Ignore_GGD == 0:
@@ -489,9 +515,21 @@ class QVizIDSViewParser(QThread):
             return None
 
     def renderPath(self, pathText):
-        """Replaces the loop placeholders by the indexes actually visited."""
+        """Replaces the loop placeholders by the indexes actually visited.
+
+        The brackets stay: this text is the `dataName` the shot view evaluates
+        against the IDS instance it holds -- `QVizTreeNode.updateStyle` reads the
+        value this way -- and an index written without them asks the runtime for
+        an attribute named `time_slice0`. Measured on the reference case, loading
+        `equilibrium` occurrence 0 into a shot view raised `AttributeError: IDS
+        structure '' has no attribute 'time_slice0'` from that evaluation, so no
+        occurrence of a dynamic IDS could be displayed at all. With the brackets
+        the same string is also the IMAS path spelling the rest of the app uses:
+        `makeIMASPath` turns it into `equilibrium/time_slice(0)/...`.
+        """
         rendered = pathText
         for level, index in enumerate(self.indexStack):
             rendered = rendered.replace(
-                '[' + QVizGlobalValues.indices[str(level + 1)] + ']', str(index))
+                '[' + QVizGlobalValues.indices[str(level + 1)] + ']',
+                '[' + str(index) + ']')
         return rendered

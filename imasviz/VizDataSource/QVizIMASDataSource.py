@@ -8,13 +8,12 @@
 # ****************************************************
 import os
 import logging
+from functools import partial
 import imas
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
 from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
-from PySide6.QtCore import QRunnable, Slot, QThreadPool
-from PySide6.QtCore import QObject, Slot, Signal, QThread
 
 
 def caseLabel(uri, legacy_attributes=None):
@@ -96,6 +95,11 @@ class QVizIMASDataSource:
 
     def __init__(self, name, uri):
         self.generatedDataTree = None
+        # The walks this source started and has not finished. A parser is a
+        # QThread, and a QThread whose Python wrapper dies while it runs takes
+        # the process with it: `generatedDataTree` alone is one slot, so a
+        # second load would drop the reference on a walk still reading the case.
+        self.runningParsers = set()
         self.progressBar = None
         self.name = name
         self.uri = uri
@@ -159,9 +163,18 @@ class QVizIMASDataSource:
                       'backend_id': backend_id})
         
 
-    # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
+    def load(self, dataTreeView, IDSName, occurrence=0, sliceSelection=None,
+             asynch=True):
+        """Walk one occurrence of one IDS and let the view build its tree.
 
+        The walk runs in the parser's own thread when `asynch` is asked for, and
+        hands the shadow tree to the frame with a Qt event; it runs here when it
+        is not. Measured, this method overrode its own argument with
+        `asynch = False` and then handed the walk to a fresh `QThreadPool` per
+        load -- a pool the caller never sees and cannot wait on -- so the walk
+        was off-thread while its result was applied to the tree directly, from
+        that thread, instead of through the event the parser posts for it.
+        """
         self.progressBar = QProgressBar()
         self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
 
@@ -169,17 +182,39 @@ class QVizIMASDataSource:
         self.progressBar.setMinimum(0)
         self.progressBar.setGeometry(100, 150, 500, 25)
         self.progressBar.show()
-        asynch = False
+
         self.generatedDataTree = QVizIDSViewParser(self.uri, dataTreeView, IDSName,
-                                                   occurrence, viewLoadingStrategy,
+                                                   occurrence, sliceSelection,
                                                    asynch)
         self.generatedDataTree.setProgressBar(self.progressBar)
         self.generatedDataTree.dataSource = self
 
-        worker = Worker('Loading', self.generatedDataTree)
+        # The load belongs to the view that asked for it: the view says whether
+        # it is already building this occurrence, and the walk tells it when it
+        # is done, on the thread the finished signal is delivered on.
+        dataTreeView.beginLoad(IDSName, occurrence)
+        parser = self.generatedDataTree
+        if asynch:
+            self.runningParsers.add(parser)
+            parser.finished.connect(partial(self._loadFinished, dataTreeView,
+                                            IDSName, occurrence, parser))
+            parser.start()
+        else:
+            try:
+                parser.run()
+            finally:
+                dataTreeView.endLoad(IDSName, occurrence)
 
-        self.threadpool = QThreadPool()
-        self.threadpool.start(worker)
+    def _loadFinished(self, dataTreeView, IDSName, occurrence, parser):
+        """Take a finished walk off the list of the ones held alive.
+
+        Delivered on the thread that owns the view, which is where the tree it
+        built belongs. The walk is dropped here rather than when `load` returns:
+        the call returns as soon as the thread is started, and a parser garbage
+        collected mid-walk is a crash, not a bug report.
+        """
+        self.runningParsers.discard(parser)
+        dataTreeView.endLoad(IDSName, occurrence)
 
     def createDBEntry(self, mode=None):
         """Builds an entry on this case and returns it; it is not kept here."""
@@ -282,26 +317,6 @@ class QVizIMASDataSource:
     def exists(self, IDSName=None):
         return True
 
-    def containsData(self, node):
-        ret = False
-
-        maxOccurrences = eval("imas." + node.getIDSName() + "().getMaxOccurrences()")
-
-        for occurrence in range(0, maxOccurrences):
-            node.setAvailableIDSData(occurrence, 0)
-            try:
-                ids_properties = eval("self.db_entry.partial_get('" + node.getIDSName() + "', 'ids_properties', occurrence)")
-                ht = ids_properties.homogeneous_time
-                if ht == 0 or ht == 1 or ht == 2:
-                    logging.getLogger(self.uri).info("Found data for occurrence " + str(occurrence) + " of " + node.getIDSName() + " IDS...")
-                    node.setHomogeneousTime(ht)
-                    node.setAvailableIDSData(occurrence, 1)
-                    self.data_dictionary_version = ids_properties.version_put.data_dictionary
-                    ret = True
-            except Exception as e:
-                print(e)
-        return ret
-
     def dataKey(self, vizTreeNode):
         """Defines the unique key attached to each data which can be plotted.
         """
@@ -323,20 +338,3 @@ class QVizIMASDataSource:
 
     def getName(self):
         return self.getShortLabel()
-
-
-class Worker(QRunnable):
-    
-    finished = Signal()
-    progress = Signal(int)
-    
-    def __init__(self, name, generatedDataTree):
-       super(Worker, self).__init__()
-
-       self.name = name
-       self.generatedDataTree = generatedDataTree
-
-    def run(self):
-        """Long-running task."""
-        self.generatedDataTree.run()
-        #self.finished.emit()

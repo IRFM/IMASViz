@@ -29,8 +29,8 @@ import logging
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
     QVizConfigurationFile
-from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData \
-    import QVizLoadSelectedData
+from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
+    import QVizLoadOccurrence
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes \
     import QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
@@ -89,11 +89,10 @@ class QVizSelectFromConfiguration(QVizAbstractCommand):
             if api.IDSDataAlreadyFetched(self.dataTreeView, idsName,
                                          quantity.occurrence):
                 continue
-            QVizLoadSelectedData(dataTreeView=self.dataTreeView,
-                                 IDSName=idsName,
-                                 occurrence=quantity.occurrence,
-                                 viewLoadingStrategy=None,
-                                 asynch=False).execute()
+            QVizLoadOccurrence(dataTreeView=self.dataTreeView,
+                               idsName=idsName,
+                               occurrence=quantity.occurrence,
+                               asynch=False).execute()
 
     def findNode(self, path, occurrence):
         for node in self.dataTreeView.signalsList:

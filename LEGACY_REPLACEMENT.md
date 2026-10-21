@@ -379,7 +379,49 @@ the rest are not fixed yet.
   "QVizNodeDocumentationWidget")` and, on a miss, `raise ValueError` — out of a
   slot, where nothing shows it to the user and where, measured, it stops the rest
   of the slot. The frame now hands the panel to the view it belongs to.
-- `QVizViewLoadingStrategy` defines `setIdentifier` twice (:26, :29).
+- **The question every load starts with could not be answered at all.**
+  *(fixed by T12)* Which occurrences a case holds was asked of the data
+  dictionary with `eval("imas." + idsName + "().getMaxOccurrences()")` at **5
+  places** — `QVizIMASDataSource.containsData:288`, `QVizTreeNode:365`,
+  `Viz_API:628/637/646`. `hasattr(imas, 'equilibrium')` is **False** on this
+  IMAS-Python: every one answers `AttributeError: module 'imas' has no attribute
+  '<ids>'`. And because the first sits above `containsData`'s own `try`,
+  **building the shot view of the reference case died on the first IDS of the
+  list** (`amns_data`) — so no occurrence could be chosen by any gesture, and the
+  guard under two of the helpers (`if availableOccurrences is None: return`) was
+  dead code: that helper has no path returning None. Asked of the case instead
+  (`DBEntry.list_all_occurrences`), the whole inventory of the 55 IDS names costs
+  **0.10 s** against **336 s** for reading each IDS to answer the same question.
+- **A double click with nothing selected answered `IndexError`.** *(fixed by
+  T12)* `loadDefaultOccurrence` took `selected[0]` without looking.
+- **The guard against loading one occurrence twice guarded nothing.** *(fixed by
+  T12)* It was a class attribute `Lock` keyed by IDS name, shared by every shot
+  view — loading `equilibrium` in one view blocked the other — and `__init__`
+  wrote `Lock[IDSName] = False`: measured `{'equilibrium': True}` straight after
+  a load started and `{'equilibrium': False}` again as soon as the next command
+  object was constructed, before anything was asked of the case.
+- **The slice choice travelled as an integer, and three of the four views got no
+  name.** *(fixed by T12)* An unrecognised name became **1 in silence** (`all
+  time slices`, `All slices`, `None` all answered 1); the four are handed to the
+  menu in the order 3, 2, 1, 4; and `getLabel()` answered **None for all four**
+  coming out of `getAllStrategies()`, because the flag it read was raised only in
+  the branch of the fourth — which is also the flag that made "Add a new view"
+  reachable, so a view built with the default choice could never be looked at
+  another way.
+- **An index past the end was refused four seconds later, in the wrong place.**
+  *(fixed by T12)* Slice 49 of the 49 the reference `equilibrium` occurrence
+  holds: `ValueError: Bad input from user: time index too large.` — naming
+  neither the count nor the bound. The dialog that asks for it had **no parent**
+  and its spin box accepted anything up to **2147483647** while 0 to 48 are valid.
+- **The walk built the tree in a thread that does not own the widget.** *(fixed
+  by T12)* `updateView` started a Python thread and waited on a `Condition`:
+  measured, it ran in `Dummy-1` while the main thread sat in `cv.wait()`. `load`
+  overrode its own `asynch` argument with `False` and handed the walk to a fresh
+  `QThreadPool` per load, a pool the caller cannot wait on.
+- **Two things were left behind by every load, and one attribute was written for
+  nobody.** *(fixed by T12)* A `QProgressBar` per load, `hide()`-ed and never
+  `close()`-ed — a dozen loads, a dozen live windows; and `limited_nodes` set on
+  every array of structures the walk met, read by nothing in the package.
 - `QVizDataTreeView.updateMenuNodeSelection` (:575-620) destroys and rebuilds a
   menu on every `aboutToShow`, and writes `dataTreeView.selectedItem` on the way.
 - `QVizMainMenuController.deleteAllViews` takes an `index` it never receives
@@ -403,7 +445,7 @@ the rest are not fixed yet.
 | T9 | "Apply Configuration" / save a configuration | One module owns the file — `QVizConfigurationFile` (both kinds, read by root element, the two shapes the old writers produced still readable) — and four commands use it: `QVizSavePlotConfiguration` (the window's button), `QVizSaveNodeSelection` (the menu entry), `QVizSelectFromConfiguration` (applying either to a shot view, loading the IDS a path belongs to), `QVizApplyConfigurations` (the two-tab window, re-read from the folder on every show) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | fait — **correction of the "kills" as first written**: the row announced two files (394 + 335 l.); measured, four modules go — `QVizSavePlotConfig.py` (342), `QVizConfigurationListsWindow.py` (399), `QVizSaveSignalSelection.py` (117) and the `QVizSelectSignals.py` (151) that T8's row left standing — **1009 lines**, plus 94 lines of `QVizGlobalOperations` helpers (`getConfFilePath`, `printCode`, `getConfFilesList`, `getConfigurationFilesDirectory`, `getSignalsPathsFromConfigurationFile`) and the `ET` import they justified. `makeIMASPath`/`makeIMASPaths` stay: the new reader uses them on the old files, whose paths are spelled with dots and brackets. `Viz_API.GetPlotConfigurationPath` and `GetPlotConfigurationPath`'s documented scripting role stay, re-pointed at `QVizSelectFromConfiguration`; so does `getNextPanelKey`, which nothing calls and nothing in T9 owns |
 | T10 | "Export to IDS" | `onExportToLocal` → `QVizExportToIDS`: `QVizExportTarget` holds the four fields and validates them where they are typed, `QVizExportDialog` asks for them (and the backend as a choice), the write entry is built at the data dictionary the IDSs were read at and closed in a `finally`, and what is written is the cache the plots read — each IDS on its own occurrence, a refused IDS named in the log without costing the others | the inline dialog, the bare `except:` | fait — **correction of the "kills" as first written**: the row announced "a 100-line inline dialog" and two kills; measured, four things go. The dialog in `QVizDataTreeViewFrame` is **127 lines removed** (15 added back: a 7-line slot and its import), and with it the three Qt classes it was the only user of (`QDialog`, `QLineEdit`, `QPushButton`). `QVizIMASDataSource.build_legacy_uri` (the `from imas import _al_lowlevel as ll` path) and `QVizIMASDataSource.exportToLocal` (70 l., never called by the gesture) go too — 55 lines out of the data source, 47 back as `caseUri`, the spelling `_readCaseFromUri` reads back and the one `QtVIZ_GUI`'s `-u -d -s -r -b` path and the example plugin call. That lift is the **`build_uri` xfail of `test_02_data_source.py` going green**, the first xfail of this work to die. Four modules added, 485 l.: `QVizExportTarget` (150), `QVizExportToIDS` (206), `QVizExportDialog` (125), `__init__` (4). Nothing was grafted: the bare `except:` is gone, and so is the `entry.open()` call that was its whole failure — an entry built from an URI is open at construction |
 | T11 | Node documentation on left click | `onLeftClickItem` → `QVizNodeDocumentationPanel.showNode(node)`, drawing what `QVizNodeFacts` decided: the name, the documentation, the data-dictionary status, the units, the shape and size, the zeros and the nan/inf counts, the extremes of the entries that *are* numbers, a preview bounded to 200 values at each end — and, when the read cannot answer, the reason, said once | `QVizNodeDocumentationWidget.py` (651 l., 12 methods, 20 `QLabel`s), its `np.set_printoptions(threshold=sys.maxsize)` — process-wide, never undone — its `update(self, item, dataTreeView)` sitting on `QWidget.update`, the 9 labels prefilled with `/`, the 7 `showFieldsFor…`/`hideAllFields`/`showAllFields` switches that prefilled them, the two bare `except:`, the duplicated dynamic-1D and static-1D branches, and in the view the `findChild(QWidget, "QVizNodeDocumentationWidget")` lookup with its `raise ValueError` | fait — **correction of the "kills" as first written**: the row announced nothing; measured, the widget is 651 lines (650 by `wc -l`) and five of its habits were answering wrong on real nodes, listed in §2. What replaces it is 335 lines in three files — `QVizNodeFacts` (231, no Qt: the facts, and the reason a read failed), `QVizNodeDocumentationPanel` (100, no arithmetic: the rows it is given, rebuilt from nothing at every click), `__init__` (4). `QVizDataTreeView` gives back 12 lines and takes 27 — the `ndw` dummy became the panel the frame hands over. Nothing was grafted: no `set_printoptions`, no `findChild`, no `raise` out of a slot, no prefilled label, and a scalar is read off the tree rather than through the runtime, which is the only way it does not answer `<IDSString0D …>` |
-| T12 | Load an occurrence — double click, Return, "Get … data for occurrence", "Add a new view", Shift+right click | `loadDefaultOccurrence` :424, `QVizLoadDataHandling`, `QVizViewLoadingStrategy` (identifiers 1-4 hardcoded, `QInputDialog` without a parent) | the magic identifiers, the duplicated `setIdentifier` | to do |
+| T12 | Load an occurrence — double click, Return, "Get … data for occurrence", "Add a new view", Shift+right click | `QVizCaseOccurrences` (the case answers which occurrences hold data, `unloaded`/`nextUnloaded` on top of it), `QVizTimeSliceSelection` (one object per choice, knowing its menu words, the words the tree shows and the window it wants), `QVizLoadOccurrence` (one command, guard on the view that owns the load), `QVizOccurrenceMenu` (both sub-menus and the one question the fourth choice asks, parented to that view and bounded by what is in memory) | `QVizViewLoadingStrategy.py` (94 l., identifiers 1-4 hardcoded, `setIdentifier` defined twice), `QVizLoadDataHandling.py` (109 l.), `QVizLoadSelectedData.py` (43 l., the class-level `Lock`) — **246 lines**; and in the modules that stay: `containsData` (21 l.) and the `Worker(QRunnable)` wrapper (8 l.) out of `QVizIMASDataSource`, its `asynch = False` override and the per-load `QThreadPool`, the `load` override of `QvizIMASPublicDataSource` (22 l.), `QVizDataTreeView`'s `cv = Condition()` and the thread `updateView` waited on, the `eval("imas.<ids>()")` of `QVizTreeNode.hasAvailableData`, the three of `Viz_API`, and the `limited_nodes` attribute nothing read | fait — **correction of the "kills" as first written**: the row announced three identifiers and one duplicated method; measured, five `eval("imas." …)` sites answered `AttributeError` on this IMAS-Python and one of them sat above `containsData`'s `try`, so **the shot view of the reference case did not build at all** — there was no occurrence to load. `QVizDataTreeView` gives back 158 lines and takes 250 (`+204/-…` on the diff): the empty tree now asks the case (0.10 s for the 55 IDS names, 1.22 s to build where it used to raise), `updateView` builds in the thread that owns the widget, and `homogeneous_time` is read off the instance the walk loaded instead of by reading the case. 446 lines in five new files replace 246 in three. One limit kept from the old behaviour and said in the code: one index applies to every dynamic array of the IDS, so the refusal names the array that cannot take it (`grids_ggd: 30 is not a time slice of this IDS: it holds 1`) |
 | T13 | Plugins in the menu | `QVizPluginsPopUpMenu`, `QVizPluginsHandler` | — (last: plugins call the frames, so they follow them) | to do |
 
 ## 4. Why this order
@@ -584,6 +626,30 @@ now copies `0D_content` the way `build_nodes` does, or a real scalar shows nothi
 and the test proves the wrong thing. T11 changed none of the four remaining
 `Viz_API.GetSignal` callers: the panel asks one node for its own values, through
 the node's own path, and never goes through the scripting layer.
+
+Since T12: **659 passed, 7 xfailed** — forty-nine tests in
+`tests/test_42_load_an_occurrence.py`, and the sweep at **126 modules, 121 passed /
+5 xfailed** (three modules deleted, five added). 610 + 49 = 659. They pin, on the
+reference case, the answer that used to make the whole gesture unreachable:
+`occurrencesOf` giving `[0, 1, 2, 3]` for `equilibrium`, `[0]` for
+`pulse_schedule`, `[0, 1]` for `magnetics` and `[]` for `core_sources` — and a
+shot view of that case **built**, 55 IDS roots in 1.22 s, which is the first time
+in this work that the tree exists to be clicked on. Four of them drive the real
+frame: an occurrence loaded with the default choice labelled `occurrence 0
+[displaying first time slice]` and marked dynamic (the flag the old code raised
+only for the fourth choice), `homogeneous_time` read off the instance, the double
+click delivering its view through the event loop with the walk held alive until it
+finishes, and a double click with nothing selected saying so instead of answering
+`IndexError`. The rest drive the four choices as objects: the windows they keep out
+of 49 slices, `FIRST_SLICE` on an empty array keeping nothing where the old one
+invented 11 nodes of 77, the refusal naming the count and the bound, the choice
+that still needs a number refusing rather than opening a dialog in the middle of a
+script, the guard on the view rather than on the class — two views, the same
+occurrence, both loaded — and the slice question recorded through a stub dialog:
+parented to the view, bounded at 48 when 49 slices are in memory. Three tests
+check the deletion itself: `find_spec` answering None for the three modules, no
+`identifier` anywhere near a choice, and no `limited_nodes` attribute left on any
+element of a walked tree.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new

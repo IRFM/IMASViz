@@ -358,15 +358,15 @@ class QVizTreeNode(QTreeWidgetItem):
         return self.infoDict.get('isStatic')
 
     def hasAvailableData(self):
-        import imas
         if self.isIDSRoot():
-            if self.getDataTreeView() is None:
+            view = self.getDataTreeView()
+            if view is None:
                 return False
-            maxOccurrences = eval("imas." + self.getIDSName() + "().getMaxOccurrences()")
-            for occurrence in range(0, maxOccurrences):
-                if self.hasIDSAvailableData(occurrence):
-                    return True
-            return False
+            # Asked of the case, not of the data dictionary: measured, the loop
+            # this replaced opened with eval("imas." + idsName + "()") and raised
+            # AttributeError on every IDS of this IMAS stack, which took the
+            # pop-up menu entry and the double click down with it.
+            return bool(view.occurrencesOf(self.getIDSName()))
         return self.infoDict.get('availableData')  # node is not a root IDS node
 
     def hasIDSAvailableData(self, occurrence):

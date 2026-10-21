@@ -8,8 +8,6 @@
 # ****************************************************
 
 import imas
-from PySide6.QtWidgets import QProgressBar
-from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, caseLabel
 
 
@@ -18,30 +16,6 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
     def __init__(self, name, uri):
 
         super(QVizIMASPublicDataSource, self).__init__(name, uri)
-
-    # Load IMAS data using IMAS api
-    def load(self, dataTreeView, IDSName, occurrence=0, viewLoadingStrategy=None, asynch=True):
-        print("Loading data using UDA")
-        self.progressBar = QProgressBar()
-        self.progressBar.setWindowTitle("Loading '" + IDSName + "'...")
-
-        self.progressBar.setMaximum(0)
-        self.progressBar.setMinimum(0)
-        self.progressBar.setGeometry(100, 150, 500, 25)
-        self.progressBar.show()
-        # The previous call passed asynch into the factory's viewLoadingStrategy
-        # slot, so the UDA path sent a boolean as loading strategy and always
-        # ran asynchronously.
-        self.generatedDataTree = QVizIDSViewParser(self.uri, dataTreeView, IDSName,
-                                                   occurrence, viewLoadingStrategy,
-                                                   asynch)
-        self.generatedDataTree.setProgressBar(self.progressBar)
-        self.generatedDataTree.dataSource = self
-
-        if asynch:
-            self.generatedDataTree.start()  # This will call asynchroneously the get() operation for fetching IMAS data
-        else:
-            self.generatedDataTree.run()  # This will call the get() operation for fetching IMAS data
 
     # This defines the unique key attached to each data which can be plotted
     def dataKey(self, vizTreeNode):
@@ -55,7 +29,3 @@ class QVizIMASPublicDataSource(QVizIMASDataSource):
 
     def open(self, data_entry):
         data_entry.open()
-
-    def containsData(self, node):
-        node.setAvailableIDSData(0, True)
-        return True
