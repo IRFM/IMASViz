@@ -13,7 +13,6 @@
 
 import os
 import sys
-import xml.etree.ElementTree as ET
 
 import numpy as np
 from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit
@@ -117,44 +116,6 @@ class QVizGlobalOperations:
         if stringToReplace is None:
             return None
         return stringToReplace.replace(" ", "_")
-
-    @staticmethod
-    def getConfFilePath(configName, configType):
-        """Get path + filename to configuration file ('.pcfg' or '.lsp').
-
-        Arguments
-            configName (str) : Name of the configuration file (with no
-                               extension).
-            configType (str) : Type/Extension of the configuration file,
-                               without dot ('pcfg' or 'lsp').
-        """
-
-        home = os.environ['HOME']
-        if home is None:
-            raise ValueError("HOME environment variable not defined")
-        configurationDirectory = home + "/" + ".imasviz"
-        if not os.path.exists(configurationDirectory):
-            os.makedirs(configurationDirectory)
-
-        if configType is not None:
-            configurationFilePath = configurationDirectory + "/" + \
-                configName + "." + configType
-        else:
-            print('getConfFilePath: File type not specified!')
-            return
-
-        return configurationFilePath
-
-    @staticmethod
-    def printCode(file, text, level):
-        n = level + 1
-        tabs = ''
-        i = 0
-        while i < n:
-            tabs += '\t'
-            i += 1
-
-        file.write(tabs + text.encode("utf-8") + "\n")
 
     @staticmethod
     def checkEnvSettings_generator():
@@ -291,84 +252,6 @@ class QVizGlobalOperations:
             print("WARNING: no suitable IDSDef.xml file found for given IMAS "
                   "version " + imas_dd_version + ".")
         return IDSDef_path
-
-    @staticmethod
-    def getConfFilesList(configType):
-        """Get a list of configuration files of certain type.
-
-        Parameters
-        ----------
-
-        configType: string
-            Type/Extension of the configuration file, without dot
-            (e.c. 'pcfg', 'lsp'...).
-
-        """
-        files = []
-        configurationDirectory = os.environ["HOME"] + "/.imasviz"
-        if not os.path.exists(configurationDirectory):
-            os.makedirs(configurationDirectory)
-        l = os.listdir(configurationDirectory)
-        for i in range(0, len(l)):
-            if l[i].endswith("." + configType):
-                files.append(l[i])
-        return files
-
-    @staticmethod
-    def getConfigurationFilesDirectory():
-        return os.environ["HOME"] + "/.imasviz"
-
-    @staticmethod
-    def getSignalsPathsFromConfigurationFile(configFile):
-        """Get the signal paths from the configuration file (.pcfg or .lsp).
-
-        Parameters
-        ----------
-
-        configFile: string
-            Full path to configuration file including file name
-            (.pcfg or .lsp file).
-        """
-
-        selectedsignalsMap = {}
-        pathsList = []
-        occurrencesList = []
-        pathsMap = {}
-        config = None
-        if configFile != None:
-            config = ET.parse(configFile)
-
-        # Distinguish between the types of the configuration files
-        # (.pcfg or .lsp)
-        if configFile.endswith('.pcfg'):
-            # Get all selectedArray attributes, containing signal paths,
-            # from the config file
-            selectedArrays = config.findall('.//*sourceInfo')
-
-            # Display number of signals, saved in the config file
-            print("Config file: Number of signals: ", len(selectedArrays))
-
-            # Extract the paths of the signals and add them to the pathsList
-            for selectedSignal in selectedArrays:
-                pathsList.append(selectedSignal.get("path"))
-                occurrencesList.append(selectedSignal.get("occurrence"))
-
-        elif configFile.endswith('lsp'):
-            # Get all selectedArray attributes, containing signal paths,
-            # from the config file
-            selectedArrays = config.findall('.//*IDSPath')
-
-            # Display number of signals, saved in the config file
-            print("Config file: Number of signals: ", len(selectedArrays))
-
-            # Extract the paths of the signals and add them to the pathsList
-            for selectedPath in selectedArrays:
-                pathsList.append(selectedPath.get("path"))
-                occurrencesList.append(selectedPath.get("occurrence"))
-
-        pathsMap['paths'] = pathsList
-        pathsMap['occurrences'] = occurrencesList
-        return pathsMap
 
     @staticmethod
     def getNextPanelKey(n, ncols):

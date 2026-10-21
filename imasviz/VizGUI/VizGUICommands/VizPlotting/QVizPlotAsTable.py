@@ -25,16 +25,22 @@ these signals share coordinates? -- is gone: nothing here shares an abscissa, so
 there is nothing to agree on.
 
 A configuration file names the quantities by IDS path and occurrence, and they
-are looked for in the tree as it stands: an IDS that has not been loaded is
-named in the log rather than drawn from a guess. What the file holds besides the
-paths -- pen, symbols, axis ranges -- is not carried over, and the command says
-so rather than letting the user find out by comparing two windows.
+are looked for in the tree as it stands: a path the tree does not hold is named
+in the log rather than drawn from a guess. The file also says where each panel
+sat in the table and along which abscissa the window was drawn, and both are put
+back -- which the old reader never did, though the old writer recorded the place:
+measured, a file naming (0, 0) and (1, 1) laid its panels at (0, 0) and (0, 1),
+and a window drawn along time came back along two spatial coordinates. What an
+older file carries besides that -- pen, symbols, axis ranges -- is not carried
+over, and the command says so rather than letting the user find out by comparing
+two windows.
 """
 
 import logging
-import xml.etree.ElementTree as ET
 
-from imasviz.VizUtils import FigureTypes, QVizGlobalOperations
+from imasviz.VizUtils import FigureTypes
+from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
+    QVizConfigurationFile
 from imasviz.VizGUI.VizGUICommands.QVizAbstractCommand import QVizAbstractCommand
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 
@@ -44,7 +50,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
 
     FIGURE_TYPE = FigureTypes.TABLEPLOTTYPE
 
-    def __init__(self, dataTreeView, all_DTV=False, plotAxis='DEFAULT',
+    def __init__(self, dataTreeView, all_DTV=False, plotAxis=None,
                  configFile=None):
         """
         Arguments:
@@ -54,6 +60,9 @@ class QVizPlotAsTable(QVizAbstractCommand):
                                anything else for the default strategy -- which
                                the read answers per quantity, because only the
                                read knows whether this one has a time base.
+                               Left out, a configuration file's own abscissa
+                               decides; a saved window was drawn along one, and
+                               applying it should give that window back.
             configFile (str) : a saved plot configuration: it names the
                                quantities by path and occurrence instead of
                                taking them from the selection.
@@ -62,6 +71,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
         self.all_DTV = all_DTV
         self.plotAxis = plotAxis
         self.configFile = configFile
+        self.configuration = None
         self.figure = None
         QVizAbstractCommand.__init__(self, dataTreeView, None)
 
@@ -74,11 +84,15 @@ class QVizPlotAsTable(QVizAbstractCommand):
         """
         quantities = self.quantities()
         if not quantities:
-            raise ValueError('Nothing to plot: no selected node to draw.')
+            raise ValueError(
+                'Nothing to plot: %s.' % (
+                    '"%s" names no quantity this tree can provide'
+                    % self.configFile if self.configFile else
+                    'no selected node to draw'))
 
         self.figure = self.newFigure()
-        for dtv, node, entry in quantities:
-            self.plotNode(dtv, node, entry)
+        for dtv, node, entry, place in quantities:
+            self.plotNode(dtv, node, entry, place)
 
         if not self.figure.isDrawing():
             self.api.DeleteFigure(figureKey=self.figure.figureKey)
@@ -89,10 +103,14 @@ class QVizPlotAsTable(QVizAbstractCommand):
         return self.figure
 
     def quantities(self):
-        """[(view, node, selection entry)] for the quantities to draw."""
+        """[(view, node, selection entry, place)] for the quantities to draw.
+
+        `place` is the (row, column) a configuration file said the panel sat at,
+        or None to lay it in the next free slot.
+        """
         if self.configFile is not None:
             return self.quantitiesFromConfiguration()
-        return [(dtv, node, self.selectionEntryOf(dtv, node))
+        return [(dtv, node, self.selectionEntryOf(dtv, node), None)
                 for dtv in self.views() for node in self.selectedNodes(dtv)]
 
     def views(self):
@@ -109,21 +127,22 @@ class QVizPlotAsTable(QVizAbstractCommand):
     def quantitiesFromConfiguration(self):
         """The quantities a saved configuration names, found in this tree.
 
-        The paths are read with the helper the signal-selection entries use, so
-        a configuration written by either entry is read the same way. A path the
-        tree does not hold is named and skipped: loading an IDS is another
-        command's job, and drawing a quantity that is not in the tree would
-        invent a node the user cannot select, name or click.
+        The file is read by the format, so the two shapes this application has
+        written are read the same way and a file that is not a configuration is
+        refused with its own reason. A path the tree does not hold is named and
+        skipped: loading an IDS is another command's job, and drawing a quantity
+        that is not in the tree would invent a node the user cannot select, name
+        or click.
         """
+        self.configuration = QVizConfigurationFile.read(self.configFile)
         self.refuseConfigurationStyling()
-        pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
-            self.configFile)
-        paths = QVizGlobalOperations.makeIMASPaths(pathsMap.get('paths') or [])
-        occurrences = pathsMap.get('occurrences') or []
+        if self.plotAxis is None and self.configuration.abscissa:
+            self.plotAxis = self.configuration.abscissa
+
         quantities = []
-        for index, path in enumerate(paths):
-            occurrence = self.occurrenceOf(occurrences, index)
-            node = self.findNode(path, occurrence)
+        for quantity, path in zip(self.configuration.quantities,
+                                  self.configuration.treePaths()):
+            node = self.findNode(path, quantity.occurrence)
             if node is None:
                 logging.getLogger(self.dataTreeView.uri).error(
                     '"%s" is named by "%s" but is not in this tree: load the '
@@ -132,16 +151,17 @@ class QVizPlotAsTable(QVizAbstractCommand):
                 continue
             quantities.append((self.dataTreeView, node,
                                {'QTreeWidgetItem': node,
-                                'uri': self.dataTreeView.dataSource.uri}))
+                                'uri': quantity.uri or
+                                       self.dataTreeView.dataSource.uri},
+                               self.placeOf(quantity)))
         return quantities
 
     @staticmethod
-    def occurrenceOf(occurrences, index):
-        if not occurrences:
-            return 0
-        if len(occurrences) == 1:
-            return int(occurrences[0])
-        return int(occurrences[index])
+    def placeOf(quantity):
+        """(row, column) the file said this panel sat at, or None."""
+        if quantity.row is None or quantity.column is None:
+            return None
+        return quantity.row, quantity.column
 
     def findNode(self, path, occurrence):
         for node in self.dataTreeView.signalsList:
@@ -150,29 +170,28 @@ class QVizPlotAsTable(QVizAbstractCommand):
         return None
 
     def refuseConfigurationStyling(self):
-        """Say what a configuration file carries that is not applied.
+        """Say what an old configuration file carries that is not applied.
 
         Not a silent omission: the user saved a window that looked a certain way
         and is about to be shown one that looks different. What is carried over
-        is which quantities, and where they sit in the table.
+        is which quantities, where they sit in the table, and the abscissa they
+        were read along.
         """
-        try:
-            styled = ET.parse(self.configFile).getroot().findall(
-                './/PlotDataItem/opts')
-        except (OSError, ET.ParseError) as e:
-            raise ValueError('Cannot read "%s": %s' % (self.configFile, e))
-        if styled:
-            logging.getLogger(self.dataTreeView.uri).warning(
-                '"%s" holds styling for %d panel(s) (pen, symbols, axis '
-                'ranges): it is not applied. The quantities and their place in '
-                'the table are taken from the file; the panels are drawn from '
-                'the data.' % (self.configFile, len(styled)))
+        if not self.configuration.styledPanels:
+            return
+        logging.getLogger(self.dataTreeView.uri).warning(
+            '"%s" holds styling for %d panel(s) (pen, symbols, axis '
+            'ranges): it is not applied. The quantities, their place in '
+            'the table and the abscissa are taken from the file; the panels '
+            'are drawn from the data.'
+            % (self.configFile, self.configuration.styledPanels))
 
-    def plotNode(self, dtv, treeNode, entry):
+    def plotNode(self, dtv, treeNode, entry, place=None):
         """Give one quantity its panel. Returns how many curves it holds."""
         try:
             drawn = self.figure.plot(treeNode,
-                                     as_function_of_time=self.alongTime())
+                                     as_function_of_time=self.alongTime(),
+                                     place=place)
         except Exception as e:
             # One unreadable quantity must not cost the user the rest of the
             # selection -- and a quantity with two axes to draw is refused by

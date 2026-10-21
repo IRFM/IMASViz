@@ -30,11 +30,14 @@ one of its elements, titled as the whole quantity and with no word saying that
 one element had been picked.
 """
 
+import logging
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QHBoxLayout, QGridLayout, QPushButton,
                                QVBoxLayout, QWidget)
 
-from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfig import QVizSavePlotConfig
+from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfiguration import \
+    QVizSavePlotConfiguration
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import (QVizPanel,
                                                             QVizPanelScrollArea)
 
@@ -84,12 +87,23 @@ class QVizTablePlot(QWidget):
         self.plotAxis = plotAxis
 
     def onSavePlotConf(self):
-        """Write this table out as a '.pcfg' the api can apply again."""
-        command = QVizSavePlotConfig(self, dataTreeView=self.dataTreeView)
-        command.execute()
+        """Write this table out as a '.pcfg' the api can apply again.
 
-    def plot(self, treeNode, as_function_of_time=None):
+        A configuration that cannot be written -- a name the user typed that
+        names a place rather than a configuration -- is said in the log panel of
+        the shot view the window belongs to, not left as a traceback out of the
+        button.
+        """
+        try:
+            QVizSavePlotConfiguration(self.dataTreeView, self).execute()
+        except ValueError as e:
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
+
+    def plot(self, treeNode, as_function_of_time=None, place=None):
         """Give this quantity its own panel and draw it there.
+
+        `place` is the (row, column) a saved configuration said this panel sat
+        at; left out, the panel goes where the next free slot of the table is.
 
         Returns how many curves the panel holds. A quantity the panel cannot
         show raises, naming the quantity: the caller keeps going with the rest of
@@ -98,7 +112,10 @@ class QVizTablePlot(QWidget):
         panel = QVizPanel(self)
         row = len(self._panels)
         drawn = panel.plot(treeNode, row, as_function_of_time)
-        self.addPanelToGrid(panel, row)
+        if place is None:
+            self.addPanelToGrid(panel, row)
+        else:
+            self.addPanelAt(panel, place[0], place[1])
         self._panels.append(panel)
         return drawn
 
@@ -119,6 +136,34 @@ class QVizTablePlot(QWidget):
     def addPanelToGrid(self, panel, row):
         columns = self.columnsFor(len(self._panels) + 1)
         self.grid.addWidget(panel, row // columns, row % columns)
+
+    def addPanelAt(self, panel, row, column):
+        """Put a panel in the slot a saved configuration named.
+
+        A file written by this window names the slot its panel sat in, so
+        re-applying it gives the table back the shape it had -- which is what the
+        manual says a configuration holds besides the quantities.
+        """
+        self.grid.addWidget(panel, row, column)
+
+    def panelsInTable(self):
+        """[(row, column, panel)] -- where each panel actually sits.
+
+        Read from the layout rather than computed from the order the panels were
+        asked for: the old window computed a place the other way round from where
+        it had laid the panel, and the configuration keyed by that place then
+        only found its panel again on the diagonal of the table.
+        """
+        placed = []
+        for index, panel in enumerate(self._panels):
+            slot = self.grid.indexOf(panel)
+            if slot < 0:
+                columns = self.columnsFor(len(self._panels))
+                placed.append((index // columns, index % columns, panel))
+                continue
+            row, column = self.grid.getItemPosition(slot)[:2]
+            placed.append((row, column, panel))
+        return placed
 
     @staticmethod
     def columnsFor(count):

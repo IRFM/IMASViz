@@ -686,17 +686,26 @@ To apply MultiPlot configuration to any IMAS database, follow the next steps:
    configuration file.
 
 .. Note::
-   A configuration file holds two things: which quantities were plotted, and how
-   their panels looked. The quantities are taken from the file -- with the place
-   each panel held in the table -- and read again from the database that is open.
-   How the panels looked (pen, symbols, axis ranges) is not applied; the log
-   panel of the shot view says that the file holds styling and how many panels it
-   leaves out, so the difference between the saved window and the new one is
-   stated rather than left to be discovered.
+   A configuration file holds three things: which quantities were plotted, where
+   each panel sat in the table, and along which abscissa the window was drawn.
+   All three are put back: the quantities are selected again in the database that
+   is open and their panels are laid where they were. How the panels *looked*
+   (pen, symbols, axis ranges) is not in a file written by this release, because
+   the panels are drawn from the data. A configuration written by an older
+   release does hold that styling; the log panel of the shot view then says so and
+   how many panels it leaves out, so the difference between the saved window and
+   the new one is stated rather than left to be discovered.
+
+.. Note::
+   The abscissa saved with the window is the one the configuration is applied
+   with. Applying one through the menu of a shot view therefore gives back the
+   window that was saved; the scripted entries that name an abscissa themselves
+   (:ref:`scripting`) keep what they name.
 
 .. Note::
    A quantity named by the file that this tree does not hold is named in the log
-   panel and skipped: load the IDS it belongs to first.
+   panel and skipped: load the IDS it belongs to first. The rest of the
+   configuration is drawn.
 
 .. Note::
    Currently this feature will take all plot data from single (currently)

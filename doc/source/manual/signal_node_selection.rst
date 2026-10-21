@@ -122,6 +122,15 @@ opened IMAS database. To save a selection, follow the next steps:
 .. Note::
    The configurations are saved to ``$HOME/.imasviz`` folder.
 
+.. Note::
+   A node selection configuration holds the quantities it names, in the order
+   they were selected, with the occurrence of the IDS each was reached through.
+   Nothing about how the tree looked is saved.
+
+.. Note::
+   Saving an empty selection says so in the log panel of the shot view instead of
+   writing a configuration that names nothing.
+
 .. _apply_selection_from_configuration:
 
 Apply Selection From Saved Configuration
@@ -152,6 +161,20 @@ next steps:
 3. Press **Apply selection only**.
 
    The signal nodes, found in the configuration file, will then be selected.
+   The selection this leaves is the same as the one the tree mouse makes: the
+   nodes are coloured as selected and a plot entry started from here draws them.
+
+.. Note::
+   Applying a configuration names the IDS each quantity belongs to, and an IDS
+   whose data are not in the tree yet is loaded first. A quantity this database
+   does not hold is named in the log panel of the shot view and skipped; the rest
+   of the configuration is selected.
+
+.. Note::
+   Applying a configuration replaces the selection that was there. The list in
+   the window is read from :file:`$HOME/.imasviz` every time the window is shown,
+   so a configuration saved from a :guilabel:`Table Plot View`, from another shot
+   view, or with the user's own editor, is there without restarting anything.
 
 Apply Selection From MultiPlot Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

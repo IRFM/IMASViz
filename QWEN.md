@@ -126,7 +126,8 @@ Core concepts, in the vocabulary used by the code and docs:
   Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
-  (`QVizLoadSelectedData`, `QVizSelectNodes`, `QVizSelectSignals`, `QVizPlotOneNode`,
+  (`QVizLoadSelectedData`, `QVizSelectNodes`, `QVizSelectFromConfiguration`,
+  `QVizSaveNodeSelection`, `QVizSavePlotConfiguration`, `QVizPlotOneNode`,
   `QVizPlotAsSlices`, `QVizPlotAsTable`, `QVizPlotAsStacked`).
   `Viz_API` methods are
   thin wrappers that instantiate one of these and call `.execute()`.
@@ -137,6 +138,18 @@ Core concepts, in the vocabulary used by the code and docs:
   The AOS family is `getParametrizedDataPath()` (index *names*, e.g.
   `core.time_slice[i].a`) plus the occurrence — never a regular expression over the
   display path, which does not spell the occurrence.
+- **configurations** — `VizConfigurations/QVizConfigurationFile.py` owns the file:
+  an `<IMASVizConfiguration kind="plot|selection" version abscissa>` root with one
+  `<Quantity path occurrence row column uri/>` each, under `$HOME/.imasviz`
+  (`.pcfg`, `.lsp`). Reading dispatches on the **root element**, not the extension,
+  and the two shapes the previous writers produced (`PlotConfiguration` with
+  `GraphicsWindow/PlotItem/sourceInfo`, `SignalSelection` with `IDSPath`) are still
+  read — their paths spelled with dots and brackets, converted by
+  `QVizGlobalOperations.makeIMASPaths`, which is why that helper stays. Anything
+  else is refused with a `ValueError` naming the root or the parse error; nothing
+  about a configuration is raised out of a button or a menu slot. A file written
+  now holds no styling, so the "styling is not applied" log line is only for the
+  old ones (`styledPanels`).
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
   figures and shot views are `QMdiSubWindow`s inside it. Show/hide and delete logic branches on
   whether a frame is MDI-embedded — that string comparison is load-bearing.
@@ -202,7 +215,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 494 passed, 8 xfailed, ~29 s, offscreen
+python3 -m pytest tests/ -q     # 525 passed, 8 xfailed, ~31 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -211,6 +224,12 @@ import time, **before** any test imports `imasviz` — which is mandatory, becau
 `QVizGlobalValues` and `QVizGlobalOperations.checkEnvSettings()` can `sys.exit()`.
 Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 8 `xfail(strict=True)`
 entries are real defects and environment limits, listed in `TESTING.md` §4.
+
+The suite does **not** isolate `$HOME`. A test that lets the application write a
+configuration, a preference or a plot-configuration file writes into the real
+`~/.imasviz`; `tests/test_39_configurations.py` shows the pattern — point `HOME`
+at `tmp_path` with `monkeypatch`, which works because those helpers read `HOME`
+when they are called, not at import.
 
 The environment modules must be loaded in a specific order here: `ach-modules`
 auto-loads `UDA/2.9.0` and `IMAS-AL-Core/5.5.1`, which conflict with the
@@ -270,7 +289,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **112/117 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
+  **113/118 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
   chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
   `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`

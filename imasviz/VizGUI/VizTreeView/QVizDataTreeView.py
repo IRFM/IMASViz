@@ -20,10 +20,10 @@ from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
 from PySide6.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
 from imasviz.VizUtils import QVizLogger, QVizGlobalValues, GlobalIDs,getWindowSize
-from imasviz.VizGUI.VizConfigurations.QVizConfigurationListsWindow \
-    import QVizConfigurationListsWindow
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveSignalSelection \
-    import QVizSaveSignalSelection
+from imasviz.VizGUI.VizConfigurations.QVizApplyConfigurations \
+    import QVizApplyConfigurations
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveNodeSelection \
+    import QVizSaveNodeSelection
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizDisplayCurrentSelection \
     import QVizDisplayCurrentSelection
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleRightClick \
@@ -426,8 +426,8 @@ class QVizDataTreeViewFrame(QMainWindow):
         """
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
-        # Set empty list of configuration windows
-        self.configurationListsWindow = None
+        # The one configurations window of this shot view, opened on demand
+        self.configurationsWindow = None
 
         # Basic settings (QMainWindow)
         self.resize(800, 800)
@@ -696,18 +696,28 @@ class QVizDataTreeViewFrame(QMainWindow):
     @Slot(QMainWindow)
     def onShowConfigurations(self, parent):
         """Show configuration window.
+
+        One window per shot view, shown again when the entry is used twice: the
+        list it shows is read from the folder as it appears, so a configuration
+        saved since it was last opened is in it.
         """
-        self.configurationListsWindow = \
-            QVizConfigurationListsWindow(parent=self)
-        self.configurationListsWindow.show()
+        if self.configurationsWindow is None:
+            self.configurationsWindow = \
+                QVizApplyConfigurations(self.dataTreeView)
+        self.configurationsWindow.show()
+        return self.configurationsWindow
 
     @Slot()
     def onSaveSignalSelection(self):
-        """Save signal selection as a list of signal paths for single DTV
-        (QVizDataTreeView)
+        """Save the node selection of this shot view as a list of paths.
+
+        The name comes from the dialog the manual describes; a cancelled dialog
+        writes nothing.
         """
-        # Save signal selection as a list of signal paths to .lsp file
-        QVizSaveSignalSelection(dataTreeView=self.dataTreeView).execute()
+        try:
+            QVizSaveNodeSelection(dataTreeView=self.dataTreeView).execute()
+        except ValueError as e:
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @Slot()
     def onDisplayNodesSelection(self):

@@ -19,7 +19,7 @@ from PySide6.QtWidgets import QApplication
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectFromConfiguration import QVizSelectFromConfiguration
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
 from PySide6.QtWidgets import QFileDialog
 
@@ -65,21 +65,16 @@ else:
     if not ok:
         print("User input has failed. Example4 not executed.")
     else:
-        # Extract signal paths from the config file and add them to a list of
-        # paths
-        pathsMap = QVizGlobalOperations.getSignalsPathsFromConfigurationFile(
-            configFile=configFilePath)
+        # Select the nodes named by the configuration file in the given Data
+        # Tree View (DTV) window. One command reads the file, loads the IDS a
+        # path belongs to when it is not in the tree yet, and selects the rest.
+        QVizSelectFromConfiguration(dataTreeView=f.dataTreeView,
+                                    configFile=configFilePath).execute()
 
-        # First unselect all signals (optional)
-        # QVizUnselectAllSignals(dataTreeView=f.dataTreeView).execute()
-
-        # Select the signals, defined by a path in a list of paths, in the
-        # given Data Tree View (DTV) window
-        QVizSelectSignals(dataTreeView=f.dataTreeView,
-                          pathsMap=pathsMap).execute()
-
-        # Plot the set of the signal nodes selected using plot configuration file to
-        # a new Table Plot View and apply plot configurations (colors, line width etc.)
+        # Draw the selected nodes in a new Table Plot View: one panel per
+        # quantity, each read on the axes it sits on. A configuration written by
+        # an older release also holds pen, symbols and axis ranges, which are
+        # not applied -- the command says so in the log panel.
         api.PlotSelectedSignalsInTablePlotViewFrame(f)
 
         # Show the DTV window

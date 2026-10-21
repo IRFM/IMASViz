@@ -57,10 +57,12 @@ import pytest
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMdiArea
 
+from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
+    QVizConfigurationFile, QVizQuantity, SELECTION
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectFromConfiguration \
+    import QVizSelectFromConfiguration
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes \
     import QVizSelectNodes
-from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals \
-    import QVizSelectSignals
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAsTable
@@ -496,18 +498,21 @@ def test_a_plot_command_draws_the_nodes_that_were_selected(view):
 
     quantities = QVizPlotAsTable(view).quantities()
 
-    assert [node.getPath() for _, node, _ in quantities] == \
+    assert [node.getPath() for _, node, _, _ in quantities] == \
         ['core/time_slice(0)/a', 'core/time_slice(0)/b']
-    assert [entry['QTreeWidgetItem'] is node for _, node, entry in quantities] \
-        == [True, True]
+    assert [entry['QTreeWidgetItem'] is node
+            for _, node, entry, _ in quantities] == [True, True]
 
 
 @pytest.mark.ui
 def test_a_selection_read_from_a_configuration_records_the_same_entries(view):
     fill(view, _a(), _b())
 
-    QVizSelectSignals(view, {'paths': ['core/time_slice(0)/b'],
-                             'occurrences': [0]}).execute()
+    QVizSelectFromConfiguration(
+        view, QVizConfigurationFile(
+            kind=SELECTION,
+            quantities=[QVizQuantity('core/time_slice(0)/b', 0, None, None,
+                                     None)])).execute()
 
     assert pathsInSelection(view) == ['core/time_slice(0)/b']
     assert labelColours(*view.signalsList) == ['other', 'selected']

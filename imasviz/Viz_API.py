@@ -518,17 +518,49 @@ class Viz_API:
             QVizLoadSelectedData(dataTreeView=dataTreeFrame, IDSName=IDSName,
                                  occurrence=occurrence, viewLoadingStrategy=None, asynch=threadingEvent).execute()
 
-    def SelectSignals(self, DTV, pathsMap):
-        """Select signals nodes from a list of IMAS paths for the given shot
-           view.
+    def SelectSignals(self, DTV, paths):
+        """Select the nodes these paths name in the given shot view.
+
+        The manual spells the argument as a plain list of node paths; a script
+        written against the older dictionary of two parallel lists is still
+        taken. Either way the selection is left by the same command that applies
+        a saved node-configuration, so a scripted selection is shaped exactly
+        like one made by hand in the tree -- and, as before, an IDS whose data
+        are not in the tree yet is fetched first.
 
         :param DTV: a QVizDataTreeViewFrame object
-        :param pathsMap: (dict) pathsMap['paths'] : a list of signal paths (e.g.
-                                           ['magnetics/flux_loop(0)/flux/data'])
-                                           pathsMap['occurrences'] : a list of occurrences
+        :param paths: a list of node paths (e.g.
+                      ['magnetics/flux_loop(0)/flux/data']), a single path, or
+                      the older map with 'paths' and 'occurrences'. Occurrences
+                      are optional; one occurrence applies to every path.
+        :returns: how many of the named nodes were found and selected
         """
-        from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectSignals import QVizSelectSignals
-        QVizSelectSignals(DTV.dataTreeView, pathsMap).execute()
+        from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
+            QVizConfigurationFile, QVizQuantity, SELECTION
+        from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectFromConfiguration import QVizSelectFromConfiguration
+
+        pathsList = paths.get('paths') if isinstance(paths, dict) else paths
+        occurrences = paths.get('occurrences') if isinstance(paths, dict) else None
+        if isinstance(pathsList, str):
+            pathsList = [pathsList]
+        pathsList = list(pathsList or [])
+        occurrences = list(occurrences or [])
+        if occurrences and len(occurrences) not in (1, len(pathsList)):
+            raise ValueError('The number of specified occurrences differs from '
+                             'the number of specified paths.')
+        if len(occurrences) == 1:
+            occurrences = occurrences * len(pathsList)
+
+        quantities = [QVizQuantity(path=path,
+                                  occurrence=int(occurrences[index])
+                                  if occurrences else 0,
+                                  row=None, column=None, uri=None)
+                      for index, path in enumerate(pathsList)]
+        configuration = QVizConfigurationFile(kind=SELECTION,
+                                              quantities=quantities,
+                                              spellPathsAsDocumented=True)
+        return QVizSelectFromConfiguration(DTV.dataTreeView,
+                                          configuration).execute()
 
     def PlotSelectedSignalsFrom(self, dataTreeFramesList, figureKey=None,
                                 all_DTV=False):

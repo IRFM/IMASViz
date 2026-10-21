@@ -260,6 +260,49 @@ the rest are not fixed yet.
   recorded `-1, 0, 1`. The value is read by nobody in `imasviz/` — no command,
   frame or plugin indexes on it — so the defect is cosmetic; the entry *shape* is
   load-bearing, and it is the node object that was wrong.
+- **The *Save Plot Configuration* button wrote no file at all.** *(fixed by T9)*
+  `QVizSavePlotConfig` read 23 keys out of `PlotDataItem.opts` by name and calls
+  `QPen` methods on whatever the pen had become. Measured on the window of two
+  panels: `KeyError: 'name'` — pyqtgraph 0.13.7 has 22 of the 23 — and with that
+  key injected by hand, `AttributeError: 'tuple' object has no attribute
+  'brush'`, because `opts['pen']` is a tuple there. Re-measured on a window
+  holding a curve of 1642 points: the same two. `git` shows no file created.
+- **A window whose first panel carried no `signalData` was written anyway.**
+  *(fixed by T9)* The save loop `break`ed there. Measured: a file of **363
+  bytes** with **0** `PlotItem` and **0** `sourceInfo` in it, and no word in the
+  log — the user pressed OK and got a configuration naming nothing.
+- **The place a panel sat was written and never read back.** *(fixed by T9)*
+  The old writer put `key="(row, column)"` and `row`/`column` attributes on every
+  panel; the reader kept two attributes per panel — path and occurrence — and
+  `QVizPlotAsTable` asked neither. Measured: a file naming **(0, 0)** and
+  **(1, 1)** laid its two panels at **(0, 0)** and **(0, 1)**, while the manual
+  promises the place back.
+- **The abscissa the window was drawn with was not in the file.** *(fixed by
+  T9)* Measured: a table drawn along `time` and re-applied came back along
+  `rho_tor` and `theta_poloidal`, first abscissa values `[0, 1, 2, 3]` — not the
+  time base — and the two menu strategies could not be told apart in the result.
+- **The reader asked the file name, not the file.** *(fixed by T9)* The same XML
+  named `probe.xyz` answered `{'paths': [], 'occurrences': []}` without a word;
+  `endswith('lsp')` — no dot — took `probe.notlsp` for a node selection; and a
+  truncated file raised `ParseError: no element found: line 1, column 35` out of
+  the slot that was asked to apply it.
+- **The name typed in the dialog was trusted.** *(fixed by T9)* `configName[:-3]`
+  on a four-character extension: typing `probe.lsp` wrote **`probe..lsp`**. And
+  nothing looked at separators: typing `../outside` wrote `$HOME/outside.lsp`,
+  outside the configuration folder.
+- **The scripted entry the manual shows did not accept the form the manual
+  shows.** *(fixed by T9)* `scripting.rst:137/214` is
+  `api.SelectSignals(f1, pathsList1)` with a plain list of paths; measured, that
+  raised `TypeError: list indices must be integers or slices, not str`. Given the
+  dictionary form, the command rewrote the caller's own list on the way in
+  (`['foo.time_slice[i].vector']` came back as `['foo/time_slice(i)/vector']` in
+  the caller's dict), and three paths with two occurrences raised `IndexError:
+  list index out of range` instead of the `ValueError` written two lines below.
+- **The configuration list was refreshed by a chain of three attributes.**
+  *(fixed by T9)* `dataTreeView.parent.configurationListsWindow.updateList('lsp')`
+  — no guard on any link. A configuration saved from anywhere else (the plot
+  window's button, another shot view, the user's editor) left the list stale, and
+  two clicks on *Actions → Apply Configuration* built two windows.
 - `QVizViewLoadingStrategy` defines `setIdentifier` twice (:26, :29).
 - `QVizDataTreeView.updateMenuNodeSelection` (:575-620) destroys and rebuilds a
   menu on every `aboutToShow`, and writes `dataTreeView.selectedItem` on the way.
@@ -281,7 +324,7 @@ the rest are not fixed yet.
 | T6 | TablePlotView — the four "New (default axis)" / "New ('TIME' axis)" × This/All entries | `onPlotToTablePlotView` → `QVizPlotAsTable` → `QVizTablePlot`: one panel per quantity, each read on the axes it sits on, each carrying the controls for the axes that read pins; the configuration file names the quantities and the place each panel held | `QVizTablePlotView.py` (283 l.), the `shareSameCoordinates` gate on these entries, the `plotItem.column`/`plotItem.row` pair the configuration was keyed by, `QVizMultiPlotWindow.addMenuBar`/`onSavePlotConf` and the two `TablePlotView` branches of `checkFigureKey`/`setMultiPlotView` (43 l.), the second registration of the window's own key | fait — **correction of the "kills" as first written**: the row announced "two duplicate menu entries"; measured, the four entries are four distinct menu items, and what was duplicated is their *wiring* — three of the four asked for `plotAxis='TIME'`. What survives: `QVizMultiPlotWindow` itself (StackedPlotView, T7) with `applyPlotConfigurationAfterPlotting`, now unreachable for the table since its only caller was the deleted frame; `Viz_API.GetNextKeyForTablePlotView`, kept as the documented scripting accessor; the `TablePlotView:` namespace, which T0's Show/Hide/Delete address. The panel is not offered the right-click `Configure Plot` dialog, and the styling a configuration file holds is refused by name in the log — both owned by T9 ("the configuration format: save and style") |
 | T7 | StackedPlotView — the same four entries | `onPlotToStackedPlotView` → `QVizPlotAsStacked` → `QVizStackedPlot`: the T6 panel, moved out of the table into `QVizPanel.py` because both windows lay the same panel out; one panel per quantity in one column, the abscissa the first quantity read fixes, the X and Y ranges of the others linked to it, and two checkboxes that do what their labels say — a quantity read along another abscissa is refused by name, with TablePlotView pointed at | `QVizStackedPlotView.py` (459 l.), `QVizMultiPlotWindow.py` (496 l.), and then `QVizPlotWidget.py` (596 l.) | fait — **correction of the "kills" as first written**: measured, the two window modules are 457 and 463 lines (920 gone), but `QVizPlotWidget.py` (595 l. measured, not 596) does **not** go with them: its consumers outlive the stacked window — `Viz_API.CreatePlotWidget:630/647` and `GetPlotWidget:659`, which `AddPlot1DToFig:696`, `plot0D_DataVsTimeCommand:737` and `plotVsTimeAtGivenCoordinate1:793/831` still call, the menu inside a figure (`QVizCustomPlotContextMenu:213/233`), the registered Profiles plugin (`CustomizedViewBox.py:198/441`), `QVizTreeNode.nodeDataShareSameCoordinatesAs:846`, and `tests/test_13_plot_axes.py` / `test_32_preview.py`. It goes with the scripting surface and the plugin, i.e. T13 and whatever owns `AddPlot1DToFig`. What T7 did kill beyond the two windows: the `menu.addMenu` submenu that died before it could be clicked, and the gate those entries hid behind — `shareSameCoordinates`, `shareSameCoordinates2` and `defaultPlotAxisForSelection` (117 lines out of `QVizSignalHandling`, 50 back). `Viz_API.GetNextKeyForStackedPlotView` and the `StackedPlotView:` namespace stay, as T0's Show/Hide/Delete address them |
 | T8 | Select / unselect — one node, all of the same AOS, everything, This/All | One command, `QVizSelectNodes`: `toggle` for the node entry, `sameAos` for the structure family (read off the parametrized path and the occurrence, not off a display string), `unselectAll(all_DTV)` for This/All, `isSelected` for the label the menu offers — so the menu asks the selection what it holds instead of asking the node a flag it keeps for itself | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | fait — **correction of the "kills" as first written**: measured, five modules go, 285 lines — `QVizSelectOrUnselectSignal` (46), `QVizSelectSignal` (47), `QVizSelectSignalsGroup` (48), `QVizUnselectAllSignals` (58) and the dead `QVizSelectSignalsFromConfig` (86) — not one file plus two habits. `QVizSelectSignals` stays (T9 owns the configuration path) but delegates, and `infoDict['isSelected']` is now written nowhere in the package, so the selection has one record. What was *not* killed, and was measured before removing anything: the toolbar's "Unselect All Nodes" sub-menu survives the commands and keeps both its actions, and `all_DTV` empties every opened view — neither had a defect to claim. Still standing, out of T8's way: `updateMenuNodeSelection`, which rebuilds its menu on every `aboutToShow`, and the `selectedItem` crutch the menu and `QVizPlotOneNode` still read |
-| T9 | "Apply Configuration" / save a configuration | `QVizConfigurationListsWindow` (394 l.), `QVizSavePlotConfig` (335 l.) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | to do |
+| T9 | "Apply Configuration" / save a configuration | One module owns the file — `QVizConfigurationFile` (both kinds, read by root element, the two shapes the old writers produced still readable) — and four commands use it: `QVizSavePlotConfiguration` (the window's button), `QVizSaveNodeSelection` (the menu entry), `QVizSelectFromConfiguration` (applying either to a shot view, loading the IDS a path belongs to), `QVizApplyConfigurations` (the two-tab window, re-read from the folder on every show) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | fait — **correction of the "kills" as first written**: the row announced two files (394 + 335 l.); measured, four modules go — `QVizSavePlotConfig.py` (342), `QVizConfigurationListsWindow.py` (399), `QVizSaveSignalSelection.py` (117) and the `QVizSelectSignals.py` (151) that T8's row left standing — **1009 lines**, plus 94 lines of `QVizGlobalOperations` helpers (`getConfFilePath`, `printCode`, `getConfFilesList`, `getConfigurationFilesDirectory`, `getSignalsPathsFromConfigurationFile`) and the `ET` import they justified. `makeIMASPath`/`makeIMASPaths` stay: the new reader uses them on the old files, whose paths are spelled with dots and brackets. `Viz_API.GetPlotConfigurationPath` and `GetPlotConfigurationPath`'s documented scripting role stay, re-pointed at `QVizSelectFromConfiguration`; so does `getNextPanelKey`, which nothing calls and nothing in T9 owns |
 | T10 | "Export to IDS" | a 100-line inline dialog in `QVizDataTreeViewFrame.onExportToLocal` + `dataSource.build_uri` (xfail: `ImportError` on `_al_lowlevel`) | the inline dialog, the bare `except:` | to do |
 | T11 | Node documentation on left click | `QVizNodeDocumentationWidget` (651 l., sets `np.set_printoptions(threshold=sys.maxsize)` globally) | — | to do |
 | T12 | Load an occurrence — double click, Return, "Get … data for occurrence", "Add a new view", Shift+right click | `loadDefaultOccurrence` :424, `QVizLoadDataHandling`, `QVizViewLoadingStrategy` (identifiers 1-4 hardcoded, `QInputDialog` without a parent) | the magic identifiers, the duplicated `setIdentifier` | to do |
@@ -405,6 +448,19 @@ clears, and that a selection read from a configuration records the same entry.
 The sweep lost four modules: five selection modules gone and the command added
 takes one back, so 121 − 5 + 1 = 117 modules and 112 passed / 5 xfailed
 (474 − 5 + 1 + 24 = 494).
+Since T9: **525 passed, 8 xfailed** — thirty tests in
+`tests/test_39_configurations.py`, the first in the suite to redirect `HOME` into
+`tmp_path` (the suite does not isolate `$HOME`, so a configuration saved by a
+test would otherwise land in the folder the user works with). They pin the file
+by what it holds rather than the name it wears, the two shapes the old writers
+produced still read and their styling counted, a name that names a place refused
+before anything is written, the button that used to write nothing now naming
+every panel the window shows, the place re-applied where it was written, the
+abscissa the window was drawn with coming back as the abscissa it is applied
+with, a selection saved from one view selecting the same nodes in another, and
+the scripted entry taking the list of paths the manual shows. The sweep gained a
+module — four configuration modules gone, five added: 117 − 4 + 5 = 118 modules,
+113 passed / 5 xfailed (494 + 30 + 1 = 525).
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new

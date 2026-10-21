@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 494 passed, 8 xfailed, ~29 s
+python3 -m pytest tests/ -q       # 525 passed, 8 xfailed, ~31 s
 ```
 
 Useful variants:
@@ -117,6 +117,7 @@ dialog or a remote backend.
 | `test_36_table_plot_entries.py` | the four `TablePlotView` entries | the four menu entries as they fire (`New (default axis)` / `New ('TIME' axis)` x This/All): the two strategies read along different axes, one panel per quantity with its own abscissa and named slices, a two-axis quantity refused by name, the `(row, column)` keys and the key released at close, a `.pcfg` drawing its paths while refusing its styling; no case |
 | `test_37_stacked_entries.py` | the four `StackedPlotView` entries | the four menu entries as they fire, plus one action triggered from the menu: the submenu is still alive after the call that built it, the two strategies read along different axes, every panel shares the ranges of the first (links asked of the view boxes), the two checkboxes change what they say, a quantity read along another abscissa is refused by name and leaves no panel, the first quantity read fixes the abscissa, one-column keys, the key released at close; no case |
 | `test_38_selection_entries.py` | selecting and unselecting nodes | the node menu as the click fires it (`selectOrUnselectSignal`, the label the menu offers, `selectAllSignalsFromSameAOS`, `onUnselectSignals` This/All): one record for the selection, the entry holding the node it was asked for, the label recoloured where it was asked, the AOS family kept inside the clicked occurrence, "Unselect All" surviving a node the tree dropped; no case |
+| `test_39_configurations.py` | the configuration file and the commands that save and apply it | one module owns the format: read by its root element rather than its extension, the two shapes the old writers produced still read (and their styling counted), a name that names a place refused, the button that used to write no file now naming every panel and the place each sits in, the abscissa the window was drawn with applied back, a selection saved from one view selecting the same nodes in another, `Viz_API.SelectSignals` taking the plain list of paths `scripting.rst` shows; `HOME` redirected into `tmp_path`, because the suite does not isolate `$HOME`; no case |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an
