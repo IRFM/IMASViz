@@ -337,6 +337,48 @@ the rest are not fixed yet.
   created `<db>/<version>/<shot>/<run>/` under the login's own `~/public/imasdb`
   tree, silently. Nothing here can promise the note's warning is checked, so the
   note stays a warning and the log names the URI that was written to.
+- **The panel that answers "what is this node?" answered wrong in five ways.**
+  *(fixed by T11)* Measured on nodes built the way `QVizDataTreeViewBuilder`
+  builds them, on the reference case, and none of it printed an error.
+  `Number of zeros` was `len(np.where(values == 0))`, the length of a one-element
+  tuple: **1** for three values with no zero, **1** for four values with three
+  zeros, **1** for the 101 values of `profiles_1d/psi` — and 49 for
+  `code/output_flag`, which is where the answer happened to be right. `Min` and
+  `Max` were the plain extremes, so `[1, nan, inf, -inf, 0]` read `-inf` and
+  `inf`. A string array went down the same branch: `['a', 'b']` read `Min: a`,
+  `Max: b`, `Number of zeros: 1`, and the two `Invalid entries` rows were left at
+  `/` by the `except:` that caught `np.isnan` refusing strings. The content of an
+  array was `str(values)`, so an IMAS-Python array showed its wrapper —
+  `<IDSNumericArray (IDS:equilibrium, time_slice[0]/profiles_1d/psi, FLT_1D)>` —
+  **1543 characters for 101 values**, where the numbers the user came for are
+  what `Content:` holds. And the constructor called
+  `np.set_printoptions(threshold=sys.maxsize)` for the whole process and never
+  undid it: the threshold went from 1000 to 9223372036854775807, after which
+  `str()` of a million floats answered **12,166,667 characters in 75.08 s** where
+  the default answers 78 characters in 0.02 s — for a panel that shows 200 values
+  at each end, which `np.array2string(value[:5])` answers in 0.0001 s.
+- **Twenty labels prefilled with one character.** *(fixed by T11)* Every field
+  started at `/` and was shown, so a real `FLT_2D` with nothing in it — 48 of
+  them in this IDS, and 6 `FLT_4D` — read `Array shape: (0, 0)`, `Min: /`,
+  `Max: /`, `Content: /`. A row a node cannot answer is now absent.
+- **A failed read left another node's identity on screen.** *(fixed by T11)*
+  `update` hid its fields first and then read, so when the read raised — a leaf
+  the runtime does not hold — every field went blank while the hidden labels kept
+  `Node: equilibrium.psi`, `Array size: 101`, `Content: [-7.9 ...`, and the
+  exception reached the slot, where PySide6 6.6 prints a traceback and lets the
+  process live: **exit 0**, the preview update sitting after it in the same slot
+  never run. The panel now rebuilds from nothing for every node and says the
+  reason a read failed.
+- **The widget took the method Qt itself calls.** *(fixed by T11)* It defined
+  `update(self, item, dataTreeView)` on a `QWidget`, so the no-argument
+  `update()` that schedules a repaint was gone: `panel.update()` answered
+  `TypeError: QVizNodeDocumentationWidget.update() missing 2 required positional
+  arguments: 'item' and 'dataTreeView'`. The entry point is `showNode`.
+- **The click hunted the panel by object name and raised when it missed.**
+  *(fixed by T11)* `onLeftClickItem` did `self.parent.findChild(QWidget,
+  "QVizNodeDocumentationWidget")` and, on a miss, `raise ValueError` — out of a
+  slot, where nothing shows it to the user and where, measured, it stops the rest
+  of the slot. The frame now hands the panel to the view it belongs to.
 - `QVizViewLoadingStrategy` defines `setIdentifier` twice (:26, :29).
 - `QVizDataTreeView.updateMenuNodeSelection` (:575-620) destroys and rebuilds a
   menu on every `aboutToShow`, and writes `dataTreeView.selectedItem` on the way.
@@ -360,7 +402,7 @@ the rest are not fixed yet.
 | T8 | Select / unselect — one node, all of the same AOS, everything, This/All | One command, `QVizSelectNodes`: `toggle` for the node entry, `sameAos` for the structure family (read off the parametrized path and the occurrence, not off a display string), `unselectAll(all_DTV)` for This/All, `isSelected` for the label the menu offers — so the menu asks the selection what it holds instead of asking the node a flag it keeps for itself | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | fait — **correction of the "kills" as first written**: measured, five modules go, 285 lines — `QVizSelectOrUnselectSignal` (46), `QVizSelectSignal` (47), `QVizSelectSignalsGroup` (48), `QVizUnselectAllSignals` (58) and the dead `QVizSelectSignalsFromConfig` (86) — not one file plus two habits. `QVizSelectSignals` stays (T9 owns the configuration path) but delegates, and `infoDict['isSelected']` is now written nowhere in the package, so the selection has one record. What was *not* killed, and was measured before removing anything: the toolbar's "Unselect All Nodes" sub-menu survives the commands and keeps both its actions, and `all_DTV` empties every opened view — neither had a defect to claim. Still standing, out of T8's way: `updateMenuNodeSelection`, which rebuilds its menu on every `aboutToShow`, and the `selectedItem` crutch the menu and `QVizPlotOneNode` still read |
 | T9 | "Apply Configuration" / save a configuration | One module owns the file — `QVizConfigurationFile` (both kinds, read by root element, the two shapes the old writers produced still readable) — and four commands use it: `QVizSavePlotConfiguration` (the window's button), `QVizSaveNodeSelection` (the menu entry), `QVizSelectFromConfiguration` (applying either to a shot view, loading the IDS a path belongs to), `QVizApplyConfigurations` (the two-tab window, re-read from the folder on every show) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | fait — **correction of the "kills" as first written**: the row announced two files (394 + 335 l.); measured, four modules go — `QVizSavePlotConfig.py` (342), `QVizConfigurationListsWindow.py` (399), `QVizSaveSignalSelection.py` (117) and the `QVizSelectSignals.py` (151) that T8's row left standing — **1009 lines**, plus 94 lines of `QVizGlobalOperations` helpers (`getConfFilePath`, `printCode`, `getConfFilesList`, `getConfigurationFilesDirectory`, `getSignalsPathsFromConfigurationFile`) and the `ET` import they justified. `makeIMASPath`/`makeIMASPaths` stay: the new reader uses them on the old files, whose paths are spelled with dots and brackets. `Viz_API.GetPlotConfigurationPath` and `GetPlotConfigurationPath`'s documented scripting role stay, re-pointed at `QVizSelectFromConfiguration`; so does `getNextPanelKey`, which nothing calls and nothing in T9 owns |
 | T10 | "Export to IDS" | `onExportToLocal` → `QVizExportToIDS`: `QVizExportTarget` holds the four fields and validates them where they are typed, `QVizExportDialog` asks for them (and the backend as a choice), the write entry is built at the data dictionary the IDSs were read at and closed in a `finally`, and what is written is the cache the plots read — each IDS on its own occurrence, a refused IDS named in the log without costing the others | the inline dialog, the bare `except:` | fait — **correction of the "kills" as first written**: the row announced "a 100-line inline dialog" and two kills; measured, four things go. The dialog in `QVizDataTreeViewFrame` is **127 lines removed** (15 added back: a 7-line slot and its import), and with it the three Qt classes it was the only user of (`QDialog`, `QLineEdit`, `QPushButton`). `QVizIMASDataSource.build_legacy_uri` (the `from imas import _al_lowlevel as ll` path) and `QVizIMASDataSource.exportToLocal` (70 l., never called by the gesture) go too — 55 lines out of the data source, 47 back as `caseUri`, the spelling `_readCaseFromUri` reads back and the one `QtVIZ_GUI`'s `-u -d -s -r -b` path and the example plugin call. That lift is the **`build_uri` xfail of `test_02_data_source.py` going green**, the first xfail of this work to die. Four modules added, 485 l.: `QVizExportTarget` (150), `QVizExportToIDS` (206), `QVizExportDialog` (125), `__init__` (4). Nothing was grafted: the bare `except:` is gone, and so is the `entry.open()` call that was its whole failure — an entry built from an URI is open at construction |
-| T11 | Node documentation on left click | `QVizNodeDocumentationWidget` (651 l., sets `np.set_printoptions(threshold=sys.maxsize)` globally) | — | to do |
+| T11 | Node documentation on left click | `onLeftClickItem` → `QVizNodeDocumentationPanel.showNode(node)`, drawing what `QVizNodeFacts` decided: the name, the documentation, the data-dictionary status, the units, the shape and size, the zeros and the nan/inf counts, the extremes of the entries that *are* numbers, a preview bounded to 200 values at each end — and, when the read cannot answer, the reason, said once | `QVizNodeDocumentationWidget.py` (651 l., 12 methods, 20 `QLabel`s), its `np.set_printoptions(threshold=sys.maxsize)` — process-wide, never undone — its `update(self, item, dataTreeView)` sitting on `QWidget.update`, the 9 labels prefilled with `/`, the 7 `showFieldsFor…`/`hideAllFields`/`showAllFields` switches that prefilled them, the two bare `except:`, the duplicated dynamic-1D and static-1D branches, and in the view the `findChild(QWidget, "QVizNodeDocumentationWidget")` lookup with its `raise ValueError` | fait — **correction of the "kills" as first written**: the row announced nothing; measured, the widget is 651 lines (650 by `wc -l`) and five of its habits were answering wrong on real nodes, listed in §2. What replaces it is 335 lines in three files — `QVizNodeFacts` (231, no Qt: the facts, and the reason a read failed), `QVizNodeDocumentationPanel` (100, no arithmetic: the rows it is given, rebuilt from nothing at every click), `__init__` (4). `QVizDataTreeView` gives back 12 lines and takes 27 — the `ndw` dummy became the panel the frame hands over. Nothing was grafted: no `set_printoptions`, no `findChild`, no `raise` out of a slot, no prefilled label, and a scalar is read off the tree rather than through the runtime, which is the only way it does not answer `<IDSString0D …>` |
 | T12 | Load an occurrence — double click, Return, "Get … data for occurrence", "Add a new view", Shift+right click | `loadDefaultOccurrence` :424, `QVizLoadDataHandling`, `QVizViewLoadingStrategy` (identifiers 1-4 hardcoded, `QInputDialog` without a parent) | the magic identifiers, the duplicated `setIdentifier` | to do |
 | T13 | Plugins in the menu | `QVizPluginsPopUpMenu`, `QVizPluginsHandler` | — (last: plugins call the frames, so they follow them) | to do |
 
@@ -518,6 +560,30 @@ deleted `QVizCurvePlot` widgets a queued `paintEvent` still pointed at — a
 segfault in a test three files away. It held at HEAD, but only until an extra
 module shifted the garbage collection: **525 passed, 8 xfailed** there, three
 runs, and 573 passed here, three runs.
+
+Since T11: **608 passed, 7 xfailed** — thirty-three tests in
+`tests/test_41_node_documentation.py`, the three `ui` tests of
+`tests/test_23_scalar_content_and_lifecycle.py` re-pointed at the new panel
+(their intention unchanged: a status shown when the dictionary gives one,
+nothing when it does not, a scalar shown as its value), and the sweep's two extra
+modules — 122 to 124, **119 passed / 5 xfailed**. 573 + 33 + 2 = 608. They pin
+the five measured wrong answers of §2 one by one: the zero count on three arrays
+answering 0, 3 and 49 where the old one answered 1, 1 and 1; `Min`/`Max` taken on
+the finite entries with the nan and inf counts beside them; no `Min`, no `Max` and
+no zero count at all for a string array; a `Content:` row that holds the numbers
+and never `IDSNumericArray`; a preview that says `600 of 1000 values not shown`
+and stays under 6000 characters; no row ending `: /`; a failed read naming its
+exception with nothing of the previous node left on screen; and `panel.update()`
+still the one from `QWidget`. Six of them run on nodes of the reference case,
+found by the path the shot view spells — `equilibrium/time_slice(0)/boundary/
+outline/r` answering 72 values, `2.578317930647737`, `2.8251454055323495` and 0
+zeros — which is why the harness grew `shadowTreePaths` and `elementByTreePath`:
+`element.text` spells that road with dots and brackets, and a `Path` built from
+it evaluates against the runtime as something else. `nodeAsTheBuilderBuildsIt`
+now copies `0D_content` the way `build_nodes` does, or a real scalar shows nothing
+and the test proves the wrong thing. T11 changed none of the four remaining
+`Viz_API.GetSignal` callers: the panel asks one node for its own values, through
+the node's own path, and never goes through the scripting layer.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new

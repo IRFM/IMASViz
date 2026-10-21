@@ -104,7 +104,8 @@ class FakeDocItem:
     def __init__(self, name='rho_tor', dataName='rho_tor', documentation='doc',
                  dataType='FLT_0D', content='2.42', lifecycleStatus=None,
                  is0D=True, is1D=False, is2DOrLarger=False, isDynamic=False,
-                 isStatic=False, isIDSRoot=False, path='tf.rho_tor'):
+                 isStatic=False, isIDSRoot=False, path='tf.rho_tor',
+                 units='m', values=None, readError=None):
         self._name = name
         self._dataName = dataName
         self._documentation = documentation
@@ -116,6 +117,9 @@ class FakeDocItem:
         self._isStatic = isStatic
         self._isIDSRoot = isIDSRoot
         self._path = path
+        self._units = units
+        self._values = values
+        self._readError = readError
         self.infoDict = {'0D_content': content}
         if lifecycleStatus is not None:
             self.infoDict['lifecycle_status'] = lifecycleStatus
@@ -134,6 +138,9 @@ class FakeDocItem:
 
     def getPath(self):
         return self._path
+
+    def getUnits(self):
+        return self._units
 
     def getData(self):
         return self.infoDict
@@ -160,7 +167,15 @@ class FakeDocItem:
         return self._is2DOrLarger
 
     def evalPath(self, expression):
-        return None
+        """What the opened case holds under this path.
+
+        A real node reads it out of the IDS instance; here it is handed over, or
+        the failure a real node can answer with -- a leaf the runtime does not
+        have at all.
+        """
+        if self._readError is not None:
+            raise self._readError
+        return self._values
 
 
 class FakeAxesNode:

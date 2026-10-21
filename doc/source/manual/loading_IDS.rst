@@ -102,8 +102,17 @@ the procedure will be shown on a **magnetics IDS**.
       :width: 550px
 
    When IDS or node label is selected the :guilabel:`Node documentation`
-   widget will display the basic information (name and documentation) of
-   the node, as shown below.
+   widget displays what the opened case holds for that node: its name and its
+   documentation, the status the data dictionary gives it (*required*,
+   *optional*, *experimental*, *alpha*, *obsolescent*) and its units. A scalar
+   shows its value; an array shows its shape and its number of values, the
+   smallest and the largest of its entries that are numbers, how many entries
+   are zero, and how many are not numbers (``nan``, ``inf``), followed by the
+   values themselves -- at most 200 at each end of a long array, with the number
+   of values left out stated. A node that holds no values of its own, such as a
+   structure, shows its name and its documentation only; a node whose values
+   cannot be read says so, and says why. A row the node cannot answer is simply
+   absent from the widget.
 
    .. image:: images/DTVFrame_node_doc.png
       :align: center

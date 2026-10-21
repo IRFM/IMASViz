@@ -38,8 +38,8 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement\
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot \
     import QVizPreviewPlot
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
-from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget \
-    import QVizNodeDocumentationWidget
+from imasviz.VizGUI.VizWidgets.VizNodeDocumentation.QVizNodeDocumentationPanel \
+    import QVizNodeDocumentationPanel
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadSelectedData import QVizLoadSelectedData
 
@@ -113,7 +113,11 @@ class QVizDataTreeView(QTreeWidget):
         # Create the empty tree
         self.createEmptyIDSsTree(IDSDefFile)
 
-        # Set dummy for node documentation widget
+        # The node documentation panel of the frame this view lives in. The
+        # frame sets it when it docks one; a view without a frame of its own
+        # (the tests, a view built by hand) leaves it None and a click then says
+        # so in the log instead of raising out of the slot, which used to kill
+        # the preview update sitting after it.
         self.ndw = None
 
         # contains root nodes for each IDS occurrence, key = IDSName + '/' + occurrence,value = ids_root_occurrence
@@ -203,13 +207,17 @@ class QVizDataTreeView(QTreeWidget):
         # (marked with blue fill color in DTV)
         self.setSelectedItem(item=item, mouseButton="LEFT")
 
-        # Find and update DTVFrame-docked node documentation widget (NDW)
-        ndw = self.parent.findChild(QWidget, "QVizNodeDocumentationWidget")
-        if ndw is not None:
-            ndw.update(item, self)
+        # Show what this node is in the frame's node documentation panel.
+        # A measured consequence of the way this used to work: the lookup by
+        # object name missed, the slot raised ValueError, PySide6 printed the
+        # traceback and carried on -- so the user saw nothing about the node and
+        # the preview update below never ran.
+        if self.ndw is None:
+            logging.getLogger(self.uri).info(
+                'No node documentation panel in this window: cannot describe '
+                'the selected node.')
         else:
-            error = 'Node Documentation Widget not found. Update not possible'
-            raise ValueError(error)
+            self.ndw.showNode(item)
 
         # UPDATE PLOT PREVIEW WIDGET
         # Every node the click names is handed to the panel, which decides from
@@ -652,9 +660,16 @@ class QVizDataTreeViewFrame(QMainWindow):
         # - Set dockwidget size
         self.addDockWidget(Qt.RightDockWidgetArea, self.dockWidget_ppw)
 
-        # NODE DOCUMENTATION WIDGET (NDW)
-        # - Set the widget with default text
-        self.nodeDocumentationWidget = QVizNodeDocumentationWidget(parent=self)
+        # NODE DOCUMENTATION PANEL (NDW)
+        # - Set the panel. It names the node it was handed, so it has something
+        #   honest to say before the first click; the legacy widget prefilled
+        #   every one of its twenty labels with '/' and showed all of them.
+        self.nodeDocumentationWidget = QVizNodeDocumentationPanel(parent=self)
+        # The view asks this panel rather than hunting it by object name: the
+        # legacy click slot did a findChild on its parent and raised ValueError
+        # when the name did not answer, out of a slot, which stopped the preview
+        # update that followed it in the same slot.
+        self.dataTreeView.ndw = self.nodeDocumentationWidget
         # - Add the widget to dockwidget
         self.dockWidget_ndw = QDockWidget("Node documentation", self)
         self.dockWidget_ndw.setFeatures(QDockWidget.DockWidgetFloatable)

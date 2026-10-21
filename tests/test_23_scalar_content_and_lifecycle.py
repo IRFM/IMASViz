@@ -28,7 +28,8 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from imasviz.VizGUI.VizWidgets.QVizNodeDocumentationWidget import QVizNodeDocumentationWidget
+from imasviz.VizGUI.VizWidgets.VizNodeDocumentation \
+    import QVizNodeDocumentationPanel
 
 from support.caseTrees import loadCaseTrees, leafByText, nodeAsTheBuilderBuildsIt
 from support.fakes import FakeDocItem, FakeTreeView
@@ -98,7 +99,7 @@ def treeView(qapp, case):
 
 @pytest.fixture
 def panel(qtbot):
-    widget = QVizNodeDocumentationWidget()
+    widget = QVizNodeDocumentationPanel()
     qtbot.addWidget(widget)
     # A child widget only reports itself visible when its parents are, so the
     # panel has to be shown for a visibility assertion to mean what it says.
@@ -108,25 +109,23 @@ def panel(qtbot):
 
 @pytest.mark.ui
 def test_the_panel_shows_the_lifecycle_status_of_a_node(panel):
-    panel.update(FakeDocItem(lifecycleStatus='obsolescent'), None)
+    panel.showNode(FakeDocItem(lifecycleStatus='obsolescent'))
 
-    assert panel.lNodeLifecycleText.text() == 'obsolescent'
-    assert panel.lNodeLifecycleText.isVisible()
-    assert panel.lNodeLifecycleTitle.isVisible()
+    assert 'Data dictionary status: obsolescent' in panel.displayedRows()
 
 
 @pytest.mark.ui
 def test_the_panel_shows_nothing_about_a_status_the_dictionary_does_not_give(panel):
-    panel.update(FakeDocItem(), None)
+    panel.showNode(FakeDocItem())
 
-    assert panel.lNodeLifecycleText.text() == ''
-    assert not panel.lNodeLifecycleTitle.isVisible()
+    assert not [row for row in panel.displayedRows()
+                if row.startswith('Data dictionary status')]
 
 
 @pytest.mark.ui
 def test_a_scalar_node_shows_its_value_in_the_panel(panel):
     # The value, not the object: the panel is where a user checks which number a
     # node holds, and a wrapper repr answers nothing.
-    panel.update(FakeDocItem(content='2.42'), None)
+    panel.showNode(FakeDocItem(content='2.42'))
 
-    assert panel.lNodeContentsText.text() == '2.42'
+    assert 'Value: 2.42' in panel.displayedRows()
