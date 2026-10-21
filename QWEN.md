@@ -12,7 +12,7 @@ remotely through **UDA**.
 
 - Language: Python 3, GUI built on **Qt for Python (PySide6)**; plotting on **pyqtgraph**
   (plus matplotlib where used).
-- 133 `.py` files, all inside the single package `imasviz/`.
+- 135 `.py` files, all inside the single package `imasviz/`.
 - License: **CeCILL-C**, holders CEA (France) and LECAD / University of Ljubljana (Slovenia).
   Authors banner: `L. Fleury, X. Li, D. Penko`.
 - Depends on the IMAS **Python HLI** — the `imas` module. **Corrected by
@@ -116,7 +116,8 @@ imasviz/
 │   ├── VizGUICommands/        # command objects (loading/selection/menus/opening/plotting)
 │   ├── VizTreeView/           # the IDS tree view (shot view, "DTV")
 │   ├── VizPlot/ + VizPlotFrames/  # plot widgets and frames
-│   ├── VizWidgets/            # db browser, nodes-selection window, docs widget…
+│   ├── VizWidgets/            # db browser, nodes-selection window, VizNodeDocumentation/
+│   │                          # (QVizNodeFacts: what a node holds; the panel draws it)
 │   ├── VizGuiCustomization/   # QVizDefault defaults
 │   └── VizConfigurations/, VizExporters/
 ├── VizPlugins/                # plugin framework + plugins (see below)
@@ -226,7 +227,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 573 passed, 7 xfailed, ~30 s, offscreen
+python3 -m pytest tests/ -q     # 608 passed, 7 xfailed, ~30 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -300,7 +301,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **117/122 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
+  **119/124 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
   chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
   `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`
