@@ -18,10 +18,12 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QDockWidget, QMenuBar, QMenu
 from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
-from PySide6.QtWidgets import QApplication, QDialog, QLineEdit, QLabel, QPushButton
+from PySide6.QtWidgets import QApplication
 from imasviz.VizUtils import QVizLogger, QVizGlobalValues, GlobalIDs,getWindowSize
 from imasviz.VizGUI.VizConfigurations.QVizApplyConfigurations \
     import QVizApplyConfigurations
+from imasviz.VizGUI.VizGUICommands.VizDataExport.QVizExportToIDS \
+    import QVizExportToIDS
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveNodeSelection \
     import QVizSaveNodeSelection
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizDisplayCurrentSelection \
@@ -729,133 +731,19 @@ class QVizDataTreeViewFrame(QMainWindow):
 
     @Slot()
     def onExportToLocal(self):
-        """A feature that allows export of opened (!) IDSs to a new separate
-        IDS using a popup dialog window.
-        NOTE: the database (created using 'imasdb' command) must ALREADY
-        EXIST!
+        """Write the IDSs this tree view has open into another case.
+
+        The dialog names the case; the reason an export cannot happen -- nothing
+        open, a field left empty, a case the Access Layer refuses -- is said in
+        the log panel, where the manual tells the user to look. That reason used
+        to be swallowed by a bare ``except:``, logged at info level as "Unable to
+        create pulse file with URI: ..." with the Access Layer's own words thrown
+        away and nothing on disk but a 1912-byte ``master.h5``.
         """
-
-        dataSource = self.dataTreeView.dataSource
-
-        dialog = QDialog(self)
-        dialog.setWindowTitle('Export browsed tree view contents to local ID')
-        dialog.resize(300,200)
-
-        userLabel = QLabel('User: ', self)
-        databaseLabel = QLabel('Database: ', self)
-        shotLabel = QLabel('Shot: ', self)
-        runLabel = QLabel('Run: ', self)
-        backendLabel = QLabel('Backend: ', self)
-
-        noteLabel1 = QLabel('Note 1: Only IDSs, that are CURRENTLY OPENED in '
-                           'the tree view, will be exported!',
-                           self)
-        noteLabel2 = QLabel('Note 2: Make sure the database/machine '
-                            '(created using imasdb command) exists!',
-                           self)
-
-        userBox = QLineEdit(self)
-        userBox.setText('/')
-        databaseBox = QLineEdit(self)
-        databaseBox.setText('/')
-        shotBox = QLineEdit(self)
-        shotBox.setText('1')
-        runBox = QLineEdit(self)
-        runBox.setText('1')
-        backendBox = QLineEdit(self)
-        backendBox.setText('13')
-
-
-        def onOk():
-            import imas
-            # Execute the export to local IDS
-            logging.getLogger(dataSource.uri).info('Starting to export opened IDSs to ' +
-                                       ' IDS with user: ' +
-                                       userBox.text() + ', database: ' +
-                                       databaseBox.text() + ', shot: ' +
-                                       shotBox.text() +
-                                       ', run: ' + runBox.text() + '.')
-
-            major_version = os.environ["IMAS_MAJOR_VERSION"]
-            backend_id = int(backendBox.text())
-            uri, legacy_attributes = dataSource.build_uri(backend_id, int(shotBox.text()), int(runBox.text()), userBox.text(), databaseBox.text(), major_version, '')
-
-            # Patch: In case IDS database or user do not exist
-            try:
-                logging.getLogger(dataSource.uri).info("Creating pulse file with URI: " + uri + " ...")
-                #exported_db_entry = imas.DBEntry(uri, 'w')
-                exported_db_entry = None
-
-                if len(legacy_attributes) == 0:
-                    exported_db_entry = imas.DBEntry(uri, 'w')
-                else:
-                    user_name = legacy_attributes['user']
-                    shot = legacy_attributes['shot']
-                    run = legacy_attributes['run']
-                    db_name = legacy_attributes['database']
-                    data_version = legacy_attributes['version']
-                    backend_id = legacy_attributes['backend_id']
-                    exported_db_entry = imas.DBEntry(backend_id, db_name, shot, run, user_name, data_version)
-
-                status, idx = exported_db_entry.open()
-                
-                if status != 0:
-                    logging.getLogger(dataSource.uri).error("Unable to create pulse file with URI: " + uri + ".")
-                    return
-
-            except:
-                logging.getLogger(dataSource.uri).info('Unable to create pulse file with URI: ' + uri + ".")
-                return
-
-            dataSource.exportToLocal(exported_db_entry)
-            exported_db_entry.close()
-            logging.getLogger(dataSource.uri).info('Export finished.')
-           
-
-        def onCancel():
-            # Close the dialog
-            dialog.destroy()
-
-        okButton = QPushButton('OK', dialog)
-        okButton.clicked.connect(onOk)
-
-        cancelButton = QPushButton('Cancel', dialog)
-        cancelButton.clicked.connect(onCancel)
-
-        # Set layout
-        layout = QGridLayout(dialog)
-        layout.setObjectName('gridLayout')
-
-        # Set layout marigin (left, top, right, bottom)
-        # layout.setContentsMargins(10, 10, 10, 10)
-
-        # Set starting row index
-        r = 0
-
-        layout.addWidget(noteLabel1,     r, 0, 1, 4)
-        r += 1
-        layout.addWidget(noteLabel2,     r, 0, 1, 4)
-        r += 1
-        layout.addWidget(userLabel,     r, 0, 1, 1)
-        layout.addWidget(userBox,       r, 1, 1, 1)
-        r += 1
-        layout.addWidget(databaseLabel, r, 0, 1, 1)
-        layout.addWidget(databaseBox,   r, 1, 1, 1)
-        r += 1
-        layout.addWidget(shotLabel,     r, 0, 1, 1)
-        layout.addWidget(shotBox,       r, 1, 1, 1)
-        r += 1
-        layout.addWidget(runLabel,      r, 0, 1, 1)
-        layout.addWidget(runBox,        r, 1, 1, 1)
-        r += 1
-        layout.addWidget(backendLabel,  r, 0, 1, 1)
-        layout.addWidget(backendBox,    r, 1, 1, 1)
-        r += 1
-        layout.addWidget(okButton,      r, 0, 1, 2)
-        r += 1
-        layout.addWidget(cancelButton,  r, 0, 1, 2)
-
-        dialog.show()
+        try:
+            QVizExportToIDS(self.dataTreeView).execute()
+        except ValueError as e:
+            logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def getMDI(self):
         """ Get MDI area through the root IMASViz main window.

@@ -94,6 +94,12 @@ The IDS case parameters are described below:
 +--------------------+-----------------------------------------------------------+
 | Run number         | Pulse run number                                          |
 +--------------------+-----------------------------------------------------------+
+| Backend            | Where the pulse is written: HDF5 or MDSplus               |
++--------------------+-----------------------------------------------------------+
+
+The four fields start from the case this tree view has open, and each is checked
+as it is entered: the two number fields only take digits, and a field left empty
+is answered with its own name rather than sent to the Access Layer.
 
 When the case parameters are set, press the :guilabel:`OK` button to export to
 the specified new IDS.
@@ -104,7 +110,16 @@ the specified new IDS.
 
    :guilabel:`Export to IDS` feature dialog with set parameters.
 
-The export status gets displayed in the tree view log widget.
+The four fields name one case: the pulse is written under
+``<database>/<data dictionary major version>/<shot>/<run>``, at the data
+dictionary the exported IDSs were read with. That version comes from the data,
+not from the Access Layer running the application: an IDS read at version 3.35.0
+is written as a version 3 case, and an export asked for under another major
+version is refused before anything is written.
+
+The export status gets displayed in the tree view log widget: the number of IDSs
+written out of the number opened, each IDS the target refused named with the
+reason it was refused, and the URI that was written to.
 
 .. figure:: images/ExportToIDS_log_success.png
    :align: center

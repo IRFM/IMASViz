@@ -12,12 +12,20 @@ remotely through **UDA**.
 
 - Language: Python 3, GUI built on **Qt for Python (PySide6)**; plotting on **pyqtgraph**
   (plus matplotlib where used).
-- 132 `.py` files, all inside the single package `imasviz/`.
+- 133 `.py` files, all inside the single package `imasviz/`.
 - License: **CeCILL-C**, holders CEA (France) and LECAD / University of Ljubljana (Slovenia).
   Authors banner: `L. Fleury, X. Li, D. Penko`.
-- Depends on the IMAS **Python HLI** hosted at `ssh://git@git.iter.org/imas/al-python.git`.
-  It is **not** compatible with the GitHub `IMAS-Python` (ITER-Organization) bindings —
-  the API surface differs. Any code written against the GitHub bindings will not work here.
+- Depends on the IMAS **Python HLI** — the `imas` module. **Corrected by
+  measurement**: the stack this checkout runs on loads `IMAS-Python/2.3.0-foss-2023b`,
+  i.e. the ITER **IMAS-Python** bindings (they export `DBEntry`, `IDSFactory`,
+  `convert_ids`, `OLDEST_SUPPORTED_VERSION`), not the old generated-module HLI at
+  `ssh://git@git.iter.org/imas/al-python.git`. What the sources were written
+  against is the older surface, so the mismatch is real but points the other way:
+  `hasattr(imas, 'equilibrium')` is **False** here, and the repo's idiom
+  `eval("imas." + idsName + "().getMaxOccurrences()")` raises `AttributeError`
+  (swallowed by `except Exception: print(e)` in `QVizIMASDataSource.containsData`).
+  Do not write new code against generated `imas.<ids>()` classes; they do not exist
+  on this node.
 - Documentation is a first-class artifact of the repo: Sphinx/RST under `doc/source`, built with
   `make doc`. The RST manual is the authoritative user guide — consult it before inventing
   behavior.
@@ -128,9 +136,12 @@ Core concepts, in the vocabulary used by the code and docs:
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
   (`QVizLoadSelectedData`, `QVizSelectNodes`, `QVizSelectFromConfiguration`,
   `QVizSaveNodeSelection`, `QVizSavePlotConfiguration`, `QVizPlotOneNode`,
-  `QVizPlotAsSlices`, `QVizPlotAsTable`, `QVizPlotAsStacked`).
+  `QVizPlotAsSlices`, `QVizPlotAsTable`, `QVizPlotAsStacked`, `QVizExportToIDS`).
   `Viz_API` methods are
-  thin wrappers that instantiate one of these and call `.execute()`.
+  thin wrappers that instantiate one of these and call `.execute()`. A command
+  raises `ValueError` with the reason; the menu slot that fires it puts that
+  reason in the log panel — no dialog lives inside a widget slot, and no gesture
+  swallows a failure in a bare `except:`.
 - **the selection** — one record only: `dataTreeView.selectedSignalsDict`, keyed by
   `dataSource.dataKey(node)` (name, uri, path, **occurrence**), holding the
   `QTreeWidgetItem` itself. The node carries no `isSelected` flag of its own, and
@@ -215,14 +226,14 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 525 passed, 8 xfailed, ~31 s, offscreen
+python3 -m pytest tests/ -q     # 573 passed, 7 xfailed, ~30 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
 `IMAS_VERSION`, `IMAS_DATA_DICTIONARIES_DIR`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
 import time, **before** any test imports `imasviz` — which is mandatory, because
 `QVizGlobalValues` and `QVizGlobalOperations.checkEnvSettings()` can `sys.exit()`.
-Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 8 `xfail(strict=True)`
+Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 7 `xfail(strict=True)`
 entries are real defects and environment limits, listed in `TESTING.md` §4.
 
 The suite does **not** isolate `$HOME`. A test that lets the application write a
@@ -289,7 +300,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **113/118 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
+  **117/122 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
   chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
   `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`

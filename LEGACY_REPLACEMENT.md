@@ -303,6 +303,40 @@ the rest are not fixed yet.
   — no guard on any link. A configuration saved from anywhere else (the plot
   window's button, another shot view, the user's editor) left the list stale, and
   two clicks on *Actions → Apply Configuration* built two windows.
+- **The export wrote no IDS, and said nothing about it.** *(fixed by T10)* Three
+  defects stacked, each hiding the next. The handler's first statement built the
+  URI through a helper doing `from imas import _al_lowlevel as ll`; IMAS-Python
+  2.3.0 has no such module, so the click answered `ImportError: cannot import
+  name '_al_lowlevel'` — and that statement sat **outside** the `try`, so nothing
+  was caught: **0 files**. With the URI spelled by hand, the handler called
+  `open()` on an entry built from that URI; IMAS-Python opens it at construction
+  and answers `RuntimeError: This DBEntry is already open`, which the bare
+  `except:` turned into one *info* line ("Unable to create pulse file with URI:
+  …"): **1 file**, a 1912-byte `master.h5`, **0 IDSs**. And an entry built
+  without a data dictionary refuses every IDS — `RuntimeError: Provided IDS uses
+  DD 3.35.0 which has a different major version than the Data Entry (-1)`; pinned
+  at `3.35.0`, the same two IDSs came out as `master.h5` 2000 bytes and
+  `pulse_schedule.h5` 83662 bytes, read back at occurrence 0.
+- **One version was carried where the format needs two.** *(fixed by T10)* The
+  URI carries the **major** of the data dictionary (the real cases sit under
+  `west/3/54924/0`) and the entry is built at the **full** number: `dd_version='3'`
+  answers `UnknownDDVersion: Data dictionary version '3' cannot be found`. The
+  old code took its single number from `IMAS_MAJOR_VERSION`, the Access Layer's
+  own — `5` on this stack — so measured, an export named `no_such_db` wrote
+  `no_such_db/5/1/0/`: bytes on disk, in a directory no reader of this
+  application looks in.
+- **The dialog trusted text boxes, and prefilled a user called `/`.** *(fixed by
+  T10)* Its shot and run boxes were read with `int()` inside the handler, so a
+  shot of `abc` answered `ValueError: invalid literal for int() with base 10:
+  'abc'`; the backend was asked for as the number `13`, which the manual never
+  mentions; and the user and the database started at `/`, which the Access Layer
+  accepted without a word.
+- **A database that does not exist is not refused, it is created.** *(left as
+  measured)* The manual's second note warns that the database must exist; the
+  Access Layer does not enforce it. Six probe URIs naming invented databases each
+  created `<db>/<version>/<shot>/<run>/` under the login's own `~/public/imasdb`
+  tree, silently. Nothing here can promise the note's warning is checked, so the
+  note stays a warning and the log names the URI that was written to.
 - `QVizViewLoadingStrategy` defines `setIdentifier` twice (:26, :29).
 - `QVizDataTreeView.updateMenuNodeSelection` (:575-620) destroys and rebuilds a
   menu on every `aboutToShow`, and writes `dataTreeView.selectedItem` on the way.
@@ -325,7 +359,7 @@ the rest are not fixed yet.
 | T7 | StackedPlotView — the same four entries | `onPlotToStackedPlotView` → `QVizPlotAsStacked` → `QVizStackedPlot`: the T6 panel, moved out of the table into `QVizPanel.py` because both windows lay the same panel out; one panel per quantity in one column, the abscissa the first quantity read fixes, the X and Y ranges of the others linked to it, and two checkboxes that do what their labels say — a quantity read along another abscissa is refused by name, with TablePlotView pointed at | `QVizStackedPlotView.py` (459 l.), `QVizMultiPlotWindow.py` (496 l.), and then `QVizPlotWidget.py` (596 l.) | fait — **correction of the "kills" as first written**: measured, the two window modules are 457 and 463 lines (920 gone), but `QVizPlotWidget.py` (595 l. measured, not 596) does **not** go with them: its consumers outlive the stacked window — `Viz_API.CreatePlotWidget:630/647` and `GetPlotWidget:659`, which `AddPlot1DToFig:696`, `plot0D_DataVsTimeCommand:737` and `plotVsTimeAtGivenCoordinate1:793/831` still call, the menu inside a figure (`QVizCustomPlotContextMenu:213/233`), the registered Profiles plugin (`CustomizedViewBox.py:198/441`), `QVizTreeNode.nodeDataShareSameCoordinatesAs:846`, and `tests/test_13_plot_axes.py` / `test_32_preview.py`. It goes with the scripting surface and the plugin, i.e. T13 and whatever owns `AddPlot1DToFig`. What T7 did kill beyond the two windows: the `menu.addMenu` submenu that died before it could be clicked, and the gate those entries hid behind — `shareSameCoordinates`, `shareSameCoordinates2` and `defaultPlotAxisForSelection` (117 lines out of `QVizSignalHandling`, 50 back). `Viz_API.GetNextKeyForStackedPlotView` and the `StackedPlotView:` namespace stay, as T0's Show/Hide/Delete address them |
 | T8 | Select / unselect — one node, all of the same AOS, everything, This/All | One command, `QVizSelectNodes`: `toggle` for the node entry, `sameAos` for the structure family (read off the parametrized path and the occurrence, not off a display string), `unselectAll(all_DTV)` for This/All, `isSelected` for the label the menu offers — so the menu asks the selection what it holds instead of asking the node a flag it keeps for itself | `QVizSelectSignalsFromConfig.py` (dead), the AOS regex, the writes into `infoDict['isSelected']` | fait — **correction of the "kills" as first written**: measured, five modules go, 285 lines — `QVizSelectOrUnselectSignal` (46), `QVizSelectSignal` (47), `QVizSelectSignalsGroup` (48), `QVizUnselectAllSignals` (58) and the dead `QVizSelectSignalsFromConfig` (86) — not one file plus two habits. `QVizSelectSignals` stays (T9 owns the configuration path) but delegates, and `infoDict['isSelected']` is now written nowhere in the package, so the selection has one record. What was *not* killed, and was measured before removing anything: the toolbar's "Unselect All Nodes" sub-menu survives the commands and keeps both its actions, and `all_DTV` empties every opened view — neither had a defect to claim. Still standing, out of T8's way: `updateMenuNodeSelection`, which rebuilds its menu on every `aboutToShow`, and the `selectedItem` crutch the menu and `QVizPlotOneNode` still read |
 | T9 | "Apply Configuration" / save a configuration | One module owns the file — `QVizConfigurationFile` (both kinds, read by root element, the two shapes the old writers produced still readable) — and four commands use it: `QVizSavePlotConfiguration` (the window's button), `QVizSaveNodeSelection` (the menu entry), `QVizSelectFromConfiguration` (applying either to a shot view, loading the IDS a path belongs to), `QVizApplyConfigurations` (the two-tab window, re-read from the folder on every show) | the hand-parsed `GraphicsWindow/PlotItem/sourceInfo` XML | fait — **correction of the "kills" as first written**: the row announced two files (394 + 335 l.); measured, four modules go — `QVizSavePlotConfig.py` (342), `QVizConfigurationListsWindow.py` (399), `QVizSaveSignalSelection.py` (117) and the `QVizSelectSignals.py` (151) that T8's row left standing — **1009 lines**, plus 94 lines of `QVizGlobalOperations` helpers (`getConfFilePath`, `printCode`, `getConfFilesList`, `getConfigurationFilesDirectory`, `getSignalsPathsFromConfigurationFile`) and the `ET` import they justified. `makeIMASPath`/`makeIMASPaths` stay: the new reader uses them on the old files, whose paths are spelled with dots and brackets. `Viz_API.GetPlotConfigurationPath` and `GetPlotConfigurationPath`'s documented scripting role stay, re-pointed at `QVizSelectFromConfiguration`; so does `getNextPanelKey`, which nothing calls and nothing in T9 owns |
-| T10 | "Export to IDS" | a 100-line inline dialog in `QVizDataTreeViewFrame.onExportToLocal` + `dataSource.build_uri` (xfail: `ImportError` on `_al_lowlevel`) | the inline dialog, the bare `except:` | to do |
+| T10 | "Export to IDS" | `onExportToLocal` → `QVizExportToIDS`: `QVizExportTarget` holds the four fields and validates them where they are typed, `QVizExportDialog` asks for them (and the backend as a choice), the write entry is built at the data dictionary the IDSs were read at and closed in a `finally`, and what is written is the cache the plots read — each IDS on its own occurrence, a refused IDS named in the log without costing the others | the inline dialog, the bare `except:` | fait — **correction of the "kills" as first written**: the row announced "a 100-line inline dialog" and two kills; measured, four things go. The dialog in `QVizDataTreeViewFrame` is **127 lines removed** (15 added back: a 7-line slot and its import), and with it the three Qt classes it was the only user of (`QDialog`, `QLineEdit`, `QPushButton`). `QVizIMASDataSource.build_legacy_uri` (the `from imas import _al_lowlevel as ll` path) and `QVizIMASDataSource.exportToLocal` (70 l., never called by the gesture) go too — 55 lines out of the data source, 47 back as `caseUri`, the spelling `_readCaseFromUri` reads back and the one `QtVIZ_GUI`'s `-u -d -s -r -b` path and the example plugin call. That lift is the **`build_uri` xfail of `test_02_data_source.py` going green**, the first xfail of this work to die. Four modules added, 485 l.: `QVizExportTarget` (150), `QVizExportToIDS` (206), `QVizExportDialog` (125), `__init__` (4). Nothing was grafted: the bare `except:` is gone, and so is the `entry.open()` call that was its whole failure — an entry built from an URI is open at construction |
 | T11 | Node documentation on left click | `QVizNodeDocumentationWidget` (651 l., sets `np.set_printoptions(threshold=sys.maxsize)` globally) | — | to do |
 | T12 | Load an occurrence — double click, Return, "Get … data for occurrence", "Add a new view", Shift+right click | `loadDefaultOccurrence` :424, `QVizLoadDataHandling`, `QVizViewLoadingStrategy` (identifiers 1-4 hardcoded, `QInputDialog` without a parent) | the magic identifiers, the duplicated `setIdentifier` | to do |
 | T13 | Plugins in the menu | `QVizPluginsPopUpMenu`, `QVizPluginsHandler` | — (last: plugins call the frames, so they follow them) | to do |
@@ -394,7 +428,8 @@ The suite lost the five tests of the deleted image widget and one entry of
 `test_30_figure_registry.py`'s legacy-type parametrization — the `Image:` namespace
 is gone, so there is no Show/Hide entry left to pin for it — and the sweep lost the
 four deleted modules and gained `QVizSliceLines` (408 + 21 − 5 − 1 − 4 + 1 = 420).
-The `build_uri` xfail can only be lifted by T10; the five Qt Designer modules stay.
+The `build_uri` xfail was lifted by T10 — the first of the eight to go; the five
+Qt Designer modules stay.
 Since T5: **432 passed, 8 xfailed** — thirteen tests in
 `tests/test_35_selection_entries.py`, driven through the two entries as the menu
 fires them (`plotSelectedSignals`, `addSelectedSignalsPlotToFig`,
@@ -461,6 +496,28 @@ with, a selection saved from one view selecting the same nodes in another, and
 the scripted entry taking the list of paths the manual shows. The sweep gained a
 module — four configuration modules gone, five added: 117 − 4 + 5 = 118 modules,
 113 passed / 5 xfailed (494 + 30 + 1 = 525).
+Since T10: **573 passed, 7 xfailed** — forty-three tests in
+`tests/test_40_export_to_ids.py` and the `build_uri` test of
+`tests/test_02_data_source.py`, which stops being an xfail: the spelling lives in
+the data layer now, so 525 + 43 + 1 = 569, and the sweep gained the four modules
+of `VizDataExport` — 118 + 4 = 122 modules, 117 passed / 5 xfailed — for 573.
+They pin the URI as the inverse of the reader (`_readCaseFromUri(caseUri(…))`
+gives the case back), the two versions the format needs — `version=3` in the URI
+while the entry is built at `3.35.0`, because `dd_version='3'` answers
+`UnknownDDVersion` — a field left empty or holding a separator named instead of
+sent to the Access Layer, the `/` the old dialog prefilled refused by name, a shot
+box that cannot hold letters, a run of 0 kept distinct from a run left blank, the
+backend asked as a choice, the entry never asked to `open()` a second time, the
+entry closed when a `put` fails, one refused IDS named while the other two are
+written, `2 of 3 IDS(s) written` counted in the log, and — the one proof that
+matters for a gesture that wrote 0 IDSs — a real `pulse_schedule` read from the
+reference case, written into a `path=` case under `tmp_path`, and found again at
+occurrence 0. The suite needed one harness fix for them: `support/plotting.py`
+dropped the command it built, and with it the api holding the plot frames, so Qt
+deleted `QVizCurvePlot` widgets a queued `paintEvent` still pointed at — a
+segfault in a test three files away. It held at HEAD, but only until an extra
+module shifted the garbage collection: **525 passed, 8 xfailed** there, three
+runs, and 573 passed here, three runs.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new

@@ -57,10 +57,41 @@ def _readCaseFromUri(uri):
             parameters.get('run'))
 
 
+def caseUri(backendId, user, database, shot, run, dataVersion, options=''):
+    """Spell the URI of a case from the parameters the user gives.
+
+    This is the inverse of `_readCaseFromUri`, and it is the only place that
+    spells it. The Access Layer used to be asked for it through
+    ``_al_lowlevel.al_build_uri_from_legacy_parameters``; that module is not in
+    the Access Layer bindings this application runs on (IMAS-Python 2.3.0), so
+    every call answered ``ImportError`` -- including the first statement of the
+    *Export to IDS* handler and the command line's ``-u -d -s -r -b`` path. The
+    spelling here is the one the Access Layer documents, and it is the one the
+    cases on disk are opened with.
+
+    `dataVersion` is the version of the **data**, not of the Access Layer: it
+    becomes the directory the pulse is stored under,
+    ``<database>/<version>/<shot>/<run>``, so a case written with the Access
+    Layer's own major version lands where no reader looks for it.
+    """
+    backend = {13: 'hdf5', 12: 'mdsplus'}.get(backendId)
+    if backend is None:
+        raise ValueError('Unknown backend %r: HDF5 (13) or MDSplus (12).'
+                         % (backendId,))
+    if not dataVersion:
+        raise ValueError('No data version given to build a case URI.')
+    uri = 'imas:%s?user=%s;shot=%s;run=%s;database=%s;version=%s' % (
+        backend, user, shot, run, database, dataVersion)
+    if options:
+        uri += ';' + options.lstrip(';')
+    return uri
+
+
 class QVizIMASDataSource:
 
     # A source only ever reads a case; writing one happens through a separate
-    # entry of its own (QVizDataTreeView.exportToLocal).
+    # entry of its own (QVizExportToIDS.openForWriting), built at the data
+    # dictionary the exported IDSs were read at and never shared with this one.
     MODE = 'r'
 
     def __init__(self, name, uri):
@@ -108,49 +139,24 @@ class QVizIMASDataSource:
         return int(major_version)
 
     @staticmethod
-    def build_legacy_uri(backend_id, shot, run, user_name, 
+    def build_uri(backend_id, shot, run, user_name,
     db_name, data_version, options):
-        from imas import _al_lowlevel as ll
-        status, uri = ll.al_build_uri_from_legacy_parameters(
-            backend_id,
-            shot,
-            run,
-            user_name,
-            db_name,
-            data_version,
-            options,
-            )
-        if status != 0:
-            raise ValueError("Error calling al_build_uri_from_legacy_parameters(...)")
-        return uri
+        """The URI of a case, and -- under Access Layer 4 only -- the legacy
+        parameters an entry has to be built from.
 
-    
-    @staticmethod
-    def build_uri(backend_id, shot, run, user_name, 
-    db_name, data_version, options):
-        legacy_attributes = {}
-        if QVizIMASDataSource.getVersion()==4:
-            backend = ''
-            if backend_id == 13:
-                backend = 'hdf5'
-            elif backend_id == 12:
-                backend = 'mdsplus'
-            else:
-                raise ValueError("Unknown backend")
-
-            legacy_attributes['user'] = user_name
-            legacy_attributes['shot'] = int(shot)
-            legacy_attributes['run'] = int(run)
-            legacy_attributes['database'] = db_name
-            legacy_attributes['version'] = str(data_version)
-            legacy_attributes['backend_id'] = backend_id
-            legacy_uri = "imas:" + backend + "?" + "user=" + user_name + ";shot=" + str(shot) + ";run=" + str(run) + ";database=" + db_name + ";version=" + data_version
-            return (legacy_uri, legacy_attributes)
-        elif QVizIMASDataSource.getVersion()==5:
-            uri = QVizIMASDataSource.build_legacy_uri(backend_id, shot, run, user_name, db_name, data_version, options)
+        Under AL5 the URI is enough. Under AL4 it is not: the entry is built
+        from the five numbers, which is what `createDBEntry` does with them.
+        """
+        uri = caseUri(backend_id, user_name, db_name, shot, run, data_version,
+                      options)
+        if QVizIMASDataSource.getVersion() != 4:
             return (uri, {})
-        else:
-            raise ValueError("Unknown Access Layer version")
+        return (uri, {'user': user_name,
+                      'shot': int(shot),
+                      'run': int(run),
+                      'database': db_name,
+                      'version': str(data_version),
+                      'backend_id': backend_id})
         
 
     # Load IMAS data using IMAS api
@@ -318,20 +324,6 @@ class QVizIMASDataSource:
     def getName(self):
         return self.getShortLabel()
 
-    def exportToLocal(self, exported_db_entry):
-        """Export specified IDS to a new separate IDS.
-
-        Arguments:
-            exported_db_entry (object) : imas.DBEntry object
-        """
-        i = 0
-        for key in self.data_entries:
-            splits = key.split("/")
-            #IDSName = splits[0]
-            occurrence = int(splits[1])
-            ids_instance = self.data_entries[key]
-            exported_db_entry.put(ids_instance, occurrence)
-            i+=1
 
 class Worker(QRunnable):
     
