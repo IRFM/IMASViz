@@ -41,14 +41,20 @@ def test_a_datasource_starts_without_an_opened_entry():
     assert dataSource.generatedDataTree is None
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "build_legacy_uri does 'from imas import _al_lowlevel as ll' "
-    "(QVizIMASDataSource.py:45) but IMAS-Python 2.3.0 exposes no _al_lowlevel, "
-    "so URI building from legacy parameters raises ImportError"))
 def test_building_a_uri_from_legacy_parameters():
+    """The URI is spelled here now; the Access Layer never had that helper.
+
+    This used to be an xfail: the helper did "from imas import _al_lowlevel as
+    ll", and IMAS-Python 2.3.0 exposes no such module, so every call answered
+    ImportError -- the *Export to IDS* click and the command line's
+    -u -d -s -r -b path among them. The spelling is the one cases on disk are
+    opened with, and under Access Layer 5 nothing asks for the legacy numbers.
+    """
     uri, attributes = QVizIMASDataSource.build_uri(
         13, 54924, 0, 'g2lfleur', 'west', '3', {})
-    assert 'hdf5' in uri
+    assert uri == ('imas:hdf5?user=g2lfleur;shot=54924;run=0;database=west'
+                   ';version=3')
+    assert attributes == {}
 
 
 @pytest.mark.case

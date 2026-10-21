@@ -65,11 +65,22 @@ class FakeApi:
         return figureType + str(max(numbers) + 1 if numbers else 1)
 
 
+# The commands the helpers hand out, kept for the session. A command is what
+# holds the view, the view holds the api, and the api's `figureframes` is the
+# only reference the frames of a multi-figure plot have: a helper that returns
+# one frame and drops the command drops the rest, and Qt then deletes widgets a
+# paint event is still queued for -- a segfault inside GraphicsView.paintEvent,
+# in a test other than the one that made it happen.
+_keptAlive = []
+
+
 def plotCommand(*nodes, all_DTV=True, otherViews=()):
     """A command over one view holding `nodes`, plus any number of other views."""
     view = FakeView('imas:hdf5?case=1', list(nodes))
     FakeApi([view] + list(otherViews))
-    return QVizPlotAsSlices(dataTreeView=view, all_DTV=all_DTV)
+    command = QVizPlotAsSlices(dataTreeView=view, all_DTV=all_DTV)
+    _keptAlive.append(command)
+    return command
 
 
 def plotted(frame, index=0):

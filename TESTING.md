@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 525 passed, 8 xfailed, ~31 s
+python3 -m pytest tests/ -q       # 573 passed, 7 xfailed, ~30 s
 ```
 
 Useful variants:
@@ -118,12 +118,13 @@ dialog or a remote backend.
 | `test_37_stacked_entries.py` | the four `StackedPlotView` entries | the four menu entries as they fire, plus one action triggered from the menu: the submenu is still alive after the call that built it, the two strategies read along different axes, every panel shares the ranges of the first (links asked of the view boxes), the two checkboxes change what they say, a quantity read along another abscissa is refused by name and leaves no panel, the first quantity read fixes the abscissa, one-column keys, the key released at close; no case |
 | `test_38_selection_entries.py` | selecting and unselecting nodes | the node menu as the click fires it (`selectOrUnselectSignal`, the label the menu offers, `selectAllSignalsFromSameAOS`, `onUnselectSignals` This/All): one record for the selection, the entry holding the node it was asked for, the label recoloured where it was asked, the AOS family kept inside the clicked occurrence, "Unselect All" surviving a node the tree dropped; no case |
 | `test_39_configurations.py` | the configuration file and the commands that save and apply it | one module owns the format: read by its root element rather than its extension, the two shapes the old writers produced still read (and their styling counted), a name that names a place refused, the button that used to write no file now naming every panel and the place each sits in, the abscissa the window was drawn with applied back, a selection saved from one view selecting the same nodes in another, `Viz_API.SelectSignals` taking the plain list of paths `scripting.rst` shows; `HOME` redirected into `tmp_path`, because the suite does not isolate `$HOME`; no case |
+| `test_40_export_to_ids.py` | "Export to IDS": the case it writes and the IDSs it writes | the URI spelled once, in the data layer, and read back by the same layer (`_readCaseFromUri(caseUri(…))`); the two versions the format needs — `version=3` in the URI while the entry is built at `3.35.0` (`dd_version='3'` answers `UnknownDDVersion`); a field left empty or holding a separator named instead of sent to the Access Layer, including the `/` the old dialog prefilled; the shot box refusing letters where `int()` used to answer from the OK button; a run of 0 kept distinct from a run left blank; the backend as a choice, not as `13`; the entry never asked to `open()` a second time and closed even when a `put` fails; one refused IDS named while the others are written, counted as `2 of 3 IDS(s) written`; and one round trip on the reference case — a real `pulse_schedule` written into a `path=` case under `tmp_path` and found again at occurrence 0. No invented database name: an URI naming a database that does not exist *creates* one under the login's `~/public/imasdb`. The Access Layer stands in for everything but that round trip, so `ui`/`case` mark the two kinds of real thing it drives |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an
 import anywhere in the package.
 
-## 4. The 8 expected failures
+## 4. The 7 expected failures
 
 They are `xfail(strict=True)`, so they surface as `XFAIL` while still failing
 the run once fixed — a fix must remove the marker.
@@ -135,10 +136,6 @@ the run once fixed — a fix must remove the marker.
   PySide6 6.6, and the `viz_solps/src` subtree imports its siblings as
   `src.<mod>`. None of them is registered in `RegisteredPlugins`, so none is on
   a code path.
-- `QVizIMASDataSource.build_uri` raises `ImportError`: it does
-  `from imas import _al_lowlevel as ll` (`QVizIMASDataSource.py:45`) and
-  IMAS-Python 2.3.0 exposes no `_al_lowlevel`. Legacy URI building is therefore
-  broken on an AL5 stack.
 - `list_filled_paths` raises `packaging InvalidVersion: "+1"` when the harness
   dictionary (3.23.3) is loaded against a case written with DD 3.35.0.
 - `VizPlugin.getAllEntries` is declared twice in the class: the instance stub
