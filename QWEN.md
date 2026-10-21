@@ -21,9 +21,12 @@ remotely through **UDA**.
   `convert_ids`, `OLDEST_SUPPORTED_VERSION`), not the old generated-module HLI at
   `ssh://git@git.iter.org/imas/al-python.git`. What the sources were written
   against is the older surface, so the mismatch is real but points the other way:
-  `hasattr(imas, 'equilibrium')` is **False** here, and the repo's idiom
-  `eval("imas." + idsName + "().getMaxOccurrences()")` raises `AttributeError`
-  (swallowed by `except Exception: print(e)` in `QVizIMASDataSource.containsData`).
+  `hasattr(imas, 'equilibrium')` is **False** here, so the idiom the sources were
+  written against — `eval("imas." + idsName + "().getMaxOccurrences()")` — raises
+  `AttributeError` wherever it appears. Since T12 it appears in **one** place, the
+  unregistered-path `viz_Profiles/VizProfiles_plugin.py`; the 5 places that stood on
+  a tree gesture (the shot view's empty tree, `hasAvailableData`, the three
+  `Viz_API` occurrence helpers) now ask the case through `DBEntry.list_all_occurrences`.
   Do not write new code against generated `imas.<ids>()` classes; they do not exist
   on this node.
 - Documentation is a first-class artifact of the repo: Sphinx/RST under `doc/source`, built with
@@ -108,8 +111,10 @@ packaging manifest** in this repo.
 imasviz/
 ├── Viz_API.py                 # Viz_API: scripting API + central session state
 ├── VizUtils/                  # global constants, prefs, logging, window geometry
-├── VizDataSource/             # opens a case: URI building, DBEntry, Tore-Supra, factory
+├── VizDataSource/             # opens a case: URI building, DBEntry, Tore-Supra, factory,
+│                              # QVizCaseOccurrences (which occurrences the case holds)
 ├── VizDataAccess/             # QVizIDSViewParser: walks the dictionary through imas reflection
+│   └── VizTimeSlices/         #   how many elements of a dynamic AOS a view keeps
 ├── VizEntities/               # data-array handles
 ├── VizGUI/
 │   ├── QtVIZ_GUI.py           # entry point: QVizMainWindow, MDI area, start window
@@ -135,7 +140,7 @@ Core concepts, in the vocabulary used by the code and docs:
   Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
-  (`QVizLoadSelectedData`, `QVizSelectNodes`, `QVizSelectFromConfiguration`,
+  (`QVizLoadOccurrence`, `QVizSelectNodes`, `QVizSelectFromConfiguration`,
   `QVizSaveNodeSelection`, `QVizSavePlotConfiguration`, `QVizPlotOneNode`,
   `QVizPlotAsSlices`, `QVizPlotAsTable`, `QVizPlotAsStacked`, `QVizExportToIDS`).
   `Viz_API` methods are
@@ -227,7 +232,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 608 passed, 7 xfailed, ~30 s, offscreen
+python3 -m pytest tests/ -q     # 659 passed, 7 xfailed, ~34 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -274,9 +279,13 @@ Two verified properties make them unusable in automation:
 Do not "clean these up" while doing unrelated work — they are existing, intentional-looking
 artifacts of this codebase, and several are load-bearing:
 
-- `eval`/`exec` on IMAS symbol names (`eval("imas." + node.getIDSName() + "().getMaxOccurrences()")`)
-  is the established idiom for reaching the generated HLI bindings. Keep the pattern rather than
-  inventing a new accessor API.
+- `eval`/`exec` on IMAS symbol names survives in `QVizTreeNode.evalPath`
+  (`eval(path)` on a `Path` spelling) and in `viz_Profiles/VizProfiles_plugin.py`.
+  It is **not** a working idiom for reaching generated IDS classes: on this node
+  `imas.<ids>` does not exist, and T12 took out the 5 sites that asked
+  `eval("imas." + idsName + "().getMaxOccurrences()")` on a tree gesture — the case
+  answers that question through `DBEntry.list_all_occurrences` instead. Do not add
+  a new site; do not "restore" the old one.
 - `sys.path.append(os.environ['VIZ_HOME'])` is done for side effects at import time, so import
   order matters. It used to append `$HOME/.imasviz/VizGeneratedCode` too, for the generated
   parser classes: that folder is gone with the reflection based parser.
@@ -301,7 +310,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **119/124 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
+  **121/126 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
   chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
   `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`
@@ -314,6 +323,13 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   launch chain imports headless (`sys.argv = [..., '-platform', 'offscreen']` **before** the
   import — `QtVIZ_GUI` builds a `QApplication` at module level). A plain run stops only at
   `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, i.e. no X display.
-- Still **not** exercised: opening a real case (`IMAS_DATA_DICTIONARIES_DIR` is unset and
-  `imas_data_dictionaries/` is absent → no `IDSDef_<ver>.xml`), plugin runtimes, and `make doc`
-  (`sphinx-build: command not found` — Sphinx is not on this stack).
+- What the suite **does** reach: the reference case is opened by `tests/conftest.py`
+  (`imas:hdf5?path=…/west/3/54924/0`, pinned at data dictionary `3.35.0` while the
+  harness dictionary is `3.23.3`), its shadow trees are walked, and since T12 a real
+  `QVizDataTreeViewFrame` is built on it — 55 IDS roots, occurrences read from the
+  entry, one occurrence loaded. `QVizPreferences().build()` has to have run first, or
+  `setStyleForIDS` calls `setForeground(0, None)` and answers `TypeError`; `QtVIZ_GUI`
+  and `Viz_API` both call it at start-up, a test has to.
+- Still **not** exercised: plugin runtimes, and `make doc` (`sphinx-build: command not
+  found` — Sphinx is not on this stack; `python3 -m sphinx -b html -D html_theme=alabaster`
+  is how the manual gets checked here).

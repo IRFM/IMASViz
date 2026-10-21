@@ -341,7 +341,7 @@ def test_a_real_leaf_shows_the_numbers_the_case_holds(panel, case, realView):
 
     rows = panel.displayedRows()
     assert rowWith(panel, 'Node: ') == \
-        'Node: equilibrium.time_slice0.boundary.outline.r'
+        'Node: equilibrium.time_slice[0].boundary.outline.r'
     assert rowWith(panel, 'Documentation: ') == 'Documentation: Major radius'
     assert rowWith(panel, 'Units: ') == 'Units: m'
     assert rowWith(panel, 'Array size: ') == 'Array size: 72'
