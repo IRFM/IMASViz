@@ -38,12 +38,10 @@ RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
                      # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
                      # A plugin drawn in Qt Designer registers the window it is
-                     # drawn from instead of a module path; the howto spells it so.
-                     # 'SOLPS_UiPlugin': {'UiFile': 'SOLPSplugin.ui',
-                     #                    'dir': os.environ['VIZ_HOME'] +
-                     #                           '/imasviz/VizPlugins/viz_solps/',
-                     #                    'targetIDSroot': 'edge_profiles',
-                     #                    'targetOccurrence': 0},
+                     # drawn from instead of a module path. Kept as the shape,
+                     # not as an offer: this one is refused at the menu, because
+                     # the .ui is drawn around an exampleWidget class this Qt
+                     # cannot build -- see QVizPluginCatalog.
                      # 'example_UiPlugin': {'UiFile': 'examplePlugin.ui',
                      #                      'dir': os.environ['VIZ_HOME'] +
                      #                             '/imasviz/VizPlugins/viz_example/',

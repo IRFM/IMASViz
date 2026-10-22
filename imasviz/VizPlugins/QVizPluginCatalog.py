@@ -52,9 +52,11 @@ from imasviz.VizPlugins.VizPlugin import getRegisteredPlugins
 # raises ImportError here), QUiLoader answers
 # "QFormBuilder was unable to create a custom widget of the class 'exampleWidget';
 # defaulting to base class 'QWidget'" and drops every connection that .ui file
-# makes to that class -- 10 for examplePlugin.ui, 3 for SOLPSplugin.ui. Overriding
-# createWidget changes nothing: it is never called. The window that comes out is
-# hollow, so it is not shown; the plugin is refused and says which class is missing.
+# makes to that class -- 10 for examplePlugin.ui, the only one left in the
+# repository since the SOLPS plugin was removed (its window dropped 3, and came
+# out with no child of the class it declares). Overriding createWidget changes
+# nothing: it is never called. The window that comes out is hollow, so it is not
+# shown; the plugin is refused and says which class is missing.
 _CUSTOM_WIDGET = re.compile(r'<customwidget>.*?<class>(\w+)</class>', re.S)
 
 

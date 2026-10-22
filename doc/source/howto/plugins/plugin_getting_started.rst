@@ -456,14 +456,25 @@ menu entries.
                          # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
                          # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
                          # a plugin drawn in Qt Designer registers the window it
-                         # is drawn from instead of a module path; see
-                         # :ref:`plugins_qtdesigner`
+                         # is drawn from instead of a module path: {'UiFile':
+                         # 'examplePlugin.ui', 'dir': ..., 'targetIDSroot':
+                         # 'magnetics', 'targetOccurrence': 0}
                          'myPlugin' : 'viz_my_plugin.myPlugin'
                          }
 
 Nothing else has to be written anywhere: the plugin is asked itself what it
 offers, and each registered plugin is imported and built **once per opened
 case** -- the first menu that needs it pays, the menus that follow do not.
+
+.. note::
+   A **.ui** plugin -- one registered as that dictionary -- is loaded with
+   ``PySide6.QtUiTools.QUiLoader`` (this PySide6 has no ``uic`` module), and is
+   **refused by name** when its file is drawn around a widget class of its own:
+   Qt then answers *"unable to create a custom widget of the class
+   'exampleWidget'; defaulting to base class 'QWidget'"* and drops the
+   connections the file makes to that class, so the window that comes out is
+   hollow. Draw the interface out of Qt classes only, or provide the widget as a
+   Python class and register the plugin the way this page shows.
 
 Executing the custom plugin in IMASViz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
