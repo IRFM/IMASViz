@@ -262,7 +262,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 718 passed, 2 xfailed, ~88 s, offscreen
+python3 -m pytest tests/ -q     # 727 passed, 2 xfailed, ~98 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -368,6 +368,19 @@ artifacts of this codebase, and several are load-bearing:
   through `QVizLogger`'s custom Qt signal. Retrieve it as
   `logging.getLogger(self.dataTreeView.uri)` per-shot as the existing code does; a generic
   `logging.info` will not surface in the app.
+- A thread that does not own a widget may not touch one, and on this Qt 6.6.3 stack the
+  failure is not a warning but a **hang**: measured with no IMAS and no case in it, a
+  `QThread` calling `close()` on a shown `QProgressBar` stayed inside `QWindow::close()`
+  past a 20 s watchdog while the GUI thread pumped events. `QVizIDSViewParser.run()` used
+  to do exactly that on its failure paths, which lost the walk thread, so `finished` never
+  fired, the parser was never dropped from `dataSource.runningParsers`, and the occurrence
+  stayed in `QVizDataTreeView.loadsInProgress` for the rest of the session — every later
+  request for it then refused as "already being loaded". It no longer does (T18): the walk
+  logs and, when it is synchronous only, takes its bar down; asynchronously the source's
+  `_loadFinished` does it, on the thread that made the bar. A worker may compute, log and
+  `postEvent`; anything that creates, shows, renames or closes a window belongs on the GUI
+  thread. The symptom to recognise is a probe or test that stops printing with no exception
+  — confirm it with `faulthandler.dump_traceback_later(n, exit=True)`, do not guess.
 
 ## Verified in situ (ACH/Gateway module stack)
 
