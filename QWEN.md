@@ -206,11 +206,13 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    that IDS through `QVizLoadOccurrence`. Measured limit: a `.ui` drawn around a widget
    class of its own cannot be shown on this stack — Qt answers *"unable to create a custom
    widget of the class 'exampleWidget'; defaulting to base class 'QWidget'"* and drops the
-   connections the file makes to it (10 in `examplePlugin.ui`, 3 in `SOLPSplugin.ui`), and
-   overriding `createWidget` changes nothing because it is never called; such a plugin is
-   refused by name, naming the class, and both `.ui` plugins of the repository stay
-   unregistered. `viz_solps/` and `viz_example/` ship a `run_plugin_ui_standalone.py` for
-   off-GUI development of those.
+   connections the file makes to it (10 in `examplePlugin.ui`), and overriding
+   `createWidget` changes nothing because it is never called; such a plugin is refused by
+   name, naming the class, so the repository's only `.ui` plugin stays unregistered.
+   `viz_example/` ships a `run_plugin_ui_standalone.py` for off-GUI development of it.
+   The SOLPS plugin (`viz_solps/`, 11 files and 1 451 lines, with its own `SOLPSwidget`
+   class and a `.ui` that lost 3 connections the same way) was removed on request: it was
+   never registered, and the manual's section that documented it is gone with it.
 
 The menu side is two modules: `VizPlugins/QVizPluginCatalog.py` (the registered plugins of
 one shot view, imported and built **once for that view**, each asked on its own, every
@@ -338,12 +340,12 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **121/126 modules import**. The 5 failures are Qt-Designer scaffolding only, none in the launch
-  chain and none registered: `viz_example/exampleplugin.py`, `viz_solps/SOLPSplugin.py`,
-  `viz_solps/src/getIDSplugin.py` (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
-  `QPyDesignerCustomWidgetCollection`), `viz_solps/SOLPSwidget`, `viz_solps/src/GGDDialog`
-  (`No module named 'src'`; that subtree imports siblings as `src.<mod>`, needing `viz_solps/src`
-  on `sys.path`).
+  **116/117 modules import**. The one failure is Qt-Designer scaffolding only, not in the
+  launch chain and not registered: `viz_example/exampleplugin.py`
+  (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
+  `QPyDesignerCustomWidgetCollection`). Before the SOLPS plugin was removed the sweep
+  walked 126 modules with 5 failures; `viz_solps/` and its `src/` subtree accounted for 9
+  of those modules, 4 of the failures.
 - In this PySide6 build `Slot`, `Signal`, `QThread` and `exec_()` **do** exist, while
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.

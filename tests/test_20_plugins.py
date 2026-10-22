@@ -81,6 +81,25 @@ def test_the_removed_ets_plugin_stays_unregistered():
     assert 'ETSpluginIMASViz' not in RegisteredPlugins
 
 
+def test_the_solps_plugin_is_out_of_the_package():
+    # 11 files, 1 451 lines. It was never registered, and the five modules of it
+    # the sweep could import were reachable by nothing: the window its .ui draws
+    # comes out of QUiLoader as a bare QWidget standing in for the SOLPSwidget it
+    # declares, with the 3 connections to it dropped.
+    assert importlib.util.find_spec('imasviz.VizPlugins.viz_solps') is None
+    # Asking for a module inside a package that is gone does not answer None --
+    # the parent cannot be imported, and that is what says here.
+    for modulePath in ('imasviz.VizPlugins.viz_solps.SOLPSplugin',
+                       'imasviz.VizPlugins.viz_solps.SOLPSwidget',
+                       'imasviz.VizPlugins.viz_solps.src.getIDS',
+                       'imasviz.VizPlugins.viz_solps.src.GGDDialog'):
+        with pytest.raises(ModuleNotFoundError) as missing:
+            importlib.import_module(modulePath)
+        assert 'viz_solps' in str(missing.value)
+    assert not any('sol' in str(name + where).lower()
+                   for name, where in RegisteredPlugins.items())
+
+
 @pytest.mark.parametrize('name', KILLED)
 def test_a_plugin_is_no_longer_looked_up_by_name_somewhere_else(name):
     # Every one of these named the registered plugins a second time, by hand,

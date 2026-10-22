@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 693 passed, 6 xfailed, ~38 s
+python3 -m pytest tests/ -q       # 688 passed, 2 xfailed, ~38 s
 ```
 
 Useful variants:
@@ -97,7 +97,7 @@ dialog or a remote backend.
 | `test_17_axes_spec.py` | `QVizAxesSpec` | the axes a leaf has to be plotted along; unbounded `1..N` spelling |
 | `test_18_case_readings.py` | reference case, through the axes model | readings frozen as numbers: 17 344 samples, 49 slices, 1 642 × 101 grid |
 | `test_19_time_coordinate_rule.py` | `homogeneous_time` | where a time coordinate gets its values |
-| `test_20_plugins.py` | `VizPlugins` framework | registration table, `VizPlugin` contract |
+| `test_20_plugins.py` | `VizPlugins` framework | registration table, `VizPlugin` contract, and the plugins that left the package (`ETSpluginIMASViz`, the SOLPS subtree — 11 files, 1 451 lines) pinned as unimportable |
 | `test_20_tensor_data_access.py` | the IMAS reader and the factory | one reader for both IMAS sources; the (arrays, handle) contract |
 | `test_21_slice_sliders.py` | the axes a plot does not draw | each one fixed in front of the user, not silently |
 | `test_22_slice_controls.py` | `QVizSliceControls` | controls driven from the axes model rather than a flag |
@@ -127,20 +127,23 @@ dialog or a remote backend.
 The import sweep is the broad one: it fails when a Qt-binding change breaks an
 import anywhere in the package.
 
-## 4. The 6 expected failures
+## 4. The 2 expected failures
 
 They are `xfail(strict=True)`, so they surface as `XFAIL` while still failing
 the run once fixed — a fix must remove the marker.
 
-- 5 modules that cannot import: the Qt Designer scaffolding
-  (`viz_example/exampleplugin`, `viz_solps/SOLPSplugin`,
-  `viz_solps/src/getIDSplugin`, `viz_solps/SOLPSwidget`,
-  `viz_solps/src/GGDDialog`). `QPyDesignerCustomWidgetPlugin` does not exist in
-  PySide6 6.6, and the `viz_solps/src` subtree imports its siblings as
-  `src.<mod>`. None of them is registered in `RegisteredPlugins`, so none is on
-  a code path.
+- 1 module that cannot import: the Qt Designer scaffolding
+  `viz_example/exampleplugin`. `QPyDesignerCustomWidgetPlugin` does not exist in
+  PySide6 6.6, and it is not registered in `RegisteredPlugins`, so it is on no
+  code path.
 - `list_filled_paths` raises `packaging InvalidVersion: "+1"` when the harness
   dictionary (3.23.3) is loaded against a case written with DD 3.35.0.
+
+Four of the five import xfails this list used to carry died with the SOLPS
+plugin, which was removed from the package: its 9 modules left the import sweep
+(126 modules down to 117), 4 of them unimportable — two of them for this same
+missing `QPyDesignerCustomWidgetPlugin`, two because that subtree imported its
+siblings as `src.<mod>`.
 
 One xfail died in T13: `VizPlugin.getAllEntries` was declared twice in the class,
 the static lookup table shadowing the instance stub, so the base-class contract

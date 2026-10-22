@@ -578,25 +578,23 @@ def test_opening_that_window_loads_the_ids_it_was_drawn_around(monkeypatch,
     assert 'Showing the panel of plugin plainUiPlugin.' in caplog.text
 
 
-@pytest.mark.parametrize('uiFile, widgetClass', [
-    ('examplePlugin.ui', 'exampleWidget'),
-    ('SOLPSplugin.ui', 'SOLPSwidget'),
-])
 def test_a_window_drawn_around_a_widget_this_qt_cannot_build_is_refused_by_name(
-        monkeypatch, view, uiFile, widgetClass):
+        monkeypatch, view):
     # Measured: the file loads, Qt answers "unable to create a custom widget of
     # the class 'exampleWidget'; defaulting to base class 'QWidget'" and drops
-    # the 10 connections that .ui makes to it (3 for SOLPSplugin.ui). Overriding
-    # createWidget changes nothing: it is never called.
-    directory = os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_' + \
-        ('example' if 'example' in uiFile else 'solps') + '/'
+    # the 10 connections that .ui makes to it. Overriding createWidget changes
+    # nothing: it is never called. The SOLPS plugin's window answered the same
+    # way -- 3 connections dropped, and no child of the SOLPSwidget class it
+    # declares -- and is out of the repository now, so this stands on the one
+    # .ui left in the tree.
+    directory = os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/'
     registerUiPlugins(monkeypatch, {
-        'someUiPlugin': {'UiFile': uiFile, 'dir': directory,
+        'someUiPlugin': {'UiFile': 'examplePlugin.ui', 'dir': directory,
                          'targetIDSroot': 'magnetics', 'targetOccurrence': 0}})
     catalog = QVizPluginCatalog(view)
     assert catalog.entriesFor(FakeTreeNode(idsName='magnetics')) == []
-    assert widgetClass in catalog.refusals[0]
-    assert uiFile in catalog.refusals[0]
+    assert 'exampleWidget' in catalog.refusals[0]
+    assert 'examplePlugin.ui' in catalog.refusals[0]
 
 
 def test_a_window_that_cannot_be_opened_is_refused_with_the_file_it_is(monkeypatch,

@@ -23,21 +23,13 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PACKAGE = 'imasviz'
 
 # Qt Designer custom-widget scaffolding. QPyDesignerCustomWidgetPlugin does not
-# exist in PySide6 6.6 (QtDesigner only exports QPyDesignerCustomWidgetCollection),
-# and the viz_solps/src subtree imports its siblings as `src.<mod>`, which needs
-# viz_solps/src itself on sys.path. None of them is registered in
-# VizPlugins.VizPlugin.RegisteredPlugins, so none is on a code path.
+# exist in PySide6 6.6 (QtDesigner only exports QPyDesignerCustomWidgetCollection).
+# Four of the five entries this list used to carry belonged to the SOLPS plugin,
+# which is out of the package; the one that stays is not registered in
+# VizPlugins.VizPlugin.RegisteredPlugins either, so it is on no code path.
 KNOWN_UNIMPORTABLE = {
     'imasviz.VizPlugins.viz_example.exampleplugin':
         'QPyDesignerCustomWidgetPlugin is gone in PySide6 6.6',
-    'imasviz.VizPlugins.viz_solps.SOLPSplugin':
-        'QPyDesignerCustomWidgetPlugin is gone in PySide6 6.6',
-    'imasviz.VizPlugins.viz_solps.src.getIDSplugin':
-        'QPyDesignerCustomWidgetPlugin is gone in PySide6 6.6',
-    'imasviz.VizPlugins.viz_solps.SOLPSwidget':
-        'imports its siblings as src.<mod>, needs viz_solps/src on sys.path',
-    'imasviz.VizPlugins.viz_solps.src.GGDDialog':
-        'imports its siblings as src.<mod>, needs viz_solps/src on sys.path',
 }
 
 # Demo scripts and standalone runners are not importable modules: they build a
