@@ -262,7 +262,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 708 passed, 2 xfailed, ~46 s, offscreen
+python3 -m pytest tests/ -q     # 718 passed, 2 xfailed, ~88 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -304,6 +304,15 @@ order written and assert on the figure keys the api handed out while they ran.
 so a reference count there is only meaningful as an invariant (the reference case
 sits at 12 in a full run), and `RemoveDTVFrame` → `forget_case` drops the whole
 record for the case it was the last to show.
+
+The real-case files are where the suite's time goes, and one walk dominates:
+`tests/test_46_time_slices_on_a_real_case.py` alone is **+42 s**, because asking
+`equilibrium` for *all* its time slices keeps **164 792** signals and takes **26 s**
+to walk (a plain load keeps one slice: **3 368** signals). Those numbers are pinned
+in the file so nobody re-measures them; a slice index the case does not hold is
+**not** raised at the caller — `QVizIDSViewParser.run()` catches the `ValueError`
+and consigns it to the log of the case, so the assertion belongs on the log
+(`caplog`), and the refused view is left with nothing loaded at all.
 
 The environment modules must be loaded in a specific order here: `ach-modules`
 auto-loads `UDA/2.9.0` and `IMAS-AL-Core/5.5.1`, which conflict with the
