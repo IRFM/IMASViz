@@ -245,10 +245,15 @@ getEntries()
 """"""""""""
 
 The :guilabel:`getEntries()` method function is returning available features provided by
-the plugin for the current context. Each entry corresponds to a plugin functionality. An entry
-is diplayed as a menu item in the 'plugins' menu. Zero or several entries can be returned by this
-function depending on the current user selection. Association between an entry and a menu item
-is performed by the function getAllEntries() described below.
+the plugin for the current context. Each entry corresponds to a plugin functionality, and
+is named by the **number** the plugin gives it. An entry is displayed as a menu item in
+the 'Plugins' menu. Zero or several entries can be returned by this function depending on
+the current user selection. Association between an entry and a menu item is performed by
+the function getAllEntries() described below: the number returned here is looked up
+**there**, not at its position in the list, so a number that
+:guilabel:`getAllEntries()` does not describe is refused -- the plugin is reported in the
+log panel of the opened case with the numbers it really describes, and the other plugins
+keep their menu entries.
 
 In the example below, the getEntries() function returns 0 (this is the first entry since our plugin
 example has only 1 functionality) only if the user has selected the magnetics IDS (since the plugin
@@ -424,30 +429,41 @@ steps in the previous subsections.
 Registering plugin in IMASViz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to register the plugin in IMASViz, a single entry is required in the
-top part of the :file:`$VIZ_HOME/imasviz/VizPlugins/VizPlugin.py` file.
+In order to register a plugin in IMASViz, a single entry is required in the
+:guilabel:`RegisteredPlugins` dictionary at the top of the
+:file:`$VIZ_HOME/imasviz/VizPlugins/VizPlugin.py` file.
 
-In the :guilabel:`RegisteredPlugins` dictionary add key and corresponding value
-relevant for your plugin, e.g. :kbd:`'myPlugin' : 'viz_my_plugin.myPlugin'`.
+Add a key and the value relevant for your plugin, e.g.
+:kbd:`'myPlugin' : 'viz_my_plugin.myPlugin'`.
 
 Here the key must match the **py. file** and **class name** while the
-corresponding value must match :kbd:`'<plugin_source_path>.<py_file_name.py>'`.
-
-In this case, it should look something like this:
+corresponding value must match :kbd:`'<plugin_source_path>.<py_file_name>'`:
+the plugin is looked up under :file:`imasviz/VizPlugins/`, and the class taken
+out of that module bears the key's name. A plugin that is not registered is
+never imported; a registered name whose module is gone is reported in the log
+panel of the opened case under its own name, and the other plugins keep their
+menu entries.
 
 .. code-block:: python
     :emphasize-lines: 9
 
-    RegisteredPlugins = {'equilibriumcharts':'viz_equi.equilibriumcharts',
-                         'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
-                         'SOLPS_UiPlugin': '',
-                         'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
-                         'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
-                         'example_UiPlugin': '',
-                         'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
-                         'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz',
+    RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
+                         # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
+                         # 'CompareFLT1DPlugin': 'viz_tests.CompareFLT1DPlugin',
+                         # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
+                         # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
+                         'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
+                         # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
+                         # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
+                         # a plugin drawn in Qt Designer registers the window it
+                         # is drawn from instead of a module path; see
+                         # :ref:`plugins_qtdesigner`
                          'myPlugin' : 'viz_my_plugin.myPlugin'
                          }
+
+Nothing else has to be written anywhere: the plugin is asked itself what it
+offers, and each registered plugin is imported and built **once per opened
+case** -- the first menu that needs it pays, the menus that follow do not.
 
 Executing the custom plugin in IMASViz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -470,9 +486,11 @@ in :guilabel:`tree view browser`:
      available action for executing the plugin.
 
   - just right-click on the tree node. A popup menu including the
-    :guilabel:`Plugin` selection will be shown. Hovering on this selection will
+    :guilabel:`Plugins` selection will be shown. Hovering on this selection will
     shown the menu action (with label previously specified in
-    :guilabel:`getAllEntries()`).
+    :guilabel:`getAllEntries()`). The same sub-menu is offered on right-click on
+    a quantity of that IDS, and the plugin is asked what it offers **for the
+    node under the cursor**, not for the node the view has selected.
 
    .. figure:: images/IMASViz_simple_plot_example_plugin_menu_2.png
      :align: center
@@ -480,6 +498,12 @@ in :guilabel:`tree view browser`:
 
      Popup menu on right-click on **Magnetics IDS** showing the
      available action for executing the plugin.
+
+  When no registered plugin has anything to offer for that node, no
+  :guilabel:`Plugins` sub-menu appears at all, and shift + right-click -- which
+  offers the plugins and nothing else -- writes one line in the log panel
+  (`No plugin offers anything for the magnetics IDS.`) instead of opening an
+  empty menu.
 
 - click on the menu action. The plugin will be executed and the results (plot)
   will be shown in a matplotlib plot window.

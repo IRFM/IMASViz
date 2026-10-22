@@ -422,6 +422,68 @@ the rest are not fixed yet.
   nobody.** *(fixed by T12)* A `QProgressBar` per load, `hide()`-ed and never
   `close()`-ed — a dozen loads, a dozen live windows; and `limited_nodes` set on
   every array of structures the walk met, read by nothing in the package.
+- **A menu that imported the world, once per right click, once per view.**
+  *(fixed by T13)* `QVizPluginsHandler` called `VizPlugin.getPluginsObjects`,
+  which imported every registered plugin and built its objects anew: **0,999 s**
+  for the first menu of a process on the reference case, 0,0425 s for the second,
+  0,0008 s after that — 4,186 s cold for that one call, and the launch chain
+  imports no plugin at all, so the whole cost (matplotlib among them) was paid on
+  the gesture. Nothing was kept either, so a `.ui` plugin rebuilt its
+  `QMainWindow` and `sys.path.append`-ed its folder on every click.
+- **One plugin's exception took every other plugin's lines with it.** *(fixed by
+  T13)* A plugin raising inside `getEntries` left **0 entries** in the menu and
+  the exception escaped the right click; a stale entry in the registration table
+  did the same with a `ModuleNotFoundError`. Now each plugin is asked on its own
+  and the one that failed is named in the log of the case, the others keeping
+  their lines.
+- **The words of an entry were read at its position; its number was never used.**
+  *(fixed by T13)* `getAllEntries()` is documented as `[(number, description)]`
+  and `execute(vizAPI, pluginEntry)` is documented as receiving that number; the
+  menu indexed the list by position and gave every entry the same id, **9999**,
+  under a `# TODO: properly set ID` — then read that id back and threw it away.
+  A plugin declaring entries `[2]` with two descriptions answered `IndexError`;
+  asking the same handler twice for the same menu showed **6 lines instead of 3**.
+- **A plugin was invisible if it did not inherit, and the fallback tables named
+  plugins that are not registered.** *(fixed by T13)* A plugin honouring every
+  documented method but not subclassing `VizPlugin` got **no line and no word**;
+  `getPluginsConfigurationFor` and `getEntriesFor` answered `KeyError` for both
+  registered plugins, because their tables named only the two that are not; and
+  `getAllEntries` was declared twice, the static table shadowing the contract
+  stub, so `VizPlugin().getAllEntries()` answered `TypeError: missing 1 required
+  positional argument: 'pluginsName'` — the contract the manual documents was
+  unreachable. `getMenuItem` read `self.getSubjects()`, which no class in the
+  package defines.
+- **A sub-menu with nothing in it, on 42 of the 55 IDS names.** *(fixed by T13)*
+  The 'Plugins' heading was added before anyone asked, and Shift+right click —
+  which offers the plugins and nothing else — opened an empty menu.
+- **The sub-menu died before the click could reach it.** *(fixed by T13)* Built
+  with `parentMenu.addMenu(title)`, its C++ object belongs to the Python wrapper
+  that call returns; the gestures dropped that wrapper, and reading the sub-menu
+  back from its action answered `RuntimeError: Internal C++ object
+  (PySide6.QtWidgets.QMenu) already deleted`. The menu is now given its parent at
+  construction, as the rest of the package does.
+- **The plugins were asked about the view's selection, not the node under the
+  cursor.** *(fixed by T13)* The manual says a plugin decides from
+  `self.selectedTreeNode`; the framework handed it the selection, and with
+  nothing selected right-clicking a quantity answered `AttributeError:
+  'NoneType' object has no attribute 'getDataType'`.
+- **A `.ui` plugin's window came out hollow, and the Profiles plugin hid its
+  failure behind a logging error of its own.** *(fixed by T13)* `from PySide6
+  import uic` does not exist on this stack; with the loader this PySide6 does
+  have, `examplePlugin.ui` loads but Qt answers "unable to create a custom
+  widget of the class 'exampleWidget'; defaulting to base class 'QWidget'" and
+  drops the 10 connections it makes to that class (3 for `SOLPSplugin.ui`), and
+  `createWidget` is never called. Such a plugin is now refused by name, naming
+  the class. `VizProfiles_plugin` chained a second `getLogger` onto the first —
+  `AttributeError: 'Logger' object has no attribute 'getLogger'` — which is what
+  the user read instead of the `AttributeError` of the sixth and last
+  `eval("imas." + ids + "…")` of the package; its `data_found` built a name with
+  `exec` and read it back with `eval`.
+- **The manual documented two tables no code defines.** *(fixed by T13, in the
+  manual)* `plugin_QTdesigner.rst` describes `RegisteredPluginsConfiguration` and
+  `EntriesPerSubject`; neither exists. What the same howto *does* show — a
+  `.ui` plugin registered as a dictionary inside `RegisteredPlugins` — is what
+  the new catalog reads.
 - `QVizDataTreeView.updateMenuNodeSelection` (:575-620) destroys and rebuilds a
   menu on every `aboutToShow`, and writes `dataTreeView.selectedItem` on the way.
 - `QVizMainMenuController.deleteAllViews` takes an `index` it never receives
@@ -446,7 +508,7 @@ the rest are not fixed yet.
 | T10 | "Export to IDS" | `onExportToLocal` → `QVizExportToIDS`: `QVizExportTarget` holds the four fields and validates them where they are typed, `QVizExportDialog` asks for them (and the backend as a choice), the write entry is built at the data dictionary the IDSs were read at and closed in a `finally`, and what is written is the cache the plots read — each IDS on its own occurrence, a refused IDS named in the log without costing the others | the inline dialog, the bare `except:` | fait — **correction of the "kills" as first written**: the row announced "a 100-line inline dialog" and two kills; measured, four things go. The dialog in `QVizDataTreeViewFrame` is **127 lines removed** (15 added back: a 7-line slot and its import), and with it the three Qt classes it was the only user of (`QDialog`, `QLineEdit`, `QPushButton`). `QVizIMASDataSource.build_legacy_uri` (the `from imas import _al_lowlevel as ll` path) and `QVizIMASDataSource.exportToLocal` (70 l., never called by the gesture) go too — 55 lines out of the data source, 47 back as `caseUri`, the spelling `_readCaseFromUri` reads back and the one `QtVIZ_GUI`'s `-u -d -s -r -b` path and the example plugin call. That lift is the **`build_uri` xfail of `test_02_data_source.py` going green**, the first xfail of this work to die. Four modules added, 485 l.: `QVizExportTarget` (150), `QVizExportToIDS` (206), `QVizExportDialog` (125), `__init__` (4). Nothing was grafted: the bare `except:` is gone, and so is the `entry.open()` call that was its whole failure — an entry built from an URI is open at construction |
 | T11 | Node documentation on left click | `onLeftClickItem` → `QVizNodeDocumentationPanel.showNode(node)`, drawing what `QVizNodeFacts` decided: the name, the documentation, the data-dictionary status, the units, the shape and size, the zeros and the nan/inf counts, the extremes of the entries that *are* numbers, a preview bounded to 200 values at each end — and, when the read cannot answer, the reason, said once | `QVizNodeDocumentationWidget.py` (651 l., 12 methods, 20 `QLabel`s), its `np.set_printoptions(threshold=sys.maxsize)` — process-wide, never undone — its `update(self, item, dataTreeView)` sitting on `QWidget.update`, the 9 labels prefilled with `/`, the 7 `showFieldsFor…`/`hideAllFields`/`showAllFields` switches that prefilled them, the two bare `except:`, the duplicated dynamic-1D and static-1D branches, and in the view the `findChild(QWidget, "QVizNodeDocumentationWidget")` lookup with its `raise ValueError` | fait — **correction of the "kills" as first written**: the row announced nothing; measured, the widget is 651 lines (650 by `wc -l`) and five of its habits were answering wrong on real nodes, listed in §2. What replaces it is 335 lines in three files — `QVizNodeFacts` (231, no Qt: the facts, and the reason a read failed), `QVizNodeDocumentationPanel` (100, no arithmetic: the rows it is given, rebuilt from nothing at every click), `__init__` (4). `QVizDataTreeView` gives back 12 lines and takes 27 — the `ndw` dummy became the panel the frame hands over. Nothing was grafted: no `set_printoptions`, no `findChild`, no `raise` out of a slot, no prefilled label, and a scalar is read off the tree rather than through the runtime, which is the only way it does not answer `<IDSString0D …>` |
 | T12 | Load an occurrence — double click, Return, "Get … data for occurrence", "Add a new view", Shift+right click | `QVizCaseOccurrences` (the case answers which occurrences hold data, `unloaded`/`nextUnloaded` on top of it), `QVizTimeSliceSelection` (one object per choice, knowing its menu words, the words the tree shows and the window it wants), `QVizLoadOccurrence` (one command, guard on the view that owns the load), `QVizOccurrenceMenu` (both sub-menus and the one question the fourth choice asks, parented to that view and bounded by what is in memory) | `QVizViewLoadingStrategy.py` (94 l., identifiers 1-4 hardcoded, `setIdentifier` defined twice), `QVizLoadDataHandling.py` (109 l.), `QVizLoadSelectedData.py` (43 l., the class-level `Lock`) — **246 lines**; and in the modules that stay: `containsData` (21 l.) and the `Worker(QRunnable)` wrapper (8 l.) out of `QVizIMASDataSource`, its `asynch = False` override and the per-load `QThreadPool`, the `load` override of `QvizIMASPublicDataSource` (22 l.), `QVizDataTreeView`'s `cv = Condition()` and the thread `updateView` waited on, the `eval("imas.<ids>()")` of `QVizTreeNode.hasAvailableData`, the three of `Viz_API`, and the `limited_nodes` attribute nothing read | fait — **correction of the "kills" as first written**: the row announced three identifiers and one duplicated method; measured, five `eval("imas." …)` sites answered `AttributeError` on this IMAS-Python and one of them sat above `containsData`'s `try`, so **the shot view of the reference case did not build at all** — there was no occurrence to load. `QVizDataTreeView` gives back 158 lines and takes 250 (`+204/-…` on the diff): the empty tree now asks the case (0.10 s for the 55 IDS names, 1.22 s to build where it used to raise), `updateView` builds in the thread that owns the widget, and `homogeneous_time` is read off the instance the walk loaded instead of by reading the case. 446 lines in five new files replace 246 in three. One limit kept from the old behaviour and said in the code: one index applies to every dynamic array of the IDS, so the refusal names the array that cannot take it (`grids_ggd: 30 is not a time slice of this IDS: it holds 1`) |
-| T13 | Plugins in the menu | `QVizPluginsPopUpMenu`, `QVizPluginsHandler` | — (last: plugins call the frames, so they follow them) | to do |
+| T13 | Plugins in the menu | `QVizPluginCatalog` (the registered plugins of one shot view, imported and built **once for it**, each asked on its own, every refusal named in the log of that case) and `QVizPluginMenu` (the sub-menu the three gestures share; a line carries its plugin and the entry number *that plugin declared*, and the caller is told how many lines there are) | `QVizPluginsHandler.py` (140 l.) and `QVizPluginsPopUpMenu.py` (29 l.) — **169 lines**; and inside what stays: the four per-name lookups of `VizPlugin.py` (`getPluginsObjects`, `getPluginsNames`, `getPluginsConfigurationFor`, `getEntriesFor`) and the static `EntriesPerSubject`-style table that shadowed the `getAllEntries` contract — 45 lines out (156 → 111) — `getMenuItem`/`getSubjects`, the id `9999` and the dispatch by position, the `except:` with `traceback.print_exc()` and `print("Unable to execute plugin…")`; in the registered Profiles plugin, the **sixth and last `eval("imas." + ids + "…")` of the package**, the `logging.getLogger(uri).getLogger(uri)` chain that hid it, and the last `exec`/`eval` of the package (5 dead imports given back) | fait — **correction of the "kills" as first written**: the row announced no kill ("plugins call the frames, so they follow them"); measured, that is backwards — the *menu* is what the gestures call, and both of its modules die now, 169 lines. Two of the three claims in that parenthetical are also wrong about where the cost is: the launch chain imports **no** plugin, so all of it (matplotlib among them) sat on the gesture — **0,999 s** for the first right click of a process, 4,186 s for `getPluginsObjects` alone cold. What the new pair adds: 286 + 98 lines. Two limits kept and said in the code: a **.ui plugin drawn around a widget class of its own cannot be shown on PySide6 6.6** (measured: `QUiLoader` falls back to a bare `QWidget` and drops 10 connections for `examplePlugin.ui`, 3 for `SOLPSplugin.ui`; overriding `createWidget` changes nothing, it is never called) — it is refused by name, naming the class; and `Viz_API`'s documented plugin hooks stay as they are |
 
 ## 4. Why this order
 
@@ -650,6 +712,29 @@ parented to the view, bounded at 48 when 49 slices are in memory. Three tests
 check the deletion itself: `find_spec` answering None for the three modules, no
 `identifier` anywhere near a choice, and no `limited_nodes` attribute left on any
 element of a walked tree.
+
+Since T13: **693 passed, 6 xfailed** — twenty-nine tests in
+`tests/test_43_plugins_in_the_menu.py`, and `tests/test_20_plugins.py` rewritten
+from eleven tests around the deleted machinery to fifteen around the contract that
+survives: **one of the seven xfails died**, the strict one that said the
+`getAllEntries` contract was unreachable (`659 − 10 + 15 + 29 = 693`, `7 − 1 = 6`).
+The sweep stays at **126 modules, 121 passed / 5 xfailed**: two modules deleted,
+two added. They pin the numbers the measurement gave: the plugins of a view
+imported and built **once**, however many menus are built (`view.pluginCatalog`,
+and one construction counted where the old code paid 0,999 s per click); an entry
+found by the **number** its plugin declared, `7` reaching `execute` as 7 and not
+as its place in the menu; a plugin raising in `getEntries` leaving the other
+plugin's line in place and its own refusal in the log; a plugin that does not
+inherit the base class being offered like the others; an undescribed number
+refused with the numbers that *are* described; the sub-menu taken back out when
+empty; the sub-menu still alive when read back from its action after the gesture
+that built it is gone; a `.ui` file refused by name for the widget class this Qt
+cannot build — pinned on both `.ui` files the repository ships, `exampleWidget`
+and `SOLPSwidget` — and, for a window drawn with Qt classes only, the load going
+through `QVizLoadOccurrence` like every other load. On the reference case: three
+lines for `equilibrium`, two for `core_profiles`, no sub-menu at all for
+`magnetics`, and the Shift+right click of that one writing a line in the log
+instead of opening an empty menu.
 
 A second number T1 owns: **what a right click reads**. The context menu used to
 answer its questions from the dictionary only, which was cheap but wrong; the new

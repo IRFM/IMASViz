@@ -20,7 +20,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import QVizPlotAs
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOneNode
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu import QVizPluginMenu
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizUtils import FigureTypes
 
@@ -63,6 +63,15 @@ class QVizSignalHandling(QObject):
         :param signalNode: the node under the mouse
         """
 
+        # The node under the mouse is the one the menu is about, and it is the
+        # one every entry acts on. Measured, the constructor had taken the view's
+        # selection into self.treeNode and buildContextMenu only refreshed the
+        # title from its argument: right-clicking a node that was not the
+        # selected one offered the entries of the other, and right-clicking with
+        # nothing selected answered AttributeError on None before the menu
+        # existed -- plugins included, since a plugin decides from the node it is
+        # handed.
+        self.treeNode = signalNode
         self.signalNodeName = signalNode.getDataName()
 
         # Set new popup menu
@@ -119,11 +128,13 @@ class QVizSignalHandling(QObject):
         return self.contextMenu
 
     def menusPlugins(self):
-        # Create the sub menu for plugins
-        self.pluginsPopUpMenu = QVizPluginsPopUpMenu()
-        sub_menu = self.contextMenu.addMenu('Plugins')
-        self.pluginsPopUpMenu.upateMenu(self.treeNode, self.dataTreeView,
-                                        sub_menu)
+        # The sub-menu is added before the plugins are asked, and taken back out
+        # when none of them has anything to offer for this node: measured, the
+        # framework left the "Plugins" heading there with nothing under it for
+        # the 42 IDS names of the reference case that no plugin claims.
+        self.pluginsMenu = QVizPluginMenu()
+        self.pluginsMenu.addPluginsMenu(self.treeNode, self.dataTreeView,
+                                        self.contextMenu)
 
     def actionPlotAsFunctionOfTime(self):
         """The entry for a quantity with a time base to read along.

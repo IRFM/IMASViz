@@ -7,15 +7,12 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-import sys
-import os
-import imas
+import logging
+
+from PySide6.QtWidgets import QInputDialog
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.VizProfiles import VizProfiles, Request
-import logging
-from PySide6.QtWidgets import QMdiSubWindow, QInputDialog
-import traceback
 
 
 class VizProfiles_plugin(VizPlugin):
@@ -35,11 +32,22 @@ class VizProfiles_plugin(VizPlugin):
             # through inheritance
             dataSource = vizAPI.GetDataSource(self.dataTreeView)
             selected_ids = self.selectedTreeNode.getIDSName()
-            maxOccurrences = eval("imas." + selected_ids + "().getMaxOccurrences()")
+            # Which occurrences this case holds is the opened case's answer, not
+            # the data dictionary's. This was the sixth and last
+            # `eval("imas." + ids + "().getMaxOccurrences()")` in the package, and
+            # on this IMAS-Python it answered AttributeError -- which the except
+            # below then hid behind a logging error of its own, so the entry looked
+            # like a logging bug rather than an impossible question.
+            occurrences = self.dataTreeView.occurrences.occurrencesOf(
+                selected_ids)
+            if not occurrences:
+                raise ValueError('the opened case holds no occurrence of the %s '
+                                 'IDS, so there are no profiles to plot.'
+                                 % selected_ids)
 
-            occurrence = 0
-            if maxOccurrences > 1:
-                occurrence = self.askForOccurrence(maxOccurrences)
+            occurrence = occurrences[0]
+            if len(occurrences) > 1:
+                occurrence = self.askForOccurrence(selected_ids, occurrences)
 
 
             # Check if the IDS data is already loaded in IMASviz. If it is not,
@@ -173,24 +181,48 @@ class VizProfiles_plugin(VizPlugin):
                 logging.getLogger(self.dataTreeView.uri).warning(message)
             # self.edge_profiles_main_window.show()
 
-        except Exception as err:
-            logging.getLogger(self.dataTreeView.uri).getLogger(self.dataTreeView.dataSource.uri).error("ERROR! (%s)" % err, exc_info=True)
-            traceback.print_exc()
-            logging.getLogger(self.dataTreeView.uri).getLogger(self.dataTreeView.dataSource.uri).error(traceback.format_exc())
+        except Exception as error:
+            # Chaining a second getLogger onto the first answered `AttributeError:
+            # 'Logger' object has no attribute 'getLogger'`, so the failure of the
+            # entry never reached the log panel -- what the user read instead was a
+            # logging error, and the traceback went to stdout. One line, on the log
+            # of the case this view is reading, is what the panel shows.
+            logging.getLogger(self.dataTreeView.uri).error(
+                'The profiles panel could not be built: %s: %s'
+                % (type(error).__name__, error))
 
-    def askForOccurrence(self, maxOccurrences):
-        user_input = QInputDialog()
-        occ, ok = user_input.getInt(None, "IDS occurrence:", "Occurrence:",
-                                               value=0, minValue=0, maxValue=maxOccurrences)
+    def askForOccurrence(self, idsName, occurrences):
+        """Which occurrence to plot, asked of the view that owns the menu.
+
+        Bounded by what the opened case holds and parented to that view: the spin
+        box used to run from 0 to `maxOccurrences` -- one past the last valid
+        occurrence -- and had no parent, so it appeared over whichever window Qt
+        picked, and refusing it logged "Bad input from user" about a case nobody
+        had named.
+        """
+        box = QInputDialog(self.dataTreeView)
+        occ, ok = box.getInt(self.dataTreeView,
+                             'Which occurrence of the %s IDS?' % idsName,
+                             'Occurrence:', occurrences[0], occurrences[0],
+                             occurrences[-1])
         if not ok:
-            logging.getLogger(self.dataTreeView.dataSource.uri).error('Bad input from user. Taking occurrence 0.')
-            return 0
+            logging.getLogger(self.dataTreeView.uri).info(
+                'No occurrence chosen: plotting occurrence %d.' % occurrences[0])
+            return occurrences[0]
         return occ
 
     def data_found(self, dataSource, treeNode, ids_name, dynamic_aos_name):
-        exec(ids_name + " = dataSource.get(ids_name, self.IDS_parameters['occurrence'])")
-        time_slices_count = len(eval(ids_name + "." + dynamic_aos_name))
-        return time_slices_count != 0
+        """Whether the loaded occurrence holds anything in the array to plot.
+
+        Spelled as a call. It used to build a variable name with `exec` and read
+        it back with `eval`, which is two ways for the same object to go missing
+        with no name to blame -- and the value it produced lived in the local
+        frame of the `exec`, not anywhere the reader could see it.
+        """
+        idsInstance = dataSource.get(ids_name, self.IDS_parameters['occurrence'])
+        if idsInstance is None:
+            return False
+        return len(getattr(idsInstance, dynamic_aos_name)) != 0
 
     def getEntries(self):
         selected_ids = self.selectedTreeNode.getIDSName()

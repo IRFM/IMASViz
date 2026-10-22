@@ -7,29 +7,70 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-import importlib
-import os, sys
+"""What a plugin is, and which ones this application offers.
 
-from PySide6.QtWidgets import QMainWindow
+The registration table is the only place a plugin is named -- which is what the
+howto says ("add the plugin in RegisteredPlugins"). It used to not be: three more
+tables lived in this module and named the same plugins again, keyed by plugin name
+by hand. Measured, all three answered `KeyError` for the two plugins that *are*
+registered -- they only knew the two that are not -- and `getEntriesFor` and
+`getAllEntries` were the fallback the menu took for anything that did not inherit
+this class, which is how a plugin honouring every documented method stayed
+invisible without a word. `getAllEntries` also carried a second meaning, as a
+static lookup table declared after the instance method of the same name, so the
+base-class contract the howto documents was unreachable: `VizPlugin().getAllEntries()`
+answered `TypeError: missing 1 required positional argument: 'pluginsName'`.
+
+`getMenuItem` was worse than unused: it read `self.getSubjects()`, which no class
+in the package defines, so calling it answered `AttributeError`.
+
+What is left here is the contract the howto documents and the table that
+registration is read from. Deciding what a registered plugin offers, and running
+it, is `QVizPluginCatalog`.
+"""
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
-                     # 'ToFuPlugin':'viz_tofu.viz_tofu_plugin',
-                     # 'SOLPS_UiPlugin': '',
-                     # 'CompareFLT1DPlugin':'viz_tests.CompareFLT1DPlugin',
-                     # 'viz_example_plugin':'viz_example_plugin.viz_example_plugin',
-                     # 'viz_spectrometer_plugin':'viz_spectrometer.viz_spectrometer_plugin',
+                     # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
+                     # 'CompareFLT1DPlugin': 'viz_tests.CompareFLT1DPlugin',
+                     # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
+                     # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
                      'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
-                     # 'example_UiPlugin': '',
-                     # 'simplePlotPluginExample' : 'viz_simple_plot_example.simplePlotPluginExample',
-                     # 'ETSpluginIMASViz' : 'viz_ETS.ETSpluginIMASViz'
+                     # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
+                     # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
+                     # A plugin drawn in Qt Designer registers the window it is
+                     # drawn from instead of a module path; the howto spells it so.
+                     # 'SOLPS_UiPlugin': {'UiFile': 'SOLPSplugin.ui',
+                     #                    'dir': os.environ['VIZ_HOME'] +
+                     #                           '/imasviz/VizPlugins/viz_solps/',
+                     #                    'targetIDSroot': 'edge_profiles',
+                     #                    'targetOccurrence': 0},
+                     # 'example_UiPlugin': {'UiFile': 'examplePlugin.ui',
+                     #                      'dir': os.environ['VIZ_HOME'] +
+                     #                             '/imasviz/VizPlugins/viz_example/',
+                     #                      'targetIDSroot': 'magnetics',
+                     #                      'targetOccurrence': 0},
                      }
 
 
 def getRegisteredPlugins():
+    """The plugins this application offers, name to where they come from.
+
+    A name mapped to a dotted path is a Python plugin under `imasviz.VizPlugins`,
+    its class named after the key. A name mapped to a dictionary is a window
+    drawn in Qt Designer, described by `UiFile`, `dir`, `targetIDSroot` and
+    `targetOccurrence`.
+    """
     return RegisteredPlugins
 
 
 class VizPlugin:
+    """The contract a plugin honours.
+
+    A plugin decides from `self.selectedTreeNode`, the node it was offered on, and
+    reaches its case through `self.dataTreeView`; both are set when the menu is
+    built, so a plugin keeps no case of its own.
+    """
+
     def __init__(self, *args, **kwargs):
         if len(args) == 2:
             self.selectedTreeNode = args[0]
@@ -45,93 +86,26 @@ class VizPlugin:
         self.dataTreeView = dataTreeView
 
     def isEnabled(self):
+        """Whether this plugin takes part at all. A plugin says yes for itself."""
         return False
 
     def getEntries(self):
+        """Which of `getAllEntries` this node earns, by their numbers."""
         raise ValueError('plugin getEntries() method should be implemented!')
 
     def getAllEntries(self):
+        """What this plugin can do, as `[(number, what the menu says)]`."""
         raise ValueError('plugin getAllEntries() method should be implemented!')
 
     def execute(self, vizAPI, pluginEntry=None):
+        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it."""
         raise ValueError('plugin execute() method should be implemented!')
 
-    def getMenuItem(self, subject):
-        return self.getSubjects()[subject]
+    def getPluginsConfiguration(self):
+        """Anything extra this plugin needs to run, its own shape. None by default.
 
-    @staticmethod
-    def getPluginsObjects(dataTreeView=None, selectedTreeNode=None):
-        pluginsNames = []
-        importedObjectsList = []
-        for key in getRegisteredPlugins():
-            pluginsNames.append(key)
-
-            # Check for plugins created by Qt designer (.ui files)
-            if 'UiPlugin' in key:
-                from PySide6 import uic
-                # Get directory where the plugin .ui file is located
-                pluginConfiguration = VizPlugin.getPluginsConfigurationFor(key)[0]
-                dir = pluginConfiguration['dir']
-                # Get ui. file name
-                UiFile = pluginConfiguration['UiFile']
-                # Append to Python path
-                sys.path.append(dir)
-                # Set MainWindow
-                w = QMainWindow(parent=dataTreeView)
-                # Get IDS case object
-                ids = None
-                w.targetOccurrence = pluginConfiguration['targetOccurrence']
-                w.targetIDSroot = pluginConfiguration['targetIDSroot']
-
-                # Set an instance of the user interface
-                uiObj = uic.loadUi(dir + UiFile, w)
-                # Add the MainWindow (containing the user interface) to
-                # list of imported objects
-                importedObjectsList.append(w)
-            else:
-                mod = importlib.import_module('imasviz.VizPlugins.' +
-                                              getRegisteredPlugins()[key])
-                importedClass = getattr(mod, key)
-                vizPluginObject = importedClass()
-                vizPluginObject.setSelectedTreeNode(selectedTreeNode=selectedTreeNode)
-                vizPluginObject.setDataTreeView(dataTreeView=dataTreeView)
-                importedObjectsList.append(vizPluginObject)
-        return pluginsNames, importedObjectsList
-
-    @staticmethod
-    def getPluginsNames():
-        pluginsNames = []
-        for key in RegisteredPlugins:
-            pluginsNames.append(key)
-        return pluginsNames
-
-    @staticmethod
-    def getPluginsConfigurationFor(pluginsName):
-        RegisteredPluginsConfiguration = { \
-            'SOLPS_UiPlugin': [{
-                'UiFile': 'SOLPSplugin.ui',
-                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_solps/',
-                'targetIDSroot': 'edge_profiles',
-                'targetOccurrence': 0}],
-            'example_UiPlugin': [{
-                'UiFile': 'examplePlugin.ui',
-                'dir': os.environ['VIZ_HOME'] + '/imasviz/VizPlugins/viz_example/',
-                'targetIDSroot': 'magnetics',
-                'targetOccurrence': 0}]}
-        return RegisteredPluginsConfiguration[pluginsName]
-
-    @staticmethod
-    def getEntriesFor(pluginsName, vizTreeNode):
-        if pluginsName == "SOLPS_UiPlugin" and vizTreeNode.getIDSName() == "edge_profiles":
-            return [0]
-        elif pluginsName == "example_UiPlugin" and vizTreeNode.getIDSName() == "magnetics":
-            return [0]
-        else:
-            return []
-
-    @staticmethod
-    def getAllEntries(pluginsName):
-        AllEntries = {'SOLPS_UiPlugin': [(0, 'SOLPS overview...')],  # (config number, description)
-                      'example_UiPlugin': [(0, 'Magnetics overview...')]
-                      }
-        return AllEntries[pluginsName]
+        The howto asks a plugin for this; the framework never asked it, and asked
+        a per-name table instead -- which knew only plugins that were not
+        registered.
+        """
+        return None

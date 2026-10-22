@@ -1161,15 +1161,21 @@ Running the plugin .ui
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The **.ui** plugin can be run using Python3 shell. Open Python3 shell and type
-the next commands:
+the next commands (IMASViz itself runs on **PySide6**, which has no ``uic``
+module -- the loader it uses, and the one shown here, is ``QUiLoader``):
 
 .. code-block:: python
 
-   from PyQt5.QtWidgets import QApplication
-   from PyQt5 import uic
+   from PySide6.QtWidgets import QApplication
+   from PySide6.QtUiTools import QUiLoader
    app = QApplication([])
-   uiObj = uic.loadUi('SOLPSplugin.ui')
+   uiObj = QUiLoader().load('SOLPSplugin.ui')
    uiObj.show()
+
+.. note::
+   What comes out of that loader is not what was drawn, if the **.ui** file was
+   drawn around a widget class of its own: see the warning under
+   :ref:`plugins_qtdesigner` at the end of this page.
 
 A script example ``run_plugin_ui_standalone.py`` is available in the plugin
 directory. It is run with the following command:
@@ -1193,7 +1199,7 @@ opening and setting the IDS is not necessary (required when running the plugin
 as a standalone application as shown in :ref:`exampleWidget_running_ui`).
 
 To run the plugin from IMASViz it must be first added (registered) in IMASViz
-``$VIZ_HOME/imasviz/VizPlugins/VizPlugins.py`` source file. This is done through
+``$VIZ_HOME/imasviz/VizPlugins/VizPlugin.py`` source file. This is done through
 the next few steps:
 
 1. Add plugin to a list of registered plugins
@@ -1203,12 +1209,15 @@ relevant properties for **examplePlugin** are highlighted in the code block
 below, where:
 
 - **example_UiPlugin** is a dictionary key (dictionary within
-  **RegisteredPlugins** dictionary).
+  **RegisteredPlugins** dictionary). It is the name the menu says when it
+  reports the plugin -- in the log panel, as the label of a refusal, and as the
+  text of the entry the plugin offers (``Show the example_UiPlugin panel``).
 
 .. warning::
-   Mandatory: in case the plugin is created with the help of **Qt Designer** and
-   **.ui** file is created, the key must contain suffix **_UiPlugin** in order
-   for IMASViz to recognize and use it correctly!
+   What tells IMASViz that a plugin is a window drawn in **Qt Designer** is the
+   **value** registered for it: a dictionary of ``UiFile``, ``dir``,
+   ``targetIDSroot`` and ``targetOccurrence`` is read as a **.ui** file, a dotted
+   path as a Python module. The name of the key is not looked at.
 
 - **UiFile** dictionary key, holding full **.ui** filename.
 - **dir** dictionary key, holding the path to the dictionary where the **.ui**
@@ -1235,58 +1244,38 @@ below, where:
                         }
 
 
-2. Add plugin configuration
+2. That is all the registration there is
 
-Each plugin can have its own specific configuration. In the case of the
-**examplePlugin** there are no configurations required. Still, an empty
-configuration must be provided, as highlighted in the code block below.
+The dictionary above **is** the plugin's configuration: a **.ui** plugin is
+asked nothing of itself, since the window it is drawn from has no methods to
+answer with. It claims the one **IDS** its ``targetIDSroot`` names -- on that
+node alone, and on no other -- and its single menu entry is the window itself,
+labelled ``Show the <plugin name> panel``. Choosing that entry loads the
+``targetOccurrence`` of the ``targetIDSroot`` through the same command every
+other load of the tree goes through, then shows the window.
 
-.. code-block:: python
-   :emphasize-lines: 10
+.. warning::
+   **A limitation measured on the stack IMASViz runs on (PySide6 6.6).** A .ui
+   file drawn around a widget class of its own -- the **exampleWidget** of this
+   manual, the **SOLPSwidget** of the SOLPS plugin -- cannot be shown. The loader
+   IMASViz has (``PySide6.QtUiTools.QUiLoader``) answers *"QFormBuilder was
+   unable to create a custom widget of the class 'exampleWidget'; defaulting to
+   base class 'QWidget'"* and drops every connection the .ui file makes to that
+   class: 10 for **examplePlugin.ui**, 3 for **SOLPSplugin.ui**. Overriding
+   ``createWidget`` changes nothing -- it is never called. Such a plugin is
+   therefore **refused by name**: the log panel of the opened case says which
+   class is missing, and no window is shown. Rebuild the interface out of Qt
+   classes only, or provide the widget as a Python class and register the plugin
+   as a Python plugin (:ref:`plugin_simple_plot_example`).
 
-   RegisteredPluginsConfiguration = {'equilibriumcharts':[{
-                                         'time_i': 31.880, \
-                                         'time_e': 32.020, \
-                                         'delta_t': 0.02, \
-                                         'shot': 50642, \
-                                         'run': 0, \
-                                         'machine': 'west_equinox', \
-                                         'user': 'imas_private'}],
-                                     'SOLPS_UiPlugin':[{}],
-                                     'example_UiPlugin':[{}]
-                              }
-
-3. Add necessary entries
-
-The entries are mainly related to plugin identification and presentation in
-IMASViz in terms of label in pop-up menus. The required entries are highlighted
-in the code blocks below.
-
-.. code-block:: python
-   :emphasize-lines: 8-9
-
-   EntriesPerSubject = {'equilibriumcharts': {'equilibrium_overview': [0],
-                                              'overview': [0]},
-                        'ToFuPlugin':        {'interferometer_overview': [0, 1],
-                                              'bolometer_overview': [2, 3],
-                                              'soft_x_rays_overview': [4, 5]},
-                        'SOLPS_UiPlugin':    {'edge_profiles_overview':[0],
-                                              'overview':[0]},
-                        'example_UiPlugin':  {'magnetics_overview': [0],
-                                              'overview': [0]}
-                        }
-
-
-.. code-block:: python
-   :emphasize-lines: 6
-
-   AllEntries = {'equilibriumcharts': [(0, 'Equilibrium overview...')],
-                 'ToFuPlugin':        [(0, 'tofu - geom...'), (1, 'tofu - data'),
-                                       (2, 'tofu - geom...'), (3, 'tofu - data'),
-                                       (4, 'tofu - geom...'), (5, 'tofu - data')],
-                 'SOLPS_UiPlugin':    [(0, 'SOLPS overview...')],
-                 'example_UiPlugin':  [(0, 'Magnetics overview...')]
-                 }
+.. note::
+   Nothing else names a plugin. Two tables this manual used to describe --
+   **RegisteredPluginsConfiguration** and **EntriesPerSubject** (with
+   **AllEntries**) -- never existed in the code: they answered nothing, and a
+   plugin registered normally was still asked *itself* what it offers. A Python
+   plugin answers that through its own ``getEntries()`` and ``getAllEntries()``,
+   as :ref:`plugin_simple_plot_example` shows; a **.ui** plugin has one entry,
+   the window.
 
 Now everything is ready to run the plugin from IMASViz.
 
@@ -1302,11 +1291,24 @@ same case parameters as defined in :ref:`plugins_qtdesigner_signals_slots`.
 
 In the :guilabel:`tree window`, navigate to :guilabel:`magnetics`.
 While holding **shift key** right click on the :guilabel:`magnetics` label and
-in the popup menu select the :guilabel:`Magnetics overview...` option.
+in the popup menu select the :guilabel:`Show the example_UiPlugin panel` option
+-- the entry a **.ui** plugin offers is named after the plugin, and it is the
+only one. Right click without the shift key offers the same entry under the
+:guilabel:`Plugins` sub-menu.
 
 .. figure:: images/examplePlugin_IMASViz_DTV_popupmenu.png
   :align: center
   :width: 400px
+
+  The popup menu as the manual drew it, when the entry still read
+  **Magnetics overview...**.
+
+.. note::
+   On the stack this manual was last run on (PySide6 6.6), the **examplePlugin**
+   of this page is **not** offered: it is drawn around an **exampleWidget**
+   class the loader cannot build, so the log panel says so and no entry appears
+   -- see the warning at the end of the previous section. The two figures below
+   show what the plugin looked like when it ran.
 
 On selection confirm, the **examplePlugin**, now referred to as
 **Magnetics IDS Overview Plugin**, the plugin window is shown.

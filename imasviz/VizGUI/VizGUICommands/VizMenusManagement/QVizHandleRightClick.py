@@ -10,7 +10,7 @@
 from PySide6.QtWidgets import QMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizOccurrenceMenu import QVizOccurrenceMenu
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling import QVizSignalHandling
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginsPopUpMenu import QVizPluginsPopUpMenu
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu import QVizPluginMenu
 
 
 class QVizHandleRightClick:
@@ -57,10 +57,12 @@ class QVizHandleRightClick:
                 self.popupmenu.addMenu(subMenu)
                 QVizOccurrenceMenu().buildOccurrencesMenu(node, dataTreeView,
                                                           subMenu)
-                self.sub_menu = QMenu('Plugins')
-                self.popupmenu.addMenu(self.sub_menu)
-                QVizPluginsPopUpMenu().upateMenu(node, dataTreeView,
-                                                 self.sub_menu)
+                # The sub-menu is added before the plugins are asked -- that is
+                # what lets an empty one be taken back out. Measured, the
+                # framework added it unconditionally, so an IDS no plugin claims
+                # showed a "Plugins" heading with nothing under it.
+                QVizPluginMenu().addPluginsMenu(node, dataTreeView,
+                                                self.popupmenu)
                 showMenu = True
 
         if showMenu:

@@ -3,6 +3,5 @@ from .QVizHandleRightClick import *
 from .QVizHandleShiftAndRightClick import *
 from .QVizMainMenuController import *
 from .QVizOccurrenceMenu import *
-from .QVizPluginsHandler import *
-from .QVizPluginsPopUpMenu import *
+from .QVizPluginMenu import *
 from .QVizSignalHandling import *

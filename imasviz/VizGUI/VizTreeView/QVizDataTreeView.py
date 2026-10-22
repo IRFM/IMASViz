@@ -97,6 +97,13 @@ class QVizDataTreeView(QTreeWidget):
         # view and reset by the next command object built.
         self.loadsInProgress = set()
 
+        # What the registered plugins offer for a node of this view, resolved on
+        # the first menu that asks -- importing them costs close to a second, and
+        # a view nobody right-clicks should not pay it. Built once for the view:
+        # the framework used to import and build every plugin again on every
+        # right click.
+        self.pluginCatalog = None
+
         # Create a IDS root node with each URI
         self.DTVRoot = QVizTreeNode(self, ['IDSs' + '(' + dataSource.uri + ')'])
         self.DTVRoot.dataTreeView = self
