@@ -7,11 +7,37 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The plugin framework: registration and the VizPlugin contract.
+"""What a plugin is, and where it is registered.
 
-An unregistered plugin never loads, and a registered name whose module is gone
-fails at getPluginsObjects() time, so both sides of that contract are asserted.
+This file used to pin the machinery around that question as well, and the
+measurements of T13 showed that machinery answering nothing useful:
+
+* `getPluginsObjects` imported and built every registered plugin, in 4.186 s
+  cold, and was called again on every menu -- 0,999 s for the first right click
+  of a session, 0,0425 s for the second, 0,0008 s afterwards;
+* `getPluginsNames` answered the keys of the registration table under another
+  name;
+* `getPluginsConfigurationFor` answered **KeyError** for both plugins that are
+  registered -- its table named only the two that are not;
+* `getAllEntries` existed twice: the contract stub raising ValueError was
+  shadowed by a static lookup table declared below it, so `VizPlugin().
+  getAllEntries()` answered `TypeError: missing 1 required positional argument:
+  'pluginsName'`, and the contract the manual documents was unreachable;
+* `getEntriesFor` was the fallback the menu took for a plugin that does not
+  inherit this class, and its table named those same two unregistered plugins --
+  which is how a plugin honouring every documented method stayed invisible
+  without a word;
+* `getMenuItem` read `self.getSubjects()`, which no class in the package
+  defines: `AttributeError: 'equilibriumcharts' object has no attribute
+  'getSubjects'`.
+
+What is left is the registration table and the contract; deciding what a plugin
+offers and running it belongs to `QVizPluginCatalog`, pinned in
+`test_43_plugins_in_the_menu.py`.
 """
+
+import importlib.util
+import inspect
 
 import pytest
 
@@ -20,29 +46,60 @@ from imasviz.VizPlugins.VizPlugin import (RegisteredPlugins, VizPlugin,
 
 from support.fakes import FakeTreeNode
 
+# The machinery T13 removed, and what each of them answered when asked.
+KILLED = ['getPluginsObjects', 'getPluginsNames', 'getPluginsConfigurationFor',
+          'getEntriesFor', 'getMenuItem', 'getSubjects']
 
-def test_the_registered_set_is_exposed_as_a_mapping():
+
+# --------------------------------------------------------------------------
+# The registration table
+# --------------------------------------------------------------------------
+
+def test_the_registration_table_is_the_only_place_a_plugin_is_named():
     assert getRegisteredPlugins() is RegisteredPlugins
-    assert all(isinstance(name, str) and isinstance(modulePath, str)
-               for name, modulePath in RegisteredPlugins.items())
+    assert all(isinstance(key, str) for key in RegisteredPlugins)
+    # A dotted path for a Python plugin, a dictionary for a window drawn in Qt
+    # Designer -- the two shapes the manual shows.
+    assert all(isinstance(value, (str, dict))
+               for value in RegisteredPlugins.values())
+
+
+def test_a_python_registration_names_the_class_it_will_import():
+    # The catalog resolves a string registration by taking the class named after
+    # the key out of the module the value points at, so the two have to agree.
+    for key, modulePath in RegisteredPlugins.items():
+        if isinstance(modulePath, dict):
+            continue
+        assert key.isidentifier()
+        assert modulePath.split('.')[-1] == key
 
 
 def test_the_removed_ets_plugin_stays_unregistered():
-    # ETSViz was deleted from the repository: an active entry would now raise
-    # ModuleNotFoundError inside getPluginsObjects.
+    # ETSViz was deleted from the repository: an active entry would now answer
+    # ModuleNotFoundError, which the catalog reports by name instead of taking
+    # the menu down with it.
     assert 'ETSpluginIMASViz' not in RegisteredPlugins
 
 
-def test_every_registered_plugin_imports_and_instantiates():
-    # getPluginsObjects resolves the dotted path and builds the object; a
-    # stale entry is a hard error, so this is the regression guard.
-    names, objects = VizPlugin.getPluginsObjects(dataTreeView=None,
-                                                selectedTreeNode=None)
-    assert sorted(names) == sorted(RegisteredPlugins)
-    assert len(objects) == len(RegisteredPlugins)
-    for plugin in objects:
-        assert isinstance(plugin, VizPlugin)
+@pytest.mark.parametrize('name', KILLED)
+def test_a_plugin_is_no_longer_looked_up_by_name_somewhere_else(name):
+    # Every one of these named the registered plugins a second time, by hand,
+    # and all of them were wrong about which plugins are registered.
+    assert not hasattr(VizPlugin, name)
+    assert not hasattr(getRegisteredPlugins, name)
 
+
+def test_the_menu_is_no_longer_built_by_two_deleted_modules():
+    for modulePath in ('imasviz.VizGUI.VizGUICommands.VizMenusManagement'
+                       '.QVizPluginsHandler',
+                       'imasviz.VizGUI.VizGUICommands.VizMenusManagement'
+                       '.QVizPluginsPopUpMenu'):
+        assert importlib.util.find_spec(modulePath) is None
+
+
+# --------------------------------------------------------------------------
+# The contract a plugin honours
+# --------------------------------------------------------------------------
 
 def test_a_fresh_plugin_is_inactive_and_unbound():
     plugin = VizPlugin()
@@ -51,7 +108,7 @@ def test_a_fresh_plugin_is_inactive_and_unbound():
     assert plugin.dataTreeView is None
 
 
-def test_the_binding_setters_are_used_by_the_loader():
+def test_a_plugin_takes_the_node_it_is_offered_on_and_the_view_it_reads():
     node = FakeTreeNode(idsName='equilibrium')
     plugin = VizPlugin()
     plugin.setSelectedTreeNode(node)
@@ -60,46 +117,28 @@ def test_the_binding_setters_are_used_by_the_loader():
     assert plugin.dataTreeView == 'a-tree-view'
 
 
-def test_getEntries_must_be_implemented_by_a_plugin():
+def test_a_plugin_that_declares_nothing_is_asked_for_it_in_words():
     plugin = VizPlugin()
+    for method in ('getEntries', 'getAllEntries', 'execute'):
+        with pytest.raises(ValueError) as refused:
+            getattr(plugin, method)(None, None) if method == 'execute' \
+                else getattr(plugin, method)()
+        assert 'should be implemented' in str(refused.value)
+
+
+def test_getAllEntries_is_reachable_on_the_base_class():
+    # Measured before: this answered `TypeError: VizPlugin.getAllEntries()
+    # missing 1 required positional argument: 'pluginsName'`, because the
+    # contract stub was shadowed by a static table of the same name.
     with pytest.raises(ValueError):
-        plugin.getEntries()
+        VizPlugin().getAllEntries()
+
+    # One declaration, taking only the plugin itself.
+    assert list(inspect.signature(VizPlugin.getAllEntries).parameters) == ['self']
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "VizPlugin declares getAllEntries twice: the instance stub raising ValueError "
-    "(VizPlugin.py:52) is shadowed by the static lookup table further down "
-    "(VizPlugin.py:130), so the base-class contract method is unreachable"))
-def test_getAllEntries_contract_stub_is_reachable():
-    plugin = VizPlugin()
-    with pytest.raises(ValueError):
-        plugin.getAllEntries()
-
-
-def test_the_static_lookup_table_serves_the_ui_plugins():
-    # What getAllEntries resolves to in practice: a table keyed by plugin name.
-    assert VizPlugin.getAllEntries('SOLPS_UiPlugin') == [(0, 'SOLPS overview...')]
-    assert VizPlugin.getAllEntries('example_UiPlugin') == [(0, 'Magnetics overview...')]
-    with pytest.raises(KeyError):
-        VizPlugin.getAllEntries('no_such_plugin')
-
-
-def test_getPluginsNames_matches_the_registration_table():
-    assert sorted(VizPlugin.getPluginsNames()) == sorted(RegisteredPlugins)
-
-
-def test_an_unknown_plugin_name_has_no_configuration():
-    with pytest.raises(KeyError):
-        VizPlugin.getPluginsConfigurationFor('no_such_plugin')
-
-
-def test_entries_of_ui_plugins_are_gated_on_the_selected_ids():
-    # The two .ui plugins claim fixed IDSs; anything else gets no entry.
-    assert VizPlugin.getEntriesFor('SOLPS_UiPlugin',
-                                   FakeTreeNode(idsName='edge_profiles')) == [0]
-    assert VizPlugin.getEntriesFor('SOLPS_UiPlugin',
-                                   FakeTreeNode(idsName='equilibrium')) == []
-    assert VizPlugin.getEntriesFor('example_UiPlugin',
-                                   FakeTreeNode(idsName='magnetics')) == [0]
-    assert VizPlugin.getEntriesFor('example_UiPlugin',
-                                   FakeTreeNode(idsName='interferometer')) == []
+def test_a_plugin_answers_for_its_own_configuration():
+    # The manual asks a plugin for this; the framework never asked it, and asked
+    # a per-name table instead -- which answered KeyError for both registered
+    # plugins.
+    assert VizPlugin().getPluginsConfiguration() is None

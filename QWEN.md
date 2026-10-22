@@ -181,24 +181,52 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
 `imasviz/VizPlugins/` is an extension mechanism, not dead code. To add a plugin:
 
 1. Create `imasviz/VizPlugins/viz_<name>/PluginName.py` subclassing `VizPlugin` and implement:
-   `isEnabled()` (return `True` to activate), `getEntries()` (entries valid for the current
-   tree node), `getAllEntries()` (`[(config_number, menu_text), …]` shown in the pop-up menu),
-   `execute(vizAPI, pluginEntry)`, optional `getPluginsConfiguration()`, `getPluginsConfigurationFor()`,
-   `getDescription()`. Gate on `self.selectedTreeNode.getIDSName()` against a
-   `supported_idss` list — that is how plugins claim IDSs.
+   `isEnabled()` (return `True` to activate), `getEntries()` (the entry *numbers* this
+   node earns), `getAllEntries()` (`[(number, menu_text), …]` — the text is looked up
+   **by that number**, and a number it does not describe is refused by name),
+   `execute(vizAPI, pluginEntry)` (receiving that same number), optional
+   `getPluginsConfiguration()`, `getDescription()`. Gate on
+   `self.selectedTreeNode.getIDSName()` against a `supported_idss` list — that is how
+   plugins claim IDSs. Inheriting `VizPlugin` is not what puts a plugin in the menu: the
+   catalog binds `setSelectedTreeNode(node)` and asks the methods, so a plugin outside
+   the hierarchy that honours them is offered like any other.
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
-   (`'PluginName': 'viz_<name>.PluginName'`). Several entries are commented out — an unregistered
-   plugin never loads. No submodule-provided plugin remains: the ETSViz submodule and
-   `imasviz/VizPlugins/viz_ETS/` were removed on request, so `'ETSpluginIMASViz'` must stay
-   commented out (an active entry would now raise `ModuleNotFoundError`).
-3. `.ui`-based plugins (`*UiPlugin` in the name) are loaded with `PySide6.uic` and configured in
-   `getPluginsConfigurationFor()` with `UiFile`, `dir` (anchored on `os.environ['VIZ_HOME']`),
-   `targetIDSroot`, `targetOccurrence`. `viz_solps/` and `viz_example/` ship a
-   `run_plugin_ui_standalone.py` for off-GUI development of those.
+   (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
+   that is what the catalog takes out of the module). Several entries are commented out —
+   an unregistered plugin never loads, and a registered path that no longer resolves is
+   refused in the log of the case without costing the other plugins. No submodule-provided
+   plugin remains: the ETSViz submodule and `imasviz/VizPlugins/viz_ETS/` were removed on
+   request, so `'ETSpluginIMASViz'` must stay commented out (an active entry would now
+   raise `ModuleNotFoundError`).
+3. `.ui`-based plugins register a **dictionary** in `RegisteredPlugins` instead of a
+   module path — `UiFile`, `dir` (anchored on `os.environ['VIZ_HOME']`), `targetIDSroot`,
+   `targetOccurrence` — and are loaded by `QVizPluginCatalog._loadUiPlugin` with
+   `PySide6.QtUiTools.QUiLoader` (`from PySide6 import uic` does not exist in PySide6 6.6).
+   Such a window claims one IDS, and its one menu entry is the window itself, which loads
+   that IDS through `QVizLoadOccurrence`. Measured limit: a `.ui` drawn around a widget
+   class of its own cannot be shown on this stack — Qt answers *"unable to create a custom
+   widget of the class 'exampleWidget'; defaulting to base class 'QWidget'"* and drops the
+   connections the file makes to it (10 in `examplePlugin.ui`, 3 in `SOLPSplugin.ui`), and
+   overriding `createWidget` changes nothing because it is never called; such a plugin is
+   refused by name, naming the class, and both `.ui` plugins of the repository stay
+   unregistered. `viz_solps/` and `viz_example/` ship a `run_plugin_ui_standalone.py` for
+   off-GUI development of those.
+
+The menu side is two modules: `VizPlugins/QVizPluginCatalog.py` (the registered plugins of
+one shot view, imported and built **once for that view**, each asked on its own, every
+refusal named in the log of that case — reachable as `dataTreeView.pluginCatalog`) and
+`VizGUI/VizGUICommands/VizMenusManagement/QVizPluginMenu.py` (the "Plugins" sub-menu the
+three gestures share: right click on an IDS root, right click on a quantity, Shift+right
+click anywhere; it answers how many lines it added, so an empty sub-menu is not left on
+screen, and builds that sub-menu with its parent at construction — `addMenu(title)` hands
+out a QMenu the Python wrapper owns, which then dies before it can be clicked).
+`QVizPluginsHandler` and `QVizPluginsPopUpMenu` are gone, and so are the per-name lookup
+tables `VizPlugin` used to carry: a plugin is asked itself, once per view.
 
 `test_imas_viz_plugin.py` instantiates a plugin with a hardcoded `dictDataSource`
-(shot 50642, `west_equinox`) and calls `execute()` directly — the pattern for exercising a plugin
-without the full GUI.
+(shot 50642, `west_equinox`) and calls `execute()` directly — the pattern for exercising a
+plugin without the full GUI. `tests/test_43_plugins_in_the_menu.py` drives the menu
+instead, with stub plugins registered through a fake module in `sys.modules`.
 
 ## Development conventions
 
