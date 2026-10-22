@@ -262,15 +262,26 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 659 passed, 7 xfailed, ~34 s, offscreen
+python3 -m pytest tests/ -q     # 695 passed, 2 xfailed, ~39 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
 `IMAS_VERSION`, `IMAS_DATA_DICTIONARIES_DIR`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
 import time, **before** any test imports `imasviz` — which is mandatory, because
 `QVizGlobalValues` and `QVizGlobalOperations.checkEnvSettings()` can `sys.exit()`.
-Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 7 `xfail(strict=True)`
+Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 2 `xfail(strict=True)`
 entries are real defects and environment limits, listed in `TESTING.md` §4.
+
+A test that **shows** a plot frame must keep it alive for the whole session —
+`support/ownership.py`'s `keep()`, which is what the application does through
+`Viz_API.figureframes`. Measured: of the 110 plot frames a run builds, 79 lose their
+Python wrapper before the run ends, and the 11 that had been shown without being
+closed are the ones a queued paint event can kill the process on — the run died at a
+fixed position with `Fatal Python error: Segmentation fault` inside pyqtgraph's
+`GraphicsView.paintEvent`, in a file several away from the one at fault. An autouse
+fixture in `conftest.py` now names the test at fault at its own teardown; a frame
+never shown, or closed before it is forgotten, is not a hazard (the production
+refusal paths close the window they opened, and that cleanup is what tests check for).
 
 The suite does **not** isolate `$HOME`. A test that lets the application write a
 configuration, a preference or a plot-configuration file writes into the real

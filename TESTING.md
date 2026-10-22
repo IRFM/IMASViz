@@ -62,7 +62,7 @@ Everything else the application needs (`VIZ_HOME`, `VIZ_PRODUCTION`,
 
 ```bash
 cd $VIZ_HOME                      # repository root
-python3 -m pytest tests/ -q       # 688 passed, 2 xfailed, ~38 s
+python3 -m pytest tests/ -q       # 695 passed, 2 xfailed, ~39 s
 ```
 
 Useful variants:
@@ -122,10 +122,23 @@ dialog or a remote backend.
 | `test_41_node_documentation.py` | the panel a left click answers with | what the reference case measured the old widget answering wrong, pinned one row at a time: the zero count (0, 3 and 49 where it answered 1, 1 and 1), `Min`/`Max` taken on the entries that are numbers with the `nan`/`inf` counts beside them, a string array given no `Min`, no `Max` and no zero count, a `Content:` row holding the numbers and never `IDSNumericArray`, a preview saying `600 of 1000 values not shown`, no row ending `: /`, a failed read naming its exception with nothing of the previous node left on screen, a scalar shown as its value or as `empty` or as `no value stored in the opened case`, and `panel.update()` still the no-argument method of `QWidget`. Six tests run on real nodes, asked by the path the shot view spells (`shadowTreePaths`, because `element.text` spells the same road with dots and brackets and evaluates against the runtime as something else). numpy's printing options are asserted untouched before and after |
 | `test_42_load_an_occurrence.py` | loading one occurrence: double click, Return, "Get … data for occurrence", "Add a new view" | the four slice choices as objects, not as the integers 1-4: the window each keeps out of 49 slices, `First time slice only` on an empty array keeping nothing (the old one invented 11 nodes of 77 on `tf`), an index past the end refused before the walk with the count and the bound in the sentence, the menu choice that still needs a number refusing rather than opening a dialog in the middle of a script; the case answering which occurrences it holds (`[0,1,2,3]` for `equilibrium`, `[]` for `core_sources`) where the data dictionary question raised `AttributeError` at 5 places and killed the shot view; the guard against a double load living on the view, so two views load the same occurrence and one never loads it twice; both sub-menus built from what the case and the view answer, and the slice question recorded through a stub dialog — parented to the view, bounded at 48 when 49 slices are in memory; the walk asking the choice for its window, recording the dynamic arrays it met, and refusing an index under the name of the array that cannot take it. Six tests drive a real shot view of the reference case — 55 IDS roots built, an occurrence labelled `occurrence 0 [displaying first time slice]` and marked dynamic, `homogeneous_time` read off the loaded instance, the double click delivered through the event loop with the walk held alive until it finishes — and three check the deletion itself: `find_spec` answering None for the three modules that used to do this work |
 | `test_43_plugins_in_the_menu.py` | the "Plugins" sub-menu of the shot view | the plugins of a view imported and built **once**, however many menus are built (measured: 0,999 s for the first right click of a process, 4,186 s cold for the call that did it per click); an entry found by the **number** its plugin declared, reaching `execute` as 7 and not as its place in the menu; a plugin raising in `getEntries` leaving the other plugin's line in place and its own refusal in the log; a plugin that does not inherit the base class offered like the others (measured: invisible, without a word); a number no `getAllEntries` describes refused with the numbers that are; the sub-menu taken back out when no plugin fills it, and still alive when read back from its action after the gesture that built it is gone (measured: `RuntimeError: Internal C++ object (QMenu) already deleted`); a `.ui` file refused by name for the widget class this Qt cannot build — pinned on both `.ui` files the repository ships — and, drawn with Qt classes only, loading its IDS through `QVizLoadOccurrence` like every other load. On the reference case: three lines for `equilibrium`, two for `core_profiles`, no sub-menu for `magnetics`, and its Shift+right click writing a line in the log instead of opening an empty menu |
+| `test_44_plot_frame_ownership.py` | the harness's own rule about plot frames | a frame **shown** then forgotten is the one state that can crash a run, and it is now named at the teardown of the test that built it (measured: of the 110 frames a run built, 79 lost their wrapper and 11 of those had been shown without being closed; the run died at a fixed position with `Fatal Python error: Segmentation fault` inside pyqtgraph's `GraphicsView.paintEvent`, in a file several away from the one at fault); a frame never shown and a frame closed before it is forgotten are **not** hazards — an invariant that called them defects produced 479 cascading failures; a hazard reported once, not again in every later test; the watched classes are the ones carrying a pyqtgraph view |
 | `test_99_import_sweep.py` | every module of the package | walks the tree and imports each module |
 
 The import sweep is the broad one: it fails when a Qt-binding change breaks an
 import anywhere in the package.
+
+### Who owns what a test builds
+
+A plot frame the application draws is held by `Viz_API.figureframes` for as long
+as its window lives. A frame a test builds has no such holder: its last Python
+reference goes when the test returns, Shiboken deletes the C++ object, and Qt may
+still owe that object a paint event. `support/ownership.py` gives the harness the
+holder the application has — `keep(x)` holds it for the session, and what is worth
+holding is often the *transitive* owner (the api holding `figureframes`, the view
+holding the api) — and an autouse fixture in `conftest.py` fails the test at fault
+instead of letting the run die later. Use it for anything your test **shows**:
+`frame.show()` is what puts a widget in the paint queue.
 
 ## 4. The 2 expected failures
 

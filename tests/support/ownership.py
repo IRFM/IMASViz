@@ -51,10 +51,18 @@ _watchedOnce = set()
 def keep(widget):
     """Keep `widget` alive for the whole session, as the application would.
 
-    Returns it, so a test can write `frame = keep(QVizCurvePlot(...))`.
+    Returns it, so a test can write `frame = keep(QVizCurvePlot(...))`. Not only
+    widgets: what has to outlive a test is often the thing that *transitively*
+    owns the frame -- the api holding `figureframes`, the view holding the api --
+    and holding that one is what the guard is really asking for.
     """
     _owners.append(widget)
     return widget
+
+
+def held():
+    """What the harness is holding, so a test can tell held from merely alive."""
+    return list(_owners)
 
 
 def watchOfPlotFrames():
