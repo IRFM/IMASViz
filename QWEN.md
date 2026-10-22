@@ -262,7 +262,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 695 passed, 2 xfailed, ~39 s, offscreen
+python3 -m pytest tests/ -q     # 708 passed, 2 xfailed, ~46 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -288,6 +288,22 @@ configuration, a preference or a plot-configuration file writes into the real
 `~/.imasviz`; `tests/test_39_configurations.py` shows the pattern — point `HOME`
 at `tmp_path` with `monkeypatch`, which works because those helpers read `HOME`
 when they are called, not at import.
+
+`tests/test_45_one_user_journey.py` is the one file that joins gestures into a
+continuous journey (open a case, load, select, draw, save, replay in a second
+window on another shot, close it), and it carries two constraints worth knowing
+before writing any case-driven test. A shot view **must** be built through
+`Viz_API.CreateDataTree` — the call `QVizOpenShotView.Open` makes — because that
+is what appends the frame to `DTVframeList` and the view to `DTVlist`; a frame
+constructed by hand with a bare `Viz_API` passes each gesture in isolation and
+then cannot draw a selection: `QVizPlotAsSlices` defaults to `all_DTV=True`, asks
+`api.DTVlist`, and answers `ValueError: No signal selected.` on a selection the
+view itself holds. Second, the journey is one scenario, so its tests run in the
+order written and assert on the figure keys the api handed out while they ran.
+`QVizDBEntryRegistry` is one dict for the process: other files open the same case,
+so a reference count there is only meaningful as an invariant (the reference case
+sits at 12 in a full run), and `RemoveDTVFrame` → `forget_case` drops the whole
+record for the case it was the last to show.
 
 The environment modules must be loaded in a specific order here: `ach-modules`
 auto-loads `UDA/2.9.0` and `IMAS-AL-Core/5.5.1`, which conflict with the
