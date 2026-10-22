@@ -234,15 +234,23 @@ class QVizIDSViewParser(QThread):
             logging.getLogger(self.dataSource.uri).error(
                 'An attribute error has occurred: the data dictionary of the data '
                 'entry does not match the fields IMASViz expects.')
-            self.closeProgressBar()
         except ValueError as valueError:
             # A slice index the IDS does not hold, or a selection left without
             # an index: said as the sentence the object raises, without the
             # traceback the generic branch below adds to everything else.
             logging.getLogger(self.dataSource.uri).error(valueError)
-            self.closeProgressBar()
         except Exception as exception:
             logging.getLogger(self.dataSource.uri).error(exception, exc_info=True)
+        # Every failure path used to take the bar down right here. Asynchronously
+        # that is the walk's own thread asking for a window to be closed, and it
+        # never comes back: measured, with no case and no IMAS in it, the thread
+        # stayed inside `QWindow::close()` past a 20 s watchdog while the GUI
+        # thread pumped events -- the walk thread is lost, `finished` is never
+        # emitted, the parser is never dropped, the occurrence stays in
+        # `loadsInProgress` for the rest of the session, and every later request
+        # for it is refused as already being loaded. So the walk says what it met
+        # and leaves the window to the thread that made it.
+        if not self.asynch:
             self.closeProgressBar()
 
     def closeProgressBar(self):
@@ -250,6 +258,10 @@ class QVizIDSViewParser(QThread):
 
         `hide()` left it alive: the source built a new one for every load, so a
         session that loaded a dozen IDSs kept a dozen closed-but-live windows.
+
+        Only a thread that owns the widget may call this. Synchronously that is
+        the caller, which is the thread that made the bar; asynchronously it is
+        the source when the walk ends, or the frame once it has drawn the tree.
         """
         if self.progressBar is not None:
             self.progressBar.close()

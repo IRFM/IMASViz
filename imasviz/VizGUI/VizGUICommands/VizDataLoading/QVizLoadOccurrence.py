@@ -32,6 +32,15 @@ a slice. Measured on the reference case:
 So one command does the work, and the guard lives on the view that owns the
 load: a view cannot be asked for the same occurrence twice at once, and another
 view is free to load the same occurrence.
+
+The load is asynchronous by default, and that window was measured on the
+reference case (`tests/test_47_loading_asynchronously.py`): the request returns in
+0,010 s having built nothing, the view says the load is in flight, one parser is
+held alive, the walk runs on a thread of its own while the tree is built on the
+one that owns the view -- 6 058 signals for `magnetics`, 3 368 for one slice of
+`equilibrium`. Asking the same occurrence of the same view while its walk runs
+meets the guard and starts nothing; asking it of another view goes through, which
+is what the shared `Lock` above used to prevent.
 """
 
 import logging

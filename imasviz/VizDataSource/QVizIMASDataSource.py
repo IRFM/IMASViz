@@ -212,7 +212,15 @@ class QVizIMASDataSource:
         built belongs. The walk is dropped here rather than when `load` returns:
         the call returns as soon as the thread is started, and a parser garbage
         collected mid-walk is a crash, not a bug report.
+
+        The bar goes down here too, whatever the walk met. It used to be taken
+        down by the walk itself on the failure paths, which lost the thread -- a
+        window closed from the thread that does not own it never comes back from
+        `close()`, and with it go `finished`, the parser and the record that this
+        occurrence is still being loaded. An accepted walk has its bar closed by
+        the frame once the tree is drawn; closing it again here is harmless.
         """
+        parser.closeProgressBar()
         self.runningParsers.discard(parser)
         dataTreeView.endLoad(IDSName, occurrence)
 
