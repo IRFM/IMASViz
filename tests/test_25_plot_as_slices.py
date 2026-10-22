@@ -26,6 +26,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotA
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 
 from support.fakes import FakeAxesNode
+from support.ownership import keep
 from support.plotting import FakeView, FakeApi, plotCommand, plotted
 
 AOS, LEAF = 'AOS', 'LEAF'
@@ -198,7 +199,12 @@ def test_the_figure_keys_do_not_collide_with_the_legacy_figures(qtbot):
     # The legacy 'Figure:' keys are listed by the "add to an existing figure"
     # menu entries, which would be handed a frame they do not know how to fill.
     view = FakeView('imas:hdf5?case=1', [_scalarInTime()])
-    api = FakeApi([view])
+    # This is the one test here that builds its commands by hand instead of
+    # through the helper, so nothing else outlives the call: the api is what
+    # holds the two frames this draws, and the command shows them
+    # (QVizPlotAsSlices.show), so dropping the api drops two windows Qt has
+    # already painted -- see support/ownership.py.
+    api = keep(FakeApi([view]))
     api.figureframes['Figure:1'] = None
     api.figureframes['Figure:2'] = None
 

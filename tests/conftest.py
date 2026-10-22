@@ -19,6 +19,8 @@ imports imasviz.
 import os
 import sys
 
+import pytest
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Data dictionary and reference case; overridable from the shell so the suite
@@ -85,3 +87,32 @@ def case_uri_or_skip():
 def rank3_case_uri_or_skip():
     """Return the rank 3 case URI, or None when that shot is not reachable."""
     return RANK3_CASE_URI if caseOnDisk(RANK3_CASE_URI) else None
+
+
+@pytest.fixture(autouse=True)
+def _every_plot_frame_outlives_its_test(request):
+    """A frame a test builds must still be alive when that test is done.
+
+    The application holds the frames it draws in `Viz_API.figureframes`; a test
+    has no such holder, so the frame dies with the test's locals and Shiboken
+    deletes the C++ object underneath a paint event Qt may still owe it. What
+    that costs was measured before this fixture existed: of the 110 plot frames
+    a run built, 79 lost their wrapper before the run ended, and the run died
+    with a segmentation fault inside pyqtgraph's GraphicsView.paintEvent -- in a
+    test several files away from the one that dropped the frame, at a fixed
+    position, only under some allocation timings.
+
+    Checking here, at the teardown of the test that built it, names that test
+    instead. The recording keeps weak references only: it cannot be what keeps a
+    frame alive, which is the difference between measuring this and hiding it.
+    """
+    from support import ownership
+
+    ownership.builtDuring(request.node.nodeid)
+    ownership.watchOfPlotFrames()
+    yield
+    dead = ownership.deadFrames()
+    assert not dead, ('a plot frame went away while Qt can still owe it a paint '
+                      'event: ' + ownership.describe(dead)
+                      + ' -- hold one with support.ownership.keep(...), or close '
+                        'it the way the production refusal paths do')

@@ -58,6 +58,7 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 
 from support.fakes import FakeAxesNode
+from support.ownership import keep
 
 RHO = [0., 1., 2., 3.]
 THETA = [0., .25, .5, .75]
@@ -187,12 +188,15 @@ def view(qapp):
             self.signalsList = []
 
     # The MDI area owns the windows the entries open, so it has to outlive the
-    # call that builds it: the api holds it as its Qt parent.
+    # call that builds it: the api holds it as its Qt parent. And the entry
+    # *shows* the table it filled (QVizPlotAsTable), so this shot, its mdi and
+    # the frames in its api have to outlive the test as well -- see
+    # support/ownership.py.
     shot = FakeView()
     shot.mdi = QMdiArea()
     shot.imas_viz_api = Viz_API(parent=shot.mdi)
     shot.imas_viz_api.DTVlist = [shot]
-    return shot
+    return keep(shot)
 
 
 def select(view, *nodes):

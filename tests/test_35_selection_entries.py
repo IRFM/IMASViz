@@ -51,6 +51,7 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
 
 from support.fakes import FakeAxesNode
+from support.ownership import keep
 
 RHO = [0., 1., 2., 3.]
 THETA = [0., .25, .5, .75]
@@ -144,11 +145,14 @@ def view(qapp):
 
     shot = FakeView()
     # The MDI area owns the windows the entries open, so it has to outlive the
-    # call that builds it: the api holds it as its Qt parent.
+    # call that builds it: the api holds it as its Qt parent. And the entries
+    # *show* the frames they open (QVizPlotAsSlices shows the frame it drew), so
+    # this shot, its mdi and the frames registered in its api must outlive the
+    # test too -- see support/ownership.py.
     shot.mdi = QMdiArea()
     shot.imas_viz_api = Viz_API(parent=shot.mdi)
     shot.imas_viz_api.DTVlist = [shot]
-    return shot
+    return keep(shot)
 
 
 def select(view, *nodes):
