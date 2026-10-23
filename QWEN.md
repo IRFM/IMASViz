@@ -277,7 +277,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 775 passed, 2 xfailed, ~132 s, offscreen
+python3 -m pytest tests/ -q     # 776 passed, 2 xfailed, ~127 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -460,6 +460,11 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   StubDialog)`) and asserts on the question rather than answering it by hand. And a
   plugin window is registered like a figure (`PlotView:1` in `figureframes`) but is a
   **top-level** window: measured `parent() is None`, never embedded in the MDI area.
+  Since T22(b) its three figure gestures run `QVizPlotOneNode` like every other gesture,
+  so the frames they build are `SlicesPlot1`/`SlicesPlot2` in the MDI area, and the
+  "add this quantity to that figure" gate lives on `Viz_API`
+  (`figureDrawsSameCurveAxis`, next to the `figToNodes` record it reads) where the shot
+  view's menu and a plugin's view box ask the same question.
 - Still **not** exercised: `make doc` (`sphinx-build: command not found` — Sphinx is
   not on this stack; `python3 -m sphinx -b html -D html_theme=alabaster` is how the
   manual gets checked here).
