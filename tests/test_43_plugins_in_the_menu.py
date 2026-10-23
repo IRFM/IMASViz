@@ -245,6 +245,33 @@ class DeclaresZero:
         RAN.append(('DeclaresZero', vizAPI, pluginEntry))
 
 
+class ReadsItsOwnView(VizPlugin):
+    """The shape `VizProfiles_plugin` has: it reaches its case on `self`.
+
+    It does not call the base constructor, so nothing but the framework's
+    binding can give it a view. Measured on the reference case, the catalog bound
+    the node only, and `execute` died on its first line with `AttributeError:
+    'VizProfiles_plugin' object has no attribute 'dataTreeView'` -- which the
+    guard in `run` reported as "Plugin ... failed", so the entry looked broken
+    rather than unbound.
+    """
+
+    def __init__(self):
+        BUILT.append('ReadsItsOwnView')
+
+    def isEnabled(self):
+        return True
+
+    def getEntries(self):
+        return [1]
+
+    def getAllEntries(self):
+        return [(1, 'draw the panel of this case')]
+
+    def execute(self, vizAPI, pluginEntry):
+        RAN.append(('ReadsItsOwnView', self.dataTreeView.uri, pluginEntry))
+
+
 class RefusesToRun(VizPlugin):
     def __init__(self):
         super().__init__()
@@ -458,6 +485,30 @@ def test_an_entry_is_logged_before_it_is_handed_over(monkeypatch, view, caplog):
     with caplog.at_level(logging.INFO, logger=view.uri):
         catalog.run(catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0])
     assert 'Running plugin DeclaresSeven, entry 7.' in caplog.text
+
+
+def test_a_plugin_is_bound_to_the_view_whose_catalog_built_it(monkeypatch,
+                                                              view):
+    # The contract says the node *and* the view are set when the menu is built.
+    # Measured after the catalog replaced the old handler, only the node was: the
+    # Profiles plugin, the one registered plugin that reaches its case through
+    # its view, failed every entry on the first line of its execute().
+    registerStubs(monkeypatch, ReadsItsOwnView)
+    catalog = QVizPluginCatalog(view)
+    catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))
+    assert catalog.plugins()[0][1].dataTreeView is view
+
+
+def test_a_plugin_that_reaches_its_case_through_its_view_runs(monkeypatch,
+                                                              view):
+    # Without the binding this answers [] -- the AttributeError happens inside
+    # execute, and the guard in `run` turns it into a log line, so the entry
+    # looks broken rather than unbound.
+    registerStubs(monkeypatch, ReadsItsOwnView)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    catalog.run(entry)
+    assert RAN == [('ReadsItsOwnView', 'stub?case', 1)]
 
 
 # --------------------------------------------------------------------------

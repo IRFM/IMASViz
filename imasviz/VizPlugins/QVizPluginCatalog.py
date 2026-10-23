@@ -163,6 +163,15 @@ class QVizPluginCatalog:
                 # menu down: ModuleNotFoundError escaped the loop that built it.
                 self._refuse(pluginName, '%s: %s' % (type(error).__name__, error))
                 continue
+            # A plugin reaches its case through `self.dataTreeView`, which the
+            # contract says is set when the menu is built. The catalog bound the
+            # node only, so a plugin reading its view answered AttributeError on
+            # the first line of execute() -- measured with the Profiles plugin,
+            # the one registered plugin that reads it -- and the guard in `run`
+            # hid that behind a line saying "Plugin ... failed".
+            bindView = getattr(plugin, 'setDataTreeView', None)
+            if callable(bindView):
+                bindView(self.dataTreeView)
             self._plugins.append((pluginName, plugin))
         return self._plugins
 
