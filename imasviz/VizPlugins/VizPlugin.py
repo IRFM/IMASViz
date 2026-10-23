@@ -31,7 +31,6 @@ it, is `QVizPluginCatalog`.
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
-                     # 'CompareFLT1DPlugin': 'viz_tests.CompareFLT1DPlugin',
                      # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
                      # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
                      'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',

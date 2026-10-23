@@ -11,24 +11,25 @@
 
 Selecting signals and asking for a figure is how a user compares quantities, so
 this is the entry whose failures are the most expensive -- and measured here on
-real tree nodes, the legacy path fails three ways at once. A quantity the
-dictionary ranks above 1D makes `plot1DSelectedSignals` `return` from inside the
+real tree nodes, the legacy path failed three ways at once. A quantity the
+dictionary ranks above 1D made `plot1DSelectedSignals` `return` from inside the
 loop over the selection: three nodes selected, **one curve drawn**, the node
 after the refused one never read, and a window left on screen to close by hand.
-The window is opened by `GetPlotWidget` and embedded in the MDI area before
-anything is read, so a refusal costs a window. And an empty selection -- the
+The window was opened by `GetPlotWidget` and embedded in the MDI area before
+anything was read, so a refusal cost a window. And an empty selection -- the
 selection emptied between the menu being built and the click, which is exactly
-what `updateMenuNodeSelection` rebuilds it against -- dies with
+what `updateMenuNodeSelection` rebuilds it against -- died with
 `UnboundLocalError: cannot access local variable 'e'`, raised out of the menu
-handler by the `logging.getLogger(...).error(str(e))` line that sits outside any
+handler by the `logging.getLogger(...).error(str(e))` line that sat outside any
 `except`.
 
 What it drew was no better: a 1D quantity held by a dynamic array came back with
 the four coordinate values along the abscissa and its time element pinned at the
 index the tree happened to carry, under an empty title and with nothing on the
-figure naming that element. The gate that hides the entry, `shareSameCoordinates`,
-answered `True` for two nodes whose first coordinates differ, because it asks the
-legacy predicates and the legacy frame factory rather than the axes.
+figure naming that element. The gate that hid the entry, `shareSameCoordinates`,
+answered `True` for two nodes whose first coordinates differ, because it asked
+the legacy predicates and the legacy frame factory rather than the axes. The
+window factory and that gate are gone with the frames behind them.
 
 So the entries are re-pointed at `QVizPlotAsSlices`, which already draws the
 selection through the tensor read for the other menu entry, and the two entries

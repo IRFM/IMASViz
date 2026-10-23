@@ -47,8 +47,9 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
 class QVizPlotOneNode(QVizAbstractCommand):
     """One quantity, drawn in a curve figure or an image figure.
 
-    Not a QVizAbstractPlot: this command owns no plot widget and reads through no
-    plot widget. The frame it builds carries the axes the read leaves out.
+    This command owns no plot widget and reads through no plot widget: it asks
+    the read what it drew, and the frame it builds carries the axes the read
+    leaves out.
     """
 
     CURVE_FIGURE_TYPE = FigureTypes.CURVEPLOTTYPE

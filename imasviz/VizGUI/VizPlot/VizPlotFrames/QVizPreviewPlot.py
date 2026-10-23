@@ -9,7 +9,7 @@
 
 """The thumbnail the shot view shows for the node under the click.
 
-The panel used to be a QVizPlotWidget subclass, so it carried the slider
+The panel used to subclass the legacy curve window, so it carried the slider
 machinery a figure needs and none of the reasons a thumbnail gives: the gesture
 asked the data dictionary how big the leaf was (isDynamicData() or is1D()) and
 only called the panel when the answer was one it recognised, the command

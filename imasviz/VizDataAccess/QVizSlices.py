@@ -16,11 +16,12 @@ fixed axis therefore becomes a slice the user can move: an index, a length, and
 a name to put on the control.
 
 This is a new module, written against the axes model rather than the slider the
-plot frames carry today. That one (sliderGroup in QVizPlotWidget) is built when
-the figure is created -- before any quantity is known -- offers one slider,
-either time or coordinate1, and drives the read by the caller reading
-slider.value() out of band. Neither the count nor the wiring can describe a
-quantity with more than two axes, so nothing here is derived from it.
+legacy plot frames carried. That one was built when the figure was created --
+before any quantity was known -- offered one slider, either time or coordinate1,
+and drove the read by the caller reading `slider.value()` out of band. Neither
+its count nor its wiring could describe a quantity with more than two axes, so
+nothing here is derived from it. The slider itself is gone with the frames that
+carried it; the controls this model produces are what the frames answer with.
 """
 
 

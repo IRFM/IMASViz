@@ -235,9 +235,9 @@ def test_no_legacy_image_key_is_produced(view):
 
     # Two namespaces for one kind of window is two Show/Hide menus and one
     # figure the "add to" entries cannot fill. Spelled as a prefix, because the
-    # 'Image:' namespace is gone: an entry in FigureTypes for it would outlive
-    # the only frame that ever produced one.
-    assert view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.FIGURETYPE) == []
+    # 'Image:' and the 'Figure:' namespaces are gone: an entry in FigureTypes
+    # for either would outlive the only frame that ever produced one.
+    assert view.imas_viz_api.GetFiguresKeys(figureType='Figure:') == []
     assert not [key for key in view.imas_viz_api.figureframes
                 if key.startswith('Image:')]
 

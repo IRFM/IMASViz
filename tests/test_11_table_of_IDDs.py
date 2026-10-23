@@ -7,42 +7,21 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""Layout widget and the IDS table model.
+"""The database browser's table model.
 
-The table model assertions also lock the Qt6 migration: QAbstractItemModel
-methods must hand back plain Python values, not QVariant.
+The assertions here also lock the Qt6 migration: QAbstractItemModel methods must
+hand back plain Python values, not QVariant.
+
+This file used to pin a second thing, a grid of plot panels whose only caller
+was a demo script -- the layout widget. It went with the legacy figure widget it
+was built around (T22c), and its grid assertions went with it: nothing in the
+application ever asked for those rows and columns.
 """
 
 import pytest
 from PySide6.QtCore import Qt
 
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QvizPlotLayoutWidget import QvizPlotLayoutWidget
 from imasviz.VizGUI.VizWidgets.QVizTableOfIDSs import TableModel
-
-
-@pytest.fixture
-def layout_widget(qtbot):
-    widget = QvizPlotLayoutWidget(dataTreeView=None, rows=2, columns=3,
-                                  title='a layout')
-    qtbot.addWidget(widget)
-    return widget
-
-
-def test_the_grid_dimensions_are_kept(layout_widget):
-    assert layout_widget.rows == 2
-    assert layout_widget.columns == 3
-    assert layout_widget.row == 0
-    assert layout_widget.column == 0
-    assert layout_widget.num_plots == 0
-
-
-def test_the_widget_identity_matches_the_code_that_looks_it_up(layout_widget):
-    assert layout_widget.objectName() == "QVizPlotLayoutWidget"
-    assert layout_widget.windowTitle() == 'a layout'
-
-
-def test_a_grid_layout_is_installed(layout_widget):
-    assert layout_widget.layout() is layout_widget.gridLayout
 
 
 def test_table_shape():

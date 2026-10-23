@@ -56,7 +56,7 @@ class FakeApi:
             frame.close()
         self.figToNodes.pop(figureKey, None)
 
-    def GetFiguresKeys(self, figureType='Figure:'):
+    def GetFiguresKeys(self, figureType):
         return sorted(key for key in self.figureframes if key.startswith(figureType))
 
     def GetNextKeyForFigure(self, figureType):

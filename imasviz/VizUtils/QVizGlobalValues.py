@@ -15,16 +15,17 @@ from PySide6 import QtGui
 
 
 class FigureTypes:
-    FIGURETYPE = "Figure:"
     TABLEPLOTTYPE = "TablePlotView:"
     STACKEDPLOTTYPE = "StackedPlotView:"
     PROFILESPLOTTYPE = "PlotView:"
     # The frames drawn through the axes model keep their own prefixes: the
     # "add to this figure" entries build their curves through another path and
     # would be handed a frame they do not know how to fill. Separate namespace,
-    # same registry. The legacy image frame's "Image:" prefix is gone with it:
-    # a second namespace for the same kind of window is two Show/Hide entries
-    # and one window the "add to" entries cannot fill.
+    # same registry. Two prefixes died with the frames that produced them: the
+    # legacy image frame's "Image:", and the "Figure:" one the legacy widget
+    # handed out. A second namespace for one kind of window is two Show/Hide
+    # entries and one window the "add to" entries cannot fill; a namespace with
+    # no frame left behind it is a Show/Hide entry that can never be filled.
     CURVEPLOTTYPE = "SlicesPlot"
     IMAGEPLOTTYPE = "SlicesImage"
 
@@ -32,9 +33,9 @@ class FigureTypes:
     # user reads (it is the prefix the window title shows), the icon named in
     # GlobalIcons, and the prefix its key carries. The Show/Hide and Delete
     # menus iterate this, because a kind missing here is a window the user has
-    # no way left to close.
-    MENU_ORDER = (('Figure', 'Figure', FIGURETYPE),
-                  ('TablePlotView', 'TPV', TABLEPLOTTYPE),
+    # no way left to close -- and a kind listed here that no command draws any
+    # more is a sub-menu that can never be filled.
+    MENU_ORDER = (('TablePlotView', 'TPV', TABLEPLOTTYPE),
                   ('StackedPlotView', 'SPV', STACKEDPLOTTYPE),
                   ('Profiles', 'Profiles', PROFILESPLOTTYPE),
                   ('SlicesPlot', 'Figure', CURVEPLOTTYPE),

@@ -16,7 +16,6 @@ from PySide6.QtWidgets import (QTabWidget, QWidget, QPushButton, QGridLayout,
 from PySide6.QtCore import Qt, QRect, Slot
 from functools import partial
 from imasviz.VizUtils import GlobalQtStyles, GlobalPgSymbols, GlobalIcons
-# from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from pyqtgraph.graphicsItems.LegendItem import ItemSample
 
 
@@ -53,8 +52,6 @@ class QVizPlotConfigUI(QDialog):
         elif "StackedPlotView" in str(self.viewBox.qWidgetParent.objectName()):
             # Get legend item. Contains legend labels, graphics etc.
             self.legendItem = self.viewBox.plotItem.legend
-        elif "QVizPlotLayoutWidget" in str(self.viewBox.qWidgetParent.objectName()):
-            self.legendItem = None
         elif "QVizPlugin" in str(self.viewBox.qWidgetParent.objectName()):
             self.legendItem = self.viewBox.plotItem.legend
         else:
@@ -132,9 +129,6 @@ class QVizPlotConfigUI(QDialog):
         # if ("TablePlotView" or "StackedPlotView") in widgetName: # fails (?)
         if ("TablePlotView" in widgetName) or ("StackedPlotView" in widgetName):
             return self.viewBox.plotItem
-        elif "QVizPlotLayoutWidget" in widgetName:
-            # No support for PlotLayoutWidget
-            return None
         elif "QVizPlugin" in widgetName:
             return self.viewBox.plotItem
         else:
@@ -1210,12 +1204,12 @@ class TabPlotDesignProperties(QWidget):
         """ Set widget for setting custom margin.
         """
 
-        # Get QVizPlotWidget
+        # Get the widget the view box was drawn in
         plotWidget = self.viewBox.qWidgetParent
 
         # Check which layout it has
-        # - gridLayout for QVizPlotWidget and QVizPreviewWidget
-        # - centralLayout for TPV and SPV
+        # - gridLayout
+        # - centralLayout, the one TPV and SPV build
         if hasattr(plotWidget, 'gridLayout'):
             self.parentLayout = plotWidget.gridLayout
         elif hasattr(plotWidget, 'centralLayout'):

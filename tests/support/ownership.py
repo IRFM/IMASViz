@@ -32,7 +32,6 @@ import weakref
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlot import QVizStackedPlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
@@ -40,7 +39,7 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 # The frames that carry a pyqtgraph view, i.e. the ones a paint event can be
 # queued for. A QVizPanel or a QVizSliceControls owns no view: deleting one is
 # not what kills a run, so they are not watched.
-FRAME_CLASSES = (QVizPlotWidget, QVizCurvePlot, QVizImagePlot, QVizStackedPlot,
+FRAME_CLASSES = (QVizCurvePlot, QVizImagePlot, QVizStackedPlot,
                  QVizTablePlot, QVizPreviewPlot)
 
 _owners = []

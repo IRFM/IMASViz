@@ -25,13 +25,16 @@ class CustomizedViewBox(pg.ViewBox):
     """
 
     def __init__(self, qWidgetParent, imas_viz_api, parent=None):
-        """Constructor of the QVizCustomPlotContextMenu
+        """Constructor of this plugin's view box.
 
         Arguments:
-            qWidgetParent (QWidget) : Parent of ViewBox which is PyQt5 QWidget
-                                      object (setting QWidget (PyQt5) as a
-                                      regular ViewBox (pyqtgraph) parent
-                                      doesn't seem to be allowed).
+            qWidgetParent (QWidget) : the widget this view box is drawn in. A
+                                      QWidget cannot be given as a pyqtgraph
+                                      ViewBox's parent, so the link is held by
+                                      name here instead.
+            imas_viz_api  (Viz_API)  : the session's figure bookkeeping, which
+                                      the "plot this into that figure" lines are
+                                      read from.
             parent        (obj)     : Parent.
         """
         self.confidenceBandLower = None

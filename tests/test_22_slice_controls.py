@@ -16,10 +16,10 @@ takes. Nothing here opens a case or a data dictionary -- the slices are built by
 hand from the model, which is also how a rank 3 quantity gets tested when no
 reference case on this checkout has one filled with values.
 
-Written as new code against QVizSlices. The slider the plot frames carry today
-(QVizPlotWidget.sliderGroup) is not touched, extended or compared: it is built
-before any quantity is known and offers one control picked by two flags, so
-neither its count nor its wiring can describe a quantity with three axes.
+Written as new code against QVizSlices. The slider the legacy plot frames
+carried is not touched, extended or compared: it was built before any quantity
+was known and offered one control picked by two flags, so neither its count nor
+its wiring could describe a quantity with three axes.
 """
 
 import pytest

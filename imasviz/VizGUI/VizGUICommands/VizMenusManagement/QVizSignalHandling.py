@@ -233,9 +233,9 @@ class QVizSignalHandling(QObject):
         One menu for every shape. The command behind 'New' picks the frame from
         the axes the read would walk, so what used to be three menus -- one per
         leaf shape the dictionary spells -- is one entry now, and the submenu
-        lists the frames that command can actually fill: the legacy 'Figure:'
-        windows are built and filled by the old path, which cannot read a
-        quantity of two axes, so offering them here is an entry that cannot work.
+        lists the frames that command can actually fill: the windows the old
+        path used to hand out are gone with it, so the only kind offered here is
+        the one this command builds and knows how to fill.
 
         Arguments:
             parentMenu (QMenu) : the menu to hang the "as function of time" entry
@@ -400,8 +400,9 @@ class QVizSignalHandling(QObject):
 
                 # Only the frames this command can fill. A picture window holds
                 # one quantity, with its colour scale and its controls, so it is
-                # not offered here; and the legacy 'Figure:' keys are not offered
-                # either, because the old path that filled them is gone.
+                # not offered here -- and no other prefix is offered either,
+                # because the kind that used to answer this entry was drawn by
+                # a path no gesture reaches any more.
                 id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
                                                            FigureTypes.CURVEPLOTTYPE)
                 subMenu_figure_existing = QMenu(figureKey, subMenu_figure)
@@ -542,7 +543,7 @@ class QVizSignalHandling(QObject):
 
         for figureKey in self.imas_viz_api.GetFiguresKeys(
                 figureType=figureType):
-            # Get figure number out of the key string (e.g. 'Figure:0' -> 0),
+            # Get figure number out of the key string (e.g. 'SlicesPlot2' -> 2),
             # which is what the show/hide and delete actions are keyed on
             figureNum = self.imas_viz_api.getFigureKeyNum(figureKey, figureType)
 
@@ -730,8 +731,8 @@ class QVizSignalHandling(QObject):
             all_DTV (bool) : Whether to consider the current or all DTVs.
         """
         # The figure the entry listed is one of the frames this command builds:
-        # the legacy 'Figure:' keys are not offered any more, because the path
-        # that filled them is gone.
+        # the entry is built from the curve kind, so the key it names is a key
+        # this command can fill.
         try:
             self.plotSelectedSignals(
                 all_DTV=all_DTV,
@@ -741,38 +742,38 @@ class QVizSignalHandling(QObject):
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     @Slot(int, str)
-    def showHideFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):
-        """Show/Hide figure plot widget window or TablePlotView frame.
+    def showHideFigure(self, numFig, figureType):
+        """Show/Hide the window holding one figure of one kind.
 
         Arguments:
             numFig     (int) : Figure number identificator.
-            figureType (str) : Type of figure e.c. "Figure:", "Multiplot:",
-                               "Subplot"... see QVizGlobalValues.py FigureTypes
-                               class for a full list of figure types.
+            figureType (str) : the prefix that kind of figure is registered
+                               under -- the menus pass the one they were built
+                               from, so a default here would be a kind the
+                               caller never asked about.
         """
-        # Get figure key (e.g. 'Figure:0' string)
+        # The key is what the registry addresses a figure by
         figureKey = \
             self.imas_viz_api.GetFigureKey(str(numFig), figureType)
         self.imas_viz_api.ShowHideFigure(figureKey)
 
     @Slot(str)
-    def deleteAllFigures(self, figureType=FigureTypes.FIGURETYPE):
+    def deleteAllFigures(self, figureType):
         figureKeys = self.imas_viz_api.GetFiguresKeys(figureType)
         for figureKey in figureKeys:
             self.imas_viz_api.DeleteFigure(figureKey)
 
     @Slot(int, str)
-    def deleteFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):
-        """Delete figure plot widget window.
+    def deleteFigure(self, numFig, figureType):
+        """Delete the window holding one figure of one kind.
 
         Arguments:
             numFig     (int) : Figure number identificator.
-            figureType (str) : Type of figure e.c. "Figure:", "Multiplot:",
-                               "Subplot"... see QVizGlobalValues.py FigureTypes
-                               class for a full list of figure types.
+            figureType (str) : the prefix that kind of figure is registered
+                               under, as above.
         """
         try:
-            # Get figure key (e.g. 'Figure:0' string)
+            # The key is what the registry addresses a figure by
             figureKey = self.imas_viz_api. \
                 GetFigureKey(str(numFig), figureType)
             self.imas_viz_api.DeleteFigure(figureKey)

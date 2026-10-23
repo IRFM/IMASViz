@@ -9,10 +9,11 @@
 
 """A curve figure that says which slice of a quantity it drew.
 
-Written against the axes model and the tensor read rather than against
-QVizPlotWidget, for the reasons those two modules state: a curve draws one axis,
-so every other axis of the quantity is fixed somewhere, and a figure that does
-not say where it fixed them is showing numbers nobody can attribute.
+Written against the axes model and the tensor read rather than against the
+legacy curve window, for the reasons that window and its command state: a curve
+draws one axis, so every other axis of the quantity is fixed somewhere, and a
+figure that does not say where it fixed them is showing numbers nobody can
+attribute.
 
 The loop this closes:
 

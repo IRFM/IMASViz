@@ -108,7 +108,6 @@ def subMenuTitles(menu):
 
 
 @pytest.mark.parametrize('figureType,label', [
-    (FigureTypes.FIGURETYPE, 'Figure'),
     (FigureTypes.TABLEPLOTTYPE, 'TablePlotView'),
     (FigureTypes.STACKEDPLOTTYPE, 'StackedPlotView'),
 ])
@@ -123,6 +122,25 @@ def test_every_legacy_figure_type_is_still_offered(qapp, view, figureType, label
     assert showHide is not None and showHide.isEnabled()
     assert subMenuNamed(showHide, label) is not None, subMenuTitles(showHide)
     assert actionNamed(subMenuNamed(showHide, label), figureType + '1') is not None
+
+
+def test_the_legacy_figure_kind_is_not_offered_any_more(qapp, view):
+    # 'Figure:' was the prefix of the legacy curve window, and that window is
+    # gone. Its kind is out of MENU_ORDER, so the two menus walk no prefix that
+    # a leftover key could match: a frame still registered under 'Figure:' stays
+    # in the bookkeeping and is named by no line -- nothing hands that key out
+    # again, and nothing pretends it can close one.
+    assert 'Figure:' not in [figureType for _label, _icon, figureType
+                             in FigureTypes.MENU_ORDER]
+    assert not hasattr(FigureTypes, 'FIGURETYPE')
+    openFigures(view, **{'Figure:1': QWidget})
+    assert view.imas_viz_api.GetFiguresCount(figureType='Figure:') == 1
+    menu = QMenu()
+    figureMenus(view, menu)
+
+    showHide = subMenuNamed(menu, 'Show/Hide')
+    assert showHide is not None and not showHide.isEnabled()
+    assert subMenuTitles(showHide) == []
 
 
 def test_deleting_all_the_stacked_figures_leaves_the_tables_alone(qapp, view):

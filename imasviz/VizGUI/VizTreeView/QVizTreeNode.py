@@ -834,29 +834,3 @@ class QVizTreeNode(QTreeWidgetItem):
     def evalPath(self, path):
         exec(self.getIDSName() + " = self.getIDSRef()")
         return eval(path)
-
-    def nodeDataShareSameCoordinatesAs(self, selectedNodeList, figureKey=None):
-        """Check if data already in figure and next to be added signal plot
-        share the same coordinates and other conditions for a meaningful plot.
-        """
-        plotAxis=None
-        api = self.dataTreeView.imas_viz_api
-        if self.is1DAndDynamic():
-            if figureKey is not None:
-                figureKey, plotWidget = api.GetPlotWidget(dataTreeView=self.dataTreeView,
-                                                              figureKey=figureKey, treeNode=self)
-                
-                plotAxis = plotWidget.getPlotAxis()
-
-            for si in selectedNodeList:
-                # Following check on coordinates is performed only if the current plot axis is not the time axis
-                if figureKey is None or (plotAxis is not None and plotAxis != 'TIME'):
-                    if self.getCoordinate(coordinateNumber=1) != si.getCoordinate(coordinateNumber=1):
-                        return False
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and self.getUnits() != si.getUnits():
-                    return False
-        elif self.is0DAndDynamic():
-            for si in selectedNodeList:
-                if QVizPreferences.Allow_data_to_be_plotted_with_different_units == 0 and self.getUnits() != si.getUnits():
-                    return False
-        return True

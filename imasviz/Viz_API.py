@@ -286,20 +286,17 @@ class Viz_API:
         parent = frame.parent()
         return parent if isinstance(parent, QMdiSubWindow) else None
 
-    def GetFiguresCount(self, figureType=FigureTypes.FIGURETYPE):
+    def GetFiguresCount(self, figureType):
         """How many figures of one kind are open.
+
+        The kind is spelled by the caller: a default here would be a prefix the
+        caller never chose, and a prefix nothing produces any more is a count
+        that reads zero for ever.
 
         :param figureType: (str) a FigureTypes prefix
         :returns: (int)
         """
         return len(self.GetFiguresKeys(figureType))
-
-    def GetFigurePlotsCount(self):
-        """Returns the next figure number available for plotting.
-
-        :returns: (int) The number of the next figure
-        """
-        return self.GetFiguresCount()
 
     def GetTablePlotViewsCount(self):
         """Returns the next table plot number available for plotting.
@@ -322,7 +319,7 @@ class Viz_API:
         """
         return self.GetFiguresCount(FigureTypes.PROFILESPLOTTYPE)
 
-    def GetNextKeyForFigure(self, figureType=FigureTypes.FIGURETYPE):
+    def GetNextKeyForFigure(self, figureType):
         """The key of the next figure of one kind: one past the highest number
         still in use.
 
@@ -348,15 +345,6 @@ class Viz_API:
         """
         return self.GetNextKeyForFigure(FigureTypes.TABLEPLOTTYPE)
 
-    def GetNextKeyForFigurePlots(self):
-        """Returns the key of the next figure plot (e.g. if 'Figure i' is the
-        latest figure on the list of existing figures, value 'Figure i+1' is
-        returned).
-
-        :returns: (str) The key of the next figure (plot)
-        """
-        return self.GetNextKeyForFigure(FigureTypes.FIGURETYPE)
-
     def GetNextKeyForStackedPlotView(self):
         """Returns the key of the next stacked plot (e.g. if 'StackedPlot i'
         is the latest stacked plot on the list of existing stacked plots,
@@ -372,7 +360,7 @@ class Viz_API:
         """
         return self.GetNextKeyForFigure(FigureTypes.PROFILESPLOTTYPE)
 
-    def GetFiguresKeys(self, figureType=FigureTypes.FIGURETYPE):
+    def GetFiguresKeys(self, figureType):
         """Returns the list of all figure keys.
 
         :returns: (list) A list of figure keys
@@ -423,22 +411,20 @@ class Viz_API:
                 frame.close()
         self.ForgetFigure(figureKey)
 
-    def GetFigureKey(self, userKey, figureType=FigureTypes.FIGURETYPE):
+    def GetFigureKey(self, userKey, figureType):
         """Get the figure key.
 
         :param userKey: (str) figure number
-        :param figureType: FigureTypes.FIGURETYPE
+        :param figureType: a FigureTypes prefix
         :returns: (str) a figure key
         """
         return figureType + userKey
 
     def getFigureKeyNum(self, figureKey, figureType):
-        """Extract figure number from a figure key (e.g. 'Figure:0' -> 0).
+        """Extract figure number from a figure key (e.g. 'SlicesPlot2' -> 2).
 
-        :param figureKey: A figure key (e.g. 'Figure:0')
-        :param figureType: FigureTypes.FIGURETYPE or
-                           FigureTypes.STACKEDPLOTTYPE or
-                           FigureTypes.TABLEPLOTTYPE
+        :param figureKey: A figure key (e.g. 'SlicesPlot2')
+        :param figureType: the prefix that kind of figure is registered under
         :returns: (str) a figure key
         """
         numFig = int(figureKey[len(figureType):])
@@ -716,45 +702,6 @@ class Viz_API:
         else:
             return self.GetDataSource(dataTreeFrame).data_entries[occurrence]
 
-    def CreatePlotWidget(self, dataTreeView, plotAxis="DEFAULT", treeNode=None):
-
-        from imasviz.VizGUI.VizPlot import QVizPlotWidget
-
-        figureKey = self.GetNextKeyForFigurePlots()
-
-        addTimeSlider = False
-        addCoordinateSlider = False
-        logging.debug('Creation of a plot widget')
-        if plotAxis == "COORDINATE1":
-            logging.debug('Creation of a plot widget with addTimeSlider = True')
-            addTimeSlider = True
-            addCoordinateSlider = False
-            
-        elif plotAxis == "TIME":
-            logging.debug('Creation of a plot widget with addTimeSlider = False')
-            addTimeSlider = False
-            addCoordinateSlider = True
-
-        plotWidget = QVizPlotWidget(size=(600, 550),
-                                    title=figureKey,
-                                    dataTreeView=dataTreeView,
-                                    addTimeSlider=addTimeSlider,
-                                    addCoordinateSlider=addCoordinateSlider)
-        #if treeNode is not None and addTimeSlider:
-        #    plotWidget.sliderGroup.slider.setValue(int(treeNode.timeValue()))
-        
-        plotWidget.setPlotAxis(plotAxis)
-        self.figureframes[figureKey] = plotWidget
-        return figureKey, plotWidget
-
-    def GetPlotWidget(self, dataTreeView, figureKey=0, plotAxis="DEFAULT", treeNode=None):
-        if figureKey in self.figureframes:
-            plotWidget = self.figureframes[figureKey]
-        else:
-            figureKey, plotWidget = self.CreatePlotWidget(dataTreeView=dataTreeView,
-                                                          plotAxis=plotAxis, treeNode=treeNode)
-        return figureKey, plotWidget
-
     def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
                   coordinate1_index=0, time_index=None, plotWidget=None):
         from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
@@ -767,165 +714,6 @@ class Viz_API:
                                               time_index=time_index)
         except:
             raise
-
-    def AddPlot1DToFig(self, numFig, vizTreeNode):
-        """Add signal plot to existing figure.
-
-        Arguments:
-            numFig (int) : Number identification of the existing figure.
-        """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
-
-        try:
-
-            label = None
-            title = None
-
-            # Get figure key (e.g. 'Figure:0' string)
-            figureKey = self.GetFigureKey(str(numFig), figureType=FigureTypes.FIGURETYPE)
-            # Get widget linked to this figure
-            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=vizTreeNode.dataTreeView,
-                                                       figureKey=figureKey)
-
-            QVizPlotSignal(dataTreeView=vizTreeNode.dataTreeView,
-                           label=label,
-                           title=title,
-                           vizTreeNode=vizTreeNode,
-                           plotWidget=plotWidget).execute(figureKey=figureKey,
-                                                          update=0)
-        except ValueError as e:
-            logging.getLogger(vizTreeNode.dataTreeView.uri).error(str(e))
-
-    def nodeDataShareSameCoordinates(self, figureKey, vizTreeNode):
-        figureDataList = self.figToNodes.get(figureKey)
-        if figureDataList is None:
-            return False
-        figureNodesList = []
-        for k in figureDataList:
-            v = figureDataList[k]
-            figureNodesList.append(v[1])  # v[0] = shot number, v[1] = vizNode
-        return self.nodeDataShareSameCoordinatesAs(figureNodesList, vizTreeNode, figureKey)
-
-    def nodeDataShareSameCoordinatesAs(self, selectedNodeList, vizTreeNode,
-                                       figureKey=None):
-        """Check if data already in figure and next to be added signal plot
-        share the same coordinates and other conditions for a meaningful plot.
-        """
-        return vizTreeNode.nodeDataShareSameCoordinatesAs(selectedNodeList, figureKey)
-
-    def plot0D_DataVsTimeCommand(self, dataTreeView, treeNode=None):
-        """Plotting of 0D data nodes, found within timed AOS
-        """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
-        try:
-            # Get currently selected QVizTreeNode (QTreeWidgetItem)
-            if treeNode is None:
-                treeNode = dataTreeView.selectedItem
-            figureKey, plotWidget = self.GetPlotWidget(dataTreeView=dataTreeView,
-                                                       figureKey=None,
-                                                       plotAxis='TIME')  # None will force a new Figure
-            self.addPlotWidgetToMDI(plotWidget)
-            p = QVizPlotSignal(dataTreeView=dataTreeView,
-                               vizTreeNode=treeNode,
-                               xlabel="time",
-                               plotWidget=plotWidget)
-            p.execute(figureKey=figureKey, update=0)
-        except ValueError as e:
-            logging.getLogger(dataTreeView.uri).error(str(e))
-
-    def plotVsTimeAtGivenCoordinate1(self, dataTreeView, coordinateIndex,
-                                     currentFigureKey, treeNode, update,
-                                     dataset_to_update=0):
-        """Overwrite/Update the existing plot (the one currently shown in the
-        plot window labeled as 'currentFigureKey') using the same
-        physical quantity (found in sibling node of the same structure (AOS))
-        but with different array positional index.
-
-        Arguments:
-            coordinateIndex             (int) : Array positional index.
-            currentFigureKey  (str) : Label of the current/relevant figure
-                                      window.
-            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
-                                      replace the current plot in figure
-                                      window.
-        """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
-        try:
-
-            # Get label, title and xlabel
-            if treeNode.is1DAndDynamic():
-                label, title, xlabel = treeNode.coordinateLabels(
-                    coordinateNumber=1, dtv=dataTreeView,
-                    index=coordinateIndex)
-
-            elif treeNode.is0DAndDynamic():
-                # logging.warning(
-                #     "Data node '" + treeNode.getName() +
-                #     "' has no explicit dependency on coordinate1 dimension.")
-                self.plot0D_DataVsTimeCommand(dataTreeView, treeNode=treeNode)
-                return
-
-            else:
-                logging.getLogger(treeNode.dataTreeView.uri).error("plotVsTimeAtGivenCoordinate1() supports only nodes with dimension <= 1D.")
-                return
-
-            currentFigureKey, plotWidget = \
-                self.GetPlotWidget(dataTreeView=dataTreeView,
-                                   figureKey=currentFigureKey,
-                                   plotAxis='TIME',
-                                   treeNode=treeNode)
-
-            # Add plot window to subwindow and to MDI only if the plotWidget
-            # with the given figurekey does not exist yet
-            if currentFigureKey not in self.figureframes:
-                self.addPlotWidgetToMDI(plotWidget)
-
-            # Update/Overwrite plot
-            QVizPlotSignal(dataTreeView=dataTreeView,
-                           title=title,
-                           label=label,
-                           xlabel="time",
-                           vizTreeNode=treeNode,
-                           plotWidget=plotWidget).execute(figureKey=currentFigureKey,
-                                                          update=update,
-                                                          dataset_to_update=dataset_to_update)
-        except ValueError as e:
-            logging.getLogger(treeNode.dataTreeView.uri).error(str(e))
-
-    def plotVsCoordinate1AtGivenTime(self, dataTreeView, currentFigureKey,
-                                     treeNode, update, dataset_to_update=0):
-        """Overwrite/Update the existing plot (done with
-        'plotSignalCommand' routine and currently still shown in
-        the plot window labeled as 'currentFigureKey') but for different time
-        slice. The node must be of the same structure (sibling to the node used
-        for the previous plot and both are located within the 'time_slice[:]'
-        structure').
-
-        Arguments:
-            currentFigureKey  (str) : Label of the current/relevant figure
-                                      window.
-            treeNode (QVizTreeNode) : QTreeWidgetItem holding node data to
-                                      replace the current plot in figure window.
-        """
-        from imasviz.VizGUI.VizGUICommands.VizPlotting import QVizPlotSignal
-        try:
-            currentFigureKey, plotWidget = \
-                self.GetPlotWidget(dataTreeView=dataTreeView,
-                                   figureKey=currentFigureKey,
-                                   plotAxis='COORDINATE1',
-                                   treeNode=treeNode)
-            # Add plot window to subwindow and to MDI only if the plotWidget
-            # with the given figurekey does not exist yet
-            if currentFigureKey not in self.figureframes:
-                self.addPlotWidgetToMDI(plotWidget)
-            # Update/Overwrite plot
-            QVizPlotSignal(dataTreeView=dataTreeView,
-                           vizTreeNode=treeNode,
-                           plotWidget=plotWidget).execute(figureKey=currentFigureKey,
-                                                          update=update,
-                                                          dataset_to_update=dataset_to_update)
-        except ValueError as e:
-            logging.getLogger(dataTreeView.uri)(str(e))
 
     def getMDI(self):
         if self.parent is not None:

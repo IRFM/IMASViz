@@ -21,11 +21,11 @@ the axes this panel does not draw at the indices these controls hold; that is
 what keeps the element a curve answers for both visible and movable, which the
 old windows did by hiding a slider behind the whole selection.
 
-Written against the axes model and the tensor read rather than the old
-`QVizPlotWidget`, which drew one curve per signal against one abscissa taken
-from the node the menu had been built on: a quantity with two axes to draw died
-on the read, and a quantity read along another quantity's abscissa came out
-labelled with the wrong axis.
+Written against the axes model and the tensor read rather than the legacy curve
+window, which drew one curve per signal against one abscissa taken from the node
+the menu had been built on: a quantity with two axes to draw died on the read,
+and a quantity read along another quantity's abscissa came out labelled with the
+wrong axis.
 """
 
 import pyqtgraph as pg

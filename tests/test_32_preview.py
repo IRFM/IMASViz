@@ -35,9 +35,9 @@ from PySide6.QtWidgets import QMdiArea, QWidget
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot, \
     CURVE, PICTURE, NOTHING
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPlotWidget import QVizPlotWidget
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.Viz_API import Viz_API
 
@@ -332,8 +332,10 @@ def test_a_quantity_holding_nothing_says_so(qapp, panel, view):
 # What the panel is not.
 
 def test_the_thumbnail_carries_no_slider_for_a_read_to_answer_to(qapp, panel, view):
-    # It used to be a QVizPlotWidget, so every read it made went through a plot
-    # widget holding the legacy time-slider machinery -- the one path that kept
-    # the old reader alive for a node nobody selected.
-    assert not isinstance(panel, QVizPlotWidget)
+    # The panel used to be a legacy plot widget, so every read it made went
+    # through a plot widget holding time-slider machinery -- the one path that
+    # kept the old reader alive for a node nobody selected. It is a fact panel
+    # now, not a frame of any kind: a frame is what a queued paint event can
+    # kill, and this one is drawn, not plotted.
+    assert not isinstance(panel, QVizCurvePlot)
     assert not hasattr(panel, 'sliderGroup')

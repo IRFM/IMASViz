@@ -11,12 +11,13 @@
 
 No test in this suite had ever *run* a plugin. `test_43` pins the menu that
 offers one and the catalog that builds it; what happens once an entry is chosen
-had never been asked. It matters here because the Profiles plugin is the only
-door left to the legacy figure island (T22): its own `CustomizedViewBox` calls
-`AddPlot1DToFig`, `plotVsCoordinate1AtGivenTime` and
+had never been asked. It mattered here because the Profiles plugin was the only
+door left to the legacy figure island (T22): its own `CustomizedViewBox` used to
+call `AddPlot1DToFig`, `plotVsCoordinate1AtGivenTime` and
 `plotVsTimeAtGivenCoordinate1`, which engine `QVizPlotWidget` and the `Figure:`
-namespace. That island cannot be removed on the strength of a grep: the door has
-to be walked, and what it produces measured. Two defects, both measured before
+namespace. That island could not be removed on the strength of a grep: the door
+had to be walked, and what it produced measured -- which is what this file does,
+and what made the deletion in step (c) safe. Two defects, both measured before
 either was touched, stood in the way of walking it.
 
 **The window never got its bottom half.** The plugin builds its tabs, then lays
@@ -63,12 +64,14 @@ choosing one of its lines adds a curve to that figure without opening a window.
 
 Those two figures are not what this file first measured. Before the plugin's three
 entries were re-pointed at `QVizPlotOneNode` (T22 step b), the same two gestures
-opened `Figure:1` and `Figure:2` -- `QVizPlotWidget` windows, in a namespace the
-Show/Hide and Delete menus still list but no other path can fill, and which no
-"add to" gesture offers. Measured then: **0,05 s** each, same curve widths. What
+opened `Figure:1` and `Figure:2` -- the legacy curve windows, in a namespace the
+Show/Hide and Delete menus listed but no other path could fill, and which no
+"add to" gesture offered. Measured then: **0,05 s** each, same curve widths. What
 the re-pointing changed is therefore not what lands on the screen -- the same
 curve, the same abscissa, at the same cost -- but which frame holds it: one the
-rest of the application knows how to fill, list, close and add to.
+rest of the application knows how to fill, list, close and add to. Step (c) took
+those windows and their namespace out, so the two measurements above are the only
+figures this file can still reproduce.
 
 The plots are counted through `layout.ci.items`, not through `findChildren`: a
 `GraphicsLayoutWidget` keeps its plots as scene items, and measured on this very
@@ -439,8 +442,9 @@ def test_the_two_entries_build_the_two_figures_the_manual_promises(session):
                     '%s2' % FigureTypes.CURVEPLOTTYPE]
     assert session.api.GetFiguresKeys(
         figureType=FigureTypes.CURVEPLOTTYPE) == keys
-    assert session.api.GetFiguresKeys(
-        figureType=FigureTypes.FIGURETYPE) == []
+    # Spelled as a prefix: the 'Figure:' namespace is gone from FigureTypes, so
+    # an assertion here is a guard that nothing starts producing it again.
+    assert session.api.GetFiguresKeys(figureType='Figure:') == []
     for key, figure, cost in built:
         assert type(figure).__name__ == 'QVizCurvePlot', key
         assert figure.isVisible()
