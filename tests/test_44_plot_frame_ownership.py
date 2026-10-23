@@ -121,6 +121,36 @@ def test_a_frame_closed_before_it_is_forgotten_is_not_a_hazard():
     assert deadNames() == []
 
 
+def test_a_frame_hidden_before_it_is_forgotten_is_not_a_hazard():
+    # Closing is not the only way out of the paint queue, and `Delete` on a shot
+    # view does not close anything: it hides the MDI window and asks Qt to
+    # delete that window, which deletes the frames nested in it -- at a point of
+    # the event loop Qt chose, not at an arbitrary one chosen by the collector.
+    frame = aFrame()
+    frame.show()
+    frame.hide()
+    frame = None
+    forget()
+    assert deadNames() == []
+
+
+def test_the_frame_inside_a_hidden_window_counts_as_hidden():
+    # What the guard has to see through: the frame is not hidden by hand, it is
+    # hidden because `QWidget.hide()` sends the hide event to the children
+    # recursively. Without that, deleting a shot view reports its preview plot
+    # as a hazard and the rule reads as a bug in the guard.
+    from PySide6.QtWidgets import QWidget
+    before = ownership.hiddenFrames()
+    window = QWidget()
+    frame = aFrame()
+    frame.setParent(window)
+    window.show()
+    assert frame.isVisible()
+    window.hide()
+    assert ownership.hiddenFrames() == before + 1
+    assert deadNames() == []
+
+
 # --------------------------------------------------------------------------
 # What holding costs, and how the report behaves
 # --------------------------------------------------------------------------

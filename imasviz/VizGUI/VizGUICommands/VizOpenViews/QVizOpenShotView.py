@@ -23,7 +23,6 @@ class QVizOpenShotView:
         from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
         try:
-            print("QVizOpenShotView::legacy_attributes=", legacy_attributes)
             dataSource = QVizDataSourceFactory(legacy_attributes).create(uri)
 
             dtv = None

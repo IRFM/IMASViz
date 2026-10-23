@@ -170,9 +170,21 @@ class Viz_API:
                 subWindow.setWidget(dataTreeView)
 
                 self.getMDI().addSubWindow(subWindow)
+                # Embedding is not showing: `addSubWindow` leaves the subwindow
+                # hidden when the area is already on screen, which is the state
+                # of the application whenever a case is opened. Same fix as
+                # `addPlotWidgetToMDI` for figures.
+                subWindow.show()
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
-            dataTreeView.parent.show()
+            frame = dataTreeView.parent
+            # The frame may be hidden (Show/Hide) or its window may be: showing
+            # the frame is not enough, since hiding the window hides everything
+            # in it whether the frame is shown or not.
+            window = self.mdiWindowOf(frame)
+            if window is not None:
+                window.show()
+            frame.show()
         else:
             raise ValueError('Wrong argument type arg for ShowDataTree(arg).')
 

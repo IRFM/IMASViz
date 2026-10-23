@@ -87,7 +87,7 @@ def _watch(cls):
         record = {'ref': weakref.ref(self), 'class': cls.__name__,
                   'name': self.objectName() or '-',
                   'builtDuring': _builtDuring[0], 'shown': False,
-                  'closed': False, 'reported': False}
+                  'closed': False, 'hidden': False, 'reported': False}
         _watched.append(record)
 
     cls.__init__ = __init__
@@ -106,8 +106,8 @@ def _watch(cls):
     cls.close = close
 
     # Qt delivers a paint event only to a widget that became visible, so the
-    # state that can crash a run is "was shown, then went away without being
-    # closed". Measured: 79 of the 110 frames a run builds lose their wrapper,
+    # state that can crash a run is "was shown, then went away while still on
+    # screen". Measured: 79 of the 110 frames a run builds lose their wrapper,
     # and the ones never shown are not a hazard -- they are the harness letting
     # go of what a test was only using to read numbers from.
     originalShowEvent = cls.showEvent
@@ -117,6 +117,20 @@ def _watch(cls):
         return originalShowEvent(self, event)
 
     cls.showEvent = showEvent
+
+    # Hiding is the other way out of the paint queue, and production uses it
+    # without closing: deleting a shot view hides the MDI window that holds the
+    # frame, then asks Qt to delete that window -- and a frame inside a window
+    # that goes away is deleted by Qt, at a point of the event loop Qt chose,
+    # not by Shiboken at an arbitrary one. `QWidget.hide()` sends the hide event
+    # to the children recursively, which is what marks them here.
+    originalHideEvent = cls.hideEvent
+
+    def hideEvent(self, event):
+        _mark(self, 'hidden')
+        return originalHideEvent(self, event)
+
+    cls.hideEvent = hideEvent
 
 
 def _mark(widget, key):
@@ -139,8 +153,18 @@ def shownFrames():
     return sum(1 for record in _watched if record['shown'])
 
 
+def hiddenFrames():
+    """How many recorded frames were hidden at least once.
+
+    Counted separately from `closed` because a production path can hide a window
+    without ever closing the widgets inside it; the recursive hide event is what
+    tells the guard those widgets left the paint queue.
+    """
+    return sum(1 for record in _watched if record['hidden'])
+
+
 def deadFrames():
-    """Frames that were shown and then died without being closed.
+    """Frames that were shown and then died while still on screen.
 
     Each is reported once, at the first teardown that notices it: otherwise
     every later test fails on the same death and the run stops saying anything
@@ -148,7 +172,8 @@ def deadFrames():
     """
     dead = []
     for record in _watched:
-        if record['reported'] or record['closed'] or not record['shown']:
+        if (record['reported'] or record['closed'] or record['hidden']
+                or not record['shown']):
             continue
         if record['ref']() is None:
             record['reported'] = True

@@ -322,13 +322,6 @@ class QVizStartWindow(QMainWindow):
         else:
             event.ignore()
 
-    def getMDI(self):
-        """ Get MDI area through the root IMASViz main window.
-        """
-        if self.window().objectName() == "IMASViz root window":
-            return self.window().getMDI()
-        return None
-
 
 class QVizMDI(QMdiArea):
     """Class for Multiple Document Interface (MDI) area.

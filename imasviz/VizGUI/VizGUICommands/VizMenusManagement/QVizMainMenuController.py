@@ -63,12 +63,19 @@ class QVizMainMenuController:
             menu_showHide.setDisabled(False)
             menu_delete.setDisabled(False)
 
-            # Create and add empty submenu to handle windows show/hide
-            submenu_showHideView = menu_showHide.addMenu('Views')
+            # Create and add empty submenu to handle windows show/hide. The
+            # submenu is built with its parent at construction: the QMenu that
+            # `addMenu(title)` hands out belongs to the Python wrapper it comes
+            # back in, so it is deleted as soon as this method returns and the
+            # QAction is left pointing at nothing (measured: reading the
+            # submenu back answers "Internal C++ object already deleted").
+            submenu_showHideView = QMenu('Views', menu_showHide)
+            menu_showHide.addMenu(submenu_showHideView)
             submenu_showHideView.setIcon(
                 GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
             # Create and add empty submenu to handle windows deletion
-            subMenu_deleteView = menu_delete.addMenu('Views')
+            subMenu_deleteView = QMenu('Views', menu_delete)
+            menu_delete.addMenu(subMenu_deleteView)
             subMenu_deleteView.setIcon(
                 GlobalIcons.getCustomQIcon(QApplication, 'Figure'))
 
@@ -107,78 +114,72 @@ class QVizMainMenuController:
         menu.addMenu(menu_delete)
 
     def showHideView(self, index):
-        """Hide/show a DTV.
+        """Hide/show a shot view.
         Argument:
             index : DTV index in the openedDTVs list
         """
-        dtv = self.openShotView.api.GetDTVFrames()[index]
+        frame = self.openShotView.api.GetDTVFrames()[index]
+        window = self.openShotView.api.mdiWindowOf(frame)
 
-        if dtv.window().objectName() == "IMASViz root window":
-            # Hide/Show MDI subwindow
-            if dtv.parent().isVisible():
-                # dtv.parent() is QMdiSubWindow
-                dtv.parent().hide()
+        if window is not None:
+            # Hide/Show the MDI window the frame is embedded in
+            if window.isVisible():
+                window.hide()
             else:
                 # To show the DTV frame, closed with X button, then both MDI
                 # subwindow AND the embedded frame must be shown
-                dtv.show()
-                dtv.parent().show()
+                window.show()
+                frame.show()
         else:
-            # Hide/Show DTVframe window (e.g. when running examples)
-            if dtv.isVisible():
-                dtv.window().hide()
+            # Hide/Show the DTV frame itself (e.g. when running examples)
+            if frame.isVisible():
+                frame.hide()
             else:
-                dtv.window().show()
+                frame.show()
 
     def deleteView(self, index):
-        """Remove a DTV.
+        """Remove a shot view.
         Argument:
             index : DTV index in the openedDTVs list
         """
-        dtv = self.openShotView.api.GetDTVFrames()[index]
+        self.closeView(self.openShotView.api.GetDTVFrames()[index])
 
-        if dtv.window().objectName() == "IMASViz root window":
-            # Delete MDI subwindow
-            if dtv.parent().isVisible():
-                # dtv.parent() is QMdiSubWindow
-                dtv.parent().hide()
-                # TODO: results in a bug when trying to run the delete DTV
-                # feature the second time
-                # dtv.parent().deleteLater()
+    def deleteAllViews(self):
+        """Remove every shot view.
+
+        The QAction that drives this is a checkable trigger: it answers with a
+        `checked` flag, not with an index. The parameter this method used to
+        take was therefore fed `False`, which behaved as index 0 and emptied
+        the list only because the loop bound shrank with it.
+        """
+        for frame in list(self.openShotView.api.GetDTVFrames()):
+            self.closeView(frame)
+
+    def closeView(self, frame):
+        """Take one shot view off the screen and out of the bookkeeping.
+
+        Hiding the window is not enough: a hidden window stays in the MDI area,
+        and nothing but the frame lists is left to reach it. Measured on this
+        Qt stack, four openings and two deletions leave **8** windows in the
+        area for **2** live views. Releasing it is safe here -- deleting one,
+        deleting a second, and re-opening the case afterwards all answer no
+        exception; what the old commented-out `deleteLater()` blamed on Qt is
+        not a Qt bug.
+        """
+        window = self.openShotView.api.mdiWindowOf(frame)
+        if window is not None:
+            window.hide()
+            window.deleteLater()
         else:
-            # Delete DTVframe window (e.g. when running examples)
-            if dtv.isVisible():
-                dtv.hide()
-                # dtv.deleteLater()
+            frame.hide()
+            frame.deleteLater()
 
-        self.openShotView.api.RemoveDTVFrame(dtv)
-
-    def deleteAllViews(self, index):
-        """Remove a DTV.
-        Argument:
-            index : DTV index in the openedDTVs list
-        """
-        for i in range(0, len(self.openShotView.api.GetDTVFrames())):
-            dtv = self.openShotView.api.GetDTVFrames()[index]
-            if dtv.window().objectName() == "IMASViz root window":
-                if dtv.window().isVisible():
-                    dtv.parent().hide()
-                    # dtv.parent().deleteLater()
-            else:
-                if dtv.isVisible():
-                    dtv.hide()
-                    # dtv.deleteLater()
-            self.openShotView.api.RemoveDTVFrame(dtv)
+        self.openShotView.api.RemoveDTVFrame(frame)
 
     def addPublicDB(self):
         self.parent.IMASdbBrowserWidget.addUserDB("public")
-        
+
     def addSpecificUserDB(self):
         username = self.parent.IMASdbBrowserWidget.getActiveUsername()
         self.parent.IMASdbBrowserWidget.addUserDB(username)
-        
-    def getMDI(self):
-        if self.parent.getMDI() != None:
-            return self.parent.getMDI()
-        return None
-        
+
