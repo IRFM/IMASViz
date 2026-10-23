@@ -12,6 +12,9 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QMenu
 from PySide6.QtGui import QAction
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI import QVizPlotConfigUI
+from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
+from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+    import QVizPlotOneNode
 from imasviz.VizUtils import FigureTypes
 
 from pyqtgraph.exporters.Matplotlib import Exporter
@@ -183,21 +186,30 @@ class CustomizedViewBox(pg.ViewBox):
     def buildContextMenu(self):
         node = self.vizTreeNodesList[0]
         self.contextMenu.setTitle('Plot ' + node.getName() + ' to')
+        # The windows this quantity can join are the open curve figures whose
+        # curves run along the same abscissa, asked of the same registry the shot
+        # view's own menu reads: two copies of that rule is two chances for the
+        # two menus to list different windows. A quantity with two axes to draw
+        # has no abscissa to share, so it gets no line here.
+        curveAxis = QVizNodePlotting(node).curveAxisKey()
+        if curveAxis is None:
+            return
         for figureKey in self.imas_viz_api.GetFiguresKeys(
-                figureType=FigureTypes.FIGURETYPE):
+                figureType=FigureTypes.CURVEPLOTTYPE):
+            if not self.imas_viz_api.figureDrawsSameCurveAxis(figureKey,
+                                                              curveAxis):
+                continue
 
-            id_Fig = self.imas_viz_api.getFigureKeyNum(figureKey,
-                                                       FigureTypes.FIGURETYPE)
+            # Set action
+            action_addSignalPlotToFig = QAction(figureKey, self)
+            action_addSignalPlotToFig.triggered.connect(
+                partial(self.plotIntoFigure, figureKey))
+            # Add to submenu
+            self.contextMenu.addAction(action_addSignalPlotToFig)
 
-            # Add menu item to add plot to specific existing figure
-            # Check for figures that share the same coordinates
-            if self.imas_viz_api.nodeDataShareSameCoordinates(figureKey, node):
-                # Set action
-                action_addSignalPlotToFig = QAction(figureKey, self)
-                action_addSignalPlotToFig.triggered.connect(
-                    partial(self.imas_viz_api.AddPlot1DToFig, id_Fig, node))
-                # Add to submenu
-                self.contextMenu.addAction(action_addSignalPlotToFig)
+    def plotIntoFigure(self, figureKey):
+        """Add this plot's quantity to a figure that is already open."""
+        self.plotNode(intoFigureKey=figureKey)
 
     def setRectMode(self):
         """Set mouse mode to rect mode for convenient zooming.
@@ -421,21 +433,31 @@ class CustomizedViewBox(pg.ViewBox):
                 Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
 
     def plotVsCoordinate1ToNewFigure(self):
-        from imasviz.Viz_API import Viz_API
-        node = self.vizTreeNodesList[0]
-        currentFigureKey = 0
-        key = node.dataTreeView.dataSource.dataKey(node)
-        tup = (node.dataTreeView.dataSource.uri, node)
-        figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
-        self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
-        self.imas_viz_api.plotVsCoordinate1AtGivenTime(node.dataTreeView, figureKey, node, 0)
+        """This quantity, in a figure of its own, read along its own coordinate."""
+        self.plotNode()
 
     def plotVsTimeToNewFigure(self):
-        from imasviz.Viz_API import Viz_API
+        """This quantity, in a figure of its own, read along time."""
+        self.plotNode(alongTime=True)
+
+    def plotNode(self, intoFigureKey=None, alongTime=False):
+        """Run the one-node command, the same the shot view's menu runs.
+
+        The frame is the one the axes call for and the api knows how to fill:
+        embedded in the MDI area, listed by the Show/Hide and Delete menus, and
+        offered to the "add to" gestures -- which the legacy window these two
+        entries used to open was none of those. A quantity the read cannot
+        answer for costs no window, and its reason goes to the log of the case
+        it came from.
+        """
         node = self.vizTreeNodesList[0]
-        currentFigureKey = 0
-        key = node.dataTreeView.dataSource.dataKey(node)
-        tup = (node.dataTreeView.dataSource.uri, node)
-        figureKey = self.imas_viz_api.GetNextKeyForFigurePlots()
-        self.imas_viz_api.AddNodeToFigure(figureKey, key, tup)
-        self.imas_viz_api.plotVsTimeAtGivenCoordinate1(node.dataTreeView, 0, figureKey, node, 0, 0)
+        command = QVizPlotOneNode(dataTreeView=node.getDataTreeView(),
+                                  treeNode=node,
+                                  intoFigureKey=intoFigureKey,
+                                  alongTime=alongTime)
+        frame = command.execute()
+        if frame is None:
+            return
+        if command.builtFigure:
+            self.imas_viz_api.addPlotWidgetToMDI(frame)
+        frame.show()

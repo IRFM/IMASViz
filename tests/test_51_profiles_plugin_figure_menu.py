@@ -54,11 +54,21 @@ points -- the boundary outlines, which carry their own base of points. The slide
 field starts at `32.1336784362793`.
 
 `getMenu()` costs **0,03 s** and answers **13** actions. Its "Plot <quantity> to"
-sub-menu holds **0** lines while no `Figure:` window exists: it lists the figures
-this quantity could join, and there are none yet. The two new-figure entries then
-build `Figure:1` (a `QVizPlotWidget` drawing **101** points along coordinate1) and
-`Figure:2` (**49** points along time), each in **0,05 s**; and the sub-menu now
-lists those two.
+sub-menu holds **0** lines while no curve figure is open: it lists the open figures
+whose curves run along the same abscissa as this quantity, and there are none yet.
+The two new-figure entries then build `SlicesPlot1` (**101** points along
+coordinate1, in **0,013 s**) and `SlicesPlot2` (**49** points along time, in
+**0,061 s**), each embedded in the MDI area; the sub-menu now lists both, and
+choosing one of its lines adds a curve to that figure without opening a window.
+
+Those two figures are not what this file first measured. Before the plugin's three
+entries were re-pointed at `QVizPlotOneNode` (T22 step b), the same two gestures
+opened `Figure:1` and `Figure:2` -- `QVizPlotWidget` windows, in a namespace the
+Show/Hide and Delete menus still list but no other path can fill, and which no
+"add to" gesture offers. Measured then: **0,05 s** each, same curve widths. What
+the re-pointing changed is therefore not what lands on the screen -- the same
+curve, the same abscissa, at the same cost -- but which frame holds it: one the
+rest of the application knows how to fill, list, close and add to.
 
 The plots are counted through `layout.ci.items`, not through `findChildren`: a
 `GraphicsLayoutWidget` keeps its plots as scene items, and measured on this very
@@ -398,11 +408,11 @@ def test_the_add_to_submenu_is_empty_while_there_is_nothing_to_add_to(session):
     node = box.vizTreeNodesList[0]
     sub = subMenuOf(box, 'Plot %s to' % node.getName())
 
-    # The sub-menu lists the existing figures this quantity shares coordinates
+    # The sub-menu lists the open curve figures this quantity shares its abscissa
     # with. None exists yet, so the documented step 6 has exactly one way to be
     # taken: the entry that opens a new figure.
     assert list(sub.actions()) == []
-    assert session.api.GetFiguresKeys(FigureTypes.FIGURETYPE) == []
+    assert session.api.GetFiguresKeys(figureType=FigureTypes.CURVEPLOTTYPE) == []
 
 
 def test_the_two_entries_build_the_two_figures_the_manual_promises(session):
@@ -422,11 +432,20 @@ def test_the_two_entries_build_the_two_figures_the_manual_promises(session):
         built.append((new[0], session.api.figureframes[new[0]], cost))
 
     keys = [key for key, _figure, _cost in built]
-    assert keys == ['Figure:1', 'Figure:2']
-    assert session.api.GetFiguresKeys(FigureTypes.FIGURETYPE) == keys
+    # The frames the plugin opens are the ones the rest of the application knows
+    # how to fill, list in the Show/Hide and Delete menus and offer to "add to"
+    # gestures -- not the legacy `Figure:` windows, which no other path can fill.
+    assert keys == ['%s1' % FigureTypes.CURVEPLOTTYPE,
+                    '%s2' % FigureTypes.CURVEPLOTTYPE]
+    assert session.api.GetFiguresKeys(
+        figureType=FigureTypes.CURVEPLOTTYPE) == keys
+    assert session.api.GetFiguresKeys(
+        figureType=FigureTypes.FIGURETYPE) == []
     for key, figure, cost in built:
-        assert type(figure).__name__ == 'QVizPlotWidget', key
+        assert type(figure).__name__ == 'QVizCurvePlot', key
         assert figure.isVisible()
+        # Unlike the plugin's own window, these are embedded in the MDI area.
+        assert session.api.mdiWindowOf(figure) is not None, key
         assert cost < 1.0, '%s cost %.2f s' % (key, cost)
     # One curve each: 101 points of the radial coordinate for the first, the 49
     # time slices of this occurrence for the second, starting where the slider's
@@ -442,6 +461,33 @@ def test_the_two_entries_build_the_two_figures_the_manual_promises(session):
 
 def test_the_add_to_submenu_then_lists_those_two_figures(session):
     box = plotsOf(session.window)[0].getViewBox()
-    sub = subMenuOf(box, 'Plot %s to' % box.vizTreeNodesList[0].getName())
+    node = box.vizTreeNodesList[0]
+    sub = subMenuOf(box, 'Plot %s to' % node.getName())
 
-    assert [a.text() for a in sub.actions()] == ['Figure:1', 'Figure:2']
+    # Both figures are listed: every curve in them runs along the same abscissa
+    # as this quantity -- the 101-point psi coordinate of this IDS.
+    assert [a.text() for a in sub.actions()] == ['%s1' % FigureTypes.CURVEPLOTTYPE,
+                                                 '%s2' % FigureTypes.CURVEPLOTTYPE]
+
+
+def test_choosing_a_submenu_line_adds_the_curve_without_opening_a_window(session):
+    key = '%s1' % FigureTypes.CURVEPLOTTYPE
+    box = plotsOf(session.window)[0].getViewBox()
+    node = box.vizTreeNodesList[0]
+    line = [a for a in subMenuOf(box, 'Plot %s to' % node.getName()).actions()
+            if a.text() == key]
+    assert len(line) == 1
+
+    figure = session.api.figureframes[key]
+    before = figure.curveCount()
+    registered = set(session.api.figureframes)
+    cost = _elapsed(line[0].trigger)
+    session.pump()
+
+    # The quantity joined the figure it was asked for: no new window, one curve
+    # more in that one, running along the abscissa the figure is labelled with.
+    assert set(session.api.figureframes) == registered, 'a window was opened'
+    assert figure.curveCount() == before + 1
+    x, _y = figure.curves()[-1].getData()
+    assert len(x) == max(WIDTHS)
+    assert cost < 1.0, 'adding a curve cost %.2f s' % cost

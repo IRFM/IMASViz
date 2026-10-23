@@ -289,7 +289,8 @@ class QVizSignalHandling(QObject):
             # in it; and a picture has no abscissa at all to share.
             if curveAxis is None:
                 continue
-            if not self.figureDrawsSameCurveAxis(figureKey, curveAxis):
+            if not self.imas_viz_api.figureDrawsSameCurveAxis(figureKey,
+                                                              curveAxis):
                 continue
 
             # Get figure number out from the figureKey string
@@ -738,19 +739,6 @@ class QVizSignalHandling(QObject):
                     str(numFig), FigureTypes.CURVEPLOTTYPE))
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
-
-    def figureDrawsSameCurveAxis(self, figureKey, axisKey):
-        """Whether every curve already in the figure runs along this axis.
-
-        A figure has one abscissa, and the label under it is the axis of the last
-        curve read, so a quantity read along another axis does not belong in it.
-        The old check asked the dictionary shape and the legacy frame factory;
-        this asks the axes the read would walk, which costs a right click nothing.
-        """
-        for entry in self.imas_viz_api.figToNodes.get(figureKey, {}).values():
-            if QVizNodePlotting(entry[1]).curveAxisKey() != axisKey:
-                return False
-        return True
 
     @Slot(int, str)
     def showHideFigure(self, numFig, figureType=FigureTypes.FIGURETYPE):

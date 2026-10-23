@@ -444,6 +444,27 @@ class Viz_API:
         numFig = int(figureKey[len(figureType):])
         return numFig
 
+    def figureDrawsSameCurveAxis(self, figureKey, axisKey):
+        """Whether every curve already in the figure runs along this axis.
+
+        A curve figure has one abscissa, and the label under it is the axis of
+        the last curve read, so a quantity read along another axis does not
+        belong in it. This is asked of the registry because the answer is the
+        bookkeeping below: the menus that offer "add this quantity to that
+        figure" -- the shot view's and a plugin's -- all read the same record,
+        and two copies of the rule is two chances for them to disagree.
+
+        :param figureKey: A figure key (e.g. 'SlicesPlot1')
+        :param axisKey: The abscissa the quantity would be read along, as
+                        `QVizNodePlotting.curveAxisKey()` spells it.
+        :returns: (bool)
+        """
+        from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
+        for entry in self.figToNodes.get(figureKey, {}).values():
+            if QVizNodePlotting(entry[1]).curveAxisKey() != axisKey:
+                return False
+        return True
+
     # def getFigureFrame(self, figureKey):
     #     if figureKey in self.figureframes:
     #         return self.figureframes[figureKey]
