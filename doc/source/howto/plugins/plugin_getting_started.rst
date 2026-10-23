@@ -445,11 +445,10 @@ panel of the opened case under its own name, and the other plugins keep their
 menu entries.
 
 .. code-block:: python
-    :emphasize-lines: 9
+    :emphasize-lines: 12
 
     RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                          # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
-                         # 'CompareFLT1DPlugin': 'viz_tests.CompareFLT1DPlugin',
                          # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
                          # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
                          'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',

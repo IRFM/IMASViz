@@ -181,8 +181,9 @@ Other features
 ~~~~~~~~~~~~~~
 
 Zooming, panning and the right-click menu of a picture are pyqtgraph's own: **View
-All**, **Auto Range**, **Mouse Mode** and **Export** work as described for 1D plots
-in :ref:`plotting_1d_arrays`. The IMASViz :guilabel:`Configure Plot` dialog is not
-offered on an image window: it configures curve properties, and a picture has no
-curve to configure -- what it has instead is the colour scale and the slice
-controls above.
+All**, **X axis** and **Y axis** (range, auto-range, invert and link in their
+sub-window) and **Mouse Mode**, and the scene adds **Export...**, as described for
+1D plots in :ref:`plotting_1d_arrays`. The IMASViz :guilabel:`Configure Plot`
+dialog is not offered on an image window: it configures curve properties, and a
+picture has no curve to configure -- what it has instead is the colour scale and
+the slice controls above.

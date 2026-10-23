@@ -82,6 +82,24 @@ are available in the right-click menu.
    and :guilabel:`Stacked Plot View` consist of multiple
    :guilabel:`Plot Displays`.
 
+.. note::
+   What a right click answers depends on which window it was asked of. On a
+   :guilabel:`Plot Figure` or :guilabel:`Image` drawn by the entries described
+   here, the menu is pyqtgraph's own -- :guilabel:`View All`, :guilabel:`X axis`
+   and :guilabel:`Y axis` (whose sub-window holds the range, the Auto/Manual
+   choice, :guilabel:`Invert Axis`, :guilabel:`Mouse Enabled` and the axis link)
+   and :guilabel:`Mouse Mode` -- and the scene adds one line,
+   :guilabel:`Export...`. The IMASViz entries named below,
+   :guilabel:`Configure Plot`, :guilabel:`Show/Hide error bars`,
+   :guilabel:`Show error bars (with slicing)` and
+   :guilabel:`Show/Hide confidence bands`, are offered by the plots of the
+   :ref:`Profiles plugin <plugins>`: the menu that carried them on a figure
+   window was deleted with that window, and the frames drawn today never gained
+   it back. Two of the sections below describe lines that menu carried:
+   :guilabel:`Auto Range` is not a line of its own on these frames -- it is the
+   Auto/Manual pair in the axis sub-window, and :guilabel:`View All` applies
+   it -- and no frame offers grid or log-scale choices from a right click.
+
 .. figure:: images/plotDisplay_popupmenu.png
   :align: center
   :width: 450px
@@ -497,8 +515,15 @@ Displaying error bars and/or confidence bands
 ---------------------------------------------
 If data for fields error_upper and/or error_lower are available, errors bars and
 confidence bars can be displayed.
-Right clicking on a plot figure will display a popup menu as shown in 
+Right clicking on a plot figure will display a popup menu as shown in
 the image below.
+
+.. note::
+   The menu below is the one a plot of the :ref:`Profiles plugin <plugins>`
+   answers with. The :guilabel:`Plot Figure` windows that the entries of this
+   chapter open answer with pyqtgraph's own menu instead, which has no error-bar
+   line: the three entries named below were carried by the plot-widget layer
+   that used to draw those windows and live, today, in the plugin's plots only.
 
   .. figure:: images/plot_menu_error_bars.png
      :align: center
@@ -614,8 +639,9 @@ To create a new :guilabel:`Table Plot View`, follow the following steps:
 
 .. note::
    Each panel is drawn from the data and is not customized by hand: the
-   :guilabel:`Configure Plot` dialog other plot windows offer on right-click is
-   not offered on a :guilabel:`Table Plot View` panel. What can be changed is
+   :guilabel:`Configure Plot` dialog that the plots of the
+   :ref:`Profiles plugin <plugins>` offer on right-click is not offered on a
+   :guilabel:`Table Plot View` panel. What can be changed is
    what the panel answers for, through the controls it carries.
 
 .. note::
@@ -816,8 +842,9 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
 
 .. note::
    Each display is drawn from the data and is not customized by hand: the
-   :guilabel:`Configure Plot` dialog other plot windows offer on right-click is
-   not offered on a :guilabel:`Stacked Plot View` display. What can be changed is
+   :guilabel:`Configure Plot` dialog that the plots of the
+   :ref:`Profiles plugin <plugins>` offer on right-click is not offered on a
+   :guilabel:`Stacked Plot View` display. What can be changed is
    what the display answers for, through the controls it carries, and what it
    shares with its neighbours, through the two checkboxes.
 

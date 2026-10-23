@@ -134,9 +134,12 @@ Core concepts, in the vocabulary used by the code and docs:
 - **DTV / shot view** — one `QVizDataTreeViewFrame` per opened case, tracked in
   `Viz_API.DTVframeList` / `DTVlist`.
 - **figure frames** — `Viz_API.figureframes`, keyed by `FigureTypes` prefix + number
-  (`SlicesPlot1`, `SlicesImage1`, `TablePlotView0`, `StackedPlotView0`, `ProfilesPlot…`; the
-  legacy `Figure:` namespace still keys frames those old paths open, the legacy `Image:`
-  one is gone with the frame that used it).
+  (`SlicesPlot1`, `SlicesImage1`, `TablePlotView0`, `StackedPlotView0`, `ProfilesPlot…`).
+  Five kinds since T22(c): the `Figure:` namespace the legacy curve window handed out is
+  gone with the window, as the `Image:` one went before it — a prefix with no frame behind
+  it is a Show/Hide sub-menu that can never be filled. Because of that, `GetFiguresCount`,
+  `GetNextKeyForFigure`, `GetFiguresKeys` and `GetFigureKey` take no default `figureType`:
+  a call naming no kind used to mean the dead one silently.
   Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
@@ -180,7 +183,7 @@ Core concepts, in the vocabulary used by the code and docs:
   running application, so `addPlotWidgetToMDI` shows what it embeds — and `ShowDataTree` shows
   the window it embeds a shot view in, since showing the frame is not what makes it visible.
 
-Naming convention: Qt widget classes are prefixed `QViz` (`QVizPlotWidget`, `QVizLogger`);
+Naming convention: Qt widget classes are prefixed `QViz` (`QVizCurvePlot`, `QVizLogger`);
 plain API/framework classes are not (`Viz_API`, `VizPlugin`). `__init__.py` files re-export with
 relative imports (`from .QVizLogger import QVizLogger`) and a `# __init__.py` first line, so
 callers import as `from imasviz.VizUtils import QVizLogger`.
@@ -277,7 +280,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 776 passed, 2 xfailed, ~127 s, offscreen
+python3 -m pytest tests/ -q     # 760 passed, 2 xfailed, ~129 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -353,9 +356,10 @@ auto-loads `UDA/2.9.0` and `IMAS-AL-Core/5.5.1`, which conflict with the
 
 ### The legacy scripts in VizExamples are demos, not tests
 
-- `imasviz/VizExamples/example{1,2,2b,3,4}.py`, `test.py`, `test_plugin.py`,
-  `test_QVizPlotLayoutWidget.py`, plus per-plugin `test_*.py` /
-  `run_plugin_ui_standalone.py` — scripted usage of the `Viz_API` without the GUI.
+- `imasviz/VizExamples/example{1,2,2b,3,4}.py`, `test.py`, `test_plugin.py`, plus per-plugin
+  `test_*.py` / `run_plugin_ui_standalone.py` — scripted usage of the `Viz_API` without the
+  GUI. (`test_QVizPlotLayoutWidget.py` was one of them until T22(c) deleted the widget it
+  drove.)
 - They instantiate a `QApplication`, build a hardcoded datasource dict, and call the class
   directly. To "test" a change, add such a script and run it — but note it needs the IMAS HLI
   and a real case to be meaningful, which is unavailable in most checkouts.
@@ -422,12 +426,14 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  **116/117 modules import**. The one failure is Qt-Designer scaffolding only, not in the
+  it walks **108** modules and **107** of them import. The one failure is Qt-Designer
+  scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
   `QPyDesignerCustomWidgetCollection`). Before the SOLPS plugin was removed the sweep
   walked 126 modules with 5 failures; `viz_solps/` and its `src/` subtree accounted for 9
-  of those modules, 4 of the failures.
+  of those modules, 4 of the failures. T22(c) took **7** more out of the walk — five
+  production modules of the legacy figure island, the `viz_tests` package and its module.
 - In this PySide6 build `Slot`, `Signal`, `QThread` and `exec_()` **do** exist, while
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.
