@@ -266,7 +266,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 739 passed, 2 xfailed, ~99 s, offscreen
+python3 -m pytest tests/ -q     # 748 passed, 2 xfailed, ~117 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -292,6 +292,19 @@ configuration, a preference or a plot-configuration file writes into the real
 `~/.imasviz`; `tests/test_39_configurations.py` shows the pattern — point `HOME`
 at `tmp_path` with `monkeypatch`, which works because those helpers read `HOME`
 when they are called, not at import.
+
+It does **not** isolate the case either. `dataSource.data_entries` is
+`QVizDBEntryRegistry.ids_cache(uri, mode, dd_version)` — one dict per **case** for
+the whole process — so any file that opens the reference case shares its cache,
+and a test that asserts that cache is empty, or asserts the exact set of files an
+export writes, is reading whatever the earlier files left behind (measured in a
+full run: `calorimetry/0` through `tf/0` before another file's first load). The
+application never meets it, because `QVizOpenShotView.Open` reuses the one view of
+a case. A test that needs a cache of its own has to own a case, and that case has
+to be copied **through the Access Layer**: the reference run directory holds one
+6 365-byte `master.h5` whose groups are HDF5 links into `../4/equilibrium.h5`, so
+a file-system copy answers `Unable to open HDF5 group: equilibrium`.
+`tests/test_49_export_then_open_what_was_written.py` shows both patterns.
 
 `tests/test_45_one_user_journey.py` is the one file that joins gestures into a
 continuous journey (open a case, load, select, draw, save, replay in a second
