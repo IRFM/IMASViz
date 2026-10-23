@@ -52,7 +52,7 @@ import sys
 import pytest
 from PySide6.QtGui import QValidator
 
-from conftest import CASE_URI, CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
+from conftest import CASE_URI, CASE_DATA_DICTIONARY_VERSION
 
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, \
     _readCaseFromUri, caseUri
@@ -521,44 +521,11 @@ def test_a_target_of_another_major_is_refused_before_anything_is_written(fakeAcc
                         target=_target(dataVersion='4')).execute()
     assert fakeAccessLayer.entries == []
 
-
-# ---------------------------------------------------------------------------
-# The real thing: an IDS read from the reference case, written, read back.
-
-@pytest.mark.case
-def test_an_exported_ids_is_found_again_in_the_case_it_was_written_to(tmp_path):
-    """The only proof that counts for a gesture that wrote 0 IDSs: bytes on disk
-    that the Access Layer hands back.
-
-    Written under a ``path=`` URI inside the test directory, never through a
-    database name: measured, an URI naming a database that does not exist does
-    not fail, it creates one under the login's own imasdb tree.
-    """
-    uri = case_uri_or_skip()
-    if uri is None:
-        pytest.skip('reference case not reachable')
-    import imas
-
-    reader = imas.DBEntry(uri, 'r', dd_version=CASE_DATA_DICTIONARY_VERSION)
-    ids = reader.get('pulse_schedule', 0)
-    reader.close()
-
-    target = os.path.join(str(tmp_path), 'exported', '3', '54924', '0')
-    exportUri = 'imas:hdf5?path=' + target
-    view = StubTreeView(opened={'pulse_schedule/0': ids},
-                        dd_version=CASE_DATA_DICTIONARY_VERSION)
-    writtenUri = QVizExportToIDS(
-        view, target=QVizExportTarget(uri=exportUri)).execute()
-    assert writtenUri == exportUri
-
-    back = imas.DBEntry(exportUri, 'r',
-                        dd_version=CASE_DATA_DICTIONARY_VERSION)
-    try:
-        assert back.list_all_occurrences('pulse_schedule') == [0]
-    finally:
-        back.close()
-
-    files = {name: os.path.getsize(os.path.join(root, name))
-             for root, _, names in os.walk(target) for name in names}
-    assert 'pulse_schedule.h5' in files
-    assert files['pulse_schedule.h5'] > 1000
+# The round trip -- an IDS of the reference case written into a case of its own
+# and opened again -- is proved on a real shot view, with a real cache, in
+# tests/test_49_export_then_open_what_was_written.py. It used to be proved here,
+# with a stub view whose cache was filled by hand from an `imas.DBEntry` opened
+# in the test: that proved the command can write an object it was handed, not
+# that the gesture finds an object to write. What stays in this file is what a
+# stub is the right tool for -- the refusal paths, where the Access Layer is the
+# thing being simulated.
