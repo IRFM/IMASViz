@@ -78,7 +78,7 @@ export UDA_DISABLED=1          # optional: no remote UDA servers
 | Command | Effect |
 | --- | --- |
 | `make` | Default is now `all: doc` — builds docs only. The `default` target (submodule fetch) still exists for explicit `make default`, but no submodule is configured any more (see ETSViz note). |
-| `make doc` / `make -C doc html` | Sphinx route (`cd doc && make html`). **Sphinx is not on the ACH module stack** — `sphinx-build: command not found` here until `pip3 install sphinx sphinx_rtd_theme` is done. `doc/build/` is gitignored. |
+| `make doc` / `make -C doc html` | Sphinx route (`cd doc && make html`). **It stops on this node, but not for the reason this row used to give**: `sphinx-build` **is** reachable — 7.2.6, at `Python-bundle-PyPI/2023.10-GCCcore-13.2.0/bin/sphinx-build`, on PATH without loading any module — and what is missing is the theme `doc/source/conf.py:90` asks for: `Theme error: no theme named 'sphinx_rtd_theme' found (missing theme.conf?)`, `make: *** [Makefile:27: doc] Error 2`. `pip3 install sphinx_rtd_theme` is what `make doc` still needs; `doc/build/` is gitignored. |
 | `make clean` | Deletes `doc/build` only. It used to delete `$HOME/.imasviz/VizGeneratedCode` as well; that folder is gone with the reflection based parser. |
 | `make -C doc html` / `-M latexpdf` | Direct Sphinx route; `doc/Makefile` adds a custom `latexpdf` rule copying `source/_static/*.mp4` next to the LaTeX output. |
 
@@ -99,8 +99,11 @@ viz -u <user> -d <database> -s <shot> -r <run> -b <backend>   # backend 13 = HDF
 `module` is a shell function: piping a `module load` into another command runs it in a subshell
 and loses `MODULEPATH` — load it in the same shell as the consuming command.
 
-Sphinx is **not** provided by that module stack (`sphinx-build: command not found`); `pip3 install
-sphinx sphinx_rtd_theme` is still required for `make doc`.
+Sphinx 7.2.6 is on this node and needs no module; `sphinx_rtd_theme` is not installed, and
+that is what `make doc` stops on. `python3 -m sphinx -b html -D html_theme=alabaster
+doc/source <out>` is how the manual gets built and checked here: 21 source files, exit 0,
+two warnings, both about `conf.py` itself (`language = None`, and the pre-1.0
+`intersphinx_mapping` form).
 
 There is a pytest suite (see Testing below), but **no CI config, linter config, or
 packaging manifest** in this repo.
@@ -471,6 +474,8 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   "add this quantity to that figure" gate lives on `Viz_API`
   (`figureDrawsSameCurveAxis`, next to the `figToNodes` record it reads) where the shot
   view's menu and a plugin's view box ask the same question.
-- Still **not** exercised: `make doc` (`sphinx-build: command not found` — Sphinx is
-  not on this stack; `python3 -m sphinx -b html -D html_theme=alabaster` is how the
-  manual gets checked here).
+- The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
+  -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
+  two `conf.py` warnings, and it is the only route that works — `make doc` itself still
+  fails, on `sphinx_rtd_theme`, not on Sphinx (`sphinx-build` 7.2.6 is on PATH here). Its
+  output is throwaway: `make clean` takes `doc/build` back.
