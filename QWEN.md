@@ -168,8 +168,12 @@ Core concepts, in the vocabulary used by the code and docs:
   now holds no styling, so the "styling is not applied" log line is only for the
   old ones (`styledPanels`).
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
-  figures and shot views are `QMdiSubWindow`s inside it. Show/hide and delete logic branches on
-  whether a frame is MDI-embedded — that string comparison is load-bearing.
+  figures and shot views are `QMdiSubWindow`s inside it. The **figure** paths ask what a frame's
+  parent *is* (`Viz_API.mdiWindowOf`) before they show, hide or delete it; the **shot view** paths
+  (`QtVIZ_GUI`, `QVizMainMenuController`, `QVizDataTreeView`) still branch on that object-name
+  string, which stays load-bearing there. Embedding is not showing: `QMdiArea.addSubWindow`
+  leaves the subwindow hidden when the area is already on screen, which is the state of the
+  running application, so `addPlotWidgetToMDI` shows what it embeds.
 
 Naming convention: Qt widget classes are prefixed `QViz` (`QVizPlotWidget`, `QVizLogger`);
 plain API/framework classes are not (`Viz_API`, `VizPlugin`). `__init__.py` files re-export with
@@ -262,7 +266,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 727 passed, 2 xfailed, ~98 s, offscreen
+python3 -m pytest tests/ -q     # 739 passed, 2 xfailed, ~99 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
