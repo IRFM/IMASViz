@@ -490,16 +490,21 @@ class VizProfiles(QMainWindow):
         tmin = -9e+40
         tmax = -9e+40
 
+        # Read as plain numbers: a 0D FLT node comes back from IMAS-Python as an
+        # IDSFloat0D, which is a numbers.Real wrapper with no __format__, so the
+        # two labels below raised `TypeError: unsupported format string passed to
+        # IDSFloat0D.__format__` and took the rest of setUI down with it -- no
+        # slider, no spin box, no time value, no Plot button.
         if ntimevalues > 0:
-            tmin = eval(self.ids_related + "." + slices_aos_name + "[0].time")
-            tmax = eval(self.ids_related + "." + slices_aos_name + "[-1].time")
+            tmin = float(eval(self.ids_related + "." + slices_aos_name + "[0].time"))
+            tmax = float(eval(self.ids_related + "." + slices_aos_name + "[-1].time"))
 
         n = eval("len(" + self.ids_related + ".time)")
         # Check if empty time values were read
         # (-9e+40 is default value == empty)
         if n > 0 and (tmin == -9e+40 or tmax == -9e+40):
-            tmin = eval(self.ids_related + ".time[0]")
-            tmax = eval(self.ids_related + ".time[-1]")
+            tmin = float(eval(self.ids_related + ".time[0]"))
+            tmax = float(eval(self.ids_related + ".time[-1]"))
 
         self.label_slider_tmin.setText(f"n<sub>t</sub> = {ntimevalues}; "
                                        f"t<sub>min</sub> = {tmin:.2f}")

@@ -96,16 +96,16 @@ class CustomizedViewBox(pg.ViewBox):
         """
 
         if self.menuUpdate is True:
-            # Modify contents of the original ViewBoxMenu
-            for action in self.menu.actions():
-                # Modify the original Mouse Mode
-                if "Mouse Mode" in action.text():
-                    # Change action labels
-                    for mouseAction in self.menu.leftMenu.actions():
-                        if "3 button" in mouseAction.text():
-                            mouseAction.setText("Pan Mode")
-                        elif "1 button" in mouseAction.text():
-                            mouseAction.setText("Area Zoom Mode")
+            # Rename the two mouse-mode choices. They are held in
+            # ViewBoxMenu.mouseModes: on pyqtgraph 0.13.7 the "Mouse Mode"
+            # sub-menu is a local of its constructor, so the `leftMenu` attribute
+            # this used to walk does not exist and the right click on a plugin
+            # plot raised AttributeError before the menu could open.
+            for mouseAction in self.menu.mouseModes:
+                if "3 button" in mouseAction.text():
+                    mouseAction.setText("Pan Mode")
+                elif "1 button" in mouseAction.text():
+                    mouseAction.setText("Area Zoom Mode")
 
             # Add custom contents to menu
             self.addCustomMenu()
