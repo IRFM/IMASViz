@@ -197,8 +197,14 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    `getPluginsConfiguration()`, `getDescription()`. Gate on
    `self.selectedTreeNode.getIDSName()` against a `supported_idss` list — that is how
    plugins claim IDSs. Inheriting `VizPlugin` is not what puts a plugin in the menu: the
-   catalog binds `setSelectedTreeNode(node)` and asks the methods, so a plugin outside
-   the hierarchy that honours them is offered like any other.
+   catalog binds `setSelectedTreeNode(node)` **and** `setDataTreeView(view)` and asks the
+   methods, so a plugin outside the hierarchy that honours them is offered like any other.
+   The view binding is load-bearing and was missing for three slices: a plugin that reads
+   `self.dataTreeView` — which is how `VizProfiles_plugin` asks the case which occurrences
+   it holds — answered `AttributeError` on the first line of `execute()`, and the guard in
+   `QVizPluginCatalog.run` reported it as `Plugin ... failed`, so the entry looked broken
+   rather than unbound. A test that only checks "a failing plugin is named in the log"
+   passes right over that; `test_43` now pins the binding itself.
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
    (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
    that is what the catalog takes out of the module). Several entries are commented out —
@@ -271,7 +277,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 763 passed, 2 xfailed, ~124 s, offscreen
+python3 -m pytest tests/ -q     # 765 passed, 2 xfailed, ~127 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -436,6 +442,14 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   entry, one occurrence loaded. `QVizPreferences().build()` has to have run first, or
   `setStyleForIDS` calls `setForeground(0, None)` and answers `TypeError`; `QtVIZ_GUI`
   and `Viz_API` both call it at start-up, a test has to.
-- Still **not** exercised: plugin runtimes, and `make doc` (`sphinx-build: command not
-  found` — Sphinx is not on this stack; `python3 -m sphinx -b html -D html_theme=alabaster`
-  is how the manual gets checked here).
+- Still **not** exercised: a plugin entry run end to end, and `make doc` (`sphinx-build:
+  command not found` — Sphinx is not on this stack; `python3 -m sphinx -b html -D
+  html_theme=alabaster` is how the manual gets checked here). The first is now blocked by
+  two measured facts about the one registered plugin that reads its case (Profiles), not by
+  the framework: it asks which occurrence to plot through a **modal `QInputDialog`** — with
+  the **4** occurrences this case holds for `equilibrium` a probe sat in
+  `VizProfiles_plugin.askForOccurrence` for **240 s** until the watchdog killed it — and
+  once that answer is supplied it registers its window (`PlotView:1`) and then raises
+  `TypeError: unsupported format string passed to IDSFloat0D.__format__` labelling its time
+  slider (`VizProfiles.py:504`), building **0** plot. A test that drives a real entry has to
+  answer the occurrence question without a dialog, and the plugin has to survive that label.
