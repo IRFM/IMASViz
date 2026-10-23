@@ -168,12 +168,17 @@ Core concepts, in the vocabulary used by the code and docs:
   now holds no styling, so the "styling is not applied" log line is only for the
   old ones (`styledPanels`).
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
-  figures and shot views are `QMdiSubWindow`s inside it. The **figure** paths ask what a frame's
-  parent *is* (`Viz_API.mdiWindowOf`) before they show, hide or delete it; the **shot view** paths
-  (`QtVIZ_GUI`, `QVizMainMenuController`, `QVizDataTreeView`) still branch on that object-name
-  string, which stays load-bearing there. Embedding is not showing: `QMdiArea.addSubWindow`
+  figures and shot views are `QMdiSubWindow`s inside it. Both the **figure** paths and the
+  **shot view** paths ask what a frame's parent *is* (`Viz_API.mdiWindowOf`) before they show,
+  hide or delete it — T21 took out of `QVizMainMenuController` the last three comparisons that
+  asked what the top-level window was *called*, and the four copies of `getMDI` that no caller
+  reached and that all four hinged on that name. The string is still load-bearing in one place:
+  `GUIFrame.getMDI` walks it to find the area it hands to `QVizOpenShotView` at construction,
+  and `QVizMainWindow.getMDI` returns its own area without deciding anything. Embedding is not
+  showing: `QMdiArea.addSubWindow`
   leaves the subwindow hidden when the area is already on screen, which is the state of the
-  running application, so `addPlotWidgetToMDI` shows what it embeds.
+  running application, so `addPlotWidgetToMDI` shows what it embeds — and `ShowDataTree` shows
+  the window it embeds a shot view in, since showing the frame is not what makes it visible.
 
 Naming convention: Qt widget classes are prefixed `QViz` (`QVizPlotWidget`, `QVizLogger`);
 plain API/framework classes are not (`Viz_API`, `VizPlugin`). `__init__.py` files re-export with
@@ -266,7 +271,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 748 passed, 2 xfailed, ~117 s, offscreen
+python3 -m pytest tests/ -q     # 763 passed, 2 xfailed, ~124 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -285,7 +290,12 @@ fixed position with `Fatal Python error: Segmentation fault` inside pyqtgraph's
 `GraphicsView.paintEvent`, in a file several away from the one at fault. An autouse
 fixture in `conftest.py` now names the test at fault at its own teardown; a frame
 never shown, or closed before it is forgotten, is not a hazard (the production
-refusal paths close the window they opened, and that cleanup is what tests check for).
+refusal paths close the window they opened, and that cleanup is what tests check
+for). Since T21 the guard counts **hidden** as another way out of the paint queue,
+which is what production uses when it deletes a window rather than refusing:
+`Delete` on a shot view hides the MDI window — a hide reaches the children
+recursively — and then asks Qt to delete it, so the preview plot nested in that
+frame dies legitimately. `test_44` pins both halves, including the recursive hide.
 
 The suite does **not** isolate `$HOME`. A test that lets the application write a
 configuration, a preference or a plot-configuration file writes into the real
