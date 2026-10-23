@@ -222,57 +222,16 @@ class QVizGlobalValues:
             os.environ["IMAS_MAJOR_VERSION"] = ""
 
 class GlobalIDs:
-    """Global frame, panels etc. IDs.
+    """The one Qt event type the application posts to itself.
+
+    This class used to carry 38 integer ids for menu items and actions, numbered
+    for a Qt where a menu entry was addressed by a number (the comments named
+    their consumers: `wxDataTreeView.py`, `SignalHandling.py`,
+    `LoadDataHandling.py`). All three are gone, and a PySide6 menu entry is a
+    QAction holding a callable, so nothing reads those numbers any more: counted,
+    38 declared, 0 read, outside the declaration itself. They are gone with this
+    pass. What stays is the event the tree view listens for.
     """
-    # IDs used in wxDataTreeView.py
-    ID_MENU_PREVIEW_PLOT = 201
-    ID_MENU_MULTIPLOT = 202
-    ID_MENU_SIGNALS = 203
-    ID_MENU_SIGNALS_UNSELECT = 204
-    ID_POPUP_MENU_SIGNALS_UNSELECT_SINGLE_DTV = 205
-    ID_POPUP_MENU_SIGNALS_UNSELECT_ALL_DTV = 206
-    ID_MENU_ITEM_PREVIEW_PLOT_ENABLE_DISABLE = 2011
-    ID_MENU_ITEM_PREVIEW_PLOT_FIX_POSITION = 2012
-    ID_MENU_ITEM_SIGNALS_ALL_DTV_TO_MULTIPLOT = 2013
-    ID_MENU_ITEM_SIGNALS_SINGLE_DTV_TO_MULTIPLOT = 2014
-    ID_MENU_ITEM_SIGNALS_SAVE = 2015
-    ID_MENU_ITEM_SIGNALS_UNSELECT_SINGLE_DTV = 2016
-    ID_MENU_ITEM_SIGNALS_UNSELECT_ALL_DTV = 2017
-    ID_MENU_ITEM_APPLY_CONFIGURATION = 2018
-    ID_MENU_ITEM_CLOSE_AND_REOPEN_DATABASE = 2019
-
-    # IDs used in SignalHandling.py
-    ID_ADD_PLOT_TO_FIGURE = 1000
-    ID_ADD_PLOT_TO_EXISTING_FIGURE = 1500
-    ID_SELECT_OR_UNSELECT_SIGNAL = 2000
-    ID_SHOW_HIDE_FIGURES  = 3000
-    ID_SHOW_HIDE_MULTIPLOTS = 3500
-    ID_SHOW_HIDE_SUBPLOTS = 4000
-    ID_PLOT_ALL_SELECTED_SIGNALS_TO_FIGURE = 5000
-    ID_PLOT_AS_ITIME = 6000
-    ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE = 7000
-    ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE_SINGLE_DTV = 7001
-    ID_PLOT_SELECTED_SIGNALS_TO_NEW_FIGURE_ALL_DTV = 7002
-    ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME = 7100
-    ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME_ALL_DTV = 7101
-    ID_PLOT_SELECTED_SIGNALS_TO_MULTIPLOTFRAME_SINGLE_DTV = 7202
-    ID_ADD_SELECTION_TO_MULTIPLOT = 7300
-    ID_SELECT_ALL_SIGNALS_FROM_SAME_AOS = 7400
-    ID_OPEN_SUBPLOTS_MANAGER = 8000
-    ID_DELETE_FIGURES = 10000
-    ID_DELETE_MULTIPLOTS = 11000
-    ID_DELETE_SUBPLOTS = 12000
-
-    # IDs used in LoadDataHandling.py
-    ID_GET_IDS_DATA = 13000
-    ID_REFRESH_IDS_DATA = 13001
-    ID_GET_IDS_OCC_DATA = 13002
-
-    # Other IDs
-    # ID_CHANGE_COORD1 = 14001
-    # ID_CHANGE_TIME1 = 14002
-
-    # PyQt5
     RESULT_EVENT = 9999
 
 

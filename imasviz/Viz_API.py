@@ -241,20 +241,38 @@ class Viz_API:
         :param figureKey: (str) A figure key (e.g. 'Figure:0)
         """
         frame = self.figureframes[figureKey]
-        if frame.window().objectName() == "IMASViz root window":
+        window = self.mdiWindowOf(frame)
+        if window is not None:
             # Hide/Show MDI subwindow
-            if frame.parent().isVisible():
-                frame.parent().hide()  # frame.parent() is QMdiSubWindow
+            if window.isVisible():
+                window.hide()  # the window the frame is embedded in
             else:
                 # To show the figure, closed with X button, then both MDI
                 # subwindow AND the embedded plot frame must be shown
-                frame.parent().show()
+                window.show()
                 frame.show()
         else:
             if frame.isVisible():
                 frame.hide()
             else:
                 frame.show()
+
+    def mdiWindowOf(self, frame):
+        """The MDI window a frame is embedded in, or None if it stands alone.
+
+        A frame lives either inside a :class:`QMdiSubWindow` handed out by
+        `addPlotWidgetToMDI`, or on its own. Show/Hide and Delete have to know
+        which, and the old test was the *name* of the top-level window
+        ("IMASViz root window"), which only holds while the frame sits under the
+        application's main window. Measured on a plain MDI area, that test fails
+        and both entries then act on the frame instead of the window: Show/Hide
+        hides the frame and leaves an empty window on screen, and Delete closes
+        the frame and leaves the window visible. Asking what the parent *is*
+        says the same thing about the application's windows and the right thing
+        about every other one.
+        """
+        parent = frame.parent()
+        return parent if isinstance(parent, QMdiSubWindow) else None
 
     def GetFiguresCount(self, figureType=FigureTypes.FIGURETYPE):
         """How many figures of one kind are open.
@@ -385,9 +403,10 @@ class Viz_API:
         """
         if figureKey in self.figureframes:
             frame = self.figureframes[figureKey]
-            if frame.window().objectName() == "IMASViz root window":
-                frame.parent().hide()
-                frame.parent().deleteLater()
+            window = self.mdiWindowOf(frame)
+            if window is not None:
+                window.hide()
+                window.deleteLater()
             else:
                 frame.close()
         self.ForgetFigure(figureKey)
@@ -893,7 +912,18 @@ class Viz_API:
             self.ForgetFigure(figureKey)
 
     def addPlotWidgetToMDI(self, plotWidget):
-        """Embeds the plotWidget inside MDI subwindow.
+        """Embeds the plotWidget inside MDI subwindow, and puts it on screen.
+
+        Embedding is not showing: `QMdiArea.addSubWindow` leaves the subwindow
+        hidden when the area is already on screen, which is the state of the
+        application whenever the user plots anything. Measured on the reference
+        case with the area shown, three of the four plot entries — the selected
+        signals as slices, the table view and the stacked view — registered and
+        embedded a window that stayed invisible: the figure was in the
+        bookkeeping, named in the Show/Hide and Delete menus, and never reached
+        the screen. The one entry that worked did it by calling `show()` itself,
+        which is why the fix lives here: whoever embeds a figure means the user
+        to see it.
         """
         subWindow = QVizMdiSubWindow(self)
         subWindow.setWidget(plotWidget)
@@ -902,6 +932,7 @@ class Viz_API:
             self.getMDI().addSubWindow(subWindow)
         else:
             self.subWindow = subWindow
+        subWindow.show()
 
     def LoadListOfIDSs(self, dataTreeView, namesOfIDSs, occurrence=0):
         """Load given IDSs for given occurrence.
