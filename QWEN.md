@@ -23,10 +23,17 @@ remotely through **UDA**.
   against is the older surface, so the mismatch is real but points the other way:
   `hasattr(imas, 'equilibrium')` is **False** here, so the idiom the sources were
   written against — `eval("imas." + idsName + "().getMaxOccurrences()")` — raises
-  `AttributeError` wherever it appears. Since T12 it appears in **one** place, the
-  unregistered-path `viz_Profiles/VizProfiles_plugin.py`; the 5 places that stood on
-  a tree gesture (the shot view's empty tree, `hasAvailableData`, the three
-  `Viz_API` occurrence helpers) now ask the case through `DBEntry.list_all_occurrences`.
+  `AttributeError` wherever it appears. Since T13 it appears in **no executable
+  statement**: the 6 places that asked it — the shot view's empty tree,
+  `hasAvailableData`, the three `Viz_API` occurrence helpers and the Profiles plugin's
+  entry — now ask the case through `DBEntry.list_all_occurrences` (0.10 s for the 55 IDS
+  names of the reference dictionary), and six mentions survive as comments naming what
+  was replaced. What does survive as live code is `eval` on an **attribute path of a
+  loaded IDS object** — `eval(self.ids_related + ".time[time_index]")`, **15** sites in
+  `viz_Profiles/viz_profiles/VizProfiles.py` — and `QVizTreeNode.evalPath`'s
+  `eval(path)`. Since T27 nothing in the repository reaches the generated modules at
+  all: `viz_equi/ids_read_multiprocess.py`, which called `imas.ids(shot, run)` and
+  `idd.open_env(...)`, is gone.
   Do not write new code against generated `imas.<ids>()` classes; they do not exist
   on this node.
 - **Two python HLIs are installed on this node, and only one of them runs IMASViz.**
@@ -267,6 +274,32 @@ tables `VizPlugin` used to carry: a plugin is asked itself, once per view.
 plugin without the full GUI. `tests/test_43_plugins_in_the_menu.py` drives the menu
 instead, with stub plugins registered through a fake module in `sys.modules`.
 
+**Two** plugins are registered (`VizPlugin.py:32-36`), and both are now run end to end on
+the reference case by `tests/test_51_*` (Profiles) and `tests/test_53_*` (Equilibrium).
+The Equilibrium one (`viz_equi/equilibriumcharts.py`, **1 253 l.**, author J. Morales) is
+the only matplotlib window in the application: it does not draw through the axes model, so
+it is registered under its own `FigureTypes.EQUILIBRIUMPLOTTYPE` (`EquiPlotView:`) — a
+**6th** `MENU_ORDER` kind, so *Show/Hide* and *Delete* reach it — and it registers **no**
+node in `figToNodes`, which is why the "add this quantity to that figure" entries do not
+offer it. Measured facts worth keeping: it reads **occurrence 0** and does not ask (unlike
+Profiles, whose occurrence question is a modal `QInputDialog`); its window is parented to
+the shot view and is **not** an MDI subwindow (`mdiWindowOf` answers `None`), so it goes
+with the view it came from; **6,73 s** cold for the first run of a process, **0,98–1,45 s**
+once the IDS is in memory. And `QVizPreferences.Ignore_GGD` does **not** cover the plugin's
+own `get`: with the GGD walk of the tree reactivated, the same case cost **287 s** in a
+probe, which is why `test_53` pins that preference at **1**.
+
+### matplotlib is not pinned here
+
+The plugin's drawing library comes from `~/.local/lib/python3.11/site-packages`, not from a
+module — measured **3.11.2** on this node, while the sources were written against something
+older. Two call shapes that file used are refused by it, and both failures land inside a Qt
+slot, so the traceback prints and the caller is not told: `set_xdata(<number>)` answers
+`RuntimeError: x must be a sequence` (a vertical line carries two points: `set_xdata([v, v])`),
+and `grid(b=…, which=…, linestyle=…)` answers `ValueError: keyword grid_b is not recognized`
+(as soon as another keyword follows `b=`, use `grid(True, which=…, linestyle=…)` /
+`grid(False)`). Check the matplotlib version before blaming a plugin for a blank window.
+
 ## Development conventions
 
 - **License header is mandatory and byte-exact.** Every `.py` file (and the RST files) begins with
@@ -299,7 +332,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 764 passed, 2 xfailed, ~132 s, offscreen
+python3 -m pytest tests/ -q     # 777 passed, 2 xfailed, ~139 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -401,13 +434,14 @@ Two verified properties make them unusable in automation:
 Do not "clean these up" while doing unrelated work — they are existing, intentional-looking
 artifacts of this codebase, and several are load-bearing:
 
-- `eval`/`exec` on IMAS symbol names survives in `QVizTreeNode.evalPath`
-  (`eval(path)` on a `Path` spelling) and in `viz_Profiles/VizProfiles_plugin.py`.
-  It is **not** a working idiom for reaching generated IDS classes: on this node
-  `imas.<ids>` does not exist, and T12 took out the 5 sites that asked
+- `eval` on IMAS symbol names survives in `QVizTreeNode.evalPath`
+  (`eval(path)` on a `Path` spelling) and in the Profiles plugin's
+  `viz_profiles/VizProfiles.py` (**15** sites, evaluating an attribute path against the
+  loaded IDS object). It is **not** a working idiom for reaching generated IDS classes:
+  on this node `imas.<ids>` does not exist, and T12 took out the 5 sites that asked
   `eval("imas." + idsName + "().getMaxOccurrences()")` on a tree gesture — the case
-  answers that question through `DBEntry.list_all_occurrences` instead. Do not add
-  a new site; do not "restore" the old one.
+  answers that question through `DBEntry.list_all_occurrences` instead — with T13 taking
+  the sixth and last one, in the plugin. Do not add a new site; do not "restore" the old one.
 - `sys.path.append(os.environ['VIZ_HOME'])` is done for side effects at import time, so import
   order matters. It used to append `$HOME/.imasviz/VizGeneratedCode` too, for the generated
   parser classes: that folder is gone with the reflection based parser.
@@ -445,7 +479,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **110** modules and **109** of them import. The one failure is Qt-Designer
+  it walks **108** modules and **107** of them import. The one failure is Qt-Designer
   scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
@@ -453,7 +487,11 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   walked 126 modules with 5 failures; `viz_solps/` and its `src/` subtree accounted for 9
   of those modules, 4 of the failures. T22(c) took **7** more out of the walk — five
   production modules of the legacy figure island, the `viz_tests` package and its module.
-  The HLI gate added **1** to the walk.
+  The HLI gate added **1** to the walk and T27 took **1** back:
+  `viz_equi/ids_read_multiprocess.py`, the module that spoke the generated HLI. Note that
+  the sweep skips `test_*.py` by name, which is why the demo
+  `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
+  removal costs no test.
 - In this PySide6 build `Slot`, `Signal`, `QThread` and `exec_()` **do** exist, while
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.

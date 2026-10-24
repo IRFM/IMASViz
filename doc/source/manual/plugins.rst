@@ -50,6 +50,20 @@ takes a few seconds. After that the plugin window will appear.
 
      Equilibrium overview plugin main window.
 
+.. note::
+   The plugin reads **occurrence 0** of the :guilabel:`equilibrium` IDS and of the
+   :guilabel:`wall` IDS. It does not ask which occurrence: unlike the *Profiles*
+   plugin, it has no occurrence question to answer. If that occurrence is not in
+   memory, nothing is opened and the reason is written in the log panel of the
+   shot view the menu was built on.
+
+.. note::
+   The window is managed like a plot window: it appears in the
+   :guilabel:`Show/Hide` and :guilabel:`Delete` menus under :guilabel:`Plot
+   windows`, under the name :guilabel:`Equilibrium` and the line
+   ``EquiPlotView:1`` (a second opening gets ``EquiPlotView:2``). It belongs to
+   the shot view it was opened from, so it is taken down with that view.
+
 Equilibrium overview plugin GUI features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
