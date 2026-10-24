@@ -199,15 +199,16 @@ class QVizGlobalValues:
         os.environ["UDA_DISABLED"] = "1"
         TESTING_USER = os.environ["USER"]
         TESTING_TS_MAPPINGS_DIR = TESTING_VIZ_HOME + '/ts_mapping_files'
-        TESTING_IMAS_DATA_DICTIONARIES_DIR = TESTING_VIZ_HOME + '/imas_data_dictionaries'
-        if "IMAS_VERSION" not in os.environ and "AL_VERSION" in os.environ:
-            os.environ["IMAS_VERSION"] = os.environ["AL_VERSION"]
-            print ("IMAS_VERSION not defined in environment, using AL_VERSION instead.")
+        # IMAS_VERSION is the version of the *data dictionary*, and IMAS-Python
+        # reads it itself (imas.dd_zip). It used to be filled here from
+        # AL_VERSION when unset, which is what made opening a pulse die: AL_VERSION
+        # is 5.7.1 on this stack, an Access Layer number that is not a data
+        # dictionary at all -- the distribution bundles 35 of them, 3.22.0 to
+        # 4.1.1. Nothing invents that number any more.
         TESTING_IMAS_VERSION = os.environ.get("IMAS_VERSION", '')
         if TESTING_IMAS_VERSION == '':
             print ("IMAS_VERSION environment variable not defined. Load the IMAS module or export IMAS_VERSION. Exiting.")
             sys.exit(-1)
-        TESTING_IMAS_MAJOR_VERSION = TESTING_IMAS_VERSION[:1]
 
         print("TESTING_VIZ_HOME:" + TESTING_VIZ_HOME)
         print("TESTING_IMAS_VERSION:" + TESTING_IMAS_VERSION)
@@ -219,15 +220,6 @@ class QVizGlobalValues:
             IMAS_VIZ_VERSION = 'Undefined (please report to admin)'
         if "TS_MAPPINGS_DIR" not in os.environ:
             os.environ["TS_MAPPINGS_DIR"] = os.environ["VIZ_HOME"] + '/ts_mapping_files'
-        if "IMAS_DATA_DICTIONARIES_DIR" not in os.environ:
-            os.environ["IMAS_DATA_DICTIONARIES_DIR"] = os.environ["VIZ_HOME"] + '/imas_data_dictionaries'
-        if "IMAS_VERSION" not in os.environ and "AL_VERSION" in os.environ:
-            os.environ["IMAS_VERSION"] = os.environ["AL_VERSION"]
-            print ("IMAS_VERSION not defined in environment, using AL_VERSION instead.")
-        if "IMAS_VERSION" in os.environ:
-            os.environ["IMAS_MAJOR_VERSION"] = os.environ["IMAS_VERSION"][:1]
-        else:
-            os.environ["IMAS_MAJOR_VERSION"] = ""
 
 class GlobalIDs:
     """The one Qt event type the application posts to itself.

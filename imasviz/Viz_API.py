@@ -13,7 +13,7 @@ import sys
 import numpy as np
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
-                              QVizGlobalValues, QVizPreferences)
+                              QVizPreferences)
 
 from PySide6.QtWidgets import QMdiSubWindow
 
@@ -131,15 +131,9 @@ class Viz_API:
         :returns:          A QVizDataTreeViewFrame object
         """
         from imasviz.VizGUI.VizTreeView import QVizDataTreeViewFrame
-        if QVizGlobalValues.TESTING:
-            IMAS_VERSION = QVizGlobalValues.TESTING_IMAS_VERSION
-        else:
-            IMAS_VERSION = os.environ['IMAS_VERSION']
-
         frame = QVizDataTreeViewFrame(parent=None,
                                       views={},
                                       dataSource=dataSource,
-                                      IDSDefFile=QVizGlobalOperations.getIDSDefFile(IMAS_VERSION),
                                       imas_viz_api=self)
 
         #frame.dataTreeView.dataSource = dataSource  # update the dataSource

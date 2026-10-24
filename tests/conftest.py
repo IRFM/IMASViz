@@ -23,15 +23,20 @@ import pytest
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Data dictionary and reference case; overridable from the shell so the suite
-# can follow a different IMAS version or a different shot.
-DATA_DICTIONARIES_DIR = os.environ.get(
-    'IMASVIZ_TEST_DD_DIR',
-    '/afs/eufus.eu/g2itmdev/user/g2lfleur/viz/imas_data_dictionaries')
+# The reference case and the data dictionary the harness declares; both
+# overridable from the shell so the suite can follow a different shot or a
+# different dictionary.
+#
+# IMAS_VERSION is the version of the data dictionary, and IMAS-Python reads that
+# variable itself (imas.dd_zip): it is not an Access Layer number and it names no
+# file. Measured on IMAS-Python/2.3.0, the distribution bundles 35 dictionary
+# versions in a zip inside the package -- 3.22.0 through 4.1.1 -- so 4.0.0 is
+# available without a checkout of the imas_data_dictionaries repository, which is
+# what the harness used to require.
 CASE_URI = os.environ.get(
     'IMASVIZ_TEST_URI',
     'imas:hdf5?path=/afs/eufus.eu/g2itmdev/user/g2lfleur/public/imasdb/west/3/54924/0')
-IMAS_TEST_VERSION = os.environ.get('IMASVIZ_TEST_IMAS_VERSION', '3.23.3')
+IMAS_TEST_VERSION = os.environ.get('IMASVIZ_TEST_IMAS_VERSION', '4.0.0')
 
 # Data dictionary the reference case was written with. The Access Layer loads
 # its own default instead (4.1.1 on the current stack) and IMAS-Python refuses
@@ -56,8 +61,6 @@ os.environ['VIZ_HOME'] = REPO_ROOT
 os.environ['IMAS_VIZ_VERSION'] = os.environ.get('IMAS_VIZ_VERSION', 'test-suite')
 os.environ['UDA_DISABLED'] = '1'
 os.environ['IMAS_VERSION'] = IMAS_TEST_VERSION
-os.environ['IMAS_MAJOR_VERSION'] = IMAS_TEST_VERSION[:1]
-os.environ['IMAS_DATA_DICTIONARIES_DIR'] = DATA_DICTIONARIES_DIR
 os.environ['TS_MAPPINGS_DIR'] = os.path.join(REPO_ROOT, 'ts_mapping_files')
 
 # No X display on the batch nodes: build every widget offscreen.

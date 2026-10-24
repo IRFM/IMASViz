@@ -60,8 +60,7 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu \
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
 from imasviz.VizPlugins.VizPlugin import VizPlugin
 
-from conftest import (CASE_DATA_DICTIONARY_VERSION, IMAS_TEST_VERSION,
-                      case_uri_or_skip)
+from conftest import CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
 from support.fakes import FakeTreeNode
 
 # The catalog looks `getRegisteredPlugins` up in its own module, so that is where
@@ -679,15 +678,12 @@ def aShotView(qapp):
     """One shot view of the reference case, held for as long as its menus are."""
     from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
     from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-    from imasviz.VizUtils import QVizGlobalOperations, QVizPreferences
+    from imasviz.VizUtils import QVizPreferences
 
     QVizPreferences().build()
     source = QVizIMASDataSource('west 54924', case_uri_or_skip())
     source.dd_version = CASE_DATA_DICTIONARY_VERSION
-    frame = QVizDataTreeViewFrame(None, [], source,
-                                  QVizGlobalOperations.getIDSDefFile(
-                                      IMAS_TEST_VERSION),
-                                  None)
+    frame = QVizDataTreeViewFrame(None, [], source, None)
     # The frame, not the view: the view is what owns the menus built on it, and
     # an owner dropped by a helper takes them down in a later test.
     return frame

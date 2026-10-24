@@ -18,7 +18,7 @@ import os
 
 import pytest
 
-from conftest import DATA_DICTIONARIES_DIR, IMAS_TEST_VERSION, REPO_ROOT
+from conftest import IMAS_TEST_VERSION, REPO_ROOT
 
 from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
 
@@ -43,12 +43,24 @@ def test_time_series_mappings_are_found():
 
 
 @pytest.mark.dd
-def test_data_dictionary_is_resolved():
-    idsdef = QVizGlobalOperations.getIDSDefFile(IMAS_TEST_VERSION)
-    assert os.path.exists(idsdef), 'no data dictionary at ' + str(idsdef)
-    assert idsdef.startswith(DATA_DICTIONARIES_DIR)
+def test_the_harness_dictionary_is_one_the_distribution_bundles():
+    # IMAS_VERSION names a data dictionary, and IMAS-Python reads that variable
+    # itself (imas.dd_zip). It has to be a version the package carries, which is
+    # what the shot view asks of an entry; it names no file on disk.
+    from imas import dd_zip
+
+    versions = dd_zip.dd_xml_versions()
+    assert IMAS_TEST_VERSION in versions, ('%r is not bundled: %r'
+                                           % (IMAS_TEST_VERSION, versions))
 
 
-@pytest.mark.dd
-def test_major_version_follows_imas_version():
-    assert os.environ['IMAS_MAJOR_VERSION'] == IMAS_TEST_VERSION[:1]
+def test_no_data_dictionary_file_is_asked_of_the_environment():
+    # The shot view used to parse IDSDef_<IMAS_VERSION>.xml, which made
+    # IMAS_DATA_DICTIONARIES_DIR mandatory and IMAS_MAJOR_VERSION a derived
+    # companion. Neither is read any more, so neither is required: with both
+    # absent, checkEnvSettings() -- which answers sys.exit() on a missing
+    # variable -- still accepts the environment.
+    for gone in ('IMAS_DATA_DICTIONARIES_DIR', 'IMAS_MAJOR_VERSION'):
+        assert gone not in os.environ
+    assert not hasattr(QVizGlobalOperations, 'getIDSDefFile')
+    QVizGlobalOperations.checkEnvSettings()

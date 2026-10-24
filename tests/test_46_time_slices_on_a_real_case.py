@@ -17,7 +17,7 @@ only* (the default) -- and states that the reference *equilibrium* holds 49
 a fake source that records the call; what no test says is **how much tree each
 choice really builds**, which only a real walk can answer. Every number below was
 measured on this machine before it was written (WEST 54924 run 0, data dictionary
-pinned at 3.35.0, harness dictionary 3.23.3), each from a shot view of its own so
+pinned at 3.35.0, harness dictionary 4.0.0), each from a shot view of its own so
 the count is a cold start and not an accumulation:
 
 * a plain load keeps slice 0: **3 368** signals, and the occurrence node reads

@@ -20,8 +20,9 @@ measured on the reference case (west 54924) before the change:
   above `containsData`'s own `try`, so **building the shot view of the reference
   case died on its first IDS** (`amns_data`) and no occurrence could be chosen
   at all;
-* the shot view now builds in 1.22 s and asks for all 55 IDS names in 0.10 s,
-  where reading each IDS to answer the same question costs 336 s;
+* the shot view now builds in 1.22 s and asks the case for the occurrences of
+  all its IDS names in 0.10 s, where reading each IDS to answer the same
+  question costs 336 s;
 * `loadDefaultOccurrence` with nothing selected answered `IndexError: list index
   out of range`;
 * the slice choice travelled as one of the integers 1, 2, 3 and 4, an unrecognised
@@ -61,7 +62,7 @@ from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizOccurrenceMenu \
     import QVizOccurrenceMenu
 
-from conftest import (CASE_DATA_DICTIONARY_VERSION, IMAS_TEST_VERSION)
+from conftest import CASE_DATA_DICTIONARY_VERSION
 from support.caseTrees import loadCaseTrees
 
 REFERENCE_SLICES = 49
@@ -643,19 +644,23 @@ def test_a_shot_view_of_the_reference_case_is_built(qtbot, case):
     # Measured before: this raised on the first IDS of the list (amns_data) and
     # no shot view existed at all.
     from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-    from imasviz.VizUtils import QVizGlobalOperations, QVizPreferences
+    from imasviz.VizUtils import QVizPreferences
     from conftest import CASE_DATA_DICTIONARY_VERSION
 
     QVizPreferences().build()
-    IDSDefFile = QVizGlobalOperations.getIDSDefFile(IMAS_TEST_VERSION)
     frame = QVizDataTreeViewFrame(None, [],
                                   _source(case['uri'],
                                           CASE_DATA_DICTIONARY_VERSION),
-                                  IDSDefFile, None)
+                                  None)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
 
-    assert len(view.IDSRoots) == 55
+    # The roots are the IDS names of the dictionary the entry is open at (3.35.0
+    # for this case), not the 55 of a file named by IMAS_VERSION: measured, the
+    # entry declares 3.35.0 and its factory enumerates 69 names, while the 3.23.3
+    # file the harness used to point at holds 55 -- two of them (ec_antennas,
+    # sdn) gone by 3.35.0, sixteen added.
+    assert len(view.IDSRoots) == 69
     assert view.occurrencesOf('equilibrium') == [0, 1, 2, 3]
     assert view.occurrencesOf('core_sources') == []
     assert view.IDSRoots['equilibrium'].hasAvailableData() is True
@@ -671,18 +676,70 @@ def test_a_shot_view_of_the_reference_case_is_built(qtbot, case):
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
+def test_the_roots_are_the_names_the_entry_declares(qtbot, case):
+    # What the roots are is answered by the case, not by a file the environment
+    # names: the entry says the dictionary it is open at, and that entry's own
+    # factory enumerates it. Measured on the reference case: `dd_version` answers
+    # '3.35.0', `IDSFactory('3.35.0').ids_names()` gives 69 names in 0.000 s
+    # (cached after the parse), and reading all 69 documentations through
+    # `IDSFactory.new(name).metadata` costs 0.401 s and answers a non-empty
+    # string for every one of them.
+    import imas
+
+    from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
+    from imasviz.VizUtils import QVizPreferences
+    from conftest import CASE_DATA_DICTIONARY_VERSION
+
+    QVizPreferences().build()
+    source = _source(case['uri'], CASE_DATA_DICTIONARY_VERSION)
+    frame = QVizDataTreeViewFrame(None, [], source, None)
+    qtbot.addWidget(frame)
+    view = frame.dataTreeView
+
+    assert source.db_entry.dd_version == CASE_DATA_DICTIONARY_VERSION
+    names = imas.IDSFactory(source.db_entry.dd_version).ids_names()
+    assert sorted(view.IDSRoots) == sorted(names)
+
+    equilibrium = view.IDSRoots['equilibrium']
+    assert equilibrium.getDocumentation().startswith(
+        'Description of a 2D, axi-symmetric, tokamak equilibrium')
+    assert [name for name, root in view.IDSRoots.items()
+            if not root.getDocumentation()] == []
+
+
+@pytest.mark.case
+@pytest.mark.dd
+def test_a_dictionary_the_package_does_not_hold_is_refused_by_name(case):
+    # The path the shot view used to build named IDSDef_<IMAS_VERSION>.xml, and
+    # IMAS_VERSION was the Access Layer's own number on any stack that exports
+    # AL_VERSION: 5.7.1 here, which is not one of the 35 dictionaries the
+    # distribution bundles (3.22.0 through 4.1.1). The old failure was therefore
+    # `[Errno 2] No such file or directory: .../IDSDef_5.7.1.xml`, raised as a
+    # FileNotFoundError outside the gesture that opened the pulse. Now the entry
+    # itself refuses, naming the version: UnknownDDVersion, a ValueError.
+    from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
+    from imasviz.VizUtils import QVizPreferences
+
+    QVizPreferences().build()
+    with pytest.raises(ValueError) as refusal:
+        QVizDataTreeViewFrame(None, [], _source(case['uri'], '5.7.1'), None)
+
+    assert '5.7.1' in str(refusal.value)
+
+
+@pytest.mark.case
+@pytest.mark.ui
+@pytest.mark.dd
 def test_the_occurrences_the_scripting_api_asks_for_answer(qtbot, case):
     from imasviz.Viz_API import Viz_API
     from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-    from imasviz.VizUtils import QVizGlobalOperations, QVizPreferences
+    from imasviz.VizUtils import QVizPreferences
     from conftest import CASE_DATA_DICTIONARY_VERSION
 
     QVizPreferences().build()
     frame = QVizDataTreeViewFrame(None, [],
                                   _source(case['uri'],
                                           CASE_DATA_DICTIONARY_VERSION),
-                                  QVizGlobalOperations.getIDSDefFile(
-                                      IMAS_TEST_VERSION),
                                   None)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
@@ -706,15 +763,12 @@ def test_an_occurrence_loaded_with_the_default_choice_is_marked_dynamic(qtbot,
     # in the branch of the fourth choice, so a view built with the default one
     # could never be looked at another way.
     from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-    from imasviz.VizUtils import QVizGlobalOperations, QVizPreferences
+    from imasviz.VizUtils import QVizPreferences
     from conftest import CASE_DATA_DICTIONARY_VERSION
 
     QVizPreferences().build()
     source = _source(case['uri'], CASE_DATA_DICTIONARY_VERSION)
-    frame = QVizDataTreeViewFrame(None, [], source,
-                                  QVizGlobalOperations.getIDSDefFile(
-                                      IMAS_TEST_VERSION),
-                                  None)
+    frame = QVizDataTreeViewFrame(None, [], source, None)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
 
@@ -736,15 +790,12 @@ def test_an_occurrence_loaded_with_the_default_choice_is_marked_dynamic(qtbot,
 @pytest.mark.dd
 def test_the_double_click_delivers_its_view_through_the_event_loop(qtbot, case):
     from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-    from imasviz.VizUtils import QVizGlobalOperations, QVizPreferences
+    from imasviz.VizUtils import QVizPreferences
     from conftest import CASE_DATA_DICTIONARY_VERSION
 
     QVizPreferences().build()
     source = _source(case['uri'], CASE_DATA_DICTIONARY_VERSION)
-    frame = QVizDataTreeViewFrame(None, [], source,
-                                  QVizGlobalOperations.getIDSDefFile(
-                                      IMAS_TEST_VERSION),
-                                  None)
+    frame = QVizDataTreeViewFrame(None, [], source, None)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
 
@@ -770,15 +821,13 @@ def test_the_double_click_delivers_its_view_through_the_event_loop(qtbot, case):
 @pytest.mark.dd
 def test_a_double_click_with_nothing_selected_loads_nothing(qtbot, case, caplog):
     from imasviz.VizGUI.VizTreeView.QVizDataTreeView import QVizDataTreeViewFrame
-    from imasviz.VizUtils import QVizGlobalOperations, QVizPreferences
+    from imasviz.VizUtils import QVizPreferences
     from conftest import CASE_DATA_DICTIONARY_VERSION
 
     QVizPreferences().build()
     frame = QVizDataTreeViewFrame(None, [],
                                   _source(case['uri'],
                                           CASE_DATA_DICTIONARY_VERSION),
-                                  QVizGlobalOperations.getIDSDefFile(
-                                      IMAS_TEST_VERSION),
                                   None)
     qtbot.addWidget(frame)
     view = frame.dataTreeView

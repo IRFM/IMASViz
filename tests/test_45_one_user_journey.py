@@ -23,9 +23,9 @@ frame constructor.
 
 What the steps answered on this machine before the file was written, in absolute
 numbers (WEST 54924 run 0, data dictionary pinned at 3.35.0, harness dictionary
-3.23.3):
+4.0.0):
 
-* opening the case: 55 IDS roots, 0 signals -- the tree is a shadow until an
+* opening the case: 69 IDS roots, 0 signals -- the tree is a shadow until an
   occurrence is loaded;
 * ``occurrencesOf('equilibrium')`` -> ``[0, 1, 2, 3]``, asked of the case, not of
   the data dictionary;
@@ -93,7 +93,7 @@ UNPICTURED = 'equilibrium.time_slice[0].coordinate_system.r'
 PICTURE_LEAF = 'hard_x_rays.channel[0].radiance.data'
 PICTURE_PATH = 'hard_x_rays/channel(0)/radiance/data'
 
-ROOTS = 55
+ROOTS = 69
 EQUILIBRIUM_OCCURRENCES = [0, 1, 2, 3]
 EQUILIBRIUM_LEAVES = 3368
 PICTURE_IDS = 'hard_x_rays'

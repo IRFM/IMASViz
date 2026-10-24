@@ -59,13 +59,18 @@ def test_filled_paths_are_listed(pinned_case_entry):
     assert 'time' in paths
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "with the harness data dictionary (IMAS_VERSION=3.23.3) loaded, the Access "
-    "Layer raises packaging InvalidVersion \"+1\" on list_filled_paths for this "
-    "case, which was written with DD 3.35.0; opening the entry with "
-    "dd_version=3.35.0 works, see test_filled_paths_are_listed"))
-def test_listing_paths_across_data_dictionary_versions_fails(case_entry):
-    case_entry.list_filled_paths('equilibrium', 0)
+def test_listing_paths_is_not_a_version_checked_read(case_entry):
+    # `list_filled_paths` walks the pulse file, so it answers across a data
+    # dictionary major version, while `get` refuses it -- see
+    # test_reading_needs_the_data_dictionary_of_the_case. Measured at the harness
+    # dictionary 4.0.0 on this case, written with 3.35.0: 112 paths, 'time'
+    # among them. This stood as an xfail while the harness declared 3.23.3: at
+    # that version the entry answers `dd_version == -1` ("Ignoring missing Data
+    # Dictionary version in loaded DD") and the same call dies with
+    # `packaging.version.InvalidVersion: Invalid version: '+1'`.
+    paths = case_entry.list_filled_paths('equilibrium', 0)
+    assert len(paths) == 112
+    assert 'time' in paths
 
 
 def test_the_access_layer_defaults_to_its_own_data_dictionary(case_entry):

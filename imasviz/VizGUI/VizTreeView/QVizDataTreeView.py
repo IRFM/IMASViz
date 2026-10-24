@@ -8,7 +8,7 @@
 # ****************************************************
 
 import os, logging
-import xml.etree.ElementTree as ET
+import imas
 import numpy as np
 from functools import partial
 from PySide6.QtCore import Qt, Slot, QMetaObject
@@ -50,16 +50,13 @@ class QVizDataTreeView(QTreeWidget):
     """
 
     def __init__(self, parent, dataSource, mappingFilesDirectory,
-                 IDSDefFile, *args, **kwargs):
+                 *args, **kwargs):
         """
         Arguments:
             parent     (QWindow)            : QVizDataTreeView parent.
             dataSource (QVizIMASDataSource) : IDS data source from QVizDataSourceFactory
             mappingFilesDirectory (str)     : Path to IMASViz mapping files directory
                                           (example: viz/ts_mapping_files)
-            IDSDefFile (str)                : Path to IDS dictionary definition .xml
-                                          file (example:
-                                          viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
         """
         super(QVizDataTreeView, self).__init__(parent)
 
@@ -80,7 +77,6 @@ class QVizDataTreeView(QTreeWidget):
         self.itemDoubleClicked.connect(self.loadDefaultOccurrence)
 
         self.dataSource = dataSource
-        self.idsNamesList = []
         self.selectedItem = None
         self.uri = dataSource.uri
         self.mappingFilesDirectory = mappingFilesDirectory
@@ -128,7 +124,7 @@ class QVizDataTreeView(QTreeWidget):
         self.IDSRoots = {}
 
         # Create the empty tree
-        self.createEmptyIDSsTree(IDSDefFile)
+        self.createEmptyIDSsTree()
 
         # The node documentation panel of the frame this view lives in. The
         # frame sets it when it docks one; a view without a frame of its own
@@ -145,38 +141,55 @@ class QVizDataTreeView(QTreeWidget):
 
         self.popupmenu = None
 
-    def createEmptyIDSsTree(self, IDSDefFile):
-        """The tree is created from IDSDef.xml file.
+    def createEmptyIDSsTree(self):
+        """One root per IDS the data dictionary of **this case** declares.
+
+        The inventory used to be parsed out of an `IDSDef_<version>.xml` file.
+        Once the walk of a loaded IDS came from IMAS-Python reflection, that file
+        supplied exactly two things: the name of a root and its documentation.
+        And the path of it was built from a number this stack does not use for a
+        data dictionary at all: measured on IMAS-Python/2.3.0, the distribution
+        bundles 35 dictionary versions (3.22.0 through 4.1.1) and `5.7.1` -- the
+        number `IMAS_VERSION` took because QVizGlobalValues copied AL_VERSION, an
+        Access Layer version, into it -- is not one of them. The path therefore
+        named a file that has never existed, and opening a pulse died on a
+        FileNotFoundError raised outside the gesture that asked for it.
+
+        The entry this view reads through answers the same two questions at the
+        version the case was actually written with: `DBEntry.dd_version` names it,
+        and the `IDSFactory` carried by that entry enumerates the names and their
+        documentation. Measured on the reference case: 69 names, 0.4 s to read all
+        69 documentations through `IDSFactory.new(name).metadata` -- against the
+        55 names the harness file held, 3.23.3 being two minor versions older.
         """
         self.dataSource.open()
 
-        xmlTree = ET.parse(IDSDefFile)
+        # Asked of the entry, not of the environment: an entry built at a version
+        # the distribution does not bundle has already refused by name
+        # (UnknownDDVersion, a ValueError naming the version and the closest one
+        # it knows), and the gesture that opened this view puts that in the log.
+        factory = imas.IDSFactory(self.dataSource.db_entry.dd_version)
+        for idsName in factory.ids_names():
+            IDSRootNode = self.createIDSRootNode(
+                idsName=idsName,
+                idsDocumentation=factory.new(idsName).metadata.documentation,
+                DTVRoot=self.DTVRoot)
 
-        for child in xmlTree.getroot():
-            if child.tag == 'IDS':
-                idsName = child.get('name')
-                idsDocumentation = child.get('documentation')
-                self.idsNamesList.append(idsName)
+            # Which occurrences hold data is answered by the case: the whole
+            # inventory of the 69 IDS names of this data dictionary costs
+            # 0.10 s, against 336 s for reading every IDS to answer the same
+            # question. An IDS the entry refuses stays in the tree holding
+            # nothing, with the reason in the log -- measured, the old
+            # question was asked as eval("imas.<ids>()"), raised out of this
+            # loop on the first IDS of the reference case (amns_data), and
+            # took the whole shot view down with it.
+            occurrences = self.occurrencesOf(idsName)
+            for occurrence in occurrences:
+                IDSRootNode.setAvailableIDSData(occurrence, 1)
+            IDSRootNode.updateIDSNode(bool(occurrences))
 
-                IDSRootNode = self.createIDSRootNode(idsName=idsName,
-                                                     idsDocumentation=idsDocumentation,
-                                                     DTVRoot=self.DTVRoot)
-
-                # Which occurrences hold data is answered by the case: the whole
-                # inventory of the 55 IDS names of this data dictionary costs
-                # 0.10 s, against 336 s for reading every IDS to answer the same
-                # question. An IDS the entry refuses stays in the tree holding
-                # nothing, with the reason in the log -- measured, the old
-                # question was asked as eval("imas.<ids>()"), raised out of this
-                # loop on the first IDS of the reference case (amns_data), and
-                # took the whole shot view down with it.
-                occurrences = self.occurrencesOf(idsName)
-                for occurrence in occurrences:
-                    IDSRootNode.setAvailableIDSData(occurrence, 1)
-                IDSRootNode.updateIDSNode(bool(occurrences))
-
-                # Add the IDS node as a tree item to the tree view
-                self.IDSRoots[idsName] = IDSRootNode
+            # Add the IDS node as a tree item to the tree view
+            self.IDSRoots[idsName] = IDSRootNode
 
         # The open() above is this view's own reference on the case, held for as
         # long as the view lives and given back by Viz_API.RemoveDTVFrame. As
@@ -189,7 +202,7 @@ class QVizDataTreeView(QTreeWidget):
 
         The refusal is logged rather than raised: this answers for every IDS of
         the shot view, and one IDS the back end refuses must not decide what the
-        other 54 look like.
+        other roots of the view look like.
         """
         try:
             return self.occurrences.occurrencesOf(idsName)
@@ -499,16 +512,13 @@ class QVizDataTreeViewFrame(QMainWindow):
     """ Set QMainWindow to contain the QTreeWidget.
     """
 
-    def __init__(self, parent, views, dataSource, IDSDefFile, imas_viz_api, *args, **kwargs):
+    def __init__(self, parent, views, dataSource, imas_viz_api, *args, **kwargs):
         """
         Arguments:
             parent     (PyQT obj)           : QVizDataTreeView parent.
             views      (array)              :
             dataSource (QVizIMASDataSource) : IDS data source from
                                               QVizDataSourceFactory
-            IDSDefFile (str)                : Path to IDS dictionary definition
-                                              .xml file (example:
-                                              viz/imas_data_dictionaries/IDSDef_{IMAS_VERSION}.xml)
         """
         super(QVizDataTreeViewFrame, self).__init__(parent, *args, **kwargs)
 
@@ -528,8 +538,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dataTreeView = \
             QVizDataTreeView(parent=self,
                              dataSource=dataSource,
-                             mappingFilesDirectory=os.environ['TS_MAPPINGS_DIR'],
-                             IDSDefFile=IDSDefFile)
+                             mappingFilesDirectory=os.environ['TS_MAPPINGS_DIR'])
         self.dataTreeView.imas_viz_api = imas_viz_api
 
 

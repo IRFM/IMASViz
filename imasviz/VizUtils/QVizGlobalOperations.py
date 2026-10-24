@@ -133,10 +133,6 @@ class QVizGlobalOperations:
                 print("Environment variable TS_MAPPINGS_DIR not defined. Exiting.")
                 sys.exit()
 
-            if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
-                print("Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting.")
-                sys.exit()
-
             if 'USER' not in os.environ:
                 print("Environment variable USER not defined. Exiting.")
                 sys.exit()
@@ -152,10 +148,6 @@ class QVizGlobalOperations:
             if 'TS_MAPPINGS_DIR' not in os.environ:
                 os.environ["TS_MAPPINGS_DIR"] = QVizGlobalValues.TESTING_TS_MAPPINGS_DIR
                 print("WARNING: environment variable TS_MAPPINGS_DIR defined from testing environment.")
-
-            if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
-                os.environ["IMAS_DATA_DICTIONARIES_DIR"] = QVizGlobalValues.TESTING_IMAS_DATA_DICTIONARIES_DIR
-                print("WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.")
 
             if 'USER' not in os.environ:
                 os.environ['USER'] = QVizGlobalValues.TESTING_USER
@@ -184,14 +176,6 @@ class QVizGlobalOperations:
                 print("Environment variable IMAS_VERSION not defined. Exiting.")
                 sys.exit()
 
-            if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
-                print("Environment variable IMAS_DATA_DICTIONARIES_DIR not defined. Exiting.")
-                sys.exit()
-
-            if 'IMAS_MAJOR_VERSION' not in os.environ:
-                print("Environment variable IMAS_MAJOR_VERSION not defined. Exiting.")
-                sys.exit()
-
             if 'USER' not in os.environ:
                 print("Environment variable USER not defined. Exiting.")
                 sys.exit()
@@ -212,46 +196,12 @@ class QVizGlobalOperations:
                 os.environ["IMAS_VERSION"] = QVizGlobalValues.TESTING_IMAS_VERSION
                 print("WARNING: environment variable IMAS_VERSION defined from testing environment.")
 
-            if 'IMAS_DATA_DICTIONARIES_DIR' not in os.environ:
-                os.environ["IMAS_DATA_DICTIONARIES_DIR"] = QVizGlobalValues.TESTING_IMAS_DATA_DICTIONARIES_DIR
-                print("WARNING: environment variable IMAS_DATA_DICTIONARIES_DIR defined from testing environment.")
-
-            if 'IMAS_MAJOR_VERSION' not in os.environ:
-                os.environ["IMAS_MAJOR_VERSION"] = QVizGlobalValues.TESTING_IMAS_MAJOR_VERSION
-                print("WARNING: environment variable IMAS_MAJOR_VERSION defined from testing environment.")
-
             if 'USER' not in os.environ:
                 os.environ['USER'] = QVizGlobalValues.TESTING_USER
                 print("WARNING: environment variable USER defined from testing environment.")
 
             if 'VIZ_HOME' not in os.environ:
                 os.environ['VIZ_HOME'] = QVizGlobalValues.TESTING_VIZ_HOME
-
-    @staticmethod
-    def getIDSDefFile(imas_dd_version):
-        """Get IDSDef.xml file. If not present in IMASViz try to find it in
-        $IMAS_PREFIX
-        """
-        # An optional system variable for setting path to IDSDef.xml file in
-        # case they're located on some non-standard location.
-        # Note that other paths won't be
-        IDSDef_path = None
-        if "IDSDEF_PATH" in os.environ:
-            IDSDef_path = os.environ['IDSDEF_PATH'] + "/IDSDef.xml"
-        else:
-            IDSDef_path = os.environ['IMAS_DATA_DICTIONARIES_DIR'] \
-                + '/IDSDef_' + imas_dd_version + '.xml'
-
-        if os.path.exists(IDSDef_path) is False and 'IMAS_PREFIX' in os.environ:
-            # Assuming that the IDSDef.xml file is present in
-            # $IMAS_PREFIX/include directory (method used on both the ITER HPC
-            # and on the GATEWAY clusters)
-            IDSDef_path = os.environ['IMAS_PREFIX'] + "/include/IDSDef.xml"
-
-        if IDSDef_path is None:
-            print("WARNING: no suitable IDSDef.xml file found for given IMAS "
-                  "version " + imas_dd_version + ".")
-        return IDSDef_path
 
     @staticmethod
     def getNextPanelKey(n, ncols):
