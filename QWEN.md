@@ -77,6 +77,7 @@ print warnings and take fallback paths.
 | `IMAS_VERSION` | The version of the **data dictionary**, not of the Access Layer. IMAS-Python reads this variable itself (`imas.dd_zip.dd_etree`), so nothing in `imasviz` needs it; it must be a version the distribution bundles — measured: 35 of them, `3.22.0` through `4.1.1`. The IMAS-Python module exports `AL_VERSION` (5.7.1) and **not** `IMAS_VERSION`; `QVizGlobalValues` used to copy the former into the latter when only the first was set, which is what made opening a pulse die (see the T28 row of `LEGACY_REPLACEMENT.md`). That copy is gone from both branches, and `IMAS_MAJOR_VERSION` with it: nothing reads either. |
 | `TS_MAPPINGS_DIR` | Same "default only if unset" rule; `$VIZ_HOME/ts_mapping_files` does exist in the repo. |
 | `UDA_DISABLED` | `1` disables UDA. Forced to `1` in TESTING mode. |
+| `AL_VERSION` | Exported by the IMAS-Python module (**5.7.1** here). **Nothing in `imasviz/` reads it any more**: since T29 no statement asks which Access Layer major version is loaded, so there is no Access Layer 4 branch left to feed — no entry built from six positional numbers, no `legacy_attributes`, no URI box disabled at start-up. Do not "restore" one. It is an Access Layer number, never a data dictionary version — see `IMAS_VERSION` above, and the T28 row for what confusing the two cost. |
 | `IMAS_VIZ_VERSION` | Displayed in window titles; warns if undefined. |
 | `HOSTNAME`, `HOME`, `USER`, `WEST`, `DATABASE_NAME` | Used in testing-mode path resolution. |
 
@@ -331,7 +332,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 780 passed, 1 xfailed, ~131 s, offscreen
+python3 -m pytest tests/ -q     # 791 passed, 1 xfailed, ~131 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
