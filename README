@@ -15,9 +15,17 @@ The terms and conditions of the CeCILL-C license are deemed to be accepted upon 
 
 ### Requirements
 
-IMASViz is only compatible with the python HLI hosted at ssh://git@git.iter.org/imas/al-python.git
+IMASViz walks the data dictionary through the Access Layer metadata of each IDS, so it
+needs the python HLI hosted at https://github.com/iterorganization/IMAS-Python.git
+(the IMAS-Python module, distribution "imas-python").
 
-IMASViz is NOT compatible with IMAS-python hosted at https://github.com/iterorganization/IMAS-Python.git 
+IMASViz CANNOT run on the generated python HLI hosted at
+ssh://git@git.iter.org/imas/al-python.git (the IMAS-AL-Python module, distribution
+"imas"). Measured on IMAS-AL-Python/5.4.0: that package exports DBEntry, IDSName,
+IDSBase and one module per IDS (imas.equilibrium, imas.tf, ...), and carries no
+metadata reflection API at all — IDSDataType and IDSStructArray appear in none of
+its files. `import imas` succeeds there, so the application says so out loud at
+start-up: which package is in charge, what it lacks, and which module to load. 
 
 IMASViz requires the following libraries:
 

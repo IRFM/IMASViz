@@ -224,13 +224,29 @@ Requirements
 
 The fundamental requirements in order to locally run IMASViz are:
 
-- IMAS
+- IMAS, and its **python HLI** — see the note below, the two HLIs ITER ships are
+  not interchangeable
 - Python3 and Python libraries:
-   - PyQt5
+   - PySide6 (Qt for Python)
    - pyqtgraph
    - matplotlib
    - Sphinx (:command:`pip3 install sphinx`)
    - Sphinx RTD theme (:command:`pip3 install sphinx_rtd_theme`)
+
+.. Note:: **Which python HLI is loaded decides whether IMASViz starts.** IMASViz
+          walks the data dictionary through the Access Layer *metadata* of each
+          loaded IDS, so it needs the IMAS-Python bindings (the
+          ``IMAS-Python`` module, distribution ``imas-python``, hosted at
+          https://github.com/iterorganization/IMAS-Python). It cannot run on the
+          generated python HLI (the ``IMAS-AL-Python`` module, distribution
+          ``imas``, hosted at ssh://git@git.iter.org/imas/al-python.git): that one
+          exports :code:`DBEntry` and one module per IDS, but carries no metadata
+          reflection API at all. Loading it is not silent — IMASViz stops at
+          start-up naming the package it found, what it lacks
+          (:code:`IDSDataType`, :code:`IDSStructArray`) and the module to load
+          instead::
+
+              IMASViz cannot start: the IMAS-Python HLI is not loaded.
 
 .. _source_code:
 

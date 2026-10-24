@@ -29,6 +29,22 @@ remotely through **UDA**.
   `Viz_API` occurrence helpers) now ask the case through `DBEntry.list_all_occurrences`.
   Do not write new code against generated `imas.<ids>()` classes; they do not exist
   on this node.
+- **Two python HLIs are installed on this node, and only one of them runs IMASViz.**
+  Measured: `IMAS-Python/2.0.1`, `2.1.0` and `2.3.0` (distribution `imas-python`,
+  homepage `github.com/iterorganization/imas-python`) all ship `ids_data_type.py`,
+  `ids_struct_array.py` and `ids_metadata.py`, and 2.3.0 exposes `IDSDataType` and
+  `IDSStructArray` at the package root too. `IMAS-AL-Python/5.4.0-*-DD-<dd>` (the
+  generated HLI from `git.iter.org/imas/al-python.git`, distribution `imas`, built
+  once per data dictionary) holds `ids_base.py`, `ids_names.py`, `db_entry.py`,
+  `dd_units.py` plus one generated module per IDS, exports `DBEntry`, `IDSName`,
+  `IDSBase`, `get_al_version` — and the string `IDSDataType` appears in **none** of
+  its files, so `import imas` and `imas.DBEntry` both succeed there while the
+  metadata walk cannot start. The README used to state the opposite of this, which
+  is how a user ends up on the wrong HLI; it now says what is measured, and
+  `VizDataAccess/QVizAccessLayerHLI.py` asks the two reflection names once and
+  refuses by name — printing the package that is in charge, what it lacks, and the
+  `module load IMAS-Python/<version>` line to answer with — instead of dying on a
+  `ModuleNotFoundError` inside a leaf import.
 - Documentation is a first-class artifact of the repo: Sphinx/RST under `doc/source`, built with
   `make doc`. The RST manual is the authoritative user guide — consult it before inventing
   behavior.
@@ -283,7 +299,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 760 passed, 2 xfailed, ~129 s, offscreen
+python3 -m pytest tests/ -q     # 764 passed, 2 xfailed, ~132 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -429,7 +445,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **108** modules and **107** of them import. The one failure is Qt-Designer
+  it walks **110** modules and **109** of them import. The one failure is Qt-Designer
   scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
@@ -437,6 +453,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   walked 126 modules with 5 failures; `viz_solps/` and its `src/` subtree accounted for 9
   of those modules, 4 of the failures. T22(c) took **7** more out of the walk — five
   production modules of the legacy figure island, the `viz_tests` package and its module.
+  The HLI gate added **1** to the walk.
 - In this PySide6 build `Slot`, `Signal`, `QThread` and `exec_()` **do** exist, while
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.
