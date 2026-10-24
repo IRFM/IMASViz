@@ -6,7 +6,6 @@
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-import os
 import logging
 from functools import partial
 import imas
@@ -16,22 +15,19 @@ from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 
 
-def caseLabel(uri, legacy_attributes=None):
+def caseLabel(uri):
     """Short human readable name for the case a source points to.
 
     Used in curve legends, where the whole IMAS URI used to be embedded and made
     the legend unreadable. Both URI spellings are understood: the parameter form
     (database=…;shot=…;run=…) and the path form (…/<db>/<dd>/<shot>/<run>).
     Falls back to the URI itself when neither can be read, so nothing is lost.
+
+    The Access Layer 4 'legacy parameters' used to be read first, because that
+    is what an AL4 entry was built from; nothing builds an entry from them any
+    more, so the URI is the one place the case is spelled.
     """
-    attributes = legacy_attributes or {}
-    database = attributes.get('database_name') or attributes.get('database')
-    shot = attributes.get('shot')
-    run = attributes.get('run')
-
-    if database is None or shot is None:
-        database, shot, run = _readCaseFromUri(uri)
-
+    database, shot, run = _readCaseFromUri(uri)
     if database is None or shot is None:
         return uri
     return '{} {}.{}'.format(database, shot, 0 if run is None else run)
@@ -107,8 +103,6 @@ class QVizIMASDataSource:
         # Pins the data dictionary used to open the entry, for cases written
         # with another version than the one the Access Layer loads by default.
         self.dd_version = None
-        self.al_version = self.getVersion()
-        self.legacy_attributes = {} #used only for AL4
 
     @property
     def db_entry(self):
@@ -131,36 +125,19 @@ class QVizIMASDataSource:
         return QVizDBEntryRegistry.ids_cache(self.uri, self.MODE, self.dd_version)
 
     @staticmethod
-    def getVersion():
-        imas_prefix = os.environ.get('AL_VERSION')
-        if imas_prefix is None:
-           raise ValueError('Unable to set the version used by the IMAS Access Layer')
-        splits = imas_prefix.split("-")
-        full_al_version = splits[0]
-        splits2 = full_al_version.split(".")
-        major_version = splits2[0]
-        #print('major_version=', major_version)
-        return int(major_version)
+    def build_uri(backend_id, shot, run, user_name, db_name, data_version,
+                  options):
+        """The URI of a case, spelled from the five parameters the user gives.
 
-    @staticmethod
-    def build_uri(backend_id, shot, run, user_name,
-    db_name, data_version, options):
-        """The URI of a case, and -- under Access Layer 4 only -- the legacy
-        parameters an entry has to be built from.
-
-        Under AL5 the URI is enough. Under AL4 it is not: the entry is built
-        from the five numbers, which is what `createDBEntry` does with them.
+        It used to answer a pair, `(uri, legacy_attributes)`: under Access Layer
+        4 an entry could not be built from an URI at all, only from those five
+        numbers. The major version the Access Layer reports here has been 5 on
+        every stack this application has run on (AL_VERSION is 5.7.1 on the
+        stack of the README), so that second answer was always an empty dict,
+        and nothing built an entry from it.
         """
-        uri = caseUri(backend_id, user_name, db_name, shot, run, data_version,
-                      options)
-        if QVizIMASDataSource.getVersion() != 4:
-            return (uri, {})
-        return (uri, {'user': user_name,
-                      'shot': int(shot),
-                      'run': int(run),
-                      'database': db_name,
-                      'version': str(data_version),
-                      'backend_id': backend_id})
+        return caseUri(backend_id, user_name, db_name, shot, run, data_version,
+                       options)
         
 
     def load(self, dataTreeView, IDSName, occurrence=0, sliceSelection=None,
@@ -224,34 +201,22 @@ class QVizIMASDataSource:
         self.runningParsers.discard(parser)
         dataTreeView.endLoad(IDSName, occurrence)
 
-    def createDBEntry(self, mode=None):
-        """Builds an entry on this case and returns it; it is not kept here."""
-        if QVizIMASDataSource.getVersion()==4:
-            if self.legacy_attributes is None or len(self.legacy_attributes) == 0:
-                raise ValueError('No legacy parameters available.')
+    def createDBEntry(self, mode):
+        """Builds an entry on this case and returns it; it is not kept here.
 
-            user_name = self.legacy_attributes['user']
-            shot = self.legacy_attributes['shot']
-            run = self.legacy_attributes['run']
-            db_name = self.legacy_attributes['database']
-            data_version = self.legacy_attributes['version']
-            backend_id = self.legacy_attributes['backend_id']
-
-            entry = imas.DBEntry(backend_id, db_name, shot, run, user_name, data_version)
-        elif QVizIMASDataSource.getVersion()==5:
-            if mode is None:
-                raise ValueError("Unspecified mode argument for createDBEntry()")
-            # A case may have been written with a data dictionary other than the
-            # one the Access Layer loads by default; IMAS-Python refuses to read
-            # an IDS across a DD major version, so the pin has to be given here.
-            if self.dd_version:
-                entry = imas.DBEntry(self.uri, mode,
-                                     dd_version=self.dd_version)
-            else:
-                entry = imas.DBEntry(self.uri, mode)
-        else:
-            raise ValueError("Unknown Access Layer version")
-        return entry
+        An URI is the whole description of a case. The five numbers Access Layer
+        4 needed instead -- `imas.DBEntry(backend_id, db_name, shot, run, user,
+        version)` -- went with the branch that asked `getVersion()` for them; on
+        every stack this application has run on that answer was 5, so that
+        branch had been unreachable here for as long as the Access Layer
+        bindings have been IMAS-Python's.
+        """
+        # A case may have been written with a data dictionary other than the
+        # one the Access Layer loads by default; IMAS-Python refuses to read
+        # an IDS across a DD major version, so the pin has to be given here.
+        if self.dd_version:
+            return imas.DBEntry(self.uri, mode, dd_version=self.dd_version)
+        return imas.DBEntry(self.uri, mode)
 
     def open(self):
         """Takes a reference on the entry for this case, opening the case when
@@ -269,21 +234,13 @@ class QVizIMASDataSource:
     def buildEntry(self):
         """Builds the entry the registry will share, already usable.
 
-        An AL5 entry opens at construction and refuses a second open(); an AL4
-        entry has to be opened explicitly. This runs once per case, not once
-        per IDS, which is what used to make the second IDS of a shot view fail.
+        An entry built from an URI opens at construction and refuses a second
+        open(); under Access Layer 4 it had to be opened explicitly, which is
+        what this method's version test was for. It runs once per case, not
+        once per IDS, which is what used to make the second IDS of a shot view
+        fail.
         """
-        version = QVizIMASDataSource.getVersion()
-        if version == 4:
-            entry = self.createDBEntry()
-            status, idx = entry.open()
-            if status != 0:
-                raise ValueError("An error has occured while opening URI: " + self.uri + ".")
-        elif version == 5:
-            entry = self.createDBEntry(self.MODE)
-        else:
-            raise ValueError("Unknown Access Layer version")
-        return entry
+        return self.createDBEntry(self.MODE)
 
     def get(self, IDSName, occurrence):
         try:
@@ -336,7 +293,7 @@ class QVizIMASDataSource:
         return self.name + "::" + self.uri + '::' + str(figureKey)
 
     def getShortLabel(self):
-        return caseLabel(self.uri, getattr(self, 'legacy_attributes', None))
+        return caseLabel(self.uri)
 
     def getLongLabel(self):
         return "URI:" + self.uri

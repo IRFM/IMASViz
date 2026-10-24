@@ -20,6 +20,12 @@ from threading import Thread, Condition
 from functools import partial
 
 
+# The two backend labels the Worker writes into the tree, and the id the rest
+# of the application asks of the Access Layer for them. The same two numbers the
+# command line takes after -b.
+BACKENDS = {'HDF5': 13, 'MDS+': 12}
+
+
 class QVizIMASdbBrowserWidget(QTreeWidget):
     """Set and populate QTreeWidget.
     """
@@ -60,6 +66,12 @@ then the available <b>IDS cases for that user will be shown too</b>.
         self.activeDatabase = None
         self.activeShot = None
         self.activeRun = None
+        # The fifth thing a selection spells. It used to be absent from this
+        # list and to appear only inside setActiveBackend, under the name
+        # 'backend', so a browser that had not seen a run double clicked yet
+        # answered AttributeError on getActiveBackend() -- which is what
+        # GUIFrame.updateIDSparam asks first thing.
+        self.activeBackend = None
         # A list to keep track of which databases had been shown and to
         # use it to avoid duplicates
         self.presentUserNameList = []
@@ -111,29 +123,73 @@ then the available <b>IDS cases for that user will be shown too</b>.
 
 
     def doubleClickHandler(self, item, column_No):
-        """Handler for double click on QTreeWidgetItem in QTreeWidget
+        """Handler for double click on QTreeWidgetItem in QTreeWidget.
+
+        Only a run number selects a case, and the five values the frame reads
+        back are then set together. The signal used to be emitted whatever had
+        been clicked: a double click on a shot, a database or a backend row
+        left `activeDatabase`, `activeShot` and `activeRun` at None and the
+        backend unset, and `GUIFrame.updateIDSparam` blanked its four text
+        fields with those None values before dying on the fifth, outside the
+        gesture that asked it.
         """
+        labels = self._caseLabelsOf(item)
+        if labels is None:
+            logging.getLogger('logPanel').info(
+                "Double clicking '%s' selects no case: only a run number, "
+                "the last level of the browser, fills the IDS parameters above."
+                % item.text(0))
+            return
 
-        # When clicking on item representing run number
-        # (last in tree hierarchy -> 0 children)
-        if item.childCount() == 0:
-            self.setActiveUsername(item.parent().parent().parent().parent().text(0))
-            self.setActiveBackend(item.parent().parent().parent().text(0))
-            self.setActiveDatabase(item.parent().parent().text(0))
-            self.setActiveShot(item.parent().text(0))
-            self.setActiveRun(item.text(0))
+        username, backendLabel, database, shot, run = labels
+        if backendLabel not in BACKENDS:
+            logging.getLogger('logPanel').error(
+                "Unknown backend '%s' under user '%s' in the database browser: "
+                "it must be one of %s."
+                % (backendLabel, username, ', '.join(sorted(BACKENDS))))
+            return
 
+        self.setActiveUsername(username)
+        self.setActiveBackend(BACKENDS[backendLabel])
+        self.setActiveDatabase(database)
+        self.setActiveShot(shot)
+        self.setActiveRun(run)
         self.onItemDoubleClick.emit()
+
+    def _caseLabelsOf(self, item):
+        """The five labels of the case a leaf spells; None when it is not one.
+
+        The tree the Worker builds is five levels deep -- user, backend,
+        database, shot, run -- and the handler used to walk exactly four
+        `parent()` steps without looking at what it walked into, so a shallower
+        tree answered AttributeError on `None.text(0)`.
+        """
+        if item.childCount() != 0:
+            return None
+        labels = []
+        node = item
+        while node is not None and len(labels) < 5:
+            labels.append(node.text(0))
+            node = node.parent()
+        if node is not None or len(labels) < 5:
+            return None
+        return tuple(labels[::-1])
 
     def setActiveUsername(self, username):
         self.activeUsername = username
 
-    def setActiveBackend(self, backend_name):
-        if backend_name=='HDF5':
-            backend = 13
-        elif backend_name=='MDS+':
-            backend = 12
-        self.backend = backend
+    def setActiveBackend(self, backend_id):
+        """The backend of the selected case, by id: 13 (HDF5) or 12 (MDS+).
+
+        It used to take the browser *label* and map it with two tests and no
+        `else`, so any other label left the local `backend` unbound and the
+        answer was UnboundLocalError -- measured with 'hdf5' (the label is
+        case sensitive) and with 'ITER'.
+        """
+        if backend_id not in BACKENDS.values():
+            raise ValueError('Unknown backend id %r: HDF5 (13) or MDSplus (12).'
+                             % (backend_id,))
+        self.activeBackend = backend_id
 
     def setActiveDatabase(self, db):
         self.activeDatabase = db
@@ -148,7 +204,7 @@ then the available <b>IDS cases for that user will be shown too</b>.
         return self.activeUsername
 
     def getActiveBackend(self):
-        return self.backend
+        return self.activeBackend
 
     def getActiveDatabase(self):
         return self.activeDatabase

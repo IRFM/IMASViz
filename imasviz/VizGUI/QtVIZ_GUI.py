@@ -37,7 +37,11 @@ class GUIFrame(QTabWidget):
         self.tab1 = QWidget()
         self.tab2 = QWidget()
 
-        self.addTab(self.tab1, "Legacy parameters")
+        # The name the manual uses for this tab (manual/loading_IDS.rst:26 asks
+        # for the "Local data source" tab); "Legacy parameters" was the AL4-era
+        # name of a tab that still takes the five parameters the -u -d -s -r -b
+        # command line feeds it.
+        self.addTab(self.tab1, "Local data source")
         self.addTab(self.tab2, "URI")
 
         self.tabOne()
@@ -161,16 +165,15 @@ class GUIFrame(QTabWidget):
                     """Check if data source is available"""
                     QVizGlobalOperations.check(QVizGlobalValues.IMAS_NATIVE)
 
-                    uri, legacy_attributes = QVizIMASDataSource.build_uri(
-                        backend_id=self.backend, 
-                        shot=int(shotNumber), 
-                        run=int(self.runNumber.text()), 
-                        user_name=self.userName.text(), 
-                        db_name=self.imasDbName.text(), 
-                        data_version='3', 
+                    uri = QVizIMASDataSource.build_uri(
+                        backend_id=self.backend,
+                        shot=int(shotNumber),
+                        run=int(self.runNumber.text()),
+                        user_name=self.userName.text(),
+                        db_name=self.imasDbName.text(),
+                        data_version='3',
                         options='')
-                    print("QtVizGui::legacy_attributes=", legacy_attributes)
-                    self.mainMenuController.openShotView.Open(evt, uri, legacy_attributes)
+                    self.mainMenuController.openShotView.Open(evt, uri)
 
             except Exception as e:
                 raise ValueError(str(e))
@@ -190,19 +193,41 @@ class GUIFrame(QTabWidget):
             raise ValueError("'Shot number' or 'run number' field is empty.")
 
     def updateIDSparam(self):
-        """Update IDS parameters widgets.
+        """Fill the IDS parameters from what the database browser just selected.
+
+        The five values are read and checked before any field is written. They
+        used to be written as they were read, so a click that did not spell a
+        case put None in the four text fields -- PySide6 6.6.3 takes None for a
+        string and writes an empty line, so what the user had typed disappeared
+        -- and then died on the fifth, outside the gesture, on an AttributeError
+        nobody was told about.
         """
-        self.userName.setText(self.IMASdbBrowserWidget.getActiveUsername())
-        self.imasDbName.setText(self.IMASdbBrowserWidget.getActiveDatabase())
-        self.shotNumber.setText(self.IMASdbBrowserWidget.getActiveShot())
-        self.runNumber.setText(self.IMASdbBrowserWidget.getActiveRun())
-        self.backend = self.IMASdbBrowserWidget.getActiveBackend()
-        if self.backend == 13:
-            self.backendCombo.setCurrentIndex(0)
-        elif self.backend == 12:
-            self.backendCombo.setCurrentIndex(1)
-        else:
-            raise ValueError("Unexpected backend id provided by the database browser.")
+        try:
+            username = self.IMASdbBrowserWidget.getActiveUsername()
+            database = self.IMASdbBrowserWidget.getActiveDatabase()
+            shot = self.IMASdbBrowserWidget.getActiveShot()
+            run = self.IMASdbBrowserWidget.getActiveRun()
+            backend = self.IMASdbBrowserWidget.getActiveBackend()
+            for label, value in (('user name', username),
+                                 ('database', database),
+                                 ('shot number', shot),
+                                 ('run number', run),
+                                 ('backend', backend)):
+                if value is None:
+                    raise ValueError(
+                        "The database browser did not select a %s: the IDS "
+                        "parameters are left as they are." % label)
+        except ValueError as e:
+            logging.getLogger('logPanel').error(str(e))
+            return
+
+        self.userName.setText(username)
+        self.imasDbName.setText(database)
+        self.shotNumber.setText(shot)
+        self.runNumber.setText(run)
+        self.backend = backend
+        # The combo holds ['HDF5', 'MDS+'], the same two BACKENDS spells.
+        self.backendCombo.setCurrentIndex(0 if backend == 13 else 1)
 
     def onUserNameEditFinished(self):
         self.IMASdbBrowserWidget.setActiveUsername(self.userName.text())
@@ -218,10 +243,6 @@ class GUIFrame(QTabWidget):
         button_open2 = QPushButton('Open', self)
         button_open2.clicked.connect(self.OpenDataSourceFromTab2)
         layout.addLayout(vboxlayout)
-
-        if QVizIMASDataSource.getVersion() == 4:
-            self.URI.setEnabled(False)
-            button_open2.setEnabled(False)
 
         vboxLayout2 = QVBoxLayout()
         vboxLayout2.addWidget(button_open2)
@@ -424,11 +445,6 @@ def main():
     window = QVizMainWindow()
     logging.getLogger('logPanel').info("Welcome to Viz!")
     logging.getLogger('logPanel').info("Please report any issue to ITER JIRA: https://jira.iter.org/")
-
-    if QVizIMASDataSource.getVersion() == 4:
-        logging.getLogger("logPanel").warning("You are using IMAS AL4. URI input are not available:")
-        logging.getLogger("logPanel").warning("--> URI input are not available for this version of the AL")
-        logging.getLogger("logPanel").warning("--> UDA is not available for this version of the AL")
 
     window.show()
     sys.exit(app.exec())

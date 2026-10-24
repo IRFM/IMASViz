@@ -7,25 +7,12 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-import imas
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource, caseLabel
 
 
+# A data source for the public databases of the IMAS reference installation:
+# it differs from a native one by its label only, which drops the user name.
 class QVizIMASPublicDataSource(QVizIMASDataSource):
 
-    def __init__(self, name, uri):
-
-        super(QVizIMASPublicDataSource, self).__init__(name, uri)
-
-    # This defines the unique key attached to each data which can be plotted
-    def dataKey(self, vizTreeNode):
-        return self.name + "::" + self.uri +  '::' + vizTreeNode.getPath()
-
     def getShortLabel(self):
-        return caseLabel(self.uri, getattr(self, 'legacy_attributes', None))
-
-    def getLongLabel(self):
-        return "UDA URI:" + self.uri
-
-    def open(self, data_entry):
-        data_entry.open()
+        return caseLabel(self.uri)

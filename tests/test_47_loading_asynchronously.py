@@ -101,7 +101,7 @@ def barsOnScreen():
 
 def opening(api):
     """A shot view built the way `QVizOpenShotView.Open` builds one."""
-    source = QVizDataSourceFactory(None).create(CASE_URI)
+    source = QVizDataSourceFactory().create(CASE_URI)
     source.dd_version = CASE_DATA_DICTIONARY_VERSION
     return api.CreateDataTree(source).dataTreeView
 

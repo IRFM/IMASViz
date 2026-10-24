@@ -118,7 +118,7 @@ class Journey:
         self.home = home
 
     def openCase(self, uri, ddVersion):
-        source = QVizDataSourceFactory(None).create(uri)
+        source = QVizDataSourceFactory().create(uri)
         source.dd_version = ddVersion
         already = self.api.isDataSourceAlreadyOpened(source)
         view = (self.api.GetDTVFor(source.getKey()) if already

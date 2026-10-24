@@ -7,25 +7,18 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-import os
-
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 from imasviz.VizUtils import QVizGlobalValues
 
 
-# A factory for creating native data-source for IMAS
+# A factory for creating native data-source for IMAS.
+#
+# An URI is the whole description of a case. The factory used to take the five
+# "legacy parameters" Access Layer 4 needed to build an entry, and to refuse
+# without them; the Access Layer has answered 5 for its major version on every
+# stack this application has run on, so that refusal never fired and the
+# parameters it collected were read by nothing.
 class QVizDataSourceFactory:
 
-    def __init__(self, legacy_attributes=None):
-        if QVizIMASDataSource.getVersion() == 4:
-            if legacy_attributes is None or len(legacy_attributes) == 0:
-                raise ValueError("Creating a datasource using AL4 required legacy parameters in the datasource factory.")
-        self.legacy_attributes = legacy_attributes
-
     def create(self, uri):
-        dataSource = QVizIMASDataSource(QVizGlobalValues.IMAS_NATIVE, uri)
-        if QVizIMASDataSource.getVersion() == 4:
-            if self.legacy_attributes is not None and len(self.legacy_attributes) > 0:
-                dataSource.legacy_attributes = self.legacy_attributes
-        return dataSource
-
+        return QVizIMASDataSource(QVizGlobalValues.IMAS_NATIVE, uri)

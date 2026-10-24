@@ -168,7 +168,7 @@ def session(qapp, tmp_path_factory):
     targetUri = 'imas:hdf5?path=' + os.path.join(targetDir, '3', '54924', '0')
     api = Viz_API(parent=QMdiArea())
     ownership.keep(api)
-    source = QVizDataSourceFactory(None).create(caseUri)
+    source = QVizDataSourceFactory().create(caseUri)
     source.dd_version = CASE_DATA_DICTIONARY_VERSION
     view = api.CreateDataTree(source).dataTreeView
     api.ShowDataTree(view)

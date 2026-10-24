@@ -49,7 +49,14 @@ def test_the_long_label_still_carries_the_full_uri():
     assert source.getShortLabel() != PATH_URI
 
 
-def test_a_legacy_attributes_dictionnary_is_preferred():
+def test_the_uri_is_the_only_thing_a_label_is_read_from():
+    """The Access Layer 4 'legacy attributes' used to win over the URI.
+
+    They were read first, under a key spelled 'database_name' where the URI
+    spells it 'database', because that is what an AL4 entry was built from.
+    Nothing builds an entry from those numbers any more, so a source that
+    cannot read its URI falls back to the URI itself and nothing else.
+    """
     source = QVizIMASDataSource('native', 'whatever')
-    source.legacy_attributes = {'database_name': 'WEST', 'shot': 54924, 'run': 0}
-    assert source.getShortLabel() == 'WEST 54924.0'
+    assert not hasattr(source, 'legacy_attributes')
+    assert source.getShortLabel() == 'whatever'

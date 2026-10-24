@@ -109,7 +109,7 @@ def opening(api):
     The frame stays reachable through ``api.DTVframeList`` for the whole module,
     which is what keeps it alive in the application -- and here.
     """
-    source = QVizDataSourceFactory(None).create(CASE_URI)
+    source = QVizDataSourceFactory().create(CASE_URI)
     source.dd_version = CASE_DATA_DICTIONARY_VERSION
     return api.CreateDataTree(source).dataTreeView
 

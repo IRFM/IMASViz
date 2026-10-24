@@ -20,18 +20,20 @@ from conftest import CASE_URI, case_uri_or_skip
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 
 
-def test_the_access_layer_major_version_is_derived(monkeypatch):
-    monkeypatch.setenv('AL_VERSION', '5.7.1-foss-2023b')
-    assert QVizIMASDataSource.getVersion() == 5
+def test_the_access_layer_major_version_is_no_longer_asked():
+    """Nothing asks which Access Layer major version is loaded any more.
 
-    monkeypatch.setenv('AL_VERSION', '4.9.3')
-    assert QVizIMASDataSource.getVersion() == 4
-
-
-def test_a_missing_access_layer_version_is_reported(monkeypatch):
-    monkeypatch.delenv('AL_VERSION', raising=False)
-    with pytest.raises(ValueError):
-        QVizIMASDataSource.getVersion()
+    `getVersion()` parsed `AL_VERSION` and every branch that asked it took the
+    Access Layer 4 path when it answered 4: an entry built from six positional
+    numbers instead of an URI, a `legacy_attributes` dict handed back by
+    `build_uri`, an URI box disabled in the GUI. Measured on the stacks this
+    application runs on, that answer is 5 — `AL_VERSION` is 5.7.1 here — so
+    those branches were dead, and the numbers they carried were read by nothing.
+    """
+    assert not hasattr(QVizIMASDataSource, 'getVersion')
+    source = QVizIMASDataSource('native', CASE_URI)
+    assert not hasattr(source, 'legacy_attributes')
+    assert not hasattr(source, 'al_version')
 
 
 def test_a_datasource_starts_without_an_opened_entry():
@@ -41,20 +43,20 @@ def test_a_datasource_starts_without_an_opened_entry():
     assert dataSource.generatedDataTree is None
 
 
-def test_building_a_uri_from_legacy_parameters():
+def test_building_a_uri_from_the_five_parameters():
     """The URI is spelled here now; the Access Layer never had that helper.
 
     This used to be an xfail: the helper did "from imas import _al_lowlevel as
     ll", and IMAS-Python 2.3.0 exposes no such module, so every call answered
     ImportError -- the *Export to IDS* click and the command line's
     -u -d -s -r -b path among them. The spelling is the one cases on disk are
-    opened with, and under Access Layer 5 nothing asks for the legacy numbers.
+    opened with. It used to answer a pair, the second element being the
+    Access Layer 4 parameters; the URI is the answer now.
     """
-    uri, attributes = QVizIMASDataSource.build_uri(
+    uri = QVizIMASDataSource.build_uri(
         13, 54924, 0, 'g2lfleur', 'west', '3', {})
     assert uri == ('imas:hdf5?user=g2lfleur;shot=54924;run=0;database=west'
                    ';version=3')
-    assert attributes == {}
 
 
 @pytest.mark.case

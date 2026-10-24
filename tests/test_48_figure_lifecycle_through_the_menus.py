@@ -154,7 +154,7 @@ def session(qapp):
     ownership.keep(root)
     api = Viz_API(parent=mdi)
     ownership.keep(api)
-    source = QVizDataSourceFactory(None).create(CASE_URI)
+    source = QVizDataSourceFactory().create(CASE_URI)
     source.dd_version = CASE_DATA_DICTIONARY_VERSION
     view = api.CreateDataTree(source).dataTreeView
     api.ShowDataTree(view)

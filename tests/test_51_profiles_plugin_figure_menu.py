@@ -207,7 +207,7 @@ class Session:
         self.runCost = None
 
     def openCase(self, uri, ddVersion):
-        source = QVizDataSourceFactory(None).create(uri)
+        source = QVizDataSourceFactory().create(uri)
         source.dd_version = ddVersion
         self.view = self.api.CreateDataTree(source).dataTreeView
         # The catalog is the view's own, as QVizPluginMenu installs it: one set

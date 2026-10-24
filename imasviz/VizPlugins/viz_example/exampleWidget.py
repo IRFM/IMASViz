@@ -123,13 +123,13 @@ class exampleWidget(QWidget):
         """
         # Open IDS
 
-        uri,legacy_attributes = QVizIMASDataSource.build_uri(
+        uri = QVizIMASDataSource.build_uri(
                         backend_id=13,
                         shot=int(self.idsParameters['shot']),
                         run=int(self.idsParameters['run']),
-                        user_name=self.idsParameters['user'], 
-                        db_name=self.idsParameters['device'], 
-                        data_version=self.idsParameters['IMAS major version'], 
+                        user_name=self.idsParameters['user'],
+                        db_name=self.idsParameters['device'],
+                        data_version=self.idsParameters['IMAS major version'],
                         options='')
 
         # Read through the registry so this case is never opened a second time
