@@ -79,11 +79,15 @@ the following commands:
 
 IMASViz reads the IMAS Data Dictionary at run time through the Access Layer
 Python bindings (imas.ids_metadata), so no parser code is generated any more.
-The dictionary itself is still required: the directory holding
-IDSDef_<version>.xml is given by the **IMAS_DATA_DICTIONARIES_DIR** environment
-variable; when it is not already defined it defaults to
-$VIZ_HOME/imas_data_dictionaries, which is not present in this repository —
-export it explicitly if the IMAS module does not provide it.
+No dictionary file is needed either: the shot view asks the case it has opened
+which data dictionary version that case is stored with (DBEntry.dd_version) and
+takes the list of IDSs and their documentation from the factory of that version
+(imas.IDSFactory), which the IMAS-Python distribution carries inside its own
+package. **IMAS_VERSION**, if you export it, is the version of the data
+dictionary — IMAS-Python reads that variable itself — and never an Access Layer
+number: on the stack above, AL_VERSION is 5.7.1 while the newest dictionary the
+package holds is 4.1.1, and a version the package does not carry is refused by
+name when the case is opened.
 
 The repository Makefile builds the documentation only:
 

@@ -26,8 +26,8 @@ remotely through **UDA**.
   `AttributeError` wherever it appears. Since T13 it appears in **no executable
   statement**: the 6 places that asked it — the shot view's empty tree,
   `hasAvailableData`, the three `Viz_API` occurrence helpers and the Profiles plugin's
-  entry — now ask the case through `DBEntry.list_all_occurrences` (0.10 s for the 55 IDS
-  names of the reference dictionary), and six mentions survive as comments naming what
+  entry — now ask the case through `DBEntry.list_all_occurrences` (0.10 s for the whole
+  inventory of the reference case), and six mentions survive as comments naming what
   was replaced. What does survive as live code is `eval` on an **attribute path of a
   loaded IDS object** — `eval(self.ids_related + ".time[time_index]")`, **15** sites in
   `viz_Profiles/viz_profiles/VizProfiles.py` — and `QVizTreeNode.evalPath`'s
@@ -74,8 +74,7 @@ print warnings and take fallback paths.
 | --- | --- |
 | `VIZ_HOME` | Repo root. Put on `sys.path`; used to locate `ts_mapping_files`, `config`, `resources/VizIcons`, plugin `.ui` dirs. |
 | `VIZ_PRODUCTION` | `1` = production (installed modules). `0`/unset ⇒ `QVizGlobalValues.TESTING = True` (dev/testing mode). |
-| `IMAS_VERSION` | e.g. `5.7.1`; `IMAS_MAJOR_VERSION` is derived as its first char. **The IMAS-Python module exports `AL_VERSION` (5.7.1) but not `IMAS_VERSION`** — `QVizGlobalValues` now copies `AL_VERSION` into `IMAS_VERSION` when only the former is set (consistent with the `UAL_VERSION → AL_VERSION` commit). |
-| `IMAS_DATA_DICTIONARIES_DIR` | Defaults to `$VIZ_HOME/imas_data_dictionaries` **only when not already exported**, so a module/user-supplied path wins. That repo path is absent, so without an explicit export `getIDSDefFile` finds no `IDSDef_<ver>.xml`. |
+| `IMAS_VERSION` | The version of the **data dictionary**, not of the Access Layer. IMAS-Python reads this variable itself (`imas.dd_zip.dd_etree`), so nothing in `imasviz` needs it; it must be a version the distribution bundles — measured: 35 of them, `3.22.0` through `4.1.1`. The IMAS-Python module exports `AL_VERSION` (5.7.1) and **not** `IMAS_VERSION`; `QVizGlobalValues` used to copy the former into the latter when only the first was set, which is what made opening a pulse die (see the T28 row of `LEGACY_REPLACEMENT.md`). That copy is gone from both branches, and `IMAS_MAJOR_VERSION` with it: nothing reads either. |
 | `TS_MAPPINGS_DIR` | Same "default only if unset" rule; `$VIZ_HOME/ts_mapping_files` does exist in the repo. |
 | `UDA_DISABLED` | `1` disables UDA. Forced to `1` in TESTING mode. |
 | `IMAS_VIZ_VERSION` | Displayed in window titles; warns if undefined. |
@@ -332,15 +331,15 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 777 passed, 2 xfailed, ~139 s, offscreen
+python3 -m pytest tests/ -q     # 780 passed, 1 xfailed, ~131 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
-`IMAS_VERSION`, `IMAS_DATA_DICTIONARIES_DIR`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
+`IMAS_VERSION`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
 import time, **before** any test imports `imasviz` — which is mandatory, because
 `QVizGlobalValues` and `QVizGlobalOperations.checkEnvSettings()` can `sys.exit()`.
-Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 2 `xfail(strict=True)`
-entries are real defects and environment limits, listed in `TESTING.md` §4.
+Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 1
+`xfail(strict=True)` entry is an environment limit, listed in `TESTING.md` §4.
 
 A test that **shows** a plot frame must keep it alive for the whole session —
 `support/ownership.py`'s `keep()`, which is what the application does through
@@ -501,9 +500,13 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `qt.qpa.plugin: Could not load the Qt platform plugin "xcb"`, i.e. no X display.
 - What the suite **does** reach: the reference case is opened by `tests/conftest.py`
   (`imas:hdf5?path=…/west/3/54924/0`, pinned at data dictionary `3.35.0` while the
-  harness dictionary is `3.23.3`), its shadow trees are walked, and since T12 a real
-  `QVizDataTreeViewFrame` is built on it — 55 IDS roots, occurrences read from the
-  entry, one occurrence loaded. `QVizPreferences().build()` has to have run first, or
+  harness dictionary is `4.0.0`), its shadow trees are walked, and since T12 a real
+  `QVizDataTreeViewFrame` is built on it — **69** IDS roots, which are the IDS names
+  the **entry** declares for the dictionary that case is stored with (`DBEntry.dd_version`
+  → `IDSFactory.ids_names()`), not the contents of an `IDSDef_<version>.xml` file: since
+  T28 no such file is read anywhere, and the `55` this section used to report was that
+  file's count at `3.23.3`. Occurrences are read from the entry, one occurrence loaded.
+  `QVizPreferences().build()` has to have run first, or
   `setStyleForIDS` calls `setForeground(0, None)` and answers `TypeError`; `QtVIZ_GUI`
   and `Viz_API` both call it at start-up, a test has to.
 - A plugin entry **is** run end to end now — `tests/test_51_profiles_plugin_figure_menu.py`
