@@ -25,11 +25,7 @@
     License: this code is in the public domain
 '''
 # Standard python modules
-from __future__ import (unicode_literals, absolute_import,  \
-                        print_function, division)
-import argparse
 from datetime import datetime
-import getpass
 import matplotlib
 # matplotlib.use('Qt5Agg')
 from matplotlib.figure import Figure
@@ -37,22 +33,15 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.ticker as tick
 import numpy as np
-import os
-import sys, logging
+import logging
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, QTreeWidget, \
     QTreeWidgetItem, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout,  \
     QLabel, QMessageBox, QStatusBar, QCheckBox
 from PySide6 import QtCore
 
-# Local python modules
-import imas
-
 from imasviz.VizPlugins.VizPlugin import VizPlugin
-
-# Project python modules
-from imasviz.VizPlugins.viz_equi.ids_read_multiprocess import \
-    ids_read_multiprocess
+from imasviz.VizUtils import FigureTypes
 
 # Figures options
 nbr_levels         = 30  # For Psi (magnetic flux function)
@@ -64,7 +53,6 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
     dataSource = vizAPI.GetDataSource(dataTreeView)
     uri = dataSource.uri
-    status = 0
     print('uri    =', uri)
     print('Reading data...')
     # Open URI
@@ -110,43 +98,46 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
         vizAPI.LoadIDSData(dataTreeView, 'equilibrium', occurrence)
 
     equilibrium = dataSource.get('equilibrium', occurrence)
+    if equilibrium is None:
+        # `QVizIMASDataSource.get` logs the Access Layer error and answers None
+        # when a read fails, so asking that answer for a node would answer
+        # AttributeError rather than name the IDS that could not be read.
+        raise ValueError("Unable to start the Equilibrium plugin: occurrence %d "
+                         "of the 'equilibrium' IDS could not be read from %s."
+                         % (occurrence, uri))
     ht = equilibrium.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
-        log.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS is empty.')
-        status = -1
-
-    elif len(equilibrium.time_slice) == 0:
-        log.error('Unable to start the Equilibrium plugin; ''Equilibrium'' IDS has no time slices.')
-        status = -1
-
-    # elif len(equilibrium.time_slice[0].ggd) == 0:
-    #     log.info('Unable to start the Equilibrium plugin; GGD is empty.')
-    #     status = -1
-
-    # Get wall geometry
-    #if not vizAPI.IDSDataAlreadyFetched(dataTreeView, 'wall', occurrence):
-    #    log.info('Loading wall IDS...')
-    #    vizAPI.LoadIDSData(dataTreeView, 'wall', occurrence)
+        raise ValueError("Unable to start the Equilibrium plugin: the "
+                         "'equilibrium' IDS occurrence %d is empty (its "
+                         "ids_properties.homogeneous_time reads %s)."
+                         % (occurrence, ht))
+    if len(equilibrium.time_slice) == 0:
+        raise ValueError("Unable to start the Equilibrium plugin: the "
+                         "'equilibrium' IDS occurrence %d holds no time slice, "
+                         "and this plugin draws one chart per time slice."
+                         % occurrence)
 
     wall_ids = dataSource.get('wall', occurrence)
+    if wall_ids is None:
+        raise ValueError("Unable to start the Equilibrium plugin: occurrence %d "
+                         "of the 'wall' IDS could not be read from %s. The "
+                         "limiter outline is drawn from it."
+                         % (occurrence, uri))
     ht = wall_ids.ids_properties.homogeneous_time
     if ht != 0 and ht != 1 and ht != 2:
-        log.error('Unable to start the Equilibrium plugin; ''Wall'' IDS is empty.')
-        status = -1
-
-    if status == -1:
-        return uri, \
-                   None, None, \
-                   None, None, None, None, None, None, None, \
-                   None, None, None, None, None, \
-                   None, None, \
-                   None, None, None, None, None, None, -1
+        raise ValueError("Unable to start the Equilibrium plugin: the 'wall' IDS "
+                         "occurrence %d is empty (its "
+                         "ids_properties.homogeneous_time reads %s)."
+                         % (occurrence, ht))
 
     # Array with all times requested
     lenArrTimes = len(equilibrium.time)
     if lenArrTimes != len(equilibrium.time_slice):
-        log.error('ERROR: length time and time_slice differ')
-        return
+        raise ValueError("Unable to start the Equilibrium plugin: the "
+                         "'equilibrium' IDS occurrence %d reads %d values along "
+                         "time and %d time slices; the charts need one slice per "
+                         "time value." % (occurrence, lenArrTimes,
+                                          len(equilibrium.time_slice)))
 
     log.info('Equilibrium plugin: preparing data...')
 
@@ -252,6 +243,19 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
                 break
 
+    if NbrPoints == 0:
+        # Measured on the reference case, the grid is not where the first branch
+        # looks: `time_slice[0].ggd[0].grid.space` holds 0 elements and the
+        # 7229-point grid lives in `grids_ggd[0].grid[0]`. When neither carries
+        # one, every 2D array below would be built over 0 points and the first
+        # contour call would fail far from the reason.
+        raise ValueError(
+            "Unable to start the Equilibrium plugin: occurrence %d of the "
+            "'equilibrium' IDS carries no 2D grid -- neither "
+            "time_slice[i].ggd[j].grid.space, nor grids_ggd[i].grid[j].space, "
+            "nor a profiles_2d slice of grid_type.index 1. The magnetic-surfaces "
+            "chart needs one." % occurrence)
+
     unicode_type = np.dtype((np.unicode_, 12))
 
     min_Psi_val = np.zeros(lenArrTimes)
@@ -265,34 +269,35 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
     magAxis = np.zeros((lenArrTimes, 2))
     xPoint  = np.zeros((lenArrTimes, 2))
 
-    wall = np.zeros((2, \
-           len(wall_ids.description_2d[0].limiter.unit[0].outline.r)))
+    # The limiter outline is read once, and its length is what sizes the wall
+    # array. Measured on the reference case, `description_2d` holds 2 entries and
+    # `limiter.unit[0].outline` 164 points. Reading it here rather than inside a
+    # `try` that only logs the error means a case without a limiter is refused by
+    # name instead of answering IndexError two statements later.
+    outline = wall_ids.description_2d[0].limiter.unit[0].outline
+    wallR, wallZ = outline.r, outline.z
+    if len(wallR) == 0 or len(wallR) != len(wallZ):
+        raise ValueError(
+            "Unable to start the Equilibrium plugin: occurrence %d of the "
+            "'wall' IDS gives a limiter outline of %d r values and %d z values; "
+            "the vessel is drawn from matched pairs."
+            % (occurrence, len(wallR), len(wallZ)))
+    wall = np.zeros((2, len(wallR)))
+    wall[0, :] = wallR
+    wall[1, :] = wallZ
 
     b0 = np.zeros(lenArrTimes)
 
     # profiles 1d
     lenProf1d = len(equi_tSlice.profiles_1d.rho_tor)
     print('length of rho_tor = ', lenProf1d)
+    if lenProf1d == 0:
+        raise ValueError(
+            "Unable to start the Equilibrium plugin: time_slice[0] of "
+            "'equilibrium' occurrence %d has an empty profiles_1d: the seven "
+            "radial charts are drawn along it." % occurrence)
     prof_1d       = np.zeros((lenArrTimes, 9, lenProf1d))
     rho_tor_label = np.array([None]*lenArrTimes, dtype=unicode_type)
-
-    # Wall
-    status = -1
-        
-    try:
-        wall[0, :] = wall_ids.description_2d[0].limiter.unit[0].outline.r
-        wall[1, :] = wall_ids.description_2d[0].limiter.unit[0].outline.z
-        status = 0
-    except Exception as e:
-        log.error(e)
-        
-    if status == -1:
-        return uri, \
-                   None, None, \
-                   None, None, None, None, None, None, None, \
-                   None, None, None, None, None, \
-                   None, None, \
-                   None, None, None, None, None, None, -1
 
     # b0 vacuum toroidal field and r0
     b0 = equilibrium.vacuum_toroidal_field.b0
@@ -307,8 +312,6 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
 
         equi_tSlice = equilibrium.time_slice[timeit]
 
-        status = -1
-        
         try:
             Ip[timeit]       = 1e-3*equi_tSlice.global_quantities.ip
             q95[timeit]      = equi_tSlice.global_quantities.q_95
@@ -317,30 +320,41 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
             w_mhd[timeit]    = 1e-3*equi_tSlice.global_quantities.w_mhd
             mag_ax_R[timeit] = equi_tSlice.global_quantities.magnetic_axis.r
             mag_ax_Z[timeit] = equi_tSlice.global_quantities.magnetic_axis.z
-            status = 0
-        except Exception as e:
-            log.error(e)
-            
-        if status == -1:
-            return uri, \
-                       None, None, \
-                       None, None, None, None, None, None, None, \
-                       None, None, None, None, None, \
-                       None, None, \
-                       None, None, None, None, None, None, -1
+        except Exception as error:
+            raise ValueError("Unable to start the Equilibrium plugin: time_slice"
+                             "[%d] of 'equilibrium' occurrence %d does not answer "
+                             "the global quantities the six time traces are drawn "
+                             "from (%s: %s)."
+                             % (timeit, occurrence, type(error).__name__, error))
 
-        num_ggd_slices = len(equilibrium.time_slice[0].ggd)
-        if num_ggd_slices > 0:
-            print("Getting psi values from GGD")
-            equi_space  = equilibrium.time_slice[timeit].ggd[0]
-            # Psi and plasma boundary
-            Psi_val[timeit, :] = equi_space.psi[0].values
+        # Asked of the slice being read, not of slice 0: this loop used to test
+        # `time_slice[0].ggd` and then read `time_slice[timeit].ggd[0]`, so a case
+        # whose first slice carries a GGD and a later one does not answered
+        # IndexError at that later slice. Measured here, all 49 slices of the
+        # reference occurrence hold one GGD with 7229 psi values.
+        if len(equi_tSlice.ggd) == 0:
+            continue
+        equi_space = equi_tSlice.ggd[0]
+        if len(equi_space.psi) == 0:
+            raise ValueError(
+                "Unable to start the Equilibrium plugin: ggd[0] of time_slice[%d] "
+                "of 'equilibrium' occurrence %d holds no psi, and the "
+                "magnetic-surfaces chart contours it." % (timeit, occurrence))
+        psiValues = equi_space.psi[0].values
+        if len(psiValues) != NbrPoints:
+            raise ValueError(
+                "Unable to start the Equilibrium plugin: ggd[0].psi[0] of "
+                "time_slice[%d] of 'equilibrium' occurrence %d reads %d values on "
+                "a grid of %d points." % (timeit, occurrence, len(psiValues),
+                                          NbrPoints))
+        # Psi and plasma boundary
+        Psi_val[timeit, :] = psiValues
 
-            min_Psi_val[timeit] = np.min(Psi_val[timeit, :])
-            max_Psi_val[timeit] = np.max(Psi_val[timeit, :])
+        min_Psi_val[timeit] = np.min(Psi_val[timeit, :])
+        max_Psi_val[timeit] = np.max(Psi_val[timeit, :])
 
-            levels1_requested[timeit, :] = np.linspace(min_Psi_val[timeit], \
-                                             max_Psi_val[timeit], nbr_levels)
+        levels1_requested[timeit, :] = np.linspace(min_Psi_val[timeit], \
+                                         max_Psi_val[timeit], nbr_levels)
         # else:
         #    print("Getting psi values from profiles_2d")
 
@@ -408,7 +422,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
            Ip, q95, q_axis, li_3, w_mhd, mag_ax_R, mag_ax_Z, \
            Psi_val, RNodes, ZNodes, triKnots, levels1_requested, \
            rho_tor_label, prof_1d, \
-           boundPlasma, magAxis, wall, b0, r0, xPoint, status
+           boundPlasma, magAxis, wall, b0, r0, xPoint
 
 class PlotFrame(QMainWindow):
     """ The main frame of the application
@@ -419,6 +433,13 @@ class PlotFrame(QMainWindow):
     def __init__(self, vizTreeNode, vizAPI, parent=None, title=title):
 
         super(PlotFrame, self).__init__(parent)
+        # The title names the registry key the window was handed, and the
+        # Show/Hide and Delete menus list that key: measured before, the title
+        # argument was accepted by this signature and used by no statement, so
+        # the window sat on screen with an empty title bar while its entry in
+        # those menus read 'EquiPlotView:1' -- nothing told the user which
+        # window a line was addressing, and two of them look identical.
+        self.setWindowTitle(title)
 
         self.uri,          self.timeEquiIDS,       self.lenArrTimes,\
         self.Ip,            self.q95,               self.q_axis, \
@@ -427,11 +448,13 @@ class PlotFrame(QMainWindow):
         self.ZNodes,        self.triKnots,          self.levels1_requested, \
         self.rho_tor_label, self.prof_1d,           self.boundPlasma, \
         self.magAxis,       self.wall,              self.b0, \
-        self.r0,            self.xPoint, status = DataGen(vizTreeNode, vizAPI,
+        self.r0,            self.xPoint = DataGen(vizTreeNode, vizAPI,
                                                   dataTreeView=parent)
 
-        if status == -1:
-            return
+        # Nothing to guard here: what DataGen cannot answer, it refuses with a
+        # ValueError naming what the case lacks, which the plugin menu logs. The
+        # sentinel it used to return left this method before the main widget was
+        # built, and `execute` then showed the empty window anyway.
 
         # Set main widget
         self.mainWidget = QWidget(self)
@@ -676,8 +699,8 @@ class PlotFrame(QMainWindow):
                                         self.wall[1, :], '-k', linewidth=2)
         self.axes[6].set(aspect=1)
         self.axes[6].set_title('Psi with B0='+ \
-                      '{:.3f}'.format(self.b0[sliderValue])+ \
-                      ' [T] at R0=' + '{:.3f}'.format(self.r0) + ' [m]', \
+                      '{:.3f}'.format(float(self.b0[sliderValue]))+ \
+                      ' [T] at R0=' + '{:.3f}'.format(float(self.r0)) + ' [m]', \
                       fontsize=fontsize_requested)
         self.axes[6].set_xlabel('R [m]', fontsize=fontsize_requested)
         self.axes[6].set_ylabel('Z [m]', fontsize=fontsize_requested)
@@ -766,8 +789,8 @@ class PlotFrame(QMainWindow):
                           self.wall[1, :], '-k', linewidth=2)
         self.axes[6].set(aspect=1)
         self.axes[6].set_title('Psi with B0='+ \
-                      '{:.3f}'.format(self.b0[sliderValue])+ \
-                      ' [T] at R0=' + '{:.3f}'.format(self.r0) + ' [m]', \
+                      '{:.3f}'.format(float(self.b0[sliderValue]))+ \
+                      ' [T] at R0=' + '{:.3f}'.format(float(self.r0)) + ' [m]', \
                       fontsize=fontsize_requested)
         self.axes[6].set_xlabel('R [m]', fontsize=fontsize_requested)
         self.axes[6].set_ylabel('Z [m]', fontsize=fontsize_requested)
@@ -778,9 +801,14 @@ class PlotFrame(QMainWindow):
 
         if (self.cb_grid.isChecked()):
             self.axes[6].minorticks_on()
-            self.axes[6].grid(b=True, which='major', linestyle='-', \
+            # The visibility is given positionally. Measured on matplotlib
+            # 3.11.2: with any other keyword present, `Axes.grid` forwards `b`
+            # into the tick parameters and answers `ValueError: keyword grid_b
+            # is not recognized`, so this branch took the whole redraw down with
+            # it -- `canvas.draw` is never reached, and the picture stays stale.
+            self.axes[6].grid(True, which='major', linestyle='-', \
                               linewidth=0.5)
-            self.axes[6].grid(b=True, which='minor', linestyle=':', \
+            self.axes[6].grid(True, which='minor', linestyle=':', \
                               linewidth=0.2)
 
         #if (not self.boolOnTextEnter):
@@ -831,8 +859,12 @@ class PlotFrame(QMainWindow):
         self.axes[13].set_xlabel(self.rho_tor_label[sliderValue], \
                                  fontsize=fontsize_requested)
 
+        # A vertical line carries two points, and matplotlib 3.11.2 refuses a
+        # bare number: measured, `set_xdata(scalar)` answers `RuntimeError: x
+        # must be a sequence`, which used to end this method before `canvas.draw`
+        # and leave the window showing the previous slice.
         for it_ax in range(6):
-            self.pltaxv[it_ax].set_xdata(self.timeEquiIDS[sliderValue])
+            self.pltaxv[it_ax].set_xdata([self.timeEquiIDS[sliderValue]] * 2)
 
         self.canvas.draw()
         self.canvas.show()
@@ -965,7 +997,7 @@ class PlotFrame(QMainWindow):
         sliderValue = int(round(self.slider_time.value()))
 
         for it_ax in range(6):
-            self.pltaxv[it_ax].set_xdata(self.timeEquiIDS[sliderValue])
+            self.pltaxv[it_ax].set_xdata([self.timeEquiIDS[sliderValue]] * 2)
 
         self.canvas.draw()
 
@@ -973,14 +1005,16 @@ class PlotFrame(QMainWindow):
         if (self.cb_grid.isChecked()):
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].minorticks_on()
-                self.axes[it_ax].grid(b=True, which='major', linestyle='-', \
+                # Positional, as in `update_figure`: the `b=` spelling is refused
+                # by matplotlib 3.11.2 as soon as another keyword follows it.
+                self.axes[it_ax].grid(True, which='major', linestyle='-', \
                                       linewidth=0.5)
-                self.axes[it_ax].grid(b=True, which='minor', linestyle=':', \
+                self.axes[it_ax].grid(True, which='minor', linestyle=':', \
                                       linewidth=0.2)
         else:
             for it_ax in range(self.numAxes):
                 self.axes[it_ax].minorticks_off()
-                self.axes[it_ax].grid(b=False)
+                self.axes[it_ax].grid(False)
         self.canvas.draw()
 
     def on_text_enter(self, event=None):
@@ -1131,11 +1165,6 @@ class PlotFrame(QMainWindow):
         dlg.exec_()
         dlg.close()
 
-    def on_save_plot(self, event=None):
-        # Note: Not implemented for PyQt version as also in the previous
-        #       wxPython version) this routine was not used
-        file_choices = "PNG (*.png)|*.png"
-
     def on_exit(self, event=None):
         self.redraw_timer.stop()
         self.close()
@@ -1161,14 +1190,6 @@ class PlotFrame(QMainWindow):
         dlg.exec_()
         dlg.close()
 
-    def flash_status_message(self, msg, flash_len_ms=1500):
-        self.statusBar.SetStatusText(msg)
-        self.timeroff = QtCore.QTimer(self)
-        self.timeroff.timeout.connect(self.on_flash_status_off)
-        self.timeroff.Start(flash_len_ms, oneShot=True)
-
-    def on_flash_status_off(self, event=None):
-        self.statusBar.SetStatusText('')
 
 class equilibriumcharts(VizPlugin):
 
@@ -1180,7 +1201,20 @@ class equilibriumcharts(VizPlugin):
 
     def execute(self, vizAPI, pluginEntry):
 
-        self.frame = PlotFrame(self.selectedTreeNode, vizAPI, parent=self.dataTreeView)
+        # The key is taken before the window is built and handed to the registry
+        # only once it exists: `GetNextKeyForFigure` reads the registry, so a
+        # refused run (a case missing what this plugin needs) costs nothing and
+        # the next run is handed the same number. Registered, the window is
+        # reachable from the Show/Hide and Delete menus like every other figure;
+        # measured before, `figureframes` stayed empty and the only way out of a
+        # window was its own Exit entry, while each new click on the menu built
+        # another one on top of the previous.
+        figureKey = vizAPI.GetNextKeyForFigure(
+            FigureTypes.EQUILIBRIUMPLOTTYPE)
+        self.frame = PlotFrame(self.selectedTreeNode, vizAPI,
+                               parent=self.dataTreeView,
+                               title=PlotFrame.title + ' [' + figureKey + ']')
+        vizAPI.figureframes[figureKey] = self.frame
         self.frame.show()
 
     def getEntries(self):
@@ -1194,75 +1228,26 @@ class equilibriumcharts(VizPlugin):
 
     def getDescription(self):
         """ Return plugin description.
+
+        The catalogue shows this as the menu tip of the entry, so what it lists
+        is what the window answers. The text used to advertise "Saving the plot
+        to a file from a menu": no menu held that action, and the method it
+        named was connected to nothing, so it is not offered here.
         """
 
         return "Equilibrium plugin allows to plot magnetic surfaces, separatrix \n" \
-               "and other equilibrium quantities as a function of time and space. \n" \
-               "This demo demonstrates how to embed a matplotlib (mpl) \n" \
-               "plot into a PyQt5 GUI application for IMAS visualization, \n" \
-               "including: \n" \
-               "* Using the navigation toolbar \n" \
-               "* Adding data to the plot \n" \
-               "* Dynamically modifying the plot's properties \n" \
-               "* Processing mpl events \n" \
-               "* Saving the plot to a file from a menu \n" \
-               "The main goal is to serve as a basis for developing rich \n" \
-               "PyQt5 GUI applications featuring mpl plots \n " \
-               "(using the mpl OO API). \n" \
+               "and other equilibrium quantities as a function of time and space, \n" \
+               "read from occurrence 0 of the equilibrium and wall IDSs. \n" \
+               "The window answers: \n" \
+               "* The matplotlib navigation toolbar \n" \
+               "* A time slider and a time value box, updating all the plots \n" \
+               "* A Run / Stop pair animating through the time slices \n" \
+               "* An 'Enable Grid' checkbox laying a grid on every plot \n" \
                "Jorge Morales (jorge.morales2@cea.fr) \n" \
                "Based on a work by: \n" \
                "Eli Bendersky (eliben@gmail.com) \n" \
                "Initially integrated in IMASViz using wxPython by: \n" \
                "Ludovic Fleury (ludovic.fleury@cea.fr) \n" \
-               "Converted from wxPython to PyQt5 by: \n" \
+               "Converted to Qt by: \n" \
                "Dejan Penko (dejan.penko@lecad.fs.uni-lj.si) \n" \
                "License: this code is in the public domain"
-
-
-if (__name__ == '__main__'):
-    # Test running. See also equilibrium test file.
-
-    # A module providing a number of functions and variables that can be used to
-    # manipulate different parts of the Python runtime environment.
-    import sys
-    # PyQt library imports
-    from PySide6.QtWidgets import QApplication
-    # IMASViz source imports
-    from imasviz.Viz_API import Viz_API
-    from imasviz.VizDataSource.QVizDataSourceFactory import \
-        QVizDataSourceFactory
-    from imasviz.VizUtils import QVizGlobalOperations
-
-    # Set object managing the PyQt GUI application's control flow and main
-    # settings
-    app = QApplication(sys.argv)
-
-    # Check if necessary system variables are set
-    QVizGlobalOperations.checkEnvSettings()
-
-    # Set Application Program Interface
-    api = Viz_API()
-
-    # Set data source retriever/factory
-    dataSourceFactory = QVizDataSourceFactory()
-
-    # Load IMAS database and build the data tree view frame
-    f1 = api.CreateDataTree(dataSourceFactory.create(uri=uri))
-
-    # Get equilibrium treeWidget item (QVizTreeNode)
-    eq_item = f1.dataTreeView.IDSRoots['equilibrium']
-
-    # Get selected item/subject data dict
-    dataDict = eq_item.getInfoDict()
-
-    # Show the data tree view window
-    # f1.show()
-
-    # Get equilibrium data and set plugin frame
-    app.frame = PlotFrame(dataDict, vizAPI=api, parent=f1.dataTreeView)
-
-    # Show frame
-    app.frame.show()
-
-    # Keep the application running
-    sys.exit(app.exec_())

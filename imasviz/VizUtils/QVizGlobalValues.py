@@ -28,6 +28,12 @@ class FigureTypes:
     # no frame left behind it is a Show/Hide entry that can never be filled.
     CURVEPLOTTYPE = "SlicesPlot"
     IMAGEPLOTTYPE = "SlicesImage"
+    # The window the Equilibrium plugin builds is a figure like the others: it is
+    # registered in `figureframes`, so Show/Hide and Delete reach it. It is not
+    # drawn through the axes model, so it keeps its own prefix and registers no
+    # node in `figToNodes` -- the "add this quantity to that figure" entries walk
+    # that record and could not fill a matplotlib window.
+    EQUILIBRIUMPLOTTYPE = "EquiPlotView:"
 
     # Every kind of figure the commands can draw, in menu order: the label the
     # user reads (it is the prefix the window title shows), the icon named in
@@ -39,7 +45,8 @@ class FigureTypes:
                   ('StackedPlotView', 'SPV', STACKEDPLOTTYPE),
                   ('Profiles', 'Profiles', PROFILESPLOTTYPE),
                   ('SlicesPlot', 'Figure', CURVEPLOTTYPE),
-                  ('SlicesImage', 'Image', IMAGEPLOTTYPE))
+                  ('SlicesImage', 'Image', IMAGEPLOTTYPE),
+                  ('Equilibrium', 'Figure', EQUILIBRIUMPLOTTYPE))
 
 class UserInputs:
     inputs = None
