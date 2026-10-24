@@ -37,7 +37,7 @@ travels anywhere, and the refusal of an index past the end names how many slices
 there are.
 """
 
-from imas.ids_data_type import IDSDataType
+from imasviz.VizDataAccess.QVizAccessLayerHLI import IDSDataType
 
 
 class QVizTimeSliceSelection:

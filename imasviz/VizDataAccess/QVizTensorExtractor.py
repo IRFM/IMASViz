@@ -10,8 +10,7 @@ import re
 
 import numpy as np
 
-from imas.ids_struct_array import IDSStructArray
-
+from imasviz.VizDataAccess.QVizAccessLayerHLI import IDSStructArray
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 
 # coordinateSegments comes from QVizIDSViewParser, whose module imports reach the

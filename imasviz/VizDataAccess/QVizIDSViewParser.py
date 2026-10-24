@@ -20,10 +20,10 @@ import logging
 import re
 import xml.etree.ElementTree as ET
 
-from imas.ids_data_type import IDSDataType
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication
 
+from imasviz.VizDataAccess.QVizAccessLayerHLI import IDSDataType
 from imasviz.VizDataAccess.QVizAxesSpec import isUnboundedCoordinate
 from imasviz.VizDataAccess.VizTimeSlices import FIRST_SLICE
 from imasviz.VizGUI.VizTreeView.QVizResultEvent import QVizResultEvent
