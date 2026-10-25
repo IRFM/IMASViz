@@ -332,7 +332,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 791 passed, 1 xfailed, ~131 s, offscreen
+python3 -m pytest tests/ -q     # 802 passed, 1 xfailed, ~138 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -507,6 +507,21 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   → `IDSFactory.ids_names()`), not the contents of an `IDSDef_<version>.xml` file: since
   T28 no such file is read anywhere, and the `55` this section used to report was that
   file's count at `3.23.3`. Occurrences are read from the entry, one occurrence loaded.
+  Since T30 a source built from a URI **without** an explicit pin no longer settles on the
+  newest dictionary the package holds: `QVizIMASDataSource.pinToCaseDictionary` runs before
+  the entry is taken from `QVizDBEntryRegistry` (the registry key *is* `(uri, mode,
+  dd_version)`), reads the major the URI spells and asks the case the exact minor its first
+  filled IDS names at `ids_properties/version_put/data_dictionary` — **slashes**, points
+  answer `ValueError: Invalid node name` — so that case opens at `3.35.0` whatever the
+  harness dictionary is. Measured cost: **0,10 s** for the occurrence inventory of the whole
+  case, **0,41 s** for the version node of one IDS. The harness' explicit pin keeps the
+  numbers above; an entry left unpinned on this node settles on **4.1.1** (the newest of the
+  **35** dictionaries IMAS-Python bundles), which declares **82** roots for that case and
+  then refuses **every** `get` with `RuntimeError: On-disk data is stored in DD 3.35.0 which
+  has a different major version than the requested DD version (4.1.1)` — while
+  `list_all_occurrences` answers through the major, which is why the view was built and only
+  the loads died. Pinning the major alone is not enough either: the walk of `equilibrium`
+  occurrence 0 holds **3519** leaves at `3.35.0` against **3594** at `3.42.2`.
   `QVizPreferences().build()` has to have run first, or
   `setStyleForIDS` calls `setForeground(0, None)` and answers `TypeError`; `QtVIZ_GUI`
   and `Viz_API` both call it at start-up, a test has to.

@@ -83,11 +83,18 @@ No dictionary file is needed either: the shot view asks the case it has opened
 which data dictionary version that case is stored with (DBEntry.dd_version) and
 takes the list of IDSs and their documentation from the factory of that version
 (imas.IDSFactory), which the IMAS-Python distribution carries inside its own
-package. **IMAS_VERSION**, if you export it, is the version of the data
+package. A case is opened **at its own version**: an entry left unpinned settles
+on the newest dictionary the package holds (4.1.1 on the stack above), and the
+Access Layer then reads every IDS of a case written under another major version
+while still listing its contents -- so IMASViz reads the version the URI spells
+(version=3, or the <db>/<data version>/<shot>/<run> of a path case), asks the
+case the exact version its first filled IDS names, and opens the entry there.
+**IMAS_VERSION**, if you export it, is the version of the data
 dictionary — IMAS-Python reads that variable itself — and never an Access Layer
 number: on the stack above, AL_VERSION is 5.7.1 while the newest dictionary the
 package holds is 4.1.1, and a version the package does not carry is refused by
-name when the case is opened.
+name when the case is opened. It is the fallback for a case that spells no
+version at all.
 
 The repository Makefile builds the documentation only:
 
