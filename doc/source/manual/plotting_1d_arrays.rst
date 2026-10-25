@@ -175,6 +175,31 @@ X and Y axis range, inverse, mouse enable/disable options and more.
 
      :guilabel:`Axis Options` feature in the right-click menu.
 
+Curve colours
+^^^^^^^^^^^^^
+
+Every trace a :guilabel:`Plot Figure` draws is given a colour of its own, taken
+in the order the traces were laid down: the first quantity plotted takes the
+first colour, the quantity added to that figure next takes the second, and so
+on. This is what makes the comparison the window exists for possible, whichever
+entry drew the trace -- :ref:`a plot added to an existing figure
+<add_plot_to_existing_figure>`, or :ref:`a selection plotted to one figure
+<plotting_a_selection_to_figure>`, where every selected quantity shares the
+same figure. A figure holding more traces than the palette holds colours
+(**8**) starts over from its first colour.
+
+   .. note::
+      When one quantity is drawn as several traces, each takes its colour and
+      its own legend label, spelled ``path[row index]`` -- the path alone would
+      name two different traces identically.
+
+Two things are left out of that palette, on purpose. The confidence bands of
+section :ref:`Displaying error bars and/or confidence bands
+<plotting_error_bars_and_confidence_bands>` keep their own red hatched fill and
+grey borders: a band belongs to a curve, it is not one. And an :guilabel:`Image`
+figure draws pictures, not traces -- one colour scale already answers for all of
+them, and there is no trace there to tell apart.
+
 Plot Configuration and Customization
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -513,6 +538,8 @@ As an example, the procedure is described below for the **magnetics.flux_loop[0]
           defaut value of coordinate1, step 3 should be repeated by selecting 'flux_loop(i1).flux.time'. 
 
 
+
+.. _plotting_error_bars_and_confidence_bands:
 
 Displaying error bars and/or confidence bands
 ---------------------------------------------

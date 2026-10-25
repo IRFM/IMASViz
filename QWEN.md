@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 832 passed, 1 xfailed, ~127 s, offscreen
+python3 -m pytest tests/ -q     # 841 passed, 1 xfailed, ~126 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -517,7 +517,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **108** modules and **107** of them import. The one failure is Qt-Designer
+  it walks **109** modules and **108** of them import. The one failure is Qt-Designer
   scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
@@ -531,7 +531,9 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   directory with it — that directory held no `__init__.py` and nothing else. T25 added
   **1**: `VizGUI/VizPlot/QVizCurveErrors.py`, the error bars and the confidence band of a
   figure's curves, which the curve frames and the Profiles plugin now share instead of
-  each carrying a copy. Note that
+  each carrying a copy. T33 added **1**: `VizGUI/VizPlot/QVizCurveColors.py`, the palette
+  of trace colours a curve figure hands out in the order the traces were drawn — pyqtgraph
+  hands out none of its own, see the colour bullet below. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test.
@@ -597,6 +599,24 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   A curve figure answers those three lines too: its right click goes from pyqtgraph's
   **4** entries to **7**, and `Configure Plot` is the one entry that stayed plugin-only
   (it is row T32 of `LEGACY_REPLACEMENT.md`).
+- **pyqtgraph 0.13.7 hands out no colour of its own**, so a figure cannot rely on it:
+  `colorCycle`, `colorLists` and `currentColor` appear **0** time in the package, and a
+  curve drawn without a pen keeps the instance default `opts['pen'] == (200, 200, 200)`
+  (`graphicsItems/PlotDataItem.py:348`). Measured on the reference case before T33, the
+  two traces of a figure holding `magnetics/flux_loop(0)/flux/data` and
+  `magnetics/bpol_probe(0)/field/data` both answered `tuple(200, 200, 200)` — the same
+  grey twice, for the one window whose purpose is a comparison. `QVizCurveColors` answers
+  the pen of the index-th trace now, cycling through **8** colours. Two measured facts
+  decide that palette: the background those lines are painted on is **black** — the
+  configuration default is `background 'k'`, and the view box answers `(0, 0, 0, 255)`,
+  read through `viewBox.background.brush()` because `ViewBox.background` is a
+  `QGraphicsRectItem`, not a method — and the confidence band of `QVizCurveErrors` is
+  filled with `(255, 0, 0)` in `DiagCrossPattern`, which is why the palette holds no pure
+  red. It is deliberately **not** `getRGBColorList()`: three of its entries are
+  near-whites (`#cce5ff`, `#d3d3d3`, `#C0C0C0`) sized for a white page, and its order
+  comes out of `GlobalColors.__dict__`. What still chooses a colour by hand is the Profiles
+  plugin's `QVizTablePlotView.setPen():289`, imposing `getRGBColorList()[0]` on all **41**
+  of its plots — row T34 of `LEGACY_REPLACEMENT.md`.
 - The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
   -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
   two `conf.py` warnings, and it is the only route that works — `make doc` itself still
