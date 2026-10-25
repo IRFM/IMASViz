@@ -4,14 +4,14 @@
 # The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
 
 import pyqtgraph as pg
-import numpy as np
 from functools import partial
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
-import logging
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QMessageBox, QInputDialog, QLineEdit, QMenu
+from PySide6.QtWidgets import QMessageBox, QLineEdit, QMenu
 from PySide6.QtGui import QAction
 from imasviz.VizGUI.VizPlot.QVizPlotConfigUI import QVizPlotConfigUI
+from imasviz.VizGUI.VizPlot.QVizCurveErrors import (CONFIDENCE_BANDS, ERROR_BARS,
+                                                    ERROR_BARS_SLICED,
+                                                    QVizCurveErrors)
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
     import QVizPlotOneNode
@@ -35,9 +35,7 @@ class CustomizedViewBox(pg.ViewBox):
                                       read from.
             parent        (obj)     : Parent.
         """
-        self.confidenceBandLower = None
         self.plotConfDialog = None
-        self.confidenceBandUpper = None
         self.actionPlotVsTimeToNewFigure = None
         self.actionPlotToNewFigure = None
         self.actionShowHideConfidenceBands = None
@@ -63,10 +61,12 @@ class CustomizedViewBox(pg.ViewBox):
         self.vizTreeNodesList = []
         self.vizNodeToPlotDataItems = {}  # map from data key (key = dataTreeView.dataSource.dataKey(treeNode)) to PlotDataItem
 
-        self.errorBars = 0
-        self.errorBarsWithSlicing = 0
-        self.errorBarsStep = 0
-        self.confidenceBands = 0
+        # The error bars and the band are drawn by the same object the curve
+        # figures use: what this window has of its own is the menu that offers
+        # them, and the pairing of a curve with the node it came from. `self`,
+        # not `self.errorQuantities` -- see QVizCurvePlot for why a bound method
+        # here would be a reference cycle and a segfault waiting in the collector.
+        self.errors = QVizCurveErrors(self, self)
 
         self.plotAxis = None
 
@@ -138,18 +138,21 @@ class CustomizedViewBox(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionConfigurePlot)
 
-        self.actionShowHideErrorBars = QAction("Show/Hide error bars", self.menu)
-        self.actionShowHideErrorBars.triggered.connect(self.showHideViewErrorBars)
+        # The three lines the manual names, spelled once in `QVizCurveErrors`:
+        # what a curve figure's right click answers and what this window answers
+        # are the same words because they come from the same constants.
+        self.actionShowHideErrorBars = QAction(ERROR_BARS, self.menu)
+        self.actionShowHideErrorBars.triggered.connect(self.errors.toggleErrorBars)
         # - Add to main menu
         self.menu.addAction(self.actionShowHideErrorBars)
 
-        self.actionShowHideErrorBarsWithSlicing = QAction("Show error bars (with slicing)", self.menu)
-        self.actionShowHideErrorBarsWithSlicing.triggered.connect(self.showHideViewErrorBarsWithSlicing)
+        self.actionShowHideErrorBarsWithSlicing = QAction(ERROR_BARS_SLICED, self.menu)
+        self.actionShowHideErrorBarsWithSlicing.triggered.connect(self.errors.toggleSlicedErrorBars)
         # - Add to main menu
         self.menu.addAction(self.actionShowHideErrorBarsWithSlicing)
 
-        self.actionShowHideConfidenceBands = QAction("Show/Hide confidence bands", self.menu)
-        self.actionShowHideConfidenceBands.triggered.connect(self.showHideViewConfidenceBands)
+        self.actionShowHideConfidenceBands = QAction(CONFIDENCE_BANDS, self.menu)
+        self.actionShowHideConfidenceBands.triggered.connect(self.errors.toggleConfidenceBands)
         # - Add to main menu
         self.menu.addAction(self.actionShowHideConfidenceBands)
 
@@ -224,195 +227,19 @@ class CustomizedViewBox(pg.ViewBox):
         self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
         self.plotConfDialog.show()
 
-    def showHideViewConfidenceBands(self):
-        """Hide/show error bars for all plots (if error data are available).
+    def errorQuantities(self):
+        """Which drawn curve came from which node, as [(node, PlotDataItem)].
+
+        What `QVizCurveErrors` cannot know by itself: this window holds several
+        plots per node, and the map is keyed by the node's data key, not by the
+        items.
         """
-        deleted = self.removeConfidenceBands()
-        if not deleted:
-            self.addConfidenceBands()
-            self.confidenceBands = 1
-
-    def removeConfidenceBands(self):
-        """Remove error bars for all plots (if error data are available).
-        """
-        deleted = False
-        itemsToRemove = []
-        for dataItem in self.addedItems:
-            if isinstance(dataItem, pg.FillBetweenItem):
-                deleted = True
-                itemsToRemove.append(dataItem)
-        for dataItem in itemsToRemove:
-            self.removeItem(dataItem.curves[0])
-            self.removeItem(dataItem.curves[1])
-            self.removeItem(dataItem)
-        if deleted:
-            self.confidenceBands = 0
-        return deleted
-
-    def updateConfidenceBands(self):
-        if self.confidenceBands == 0:
-            return
-        self.removeConfidenceBands()
-        self.showHideViewConfidenceBands()
-
-    def updateErrorBars(self):
-        if self.errorBars == 0 and self.errorBarsWithSlicing == 0:
-            return
-        if self.errorBars == 1:
-            self.removeErrorBars()
-            self.showHideViewErrorBars()
-        elif self.errorBarsWithSlicing == 1:
-            self.removeErrorBars()
-            self.showHideViewErrorBarsWithSlicing(useLatestSettings=1)
-
-    def removeErrorBars(self):
-        """Remove error bars for all plots (if error data are available).
-        """
-        deleted = False
-        itemsToRemove = []
-        for dataItem in self.addedItems:
-            if isinstance(dataItem, pg.ErrorBarItem):
-                deleted = True
-                itemsToRemove.append(dataItem)
-        for dataItem in itemsToRemove:
-            self.removeItem(dataItem)
-        if deleted:
-            self.errorBars = 0
-            self.errorBarsWithSlicing = 0
-        return deleted
-
-    def showHideViewErrorBars(self):
-        """Hide/show error bars for all plots (if error data are available).
-        """
-        deleted = self.removeErrorBars()
-        if not deleted:
-            self.addErrorBars(1, beam=0)
-            self.errorBars = 1
-
-    def showHideViewErrorBarsWithSlicing(self, useLatestSettings=0):
-        """Show error bars for all plots with slicing (if error data are available).
-        """
-        self.removeErrorBars()
-        step = self.errorBarsStep
-
-        if step == 0 or useLatestSettings == 0:
-            user_input = QInputDialog()
-            step, ok = user_input.getInt(None, "Enter a step value for slicing", "Step:", value=10, minValue=1)
-            if not ok:
-                logging.error("Bad input from user.")
-                return
-
-        self.addErrorBars(step, beam=0)
-        self.errorBarsWithSlicing = 1
-
-    def addConfidenceBands(self):
+        pairs = []
         for node in self.vizTreeNodesList:
-            dataTreeView = node.getDataTreeView()
-            plotDataItems = self.vizNodeToPlotDataItems.get(dataTreeView.dataSource.dataKey(node))
-            if plotDataItems is None:
-                continue
-            for dataItem in plotDataItems:
-                self.addConfidenceBandsForDataItem(dataItem, node)
-
-    def addConfidenceBandsForDataItem(self, dataItem, vizTreeNode):
-        (x, y) = dataItem.getData()
-        shape_x = len(x)
-        shape_y = len(y)
-        data_error_lower = vizTreeNode.get_data_error_lower(dataItem)
-        data_error_upper = vizTreeNode.get_data_error_upper(dataItem)
-        add_confidence_bands = False
-        upper = None
-        lower = None
-
-        if data_error_lower is not None and data_error_upper is not None:
-            lower = data_error_lower
-            upper = data_error_upper
-            add_confidence_bands = True
-        elif data_error_lower is None and data_error_upper is not None:
-            lower = data_error_upper
-            upper = data_error_upper
-            add_confidence_bands = True
-        else:
-            add_confidence_bands = False
-
-        if add_confidence_bands:
-            self.confidenceBandUpper = None
-            self.confidenceBandLower = None
-            self.confidenceBandUpper = pg.PlotDataItem(x, y + upper)
-            self.confidenceBandLower = pg.PlotDataItem(x, y - lower)
-            self.addItem(self.confidenceBandUpper)
-            self.addItem(self.confidenceBandLower)
-            fbitem = pg.FillBetweenItem(self.confidenceBandLower, self.confidenceBandUpper)
-            brush = pg.mkBrush('r')
-            brush.setStyle(Qt.DiagCrossPattern)
-            brush.setColor(Qt.red)
-            # self.fbitem.setBrush(brush)
-            self.addItem(fbitem)
-
-        else:
-            logging.getLogger(vizTreeNode.dataTreeView.dataSource.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
-
-    def addErrorBars(self, step, beam=0.5):
-
-        self.errorBarsStep = step
-
-        for node in self.vizTreeNodesList:
-            dataTreeView = node.getDataTreeView()
-            plotDataItems = self.vizNodeToPlotDataItems.get(dataTreeView.dataSource.dataKey(node))
-            if plotDataItems is None:
-                continue
-            for dataItem in plotDataItems:
-                if beam == 0:
-                    (x, y) = dataItem.getData()
-                    x_range = np.amax(x) - np.amin(x)
-                    minBeam = float(x_range / 1000)
-                    maxBeam = float(x_range / 20)
-                    beam = float(x_range / len(x))
-                    beam = np.maximum(minBeam, beam)
-                    beam = np.minimum(maxBeam, beam)
-
-                self.addErrorBarsForDataItem(dataItem, node, step, beam)
-
-    def addErrorBarsForDataItem(self, dataItem, vizTreeNode, step=1, beam=0.5):
-
-        (x, y) = dataItem.getData()
-        shape_x = len(x)
-        shape_y = len(y)
-
-        if step != 1:
-            x = x[0:shape_x - 1:step]
-            y = y[0:shape_y - 1:step]
-
-        data_error_lower = vizTreeNode.get_data_error_lower(dataItem)
-        data_error_upper = vizTreeNode.get_data_error_upper(dataItem)
-
-        if step != 1:
-            if data_error_lower is not None:
-                data_error_lower = data_error_lower[0:shape_y - 1:step]
-            if data_error_upper is not None:
-                data_error_upper = data_error_upper[0:shape_y - 1:step]
-
-        add_error_bars = False
-        top = None
-        bottom = None
-
-        if data_error_lower is not None and data_error_upper is not None:
-            bottom = data_error_lower
-            top = data_error_upper
-            add_error_bars = True
-        elif data_error_lower is None and data_error_upper is not None:
-            bottom = data_error_upper
-            top = data_error_upper
-            add_error_bars = True
-        else:
-            add_error_bars = False
-
-        if add_error_bars:
-            error = pg.ErrorBarItem(beam=beam)
-            error.setData(x=x, y=y, top=top, bottom=bottom)
-            self.addItem(error)
-        else:
-            logging.getLogger(vizTreeNode.dataTreeView.dataSource.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
+            key = node.getDataTreeView().dataSource.dataKey(node)
+            for dataItem in self.vizNodeToPlotDataItems.get(key) or []:
+                pairs.append((node, dataItem))
+        return pairs
 
     def plotVsCoordinate1ToNewFigure(self):
         """This quantity, in a figure of its own, read along its own coordinate."""

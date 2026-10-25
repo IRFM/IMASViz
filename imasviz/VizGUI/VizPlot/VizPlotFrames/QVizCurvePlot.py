@@ -32,6 +32,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+from imasviz.VizGUI.VizPlot.QVizCurveErrors import QVizCurveErrors
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
 
 
@@ -64,6 +65,19 @@ class QVizCurvePlot(QWidget):
         self.pgPlotWidget = pg.PlotWidget(self)
         self.pgPlotWidget.setObjectName('curvePlot')
         self.pgPlotWidget.addLegend()
+
+        # The error bars and the confidence band of the curves this figure drew.
+        # pyqtgraph builds the view box's menu at construction -- measured: `View
+        # All`, `X axis`, `Y axis`, `Mouse Mode`, and the scene adds `Export...`
+        # -- and the three lines the manual names go after those. They are added
+        # here rather than in a subclass because the menu is an instance's own:
+        # unlike a class attribute, nothing here reaches another figure.
+        # `self` is handed over, not `self.errorQuantities`: a bound method would
+        # be a reference back to this frame, and the cycle it makes is what makes
+        # the frame die inside the cyclic collector rather than at its refcount
+        # -- which on this Qt stack is a segfault, not a leak. See QVizCurveErrors.
+        self.errors = QVizCurveErrors(self.pgPlotWidget.getViewBox(), self)
+        self.errors.addMenuEntries(self.pgPlotWidget.getViewBox().menu)
 
         self.sliceControls = QVizSliceControls(self)
         # The read calls this attribute by name, so the controls and the numbers
@@ -109,6 +123,11 @@ class QVizCurvePlot(QWidget):
         self.setAxisLabels(treeNode, axesSpec, timeAxis, alongTime)
         self.addSlices(access.slicesFor(treeNode, plotWidget=self,
                                         as_function_of_time=as_function_of_time))
+        # A quantity added to a figure already showing bars or a band joins them:
+        # the entries answer for every curve on the figure, not for the ones that
+        # happened to be there when they were clicked. `refresh` draws only if
+        # something is drawn, so on the ordinary case this changes nothing.
+        self.errors.refresh()
         return y.shape[0]
 
     def refresh(self):
@@ -126,6 +145,9 @@ class QVizCurvePlot(QWidget):
                 curve.setData(x[0], y[row])
             else:
                 curve.setData([], [])
+        # Bars and bands are read off the samples, so they move with them: a bar
+        # left over the slice the curve no longer draws is not stale, it is wrong.
+        self.errors.refresh()
         return self.sliceControls.indices()
 
     def curveCount(self):
@@ -136,6 +158,15 @@ class QVizCurvePlot(QWidget):
 
     def curves(self):
         return [curve for _, _, curve, _ in self._curves]
+
+    def errorQuantities(self):
+        """Which drawn curve came from which node, as [(node, curve)].
+
+        The error bars and the confidence band are drawn per curve and read from
+        that curve's node, and on a figure holding several quantities this is the
+        only place holding the pairing.
+        """
+        return [(treeNode, curve) for treeNode, _, curve, _ in self._curves]
 
     def sliceKeys(self):
         return list(self._slices)
