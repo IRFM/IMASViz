@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 817 passed, 1 xfailed, ~126 s, offscreen
+python3 -m pytest tests/ -q     # 832 passed, 1 xfailed, ~127 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -492,6 +492,23 @@ artifacts of this codebase, and several are load-bearing:
   `postEvent`; anything that creates, shows, renames or closes a window belongs on the GUI
   thread. The symptom to recognise is a probe or test that stops printing with no exception
   — confirm it with `faulthandler.dump_traceback_later(n, exit=True)`, do not guess.
+- A plain-Python helper stored on a Qt widget may not keep a **bound method** of that
+  widget. `QVizCurvePlot` owns `QVizCurveErrors`, and that object has to ask the frame
+  which curve came from which node; handing it `self.errorQuantities` — a bound method,
+  so a strong reference back — makes a cycle, so the frame is freed by the **cyclic
+  collector** instead of at its refcount, and on this stack a Qt widget freed there is
+  freed while Qt still owes it a paint event: `Fatal Python error: Segmentation fault`
+  under `Garbage-collecting`, in whichever file happens to call `gc.collect()`
+  (`tests/test_44_plot_frame_ownership.py` died 2 runs in 2, and passes 3 in 3 without
+  it). The shape to write instead is what T25 wrote: pass the owner and hold it through
+  `weakref.ref`, answer `[]` once it is gone. `test_58`'s last test pins it —
+  `weakref.ref(frame)()` answers `None` the moment the last reference goes.
+- Two pytest runs of this suite **at the same time** are not two independent runs: they
+  read the same reference case over AFS and one of them stalled past a 20 min `timeout`
+  without printing a summary, in a position that had nothing to do with the code under
+  test. One run at a time; when a run dies with no summary, check for a concurrent one
+  before believing a hang (`-o faulthandler_timeout=45` is the flag that names a real
+  hang — `--faulthandler-timeout` is not an option of this pytest).
 
 ## Verified in situ (ACH/Gateway module stack)
 
@@ -500,7 +517,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **107** modules and **106** of them import. The one failure is Qt-Designer
+  it walks **108** modules and **107** of them import. The one failure is Qt-Designer
   scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
@@ -511,7 +528,10 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   The HLI gate added **1** to the walk and T27 took **1** back:
   `viz_equi/ids_read_multiprocess.py`, the module that spoke the generated HLI; T23 took
   **1** more, `VizGUI/VizExporters/QVizMatplotlibExporter.py`, and the `VizExporters/`
-  directory with it — that directory held no `__init__.py` and nothing else. Note that
+  directory with it — that directory held no `__init__.py` and nothing else. T25 added
+  **1**: `VizGUI/VizPlot/QVizCurveErrors.py`, the error bars and the confidence band of a
+  figure's curves, which the curve frames and the Profiles plugin now share instead of
+  each carrying a copy. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test.
@@ -570,7 +590,13 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   so the frames they build are `SlicesPlot1`/`SlicesPlot2` in the MDI area, and the
   "add this quantity to that figure" gate lives on `Viz_API`
   (`figureDrawsSameCurveAxis`, next to the `figToNodes` record it reads) where the shot
-  view's menu and a plugin's view box ask the same question.
+  view's menu and a plugin's view box ask the same question. Since T25 its view box no
+  longer carries the error-bar behaviour either: `CustomizedViewBox.py` is **272** lines
+  where it was **445**, and the three lines its menu offers call the same `QVizCurveErrors`
+  a curve figure builds — what the plugin keeps is its menu and its node-to-curves map.
+  A curve figure answers those three lines too: its right click goes from pyqtgraph's
+  **4** entries to **7**, and `Configure Plot` is the one entry that stayed plugin-only
+  (it is row T32 of `LEGACY_REPLACEMENT.md`).
 - The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
   -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
   two `conf.py` warnings, and it is the only route that works — `make doc` itself still

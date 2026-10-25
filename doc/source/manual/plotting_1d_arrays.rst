@@ -85,20 +85,23 @@ are available in the right-click menu.
 .. note::
    What a right click answers depends on which window it was asked of. On a
    :guilabel:`Plot Figure` or :guilabel:`Image` drawn by the entries described
-   here, the menu is pyqtgraph's own -- :guilabel:`View All`, :guilabel:`X axis`
-   and :guilabel:`Y axis` (whose sub-window holds the range, the Auto/Manual
-   choice, :guilabel:`Invert Axis`, :guilabel:`Mouse Enabled` and the axis link)
-   and :guilabel:`Mouse Mode` -- and the scene adds one line,
-   :guilabel:`Export...`. The IMASViz entries named below,
-   :guilabel:`Configure Plot`, :guilabel:`Show/Hide error bars`,
+   here, the menu starts with pyqtgraph's own -- :guilabel:`View All`,
+   :guilabel:`X axis` and :guilabel:`Y axis` (whose sub-window holds the range,
+   the Auto/Manual choice, :guilabel:`Invert Axis`, :guilabel:`Mouse Enabled`
+   and the axis link) and :guilabel:`Mouse Mode` -- and the scene adds one line,
+   :guilabel:`Export...`. A :guilabel:`Plot Figure` adds the three IMASViz lines
+   named below -- :guilabel:`Show/Hide error bars`,
    :guilabel:`Show error bars (with slicing)` and
-   :guilabel:`Show/Hide confidence bands`, are offered by the plots of the
-   :ref:`Profiles plugin <plugins>`: the menu that carried them on a figure
-   window was deleted with that window, and the frames drawn today never gained
-   it back. Two of the sections below describe lines that menu carried:
-   :guilabel:`Auto Range` is not a line of its own on these frames -- it is the
-   Auto/Manual pair in the axis sub-window, and :guilabel:`View All` applies
-   it -- and no frame offers grid or log-scale choices from a right click.
+   :guilabel:`Show/Hide confidence bands` -- because the figure that drew the
+   curve is the one holding it; an :guilabel:`Image` figure answers pyqtgraph's
+   lines only, and no figure offers :guilabel:`Configure Plot`: that dialog
+   belongs to the plots of the :ref:`Profiles plugin <plugins>`. The menu that
+   carried these entries on the old figure window was deleted with that window,
+   and the frames drawn today answer the error-bar lines themselves. Two of the
+   sections below describe lines that menu carried: :guilabel:`Auto Range` is
+   not a line of its own on these frames -- it is the Auto/Manual pair in the
+   axis sub-window, and :guilabel:`View All` applies it -- and no frame offers
+   grid or log-scale choices from a right click.
 
 .. figure:: images/plotDisplay_popupmenu.png
   :align: center
@@ -519,18 +522,21 @@ Right clicking on a plot figure will display a popup menu as shown in
 the image below.
 
 .. note::
-   The menu below is the one a plot of the :ref:`Profiles plugin <plugins>`
-   answers with. The :guilabel:`Plot Figure` windows that the entries of this
-   chapter open answer with pyqtgraph's own menu instead, which has no error-bar
-   line: the three entries named below were carried by the plot-widget layer
-   that used to draw those windows and live, today, in the plugin's plots only.
+   The three lines below are answered by a :guilabel:`Plot Figure` -- the window
+   that drew the curve is the one asked -- and by the plots of the
+   :ref:`Profiles plugin <plugins>`, whose menu carries them too. They are not
+   offered on an :guilabel:`Image` figure or on a MultiPlot display: an error bar
+   or a band belongs to a curve, and those windows draw none. The image below is
+   a :ref:`Profiles plugin <plugins>` menu, whose two extra lines
+   :guilabel:`Auto Range` and :guilabel:`Configure Plot` a :guilabel:`Plot
+   Figure` does not offer.
 
   .. figure:: images/plot_menu_error_bars.png
      :align: center
      :width: 550px
 
-'Show/Hide error bars' displays error bars for each data point while 
-'Show/Hide error bars (with slicing)' diplays error bars every N data points
+'Show/Hide error bars' displays error bars for each data point while
+'Show error bars (with slicing)' diplays error bars every N data points
 where N is a value asked to the user.
 
 'Show/Hide confidence bands' displays confidence bands as shown in 
