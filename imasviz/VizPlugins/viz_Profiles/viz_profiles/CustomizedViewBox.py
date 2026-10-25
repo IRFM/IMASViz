@@ -17,8 +17,6 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
     import QVizPlotOneNode
 from imasviz.VizUtils import FigureTypes
 
-from pyqtgraph.exporters.Matplotlib import Exporter
-
 
 class CustomizedViewBox(pg.ViewBox):
     """Subclass of ViewBox.
@@ -61,10 +59,6 @@ class CustomizedViewBox(pg.ViewBox):
 
         # Menu update property
         self.menuUpdate = True
-
-        # Modify list of available exporters (in order to remove the
-        # problematic Matplotlib exporter and replace it with ours)
-        self.updateExportersList()
 
         self.vizTreeNodesList = []
         self.vizNodeToPlotDataItems = {}  # map from data key (key = dataTreeView.dataSource.dataKey(treeNode)) to PlotDataItem
@@ -419,21 +413,6 @@ class CustomizedViewBox(pg.ViewBox):
             self.addItem(error)
         else:
             logging.getLogger(vizTreeNode.dataTreeView.dataSource.uri).error("No errors data available for: " + vizTreeNode.getParametrizedDataPath())
-
-    def updateExportersList(self):
-        """Update/Modify list of available exporters (in order to remove the
-        problematic Matplotlib exporter and replace it with ours).
-        """
-        # Remove the pyqtgrapth Matplotlib Window and add our Matplotlib Window
-        # v2 to the same place on the list (initially it is on the end of the
-        # list)
-        for exporter in Exporter.Exporters:
-            if exporter.Name == 'Matplotlib Window':
-                i = Exporter.Exporters.index(exporter)
-                del Exporter.Exporters[i]
-            if exporter.Name == 'Matplotlib Window (v2)':
-                i = Exporter.Exporters.index(exporter)
-                Exporter.Exporters.insert(2, Exporter.Exporters.pop(i))
 
     def plotVsCoordinate1ToNewFigure(self):
         """This quantity, in a figure of its own, read along its own coordinate."""
