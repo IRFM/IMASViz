@@ -32,6 +32,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
 from imasviz.VizGUI.VizPlot.QVizCurveErrors import QVizCurveErrors
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
 
@@ -115,9 +116,18 @@ class QVizCurvePlot(QWidget):
             raise ValueError('Nothing to plot for "' + self.dataPathOf(treeNode) +
                              '": no values along the plotted axis.')
 
-        legend = self.dataPathOf(treeNode)
+        # One colour per trace, in the order the traces were laid down. Asked of
+        # the module rather than kept here because the cycle is what makes the
+        # palette survive a selection longer than it is long, and because
+        # pyqtgraph has no cycle of its own to fall back on: a curve drawn without
+        # a pen is `(200, 200, 200)`, measured, twice over on one figure.
+        path = self.dataPathOf(treeNode)
         for row in range(y.shape[0]):
-            curve = self.pgPlotWidget.plot(x[0], y[row], name=legend)
+            # Several rows of one quantity are several traces, and the path alone
+            # would name them identically in the legend the figure draws.
+            legend = path if y.shape[0] == 1 else '%s[%d]' % (path, row)
+            curve = self.pgPlotWidget.plot(x[0], y[row], name=legend,
+                                           pen=penFor(len(self._curves)))
             self._curves.append((treeNode, row, curve, as_function_of_time))
 
         self.setAxisLabels(treeNode, axesSpec, timeAxis, alongTime)
