@@ -9,10 +9,88 @@
 
 import numpy as np
 import logging
+import re
 from imasviz.VizUtils import (QVizGlobalOperations, QVizGlobalValues,
                               QVizPreferences, GlobalColors)
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QTreeWidgetItem
+
+# What a path segment looks like: a node name of the dictionary, then the
+# position of one element of a structure array. Both spellings the shot view
+# hands out -- `magnetics.flux_loop[9].field.data` and the bare `magnetics` of
+# an IDS root -- are covered by walking one of these after the other.
+NODE_NAME = re.compile(r'[A-Za-z_]\w*')
+ELEMENT_INDEX = re.compile(r'-?\d+')
+
+
+def resolveIDSPath(path, idsName, idsInstance):
+    """The value an IDS path names, taken out of the IDS instance itself.
+
+    The shot view builds these paths as text -- the parser spells them, the
+    builder turns them into the tree, the documentation panel turns a tree path
+    back into one -- and it always asked for their value with
+    `exec(idsName + " = self.getIDSRef()")` followed by `eval(path)`. That pair
+    never read the IDS: it bound a *local name* in the frame of the caller and
+    asked `eval` to find it back in the frame's locals, which is a CPython
+    implementation detail. Measured on Python 3.11.5 it answers; on the frame
+    semantics of Python 3.13 the binding made by `exec` is not visible to the
+    `eval` that follows, and every node of a real session died with
+    `NameError: name 'magnetics' is not defined` inside `updateStyle`, from
+    `QVizDataTreeView.py:574 in event` down -- the tree stops building at the
+    node that asks. Nothing in the traceback names the IDS or the case.
+
+    Walking the instance instead answers the same value, and answers it faster:
+    measured on the reference case (WEST 54924 run 0, its own dictionary 3.35.0),
+    building the view of `magnetics` occurrence 0 and then of `equilibrium`
+    occurrence 0 asks **15 131** paths -- **11 428** and **3 703** -- over **802**
+    distinct shapes, and the walk answers each of them identically in **0,053 s**
+    where the pair took **0,189 s**. Asked of every signal node of those two views
+    through the callers that are still reached (`coordinateValues`, the error
+    bars), it is **22 658** paths, **0,076 s** against **0,630 s**.
+
+    A path is refused by name, never by a bare `NameError` or `SyntaxError`: a
+    path of another IDS, an index that was never given a value -- `[i]`, `[itime]`
+    -- and a coordinate spelled as a range instead of a position. The last one is
+    not hypothetical: **537** nodes of `magnetics` and **6** of `equilibrium` on
+    this case carry a coordinate the dictionary spells `1...2` or `1...3`, which
+    reaches here as `magnetics.1...2` and was refused with
+    `SyntaxError: invalid syntax (<string>, line 1)`, swallowed by the caller.
+    It is refused the same way now, with the offending text named.
+    """
+    if idsInstance is None:
+        raise ValueError("Cannot read %s: the IDS %s is not loaded in this view."
+                         % (path, idsName))
+    if idsName is None or not path.startswith(idsName):
+        raise ValueError("Cannot read %s: it is not a path of IDS %s."
+                         % (path, idsName))
+
+    value = idsInstance
+    position = len(idsName)
+    while position < len(path):
+        character = path[position]
+        if character == '.':
+            name = NODE_NAME.match(path, position + 1)
+            if name is None:
+                raise ValueError(
+                    "Cannot read %s: %s is not a node of the dictionary."
+                    % (path, path[position + 1:].split('[')[0]))
+            value = getattr(value, name.group())
+            position = name.end()
+        elif character == '[':
+            end = path.find(']', position)
+            if end < 0:
+                raise ValueError("Cannot read %s: a bracket is left open." % path)
+            index = path[position + 1:end]
+            if not ELEMENT_INDEX.fullmatch(index):
+                raise ValueError(
+                    "Cannot read %s: the element [%s] was never given a position."
+                    % (path, index))
+            value = value[int(index)]
+            position = end + 1
+        else:
+            raise ValueError("Cannot read %s: %s is not a node of the dictionary."
+                             % (path, path[position:]))
+    return value
 
 
 class QVizTreeNode(QTreeWidgetItem):
@@ -231,38 +309,21 @@ class QVizTreeNode(QTreeWidgetItem):
     def evaluateCoordinateVsTime(self, coordinateNumber):  # the result can eventually depend on [itime]
         return self.evaluatePath(self.coordinates[coordinateNumber - 1])
 
-    def coordinateLength(self, coordinateNumber, dataTreeView):
-        # Set IDS source database
-        if self.coordinates[coordinateNumber - 1] == "1..N" or \
-                self.coordinates[coordinateNumber - 1] == "1...N":
-            r = np.array([self.evalPath(self.getDataName())])
-            return len(r[0])
-        # Set python expression to get length of the array
-        to_evaluate = self.getIDSName() + '.' + self.evaluateCoordinate(coordinateNumber)
-        len_to_evaluate = self.evalPath('len(' + to_evaluate + ')')
-        return len_to_evaluate
-
     def coordinateValues(self, coordinateNumber, dataTreeView):
+        """The values one coordinate of this node is sampled on.
+
+        A coordinate the dictionary spells as a range -- `1..N` -- has no values
+        in the case: the position of the element *is* the axis, so the positions
+        are handed back. Any other coordinate is a path of the IDS, and it is
+        read off the instance the view holds.
+        """
         if len(self.coordinates) < coordinateNumber:
             return None
-        # Set IDS data entry
         if self.coordinates[coordinateNumber - 1] == "1..N" or \
                 self.coordinates[coordinateNumber - 1] == "1...N":
-            return np.array(range(len(self.evalPath(self.getDataName()))))
-        to_evaluate = self.getIDSName() + '.' + self.evaluateCoordinate(coordinateNumber)
-        return self.evalPath(to_evaluate)
-
-    def getGlobalTimeForArraysInDynamicAOS(self):
-        t = None
-        try:
-            t = self.evalPath(self.getIDSName() + ".time")
-            return t
-        except ValueError:
-            return None
-
-    def timeMaxValue(self):
-        if self.time_dependent(self.parametrizedPath):
-            return self.parameters_max_values[self.index_name_of_itime()]
+            return np.array(range(len(self.resolvePath(self.getDataName()))))
+        return self.resolvePath(self.getIDSName() + '.' +
+                                self.evaluateCoordinate(coordinateNumber))
 
     def timeValue(self):
         time_index = 0
@@ -304,15 +365,6 @@ class QVizTreeNode(QTreeWidgetItem):
         value = value.replace("[i6]", "[r]")
         value = value.replace("[i7]", "[t]")
         return value
-
-    def getDataTimeSlices(self):  # return a list of full data path for all time slices
-        data_list = []
-        aos_vs_itime = self.evaluatePath(self.getParametrizedDataPath())
-        # print "QVizTreeNode : time max value = " + self.timeMaxValue()
-        for itime in range(0, int(self.timeMaxValue())):
-            data_path = aos_vs_itime.replace("[itime]", "[" + str(itime) + "]")
-            data_list.append(data_path)
-        return data_list
 
     def getIDSRef(self):
         return self.idsRef
@@ -489,22 +541,6 @@ class QVizTreeNode(QTreeWidgetItem):
         if not self.is0D() and not self.is1D() and self.isDynamicData():
             return True
 
-    def hasClosedOutline(self, dtv):
-        if not self.is1D():
-            return False
-        if self.coordinates[0] == "1..N" or \
-                self.coordinates[0] == "1...N":
-            return False
-        tokens = str(self.getPath()).split("/")
-        if not (len(tokens) > 1 and tokens[-2].startswith('outline')):
-            return False
-        closedOutlinePath = self.getPath().replace("/" + tokens[-1], "", 1);
-        closedOutlinePath = closedOutlinePath.replace("/" + tokens[-2], "", 1) + "/closed";
-        #expression = 'dtv.dataSource.data_entries[' + str(self.getOccurrence()) + '].' + closedOutlinePath
-        expression = closedOutlinePath
-        value = self.evalPath(QVizGlobalOperations.makePythonPath(expression))
-        return value
-
     def updateIDSNode(self, containsData):
         if containsData:
             # Set tree item style when node contains data
@@ -548,20 +584,17 @@ class QVizTreeNode(QTreeWidgetItem):
     # Define the color of a node which contains a signal
     def updateStyle(self):
 
-        if self.getIDSRef() is not None and self.getIDSName() is not None:
-            exec(self.getIDSName() + " = self.getIDSRef()")
-        
         if self.is1D():
 
             # And error occurs for non-homogeneous cases (time array is
             # different or empty). This is 'solved' with the below fix using
             # 'e' variable
-            e = self.evalPath(self.getDataName())
+            e = self.resolvePath(self.getDataName())
             #print(e)
             if self.getDataType() != 'STR_1D' and (e is None or e.all() is None):
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
-            elif len(self.evalPath(self.getDataName())) == 0:  # empty (signals) arrays appear in black
+            elif len(self.resolvePath(self.getDataName())) == 0:  # empty (signals) arrays appear in black
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
             else:
@@ -576,7 +609,7 @@ class QVizTreeNode(QTreeWidgetItem):
                 self.setStyleForWhenNotContainingData()
                 return
 
-            e = self.evalPath(self.getDataName())
+            e = self.resolvePath(self.getDataName())
 
             emptyField = False
             if self.getDataType() == 'FLT_0D' or self.getDataType() == 'flt_type':
@@ -600,7 +633,7 @@ class QVizTreeNode(QTreeWidgetItem):
 
 
         elif self.is2DOrLarger():
-            e = self.evalPath(self.getDataName())
+            e = self.resolvePath(self.getDataName())
             if e.shape[0] == 0:
                 self.setAvailableData(0)
                 self.setStyleForWhenNotContainingData()
@@ -796,41 +829,42 @@ class QVizTreeNode(QTreeWidgetItem):
         return plotAxis
 
     def get_data_error_lower(self, dataItem):
-        data_error_lower = None
-        dtv = self.getDataTreeView()
+        """The `_error_lower` sibling of this node, when the case holds one.
+
+        Most leaves have no such sibling in the dictionary, so "there is none" is
+        an answer, not a failure: it is handed back as None and the plot draws
+        without the bar.
+        """
         try:
             tokens = str(self.getPath()).split("/")
             nodeName = tokens[-1]
             data_error_lower_path = self.getPath().replace("/" + tokens[-1], "", 1);
             data_error_lower_path = data_error_lower_path + "/" + nodeName + "_error_lower";
-            #expression_error_lower_path = 'dtv.dataSource.data_entries[' + str(
-            #    self.getOccurrence()) + '].' + data_error_lower_path
-            data_error_lower = self.evalPath(QVizGlobalOperations.makePythonPath(data_error_lower_path))
+            data_error_lower = self.resolvePath(
+                QVizGlobalOperations.makePythonPath(data_error_lower_path))
             (x, y) = dataItem.getData()
             if np.shape(data_error_lower) != np.shape(y):
                 return None
-        except:
+        except Exception:
             return None
         return data_error_lower
 
     def get_data_error_upper(self, dataItem):
-        data_error_upper = None
-        dtv = self.getDataTreeView()
+        """The `_error_upper` sibling of this node, when the case holds one."""
         try:
             tokens = str(self.getPath()).split("/")
             nodeName = tokens[-1]
             data_error_upper_path = self.getPath().replace("/" + tokens[-1], "", 1);
             data_error_upper_path = data_error_upper_path + "/" + nodeName + "_error_upper";
-            #expression_error_upper_path = 'dtv.dataSource.data_entries[' + str(
-            #    self.getOccurrence()) + '].' + data_error_upper_path
-            data_error_upper = self.evalPath(QVizGlobalOperations.makePythonPath(data_error_upper_path))
+            data_error_upper = self.resolvePath(
+                QVizGlobalOperations.makePythonPath(data_error_upper_path))
             (x, y) = dataItem.getData()
             if np.shape(data_error_upper) != np.shape(y):
                 return None
-        except:
+        except Exception:
             return None
         return data_error_upper
 
-    def evalPath(self, path):
-        exec(self.getIDSName() + " = self.getIDSRef()")
-        return eval(path)
+    def resolvePath(self, path):
+        """The value this path names, read off the IDS instance of the view."""
+        return resolveIDSPath(path, self.getIDSName(), self.getIDSRef())

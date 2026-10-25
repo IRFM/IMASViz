@@ -420,12 +420,28 @@ class VizProfiles(QMainWindow):
     def getTimeIndex(self):
         return self.time_index
 
+    def getIDSInstance(self):
+        """The IDS this window reads, from the source it was opened with.
+
+        It used to be bound to a local name spelled after the IDS --
+        `exec("equilibrium = self.dataSource.get(...)")` -- so that the reads
+        below could be written as text and handed to
+        `eval("equilibrium.time_slice[time_index].time")`. That only works while
+        CPython lets `eval` see what `exec` bound in the caller's frame; on the
+        frame semantics of Python 3.13 it does not, and every one of those reads
+        answers `NameError: name 'equilibrium' is not defined`. A local variable
+        is the same thing with no such dependency, and the paths become ordinary
+        attribute access.
+        """
+        return self.dataSource.get(self.ids_related,
+                                   self.IDS_parameters['occurrence'])
+
     def getTimeValueForTimeIndex(self, time_index):
         """ Get time value for given time index.
         """
         slices_aos_name = self.getCurrentTab().slices_aos_name
-        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
-        time_slices_count = len(eval(self.ids_related + "." + slices_aos_name))
+        slices = getattr(self.getIDSInstance(), slices_aos_name)
+        time_slices_count = len(slices)
 
         if time_slices_count == 0:
             message = "No time slice found for " + self.ids_related + "."
@@ -437,10 +453,10 @@ class VizProfiles(QMainWindow):
             message = "Time index=" + str(time_index) + " exceeds the number of slices."
             raise ValueError(message)
 
-        time_value = eval(self.ids_related + "." + slices_aos_name + "[time_index].time")
+        time_value = slices[time_index].time
 
         if time_value == -9e+40:
-            time_value = eval(self.ids_related + ".time[time_index]")
+            time_value = self.getIDSInstance().time[time_index]
         return time_value
 
     def getCurrentTab(self):
@@ -468,8 +484,7 @@ class VizProfiles(QMainWindow):
         slider_time = QSlider(Qt.Horizontal, self)
         slider_time.setValue(0)
         slider_time.setMinimum(0)
-        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
-        time_slices_count = len(eval(self.ids_related + ".time"))
+        time_slices_count = len(self.getIDSInstance().time)
         slider_time.setMaximum(time_slices_count - 1)
         # self.slider_time.adjustSize()
         # self.slider_time.setMinimumWidth(600)
@@ -485,8 +500,9 @@ class VizProfiles(QMainWindow):
         if self.getCurrentTab() is None:
             return
         slices_aos_name = self.getCurrentTab().slices_aos_name
-        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
-        ntimevalues = eval("len(" + self.ids_related + "." + slices_aos_name + ")")
+        ids = self.getIDSInstance()
+        slices = getattr(ids, slices_aos_name)
+        ntimevalues = len(slices)
         tmin = -9e+40
         tmax = -9e+40
 
@@ -496,15 +512,15 @@ class VizProfiles(QMainWindow):
         # IDSFloat0D.__format__` and took the rest of setUI down with it -- no
         # slider, no spin box, no time value, no Plot button.
         if ntimevalues > 0:
-            tmin = float(eval(self.ids_related + "." + slices_aos_name + "[0].time"))
-            tmax = float(eval(self.ids_related + "." + slices_aos_name + "[-1].time"))
+            tmin = float(slices[0].time)
+            tmax = float(slices[-1].time)
 
-        n = eval("len(" + self.ids_related + ".time)")
+        n = len(ids.time)
         # Check if empty time values were read
         # (-9e+40 is default value == empty)
         if n > 0 and (tmin == -9e+40 or tmax == -9e+40):
-            tmin = float(eval(self.ids_related + ".time[0]"))
-            tmax = float(eval(self.ids_related + ".time[-1]"))
+            tmin = float(ids.time[0])
+            tmax = float(ids.time[-1])
 
         self.label_slider_tmin.setText(f"n<sub>t</sub> = {ntimevalues}; "
                                        f"t<sub>min</sub> = {tmin:.2f}")
@@ -514,8 +530,7 @@ class VizProfiles(QMainWindow):
         spinBox_timeIndex = QSpinBox(parent=self)
         spinBox_timeIndex.setValue(0)
         spinBox_timeIndex.setMinimum(0)
-        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
-        maxIndex = eval("len(" + self.ids_related + ".time) - 1")
+        maxIndex = len(self.getIDSInstance().time) - 1
         spinBox_timeIndex.setMaximum(maxIndex)
         spinBox_timeIndex.setFixedWidth(65)
         spinBox_timeIndex.valueChanged.connect(self.onSpinBoxChange)
@@ -575,12 +590,13 @@ class VizProfiles(QMainWindow):
             idx = (np.abs(array - value)).argmin()
             return array[idx], idx
 
-        exec(self.ids_related + " = self.dataSource.get(self.ids_related, self.IDS_parameters['occurrence'])")
+        ids = self.getIDSInstance()
         value = float(self.lineEdit_timeValue.text())
         slices_aos_name = self.getCurrentTab().slices_aos_name
-        time_profiles0 = eval(self.ids_related + "." + slices_aos_name + "[0].time")
-        time = eval(self.ids_related + ".time")
-        ntimevalues = len(eval(self.ids_related + "." + slices_aos_name))
+        slices = getattr(ids, slices_aos_name)
+        time_profiles0 = slices[0].time
+        time = ids.time
+        ntimevalues = len(slices)
         time_values = None
 
         if time_profiles0 == -9e+40:
@@ -588,8 +604,7 @@ class VizProfiles(QMainWindow):
         else:
             time_values = [0] * ntimevalues
             for i in range(len(time_values)):
-                time_values[i] = eval(self.ids_related + "." +
-                                      slices_aos_name + "[i].time")
+                time_values[i] = slices[i].time
 
         closest_value, index = find_nearest(time_values, value)
         self.spinBox_timeIndex.setValue(index)

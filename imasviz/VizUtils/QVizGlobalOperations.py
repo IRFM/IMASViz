@@ -32,31 +32,6 @@ class QVizGlobalOperations:
             raise ValueError("Unknow data source " + dataSourceName + ".")
 
     @staticmethod
-    def isTimeHomogeneous(selectedNode):
-        selectedNodeData = selectedNode.getData()
-        to_eval = selectedNodeData['IDSName'] + ".ids_properties.homogeneous_time"
-        homogeneous_time = selectedNode.evalPath(to_eval)
-        if homogeneous_time == 0:
-            return False
-        return True
-
-    @staticmethod
-    def getCoordinate_array(selectedNode, coordinate):
-        if coordinate is None:
-            return None
-        selectedNodeData = selectedNode.getData()
-        homogeneous_time = QVizGlobalOperations.isTimeHomogeneous(selectedNode)
-        t = None
-        try:
-            if not homogeneous_time:
-                t = np.array(selectedNode.evalPath(selectedNodeData['IDSName'] + "." + coordinate))
-            else:
-                t = np.array(selectedNode.evalPath(selectedNodeData['IDSName'] + ".time"))
-            return t
-        except ValueError:
-            return None
-
-    @staticmethod
     def message(parent=None, message='', title=''):
         msg = QMessageBox()
         msg.setIcon(QMessageBox.Critical)

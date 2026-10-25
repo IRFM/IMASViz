@@ -166,12 +166,12 @@ class FakeDocItem:
     def is2DOrLarger(self):
         return self._is2DOrLarger
 
-    def evalPath(self, expression):
+    def resolvePath(self, expression):
         """What the opened case holds under this path.
 
-        A real node reads it out of the IDS instance; here it is handed over, or
-        the failure a real node can answer with -- a leaf the runtime does not
-        have at all.
+        A real node walks it on the IDS instance; here it is handed over, or the
+        failure a real node can answer with -- a leaf the runtime does not have
+        at all.
         """
         if self._readError is not None:
             raise self._readError

@@ -442,7 +442,7 @@ def test_the_facts_of_a_node_are_asked_once():
     asked = []
 
     class Counting(FakeDocItem):
-        def evalPath(self, expression):
+        def resolvePath(self, expression):
             asked.append(expression)
             return np.array([1.0, 2.0])
 

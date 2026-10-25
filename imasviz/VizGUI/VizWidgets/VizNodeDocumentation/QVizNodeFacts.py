@@ -96,7 +96,7 @@ class QVizNodeFacts:
             return
         expression = QVizGlobalOperations.makePythonPath(node.getPath())
         try:
-            values = node.evalPath(expression)
+            values = node.resolvePath(expression)
         except Exception as error:
             # Not swallowed, as the old widget swallowed the same failure: the
             # user clicked this node to learn what is in it, and "nothing" is
