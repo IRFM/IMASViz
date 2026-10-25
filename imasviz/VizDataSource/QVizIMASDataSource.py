@@ -9,6 +9,8 @@
 import logging
 from functools import partial
 import imas
+from imas.dd_zip import dd_xml_versions
+from packaging.version import Version
 from PySide6.QtWidgets import QProgressBar
 from imasviz.VizDataAccess.QVizIDSViewParser import QVizIDSViewParser
 from imasviz.VizDataSource.QVizDBEntryRegistry import QVizDBEntryRegistry
@@ -33,7 +35,8 @@ def caseLabel(uri):
     return '{} {}.{}'.format(database, shot, 0 if run is None else run)
 
 
-def _readCaseFromUri(uri):
+def _uriParameters(uri):
+    """The `key=value` terms an IMAS URI carries after its question mark."""
     parameters = {}
     question = uri.find('?')
     if question != -1:
@@ -41,6 +44,11 @@ def _readCaseFromUri(uri):
             if '=' in term:
                 key, value = term.split('=', 1)
                 parameters[key] = value
+    return parameters
+
+
+def _readCaseFromUri(uri):
+    parameters = _uriParameters(uri)
 
     if 'path' in parameters:
         parts = [part for part in parameters['path'].rstrip('/').split('/') if part]
@@ -82,6 +90,56 @@ def caseUri(backendId, user, database, shot, run, dataVersion, options=''):
     return uri
 
 
+# The node an IDS names the dictionary its data was written with. Asked through
+# `list_all_occurrences`, it answers per occurrence without reading the IDS.
+DD_VERSION_NODE = 'ids_properties/version_put/data_dictionary'
+
+
+def dataVersionFromUri(uri):
+    """The **data** version an URI spells, or None when it spells none.
+
+    Both spellings carry it: `caseUri` writes `version=3`, and a path case lives
+    under `<database>/<data version>/<shot>/<run>` -- so `.../west/3/54924/0`
+    spells 3 as its third-last part. Only the major is kept here, which is what
+    both spellings write and all the URI ever asks of it.
+    """
+    version = _uriParameters(uri).get('version')
+    if version:
+        return version.split('.')[0]
+    if 'path' in _uriParameters(uri):
+        parts = [part for part in _uriParameters(uri)['path'].rstrip('/').split('/')
+                 if part]
+        if len(parts) >= 4:
+            return parts[-3]
+    return None
+
+
+def candidateDDVersions(uri):
+    """Data dictionary versions to ask this case with, best guess first.
+
+    An entry built from an URI with no `dd_version` settles on the version
+    `IMAS_VERSION` names, or on the newest one the distribution bundles -- 4.1.1
+    measured here with the variable unset -- and `DBEntry.get` then refuses every
+    IDS of a case stored under another **major**: `RuntimeError: On-disk data is
+    stored in DD 3.35.0 which has a different major version than the requested DD
+    version (4.1.1)`. The major is therefore the one thing worth reading off the
+    URI, and the newest dictionary inside it is the best first guess because
+    IMAS-Python converts between minors of one major (measured: the reference
+    case, written with 3.35.0, reads whole at 3.37.1 and at 3.42.2).
+    """
+    versions = sorted(dd_xml_versions(), key=Version)
+    newest = {}
+    for version in versions:
+        newest[version.split('.')[0]] = version
+    guesses = []
+    major = dataVersionFromUri(uri)
+    if major in newest:
+        guesses.append(newest[major])
+    if versions[-1] not in guesses:
+        guesses.append(versions[-1])
+    return guesses
+
+
 class QVizIMASDataSource:
 
     # A source only ever reads a case; writing one happens through a separate
@@ -99,9 +157,9 @@ class QVizIMASDataSource:
         self.progressBar = None
         self.name = name
         self.uri = uri
-        self.data_dictionary_version = None
-        # Pins the data dictionary used to open the entry, for cases written
-        # with another version than the one the Access Layer loads by default.
+        # Pins the data dictionary used to open the entry. Left to None, the case
+        # is asked which one it was written with (`pinToCaseDictionary`); an
+        # explicit value here is never overruled.
         self.dd_version = None
 
     @property
@@ -218,18 +276,93 @@ class QVizIMASDataSource:
             return imas.DBEntry(self.uri, mode, dd_version=self.dd_version)
         return imas.DBEntry(self.uri, mode)
 
+    def pinToCaseDictionary(self):
+        """Opens this case at the data dictionary its own IDSs were written with.
+
+        An entry built from an URI with no `dd_version` settles on the version
+        `IMAS_VERSION` names, or on the newest one the distribution bundles --
+        4.1.1 measured here, with the variable unset. `DBEntry.get` then refuses
+        every IDS of a case stored under another **major**, while
+        `list_all_occurrences` answers anyway: the shot view is built, the IDS
+        names are coloured as holding data, and every load dies afterwards. That
+        is how a real session reached the user -- a case of 2019 written with DD
+        3.35.0, opened at 4.1.1, and `'NoneType' object has no attribute
+        'metadata'` where the refusal should have been.
+
+        The case answers the question for one price: asking a filled IDS for the
+        `ids_properties/version_put/data_dictionary` node names the version each
+        occurrence was written with, without reading the IDS (0,41 s for the four
+        occurrences of `equilibrium` here; the other occurrences of the case may
+        name other minors -- `magnetics` answers 3.35.0 and 3.37.0 -- and the
+        first one found wins, IMAS-Python converting between minors of one major).
+        That node can only be asked of an entry whose major already matches, so
+        the major comes from the URI and the guess is probed.
+        """
+        if self.dd_version:
+            return self.dd_version
+        for candidate in candidateDDVersions(self.uri):
+            version = self._probeCaseDictionary(candidate)
+            if version:
+                self.dd_version = version
+                logging.getLogger(self.uri).info(
+                    "Opening %s at data dictionary %s, the version its IDSs were "
+                    "written with." % (self.uri, version))
+                return version
+        logging.getLogger(self.uri).warning(
+            "Cannot ask %s which data dictionary it was written with: the case is "
+            "opened at the version IMAS_VERSION names, or the newest bundled one, "
+            "and an IDS stored in another major version will be refused."
+            % self.uri)
+        return None
+
+    def _probeCaseDictionary(self, candidate):
+        """The dictionary the first filled IDS of this case names; else None.
+
+        The names are asked of the candidate's factory, in the factory's own
+        order, and an IDS the case does not hold answers without occurrences --
+        measured: the whole inventory of the reference case costs 0,10 s that
+        way, so stopping at the first filled one stays cheap.
+        """
+        try:
+            entry = imas.DBEntry(self.uri, self.MODE, dd_version=candidate)
+        except Exception:
+            # A case that cannot be opened at all is refused by `open()`, which
+            # carries the Access Layer's own sentence; guessing here would only
+            # bury it.
+            return None
+        try:
+            for idsName in imas.IDSFactory(candidate).ids_names():
+                try:
+                    _, versions = entry.list_all_occurrences(idsName, DD_VERSION_NODE)
+                except Exception:
+                    continue
+                for version in versions:
+                    if str(version):
+                        return str(version)
+            return None
+        finally:
+            entry.close()
+
     def open(self):
         """Takes a reference on the entry for this case, opening the case when
         nobody holds it yet. Must be paired with close().
         """
         try:
+            # Before the registry key, not inside `buildEntry`: the record is
+            # keyed by (uri, mode, dd_version), so a pin settled while the entry
+            # was built would leave the case held under one key and looked up
+            # under another.
+            self.pinToCaseDictionary()
             QVizDBEntryRegistry.acquire(
                 self.uri, self.MODE, self.dd_version, build=self.buildEntry)
             return 0
-        except BaseException as e:
-            print(e)
-            #logging.getLogger("logPanel").error(str(e))
-            raise ValueError(e)
+        except Exception as error:
+            # The Access Layer's own sentence, carried as the reason of a
+            # ValueError so the log panel of the case shows it. It used to be
+            # printed on the console and re-raised bare, which left the panel
+            # with a bare exception and the console with the only clue.
+            raise ValueError("Cannot open %s: %s: %s"
+                             % (self.uri, type(error).__name__, error))
 
     def buildEntry(self):
         """Builds the entry the registry will share, already usable.
@@ -243,16 +376,40 @@ class QVizIMASDataSource:
         return self.createDBEntry(self.MODE)
 
     def get(self, IDSName, occurrence):
-        try:
-            key = IDSName + "/" + str(occurrence)
-            if not key in self.data_entries:
-                logging.getLogger(self.uri).info("Loading '" + IDSName + "'" + " with occurrence " + str(occurrence))
-                ids_instance = self.db_entry.get(IDSName, occurrence)
-                self.data_entries[key] = ids_instance
+        """Reads one IDS occurrence once, and hands the same instance to the next ask.
 
+        A refusal is raised with what was asked, of which case, at which
+        dictionary, and why. It used to be caught here -- `except BaseException`
+        around the read, logged as a bare `str(e)` into the log panel of the
+        *session* instead of the log of the case it belongs to -- after which the
+        function returned None **and cached it**. The caller then died further
+        away on that None, and the sentence the Access Layer had actually given
+        sat one line above in a different log. Measured on the reference case,
+        that is the whole path a real session took: `On-disk data is stored in DD
+        3.35.0 which has a different major version than the requested DD version
+        (4.1.1)` became `'NoneType' object has no attribute 'metadata'` at
+        `QVizIDSViewParser.py:283`. An IDS the case does not hold answers the same
+        way: `DataEntryException: IDS 'amns_data', occurrence 0 is empty.`
+        """
+        key = IDSName + "/" + str(occurrence)
+        if key in self.data_entries:
             return self.data_entries[key]
-        except BaseException as e:
-            logging.getLogger("logPanel").error(str(e))
+
+        logging.getLogger(self.uri).info(
+            "Loading '%s' with occurrence %s" % (IDSName, occurrence))
+        entry = self.db_entry
+        if entry is None:
+            raise ValueError("The case %s is not open: cannot read %s occurrence %d."
+                             % (self.uri, IDSName, occurrence))
+        try:
+            ids_instance = entry.get(IDSName, occurrence)
+        except Exception as error:
+            raise ValueError("Cannot read %s occurrence %d of %s, opened at data "
+                             "dictionary %s: %s: %s"
+                             % (IDSName, occurrence, self.uri, entry.dd_version,
+                                type(error).__name__, error))
+        self.data_entries[key] = ids_instance
+        return ids_instance
 
     def remove_entry(self, IDSName, occurrence):
         key = IDSName + "/" + str(occurrence)
@@ -277,10 +434,6 @@ class QVizIMASDataSource:
         each data source owned its own cache.
         """
         return QVizDBEntryRegistry.drop(self.uri, self.MODE, self.dd_version)
-
-    # Check if the data for the given IDS exists
-    def exists(self, IDSName=None):
-        return True
 
     def dataKey(self, vizTreeNode):
         """Defines the unique key attached to each data which can be plotted.

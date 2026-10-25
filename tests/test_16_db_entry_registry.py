@@ -255,10 +255,13 @@ def test_a_failed_walk_gives_back_the_reference_it_took(qapp):
     uri = case_uri_or_skip()
     source = makeSource(uri)
 
-    # An IDS this case does not hold: get() logs the error and returns None, so
-    # reading its metadata raises AttributeError -- the failure run() catches.
-    with pytest.raises(AttributeError):
+    # An IDS this case does not hold. The read used to be swallowed into a None
+    # that died further away on `.metadata`; it now raises with what was asked,
+    # of which case and why. What this test pins is that the reference comes
+    # back either way, and the `finally` of `loadIDS` is what does it.
+    with pytest.raises(ValueError) as raised:
         loadIDS(source, 'no_such_ids')
+    assert "Cannot read no_such_ids occurrence 0" in str(raised.value)
 
     assert QVizDBEntryRegistry.count(uri, source.MODE, source.dd_version) == 0
     assert QVizDBEntryRegistry.live_entries() == []

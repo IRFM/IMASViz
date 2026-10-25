@@ -230,10 +230,13 @@ class QVizIDSViewParser(QThread):
                                      idsData, self.sliceSelection)
                 self.closeProgressBar()
         except AttributeError as attributeError:
+            # What the walk met, with the frames that show where. The sentence
+            # that used to follow it -- 'the data dictionary of the data entry
+            # does not match the fields IMASViz expects' -- was a diagnosis this
+            # code cannot make: measured, the branch was reached because a read
+            # had been refused for a data-dictionary major version, and the
+            # answer named something else entirely.
             logging.getLogger(self.dataSource.uri).error(attributeError, exc_info=True)
-            logging.getLogger(self.dataSource.uri).error(
-                'An attribute error has occurred: the data dictionary of the data '
-                'entry does not match the fields IMASViz expects.')
         except ValueError as valueError:
             # A slice index the IDS does not hold, or a selection left without
             # an index: said as the sentence the object raises, without the
