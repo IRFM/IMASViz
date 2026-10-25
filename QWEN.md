@@ -154,7 +154,7 @@ imasviz/
 │   ├── VizWidgets/            # db browser, nodes-selection window, VizNodeDocumentation/
 │   │                          # (QVizNodeFacts: what a node holds; the panel draws it)
 │   ├── VizGuiCustomization/   # QVizDefault defaults
-│   └── VizConfigurations/, VizExporters/
+│   └── VizConfigurations/
 ├── VizPlugins/                # plugin framework + plugins (see below)
 └── VizExamples/               # example_*.py and test_*.py standalone scripts
 ```
@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 812 passed, 1 xfailed, ~124 s, offscreen
+python3 -m pytest tests/ -q     # 817 passed, 1 xfailed, ~126 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -458,6 +458,16 @@ artifacts of this codebase, and several are load-bearing:
   parser classes: that folder is gone with the reflection based parser.
 - Mutating `os.environ` as module state in `QVizGlobalValues` means import order and repeated
   imports have visible effects.
+- `pyqtgraph.exporters.Exporter.Exporters` is a **class** attribute, and the export dialogue
+  fills its format list from it each time it is built (`exportDialog.py:104`): a module that
+  edits it edits every figure of the session, not the plot that asked. The Profiles plugin
+  did exactly that from its view box's constructor — measured on one curve figure, the
+  dialogue answered **5** formats before a `CustomizedViewBox` existed and **4** after, the
+  missing one being the `Matplotlib Window` the manual documents — and the copy it meant to
+  put in that place (`VizGUI/VizExporters/QVizMatplotlibExporter.py`) was imported by nobody,
+  so its `register()` never ran and the patch only ever subtracted. T23 deleted the class,
+  its directory and the patch; `test_57` refuses any module of the package naming
+  `Exporter.Exporters`.
 - `QVizGlobalOperations.check(...)` / `checkEnvSettings()` print and exit rather than raising
   typed exceptions — error handling at the GUI level expects `ValueError`, so wrap accordingly.
 - The root `Makefile` default is now `all: doc`. The `default` (submodule-fetch) target is kept
@@ -490,7 +500,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **108** modules and **107** of them import. The one failure is Qt-Designer
+  it walks **107** modules and **106** of them import. The one failure is Qt-Designer
   scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
@@ -499,7 +509,9 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   of those modules, 4 of the failures. T22(c) took **7** more out of the walk — five
   production modules of the legacy figure island, the `viz_tests` package and its module.
   The HLI gate added **1** to the walk and T27 took **1** back:
-  `viz_equi/ids_read_multiprocess.py`, the module that spoke the generated HLI. Note that
+  `viz_equi/ids_read_multiprocess.py`, the module that spoke the generated HLI; T23 took
+  **1** more, `VizGUI/VizExporters/QVizMatplotlibExporter.py`, and the `VizExporters/`
+  directory with it — that directory held no `__init__.py` and nothing else. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test.
