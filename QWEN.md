@@ -28,10 +28,14 @@ remotely through **UDA**.
   `hasAvailableData`, the three `Viz_API` occurrence helpers and the Profiles plugin's
   entry — now ask the case through `DBEntry.list_all_occurrences` (0.10 s for the whole
   inventory of the reference case), and six mentions survive as comments naming what
-  was replaced. What does survive as live code is `eval` on an **attribute path of a
+  was replaced. What survived after T13 was `eval` on an **attribute path of a
   loaded IDS object** — `eval(self.ids_related + ".time[time_index]")`, **15** sites in
-  `viz_Profiles/viz_profiles/VizProfiles.py` — and `QVizTreeNode.evalPath`'s
-  `eval(path)`. Since T27 nothing in the repository reaches the generated modules at
+  `viz_Profiles/viz_profiles/VizProfiles.py` — fed by an `exec(idsName + " = …")` in
+  the same breath, and `QVizTreeNode.evalPath`'s `eval(path)`. **T31 took all of it
+  out**: a path is walked off the loaded IDS object now (`resolveIDSPath`), because
+  the `exec`/`eval` pair only ever worked by leaving a name in the caller's frame
+  locals — see the *Pitfalls* list. Since T27 nothing in the repository reaches the
+  generated modules at
   all: `viz_equi/ids_read_multiprocess.py`, which called `imas.ids(shot, run)` and
   `idd.open_env(...)`, is gone.
   Do not write new code against generated `imas.<ids>()` classes; they do not exist
@@ -332,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 802 passed, 1 xfailed, ~138 s, offscreen
+python3 -m pytest tests/ -q     # 812 passed, 1 xfailed, ~124 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -434,14 +438,21 @@ Two verified properties make them unusable in automation:
 Do not "clean these up" while doing unrelated work — they are existing, intentional-looking
 artifacts of this codebase, and several are load-bearing:
 
-- `eval` on IMAS symbol names survives in `QVizTreeNode.evalPath`
-  (`eval(path)` on a `Path` spelling) and in the Profiles plugin's
-  `viz_profiles/VizProfiles.py` (**15** sites, evaluating an attribute path against the
-  loaded IDS object). It is **not** a working idiom for reaching generated IDS classes:
-  on this node `imas.<ids>` does not exist, and T12 took out the 5 sites that asked
-  `eval("imas." + idsName + "().getMaxOccurrences()")` on a tree gesture — the case
-  answers that question through `DBEntry.list_all_occurrences` instead — with T13 taking
-  the sixth and last one, in the plugin. Do not add a new site; do not "restore" the old one.
+- The `eval`-on-an-IMAS-symbol-name idiom is **gone** — T31 took out its last two
+  homes, `QVizTreeNode.evalPath` and the **15** sites of the Profiles plugin's
+  `viz_profiles/VizProfiles.py`. It was never a way to reach generated IDS classes
+  (`imas.<ids>` does not exist on this node), and it was never a way to read a value
+  either: every site was fed by `exec(idsName + " = self.getIDSRef()")`, which writes
+  into the **frame-locals mapping of its caller** and leaves `eval` to find that name
+  back there. That is a CPython implementation detail — it answers on this node's
+  3.11.5, it stopped answering on a newer CPython elsewhere, and every node of a real
+  session died with `NameError: name 'magnetics' is not defined` inside `updateStyle`,
+  with nothing in the traceback naming the case or the IDS. A path is walked off the
+  loaded IDS object now (`QVizTreeNode.resolveIDSPath`), which is also **3,6×** faster
+  on a real view. Do not add an `exec`/`eval` pair back; `test_56` compiles the module
+  and refuses the names. Earlier T12/T13 had already taken out the 6
+  `eval("imas." + idsName + "().getMaxOccurrences()")` sites — do not "restore" those
+  either; the case answers that through `DBEntry.list_all_occurrences`.
 - `sys.path.append(os.environ['VIZ_HOME'])` is done for side effects at import time, so import
   order matters. It used to append `$HOME/.imasviz/VizGeneratedCode` too, for the generated
   parser classes: that folder is gone with the reflection based parser.
