@@ -146,6 +146,14 @@ Here is a scenario example on executing the IMASViz **Profiles plugin**:
 
      Plots example along the coordinate1 axis using the 'Profiles' plugin
 
+.. note::
+   Every panel of that window draws its curve in the same colour, and on white.
+   This is not an oversight: the window holds one quantity **per panel**, so a
+   colour would have nothing there to tell apart, and the ground is the window's
+   own — unlike a :guilabel:`Plot Figure`, which paints black and gives each of
+   its traces a colour of its own (section :ref:`plotting_1d_arrays`). The
+   colours of that palette are chosen so that they stay legible on white.
+
 4. Move the time slider. Each plot is updated accordingly.
 
 5. **right-click** on a particular plot. A popup menu displays.

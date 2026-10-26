@@ -623,16 +623,29 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `magnetics/bpol_probe(0)/field/data` both answered `tuple(200, 200, 200)` — the same
   grey twice, for the one window whose purpose is a comparison. `QVizCurveColors` answers
   the pen of the index-th trace now, cycling through **8** colours. Two measured facts
-  decide that palette: the background those lines are painted on is **black** — the
-  configuration default is `background 'k'`, and the view box answers `(0, 0, 0, 255)`,
-  read through `viewBox.background.brush()` because `ViewBox.background` is a
-  `QGraphicsRectItem`, not a method — and the confidence band of `QVizCurveErrors` is
-  filled with `(255, 0, 0)` in `DiagCrossPattern`, which is why the palette holds no pure
-  red. It is deliberately **not** `getRGBColorList()`: three of its entries are
-  near-whites (`#cce5ff`, `#d3d3d3`, `#C0C0C0`) sized for a white page, and its order
-  comes out of `GlobalColors.__dict__`. What still chooses a colour by hand is the Profiles
-  plugin's `QVizTablePlotView.setPen():289`, imposing `getRGBColorList()[0]` on all **41**
-  of its plots — row T34 of `LEGACY_REPLACEMENT.md`.
+  decide that palette: the ground those lines are painted on is **black**, and it is the
+  *window* that paints it — `PlotWidget.backgroundBrush()` answers `SolidPattern
+  (0, 0, 0, 255)`, from pyqtgraph's own configuration default (`'background': 'k'`,
+  `pyqtgraph/__init__.py:45`), not from any IMASViz preference, of which there is none
+  about colours. **Do not read `viewBox.background.brush()`**: that `QGraphicsRectItem`
+  is hidden and its brush `NoBrush` unless `setBackgroundColor` was called, which nowhere
+  in this package does, while its `color()` still answers `(0, 0, 0, 255)` — that reading
+  reported the Profiles plugin's **white** window as black; and the confidence band of
+  `QVizCurveErrors` is filled with `(255, 0, 0)` in `DiagCrossPattern`, which is why
+  neither palette holds pure red.
+- A window that paints the other ground asks `LIGHT_CURVE_COLOURS` of the same module.
+  The Profiles plugin's table window is the only `setBackground` in the package — white,
+  `QVizTablePlotView.py:75` — and **5** of the 8 colours of the black palette answer a
+  contrast under **2,5** there (cyan 1,25, chartreuse 1,30, spring green 1,35, gold 1,40,
+  orange 2,33); the light list's weakest answers **4,77**. Until T34 that window drew all
+  **41** of its curves in `getRGBColorList()[0]`, one blue reached by walking
+  `GlobalColors.__dict__` for attributes ending in `HEX` — **8** of those 18 answers are
+  under a contrast of 2 on the white they were drawn on. The function and the eighteen
+  `*_HEX` attributes are gone (`GlobalColors` itself stays: the tree, the preferences and
+  the documentation panel ask its six brushes), and the plugin asks `lightColourFor(0)` —
+  `navy` — **uniformly**, because its 41 panels were measured to carry **41 distinct
+  parametrized paths**: a colour there has nothing to group, and a cycle would answer the
+  same colour five times in one window.
 - The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
   -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
   two `conf.py` warnings, and it is the only route that works — `make doc` itself still
