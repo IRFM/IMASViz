@@ -26,7 +26,7 @@ controls and a mapping back.
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (QHBoxLayout, QLabel, QSizePolicy, QSlider,
-                               QVBoxLayout, QWidget)
+                               QToolButton, QVBoxLayout, QWidget)
 
 
 class QVizSliceRow(QWidget):
@@ -42,6 +42,7 @@ class QVizSliceRow(QWidget):
     def __init__(self, sl, parent=None):
         super().__init__(parent)
         self.key = sl.key
+        self.label = sl.label
         self.length = sl.length
 
         layout = QHBoxLayout(self)
@@ -103,6 +104,14 @@ class QVizSliceRow(QWidget):
         else:
             self.indexLabel.setText('%d / %d' % (index, max(int(self.length), 1) - 1))
 
+    def indexText(self):
+        """What this row says about where it stands, for whoever has no slider.
+
+        The folded band spells one line out of these, so the numbers a row shows
+        are the same numbers whether the band is open or shut.
+        """
+        return self.indexLabel.text()
+
     def __repr__(self):
         return '<QVizSliceRow %s index=%s length=%s>' % (self.key, self.index(),
                                                          self.length)
@@ -115,16 +124,43 @@ class QVizSliceControls(QWidget):
     new curve, a time slice redraw -- so the values the user picked are kept for
     an axis that survives the rebuild, and dropped for one that no longer exists
     rather than carried over onto an unrelated axis.
+
+    A curve figure asks for `foldable`: exploring a tensor puts one slider on
+    every axis the curve leaves out, and a quantity held by three arrays of
+    structures then takes three lines of a window whose plot is what the user
+    came to look at. Folded, the band answers with one line naming every axis
+    and where it stands, and the sliders come back on a click. An image window
+    and a table panel do not fold: there the rows are the only place saying which
+    slice the colours and the panel numbers stand for.
     """
 
     changed = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, foldable=False):
         super().__init__(parent)
+        self._foldable = bool(foldable)
+        self._folded = False
         self._rows = []
         self._layout = QVBoxLayout(self)
         self._layout.setContentsMargins(2, 2, 2, 2)
         self._layout.setSpacing(2)
+
+        # Added before the rows so folding leaves it where it is: the rows come
+        # and go underneath it.
+        self.summaryRow = QWidget(self)
+        summary = QHBoxLayout(self.summaryRow)
+        summary.setContentsMargins(0, 0, 0, 0)
+        self.summaryLabel = QLabel(self.summaryRow)
+        self.summaryLabel.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.foldButton = QToolButton(self.summaryRow)
+        self.foldButton.setText('More')
+        self.foldButton.clicked.connect(self.toggleFold)
+        summary.addWidget(self.summaryLabel)
+        summary.addWidget(self.foldButton)
+        summary.addStretch(1)
+        self.summaryRow.setVisible(False)
+        self._layout.addWidget(self.summaryRow)
+
         self.setVisible(False)
 
     def setSlices(self, slices):
@@ -148,9 +184,13 @@ class QVizSliceControls(QWidget):
             row = QVizSliceRow(sl if index is None else self._withIndex(sl, index),
                                parent=self)
             row.moved.connect(self.changed)
+            row.moved.connect(self._showSummary)
             self._layout.addWidget(row)
             self._rows.append(row)
 
+        self._folded = self._foldable and len(self._rows) > 1
+        self._showSummary()
+        self._applyFold()
         self.setVisible(bool(self._rows))
 
     def indices(self):
@@ -173,6 +213,39 @@ class QVizSliceControls(QWidget):
 
     def keys(self):
         return [row.key for row in self._rows]
+
+    def isFoldable(self):
+        return self._foldable
+
+    def isFolded(self):
+        return self._folded
+
+    def toggleFold(self):
+        """Put the sliders back on screen, or take them away.
+
+        Visibility, never a rebuild: the rows stay built, so `indices` keeps
+        answering the read with the indices the user picked whether the band is
+        open or shut. Rebuilding them to fold would drop those indices and move
+        the curves the figure is showing.
+        """
+        if not self._foldable:
+            return False
+        self._folded = not self._folded
+        self._applyFold()
+        return True
+
+    def summaryText(self):
+        return '   '.join('%s %s' % (row.label, row.indexText())
+                          for row in self._rows)
+
+    def _showSummary(self):
+        self.summaryLabel.setText(self.summaryText())
+
+    def _applyFold(self):
+        for row in self._rows:
+            row.setVisible(not self._folded)
+        self.summaryRow.setVisible(self._folded)
+        self.foldButton.setText('More' if self._folded else 'Fewer')
 
     @staticmethod
     def _withIndex(sl, index):

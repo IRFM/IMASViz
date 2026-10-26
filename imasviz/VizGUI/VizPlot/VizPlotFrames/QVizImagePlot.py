@@ -48,14 +48,6 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceLines import (
 class QVizImagePlot(QWidget):
     """The pictures of one quantity, with a control per axis outside them."""
 
-    # The data access and the node's label code ask a plot frame these three.
-    # This path drives nothing from them -- the slice controls carry the indices
-    # -- but they are asked, so they are answered without the slider machinery
-    # the names imply.
-    addTimeSlider = False
-    addCoordinateSlider = False
-    sliderGroup = None
-
     def __init__(self, parent=None, title=''):
         super().__init__(parent)
 

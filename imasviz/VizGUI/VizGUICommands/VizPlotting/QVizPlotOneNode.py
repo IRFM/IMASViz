@@ -56,17 +56,21 @@ class QVizPlotOneNode(QVizAbstractCommand):
     IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
     def __init__(self, dataTreeView, treeNode, intoFigureKey=None,
-                 alongTime=False):
+                 alongTime=False, tensor=False):
         """
         Arguments:
             treeNode       (QVizTreeNode) : the node to draw, never the selection.
             intoFigureKey      (str)      : an open figure to add to, or None for
                                             a figure of this quantity's own.
             alongTime        (bool)       : read it as a history, along time.
+            tensor           (bool)       : draw the tensor that holds it, under a
+                                            slider per pinned axis, instead of the
+                                            one element the tree is standing on.
         """
         self.api = dataTreeView.imas_viz_api
         self.intoFigureKey = intoFigureKey
         self.alongTime = alongTime
+        self.tensor = tensor
         # Set when this command opened the figure itself: a frame that is already
         # on screen must not be embedded in a second subwindow.
         self.builtFigure = False
@@ -120,11 +124,18 @@ class QVizPlotOneNode(QVizAbstractCommand):
     def draw(self, frame):
         if isinstance(frame, QVizImagePlot):
             # An image reads across its pictures along one axis of the quantity;
-            # asking it for a history would be asking for a curve.
+            # asking it for a history would be asking for a curve. And asking it
+            # to explore a tensor would be asking the pictures to move under a
+            # slider they are already spread over.
+            if self.tensor:
+                raise ValueError('"' + self.path() + '" is drawn as pictures: '
+                                 'exploring its tensor belongs on a figure of '
+                                 'curves, where a pinned axis can move.')
             frame.plot(self.treeNode)
             return
         frame.plot(self.treeNode,
-                   as_function_of_time=True if self.alongTime else None)
+                   as_function_of_time=True if self.alongTime else None,
+                   tensor=self.tensor)
 
     def newFigure(self, figureType, frameClass):
         figureKey = self.api.GetNextKeyForFigure(figureType)

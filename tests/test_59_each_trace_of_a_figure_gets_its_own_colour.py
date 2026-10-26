@@ -71,6 +71,12 @@ IDS_NAME = 'magnetics'
 OCCURRENCE = 0
 FIRST = 'magnetics/flux_loop(0)/flux/data'
 SECOND = 'magnetics/bpol_probe(0)/field/data'
+# What the legend has to say for those two nodes: the path of the element, with
+# the array index the tree carries spelled out. A legend spelling `flux_loop[i]`
+# says a trace came from some element and not which, which is how two traces of
+# one array came to be the same curve twice without anyone being able to see it.
+FIRST_ELEMENT = 'magnetics.flux_loop[0].flux.data'
+SECOND_ELEMENT = 'magnetics.bpol_probe[0].field.data'
 # A leaf the case holds no value for along the plotted axis: selected with the
 # other two, it is refused by name and draws no trace.
 NO_VALUE = 'magnetics/bpol_probe(0)/voltage/data'
@@ -169,9 +175,11 @@ class SeveralRows:
     def slicesFor(self, treeNode, **kargs):
         return self._real.slicesFor(treeNode, **kargs)
 
-    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None):
+    def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
+                  slices=None):
         x, y = self._real.GetSignal(treeNode=treeNode, plotWidget=plotWidget,
-                                    as_function_of_time=as_function_of_time)
+                                    as_function_of_time=as_function_of_time,
+                                    slices=slices)
         return x[:1], np.repeat(y[:1], self._rows, axis=0)
 
 
@@ -198,9 +206,9 @@ def test_two_quantities_of_one_figure_are_not_the_same_colour(session):
     assert rgbOf(first.curves()[0]) == FIRST_RGB
     assert rgbOf(first.curves()[1]) == SECOND_RGB
     assert len({rgbOf(curve) for curve in first.curves()}) == 2
-    # The legend still says which trace is which quantity.
-    assert legendOf(first) == ['magnetics.flux_loop[i].flux.data',
-                               'magnetics.bpol_probe[i].field.data']
+    # The legend still says which trace is which quantity -- and says it with the
+    # element each trace came from, not with the array's loop letter.
+    assert legendOf(first) == [FIRST_ELEMENT, SECOND_ELEMENT]
 
 
 @pytest.mark.ui
@@ -233,14 +241,14 @@ def test_several_rows_of_one_quantity_have_their_colour_and_their_label(session)
     hold the same words twice and say nothing.
     """
     figure, node = figureDrawingRows(session, FIRST, 3)
-    path = node.getParametrizedDataPath()
 
     assert figure.curveCount() == 3
     assert rgbOf(figure.curves()[0]) == colourFor(0)
     assert rgbOf(figure.curves()[1]) == colourFor(1)
     assert rgbOf(figure.curves()[2]) == colourFor(2)
     assert len({rgbOf(curve) for curve in figure.curves()}) == 3
-    assert legendOf(figure) == ['%s[%d]' % (path, row) for row in range(3)]
+    assert legendOf(figure) == ['%s[%d]' % (FIRST_ELEMENT, row)
+                                for row in range(3)]
 
 
 @pytest.mark.ui

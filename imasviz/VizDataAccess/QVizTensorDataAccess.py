@@ -64,16 +64,13 @@ class QVizTensorDataAccess:
         if slices is None:
             # A plot frame that carries slice controls decides them; the axes
             # those controls offer are the ones this read fixes, because both
-            # come out of plan().
+            # come out of plan(). A curve frame passes an explicit mapping
+            # instead, because on a figure holding two elements of one array the
+            # controls answer for whichever moved them last -- see
+            # QVizCurvePlot._readSlices.
             controls = getattr(plotWidget, 'sliceControls', None)
             if controls is not None:
                 slices = controls.indices()
-        if plotWidget is not None and plotWidget.addTimeSlider:
-            if plotWidget.sliderGroup is not None:
-                time_index = plotWidget.sliderGroup.slider.value()
-        if plotWidget is not None and plotWidget.addCoordinateSlider:
-            if plotWidget.sliderGroup is not None:
-                coordinate_index = plotWidget.sliderGroup.slider.value()
 
         if alongTime:
             return self._curveAlongTime(treeNode, axesSpec, extractor, timeAxis,

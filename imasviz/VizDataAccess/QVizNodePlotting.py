@@ -113,6 +113,24 @@ class QVizNodePlotting:
             return 'time'
         return None
 
+    def tensorAxes(self):
+        """Which arrays of structures exploring the tensor would put under a slider.
+
+        The plot entries draw an *element*: the tree is already standing on
+        'flux_loop[3]', so the figure fixes that array and spells its index in the
+        legend. Exploring the *tensor* is the other question, and it is only worth
+        offering when a curve figure would have such an array to pin. The dynamic
+        array does not count: a curve of a quantity held by it is read along time,
+        so that array is drawn rather than pinned, and a slider for it would ask
+        for what the abscissa already shows.
+
+        Asked of the axes alone, like curveAxisKey(): a right click must not pay
+        for a read to find out what it may offer.
+        """
+        if not self.isPlottable():
+            return []
+        return [axis for axis in self.axes.aosAxes() if not axis.is_time]
+
     def plottedAxes(self):
         """How many axes a picture of this quantity would show.
 

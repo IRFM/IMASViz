@@ -269,7 +269,8 @@ class QVizSignalHandling(QObject):
         # soon as the leaf has more than one axis of its own -- because the answer
         # that measures values, plottedAxes(), would extract a tensor for a right
         # click that may never draw anything.
-        curveAxis = QVizNodePlotting(self.treeNode).curveAxisKey()
+        plotting = QVizNodePlotting(self.treeNode)
+        curveAxis = plotting.curveAxisKey()
         frameType = 'Figure' if curveAxis is not None else 'Image'
         menu_frame = QMenu(frameType, menu)
         menu_frame.setIcon(GlobalIcons.getCustomQIcon(QApplication, frameType))
@@ -303,6 +304,24 @@ class QVizSignalHandling(QObject):
                 partial(self.addSignalPlotToFig, id_Fig))
             # Add to submenu
             menu_frame.addAction(action_addSignalPlotToFig)
+
+        # The other question about the same quantity. Every entry above draws the
+        # element the tree is standing on, with the arrays that hold it fixed and
+        # spelled out in the legend; this one puts those arrays under sliders so
+        # the tensor itself can be walked, curve by curve, on one abscissa. It is
+        # offered from the axes alone -- the same reading as the submenu title --
+        # and only when a curve figure would have such an array to pin: for a
+        # quantity held only by the dynamic array, the curve is already running
+        # along it and there is nothing left to explore.
+        if curveAxis is not None and plotting.tensorAxes():
+            action_exploreTensor = QAction(
+                GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'),
+                'Explore this tensor', menu_frame)
+            action_exploreTensor.setToolTip(
+                'Draw this quantity on a figure of curves with a slider per '
+                'array that holds it, starting at the element the tree is on')
+            action_exploreTensor.triggered.connect(self.exploreTensorCommand)
+            menu_frame.addAction(action_exploreTensor)
 
         return menu
 
@@ -587,7 +606,16 @@ class QVizSignalHandling(QObject):
         """Draw the node the menu was built on as a history along time."""
         self.plotNodeCommand(alongTime=True)
 
-    def plotNodeCommand(self, alongTime=False, intoFigureKey=None):
+    def exploreTensorCommand(self):
+        """Walk the tensor that holds the node, on a figure of curves.
+
+        The element entries above draw one element and fix the arrays around it;
+        this asks the other question, so the figure opens at the element the tree
+        is standing on and the user walks the arrays from there.
+        """
+        self.plotNodeCommand(tensor=True)
+
+    def plotNodeCommand(self, alongTime=False, intoFigureKey=None, tensor=False):
         """Run the one-node command and show what it drew.
 
         The frame is embedded only once it holds something, so a node the read
@@ -597,7 +625,8 @@ class QVizSignalHandling(QObject):
         command = QVizPlotOneNode(dataTreeView=self.dataTreeView,
                                   treeNode=self.treeNode,
                                   intoFigureKey=intoFigureKey,
-                                  alongTime=alongTime)
+                                  alongTime=alongTime,
+                                  tensor=tensor)
         plotWidget = command.execute()
         if plotWidget is None:
             # The reason is in the log panel of this shot view already.

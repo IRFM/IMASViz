@@ -64,6 +64,34 @@ def sliceLabel(axis):
     return 'dimension %d' % axis.level
 
 
+def elementLabel(node, axes=(), indices=None):
+    """Which element of which array one drawn trace came from, spelled out.
+
+    The parametrized path names the arrays with their loop letters
+    ('flux_loop[i]'), which says a trace came from *some* element of flux_loop
+    and not which. Two curves of one array in one figure therefore carry the same
+    label -- and once the array stops being a control the user reads, nothing on
+    the figure says where its numbers came from at all.
+
+    `axes` are the axes the trace fixes, never the one it draws: substituting the
+    array a curve runs along would label a whole time axis with one index.
+    `indices` is where a tensor exploration's sliders stand; left out, the
+    indices the tree carries are used, which is the element the node is.
+    """
+    path = node.getParametrizedDataPath()
+    if not path:
+        return node.getName()
+    indices = indices or {}
+    for axis in axes:
+        if axis.origin != axis.AOS or not axis.placeholder:
+            continue
+        index = indices.get(axis.key(), axis.index)
+        if index is None:
+            continue
+        path = path.replace('[' + axis.placeholder + ']', '[%d]' % int(index))
+    return path
+
+
 def slicesFor(axesSpec, plottedPositions=(), lengths=None, frames=None):
     """One slice per axis the plot leaves out, in the order the spec lists them.
 

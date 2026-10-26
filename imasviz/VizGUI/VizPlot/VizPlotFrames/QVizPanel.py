@@ -52,10 +52,6 @@ class QVizPanelScrollArea(QScrollArea):
 class QVizPanel(QWidget):
     """One quantity: its plot, and the controls for the axes it leaves out."""
 
-    addTimeSlider = False
-    addCoordinateSlider = False
-    sliderGroup = None
-
     def __init__(self, frame, parent=None):
         super().__init__(parent)
         self._frame = frame

@@ -61,11 +61,12 @@ def _idsWith(leafValues):
     return ids
 
 
-def _leaf(name):
-    """One of the rank 3 leaves, the ion array read at index 1 by the tree."""
+def _leaf(name, ionIndex='1'):
+    """One of the rank 3 leaves, the ion array read at `ionIndex` by the tree."""
     return FakeAxesNode(_idsWith(VALUES), 'foo', 'foo.profiles_1d[itime].ion[j]',
                         'FLT_1D', name=name, itimeIndex=0, coordinates=('1..N',),
-                        indices={'i': '0', 'j': '1'}, lengths={'i': '2', 'j': '2'})
+                        indices={'i': '0', 'j': str(ionIndex)},
+                        lengths={'i': '2', 'j': '2'})
 
 
 def _scalarInTime():
@@ -98,8 +99,13 @@ def _scalarInAoS():
         ion = type(str('Ion'), (), {})()
         ion.gap = gap
         ids.ion.append(ion)
-    return FakeAxesNode(ids, 'foo', 'foo.ion[j]', 'FLT_0D', name='gap',
-                        coordinates=(), indices={'j': '1'}, lengths={'j': '2'},
+    # The array is the only one around the leaf, so it is level 1 and the tree
+    # keys its index by that level's letter -- which is what the axes model reads
+    # back. Spelling it with the next letter used to cost nothing, because the
+    # node's own index was never asked: the read took the index another curve's
+    # control happened to hold.
+    return FakeAxesNode(ids, 'foo', 'foo.ion[i]', 'FLT_0D', name='gap',
+                        coordinates=(), indices={'i': '1'}, lengths={'i': '2'},
                         alongTime=False)
 
 
@@ -116,6 +122,15 @@ def plotted(figure, index=0):
     return list(x), list(y)
 
 
+def legendOf(figure):
+    """The legend's labels, in the order the traces were drawn.
+
+    A legend entry is a `(sample, LabelItem)` pair, and a `LabelItem` keeps its
+    string in `.text`.
+    """
+    return [text.text for _, text in figure.pgPlotWidget.getPlotItem().legend.items]
+
+
 @pytest.mark.ui
 def test_a_rank_three_quantity_becomes_one_curve(figure):
     assert figure.plot(_leaf('z_ion')) == 1
@@ -127,23 +142,49 @@ def test_a_rank_three_quantity_becomes_one_curve(figure):
 
 
 @pytest.mark.ui
-def test_the_figure_offers_a_control_for_every_axis_the_read_pinned(figure):
+def test_the_figure_offers_a_control_for_the_leaf_coordinate_only(figure):
+    """The array the tree stands on is fixed; the leaf's coordinate is not.
+
+    The node asked for is an *element* of `ion`. Another element is another node,
+    so a slider here would move a curve the user never asked about -- and a second
+    curve of the same array would be read at the first one's element. What the tree
+    does not fix is the leaf's own coordinate, and that keeps its control.
+    """
     figure.plot(_leaf('z_ion'))
 
-    assert figure.sliceControls.keys() == [ION, RADIAL]
+    assert figure.sliceControls.keys() == [RADIAL]
     assert [row.nameLabel.text() for row in figure.sliceControls.rows()] == \
-           ['ion:', 'dimension 1:']
+           ['dimension 1:']
+    assert legendOf(figure) == ['foo.profiles_1d[itime].ion[1].z_ion']
 
 
 @pytest.mark.ui
-def test_moving_a_slice_moves_that_curve(figure):
+def test_moving_the_coordinate_slice_moves_that_curve(figure):
     figure.plot(_leaf('z_ion'))
     before = plotted(figure)
 
-    figure.sliceControls.setIndex(ION, 0)
+    figure.sliceControls.setIndex(RADIAL, 2)
 
     assert plotted(figure) != before
-    assert plotted(figure)[1] == [1., 4.]
+    assert plotted(figure)[1] == [30., 60.]
+
+
+@pytest.mark.ui
+def test_two_elements_of_one_array_in_one_figure_are_two_curves(figure):
+    """The loop the per-trace index set exists for.
+
+    The figure used to carry one index per *axis*, shared by every curve, and the
+    read took it from there: asking for ion 0 then ion 1 drew the same element
+    twice, and the legend spelled both traces `ion[j]`, so nothing on screen said
+    they were the same curve.
+    """
+    figure.plot(_leaf('z_ion', ionIndex=0))
+    figure.plot(_leaf('z_ion', ionIndex=1))
+
+    assert plotted(figure, 0)[1] == [1., 4.]
+    assert plotted(figure, 1)[1] == [10., 40.]
+    assert legendOf(figure) == ['foo.profiles_1d[itime].ion[0].z_ion',
+                                'foo.profiles_1d[itime].ion[1].z_ion']
 
 
 @pytest.mark.ui
@@ -167,25 +208,32 @@ def test_the_time_axis_is_labelled_as_time(figure):
 
 @pytest.mark.ui
 def test_two_quantities_of_one_array_share_one_control(figure):
-    # The ion array is one array whether its z or its density is drawn, so one
-    # control moves both -- and a second control for the same array would let the
-    # two curves disagree about which ion they came from.
+    # The leaf is sampled on one radial grid whether its z or its density is
+    # drawn, so one control moves both. The ion array is not a control at all:
+    # each curve keeps the element the tree was standing on, which is why the two
+    # here can disagree about which ion they came from and be right both times.
     figure.plot(_leaf('z_ion'))
     figure.plot(_leaf('density'))
 
-    assert figure.sliceControls.keys() == [ION, RADIAL]
+    assert figure.sliceControls.keys() == [RADIAL]
     assert figure.curveCount() == 2
+    assert legendOf(figure) == ['foo.profiles_1d[itime].ion[1].z_ion',
+                                'foo.profiles_1d[itime].ion[1].density']
 
 
 @pytest.mark.ui
-def test_moving_a_shared_control_moves_both_curves_together(figure):
-    figure.plot(_leaf('z_ion'))
-    figure.plot(_leaf('density'))
+def test_two_elements_of_one_array_keep_their_own_curve(figure):
+    """What the shared control used to make impossible, and what replaced it.
 
-    figure.sliceControls.setIndex(ION, 0)
+    Two quantities of one array share their coordinate; two elements of that array
+    share nothing. The tensor representation, where one slider does drive several
+    traces at once, is test_60's subject.
+    """
+    figure.plot(_leaf('z_ion', ionIndex=0))
+    figure.plot(_leaf('density', ionIndex=1))
 
     assert plotted(figure, 0)[1] == [1., 4.]
-    assert plotted(figure, 1)[1] == [7., 14.]
+    assert plotted(figure, 1)[1] == [70., 140.]
 
 
 @pytest.mark.ui

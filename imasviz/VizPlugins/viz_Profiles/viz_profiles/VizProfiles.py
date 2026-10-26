@@ -632,10 +632,7 @@ class GlobalPlotWidget():
 
     def __init__(self, plotAxis):
         super(GlobalPlotWidget, self).__init__()
-        self.addTimeSlider = True
-        self.addCoordinateSlider = False
         self.plotAxis = plotAxis
-        self.sliderGroup = None
 
     def getPlotAxis(self):
         return self.plotAxis

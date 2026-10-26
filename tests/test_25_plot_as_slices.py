@@ -119,13 +119,17 @@ def test_every_selected_node_of_the_view_is_drawn(qtbot):
 @pytest.mark.ui
 def test_a_rank_three_selection_is_not_refused(qtbot):
     # The legacy command logs 'Plots dimension larger than 1D are currently not
-    # supported.' and stops here.
+    # supported.' and stops here. The ion array the tree is standing on is fixed
+    # and spelled in the legend, so only the leaf's own coordinate gets a control.
     frame = _curve(_rankThreeLeaf())
 
     assert frame.curveCount() == 1
-    assert frame.sliceControls.keys() == [ION, RADIAL]
+    assert frame.sliceControls.keys() == [RADIAL]
     assert [row.nameLabel.text() for row in frame.sliceControls.rows()] == \
-           ['ion:', 'dimension 1:']
+           ['dimension 1:']
+    assert [text.text for _, text in
+            frame.pgPlotWidget.getPlotItem().legend.items] == \
+           ['foo.profiles_1d[itime].ion[1].z_ion']
 
 
 @pytest.mark.ui
@@ -133,9 +137,9 @@ def test_the_curve_still_answers_its_controls_after_the_command_is_done(qtbot):
     # The command is gone by then; the frame holds the loop on its own.
     frame = _curve(_rankThreeLeaf())
 
-    frame.sliceControls.setIndex(ION, 0)
+    frame.sliceControls.setIndex(RADIAL, 2)
 
-    assert plotted(frame)[1] == [1., 4.]
+    assert plotted(frame)[1] == [30., 60.]
 
 
 @pytest.mark.ui

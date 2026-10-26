@@ -682,14 +682,9 @@ class QVizTreeNode(QTreeWidgetItem):
 
         if time_index is None:
             time_index = self.timeValue()
-            if plotWidget is not None and plotWidget.addTimeSlider:
-                if plotWidget.sliderGroup is not None:
-                    time_index = plotWidget.sliderGroup.slider.value()
 
         if coordinate_index is None:
             coordinate_index = 0
-            if plotWidget is not None and plotWidget.addCoordinateSlider:
-                coordinate_index = plotWidget.sliderGroup.slider.value()
 
         plotAxis = None
         if plotWidget is not None:
