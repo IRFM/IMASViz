@@ -191,7 +191,10 @@ same figure. A figure holding more traces than the palette holds colours
    .. note::
       When one quantity is drawn as several traces, each takes its colour and
       its own legend label, spelled ``path[row index]`` -- the path alone would
-      name two different traces identically.
+      name two different traces identically. And the ``path`` of a trace taken
+      from an array of structures names the **element** it came from,
+      ``magnetics.flux_loop[3].flux.data`` and not ``flux_loop[i]`` -- see
+      :ref:`element_or_tensor`.
 
 Two things are left out of that palette, on purpose. The confidence bands of
 section :ref:`Displaying error bars and/or confidence bands
@@ -382,14 +385,60 @@ follows:
 
      Example of plot figure, created by plotting data from node selection.
 
+.. _element_or_tensor:
+
+One element of an array, or the array itself
+--------------------------------------------
+
+The shot view shows the **elements** of an array: right-clicking
+**magnetics.flux_loop[3].flux.data** asks for one of the **17** things that array
+holds, not for the array. IMASViz answers that in two ways, and they are not the
+same picture:
+
+* an **element** — every plot entry of the tree. The arrays the node stands on are
+  fixed at the element the node names, and that element is written where the user
+  can read it: the legend says **flux_loop[3]**, not **flux_loop[i]**. Nothing on
+  the figure offers to move those indices, because moving one would answer a
+  different quantity than the one asked for. What the tree does *not* fix is the
+  leaf's own coordinate -- the index inside **flux.data** -- and that keeps a
+  control of its own.
+* the **tensor** — :guilabel:`Plot <node> to` |icon_plotSingle| ->
+  :guilabel:`Figure` |icon_Figure| -> :guilabel:`Explore this tensor`. One figure
+  where every axis the curve leaves out gets a slider, so the elements of that
+  array can be walked one after the other. The figure opens on the element the
+  tree was standing on, not on the first one.
+
+:guilabel:`Keep this curve`, under the sliders, freezes the curve that is live at
+the indices it stands on; the sliders then carry on with a new curve, and the
+frozen one stays. Unchecking it takes the frozen curve back out. That is how a
+family of elements -- **flux_loop[0]**, **flux_loop[5]**, **flux_loop[12]** -- is
+laid on one figure to be compared.
+
+A slider costs a line of the window, so the sliders of a figure of curves are
+folded behind one summary line, **flux_loop 5 / 16**, with a
+:guilabel:`More` / :guilabel:`Fewer` button to open them. A folded band still
+answers: it is hidden, not dismantled. An :guilabel:`Image` figure and a
+:guilabel:`Table Plot View` panel keep theirs open -- there, the rows are the only
+place saying which slice the colours and the numbers stand for (see
+:ref:`plotting_2d_arrays`).
+
+A quantity of two axes to draw at once belongs on an :guilabel:`Image` figure, and
+an image window does not explore its tensor: the axis an exploration would move is
+the one the pictures are already spread over. Such a request is named in the log
+panel of the shot view and costs no window.
+
 Plotting 1D array as a function of coordinate1 along the time axis
 ------------------------------------------------------------------
 
-One of the IMASViz features is to plot data along coordinate1 specified 
-in the IMAS Data Dictionary. Coordinate1 data can be set
-using a time slider along the time axis.
+One of the IMASViz features is to plot data along coordinate1 specified
+in the IMAS Data Dictionary.
 This is allowed for IDS nodes, located within **time_slice[:]** structure, and
 it is already set as a default plotting feature for such arrays.
+
+The curve answers the time slice the node names: right-clicking
+**equilibrium.time_slice[0].profiles_1d.phi** draws slice **0**, and the legend
+says so. The other slices are reached through :guilabel:`Explore this tensor`,
+which puts a slider on **time_slice** (:ref:`element_or_tensor` above).
 
 The procedure to plot such 1D array is quite identical as in section
 :ref:`plotting_single_1d_array`. The procedure is described and demonstrated
@@ -432,8 +481,10 @@ on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
      first **phi** time slice
      (**ids.equilibrium.time_slice[0].profiles_1d.phi**).
 
-   The time slider allows you to move along the time axis and the plot will
-   change accordingly.
+   The slice drawn is the one the node names. To walk the time axis, ask
+   :guilabel:`Explore this tensor`: it puts a slider on **time_slice**, starting
+   at the slice that was clicked, and the plot changes with it
+   (:ref:`element_or_tensor`).
 
    .. figure:: images/plotWidget_function_of_coordinate1_2.png
      :align: center
@@ -444,16 +495,19 @@ on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
      represented as a function of coordinate1
      (**ids.equilibrium.time_slice[48].profiles_1d.psi**).
 
-.. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to
-          such existing plot might not work as expected, as the sliding through
-          indexes works directly only the last added plot.
+.. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to such
+          an existing figure adds a curve of its own, read at the element the tree
+          was standing on and labelled with it. The slices of one quantity are
+          shared by the curves that sample on them; the element an array of
+          structures stands on is not shared, and a curve added later does not
+          move an earlier one.
 
 Plotting 1D arrays at given coordinate1 index as a function of the time
 -----------------------------------------------------------------------
 
 One of the IMASViz features is to plot data as a function of time for a given
-coordinate1 index which can be set using a slider. This is allowed for IDS nodes, 
-located within **time_slice[:]** structure, and it is already set as a 
+coordinate1 index which can be set using a slider. This is allowed for IDS nodes,
+located within **time_slice[:]** structure, and it is already set as a
 default plotting feature for such arrays.
 
 The procedure is described and demonstrated
@@ -498,8 +552,11 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
      slices (marked by **[:]**) and X-axis values are time values found in
      **equilibrium.time**.
 
-   The time slider allows you to move along the array index and the plot will
-   change accordingly.
+   The coordinate1 slider allows you to move along the array index and the plot
+   will change accordingly. That slider belongs to the quantity itself: the tree
+   does not fix an index inside **profiles_1d.f**, and the curve follows it. The
+   time slice of the node is fixed and written in the legend; to walk it, ask
+   :guilabel:`Explore this tensor` (:ref:`element_or_tensor`).
 
    .. figure:: images/plotWidget_function_of_time_2.png
      :align: center
@@ -510,9 +567,12 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
      slices (marked by **[:]**) and X-axis values are time values found in
      **equilibrium.time** node (array of FLT_1D values).
 
-.. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to
-          such existing plot might not work as expected, as the sliding through
-          indexes works directly only the last added plot.
+.. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to such
+          an existing figure adds a curve of its own, and the coordinate1 slider
+          moves the curves that sample on that coordinate. On a figure built by
+          :guilabel:`Explore this tensor`, :guilabel:`Keep this curve` freezes the
+          live curve at the indices it stands on before the sliders go on to
+          another element, so the elements of one array can be compared at once.
 
 .. _multiplot_features:
 

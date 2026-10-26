@@ -108,6 +108,11 @@ its :guilabel:`2 / 2` index. The axis spread across the pictures gets none: its
 elements are already on screen. Moving a control re-reads and moves every picture at
 once.
 
+Those rows stay open on an image window. They are the only place the window says
+which slice the colours stand for, so hiding them would take the answer away rather
+than the room; a figure of :ref:`1D curves <plotting_1d_arrays>` folds its rows into
+one summary line, because there the legend spells the same thing out.
+
 Slices
 ^^^^^^
 

@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 841 passed, 1 xfailed, ~126 s, offscreen
+python3 -m pytest tests/ -q     # 859 passed, 1 xfailed, ~136 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -509,6 +509,22 @@ artifacts of this codebase, and several are load-bearing:
   test. One run at a time; when a run dies with no summary, check for a concurrent one
   before believing a hang (`-o faulthandler_timeout=45` is the flag that names a real
   hang — `--faulthandler-timeout` is not an option of this pytest).
+- A curve figure's slice indices are **per trace**, not per figure (T35), and a plot
+  entry draws an **element**: the arrays of structures the tree node stands on are
+  pinned to the indices that node carries and written into the legend
+  (`magnetics.flux_loop[3].flux.data`), so no control exists for them — only the leaf's
+  own coordinate keeps one. The tensor representation is a **separate entry**,
+  *Explore this tensor* (`QVizPlotOneNode(tensor=True)`), which puts a slider on every
+  axis the curve leaves out, opened on the indices the tree stood on, with *Keep this
+  curve* freezing a trace so a family can pile up. Do not "restore" a control for a
+  pinned AOS on a plain plot entry: measured before the change, that shared dict made
+  two elements of one array answer **identical samples** (`flux_loop`, 17 filled
+  elements of 17 344 samples). Two facts to keep when driving this: an AOS index is read
+  back under its **level's** letter (`QVizGlobalValues.indices[level]`), not the letter
+  spelled in the parametrized path — a stub writing `foo.ion[j]` for a level-1 array
+  answers `axis.index is None` — and a curve figure's band **folds** to one summary line
+  (`QVizSliceControls(foldable=True)`), while an image window and a table panel stay
+  unfolded because there the rows are the only place saying which slice is drawn.
 
 ## Verified in situ (ACH/Gateway module stack)
 
