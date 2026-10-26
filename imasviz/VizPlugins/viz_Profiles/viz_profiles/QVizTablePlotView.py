@@ -25,10 +25,16 @@ from PySide6.QtWidgets import QWidget, QScrollArea
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from imasviz.Viz_API import Viz_API
-from imasviz.VizUtils import getRGBColorList, PlotTypes, getScreenGeometry
+from imasviz.VizGUI.VizPlot.QVizCurveColors import lightColourFor
+from imasviz.VizUtils import PlotTypes, getScreenGeometry
 from .CustomizedViewBox import CustomizedViewBox
 from pyqtgraph.graphicsItems.ViewBox import ViewBox
 import numpy as np
+
+# The line this window draws its curves with. Its own, not the library's: a
+# panel of this table is a few tens of points wide, and the default width of 1
+# disappears in it.
+PLOT_LINE_WIDTH = 3
 
 
 class QVizTablePlotView(pg.GraphicsLayoutWidget):
@@ -190,8 +196,13 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             :param node:
             :param plotAxis:
         """
-        # Set pen
-        pen = self.setPen()
+        # Every panel of this window is one curve of one quantity, so every
+        # panel is drawn in the same colour: `lightColourFor(0)`, asked of the
+        # module that owns the palette, because this window paints white
+        # (`setBackground` below) and the palette of a figure of curves is
+        # picked for the black those figures paint.
+        pen = pg.mkPen(lightColourFor(0), width=PLOT_LINE_WIDTH,
+                       style=QtCore.Qt.SolidLine)
         viewBox = CustomizedViewBox(qWidgetParent=self, imas_viz_api=self.imas_viz_api)
         viewBox.id = n
         viewBox.addVizTreeNode(node)
@@ -284,21 +295,6 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
             except:
                pass
             i += 1
-
-    @staticmethod
-    def setPen():
-        """Set pen (line design) for plot.
-        """
-        # Set line color
-        # - Get list of available global colors (RGB)
-        RGBlist = getRGBColorList()
-        # - Note: self.RGBlist[0] -> blue color
-        color = RGBlist[0]
-        # Set style
-        style = QtCore.Qt.SolidLine
-        # Set pen
-        pen = pg.mkPen(color=color, width=3, style=style)
-        return pen
 
     def modifySize(self, n_plots):
         """Modify TablePlotView size.

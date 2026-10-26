@@ -26,18 +26,45 @@ tell apart. Measured on the reference case (WEST 54924 run 0, dictionary
 * the selection figure does the same: **3** nodes selected, **2** curves drawn
   (the third has no value along the plotted axis and is refused by name), both
   `tuple(200, 200, 200)`;
-* the background those lines are drawn on is **black**: the configuration default
-  is `background 'k'`, and the view box of the figure built by *Plot X to ->
-  Figure* paints `(0, 0, 0, 255)`. Nothing in `imasviz` changes it -- the only
-  `setBackground` in the package is the Profiles plugin's own table window, which
-  sets white. So a palette has to be legible on black, which is why this list is
-  **not** `getRGBColorList()`: that list carries `#FFFF00` on a white assumption,
-  and three near-whites (`#cce5ff`, `#d3d3d3`, `#C0C0C0`) that read as background
-  noise here, and its order comes out of `GlobalColors.__dict__`.
+* the background those lines are drawn on is **black** -- and it is the *view*
+  that paints it, not the plot. Measured: `PlotWidget.backgroundBrush()` answers
+  `SolidPattern (0, 0, 0, 255)`, from pyqtgraph's own configuration default
+  (`'background': 'k'`, `pyqtgraph/__init__.py:45`, applied by
+  `GraphicsView.__init__` through `setBackground('default')`); `imasviz` never
+  touches it. Do not ask `viewBox.background.brush()` -- that is a
+  `QGraphicsRectItem` pyqtgraph only shows when `setBackgroundColor` was called,
+  and it was not: measured on both a curve figure and a plugin panel, the item is
+  **hidden** and its brush **NoBrush**, while its `color()` still answers
+  `(0, 0, 0, 255)`. That reading says nothing about the ground.
+
+So a palette has to be legible on black, which is why this list is **not**
+`getRGBColorList()`: that list carries `#FFFF00` on a white assumption, and three
+near-whites (`#cce5ff`, `#d3d3d3`, `#C0C0C0`) that read as background noise here,
+and its order comes out of `GlobalColors.__dict__`.
 
 The confidence band of `QVizCurveErrors` is filled with `Qt.red`, so this palette
 holds **no pure red**: a band and a trace in the same colour is the confusion this
 row exists to remove, not one it should reintroduce.
+
+`LIGHT_CURVE_COLOURS` is the same answer for a window that paints the other
+ground. The Profiles plugin's table window sets `setBackground((255, 255, 255))`
+(`QVizTablePlotView.py:75`), measured `SolidPattern (255, 255, 255, 255)` on its
+view: it is the only `setBackground` in the package, and it is white. Half of the
+black palette vanishes there -- measured contrast against that white: cyan
+**1,25**, chartreuse **1,30**, spring green **1,35**, gold **1,40**, orange
+**2,33**, magenta **3,14** -- so the plugin asks this list instead. Its entries
+are picked against the same three rules, measured here: a contrast of at least
+**4,5** on white (the weakest, teal, answers **4,77**), no pure red (those panels
+carry the same `QVizCurveErrors` band as a curve figure), and no colour whose
+three channels are all at or above 128 -- a near-white on a white ground. Ordered
+so the cycle stays legible where it closes: the smallest squared rgb distance
+between two consecutive entries, the last and the first included, is **32 768**.
+
+The plugin draws **one** of these, the first, on every panel -- and not because a
+palette of 8 was too small for it. Measured on the reference case, its window
+holds **41** panels carrying **41 distinct parametrized paths**, one panel per
+path: there is nothing for a colour to group, and cycling would answer the same
+colour five times in one window.
 """
 
 import pyqtgraph as pg
@@ -72,3 +99,32 @@ def nameFor(index):
 def penFor(index):
     """The pen of the index-th trace, of the library's own default width."""
     return pg.mkPen(colourFor(index))
+
+
+# For a window that paints white, and so cannot use the list above: half of it
+# answers a contrast under 2,5 there. Same three rules -- contrast on the ground
+# it is painted on, no pure red (the confidence band is red wherever it is drawn),
+# no near-white -- and an order that keeps the cycle legible where it closes.
+# `lightColourFor(0)` is what the Profiles plugin draws every panel with.
+LIGHT_CURVE_COLOURS = (
+    ('navy', (0, 0, 128)),
+    ('maroon', (128, 0, 0)),
+    ('green', (0, 128, 0)),
+    ('purple', (128, 0, 128)),
+    ('teal', (0, 128, 128)),
+    ('dark magenta', (140, 0, 110)),
+    ('blue', (0, 0, 255)),
+    ('sienna', (160, 82, 45)),
+)
+
+LIGHT_CYCLE = len(LIGHT_CURVE_COLOURS)
+
+
+def lightColourFor(index):
+    """The rgb triple of the index-th trace drawn on a white ground."""
+    return LIGHT_CURVE_COLOURS[index % LIGHT_CYCLE][1]
+
+
+def lightNameFor(index):
+    """What that colour is called -- for a test, a log line, or the manual."""
+    return LIGHT_CURVE_COLOURS[index % LIGHT_CYCLE][0]

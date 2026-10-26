@@ -91,7 +91,10 @@ import imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin as profilesPlugin
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
+from imasviz.VizGUI.VizPlot.QVizCurveColors import lightColourFor, lightNameFor
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView \
+    import PLOT_LINE_WIDTH, QVizTablePlotView
 from imasviz.VizUtils import FigureTypes
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI, case_uri_or_skip)
@@ -347,6 +350,36 @@ def test_the_window_drew_every_curve_the_case_holds(session):
     # Qt answers no PlotItem at all -- an earlier probe read that as "the plugin
     # builds 0 plot", on a window that had drawn 41.
     assert session.window.findChildren(pyqtgraph.PlotItem) == []
+
+
+def test_every_panel_of_the_window_is_drawn_in_one_named_colour(session):
+    """One colour, asked of the module that owns the palette.
+
+    Measured before: all **41** curves answered `(0, 0, 255)` at width 3, a
+    colour `getRGBColorList()[0]` had reached by walking `GlobalColors.__dict__`
+    and moving `BLUE_HEX` to the front. The window paints white, so it asks the
+    light palette now -- and it asks it **once**, because these 41 panels carry
+    41 distinct parametrized paths: a colour has nothing here to group, and a
+    cycle would answer the same colour five times in one window. What the window
+    keeps for itself is the width, 3, which a panel a few tens of points wide
+    needs and the library's default of 1 does not.
+    """
+    curves = [item for plot in plotsOf(session.window)
+              for item in plot.listDataItems()]
+    pens = [curve.opts['pen'] for curve in curves]
+
+    assert {pen.color().getRgb()[:3] for pen in pens} == {lightColourFor(0)}
+    assert {pen.width() for pen in pens} == {PLOT_LINE_WIDTH}
+    assert {pen.style().name for pen in pens} == {'SolidLine'}
+    # The colour has a name, so a refusal and the manual can say which one.
+    assert lightNameFor(0) == 'navy'
+    # And the ground it was picked against is the one these panels paint. It is
+    # the table view that paints, not the window holding the tabs: the view is a
+    # `QGraphicsView`, and it is where `setBackground` was called.
+    tables = session.window.findChildren(QVizTablePlotView)
+    assert len(tables) == TABS
+    assert {table.backgroundBrush().color().getRgb()[:3] for table in tables} \
+        == {(255, 255, 255)}
 
 
 def test_the_time_row_under_the_tabs_is_there(session):
