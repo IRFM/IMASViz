@@ -8,7 +8,7 @@ from functools import partial
 from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 from PySide6.QtWidgets import QMessageBox, QLineEdit, QMenu
 from PySide6.QtGui import QAction
-from imasviz.VizGUI.VizPlot.QVizPlotConfigUI import QVizPlotConfigUI
+from imasviz.VizGUI.VizPlot.QVizPlotStyleUI import QVizPlotStyleUI
 from imasviz.VizGUI.VizPlot.QVizCurveErrors import (CONFIDENCE_BANDS, ERROR_BARS,
                                                     ERROR_BARS_SLICED,
                                                     QVizCurveErrors)
@@ -51,9 +51,6 @@ class CustomizedViewBox(pg.ViewBox):
         self.contextMenu = None
 
         self.imas_viz_api = imas_viz_api
-
-        # Default id
-        self.id = 0
 
         # Menu update property
         self.menuUpdate = True
@@ -224,8 +221,40 @@ class CustomizedViewBox(pg.ViewBox):
     def showConfigurePlot(self):
         """Set and show custom plot configuration GUI.
         """
-        self.plotConfDialog = QVizPlotConfigUI(viewBox=self)
+        self.plotConfDialog = QVizPlotStyleUI(viewBox=self)
         self.plotConfDialog.show()
+
+    # -- what the Configure Plot dialogue asks this view box ---------------
+    #
+    # The dialogue used to work that out by asking what the window it is drawn
+    # in is *called*: four branches on `qWidgetParent.objectName()`, of which the
+    # only caller in the package took one ('QVizPlugin'), and a last branch
+    # reading a `pgPlotWidget` attribute no frame of the package has. These three
+    # answers are asked directly, so the dialogue needs no name and no fallback.
+
+    def styleCurves(self):
+        """The drawn curves of this panel that hand styling may change.
+
+        `listDataItems()` answers the `PlotDataItem`s of the plot and nothing
+        else: measured on a panel holding 4 curves plus an `ErrorBarItem`, an
+        `InfiniteLine` and a `FillBetweenItem` -- all three in `addedItems` --
+        it answers **4**. So the error bars and the band this window can draw are
+        not offered as curves to style, and no list of item types to skip is
+        needed to keep them out.
+        """
+        return list(self.plotItem.listDataItems())
+
+    def styleText(self):
+        """The plot item holding this panel's title and axis labels."""
+        return self.plotItem
+
+    def styleMargins(self):
+        """The layout whose margins to set, or None for no margins section.
+
+        Asked of the window, which is where the answer is: a panel of this table
+        lives in the layout of its window's `ci`, not in one of the view box.
+        """
+        return self.qWidgetParent.panelLayout()
 
     def errorQuantities(self):
         """Which drawn curve came from which node, as [(node, PlotDataItem)].

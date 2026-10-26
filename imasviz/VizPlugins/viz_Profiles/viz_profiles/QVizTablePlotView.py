@@ -168,6 +168,25 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         for i in range(count):
             self.addViewBox(colspan=1)
 
+    def panelLayout(self):
+        """The layout this window's panels live in.
+
+        Asked of the window by the Configure Plot dialogue when it sets margins:
+        a panel is positioned by the grid of the `GraphicsLayout` this widget
+        installed as its central item, so the answer is `ci.layout`. Measured on
+        a fresh window: it reads (9.0, 9.0, 9.0, 9.0), and setting its left
+        margin to 120 moved three panels from x = 9.0, 305.0, 601.0 to 120.0,
+        379.0, 638.0.
+
+        Two names nearby answer nothing useful, which is why this is a method and
+        not one of them. `self.layout()` answers None -- the QGraphicsWidget is
+        not the one holding the panels. `self.centralLayout` is a name pyqtgraph
+        leaves behind when `GraphicsLayoutWidget` replaces the central widget
+        `GraphicsView` built with its own `ci`: reading it answers
+        `RuntimeError: Internal C++ object (QGraphicsGridLayout) already deleted`.
+        """
+        return self.ci.layout
+
     def addViewBoxes(self):
         if self.nb_plots_per_line != 0:
             for i in range(self.ncols - self.nb_plots_per_line):
@@ -204,7 +223,6 @@ class QVizTablePlotView(pg.GraphicsLayoutWidget):
         pen = pg.mkPen(lightColourFor(0), width=PLOT_LINE_WIDTH,
                        style=QtCore.Qt.SolidLine)
         viewBox = CustomizedViewBox(qWidgetParent=self, imas_viz_api=self.imas_viz_api)
-        viewBox.id = n
         viewBox.addVizTreeNode(node)
         viewBox.plotAxis = plotAxis
         title = label.replace("\n", "")
