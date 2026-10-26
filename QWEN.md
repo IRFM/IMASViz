@@ -614,7 +614,11 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   a curve figure builds — what the plugin keeps is its menu and its node-to-curves map.
   A curve figure answers those three lines too: its right click goes from pyqtgraph's
   **4** entries to **7**, and `Configure Plot` is the one entry that stayed plugin-only
-  (it is row T32 of `LEGACY_REPLACEMENT.md`).
+  (it is row T32 of `LEGACY_REPLACEMENT.md`, and the dialogue behind it is
+  `QVizPlotStyleUI`). That dialogue **asks** its caller and does not name it: the
+  view box answers `styleCurves()`, `styleText()` and `styleMargins()`, and
+  `QVizTablePlotView.panelLayout()` answers `ci.layout` — the layout its panels
+  live in. A window answering `None` gets no margins section.
 - **pyqtgraph 0.13.7 hands out no colour of its own**, so a figure cannot rely on it:
   `colorCycle`, `colorLists` and `currentColor` appear **0** time in the package, and a
   curve drawn without a pen keeps the instance default `opts['pen'] == (200, 200, 200)`

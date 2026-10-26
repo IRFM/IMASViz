@@ -215,8 +215,8 @@ Setting color and line properties of plots shown in the Plot Display.
      :guilabel:`Configure Plot` feature in the right-click menu.
 
 Each plot can be customized. By selecting this feature a separate GUI window
-will open, listing all plots within the plot display window and their
-properties that can be customized.
+will open, listing the curves of the plot whose menu was used and the properties
+that can be changed on each of them by hand.
 
    .. figure:: images/plotDisplay_configurePlot_window.png
      :align: center
@@ -227,6 +227,20 @@ properties that can be customized.
      :align: center
 
      Plot configuration example for single plot.
+
+The window answers three questions, in three sections: the properties of each
+drawn curve -- colour, line style and thickness, symbol, symbol size and the two
+symbol colours; the text of the plot and of the axes it draws a label for, with
+bold, italic and size; and, for a window that lays several plots out, the
+margins around them. Each change is applied to the plot as it is made.
+:guilabel:`Cancel` puts back what the window found when it opened, and
+:guilabel:`OK` leaves the changes in place.
+
+A curve drawn without a symbol offers :guilabel:`None` in its symbol list, which
+is how a symbol already drawn is taken back off. The error bars and confidence
+bands of section :ref:`plotting_error_bars_and_confidence_bands` are not listed
+as curves to style: they belong to a curve, and are turned on and off from the
+right-click menu.
 
 Plot options
 ^^^^^^^^^^^^
