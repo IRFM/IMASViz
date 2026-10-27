@@ -149,6 +149,22 @@ def figureSubMenu(menu):
                          % [action.text() for action in menu.actions()])
 
 
+def popUpEntries(view, node):
+    """The entries the right click offers at its top level, in the order shown.
+
+    The node is equipped as the tree builder leaves a real one, because the whole
+    pop-up is built here and not one entry at a time: the view the node belongs
+    to, which the select/unselect command walks up to find, and the dictionary's
+    default coordinates, which the coordinate1 entry reads. FakeAxesNode carries
+    neither, because no other test of this file builds a menu.
+    """
+    node.dataTreeView = view
+    node.default_coordinates = {}
+    menu = QVizSignalHandling(dataTreeView=view,
+                              treeNode=node).buildContextMenu(node)
+    return [action.text() for action in menu.actions()]
+
+
 # -- the element representation -------------------------------------------
 
 @pytest.mark.ui
@@ -332,9 +348,7 @@ def view(qapp):
 
 @pytest.mark.ui
 def test_the_entry_is_offered_when_a_curve_figure_has_an_array_to_pin(view):
-    menu = QVizSignalHandling(dataTreeView=view,
-                              treeNode=_leaf()).menuPlotCurrentSignalNode()
-    texts = [action.text() for action in figureSubMenu(menu).actions()]
+    texts = popUpEntries(view, _leaf())
 
     assert 'Explore this tensor' in texts
 
@@ -343,14 +357,36 @@ def test_the_entry_is_offered_when_a_curve_figure_has_an_array_to_pin(view):
 def test_the_entry_is_not_offered_when_there_is_nothing_to_walk(view):
     # A quantity held only by the dynamic array: the curve is already running
     # along it, so a slider for it would ask for what the abscissa shows.
-    menu = QVizSignalHandling(dataTreeView=view,
-                              treeNode=_inTheDynamicArrayOnly()
-                              ).menuPlotCurrentSignalNode()
-    texts = [action.text() for action in figureSubMenu(menu).actions()]
+    texts = popUpEntries(view, _inTheDynamicArrayOnly())
 
     assert 'Explore this tensor' not in texts
     assert QVizNodePlotting(_inTheDynamicArrayOnly()).tensorAxes() == []
     assert [axis.name for axis in QVizNodePlotting(_leaf()).tensorAxes()] == ['ion']
+
+
+@pytest.mark.ui
+def test_the_entry_answers_the_node_beside_the_time_entry(view):
+    """Where the entry belongs: the pop-up's top level, next to the time entry.
+
+    The two entries answer one question about the quantity -- run along time, or
+    walk the arrays that hold it -- and neither answer needs a window picked. The
+    submenu that lists windows is the one that asks which window, so an entry
+    that opens a window of its own had no business hanging inside it, two levels
+    down and below the figures it may join.
+    """
+    node = _leaf()
+    texts = popUpEntries(view, node)
+
+    assert texts.index('Explore this tensor') == (
+        texts.index('Plot as function of time') + 1)
+    assert texts.index('Explore this tensor') < texts.index('Plot z_ion to')
+
+    # And it is not left behind in the submenu it came out of: one entry, one
+    # place to find it.
+    menu = QVizSignalHandling(dataTreeView=view,
+                              treeNode=node).menuPlotCurrentSignalNode()
+    assert 'Explore this tensor' not in [action.text()
+                                         for action in figureSubMenu(menu).actions()]
 
 
 @pytest.mark.ui

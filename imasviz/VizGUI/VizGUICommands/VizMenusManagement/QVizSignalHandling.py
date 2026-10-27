@@ -157,6 +157,32 @@ class QVizSignalHandling(QObject):
 
         return action_plotAsFunctionOfTime
 
+    def actionExploreThisTensor(self):
+        """The entry that puts the arrays holding the quantity under sliders.
+
+        The other question about the same quantity. Every plot entry draws the
+        **element** the tree is standing on, with those arrays fixed and spelled
+        out in the legend; this one draws the **tensor** they belong to, with a
+        slider per array the curve leaves out, opened on the element the tree is
+        on. Offered from the axes alone, and only when a curve figure would have
+        such an array to pin: for a quantity held only by the dynamic array, the
+        curve is already running along it, so there is nothing left to explore.
+        """
+        plotting = QVizNodePlotting(self.treeNode)
+        if not (plotting.isPlottable() and plotting.curveAbscissae()
+                and plotting.tensorAxes()):
+            return None
+
+        action_exploreTensor = QAction(
+            GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'),
+            'Explore this tensor', self)
+        action_exploreTensor.setToolTip(
+            'Draw this quantity on a figure of curves with a slider per '
+            'array that holds it, starting at the element the tree is on')
+        action_exploreTensor.triggered.connect(self.exploreTensorCommand)
+
+        return action_exploreTensor
+
     def actionSelectOrUnselectSignalNode(self):
         """Set action to select/unselect signal node.
 
@@ -238,16 +264,20 @@ class QVizSignalHandling(QObject):
         the one this command builds and knows how to fill.
 
         Arguments:
-            parentMenu (QMenu) : the menu to hang the "as function of time" entry
-                                 from. It belongs to the context menu, not to this
-                                 submenu -- but it is handed by the caller, because
-                                 reading self.contextMenu made this method work
-                                 only after buildContextMenu had run.
+            parentMenu (QMenu) : the menu to hang the node's two stand-alone
+                                 entries from. They belong to the context menu,
+                                 not to this submenu -- but they are handed by the
+                                 caller, because reading self.contextMenu made this
+                                 method work only after buildContextMenu had run.
         """
-        # - Add action for ploting signal node as a function of time
-        action_plotAsFunctionOfTime = self.actionPlotAsFunctionOfTime()
-        if action_plotAsFunctionOfTime is not None and parentMenu is not None:
-            parentMenu.addAction(action_plotAsFunctionOfTime)
+        # The two questions the node answers before any window is picked: run
+        # along time, or explore the arrays that hold the quantity. They hang off
+        # the pop-up because neither answer needs a window chosen -- the submenu
+        # built below is the one that asks which window.
+        for action in (self.actionPlotAsFunctionOfTime(),
+                       self.actionExploreThisTensor()):
+            if action is not None and parentMenu is not None:
+                parentMenu.addAction(action)
 
         menu = QMenu('Plot ' + self.signalNodeName + ' to', parentMenu)
         if parentMenu is None:
@@ -308,24 +338,6 @@ class QVizSignalHandling(QObject):
                 partial(self.addSignalPlotToFig, id_Fig))
             # Add to submenu
             menu_frame.addAction(action_addSignalPlotToFig)
-
-        # The other question about the same quantity. Every entry above draws the
-        # element the tree is standing on, with the arrays that hold it fixed and
-        # spelled out in the legend; this one puts those arrays under sliders so
-        # the tensor itself can be walked, curve by curve, on one abscissa. It is
-        # offered from the axes alone -- the same reading as the submenu title --
-        # and only when a curve figure would have such an array to pin: for a
-        # quantity held only by the dynamic array, the curve is already running
-        # along it and there is nothing left to explore.
-        if abscissae and plotting.tensorAxes():
-            action_exploreTensor = QAction(
-                GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'),
-                'Explore this tensor', menu_frame)
-            action_exploreTensor.setToolTip(
-                'Draw this quantity on a figure of curves with a slider per '
-                'array that holds it, starting at the element the tree is on')
-            action_exploreTensor.triggered.connect(self.exploreTensorCommand)
-            menu_frame.addAction(action_exploreTensor)
 
         return menu
 
