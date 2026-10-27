@@ -429,11 +429,15 @@ same picture:
   different quantity than the one asked for. What the tree does *not* fix is the
   leaf's own coordinate -- the index inside **flux.data** -- and that keeps a
   control of its own.
-* the **tensor** — :guilabel:`Plot <node> to` |icon_plotSingle| ->
-  :guilabel:`Figure` |icon_Figure| -> :guilabel:`Explore this tensor`. One figure
-  where every axis the curve leaves out gets a slider, so the elements of that
-  array can be walked one after the other. The figure opens on the element the
-  tree was standing on, not on the first one.
+* the **tensor** — :guilabel:`Explore this tensor`, in the pop-up menu itself,
+  just under :guilabel:`Plot as function of time` and above the
+  :guilabel:`Plot <node> to` submenu. Those two lines answer one question about
+  the quantity — run along time, or walk the arrays that hold it — and neither
+  answer needs a window picked, so they sit side by side; the submenu below them
+  is the one that says *which window*. One figure where every axis the curve
+  leaves out gets a slider, so the elements of that array can be walked one
+  after the other. The figure opens on the element the tree was standing on, not
+  on the first one.
 
 :guilabel:`Keep this curve`, under the sliders, freezes the curve that is live at
 the indices it stands on; the sliders then carry on with a new curve, and the

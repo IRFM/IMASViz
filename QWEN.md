@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 911 passed, 1 xfailed, ~135 s, offscreen
+python3 -m pytest tests/ -q     # 912 passed, 1 xfailed, ~138 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -516,8 +516,13 @@ artifacts of this codebase, and several are load-bearing:
   own coordinate keeps one. The tensor representation is a **separate entry**,
   *Explore this tensor* (`QVizPlotOneNode(tensor=True)`), which puts a slider on every
   axis the curve leaves out, opened on the indices the tree stood on, with *Keep this
-  curve* freezing a trace so a family can pile up. Do not "restore" a control for a
-  pinned AOS on a plain plot entry: measured before the change, that shared dict made
+  curve* freezing a trace so a family can pile up. It is answered by
+  `QVizSignalHandling.actionExploreThisTensor()` and hung at the **pop-up's top
+  level**, right after *Plot as function of time* (T37) — not inside
+  `Plot <node> to → Figure`, where it sat below the list of figures it may join
+  while it answers a different question than "which window". Do not "restore" a
+  control for a pinned AOS on a plain plot entry: measured before the change, that
+  shared dict made
   two elements of one array answer **identical samples** (`flux_loop`, 17 filled
   elements of 17 344 samples). Two facts to keep when driving this: an AOS index is read
   back under its **level's** letter (`QVizGlobalValues.indices[level]`), not the letter
