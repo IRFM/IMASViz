@@ -265,13 +265,13 @@ class QVizSignalHandling(QObject):
         # says which window is coming. A quantity with two axes to draw needs the
         # image frame, and that frame holds one quantity per figure, so no window
         # is already open that its axes could join: 'New' is the whole menu. Which
-        # frame it is comes from the axes alone -- curveAxisKey() answers None as
-        # soon as the leaf has more than one axis of its own -- because the answer
-        # that measures values, plottedAxes(), would extract a tensor for a right
-        # click that may never draw anything.
+        # frame it is comes from the axes alone -- curveAbscissae() answers nothing
+        # as soon as the leaf has more than one axis of its own -- because the
+        # answer that measures values, plottedAxes(), would extract a tensor for a
+        # right click that may never draw anything.
         plotting = QVizNodePlotting(self.treeNode)
-        curveAxis = plotting.curveAxisKey()
-        frameType = 'Figure' if curveAxis is not None else 'Image'
+        abscissae = plotting.curveAbscissae()
+        frameType = 'Figure' if abscissae else 'Image'
         menu_frame = QMenu(frameType, menu)
         menu_frame.setIcon(GlobalIcons.getCustomQIcon(QApplication, frameType))
         menu.addMenu(menu_frame)
@@ -286,12 +286,16 @@ class QVizSignalHandling(QObject):
                 figureType=FigureTypes.CURVEPLOTTYPE):
 
             # Add menu item to add plot to specific existing figure. A figure has
-            # one abscissa, so a quantity read along another one does not belong
-            # in it; and a picture has no abscissa at all to share.
-            if curveAxis is None:
+            # one abscissa, settled by the first curve drawn in it, and it is the
+            # figure that is asked whether this quantity can be read along it --
+            # not a spelling of this quantity's own axis, which is what used to
+            # answer "no" for two quantities of one and same array. A quantity
+            # with more than one axis of its own has no abscissa to share: it is
+            # a picture, not a curve.
+            if not abscissae:
                 continue
             if not self.imas_viz_api.figureDrawsSameCurveAxis(figureKey,
-                                                              curveAxis):
+                                                              self.treeNode):
                 continue
 
             # Get figure number out from the figureKey string
@@ -313,7 +317,7 @@ class QVizSignalHandling(QObject):
         # and only when a curve figure would have such an array to pin: for a
         # quantity held only by the dynamic array, the curve is already running
         # along it and there is nothing left to explore.
-        if curveAxis is not None and plotting.tensorAxes():
+        if abscissae and plotting.tensorAxes():
             action_exploreTensor = QAction(
                 GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'),
                 'Explore this tensor', menu_frame)
@@ -615,12 +619,17 @@ class QVizSignalHandling(QObject):
         """
         self.plotNodeCommand(tensor=True)
 
-    def plotNodeCommand(self, alongTime=False, intoFigureKey=None, tensor=False):
+    def plotNodeCommand(self, alongTime=None, intoFigureKey=None, tensor=False):
         """Run the one-node command and show what it drew.
 
         The frame is embedded only once it holds something, so a node the read
         cannot answer for costs no window; and an open figure is not embedded
         again, which is how one window ends up inside two subwindows.
+
+        No entry of this menu asks for the abscissa to be anything but the
+        figure's: *New* leaves the figure's own rule standing -- the history for
+        a quantity of the dynamic array, as the manual draws it -- and *as a
+        function of the time* is the one entry that names the clock.
         """
         command = QVizPlotOneNode(dataTreeView=self.dataTreeView,
                                   treeNode=self.treeNode,

@@ -12,6 +12,7 @@ import logging
 import numpy as np
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
+from imasviz.VizDataAccess.QVizCurveAbscissa import TIME
 from imasviz.VizDataAccess.QVizSlices import (QVizSlice, frameLabel, sliceLabel,
                                               slicesFor)
 from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
@@ -47,7 +48,8 @@ class QVizTensorDataAccess:
         self.dataSource = dataSource
 
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  coordinate_index=0, time_index=None, slices=None):
+                  coordinate_index=0, time_index=None, slices=None,
+                  abscissa=None):
         """The quantity, read whole and reduced to what this plot draws.
 
         slices is {axis key: index}: the index to read each axis the plot does
@@ -57,7 +59,7 @@ class QVizTensorDataAccess:
         indices give.
         """
         axesSpec, timeAxis, alongTime, _ = \
-            self.plan(treeNode, plotWidget, as_function_of_time)
+            self.plan(treeNode, plotWidget, as_function_of_time, abscissa)
         extractor = QVizTensorExtractor(treeNode.getIDSRef())
         if time_index is None:
             time_index = int(treeNode.timeValue())
@@ -78,7 +80,8 @@ class QVizTensorDataAccess:
         return self._sliceAtTime(treeNode, axesSpec, extractor, plotWidget,
                                  coordinate_index, time_index, slices)
 
-    def plan(self, treeNode, plotWidget=None, as_function_of_time=None):
+    def plan(self, treeNode, plotWidget=None, as_function_of_time=None,
+             abscissa=None):
         """What this plot draws, and therefore which axes must be fixed.
 
         One place decides it, because the read, the slice controls and the axis
@@ -86,13 +89,33 @@ class QVizTensorDataAccess:
         no control for an axis the read silently fixes, or a label naming a
         different axis than the one the numbers came off, all look right until
         the numbers move under the user.
+
+        `abscissa` is the axis a **curve figure** has already settled on, as
+        `QVizCurveAbscissa` spells its identity. When a figure has one, the read
+        follows it: a curve added to a figure that runs along time is read along
+        time, whatever the quantity's own default would have been. Measured
+        before that: a figure opened on `equilibrium.time_slice[i].profiles_1d.f`
+        drew 101 points against `psi`, and adding `.psi` to it drew 101 points
+        against the index and rewrote the figure's one bottom label from `psi` to
+        `dimension 1`.
+
+        Left out, the question falls back on the node -- which is what the table
+        and stacked windows still ask, through the `plotAxis` spelling their
+        menus document (`New (default axis)` / `New ('TIME' axis)`).
         """
         axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
         timeAxis = self._timeAxis(axesSpec)
-        if as_function_of_time is None:
-            as_function_of_time = \
-                treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
-        alongTime = bool(as_function_of_time) and timeAxis is not None
+        if abscissa is not None:
+            # The clock, walked by walking the dynamic array. A quantity whose
+            # own coordinate *is* a time base has no dynamic array to walk --
+            # `magnetics.flux_loop[i].flux.data` on the reference case -- and it
+            # is sliced at one element while still running along the clock.
+            alongTime = abscissa == TIME and timeAxis is not None
+        else:
+            if as_function_of_time is None:
+                as_function_of_time = \
+                    treeNode.isPlotToPerformAlongTimeAxis(plotWidget=plotWidget)
+            alongTime = bool(as_function_of_time) and timeAxis is not None
         return axesSpec, timeAxis, alongTime, self._plottedPositions(axesSpec,
                                                                      timeAxis,
                                                                      alongTime)
@@ -106,7 +129,7 @@ class QVizTensorDataAccess:
                      if axis.origin == QVizAxis.LEAF)
 
     def slicesFor(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  coordinate_index=0, frames=None):
+                  coordinate_index=0, frames=None, abscissa=None):
         """The axes this plot does not draw, ready for a control.
 
         A leaf axis length comes from the values themselves: the dictionary
@@ -117,7 +140,7 @@ class QVizTensorDataAccess:
         it is on screen, so it gets no control. See framesFor.
         """
         axesSpec, timeAxis, alongTime, plotted = \
-            self.plan(treeNode, plotWidget, as_function_of_time)
+            self.plan(treeNode, plotWidget, as_function_of_time, abscissa)
         lengths = self._readLengths(treeNode, axesSpec, timeAxis)
         return slicesFor(axesSpec, plotted, lengths, frames=frames)
 

@@ -169,17 +169,19 @@ class SeveralRows:
         self._real = real
         self._rows = rows
 
-    def plan(self, treeNode, plotWidget=None, as_function_of_time=None):
-        return self._real.plan(treeNode, plotWidget, as_function_of_time)
+    def plan(self, treeNode, plotWidget=None, as_function_of_time=None,
+             abscissa=None):
+        return self._real.plan(treeNode, plotWidget, as_function_of_time,
+                               abscissa)
 
     def slicesFor(self, treeNode, **kargs):
         return self._real.slicesFor(treeNode, **kargs)
 
     def GetSignal(self, treeNode, plotWidget=None, as_function_of_time=None,
-                  slices=None):
+                  slices=None, abscissa=None):
         x, y = self._real.GetSignal(treeNode=treeNode, plotWidget=plotWidget,
                                     as_function_of_time=as_function_of_time,
-                                    slices=slices)
+                                    slices=slices, abscissa=abscissa)
         return x[:1], np.repeat(y[:1], self._rows, axis=0)
 
 

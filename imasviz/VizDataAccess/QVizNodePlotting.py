@@ -27,6 +27,7 @@ it -- a right click must not extract a tensor to decide what to offer.
 """
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, leafDataDimension
+from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 
 
@@ -90,28 +91,29 @@ class QVizNodePlotting:
             return False
         return bool(self.axes.leafAxes()) or self.hasTimeAxis()
 
-    def curveAxisKey(self):
-        """Names the abscissa a curve of this quantity would run along.
+    def curveAbscissae(self):
+        """The abscissae a curve of this quantity can run along.
 
-        A curve figure has one bottom label, and what it says is the axis of the
-        last curve read -- so a quantity read along another abscissa must not be
-        added to a figure that already holds curves. Two leaf axes is a picture
-        and not a curve: the curve frame draws one and would die unpacking a
-        data-array handle. Nothing around the quantity but a time base is the
-        history case, whose abscissa is time.
+        A curve figure has one bottom label, and a quantity added to it is read
+        along the axis that label names -- so the question is not "what is this
+        quantity's axis", it is "can this quantity be read along the axis that
+        figure draws". A quantity in the dynamic array answers two abscissae,
+        which is exactly the pair of entries the manual documents: the history
+        along time, and the profile along its own coordinate.
+
+        Empty when the quantity has more than one axis of its own: that is a
+        picture and not a curve, and the curve frame draws one axis. Nothing
+        around the quantity but a time base is the history case, answering one
+        abscissa: time.
 
         Asked of the axes alone, because the menu that lists the open figures
         must not pay for a read: plottedAxes() below measures lengths on the
-        values, this does not.
+        values, this does not. What the abscissae *are* -- why `equilibrium.time`
+        and `time_slice[i].time` name one axis while `psi` and `1..N` name two --
+        is `QVizCurveAbscissa`'s answer, so the menus, the figure and the read
+        cannot disagree about it.
         """
-        own = self.axes.leafAxes()
-        if len(own) > 1:
-            return None
-        if own:
-            return own[0].key()
-        if self.hasTimeAxis():
-            return 'time'
-        return None
+        return abscissae(self.axes)
 
     def tensorAxes(self):
         """Which arrays of structures exploring the tensor would put under a slider.
@@ -124,7 +126,7 @@ class QVizNodePlotting:
         so that array is drawn rather than pinned, and a slider for it would ask
         for what the abscissa already shows.
 
-        Asked of the axes alone, like curveAxisKey(): a right click must not pay
+        Asked of the axes alone, like curveAbscissae(): a right click must not pay
         for a read to find out what it may offer.
         """
         if not self.isPlottable():

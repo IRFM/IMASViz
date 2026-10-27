@@ -188,13 +188,11 @@ class CustomizedViewBox(pg.ViewBox):
         # view's own menu reads: two copies of that rule is two chances for the
         # two menus to list different windows. A quantity with two axes to draw
         # has no abscissa to share, so it gets no line here.
-        curveAxis = QVizNodePlotting(node).curveAxisKey()
-        if curveAxis is None:
+        if not QVizNodePlotting(node).curveAbscissae():
             return
         for figureKey in self.imas_viz_api.GetFiguresKeys(
                 figureType=FigureTypes.CURVEPLOTTYPE):
-            if not self.imas_viz_api.figureDrawsSameCurveAxis(figureKey,
-                                                              curveAxis):
+            if not self.imas_viz_api.figureDrawsSameCurveAxis(figureKey, node):
                 continue
 
             # Set action

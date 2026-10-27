@@ -424,26 +424,33 @@ class Viz_API:
         numFig = int(figureKey[len(figureType):])
         return numFig
 
-    def figureDrawsSameCurveAxis(self, figureKey, axisKey):
-        """Whether every curve already in the figure runs along this axis.
+    def figureDrawsSameCurveAxis(self, figureKey, treeNode):
+        """Whether this quantity can be drawn in that figure -- asked of the figure.
 
-        A curve figure has one abscissa, and the label under it is the axis of
-        the last curve read, so a quantity read along another axis does not
-        belong in it. This is asked of the registry because the answer is the
-        bookkeeping below: the menus that offer "add this quantity to that
-        figure" -- the shot view's and a plugin's -- all read the same record,
-        and two copies of the rule is two chances for them to disagree.
+        A curve figure has one abscissa, and the first curve settled it. So the
+        question is what that figure draws and whether this quantity can be read
+        along it; both are asked rather than derived, the figure answering for
+        itself because those are the numbers its label stands over.
+
+        The rule used to be spelled twice, and the two spellings disagreed. The
+        menus took a key off the quantity's axes and compared it against the same
+        key recomputed for every node the figure had registered. Measured on the
+        two quantities of one `profiles_1d` structure -- `.f` and `.psi`, both
+        read along time by the read -- the keys were `('LEAF', 'equilibrium',
+        'time_slice(itime).profiles_1d.psi')` and `('LEAF', 'equilibrium',
+        'dimension 1')`, and the gate answered **False** for both: neither was
+        offered in the other's figure, and no gesture could put them side by side.
 
         :param figureKey: A figure key (e.g. 'SlicesPlot1')
-        :param axisKey: The abscissa the quantity would be read along, as
-                        `QVizNodePlotting.curveAxisKey()` spells it.
+        :param treeNode: The node a menu is offering to draw there
         :returns: (bool)
         """
-        from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
-        for entry in self.figToNodes.get(figureKey, {}).values():
-            if QVizNodePlotting(entry[1]).curveAxisKey() != axisKey:
-                return False
-        return True
+        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+        from imasviz.VizDataAccess.QVizCurveAbscissa import choose
+
+        frame = self.figureframes.get(figureKey)
+        return choose(QVizAxesSpec.fromTreeNode(treeNode),
+                      getattr(frame, 'abscissa', None)) is not None
 
     # def getFigureFrame(self, figureKey):
     #     if figureKey in self.figureframes:

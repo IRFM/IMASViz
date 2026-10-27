@@ -54,7 +54,11 @@ import pyqtgraph as pg
 
 from PySide6.QtWidgets import QCheckBox, QVBoxLayout, QWidget
 
-from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
+from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
+from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae
+from imasviz.VizDataAccess.QVizCurveAbscissa import choose as chooseAbscissa
+from imasviz.VizDataAccess.QVizCurveAbscissa import describe as describeAbscissa
+from imasviz.VizDataAccess.QVizCurveAbscissa import labelFor as abscissaLabel
 from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
@@ -76,11 +80,16 @@ class QVizTrace:
     """
 
     def __init__(self, treeNode, row, curve, asFunctionOfTime, fixed, movable,
-                 pinned, suffix, legend=None):
+                 pinned, suffix, legend=None, abscissa=None):
         self.treeNode = treeNode
         self.row = row
         self.curve = curve
         self.asFunctionOfTime = asFunctionOfTime
+        # The abscissa this row was read along. A slider re-reads a row, and it
+        # has to re-read it along the axis the figure draws -- not along whatever
+        # the quantity's own default would have picked, which is a different
+        # answer for a quantity in a dynamic array.
+        self.abscissa = abscissa
         self.fixed = fixed
         self.movable = movable
         # Every axis this row leaves out, movable or not: what the legend spells
@@ -104,7 +113,15 @@ class QVizCurvePlot(QWidget):
     def __init__(self, parent=None, title=''):
         super().__init__(parent)
 
-        self.plotAxis = 'DEFAULT'
+        # The axis this figure draws along, as `QVizCurveAbscissa` spells its
+        # identity -- None until the first curve answers. A curve figure has one
+        # abscissa, so the first curve settles it and every later one is read
+        # along it: the label under the figure and the numbers under that label
+        # then come from one answer. The frame used to carry a `plotAxis` string
+        # ('DEFAULT' on every curve frame) that a node read as a question about
+        # itself, which is how a figure ended up labelled by whichever curve was
+        # added last.
+        self.abscissa = None
         # One QVizTrace per drawn row: the node it came from, which row of that
         # node's answer it is, how it was asked for, and the indices it pins. A
         # quantity held by a static array read at several indexes gives several
@@ -161,14 +178,8 @@ class QVizCurvePlot(QWidget):
         if title:
             self.setWindowTitle(title)
 
-    def getPlotAxis(self):
-        return self.plotAxis
-
-    def setPlotAxis(self, plotAxis):
-        self.plotAxis = plotAxis
-
     def plot(self, treeNode, as_function_of_time=None, tensor=False):
-        """Add one quantity to the figure, pinning what the trace pins by itself.
+        """Add one quantity to the figure, along the abscissa the figure draws.
 
         `tensor` is the other representation of the same quantity: the arrays the
         tree already picked become sliders the user moves, instead of staying at
@@ -176,11 +187,33 @@ class QVizCurvePlot(QWidget):
         slider on the leaf's own coordinates only and writes the arrays in the
         legend.
 
+        The first curve settles the figure's abscissa; after that the figure
+        decides it, and a quantity that cannot be read along it is refused by
+        name -- both the abscissa and what the quantity could be read along.
+        Before that, each trace asked for itself: measured on a figure opened on
+        `equilibrium.time_slice[i].profiles_1d.f`, the first curve ran against
+        `psi` (101 points) and the second, `.psi`, ran against its index (101
+        points) and rewrote the figure's single bottom label.
+
         Returns the number of rows drawn.
         """
         access = self.accessFor(treeNode)
+        axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
+        abscissa = chooseAbscissa(axesSpec, self.abscissa, as_function_of_time)
+        if abscissa is None:
+            options = abscissae(axesSpec)
+            raise ValueError('"' + self.dataPathOf(treeNode) + '" cannot be read '
+                             'along ' + describeAbscissa(self.abscissa) +
+                             ', which this figure draws; it runs along ' +
+                             (' or '.join(describeAbscissa(option)
+                                          for option in options)
+                              if options else 'nothing of its own') + '.')
+        if self.abscissa is None:
+            self.abscissa = abscissa
+
         axesSpec, timeAxis, alongTime, plotted = access.plan(treeNode, self,
-                                                             as_function_of_time)
+                                                             as_function_of_time,
+                                                             abscissa)
         pinned = [axis for position, axis in enumerate(axesSpec.axes)
                   if position not in plotted]
         fixed, movable = self._pinning(pinned, tensor)
@@ -188,7 +221,7 @@ class QVizCurvePlot(QWidget):
 
         x, y = access.GetSignal(treeNode=treeNode, plotWidget=self,
                                 as_function_of_time=as_function_of_time,
-                                slices=slices)
+                                slices=slices, abscissa=abscissa)
         if x.size == 0 or y.size == 0:
             # Drawing an empty curve silently is the failure this path exists to
             # remove: the axes were pinned somewhere and nothing said where, so
@@ -213,11 +246,13 @@ class QVizCurvePlot(QWidget):
             self._curves.append(QVizTrace(treeNode, row, curve,
                                           as_function_of_time, fixed, movable,
                                           pinned, suffix,
-                                          self.legendLabelFor(label + suffix)))
+                                          self.legendLabelFor(label + suffix),
+                                          abscissa))
 
-        self.setAxisLabels(treeNode, axesSpec, timeAxis, alongTime)
+        self.setAbscissaLabel(axesSpec)
+        self.setQuantityLabel(treeNode)
         self.addSlices(self._controlsFor(access, treeNode, pinned, tensor,
-                                         as_function_of_time))
+                                         as_function_of_time, abscissa))
         # A quantity added to a figure already showing bars or a band joins them:
         # the entries answer for every curve on the figure, not for the ones that
         # happened to be there when they were clicked. `refresh` draws only if
@@ -239,7 +274,8 @@ class QVizCurvePlot(QWidget):
             slices = self._readSlices(trace.fixed, trace.movable)
             x, y = self.accessFor(trace.treeNode).GetSignal(
                 treeNode=trace.treeNode, plotWidget=self,
-                as_function_of_time=trace.asFunctionOfTime, slices=slices)
+                as_function_of_time=trace.asFunctionOfTime, slices=slices,
+                abscissa=trace.abscissa)
             if y.shape[0] > trace.row and x.shape[0] > 0:
                 trace.curve.setData(x[0], y[trace.row])
             else:
@@ -377,16 +413,23 @@ class QVizCurvePlot(QWidget):
             slices[axis.key()] = 0 if index is None else int(index)
         return slices
 
-    def _controlsFor(self, access, treeNode, pinned, tensor, as_function_of_time):
+    def _controlsFor(self, access, treeNode, pinned, tensor,
+                     as_function_of_time, abscissa):
         """The sliders this quantity earns, with the lengths the values answer.
 
         `slicesFor` answers every axis the read leaves out, because a leaf axis
         length exists only in the values; the element representation keeps the
         arrays of structures out of it, since they are fixed and the legend says
         where.
+
+        The abscissa goes to `slicesFor` with the rest, because which axes are
+        left out depends on it: the same quantity offers a coordinate slider on a
+        figure drawn against time and a time-slice slider on one drawn against
+        that coordinate.
         """
         slices = access.slicesFor(treeNode, plotWidget=self,
-                                  as_function_of_time=as_function_of_time)
+                                  as_function_of_time=as_function_of_time,
+                                  abscissa=abscissa)
         if tensor:
             return slices
         movable = {axis.key() for axis in pinned if axis.origin == QVizAxis.LEAF}
@@ -427,30 +470,28 @@ class QVizCurvePlot(QWidget):
         path = treeNode.getParametrizedDataPath()
         return path if path else treeNode.getName()
 
-    def setAxisLabels(self, treeNode, axesSpec, timeAxis, alongTime):
-        """Label both axes from the axes the read actually drew.
+    def setAbscissaLabel(self, axesSpec):
+        """Label the abscissa from the abscissa the figure settled on.
 
-        The unit comes from the axis itself: a label built from a flag set when
-        the figure was created claims seconds for an axis the dictionary says is
-        in metres.
+        Asked with the abscissa rather than with the answer to "did the read walk
+        the dynamic array", because those are not the same question: a quantity
+        whose own coordinate *is* a time base is sliced at one element of a static
+        array and still runs along the clock, and labelling it `time[s]` is what
+        the numbers say.
+
+        Set from the figure, not from the last trace: measured before, a figure
+        opened on `profiles_1d.f` was labelled `psi`, and adding `.psi` to it
+        relabelled the same axis `dimension 1` -- under a curve nobody had asked
+        for, against numbers that had never been taken on that axis.
         """
-        if alongTime:
-            self.pgPlotWidget.setLabel('bottom', 'time', units='s')
-        else:
-            plotted = [axis for axis in axesSpec.axes if axis.origin == QVizAxis.LEAF]
-            if plotted:
-                axis = plotted[0]
-                self.pgPlotWidget.setLabel('bottom', self.axisName(axis),
-                                           units=axis.units or '')
+        name, units = abscissaLabel(axesSpec, self.abscissa)
+        if name:
+            self.pgPlotWidget.setLabel('bottom', name, units=units)
 
+    def setQuantityLabel(self, treeNode):
+        """Label the ordinate with the quantity of this trace, unit and all."""
         quantity = treeNode.getName() or ''
         units = treeNode.getUnits()
         if units:
             quantity += '[' + units + ']'
         self.pgPlotWidget.setLabel('left', quantity)
-
-    @staticmethod
-    def axisName(axis):
-        if axis.coordinate:
-            return axis.coordinate.replace('/', '.').rsplit('.', 1)[-1]
-        return 'dimension %d' % axis.level

@@ -56,13 +56,24 @@ class QVizPlotOneNode(QVizAbstractCommand):
     IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
     def __init__(self, dataTreeView, treeNode, intoFigureKey=None,
-                 alongTime=False, tensor=False):
+                 alongTime=None, tensor=False):
         """
         Arguments:
             treeNode       (QVizTreeNode) : the node to draw, never the selection.
             intoFigureKey      (str)      : an open figure to add to, or None for
                                             a figure of this quantity's own.
-            alongTime        (bool)       : read it as a history, along time.
+            alongTime        (bool)       : None for no opinion, which leaves the
+                                            figure's own rule standing; True to
+                                            read it as a history along time;
+                                            False to read it along its own
+                                            coordinate -- the other entry the
+                                            Profiles plugin offers, and the
+                                            manual keeps the two apart ("the time
+                                            slider appears only for plots along
+                                            the 'coordinate1' axis"). It asks a
+                                            question of a figure that has no
+                                            abscissa yet: an open figure has one,
+                                            and it decides.
             tensor           (bool)       : draw the tensor that holds it, under a
                                             slider per pinned axis, instead of the
                                             one element the tree is standing on.
@@ -133,8 +144,7 @@ class QVizPlotOneNode(QVizAbstractCommand):
                                  'curves, where a pinned axis can move.')
             frame.plot(self.treeNode)
             return
-        frame.plot(self.treeNode,
-                   as_function_of_time=True if self.alongTime else None,
+        frame.plot(self.treeNode, as_function_of_time=self.alongTime,
                    tensor=self.tensor)
 
     def newFigure(self, figureType, frameClass):
