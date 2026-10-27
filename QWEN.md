@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 859 passed, 1 xfailed, ~136 s, offscreen
+python3 -m pytest tests/ -q     # 911 passed, 1 xfailed, ~135 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -607,7 +607,9 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   Since T22(b) its three figure gestures run `QVizPlotOneNode` like every other gesture,
   so the frames they build are `SlicesPlot1`/`SlicesPlot2` in the MDI area, and the
   "add this quantity to that figure" gate lives on `Viz_API`
-  (`figureDrawsSameCurveAxis`, next to the `figToNodes` record it reads) where the shot
+  (`figureDrawsSameCurveAxis`, which since T36 asks **the frame** — `figureframes`
+  and the abscissa it carries — and no longer re-walks the `figToNodes` record)
+  where the shot
   view's menu and a plugin's view box ask the same question. Since T25 its view box no
   longer carries the error-bar behaviour either: `CustomizedViewBox.py` is **272** lines
   where it was **445**, and the three lines its menu offers call the same `QVizCurveErrors`
@@ -650,6 +652,29 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `navy` — **uniformly**, because its 41 panels were measured to carry **41 distinct
   parametrized paths**: a colour there has nothing to group, and a cycle would answer the
   same colour five times in one window.
+- **A curve figure has one abscissa, and it is an identity, not a spelling** (T36).
+  `QVizCurveAbscissa` answers it once: `TIME` unifies the three ways IMAS writes one
+  clock — the dynamic array (`IDS.time`), `<aos>/time`, bare `time` — and which one a
+  case uses follows `ids_properties.homogeneous_time`, measured on the reference case
+  as **0** for `equilibrium` and **1** for `magnetics`; a coordinate named by the
+  dictionary is keyed by that name with the loop decoration (`(itime)`, `[itime]`), the
+  slashes and the IDS root taken out; an axis left unbounded (`1..N`) is keyed by its
+  **units**, because what the read draws under it is the element rank. The figure
+  settles its abscissa on its first curve (`QVizCurvePlot.abscissa`, and each
+  `QVizTrace` carries the one it was drawn on), the read follows it (`plan` /
+  `GetSignal` / `slicesFor` take `abscissa`), the bottom label is put **from the
+  abscissa, once**, and `Viz_API.figureDrawsSameCurveAxis(figureKey, treeNode)` asks
+  the frame. Two things to not "restore": a key spelled off one quantity's axes
+  compared against another's — measured to answer **False** for
+  `profiles_1d.f` and `profiles_1d.psi`, one structure, both read along time — and a
+  `plotAxis` string on the curve frame, which is what made the plain entry draw **101**
+  points against `psi` where the manual's walkthrough of that very leaf says X is
+  `equilibrium.time` (**49** points). `plotAxis` / `getPlotAxis` stay on the **table**
+  and the **stacked** window, whose entries *New (default axis)* and *New ('TIME'
+  axis)* are documented, and `isPlotToPerformAlongTimeAxis` stays for the **3** legacy
+  label sites of `QVizTreeNode`. A quantity with **no axis of its own** (a scalar held
+  by an array) has nothing to disagree with, so it takes the figure's abscissa and is
+  spread over it, said in the log; refused on an empty figure.
 - The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
   -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
   two `conf.py` warnings, and it is the only route that works — `make doc` itself still

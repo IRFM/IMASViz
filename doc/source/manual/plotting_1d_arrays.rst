@@ -313,6 +313,19 @@ below.
 
      Plotting to existing figure - result.
 
+.. Note:: A plot figure has **one** abscissa: the axis its first curve was read
+          along, and the label under it says which. Every quantity added to that
+          figure is read along the same axis, so its curves are comparable point by
+          point — and the quantities offered in that submenu are the ones that can
+          be read along it. A quantity that cannot be read along it is not offered;
+          asked for by another route, it is refused in the log panel of that shot,
+          naming both the axis of the figure and the axis that quantity runs along.
+          The same clock counts as one axis whichever way the IDS writes it: an IDS
+          with a homogeneous time base keeps it in the IDS **time** node, an
+          inhomogeneous one spells it under the array that carries the quantity
+          (``time_slice(itime).time``); the two are one abscissa, and a history of
+          one can be joined by a history of the other.
+
 
 Comparing plots between two IDS databases
 -----------------------------------------
