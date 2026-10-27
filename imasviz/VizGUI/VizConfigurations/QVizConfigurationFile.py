@@ -232,8 +232,14 @@ class QVizConfigurationFile:
             element.set('path', quantity.path)
             element.set('occurrence', str(quantity.occurrence))
             if self.kind == PLOT:
-                element.set('row', str(quantity.row))
-                element.set('column', str(quantity.column))
+                # A quantity with no place in the table is written without the
+                # attributes, which is how the reader takes an absent place: the
+                # string "None" is what `str(None)` gives, and reading this file
+                # back answered `invalid literal for int() with base 10: 'None'`
+                # -- and the entry then drew no panel at all, naming the file.
+                if quantity.row is not None and quantity.column is not None:
+                    element.set('row', str(quantity.row))
+                    element.set('column', str(quantity.column))
             if quantity.uri:
                 element.set('uri', quantity.uri)
         _indent(root)

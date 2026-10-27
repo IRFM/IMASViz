@@ -50,6 +50,9 @@ class QVizTablePlot(QWidget):
         self.figureKey = None
         self.dataTreeView = None
         self._panels = []
+        # {panel: (row, column)} for the panels a saved configuration named a
+        # place for. They keep that cell; the rest fill what is left.
+        self._places = {}
         # The abscissa strategy the entry asked for: 'TIME', or 'DEFAULT' to let
         # each quantity answer for itself.
         self.plotAxis = 'DEFAULT'
@@ -107,16 +110,21 @@ class QVizTablePlot(QWidget):
 
         Returns how many curves the panel holds. A quantity the panel cannot
         show raises, naming the quantity: the caller keeps going with the rest of
-        the selection.
+        the selection, and the panel it was given is taken back with the read
+        that refused it -- a panel drawn before the grid is asked is a child of
+        this window that no layout owns, and it stays on screen over the panels
+        that were accepted.
         """
         panel = QVizPanel(self)
-        row = len(self._panels)
-        drawn = panel.plot(treeNode, row, as_function_of_time)
-        if place is None:
-            self.addPanelToGrid(panel, row)
-        else:
-            self.addPanelAt(panel, place[0], place[1])
+        try:
+            drawn = panel.plot(treeNode, len(self._panels), as_function_of_time)
+        except Exception:
+            panel.deleteLater()
+            raise
         self._panels.append(panel)
+        if place is not None:
+            self._places[panel] = (place[0], place[1])
+        self.layoutTable()
         return drawn
 
     def setSignalData(self, treeNode, signalData):
@@ -133,18 +141,61 @@ class QVizTablePlot(QWidget):
         panel.plotItem().signalData = signalData
         return True
 
-    def addPanelToGrid(self, panel, row):
-        columns = self.columnsFor(len(self._panels) + 1)
-        self.grid.addWidget(panel, row // columns, row % columns)
+    def layoutTable(self):
+        """Lay every panel in a cell of its own, on a grid of one width.
 
-    def addPanelAt(self, panel, row, column):
-        """Put a panel in the slot a saved configuration named.
+        The width is asked once for the whole table, from how many panels it
+        holds. Asked per panel as it arrives -- which is what this file did -- it
+        answers 1 for the first panel, 2 until the fifth and 3 after, so the
+        first panels are laid on a narrower grid than the rest: measured, panels
+        3 and 4 both land in cell (1,1) from five panels on, cell (0,2) is never
+        filled, and a 16-panel table grows a sixth row holding one panel. A
+        QGridLayout puts two widgets in one cell **without a word of warning**,
+        so the overlap is only what the user sees.
 
-        A file written by this window names the slot its panel sat in, so
-        re-applying it gives the table back the shape it had -- which is what the
-        manual says a configuration holds besides the quantities.
+        A panel whose cell came from a saved configuration keeps that cell; the
+        others fill the first cell left free, row by row. The table is filled
+        before it is shown (QVizPlotAsTable.execute), so relaying it as panels
+        arrive costs nothing on screen.
         """
-        self.grid.addWidget(panel, row, column)
+        columns = self.columnsFor(len(self._panels))
+        named = self._namedCells()
+        free = self._freeCells(columns, set(named.values()))
+        for panel in self._panels:
+            cell = named[panel] if panel in named else next(free)
+            slot = self.grid.indexOf(panel)
+            if slot >= 0 and self.grid.getItemPosition(slot)[:2] == cell:
+                continue
+            if slot >= 0:
+                self.grid.removeWidget(panel)
+            self.grid.addWidget(panel, cell[0], cell[1])
+
+    def _namedCells(self):
+        """{panel: (row, column)} for the panels a configuration named a place for.
+
+        The first panel to claim a cell keeps it and the rest are laid with the
+        others: a configuration written before this layout was fixed names one
+        cell twice, and laying those two panels on top of one another again is
+        the defect travelling through a file.
+        """
+        named = {}
+        taken = set()
+        for panel in self._panels:
+            cell = self._places.get(panel)
+            if cell is not None and cell not in taken:
+                taken.add(cell)
+                named[panel] = cell
+        return named
+
+    @staticmethod
+    def _freeCells(columns, taken):
+        """The cells of a `columns`-wide table that no panel claimed, row by row."""
+        row = 0
+        while True:
+            for column in range(columns):
+                if (row, column) not in taken:
+                    yield (row, column)
+            row += 1
 
     def panelsInTable(self):
         """[(row, column, panel)] -- where each panel actually sits.
@@ -152,18 +203,13 @@ class QVizTablePlot(QWidget):
         Read from the layout rather than computed from the order the panels were
         asked for: the old window computed a place the other way round from where
         it had laid the panel, and the configuration keyed by that place then
-        only found its panel again on the diagonal of the table.
+        only found its panel again on the diagonal of the table. Every panel
+        reaches the layout through layoutTable, so there is nothing to fall back
+        to -- the panel of a read that refused its quantity is taken back in
+        plot(), which is the only way a panel used to end up outside the grid.
         """
-        placed = []
-        for index, panel in enumerate(self._panels):
-            slot = self.grid.indexOf(panel)
-            if slot < 0:
-                columns = self.columnsFor(len(self._panels))
-                placed.append((index // columns, index % columns, panel))
-                continue
-            row, column = self.grid.getItemPosition(slot)[:2]
-            placed.append((row, column, panel))
-        return placed
+        return [(self.grid.getItemPosition(self.grid.indexOf(panel))[:2] +
+                 (panel,)) for panel in self._panels]
 
     @staticmethod
     def columnsFor(count):
@@ -208,12 +254,14 @@ class QVizTablePlot(QWidget):
 
         Keyed the way the configuration file writes it -- row then column -- so
         a configuration saved from this window and read back names the same
-        panel. The old window wrote one order and compared the other, so only a
-        panel on the diagonal of the table was ever found again.
+        panel. It reads the same layout `panelsInTable` reads, because computing
+        the places a second time from the panel count is what wrote a file
+        naming a cell no panel sat in, and naming one cell twice: measured, a
+        15-panel table laid two panels in (1,1) while this answer listed (0,2),
+        and reloading that file laid the overlap again.
         """
-        columns = self.columnsFor(len(self._panels))
-        return {panel.plotItem(): [(index // columns, index % columns)]
-                for index, panel in enumerate(self._panels)}
+        return {panel.plotItem(): [(row, column)]
+                for row, column, panel in self.panelsInTable()}
 
     def dataPathOf(self, treeNode):
         path = treeNode.getParametrizedDataPath()
