@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 912 passed, 1 xfailed, ~138 s, offscreen
+python3 -m pytest tests/ -q     # 930 passed, 1 xfailed, ~139 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -514,13 +514,33 @@ artifacts of this codebase, and several are load-bearing:
   pinned to the indices that node carries and written into the legend
   (`magnetics.flux_loop[3].flux.data`), so no control exists for them — only the leaf's
   own coordinate keeps one. The tensor representation is a **separate entry**,
-  *Explore this tensor* (`QVizPlotOneNode(tensor=True)`), which puts a slider on every
-  axis the curve leaves out, opened on the indices the tree stood on, with *Keep this
-  curve* freezing a trace so a family can pile up. It is answered by
-  `QVizSignalHandling.actionExploreThisTensor()` and hung at the **pop-up's top
-  level**, right after *Plot as function of time* (T37) — not inside
+  *Explore this tensor along \<axis\>* (`QVizPlotOneNode(tensor=True)`), which puts a
+  slider on every axis the curve leaves out, opened on the indices the tree stood on,
+  with *Keep this curve* freezing a trace so a family can pile up. The heading **names
+  the abscissa it explores** — `time axis`, `psi`, `its index` — because which arrays are
+  left out depends on it (`QVizCurveAbscissa.axisPhrase`); along time a quantity of the
+  dynamic array has **nothing** to explore, so the entry is not offered there. It is
+  answered by `QVizSignalHandling.menuExploreThisTensor(parentMenu)` and hung at the
+  **pop-up's top level**, right after *Plot as function of time* (T37) — not inside
   `Plot <node> to → Figure`, where it sat below the list of figures it may join
-  while it answers a different question than "which window". Do not "restore" a
+  while it answers a different question than "which window". Since T38 it is a
+  **sub-menu**: `New`, then one line per open figure whose sliders are those very arrays
+  (`exploreTensorCommand(intoFigureKey=)`). A Qt fact came with it: `QMenu(title, parent)`
+  only sets the Qt **parent** — nothing hung it on the pop-up, and a QMenu no Python
+  reference holds dies with the wrapper that made it (the dangling submenu T0 removed);
+  `parentMenu.addMenu(menu)` is what makes it appear.
+  Beside its abscissa a curve figure now keeps **the arrays its band walks**
+  (`QVizCurvePlot.walkingArrays`, settled by the first tensor asked into it), and one
+  pure function — `QVizCurveAbscissa.axesLeftOut` / `arraysLeftOut` — is the **mirror of
+  the read** for that: `QVizTensorDataAccess._plottedPositions` / `_timeAxis` delegate to
+  it, `QVizNodePlotting.tensorAxes(abscissa)` asks it, `QVizCurvePlot.accepts(treeNode,
+  tensor)` answers it, and `Viz_API.figureDrawsSameCurveAxis(figureKey, treeNode,
+  tensor=)` relays it. The rule is **narrower than it looks**: it applies to a tensor
+  entering a figure and to a figure that already has a band, **not** to two plain
+  elements — those still share only the abscissa (T36), which is what lets a flux loop
+  and its neighbour probe be compared; the first cut asked the arrays of every trace and
+  turned 4 tests red. An element added to a tensor figure is **frozen on all its axes**
+  (no control, `isFrozen()`, its legend spelling the whole index set). Do not "restore" a
   control for a pinned AOS on a plain plot entry: measured before the change, that
   shared dict made
   two elements of one array answer **identical samples** (`flux_loop`, 17 filled

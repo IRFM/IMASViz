@@ -429,15 +429,61 @@ same picture:
   different quantity than the one asked for. What the tree does *not* fix is the
   leaf's own coordinate -- the index inside **flux.data** -- and that keeps a
   control of its own.
-* the **tensor** — :guilabel:`Explore this tensor`, in the pop-up menu itself,
-  just under :guilabel:`Plot as function of time` and above the
-  :guilabel:`Plot <node> to` submenu. Those two lines answer one question about
+* the **tensor** — :guilabel:`Explore this tensor along <axis>`, in the pop-up
+  menu itself, just under :guilabel:`Plot as function of time` and above the
+  :guilabel:`Plot <node> to` submenu. Those two entries answer one question about
   the quantity — run along time, or walk the arrays that hold it — and neither
   answer needs a window picked, so they sit side by side; the submenu below them
   is the one that says *which window*. One figure where every axis the curve
   leaves out gets a slider, so the elements of that array can be walked one
   after the other. The figure opens on the element the tree was standing on, not
   on the first one.
+
+  The heading names the axis the figure runs along — :guilabel:`Explore this
+  tensor along time axis` for a quantity of the dynamic array, :guilabel:`Explore
+  this tensor along psi` for one drawn against its own grid — because which
+  arrays are left out of the curve depends on it. A quantity held only by the
+  dynamic array has nothing left to explore along time: that array *is* the
+  curve. Drawn along ``psi`` instead, the same quantity leaves **time_slice**
+  out, and that is the slider it earns there.
+
+  The entry is a sub-menu, because a tensor is not tied to a new window.
+  :guilabel:`New` opens a figure of its own; every open figure whose sliders
+  already walk those very arrays is offered under its key, and the tensor is
+  drawn there instead — one band of sliders, driving every curve of the figure.
+  A figure whose sliders would be other arrays is not offered, and asked for by
+  another route it refuses in the log panel, naming both sets.
+
+Superposing tensors, and adding an element to one
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A figure of curves holds **one** band of sliders, so besides its abscissa it is
+defined by the arrays those sliders walk. What may be added to it follows from
+that:
+
++-------------------------+-------------------------------------------------------------+
+| added to the figure     | asked                                                       |
++=========================+=============================================================+
+| an **element** (any     | its abscissa only — each element pins the arrays the tree   |
+| plot entry) to an       | stands on and writes them in its legend, so two elements of |
+| ordinary figure         | different arrays can be compared on one abscissa            |
++-------------------------+-------------------------------------------------------------+
+| a **tensor** to an      | its abscissa, and the arrays of the node must be the arrays |
+| ordinary figure         | of the figure — a figure with no sliders yet adopts the ones|
+|                         | the tensor brings, which is what settles its band           |
++-------------------------+-------------------------------------------------------------+
+| a **tensor** to a       | its abscissa, and **equal** array sets. Otherwise the       |
+| tensor figure           | figure refuses by name, writing both sets in the log panel  |
+|                         | of that shot, and no window is opened                       |
++-------------------------+-------------------------------------------------------------+
+| an **element** to a     | the same arrays — and the element is then frozen on **all** |
+| tensor figure           | of them: neither the array sliders nor its own coordinate   |
+|                         | moves it, and its legend spells the whole index set         |
++-------------------------+-------------------------------------------------------------+
+
+That last row is what makes the two representations comparable in one window: the
+tensor walks, the element the user asked for stays where it was, and the legend
+says which is which.
 
 :guilabel:`Keep this curve`, under the sliders, freezes the curve that is live at
 the indices it stands on; the sliders then carry on with a new curve, and the
@@ -468,8 +514,9 @@ it is already set as a default plotting feature for such arrays.
 
 The curve answers the time slice the node names: right-clicking
 **equilibrium.time_slice[0].profiles_1d.phi** draws slice **0**, and the legend
-says so. The other slices are reached through :guilabel:`Explore this tensor`,
-which puts a slider on **time_slice** (:ref:`element_or_tensor` above).
+says so. The other slices are reached through :guilabel:`Explore this tensor
+along psi` — the entry names the axis that figure runs along — which puts a
+slider on **time_slice** (:ref:`element_or_tensor` above).
 
 The procedure to plot such 1D array is quite identical as in section
 :ref:`plotting_single_1d_array`. The procedure is described and demonstrated
@@ -513,8 +560,8 @@ on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
      (**ids.equilibrium.time_slice[0].profiles_1d.phi**).
 
    The slice drawn is the one the node names. To walk the time axis, ask
-   :guilabel:`Explore this tensor`: it puts a slider on **time_slice**, starting
-   at the slice that was clicked, and the plot changes with it
+   :guilabel:`Explore this tensor along psi`: it puts a slider on **time_slice**,
+   starting at the slice that was clicked, and the plot changes with it
    (:ref:`element_or_tensor`).
 
    .. figure:: images/plotWidget_function_of_coordinate1_2.png
@@ -586,8 +633,11 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
    The coordinate1 slider allows you to move along the array index and the plot
    will change accordingly. That slider belongs to the quantity itself: the tree
    does not fix an index inside **profiles_1d.f**, and the curve follows it. The
-   time slice of the node is fixed and written in the legend; to walk it, ask
-   :guilabel:`Explore this tensor` (:ref:`element_or_tensor`).
+   time slices are not fixed either — the curve runs along them, which is what
+   the abscissa is: asking :guilabel:`Explore this tensor along time axis` for
+   such a node would leave no array under a slider, so the entry is not offered
+   for it. The slices are walked by the abscissa here, and by a slider on the
+   figure drawn along **psi** (:ref:`element_or_tensor`).
 
    .. figure:: images/plotWidget_function_of_time_2.png
      :align: center
@@ -601,9 +651,11 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
 .. Note:: Adding a plot (presented in :ref:`add_plot_to_existing_figure`) to such
           an existing figure adds a curve of its own, and the coordinate1 slider
           moves the curves that sample on that coordinate. On a figure built by
-          :guilabel:`Explore this tensor`, :guilabel:`Keep this curve` freezes the
-          live curve at the indices it stands on before the sliders go on to
-          another element, so the elements of one array can be compared at once.
+          :guilabel:`Explore this tensor along <axis>`, :guilabel:`Keep this
+          curve` freezes the live curve at the indices it stands on before the
+          sliders go on to another element, so the elements of one array can be
+          compared at once — and an element added to such a figure stays at its
+          own element while the sliders walk (:ref:`element_or_tensor`).
 
 .. _multiplot_features:
 
