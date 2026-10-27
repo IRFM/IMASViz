@@ -424,7 +424,7 @@ class Viz_API:
         numFig = int(figureKey[len(figureType):])
         return numFig
 
-    def figureDrawsSameCurveAxis(self, figureKey, treeNode):
+    def figureDrawsSameCurveAxis(self, figureKey, treeNode, tensor=False):
         """Whether this quantity can be drawn in that figure -- asked of the figure.
 
         A curve figure has one abscissa, and the first curve settled it. So the
@@ -441,14 +441,27 @@ class Viz_API:
         'dimension 1')`, and the gate answered **False** for both: neither was
         offered in the other's figure, and no gesture could put them side by side.
 
+        `tensor` adds the second half of the question, which the abscissa cannot
+        answer: a figure that explores a tensor holds a band of sliders, one per
+        array of structures it leaves out, and those sliders drive **every** curve
+        of the figure. A second quantity whose sliders would be other arrays is
+        therefore not the same picture -- one slider would walk one curve and
+        leave the other at the element the tree stood on. So the arrays asked
+        must be the arrays the figure holds, and the figure says which.
+
         :param figureKey: A figure key (e.g. 'SlicesPlot1')
         :param treeNode: The node a menu is offering to draw there
+        :param tensor: Drawn as a tensor, under the figure's sliders (False: as
+                       one element, frozen on the arrays the tree stands on)
         :returns: (bool)
         """
         from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
         from imasviz.VizDataAccess.QVizCurveAbscissa import choose
 
         frame = self.figureframes.get(figureKey)
+        accepts = getattr(frame, 'accepts', None)
+        if accepts is not None:
+            return accepts(treeNode, tensor)
         return choose(QVizAxesSpec.fromTreeNode(treeNode),
                       getattr(frame, 'abscissa', None)) is not None
 

@@ -21,6 +21,9 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode import QVizPlotOn
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu import QVizPluginMenu
+from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+from imasviz.VizDataAccess.QVizCurveAbscissa import axisPhrase
+from imasviz.VizDataAccess.QVizCurveAbscissa import choose as chooseAbscissa
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizUtils import FigureTypes
 
@@ -157,7 +160,7 @@ class QVizSignalHandling(QObject):
 
         return action_plotAsFunctionOfTime
 
-    def actionExploreThisTensor(self):
+    def menuExploreThisTensor(self, parentMenu):
         """The entry that puts the arrays holding the quantity under sliders.
 
         The other question about the same quantity. Every plot entry draws the
@@ -166,22 +169,74 @@ class QVizSignalHandling(QObject):
         slider per array the curve leaves out, opened on the element the tree is
         on. Offered from the axes alone, and only when a curve figure would have
         such an array to pin: for a quantity held only by the dynamic array, the
-        curve is already running along it, so there is nothing left to explore.
+        curve is already running along it, so there is nothing left to explore --
+        and which arrays are left out depends on the abscissa the figure runs
+        along, which is why the entry says along *what* it explores.
+
+        A tensor is not tied to a new window: the sliders of a figure drive every
+        curve it holds, so a second tensor belongs there when it would put the
+        **same arrays** under them. One figure per destination, then: *New* for a
+        figure of its own, one line per open figure whose sliders are those very
+        arrays. A figure whose sliders are other arrays is not offered -- and the
+        command behind it refuses it by name if it is asked, because a slider
+        would then walk one curve and leave the other where the tree stood.
         """
         plotting = QVizNodePlotting(self.treeNode)
-        if not (plotting.isPlottable() and plotting.curveAbscissae()
-                and plotting.tensorAxes()):
+        if not (plotting.isPlottable() and plotting.curveAbscissae()):
             return None
 
-        action_exploreTensor = QAction(
-            GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'),
-            'Explore this tensor', self)
-        action_exploreTensor.setToolTip(
-            'Draw this quantity on a figure of curves with a slider per '
-            'array that holds it, starting at the element the tree is on')
-        action_exploreTensor.triggered.connect(self.exploreTensorCommand)
+        axesSpec = QVizAxesSpec.fromTreeNode(self.treeNode)
+        own = chooseAbscissa(axesSpec)
+        targets = []
+        if plotting.tensorAxes(own):
+            targets.append((None, own))
+        for figureKey in self.imas_viz_api.GetFiguresKeys(
+                figureType=FigureTypes.CURVEPLOTTYPE):
+            frame = self.imas_viz_api.figureframes.get(figureKey)
+            abscissa = getattr(frame, 'abscissa', None)
+            # A figure along another abscissa explores another set of arrays, so
+            # it is asked for itself -- and it is the figure that answers.
+            if abscissa is None or not plotting.tensorAxes(abscissa):
+                continue
+            if not self.imas_viz_api.figureDrawsSameCurveAxis(figureKey,
+                                                              self.treeNode,
+                                                              tensor=True):
+                continue
+            targets.append((figureKey, abscissa))
+        if not targets:
+            return None
 
-        return action_exploreTensor
+        menu = QMenu('Explore this tensor along ' + axisPhrase(targets[0][1]),
+                     parentMenu)
+        if parentMenu is None:
+            self.exploreTensorMenu = menu
+        else:
+            # Hanging it here, because the constructor only sets the Qt parent:
+            # nothing put the submenu into the pop-up, and a QMenu no one holds is
+            # deleted with the Python wrapper that made it -- the dangling submenu
+            # T0 removed. Asked to hang itself, it keeps its place in the order:
+            # the time entry, this one, then the windows.
+            parentMenu.addMenu(menu)
+            self.exploreTensorMenu = menu
+        menu.setIcon(GlobalIcons.getCustomQIcon(QApplication, 'plotSingle'))
+        menu.setToolTip('Draw this quantity on a figure of curves with a slider '
+                        'per array that holds it, starting at the element the '
+                        'tree is on')
+        for figureKey, abscissa in targets:
+            if figureKey is None:
+                action = QAction(GlobalIcons.getCustomQIcon(QApplication, 'new'),
+                                 'New', self)
+            else:
+                # A figure along another abscissa than the heading names says so,
+                # because the sliders it offers are that abscissa's leftovers.
+                title = figureKey
+                if abscissa != targets[0][1]:
+                    title += ' (along ' + axisPhrase(abscissa) + ')'
+                action = QAction(title, self)
+            action.triggered.connect(partial(self.exploreTensorCommand,
+                                             intoFigureKey=figureKey))
+            menu.addAction(action)
+        return menu
 
     def actionSelectOrUnselectSignalNode(self):
         """Set action to select/unselect signal node.
@@ -273,11 +328,14 @@ class QVizSignalHandling(QObject):
         # The two questions the node answers before any window is picked: run
         # along time, or explore the arrays that hold the quantity. They hang off
         # the pop-up because neither answer needs a window chosen -- the submenu
-        # built below is the one that asks which window.
-        for action in (self.actionPlotAsFunctionOfTime(),
-                       self.actionExploreThisTensor()):
-            if action is not None and parentMenu is not None:
-                parentMenu.addAction(action)
+        # built below is the one that asks which window. The tensor entry is a
+        # submenu of its own for the same reason: it asks *which figure*, and a
+        # tensor is not tied to a new window.
+        action_plotTime = self.actionPlotAsFunctionOfTime()
+        if action_plotTime is not None and parentMenu is not None:
+            parentMenu.addAction(action_plotTime)
+        if parentMenu is not None:
+            self.menuExploreThisTensor(parentMenu)
 
         menu = QMenu('Plot ' + self.signalNodeName + ' to', parentMenu)
         if parentMenu is None:
@@ -622,14 +680,17 @@ class QVizSignalHandling(QObject):
         """Draw the node the menu was built on as a history along time."""
         self.plotNodeCommand(alongTime=True)
 
-    def exploreTensorCommand(self):
+    def exploreTensorCommand(self, intoFigureKey=None):
         """Walk the tensor that holds the node, on a figure of curves.
 
         The element entries above draw one element and fix the arrays around it;
         this asks the other question, so the figure opens at the element the tree
-        is standing on and the user walks the arrays from there.
+        is standing on and the user walks the arrays from there. `intoFigureKey`
+        is the open figure the menu offered because its sliders are the very
+        arrays this tensor would walk; asked for a figure whose sliders are other
+        arrays, the frame refuses it by name and no window is opened.
         """
-        self.plotNodeCommand(tensor=True)
+        self.plotNodeCommand(intoFigureKey=intoFigureKey, tensor=True)
 
     def plotNodeCommand(self, alongTime=None, intoFigureKey=None, tensor=False):
         """Run the one-node command and show what it drew.

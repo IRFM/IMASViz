@@ -12,7 +12,8 @@ import logging
 import numpy as np
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
-from imasviz.VizDataAccess.QVizCurveAbscissa import TIME
+from imasviz.VizDataAccess.QVizCurveAbscissa import (TIME, dynamicArrayAxis,
+                                                     plottedPositions)
 from imasviz.VizDataAccess.QVizSlices import (QVizSlice, frameLabel, sliceLabel,
                                               slicesFor)
 from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
@@ -121,12 +122,7 @@ class QVizTensorDataAccess:
                                                                      alongTime)
 
     def _plottedPositions(self, axesSpec, timeAxis, alongTime):
-        if alongTime:
-            for position, axis in enumerate(axesSpec.axes):
-                if axis is timeAxis:
-                    return (position,)
-        return tuple(position for position, axis in enumerate(axesSpec.axes)
-                     if axis.origin == QVizAxis.LEAF)
+        return plottedPositions(axesSpec, alongTime)
 
     def slicesFor(self, treeNode, plotWidget=None, as_function_of_time=None,
                   coordinate_index=0, frames=None, abscissa=None):
@@ -250,10 +246,7 @@ class QVizTensorDataAccess:
 
     def _timeAxis(self, axesSpec):
         """The array of structures carrying the time index, if there is one."""
-        for axis in axesSpec.axes:
-            if axis.is_time and axis.origin == QVizAxis.AOS:
-                return axis
-        return None
+        return dynamicArrayAxis(axesSpec)
 
     def _fixedIndices(self, axesSpec, timeIndex=None, timeAxis=None, slices=None):
         """The index every array of structures is read at.

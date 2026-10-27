@@ -24,10 +24,11 @@ Two questions, kept apart here and joined by one entry:
     an element (the plot entries)  the arrays the tree stands on are fixed, and
                                    spelled out in the legend; only the leaf's own
                                    coordinate is movable
-    the tensor (Explore this tensor) every axis the curve leaves out gets a
-                                   slider, opened where the tree was standing;
-                                   *Keep this curve* freezes the curve at the
-                                   indices it stands on so a family can pile up
+    the tensor (Explore this tensor along <axis>) every axis the curve leaves out
+                                   gets a slider, opened where the tree was
+                                   standing; *Keep this curve* freezes the curve
+                                   at the indices it stands on so a family can
+                                   pile up
 
 A slider costs a line of the window, so the band of a curve figure folds to one
 summary line; an image window and a table panel keep theirs open, because there
@@ -62,6 +63,12 @@ from support.fakes import FakeAxesNode
 AOS, LEAF = 'AOS', 'LEAF'
 ION = (AOS, 'foo', 'ion')
 RADIAL = (LEAF, 'foo', 'dimension 1')
+
+# The entry says along *what* it explores, because which arrays end up under a
+# slider depends on the abscissa the figure runs along: the same quantity left out
+# of a figure drawn against time is not left out of one drawn against its own
+# coordinate.
+EXPLORE = 'Explore this tensor along time axis'
 
 # Two time slices, two ions each, three radial points each -- the same shape
 # test_24 drives, read here for the element/tensor split instead of the loop.
@@ -350,7 +357,7 @@ def view(qapp):
 def test_the_entry_is_offered_when_a_curve_figure_has_an_array_to_pin(view):
     texts = popUpEntries(view, _leaf())
 
-    assert 'Explore this tensor' in texts
+    assert EXPLORE in texts
 
 
 @pytest.mark.ui
@@ -359,7 +366,7 @@ def test_the_entry_is_not_offered_when_there_is_nothing_to_walk(view):
     # along it, so a slider for it would ask for what the abscissa shows.
     texts = popUpEntries(view, _inTheDynamicArrayOnly())
 
-    assert 'Explore this tensor' not in texts
+    assert EXPLORE not in texts
     assert QVizNodePlotting(_inTheDynamicArrayOnly()).tensorAxes() == []
     assert [axis.name for axis in QVizNodePlotting(_leaf()).tensorAxes()] == ['ion']
 
@@ -377,16 +384,15 @@ def test_the_entry_answers_the_node_beside_the_time_entry(view):
     node = _leaf()
     texts = popUpEntries(view, node)
 
-    assert texts.index('Explore this tensor') == (
-        texts.index('Plot as function of time') + 1)
-    assert texts.index('Explore this tensor') < texts.index('Plot z_ion to')
+    assert texts.index(EXPLORE) == texts.index('Plot as function of time') + 1
+    assert texts.index(EXPLORE) < texts.index('Plot z_ion to')
 
     # And it is not left behind in the submenu it came out of: one entry, one
     # place to find it.
     menu = QVizSignalHandling(dataTreeView=view,
                               treeNode=node).menuPlotCurrentSignalNode()
-    assert 'Explore this tensor' not in [action.text()
-                                         for action in figureSubMenu(menu).actions()]
+    assert not [action.text() for action in figureSubMenu(menu).actions()
+                if action.text().startswith('Explore this tensor')]
 
 
 @pytest.mark.ui

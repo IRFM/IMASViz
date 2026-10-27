@@ -56,9 +56,11 @@ from PySide6.QtWidgets import QCheckBox, QVBoxLayout, QWidget
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
 from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae
+from imasviz.VizDataAccess.QVizCurveAbscissa import arraysLeftOut
 from imasviz.VizDataAccess.QVizCurveAbscissa import choose as chooseAbscissa
 from imasviz.VizDataAccess.QVizCurveAbscissa import describe as describeAbscissa
 from imasviz.VizDataAccess.QVizCurveAbscissa import labelFor as abscissaLabel
+from imasviz.VizDataAccess.QVizCurveAbscissa import spellArrays
 from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
@@ -136,6 +138,14 @@ class QVizCurvePlot(QWidget):
         # Whether this figure was asked to explore a tensor: the sliders over the
         # arrays and the *Keep this curve* box belong to that question only.
         self.exploresTensor = False
+        # Beside its abscissa, the other half of what a figure of curves *is*:
+        # the arrays of structures it puts under a slider. Only a tensor puts an
+        # array there, so this is empty until the figure is asked to explore one
+        # -- and from then on it is what every later trace has to come from,
+        # because the band of controls is one for the whole figure: a slider
+        # would otherwise move one curve and leave the other at the element the
+        # tree stood on.
+        self.walkingArrays = frozenset()
         # Curves frozen by *Keep this curve*, in the order they were frozen.
         self._kept = []
 
@@ -210,13 +220,14 @@ class QVizCurvePlot(QWidget):
                               if options else 'nothing of its own') + '.')
         if self.abscissa is None:
             self.abscissa = abscissa
+        self._checkArrays(axesSpec, abscissa, tensor)
 
         axesSpec, timeAxis, alongTime, plotted = access.plan(treeNode, self,
                                                              as_function_of_time,
                                                              abscissa)
         pinned = [axis for position, axis in enumerate(axesSpec.axes)
                   if position not in plotted]
-        fixed, movable = self._pinning(pinned, tensor)
+        fixed, movable = self._pinning(pinned, tensor, self.walkingArrays)
         slices = self._readSlices(fixed, movable)
 
         x, y = access.GetSignal(treeNode=treeNode, plotWidget=self,
@@ -251,7 +262,7 @@ class QVizCurvePlot(QWidget):
 
         self.setAbscissaLabel(axesSpec)
         self.setQuantityLabel(treeNode)
-        self.addSlices(self._controlsFor(access, treeNode, pinned, tensor,
+        self.addSlices(self._controlsFor(access, treeNode, movable, tensor,
                                          as_function_of_time, abscissa))
         # A quantity added to a figure already showing bars or a band joins them:
         # the entries answer for every curve on the figure, not for the ones that
@@ -374,8 +385,66 @@ class QVizCurvePlot(QWidget):
                 self._slices[sl.key] = sl
         self.sliceControls.setSlices(list(self._slices.values()))
 
+    def accepts(self, treeNode, tensor=False):
+        """Whether this quantity may be drawn here -- the gate the menus ask.
+
+        The abscissa first: a curve figure has one bottom label, and
+        `QVizCurveAbscissa.choose` answers whether the quantity can be read along
+        it. Then, for the two questions that involve a tensor, the arrays: a
+        figure of curves has one band of sliders, so a tensor whose sliders would
+        be *other* arrays is another picture -- moving one slider would move one
+        curve and leave the other at the element the tree stood on -- and an
+        element asked into such a figure is frozen at one element of those very
+        arrays, so it has to be an element of them.
+
+        Two elements asked of an ordinary figure are not that question: each pins
+        its own arrays and spells them in its legend, which is what lets two
+        elements of two different arrays sit on one abscissa and be compared.
+
+        `plot` enforces the same rule and says it in the log; this answers it
+        without reading anything, so a right click can ask it of every open
+        figure.
+        """
+        axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
+        abscissa = chooseAbscissa(axesSpec, self.abscissa)
+        if abscissa is None:
+            return False
+        return self._arraysAgree(arraysLeftOut(axesSpec, abscissa))
+
+    def _arraysAgree(self, asked):
+        """Does this trace come from the arrays the figure puts under a slider?
+
+        Only a tensor puts arrays under a slider, so a figure that has never
+        explored one has none to agree with: its band is empty, and an element
+        asked into it pins its own arrays and moves nothing -- the representation
+        the plot entries have always had, and what lets two elements of two
+        different arrays sit on one abscissa and be compared (`test_59`'s
+        flux loop and its neighbour probe, measured on the case). Once the figure
+        explores a tensor, both representations are asked: the tensor's sliders
+        would walk one curve and not the other, and the element would be frozen
+        at an element of arrays the sliders do not walk.
+        """
+        return not self.walkingArrays or asked == self.walkingArrays
+
+    def _checkArrays(self, axesSpec, abscissa, tensor):
+        """The same question, refused by name -- and the first tensor settles it.
+
+        The first tensor asked into a figure settles which arrays its band of
+        sliders walks; every later trace has to come from those same arrays,
+        because the band is one for the whole figure.
+        """
+        asked = arraysLeftOut(axesSpec, abscissa)
+        if not self._arraysAgree(asked):
+            raise ValueError('"' + (axesSpec.dataPath or '') + '" leaves out '
+                             + spellArrays(asked) + ', while this figure holds '
+                             + spellArrays(self.walkingArrays) + ': its sliders '
+                             'would walk one curve and leave the other where '
+                             'it is.')
+        if tensor:
+            self.walkingArrays = asked or self.walkingArrays
+
     @staticmethod
-    def _pinning(pinned, tensor):
+    def _pinning(pinned, tensor, walkingArrays):
         """Split the axes a trace leaves out into its own and the figure's.
 
         An array of structures the tree is standing on belongs to the identity of
@@ -386,11 +455,18 @@ class QVizCurvePlot(QWidget):
         the same grid, and one control moving both is what makes them comparable.
         Under `tensor` the array itself is the question, so it goes under a
         slider too.
+
+        An element asked into a figure that *is* walking arrays is the exception:
+        there the sliders answer the tensor, and the curve the user asked for as
+        one element must not move under them -- it is frozen on every axis it
+        leaves out, its own coordinate included, and its legend spells the whole
+        index set.
         """
         fixed = {}
         movable = []
+        frozen = bool(walkingArrays) and not tensor
         for axis in pinned:
-            if tensor or axis.origin == QVizAxis.LEAF:
+            if tensor or (axis.origin == QVizAxis.LEAF and not frozen):
                 movable.append(axis)
             else:
                 fixed[axis.key()] = axis.index
@@ -413,14 +489,17 @@ class QVizCurvePlot(QWidget):
             slices[axis.key()] = 0 if index is None else int(index)
         return slices
 
-    def _controlsFor(self, access, treeNode, pinned, tensor,
+    def _controlsFor(self, access, treeNode, movable, tensor,
                      as_function_of_time, abscissa):
         """The sliders this quantity earns, with the lengths the values answer.
 
         `slicesFor` answers every axis the read leaves out, because a leaf axis
-        length exists only in the values; the element representation keeps the
-        arrays of structures out of it, since they are fixed and the legend says
-        where.
+        length exists only in the values; a control is then kept for the axes this
+        trace actually follows, which is what makes an element different from a
+        tensor: the element fixes the arrays the tree stands on and keeps only its
+        own coordinate, while an element frozen by a tensor figure follows nothing
+        and gets no control at all -- its index set is in the legend, and no
+        slider may move a curve the user asked for as one element.
 
         The abscissa goes to `slicesFor` with the rest, because which axes are
         left out depends on it: the same quantity offers a coordinate slider on a
@@ -432,8 +511,8 @@ class QVizCurvePlot(QWidget):
                                   abscissa=abscissa)
         if tensor:
             return slices
-        movable = {axis.key() for axis in pinned if axis.origin == QVizAxis.LEAF}
-        return [sl for sl in slices if sl.key in movable]
+        movableKeys = {axis.key() for axis in movable}
+        return [sl for sl in slices if sl.key in movableKeys]
 
     def labelOf(self, trace, slices):
         return elementLabel(trace.treeNode, trace.pinned, slices) + trace.suffix

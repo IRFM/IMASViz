@@ -153,6 +153,92 @@ def abscissae(axesSpec):
     return options
 
 
+def dynamicArrayAxis(axesSpec):
+    """The array of structures a curve walks when it runs along the clock.
+
+    The read indexes that array once per point of the curve, so it is the one
+    axis the abscissa draws rather than leaves out -- and no slider may be put on
+    it, which is what `QVizTensorDataAccess._timeAxis` answers for the read. Asked
+    here so the read, the menus and the figure cannot pick different arrays.
+    """
+    for axis in axesSpec.axes:
+        if axis.is_time and axis.origin == QVizAxis.AOS:
+            return axis
+    return None
+
+
+def plottedPositions(axesSpec, alongTime):
+    """Which positions of the spec a curve of this quantity draws.
+
+    One spelling of the rule for the read, the controls and the superposition
+    gate: running along the clock walks the dynamic array, anything else slices
+    at one element of every array and draws the leaf's own axes. It mirrors
+    `QVizTensorDataAccess._plottedPositions`, which delegates here.
+    """
+    if alongTime:
+        axis = dynamicArrayAxis(axesSpec)
+        if axis is not None:
+            return (axesSpec.axes.index(axis),)
+    return tuple(position for position, axis in enumerate(axesSpec.axes)
+                 if axis.origin == QVizAxis.LEAF)
+
+
+def axesLeftOut(axesSpec, abscissa):
+    """The axes a figure running along this abscissa does not draw.
+
+    The abscissa answers which arrays are walked and which are left out, so the
+    same quantity leaves out different arrays on a figure drawn against time and
+    on one drawn against `psi`: `equilibrium.time_slice[i].profiles_1d.f` leaves
+    out nothing along time -- the curve *is* the array -- and leaves out
+    **time_slice** along `psi`, which is the slider the manual asks for there
+    ("the other slices are reached through *Explore this tensor*, which puts a
+    slider on time_slice"). Asking the axes without the abscissa cannot answer
+    that, and answering it once per caller is what let a documented slider go
+    missing.
+    """
+    alongTime = abscissa == TIME and dynamicArrayAxis(axesSpec) is not None
+    drawn = plottedPositions(axesSpec, alongTime)
+    return [axis for position, axis in enumerate(axesSpec.axes)
+            if position not in drawn]
+
+
+def arraysLeftOut(axesSpec, abscissa):
+    """The arrays of structures a figure running along this abscissa leaves out.
+
+    A figure's identity beside its abscissa: the arrays it puts under a slider
+    are the arrays its traces leave out, and a second tensor whose sliders would
+    be different arrays is not the same picture -- its sliders would move some of
+    the curves and not the others, which is what "les axes soient les memes"
+    refuses.
+    """
+    return frozenset(axis.key() for axis in axesLeftOut(axesSpec, abscissa)
+                     if axis.origin == QVizAxis.AOS)
+
+
+def spellArrays(keys):
+    """The arrays of a key set, named as a control names them, for a refusal.
+
+    A refusal that says "different axes" is useless; one that says *which* axes
+    are the two figures' says what to change. The last part of an axis key is the
+    array name for an array of structures and the coordinate for a leaf axis,
+    which is what `sliceLabel` puts on the control for the same axis.
+    """
+    if not keys:
+        return 'nothing'
+    return ' and '.join(sorted(str(key[-1]) for key in keys))
+
+
+def axisPhrase(abscissa):
+    """What an entry naming this abscissa would say to the user."""
+    if abscissa == TIME:
+        return 'time axis'
+    if abscissa and abscissa[0] == COORDINATE:
+        return str(abscissa[1]).rsplit('.', 1)[-1]
+    if abscissa and abscissa[0] == DIMENSION:
+        return 'its index' + ('[%s]' % abscissa[1] if abscissa[1] else '')
+    return 'nothing'
+
+
 def hasNoAxisOfItsOwn(axesSpec):
     """A quantity with no axis to run along: a scalar the figure has to place.
 

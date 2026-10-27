@@ -26,8 +26,9 @@ pictures: plottedAxes() asks the read, and only the command that draws pays for
 it -- a right click must not extract a tensor to decide what to offer.
 """
 
-from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, leafDataDimension
-from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae
+from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis, leafDataDimension
+from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae, axesLeftOut
+from imasviz.VizDataAccess.QVizCurveAbscissa import choose as chooseAbscissa
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 
 
@@ -115,23 +116,34 @@ class QVizNodePlotting:
         """
         return abscissae(self.axes)
 
-    def tensorAxes(self):
+    def tensorAxes(self, abscissa=None):
         """Which arrays of structures exploring the tensor would put under a slider.
 
         The plot entries draw an *element*: the tree is already standing on
         'flux_loop[3]', so the figure fixes that array and spells its index in the
         legend. Exploring the *tensor* is the other question, and it is only worth
-        offering when a curve figure would have such an array to pin. The dynamic
-        array does not count: a curve of a quantity held by it is read along time,
-        so that array is drawn rather than pinned, and a slider for it would ask
-        for what the abscissa already shows.
+        offering when a curve figure would have such an array to pin.
+
+        Which arrays those are depends on **the abscissa the figure runs along**,
+        which is why the abscissa is asked for and the arrays are not simply the
+        non-temporal ones. On a figure drawn against time, the dynamic array *is*
+        the curve and a slider for it would ask for what the abscissa shows --
+        `equilibrium.time_slice[i].profiles_1d.f` then has nothing to explore. On
+        a figure drawn against `psi` -- the very figure the manual builds from
+        that leaf -- the dynamic array is left out and the slider it earns is the
+        one the manual promises: *"the other slices are reached through Explore
+        this tensor, which puts a slider on time_slice"*. Left out, the abscissa
+        is the one this quantity would pick for a figure of its own.
 
         Asked of the axes alone, like curveAbscissae(): a right click must not pay
         for a read to find out what it may offer.
         """
-        if not self.isPlottable():
+        if not self.isPlottable() or not abscissae(self.axes):
             return []
-        return [axis for axis in self.axes.aosAxes() if not axis.is_time]
+        if abscissa is None:
+            abscissa = chooseAbscissa(self.axes)
+        return [axis for axis in axesLeftOut(self.axes, abscissa)
+                if axis.origin == QVizAxis.AOS]
 
     def plottedAxes(self):
         """How many axes a picture of this quantity would show.
