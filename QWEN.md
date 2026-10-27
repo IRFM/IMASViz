@@ -336,7 +336,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 930 passed, 1 xfailed, ~139 s, offscreen
+python3 -m pytest tests/ -q     # 964 passed, 1 xfailed, ~143 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -550,6 +550,25 @@ artifacts of this codebase, and several are load-bearing:
   answers `axis.index is None` — and a curve figure's band **folds** to one summary line
   (`QVizSliceControls(foldable=True)`), while an image window and a table panel stay
   unfolded because there the rows are the only place saying which slice is drawn.
+- A Table Plot View asks the width of its grid **once for the table**, from how many
+  panels it holds (`QVizTablePlot.layoutTable` → `columnsFor(len(self._panels))`), and
+  lays the panels on that grid — never one panel at a time against a width read for
+  that panel. Asked per arrival it answered 1, then 2 until the fifth, then 3, while the
+  row came from the panel count: measured on a 15-panel table, **14 cells for 15
+  panels**, row 0 holding only (0,0) and (0,1), cell **(1,1) holding two panels**, (0,2)
+  never filled. `QGridLayout` accepts two widgets in one cell **without a word of
+  warning** — no exception, no Qt warning — so the only symptom is what the user counts
+  on screen. What keeps the two answers together: `panelsInTable()` reads the layout,
+  and `getPlotItemsDict()` reads it through that, because recomputing the places from
+  the panel count wrote a `.pcfg` naming (0,2) where no panel sat and (1,1) once for
+  two panels, and re-applying such a file laid the overlap again. A quantity the read
+  refuses costs its panel **and takes it back** (`plot()` draws before it keeps the
+  panel, and calls `deleteLater()` on the refusal): a `QVizPanel(self)` that no layout
+  owns stays visible on the window, over the panels that were accepted. In the file, an
+  absent place is **no attribute** — the reader turns a missing `row` into a missing
+  place, so writing `str(None)` made the file unreadable (`invalid literal for int()
+  with base 10: 'None'`) and that entry drew nothing. `tests/test_65_*` pins all of it
+  on stubs, the 15- and 16-panel shapes cell by cell.
 
 ## Verified in situ (ACH/Gateway module stack)
 

@@ -749,6 +749,12 @@ below. The number of columns follows the number of panels: one panel gets a
 row of its own, up to four panels share two columns, and more than four are
 laid out in three columns.
 
+That width is the :guilabel:`Table Plot View`'s own, decided by how many panels
+it holds, and every panel gets a cell of its own: a panel is never laid on top of
+another, and no cell is left empty before the last panel. So a selection of
+fifteen quantities comes out as five rows of three, and a sixteenth quantity
+starts a sixth row holding it alone.
+
 .. figure:: images/TablePlotView_example.png
     :align: center
     :scale: 50%
@@ -891,7 +897,11 @@ To apply MultiPlot configuration to any IMAS database, follow the next steps:
    A configuration file holds three things: which quantities were plotted, where
    each panel sat in the table, and along which abscissa the window was drawn.
    All three are put back: the quantities are selected again in the database that
-   is open and their panels are laid where they were. How the panels *looked*
+   is open and their panels are laid where they were -- in the same cells, which
+   are the cells the saved window showed. A file that leaves a panel's place out
+   -- one written by a release that did not record it, or naming a cell another
+   panel already claims -- puts that panel in the first cell left free rather
+   than laying it on top of another. How the panels *looked*
    (pen, symbols, axis ranges) is not in a file written by this release, because
    the panels are drawn from the data. A configuration written by an older
    release does hold that styling; the log panel of the shot view then says so and
