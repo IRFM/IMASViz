@@ -172,5 +172,80 @@ those available options.
 
    :guilabel:`Show/Hide/Delete DTV` popup menu.
 
+Save/Load Session
+-----------------
+
+A **session** is what is on the screen when :guilabel:`IMASViz` is closed: the
+case views that are open, the IDS occurrences they have loaded, the quantities
+that are selected, and the plot windows that were drawn. The two commands
+:guilabel:`Actions` -> :guilabel:`Save session` and :guilabel:`Actions` ->
+:guilabel:`Load session` write that down and put it back.
+
+To save a session, select :guilabel:`Save session` and type a name in the dialog.
+The session is written to :file:`$HOME/.imasviz/<name>.vsess`, beside the plot and
+selection configuration files.
+
+To put a session back, select :guilabel:`Load session` and choose one of the
+sessions that folder holds -- the sub-menu is only on the menu once at least one
+session has been saved. Nothing else is asked: the file names the cases, so a
+session comes back without retyping the database parameters.
+
++-------------------------------------+-----------------------------------------+
+| **What the file keeps**             | **How it comes back**                   |
++=====================================+=========================================+
+| The cases (their URIs)              | Each one is opened as the *Open* entry  |
+|                                     | opens it, and shown as a case view      |
++-------------------------------------+-----------------------------------------+
+| The IDS occurrences that were       | Each one is loaded again, with the same |
+| loaded and the time slices each     | time-slice choice: *all*, *one over 10*,|
+| was asked for                       | *first*, or the index that was asked    |
++-------------------------------------+-----------------------------------------+
+| Which branches of the tree were     | The IDS branch and the occurrence       |
+| unfolded                            | branch are unfolded again; deeper       |
+|                                     | branches stay as the load leaves them   |
++-------------------------------------+-----------------------------------------+
+| The selected quantities, in the     | Selected on the case view, as a node    |
+| order they were picked              | selection file is applied               |
++-------------------------------------+-----------------------------------------+
+| The plot windows: kind, quantities, | Each window is drawn again by the same  |
+| axis, table cells, and the **key**  | command that drew it the first time,    |
+| of each                             | under the key it had -- see below       |
++-------------------------------------+-----------------------------------------+
+
+The key of a window is not a label: it is the name the :guilabel:`Show/Hide` and
+:guilabel:`Delete` menus address it by, and the name the *Plot X to -> Figure*
+menu offers when a quantity is added to a window that is already open. A saved
+session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
+:guilabel:`SlicesPlot1`, and the menus still name one line for it.
+
+.. note::
+   A restored window is drawn from the data again, not taken out of the file. So
+   it owns its time sliders, its axis, its legend and its log, and it answers the
+   same gestures as a window drawn by hand. A Stacked Plot View is filled from the
+   selection, so the selection of its case is set to its quantities while it is
+   drawn, and the selection the session was left on is applied afterwards.
+
+.. note::
+   Reading a session is fast because its IDSs are read lazily: only the structure
+   each tree needs is walked, and the values are taken from the file when a
+   quantity is drawn. Measured on the reference case (WEST 54924 run 0): the tree
+   of one ``equilibrium`` occurrence costs 0,10 s this way, against 3,99 s when
+   the same IDS is read whole -- and the tree is the same either way.
+
+.. warning::
+   A session names quantities of a **data dictionary**. A case that comes back at
+   another version than the one the session was written with can hold fewer nodes
+   than the file names: the difference is said in the log when the case is opened,
+   and each quantity that is gone is named when its window is drawn. A case that
+   cannot be opened at all costs its own windows and nothing else, so the other
+   cases of the file still come back.
+
+.. warning::
+   What a session does not keep yet: the styling of a window (title, axis labels,
+   margins, error bars), the position and size of a window in the area, and the
+   windows drawn by a plugin (:guilabel:`Profiles`, :guilabel:`Equilibrium
+   overview`) -- those are drawn from a question the plugin asks, so they are left
+   out and the log says which windows were skipped.
+
 
 

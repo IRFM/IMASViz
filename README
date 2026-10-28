@@ -181,3 +181,21 @@ To launch **IMASViz**, execute the following command:
 To browse IMASViz documentation, just type:
 
     viz_doc
+
+
+### Saving and restoring a session
+
+**Actions -> Save session** writes what is on the screen — the cases that are
+open, the IDS occurrences they have loaded and the time slices each was asked
+for, the selection, and the plot windows with the key the Show/Hide and Delete
+menus address them by — to **$HOME/.imasviz/\<name\>.vsess**. **Actions -> Load
+session** lists those files and puts one back: the cases are reopened and the
+windows drawn again by the same commands that drew them the first time, so a
+restored window owns its sliders, its axis and its legend. See the manual,
+*Other GUI features -> Save/Load Session*, for what the file keeps and what it
+does not keep yet.
+
+The IDSs of a session are read lazily through IMAS-Python, which is what makes
+putting a session back affordable: on the reference case, building the tree of
+one *equilibrium* occurrence costs 0,10 s and 7,7 Mo this way against 3,99 s and
+122,8 Mo read whole, with the same tree either way.

@@ -142,7 +142,9 @@ imasviz/
 ├── Viz_API.py                 # Viz_API: scripting API + central session state
 ├── VizUtils/                  # global constants, prefs, logging, window geometry
 ├── VizDataSource/             # opens a case: URI building, DBEntry, Tore-Supra, factory,
-│                              # QVizCaseOccurrences (which occurrences the case holds)
+│                              # QVizCaseOccurrences (which occurrences the case holds),
+│                              # QVizDBEntryRegistry (one record per case: the entry, its
+│                              # reference count, its IDS handles, and which of them are lazy)
 ├── VizDataAccess/             # QVizIDSViewParser: walks the dictionary through imas reflection
 │   └── VizTimeSlices/         #   how many elements of a dynamic AOS a view keeps
 ├── VizEntities/               # data-array handles
@@ -171,7 +173,13 @@ Core concepts, in the vocabulary used by the code and docs:
   `GetNextKeyForFigure`, `GetFiguresKeys` and `GetFigureKey` take no default `figureType`:
   a call naming no kind used to mean the dead one silently.
   Allocate keys through
-  the `GetNextKeyFor*` accessors, never by hand.
+  the `GetNextKeyFor*` accessors, never by hand — **except when a key arrives from
+  a session file**, which is answered by `Viz_API.FigureKeyFor(type, key)`: the key
+  is the identity the *Show/Hide*, *Delete* and *add to that figure* menus address
+  a window by, so the three plot commands take a `figureKey=` and honour it, and a
+  key a live window already holds is refused (measured before that: a file naming
+  `SlicesPlot1` came back as `SlicesPlot2`, and `QVizPlotAsStacked` was the last of
+  the three still asking for the next key).
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
   (`QVizLoadOccurrence`, `QVizSelectNodes`, `QVizSelectFromConfiguration`,
   `QVizSaveNodeSelection`, `QVizSavePlotConfiguration`, `QVizPlotOneNode`,
@@ -200,6 +208,43 @@ Core concepts, in the vocabulary used by the code and docs:
   about a configuration is raised out of a button or a menu slot. A file written
   now holds no styling, so the "styling is not applied" log line is only for the
   old ones (`styledPanels`).
+- **a session** — `VizConfigurations/QVizSessionFile.py` owns the third kind,
+  `.vsess` under the same folder and behind the same name guard and listing
+  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="1">` root, one
+  `<Case uri dd_version label>` per case holding `<Load ids occurrence slices>`,
+  `<Expanded ids [occurrence]>` and `<Selection path occurrence>`, then one
+  `<Figure key kind [axis] [tensor]>` per window holding
+  `<Quantity path occurrence [uri] [row column]/>`. `VizGUICommands/VizSession/`
+  holds the two commands: `QVizSaveSession` reads the screen out of the api,
+  `QVizRestoreSession` **replays the gestures** rather than rebuilding widgets —
+  the body of `QVizOpenShotView.Open`, `QVizLoadOccurrence`, `QVizPlotOneNode`,
+  `QVizPlotAsTable`, `QVizPlotAsStacked` — so a restored window owns its sliders,
+  its abscissa and its menu line. Three consequences of that choice, each said in
+  the module: the loads are synchronous (a figure whose tree is still being built
+  is an empty window), a case that cannot be opened costs **its own** windows and
+  names the file and the URI in the log, and the selection is applied **last**
+  because a Stacked Plot View is filled from the selection of its view. The
+  plugin windows (`PlotView:`, `EquiPlotView:`) are left out and named, because
+  they are drawn from a question a plugin asks — the Profiles one is a modal
+  `QInputDialog`.
+- **reading a case is lazy** — `QVizIMASDataSource.LAZY_READS` is `True`, so every
+  `entry.get()` of the application asks IMAS-Python for a lazy IDS: the handle is a
+  window onto the open file, and the values are read when something asks for them.
+  Measured on the reference case, walking `equilibrium` occurrence 0: **0,10 s** and
+  **+7,7 Mo** lazily, against **3,99 s** and **+122,8 Mo** read whole — and the tree
+  is the same either way (**7203** elements, **7030** leaves). Two consequences to
+  keep in mind. A lazy handle **dies with the entry**: after `entry.close()` it
+  answers `RuntimeError: Cannot lazy load the requested data`, which is why
+  `tests/support/caseTrees.py` releases its source through `request.addfinalizer`
+  and why `QVizDBEntryRegistry.release()` forgets the lazy handles only once the
+  entry is closed (`cache_ids(..., lazy=True)` records which ones). And a lazy IDS
+  is **read-only** to IMAS-Python: `put(lazy=True)` answers `Lazy loaded IDSs
+  cannot be used in put or put_slice` and `get(destination=lazy=True)` answers
+  `Lazy-loaded IDSs are read-only`, so `QVizExportToIDS.wholeCopyOf` re-reads whole
+  the IDS it is about to write instead of handing the lazy one over. The marker to
+  ask is `ids._lazy`. To know whether a dataset holds anything without reading it,
+  `DBEntry.list_filled_paths` answers the filled paths — **141** for `equilibrium`
+  in **0,020 s** — but the tree is not built from it; the walk keeps its own rules.
 - **MDI** — a `QMdiArea` under `QVizMainWindow` (root window `objectName() == "IMASViz root window"`);
   figures and shot views are `QMdiSubWindow`s inside it. Both the **figure** paths and the
   **shot view** paths ask what a frame's parent *is* (`Viz_API.mdiWindowOf`) before they show,
@@ -336,7 +381,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 964 passed, 1 xfailed, ~143 s, offscreen
+python3 -m pytest tests/ -q     # 1007 passed, 1 xfailed, ~145 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -577,7 +622,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
 
 - `imas`, `PySide6` (reports **6.6.3**), `pyqtgraph` (0.13.7), `numpy`, `matplotlib` all import.
 - Import sweep of the `imasviz` package (skipping `VizExamples/` and standalone scripts):
-  it walks **109** modules and **108** of them import. The one failure is Qt-Designer
+  it walks **114** modules and **113** of them import. The one failure is Qt-Designer
   scaffolding only, not in the
   launch chain and not registered: `viz_example/exampleplugin.py`
   (`QPyDesignerCustomWidgetPlugin` absent in PySide6 6.6 — only
@@ -593,10 +638,13 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   figure's curves, which the curve frames and the Profiles plugin now share instead of
   each carrying a copy. T33 added **1**: `VizGUI/VizPlot/QVizCurveColors.py`, the palette
   of trace colours a curve figure hands out in the order the traces were drawn — pyqtgraph
-  hands out none of its own, see the colour bullet below. Note that
+  hands out none of its own, see the colour bullet below. T40a added **4**:
+  `VizGUI/VizConfigurations/QVizSessionFile.py` and the `VizGUICommands/VizSession/`
+  package (`__init__`, `QVizSaveSession`, `QVizRestoreSession`). Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
-  removal costs no test.
+  removal costs no test. It collects the modules and parametrizes on them, so a new
+  module costs four more ids and no counter anywhere.
 - In this PySide6 build `Slot`, `Signal`, `QThread` and `exec_()` **do** exist, while
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.
