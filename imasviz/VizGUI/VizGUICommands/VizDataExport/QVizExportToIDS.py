@@ -28,10 +28,25 @@ did none of them and reported no reason:
 * a ``put`` that fails leaves the entry open. Nothing here is closed unless a
   ``finally`` closes it.
 
-What is written is what is loaded -- the same cache the plots read -- so
-exporting does not reopen the case or re-read anything. Each IDS is written on
-its own occurrence, and one IDS that the target refuses does not cost the user
-the others: it is named in the log and the rest goes on.
+What is written is what is **open** -- the occurrences the plots read -- and each
+IDS is written on its own occurrence, one IDS that the target refuses not
+costing the user the others: it is named in the log and the rest goes on.
+
+What is written, though, has to be a copy that holds its data. The views read
+their IDSs lazily (``QVizIMASDataSource.LAZY_READS``), and the Access Layer
+refuses to write such a handle: ``put`` answers ``ValueError: Lazy loaded IDSs
+cannot be used in put or put_slice.`` and filling it in place is refused too
+(``get(destination=...)`` answers ``ValueError: Lazy-loaded IDSs are
+read-only.``). Measured, a view of ``equilibrium`` and ``pulse_schedule``
+exported as it stood left one file behind -- a 1 912-byte ``master.h5`` -- and
+the case read back answered ``IDS 'equilibrium', occurrence 0 is empty``. So the
+export asks the open entry for a whole copy of each occurrence it writes:
+**3,8 s and +125 Mo** for ``equilibrium`` occurrence 0 of the reference case,
+against 0,06 s and +1,9 Mo for the lazy read the view keeps. That price is paid
+when the export is asked for, not on every load of the session, and the copy is
+handed straight to the write rather than put back in the cache -- the tree keeps
+reading through its own handle, and 125 Mo per IDS is not what a session should
+carry for a command the user asked for once.
 """
 
 import logging
@@ -126,18 +141,49 @@ class QVizExportToIDS(QVizAbstractCommand):
         return dialog.target()
 
     def loadedIds(self):
-        """[(name, occurrence, ids instance)] for what this case has in memory.
+        """[(name, occurrence, ids instance)] for what this case has open.
 
-        Read from the cache the plots read: an IDS the user opened is a whole
-        IDS in memory, so exporting neither reopens the case nor re-reads it, and
-        the occurrences written are the occurrences that were opened.
+        The occurrences are the ones the plots read -- the cache of the view --
+        so exporting does not reopen the case and writes no occurrence the user
+        did not open. What each one is made of, though, is a copy that holds its
+        data: the views read lazily, and a lazy handle is a window on the open
+        file, which the Access Layer refuses to write (see this module's header).
         """
         entries = self.dataTreeView.dataSource.data_entries
         loaded = []
         for key, idsInstance in entries.items():
             name, _, occurrence = key.rpartition('/')
-            loaded.append((name, int(occurrence), idsInstance))
+            occurrence = int(occurrence)
+            if getattr(idsInstance, '_lazy', False):
+                idsInstance = self.wholeCopyOf(name, occurrence)
+            loaded.append((name, occurrence, idsInstance))
         return sorted(loaded)
+
+    def wholeCopyOf(self, name, occurrence):
+        """One occurrence read whole, for the write to have something to write.
+
+        Asked of the entry the case is already open with, and not cached: the
+        tree goes on reading through the lazy handle it drew, and holding a
+        whole copy of every opened IDS for the rest of the session would cost
+        125 Mo per IDS for a command asked for once.
+        """
+        entry = self.dataTreeView.dataSource.db_entry
+        if entry is None:
+            raise ValueError('Cannot export %s occurrence %d: the case %s is not '
+                             'open, and what this view holds of it is a lazy '
+                             'handle, which the Access Layer refuses to write.'
+                             % (name, occurrence, self.dataTreeView.uri))
+        logging.getLogger(self.dataTreeView.uri).info(
+            'Reading %s occurrence %d whole for the export: what the tree holds '
+            'is read lazily, and a lazily read IDS cannot be written.'
+            % (name, occurrence))
+        try:
+            return entry.get(name, occurrence)
+        except Exception as error:
+            raise ValueError('Cannot re-read %s occurrence %d of %s whole for the '
+                             'export: %s: %s'
+                             % (name, occurrence, self.dataTreeView.uri,
+                                type(error).__name__, error))
 
     @staticmethod
     def dataDictionaryOf(dataSource, loaded):

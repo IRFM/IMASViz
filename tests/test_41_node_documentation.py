@@ -311,8 +311,8 @@ def test_the_second_node_replaces_the_first_wholesale(panel):
 
 
 @pytest.fixture(scope='module')
-def case(qapp):
-    return loadCaseTrees(qapp, ('equilibrium',))
+def case(qapp, request):
+    return loadCaseTrees(qapp, ('equilibrium',), request=request)
 
 
 @pytest.fixture

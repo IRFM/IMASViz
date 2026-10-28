@@ -56,7 +56,7 @@ class QVizPlotOneNode(QVizAbstractCommand):
     IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
     def __init__(self, dataTreeView, treeNode, intoFigureKey=None,
-                 alongTime=None, tensor=False):
+                 alongTime=None, tensor=False, figureKey=None):
         """
         Arguments:
             treeNode       (QVizTreeNode) : the node to draw, never the selection.
@@ -77,11 +77,16 @@ class QVizPlotOneNode(QVizAbstractCommand):
             tensor           (bool)       : draw the tensor that holds it, under a
                                             slider per pinned axis, instead of the
                                             one element the tree is standing on.
+            figureKey          (str)      : the key the new figure is to carry,
+                                            for a session being put back the way
+                                            its file named its windows. Left None,
+                                            the api hands out the next key.
         """
         self.api = dataTreeView.imas_viz_api
         self.intoFigureKey = intoFigureKey
         self.alongTime = alongTime
         self.tensor = tensor
+        self.figureKey = figureKey
         # Set when this command opened the figure itself: a frame that is already
         # on screen must not be embedded in a second subwindow.
         self.builtFigure = False
@@ -148,7 +153,7 @@ class QVizPlotOneNode(QVizAbstractCommand):
                    tensor=self.tensor)
 
     def newFigure(self, figureType, frameClass):
-        figureKey = self.api.GetNextKeyForFigure(figureType)
+        figureKey = self.api.FigureKeyFor(figureType, self.figureKey)
         frame = frameClass(title=figureKey)
         frame.figureKey = figureKey
         self.api.figureframes[figureKey] = frame

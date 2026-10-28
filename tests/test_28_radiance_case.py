@@ -51,14 +51,14 @@ BANDS, SAMPLES = 8, 808
 
 
 @pytest.fixture(scope='module')
-def case(qapp):
+def case(qapp, request):
     """The shadow tree and the runtime IDS, walked once for all tests."""
     uri = rank3_case_uri_or_skip()
     if uri is None:
         pytest.skip('rank 3 case not reachable: %s' % RANK3_CASE_URI)
     return loadCaseTrees(qapp, (IDS_NAME,), uri=uri,
                          dd_version=RANK3_CASE_DATA_DICTIONARY_VERSION,
-                         label='west 55799')
+                         label='west 55799', request=request)
 
 
 @pytest.fixture

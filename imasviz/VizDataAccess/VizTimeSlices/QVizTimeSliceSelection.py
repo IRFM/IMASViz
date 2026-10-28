@@ -43,14 +43,24 @@ from imasviz.VizDataAccess.QVizAccessLayerHLI import IDSDataType
 class QVizTimeSliceSelection:
     """One way of slicing a dynamic array of structures, named by what it does."""
 
-    def __init__(self, menuLabel, viewLabel, window):
+    def __init__(self, menuLabel, viewLabel, window, index=None):
         self._menuLabel = menuLabel
         self._viewLabel = viewLabel
         self._window = window
+        self._index = index
 
     def menuLabel(self):
         """What the entry in the menu says."""
         return self._menuLabel
+
+    def index(self):
+        """The one element this selection keeps, or None when it keeps a range.
+
+        The index used to live only inside the closure of `window` and inside the
+        words of `viewLabel`, so a session file asking which slice a view was
+        standing on could only read it back out of a sentence.
+        """
+        return self._index
 
     def viewLabel(self):
         """What the occurrence node says about the view it heads.
@@ -108,7 +118,7 @@ def atIndex(index):
     return QVizTimeSliceSelection(
         'Specific time slice only',
         'displaying time slice with index=%d' % index,
-        _windowForIndex(index))
+        _windowForIndex(index), index=index)
 
 
 def _windowForIndex(index):

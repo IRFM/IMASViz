@@ -22,6 +22,10 @@ class QVizDBEntryRegistry:
     The key carries the mode and the data dictionary pin because IMAS-Python
     settles both when the entry is built: the same case cannot be shared
     between a reader and a writer, nor between two dictionary versions.
+
+    An IDS instance is kept here only as long as it can still be read, which
+    depends on how it was read (see cache_ids): that is what decides whether
+    the last release drops the cache or leaves it alone.
     """
 
     _records = {}
@@ -44,7 +48,7 @@ class QVizDBEntryRegistry:
         with QVizDBEntryRegistry._lock:
             record = QVizDBEntryRegistry._records.get(key)
             if record is None:
-                record = {'entry': None, 'count': 0, 'ids': {}}
+                record = {'entry': None, 'count': 0, 'ids': {}, 'lazy': set()}
                 QVizDBEntryRegistry._records[key] = record
             if record['entry'] is None:
                 if build is None:
@@ -62,10 +66,14 @@ class QVizDBEntryRegistry:
         Releasing more often than acquiring is ignored: a caller that lost its
         reference must not close the file under another user's feet.
 
-        The IDS instances read from the entry outlive it on purpose. An entry
-        loads a whole IDS into memory, so those instances stay valid, and the
-        views and the export go on reading what has been loaded. They are
-        dropped by drop(), when nobody displays the case any more.
+        An IDS instance read **whole** outlives the entry: the read copied it
+        into memory, and the views and the export go on reading it. An instance
+        read **lazily** does not -- it is a window on the open file, and
+        IMAS-Python answers `RuntimeError: Cannot lazy load the requested data:
+        the data entry is no longer available for reading.` for any part of it
+        that had not been read yet. So the last release drops the lazy ones and
+        keeps the rest; both are dropped by drop(), when nobody displays the
+        case any more.
         """
         key = QVizDBEntryRegistry._key(uri, mode, dd_version)
         with QVizDBEntryRegistry._lock:
@@ -78,6 +86,9 @@ class QVizDBEntryRegistry:
             if record['entry'] is not None:
                 record['entry'].close()
                 record['entry'] = None
+                for name in record['lazy']:
+                    record['ids'].pop(name, None)
+                record['lazy'].clear()
             return 0
 
     @staticmethod
@@ -96,6 +107,33 @@ class QVizDBEntryRegistry:
             if record['entry'] is not None:
                 record['entry'].close()
             return True
+
+    @staticmethod
+    def cache_ids(uri, name, ids_instance, mode='r', dd_version=None,
+                  lazy=False):
+        """Keeps one IDS instance read from this case, saying how it was read.
+
+        Read whole (`lazy=False`), the instance is a copy in memory and stays
+        readable after the entry is closed. Read lazily (`lazy=True`), it is a
+        window on the open file: IMAS-Python answers `RuntimeError: Cannot lazy
+        load the requested data: the data entry is no longer available for
+        reading.` for any part of it not read yet, once the entry is closed. The
+        flag is what lets release() tell the two apart instead of keeping a
+        handle that has gone blind.
+        """
+        key = QVizDBEntryRegistry._key(uri, mode, dd_version)
+        with QVizDBEntryRegistry._lock:
+            record = QVizDBEntryRegistry._records.get(key)
+            if record is None:
+                raise ValueError(
+                    'No entry is held for %s: %s cannot be cached there.'
+                    % (uri, name))
+            record['ids'][name] = ids_instance
+            if lazy:
+                record['lazy'].add(name)
+            else:
+                record['lazy'].discard(name)
+            return ids_instance
 
     @staticmethod
     def ids_cache(uri, mode='r', dd_version=None):

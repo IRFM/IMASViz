@@ -37,7 +37,8 @@ class QVizPlotAsStacked(QVizAbstractCommand):
 
     FIGURE_TYPE = FigureTypes.STACKEDPLOTTYPE
 
-    def __init__(self, dataTreeView, all_DTV=False, plotAxis='TIME'):
+    def __init__(self, dataTreeView, all_DTV=False, plotAxis='TIME',
+                 figureKey=None):
         """
         Arguments:
             all_DTV   (bool) : draw the selection of this view, or of every
@@ -46,10 +47,13 @@ class QVizPlotAsStacked(QVizAbstractCommand):
                                which is what the scripting entry has always
                                asked for -- anything else for the default
                                strategy, answered per quantity by the read.
+            figureKey (str)  : the key the window is to carry, for a session put
+                               back under the names its file gave its windows.
         """
         self.api = dataTreeView.imas_viz_api
         self.all_DTV = all_DTV
         self.plotAxis = plotAxis
+        self.figureKey = figureKey
         self.figure = None
         QVizAbstractCommand.__init__(self, dataTreeView, None)
 
@@ -114,7 +118,11 @@ class QVizPlotAsStacked(QVizAbstractCommand):
         return True if self.plotAxis == 'TIME' else None
 
     def newFigure(self):
-        figureKey = self.api.GetNextKeyForFigure(self.FIGURE_TYPE)
+        # The key is the name the Show/Hide and Delete menus address this window
+        # by, so a session that names one gets it: handing out the next key would
+        # put the window of a restored session somewhere else than where its file
+        # says it is.
+        figureKey = self.api.FigureKeyFor(self.FIGURE_TYPE, self.figureKey)
         frame = QVizStackedPlot(title=figureKey)
         frame.figureKey = figureKey
         frame.dataTreeView = self.dataTreeView

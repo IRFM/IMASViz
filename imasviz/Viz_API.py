@@ -330,6 +330,29 @@ class Viz_API:
                    for key in self.GetFiguresKeys(figureType)]
         return figureType + str(max(numbers) + 1 if numbers else 1)
 
+    def FigureKeyFor(self, figureType, figureKey=None):
+        """The key a figure being opened now is to carry.
+
+        Left free, that is the next key of the kind. Named, it is the key a
+        session file recorded -- and the reason a restoring command may name one
+        is that a key is not a label but the identity a menu addresses: show/hide,
+        delete and "add this quantity to that figure" all read `figureframes` by
+        it, so replaying the gestures of a session without its keys would put the
+        same windows under other names (measured: `SlicesPlot1` came back as
+        `SlicesPlot2`) and the file would stop describing the screen.
+
+        A named key already held by a live window is refused rather than shared:
+        two frames under one key make one of them unreachable, which is the
+        failure `GetNextKeyForFigure` above was rewritten to avoid.
+        """
+        if figureKey is None:
+            return self.GetNextKeyForFigure(figureType)
+        if figureKey in self.figureframes:
+            raise ValueError('A figure named "%s" is already open: the session '
+                             'cannot open another window under that key.'
+                             % figureKey)
+        return figureKey
+
     def GetNextKeyForTablePlotView(self):
         """Returns the key of the next table plot (e.g. if 'TablePlot i' is the
         latest table plot on the list of existing table plots, value

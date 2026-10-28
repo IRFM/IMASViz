@@ -136,6 +136,13 @@ class QVizDataTreeView(QTreeWidget):
         # contains root nodes for each IDS occurrence, key = IDSName + '/' + occurrence,value = ids_root_occurrence
         self.ids_roots_occurrence = {}
 
+        # How each of those occurrences was asked for, same key. The slice
+        # choice only ever reached the label of the occurrence node, spelled as
+        # a sentence ("[displaying one time slice out of ten]"), and a session
+        # file has to say which walk to replay -- reading it back out of a
+        # display string is how a wording change would break the file.
+        self.sliceSelections = {}
+
         # key=occurrence, value=IDS name
         self.IDSNameSelected = {}
 
@@ -228,6 +235,15 @@ class QVizDataTreeView(QTreeWidget):
             if entry is not None and getattr(entry, 'idsRef', None) is not None:
                 return entry.idsRef
         return None
+
+    def sliceSelectionFor(self, idsName, occurrence):
+        """How this view asked for that occurrence: the slice choice, as an object.
+
+        FIRST_SLICE is the answer when nothing was recorded, which is what a
+        plain load of the manual asks for.
+        """
+        return self.sliceSelections.get(idsName + '/' + str(occurrence),
+                                        FIRST_SLICE)
 
     def isLoadInFlight(self, idsName, occurrence):
         """Whether this view is already building this occurrence."""
@@ -402,6 +418,7 @@ class QVizDataTreeView(QTreeWidget):
         ids_root_node.setOccurrence(occurrence)
         ids_root_node.idsRef = idsInstance
         selection = FIRST_SLICE if sliceSelection is None else sliceSelection
+        self.sliceSelections[idsName + '/' + str(int(occurrence))] = selection
         root_node_label = 'occurrence ' + str(int(occurrence)) \
                           + ' [' + selection.viewLabel() + ']'
 

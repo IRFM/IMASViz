@@ -42,8 +42,9 @@ from support.fakes import FakeAxesNode, FakeTreeView
 
 
 @pytest.fixture(scope='module')
-def case(qapp):
-    return loadCaseTrees(qapp, ('tf', 'equilibrium', 'core_profiles'))
+def case(qapp, request):
+    return loadCaseTrees(qapp, ('tf', 'equilibrium', 'core_profiles'),
+                         request=request)
 
 
 @pytest.fixture

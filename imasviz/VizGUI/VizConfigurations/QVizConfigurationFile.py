@@ -53,7 +53,12 @@ QVizQuantity = namedtuple('QVizQuantity', 'path occurrence row column uri')
 
 PLOT = 'plot'
 SELECTION = 'selection'
-EXTENSIONS = {PLOT: 'pcfg', SELECTION: 'lsp'}
+# The session file is a third kind of file kept in the same folder, with its own
+# module for its own root element (`QVizSessionFile`). It is listed here because
+# what this class owns is the folder, the extension and the guard on a name typed
+# by hand -- not the shape of the XML.
+SESSION = 'session'
+EXTENSIONS = {PLOT: 'pcfg', SELECTION: 'lsp', SESSION: 'vsess'}
 
 # The roots the previous writer produced, and still produces on users' disks.
 LEGACY_ROOTS = {'PlotConfiguration': PLOT, 'SignalSelection': SELECTION}

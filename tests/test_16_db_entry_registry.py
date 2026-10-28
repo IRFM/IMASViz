@@ -45,8 +45,8 @@ class CountingEntry:
         self.closes += 1
         self.closed = True
 
-    def get(self, IDSName, occurrence):
-        return (IDSName, occurrence, self.mode)
+    def get(self, IDSName, occurrence, lazy=False):
+        return (IDSName, occurrence, self.mode, lazy)
 
 
 @pytest.fixture(autouse=True)
@@ -127,18 +127,67 @@ def test_releasing_more_than_acquired_does_not_disturb_the_next_user():
     assert not second.closed
 
 
-def test_the_loaded_idss_survive_the_entry_being_closed():
+def test_an_eagerly_read_ids_survives_the_entry_being_closed():
     # exportToLocal (QVizIMASDataSource.py) writes what has been loaded, reading
-    # it from this cache: an IDS loaded, then the case closed, must still be
-    # there to export. An entry loads the whole IDS in memory, so the instance
-    # stays valid once the file is closed.
+    # it from this cache: an IDS read **whole**, then the case closed, must still
+    # be there to export. `get()` copied the whole IDS into memory, so the
+    # instance stays valid once the file is closed.
     entry = acquire()
-    cache = QVizDBEntryRegistry.ids_cache(PATH_URI)
-    cache['tf/0'] = entry.get('tf', 0)
+    QVizDBEntryRegistry.cache_ids(PATH_URI, 'tf/0', entry.get('tf', 0))
     QVizDBEntryRegistry.release(PATH_URI)
 
     assert list(QVizDBEntryRegistry.ids_cache(PATH_URI)) == ['tf/0']
     assert QVizDBEntryRegistry.live_entries() == []
+
+
+def test_a_lazily_read_ids_is_forgotten_when_the_entry_closes():
+    # A lazy instance is a window on the open file, not a copy of it: measured on
+    # the reference case, reading a node of one after `entry.close()` answers
+    # `RuntimeError: Cannot lazy load the requested data: the data entry is no
+    # longer available for reading.` Keeping it would hand the views and the
+    # export a handle that has gone blind, refusing at a distance whatever the
+    # read was about.
+    entry = acquire()
+    QVizDBEntryRegistry.cache_ids(PATH_URI, 'tf/0', entry.get('tf', 0),
+                                  lazy=True)
+    assert list(QVizDBEntryRegistry.ids_cache(PATH_URI)) == ['tf/0']
+
+    QVizDBEntryRegistry.release(PATH_URI)
+    assert QVizDBEntryRegistry.ids_cache(PATH_URI) == {}
+
+
+def test_a_lazily_read_ids_survives_while_someone_holds_the_case():
+    # The other half of the rule: a shot view holds a reference for as long as
+    # its tree shows nodes of the case, and the lazy handles it drew stay
+    # readable for exactly that long.
+    acquire()
+    acquire()
+    entry = QVizDBEntryRegistry.entry(PATH_URI)
+    QVizDBEntryRegistry.cache_ids(PATH_URI, 'tf/0', entry.get('tf', 0),
+                                  lazy=True)
+
+    QVizDBEntryRegistry.release(PATH_URI)
+    assert list(QVizDBEntryRegistry.ids_cache(PATH_URI)) == ['tf/0']
+
+    QVizDBEntryRegistry.release(PATH_URI)
+    assert QVizDBEntryRegistry.ids_cache(PATH_URI) == {}
+
+
+def test_the_source_asks_for_its_idss_lazily():
+    # What the reading of an IDS costs is dominated by that flag: measured on the
+    # reference case, the walk of `equilibrium` occurrence 0 answers 3,99 s and
+    # +122,8 Mo read whole, 0,10 s and +7,7 Mo read lazily -- for an identical
+    # tree (7203 elements, 7030 leaves).
+    source = QVizIMASDataSource('west 54924', PATH_URI)
+    acquire()
+
+    instance = source.get('tf', 0)
+    assert instance == ('tf', 0, 'r', True)
+    assert source.data_entries['tf/0'] is instance
+    # The reference the source holds was taken by `open()`; while someone holds
+    # it, the instance is in the cache.
+    QVizDBEntryRegistry.release(PATH_URI)
+    assert source.data_entries == {}
 
 
 def test_dropping_a_case_forgets_the_loaded_idss():
@@ -196,14 +245,21 @@ def loadIDS(source, IDSName):
 @pytest.mark.case
 def test_two_idss_can_be_loaded_through_one_source(qapp):
     # This is what the shot view does: QVizLoadSelectedData.py:33 calls
-    # dataSource.load() on the view's source, once per selected IDS.
+    # dataSource.load() on the view's source, once per selected IDS. The view
+    # holds its own reference on the case between the two loads
+    # (createEmptyIDSsTree), which is what keeps the lazy instances it drew
+    # readable; without it the walk would close the file under its own tree.
     uri = case_uri_or_skip()
     source = makeSource(uri)
 
-    loadIDS(source, 'tf')
-    loadIDS(source, 'pulse_schedule')
+    source.open()
+    try:
+        loadIDS(source, 'tf')
+        loadIDS(source, 'pulse_schedule')
 
-    assert sorted(source.data_entries) == ['pulse_schedule/0', 'tf/0']
+        assert sorted(source.data_entries) == ['pulse_schedule/0', 'tf/0']
+    finally:
+        source.close()
 
 
 @pytest.mark.case
@@ -215,12 +271,20 @@ def test_a_second_source_on_the_same_uri_reuses_the_entry(qapp):
     shotView = makeSource(uri)
     plugin = makeSource(uri)
 
-    loadIDS(shotView, 'tf')
-    loadIDS(plugin, 'tf')
+    shotView.open()
+    try:
+        loadIDS(shotView, 'tf')
+        loadIDS(plugin, 'tf')
 
-    assert len(QVizDBEntryRegistry.known_cases()) == 1
-    assert plugin.data_entries['tf/0'] is shotView.data_entries['tf/0']
-    # Both loads released their reference: nobody holds the file open.
+        assert len(QVizDBEntryRegistry.known_cases()) == 1
+        assert plugin.data_entries['tf/0'] is shotView.data_entries['tf/0']
+        # Only the view's own reference is left: the two walks gave theirs back.
+        assert QVizDBEntryRegistry.count(uri, shotView.MODE,
+                                         shotView.dd_version) == 1
+    finally:
+        shotView.close()
+
+    # Nobody needs the case any more: nothing is left holding it.
     assert QVizDBEntryRegistry.live_entries() == []
 
 
@@ -239,6 +303,7 @@ def test_a_shot_view_going_away_forgets_the_case_it_loaded(qapp):
     # loaded IDSs used to go away with the source it owned.
     uri = case_uri_or_skip()
     source = makeSource(uri)
+    source.open()
     loadIDS(source, 'tf')
 
     assert list(source.data_entries) == ['tf/0']

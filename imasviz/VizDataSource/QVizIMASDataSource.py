@@ -147,6 +147,22 @@ class QVizIMASDataSource:
     # dictionary the exported IDSs were read at and never shared with this one.
     MODE = 'r'
 
+    # IMAS-Python can hand back a window on the file instead of a copy of it:
+    # `get(..., lazy=True)` builds the IDS structure and reads a node when it is
+    # first asked for. Measured on the reference case, the walk of `equilibrium`
+    # occurrence 0 -- which is what a shot view costs -- answers **3,99 s and
+    # +122,8 Mo** read whole against **0,10 s and +7,7 Mo** read lazily, for an
+    # identical tree (7203 elements, 7030 leaves); `core_profiles` occurrence 0
+    # answers 5,04 s / +115,4 Mo against 0,04 s / +2,6 Mo. Three IDSs held at
+    # once cost +3,8 Mo lazily against +246,8 Mo read whole.
+    #
+    # The price is that a lazy instance is a window on the *open* file, so it
+    # stops reading once the entry closes (see QVizDBEntryRegistry.cache_ids). A
+    # shot view holds its own reference on the case for as long as its tree
+    # shows nodes of it -- which is what `createEmptyIDSsTree` already does --
+    # and the registry forgets a lazy instance with the entry that fed it.
+    LAZY_READS = True
+
     def __init__(self, name, uri):
         self.generatedDataTree = None
         # The walks this source started and has not finished. A parser is a
@@ -402,13 +418,15 @@ class QVizIMASDataSource:
             raise ValueError("The case %s is not open: cannot read %s occurrence %d."
                              % (self.uri, IDSName, occurrence))
         try:
-            ids_instance = entry.get(IDSName, occurrence)
+            ids_instance = entry.get(IDSName, occurrence,
+                                     lazy=self.LAZY_READS)
         except Exception as error:
             raise ValueError("Cannot read %s occurrence %d of %s, opened at data "
                              "dictionary %s: %s: %s"
                              % (IDSName, occurrence, self.uri, entry.dd_version,
                                 type(error).__name__, error))
-        self.data_entries[key] = ids_instance
+        QVizDBEntryRegistry.cache_ids(self.uri, key, ids_instance, self.MODE,
+                                      self.dd_version, lazy=self.LAZY_READS)
         return ids_instance
 
     def remove_entry(self, IDSName, occurrence):

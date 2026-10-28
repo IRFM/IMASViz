@@ -7,13 +7,17 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
+import logging
 from functools import partial
-from PySide6.QtWidgets import QWidget, QApplication, QMenu, QStyle
+from PySide6.QtWidgets import (QWidget, QApplication, QMenu, QStyle,
+                               QTreeWidget, QTreeWidgetItem, QInputDialog)
 from PySide6.QtGui import QAction
-from imasviz.VizUtils import GlobalIcons
-from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
-from PySide6.QtWidgets import QTreeWidget, QTreeWidgetItem
 from PySide6.QtCore import Signal
+from imasviz.VizUtils import GlobalIcons
+from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
+from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
+from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
+from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRestoreSession
 
 from functools import partial
 
@@ -28,9 +32,66 @@ class QVizMainMenuController:
     def updateMenu(self, menu, listenerWidget):
         numWindows = len(self.openShotView.api.GetDTVFrames())
         self.menusShowHideAndDelete(numWindows, menu, listenerWidget)
+        self.menuSession(menu, listenerWidget)
         #if not self.hideAddPublicDBCommand:
         self.menuAddPublicDB(menu, listenerWidget)
         self.menuAddSpecificUserDB(menu, listenerWidget)
+
+    def menuSession(self, menu, listenerWidget):
+        """Save the session, and put back one that was saved.
+
+        *Load session* lists the sessions the folder holds rather than asking for
+        a name: the point of saving a session is to come back to it without
+        remembering what it was called. An empty list leaves no sub-menu on
+        screen -- the same reason the Plugins sub-menu answers how many lines it
+        added -- and *Save session* is still there to make the first one.
+        """
+        action_saveSession = QAction('Save session', listenerWidget)
+        action_saveSession.triggered.connect(self.saveSession)
+        menu.addAction(action_saveSession)
+
+        sessions = QVizSessionFile.listing()
+        if not sessions:
+            return
+        submenu_loadSession = QMenu('Load session', menu)
+        menu.addMenu(submenu_loadSession)
+        for name in sessions:
+            action_loadSession = QAction(name, listenerWidget)
+            action_loadSession.triggered.connect(partial(self.loadSession, name))
+            submenu_loadSession.addAction(action_loadSession)
+
+    def saveSession(self):
+        """Ask a name, then write the session under it.
+
+        The name is asked here, in the slot the user clicked, and not inside the
+        command: a command that opens a dialog cannot be run by a script, and the
+        session commands are exactly what a script would want to run. The guard
+        on the name -- that it stays inside the configuration folder -- belongs
+        to the format, and its refusal lands in the log panel below.
+        """
+        name, ok = QInputDialog.getText(self.parent, 'Save session',
+                                        'Name of the session:',
+                                        text=self.defaultSessionName())
+        if not ok:
+            return
+        try:
+            QVizSaveSession(self.openShotView.api, name=name).execute()
+        except ValueError as e:
+            logging.getLogger('logPanel').error(str(e))
+
+    def defaultSessionName(self):
+        """A name the user does not have to invent: the case of the first view."""
+        frames = self.openShotView.api.GetDTVFrames()
+        if not frames:
+            return 'session'
+        return frames[0].dataTreeView.dataSource.getShortLabel()
+
+    def loadSession(self, name):
+        """Put back the session saved under that name."""
+        try:
+            QVizRestoreSession(self.openShotView.api, name=name).execute()
+        except ValueError as e:
+            logging.getLogger('logPanel').error(str(e))
 
     def menuAddPublicDB(self, menu, listenerWidget):
         action_addPublicDB = QAction('Add public databases', listenerWidget)

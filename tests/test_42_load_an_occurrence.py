@@ -574,8 +574,8 @@ def _source(uri, ddVersion):
 
 
 @pytest.fixture(scope='module')
-def case(qapp):
-    return loadCaseTrees(qapp, ('equilibrium', 'tf'))
+def case(qapp, request):
+    return loadCaseTrees(qapp, ('equilibrium', 'tf'), request=request)
 
 
 @pytest.mark.case

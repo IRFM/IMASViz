@@ -36,8 +36,8 @@ from support.fakes import FakeDocItem, FakeTreeView
 
 
 @pytest.fixture(scope='module')
-def case(qapp):
-    return loadCaseTrees(qapp, ('tf',))
+def case(qapp, request):
+    return loadCaseTrees(qapp, ('tf',), request=request)
 
 
 @pytest.mark.case

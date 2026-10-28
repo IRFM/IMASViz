@@ -27,30 +27,49 @@ from imasviz.VizUtils import QVizPreferences
 from support.fakes import FakeTreeView
 
 
-def loadCaseTrees(qapp, idsNames, uri=None, dd_version=None, label='west 54924'):
+def loadCaseTrees(qapp, idsNames, uri=None, dd_version=None, label='west 54924',
+                  request=None):
     """{idsName: (shadow tree, runtime object)} for one case.
 
     Two cases are walked by the suite: the reference shot, and the shot whose
     hard_x_rays holds a filled two-dimension leaf inside a static array of
     structures. Both are named by argument so a test can ask for the one that
     has the shape it needs, and both skip when their pulse files are absent.
+
+    `request` is pytest's own fixture argument, and passing it is what gives the
+    case back at the end of the module. The source is opened once, before the
+    walks, and held until then -- exactly what a shot view does
+    (`QVizDataTreeView.createEmptyIDSsTree` opens for the life of the view and
+    `Viz_API.RemoveDTVFrame` gives it back). Since the sources read IDSs lazily
+    that reference is not an optimisation but the condition of the objects this
+    helper returns: a runtime object is a window on the open file, and once the
+    entry that fed it is closed, every node the walk did not read answers
+    `RuntimeError: Cannot lazy load the requested data: the data entry is no
+    longer available for reading.`
     """
     uri = uri or case_uri_or_skip()
     if uri is None:
         pytest.skip('reference case not reachable')
     dd_version = dd_version or CASE_DATA_DICTIONARY_VERSION
+    if request is None:
+        raise AssertionError('loadCaseTrees needs pytest`s `request` to give the '
+                             'case back: the runtime objects it returns are lazy '
+                             'handles on the entry that read them.')
 
     QVizPreferences.Ignore_GGD = 1
+    source = QVizIMASDataSource(label, uri)
+    source.dd_version = dd_version
+    source.open()
+    request.addfinalizer(source.close)
+
     trees = {}
     runtime = {}
     for idsName in idsNames:
-        source = QVizIMASDataSource(label, uri)
-        source.dd_version = dd_version
         view = FakeTreeView(uri=uri)
         parser = QVizIDSViewParser(uri, view, idsName, 0, None, False)
         parser.dataSource = source
         trees[idsName], runtime[idsName] = parser.loadIDS(idsName, 0)
-    return {'uri': uri, 'trees': trees, 'runtime': runtime}
+    return {'uri': uri, 'trees': trees, 'runtime': runtime, 'source': source}
 
 
 def leafByText(root, text):

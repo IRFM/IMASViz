@@ -404,9 +404,10 @@ def test_the_answer_is_asked_once_and_not_reimplemented():
 # -- the same answers, taken from the reference case ----------------------------
 
 @pytest.fixture(scope='module')
-def caseBundle(qapp):
+def caseBundle(qapp, request):
     from support import caseTrees
-    return caseTrees.loadCaseTrees(qapp, ['equilibrium', 'magnetics'])
+    return caseTrees.loadCaseTrees(qapp, ['equilibrium', 'magnetics'],
+                                   request=request)
 
 
 def caseNode(bundle, idsName, text):

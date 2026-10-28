@@ -55,9 +55,10 @@ CP_TIME_LAST = 48.54367843627929
 
 
 @pytest.fixture(scope='module')
-def case(qapp):
+def case(qapp, request):
     """The shadow trees and the runtime objects, walked once for all tests."""
-    return loadCaseTrees(qapp, ('tf', 'equilibrium', 'core_profiles'))
+    return loadCaseTrees(qapp, ('tf', 'equilibrium', 'core_profiles'),
+                         request=request)
 
 
 @pytest.fixture

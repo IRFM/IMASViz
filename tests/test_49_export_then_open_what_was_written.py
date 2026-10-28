@@ -39,8 +39,14 @@ same as the source. What the user sees and what the user exports are two
 different amounts, and the second is the larger.
 
 And the export leaves the view it read from exactly as it was: same cache keys,
-same loaded occurrences, same 3 632 leaves. It does not re-read the case, because
-it writes the very objects the plots hold.
+same loaded occurrences, same 3 632 leaves. What it writes, though, is a copy
+read **whole** through the open entry, not the handle the tree reads: the views
+read lazily and the Access Layer refuses to write a lazy handle
+(``ValueError: Lazy loaded IDSs cannot be used in put or put_slice.``, measured;
+filling it in place is refused too, ``get(destination=...)`` answering
+``ValueError: Lazy-loaded IDSs are read-only.``). Exporting the two occurrences
+as the tree held them left one 1 912-byte ``master.h5`` and nothing else, and the
+case read back answered ``IDS 'equilibrium', occurrence 0 is empty``.
 
 The writing target is named by a ``path=`` URI throughout, never by a database
 name: measured earlier and pinned in ``test_40_export_to_ids.py``, an URI naming
@@ -227,15 +233,26 @@ def test_a_view_that_has_loaded_nothing_has_exported_nothing(session):
 def test_an_occurrence_load_is_what_the_export_finds(session):
     session.load(PULSE)
 
-    # One key per opened IDS, spelling the occurrence -- and it is the same
-    # object the tree reads, not a copy the export fetched for itself.
+    # One key per opened IDS, spelling the occurrence.
     assert session.cacheKeys() == ['%s/%d' % (PULSE, OCCURRENCE)]
     assert len(session.view.signalsList) == PULSE_LEAVES
     loaded = QVizExportToIDS(session.view).loadedIds()
     assert [(name, occurrence) for name, occurrence, _ in loaded] == \
         [(PULSE, OCCURRENCE)]
-    assert loaded[0][2] is session.view.dataSource.data_entries[
-        '%s/%d' % (PULSE, OCCURRENCE)]
+
+    # The occurrences written are the ones the view opened; the objects written
+    # are not the objects the tree reads. The tree's handle is a lazy window on
+    # the open file, and the Access Layer refuses to write one -- measured,
+    # `put` answers `ValueError: Lazy loaded IDSs cannot be used in put or
+    # put_slice.` -- so the command asks the entry for a whole copy.
+    cached = session.view.dataSource.data_entries['%s/%d' % (PULSE, OCCURRENCE)]
+    assert getattr(cached, '_lazy', False) is True
+    assert getattr(loaded[0][2], '_lazy', False) is False
+    assert loaded[0][2] is not cached
+    # And it is the same occurrence of the same case, not another read of
+    # something else: `event` is the array of structures this IDS is made of,
+    # and the tree walked 135 elements of it.
+    assert len(loaded[0][2].event) == len(cached.event) == 135
 
 
 def test_two_open_ids_are_two_exported_ids_in_the_order_the_cache_answers(session):

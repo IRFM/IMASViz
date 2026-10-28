@@ -51,7 +51,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
     FIGURE_TYPE = FigureTypes.TABLEPLOTTYPE
 
     def __init__(self, dataTreeView, all_DTV=False, plotAxis=None,
-                 configFile=None):
+                 configFile=None, configuration=None, figureKey=None):
         """
         Arguments:
             all_DTV   (bool) : draw the selection of this view, or of every
@@ -66,12 +66,23 @@ class QVizPlotAsTable(QVizAbstractCommand):
             configFile (str) : a saved plot configuration: it names the
                                quantities by path and occurrence instead of
                                taking them from the selection.
+            configuration    : a configuration already read, for whoever names
+                               the same things in another file. A session file
+                               holds the quantities of a Table Plot View and the
+                               cell each panel sat in -- the same two answers a
+                               plot configuration carries -- and the places only
+                               survive if they reach this command as a
+                               configuration, because laying them out again by
+                               hand is how two panels ended up in one cell.
+            figureKey  (str) : the key the new window is to carry, for a session
+                               put back under the names its file gave them.
         """
         self.api = dataTreeView.imas_viz_api
         self.all_DTV = all_DTV
         self.plotAxis = plotAxis
         self.configFile = configFile
-        self.configuration = None
+        self.configuration = configuration
+        self.figureKey = figureKey
         self.figure = None
         QVizAbstractCommand.__init__(self, dataTreeView, None)
 
@@ -87,7 +98,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
             raise ValueError(
                 'Nothing to plot: %s.' % (
                     '"%s" names no quantity this tree can provide'
-                    % self.configFile if self.configFile else
+                    % self.source() if self.namesQuantities() else
                     'no selected node to draw'))
 
         self.figure = self.newFigure()
@@ -102,13 +113,22 @@ class QVizPlotAsTable(QVizAbstractCommand):
         self.figure.show()
         return self.figure
 
+    def namesQuantities(self):
+        return self.configFile is not None or self.configuration is not None
+
+    def source(self):
+        """The file to name when a quantity named by it is not in the tree."""
+        if self.configFile is not None:
+            return self.configFile
+        return self.configuration.path
+
     def quantities(self):
         """[(view, node, selection entry, place)] for the quantities to draw.
 
-        `place` is the (row, column) a configuration file said the panel sat at,
-        or None to lay it in the next free slot.
+        `place` is the (row, column) a configuration said the panel sat at, or
+        None to lay it in the next free slot.
         """
-        if self.configFile is not None:
+        if self.namesQuantities():
             return self.quantitiesFromConfiguration()
         return [(dtv, node, self.selectionEntryOf(dtv, node), None)
                 for dtv in self.views() for node in self.selectedNodes(dtv)]
@@ -125,7 +145,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
         return dtv.selectedSignalsDict.get(dtv.dataSource.dataKey(treeNode))
 
     def quantitiesFromConfiguration(self):
-        """The quantities a saved configuration names, found in this tree.
+        """The quantities a configuration names, found in this tree.
 
         The file is read by the format, so the two shapes this application has
         written are read the same way and a file that is not a configuration is
@@ -134,7 +154,8 @@ class QVizPlotAsTable(QVizAbstractCommand):
         that is not in the tree would invent a node the user cannot select, name
         or click.
         """
-        self.configuration = QVizConfigurationFile.read(self.configFile)
+        if self.configuration is None:
+            self.configuration = QVizConfigurationFile.read(self.configFile)
         self.refuseConfigurationStyling()
         if self.plotAxis is None and self.configuration.abscissa:
             self.plotAxis = self.configuration.abscissa
@@ -147,7 +168,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
                 logging.getLogger(self.dataTreeView.uri).error(
                     '"%s" is named by "%s" but is not in this tree: load the '
                     'IDS it belongs to before applying the configuration.'
-                    % (path, self.configFile))
+                    % (path, self.source()))
                 continue
             quantities.append((self.dataTreeView, node,
                                {'QTreeWidgetItem': node,
@@ -209,7 +230,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
         return True if self.plotAxis == 'TIME' else None
 
     def newFigure(self):
-        figureKey = self.api.GetNextKeyForFigure(self.FIGURE_TYPE)
+        figureKey = self.api.FigureKeyFor(self.FIGURE_TYPE, self.figureKey)
         frame = QVizTablePlot(title=figureKey)
         frame.figureKey = figureKey
         frame.dataTreeView = self.dataTreeView
