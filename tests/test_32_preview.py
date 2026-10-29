@@ -20,12 +20,14 @@ from the selection rather than from the node under the click.
 
 What is pinned here is that the panel answers for every node it is handed: it
 draws what the axes allow and says in one line what it left out, or it says why
-nothing is drawn. Nothing here opens a case. The refusals are checked on real
-QVizTreeNodes -- with no IDS behind them, so a refusal that read the shot first
-would crash instead of answering. The drawn quantities are stub nodes holding
-their values in memory, as in the image and curve figure tests: a filled
-quantity of three axes needs several enclosing arrays of structures, and no
-reference case on this checkout holds one.
+nothing is drawn. The quantities it draws and the refusals it makes are checked
+on stub nodes -- with no IDS behind them, so a refusal that read the shot first
+would crash instead of answering. The drawn quantities hold their values in
+memory, as in the image and curve figure tests: a filled quantity of three axes
+needs several enclosing arrays of structures, and no reference case on this
+checkout holds one. The two node shapes the tree shows for everything that is
+not a quantity are checked on the reference case too, because only the builder
+leaves them the way the panel meets them -- without a data path of their own.
 """
 
 import numpy as np
@@ -41,6 +43,8 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot import QVizPreviewPlot
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.Viz_API import Viz_API
 
+from support.caseTrees import (elementByTreePath, loadCaseTrees,
+                               nodeAsTheBuilderBuildsIt)
 from support.fakes import FakeAxesNode
 
 TIMES = [0., 1., 2., 3., 4.]
@@ -145,7 +149,15 @@ def makeNode(dataType, name='psi', path='time_slice[itime].profiles_1d',
                 'isStatic': 0, 'isSelected': 0, 'availableData': 1,
                 'aos_parents_count': str(aosCount), 'Path': path + '.' + name}
     node = QVizTreeNode(None, [name], infoDict)
-    node.parametrizedPath = path
+    # The walk spells a parametrized path for a leaf and for nothing else
+    # (QVizIDSViewParser.buildLeaf), and the builder copies the attribute only
+    # when the element carries it (QVizDataTreeViewBuilder.py:287). A structure
+    # node handed to the panel with a path under it is a shape no shot view ever
+    # shows -- and it is the shape that kept the refusal below green while every
+    # left click on a folder of the tree raised TypeError.
+    node.parametrizedPath = None
+    if dataType not in ('structure', 'struct_array'):
+        node.parametrizedPath = path or None
     node.itime_index = itimeIndex if path else None
     node.aos_parents_count = aosCount
     node.coordinates = list(coordinates)
@@ -292,12 +304,27 @@ def test_a_text_leaf_takes_the_previous_thumbnail_away(qapp, panel, view):
 
 
 def test_a_structure_says_it_is_not_a_quantity(qapp, panel, view):
+    # Carrying no parametrized path is what the builder leaves a structure with,
+    # so refusing it by naming it cannot ask for a data path it does not have.
     panel_result = click(view, panel,
                          makeNode('structure', name='profiles_1d',
                                   path='time_slice[itime]', coordinates=()))
 
     assert panel_result.kind() == NOTHING
     assert 'profiles_1d' in panel_result.reason()
+    assert panel_result.curve() == (None, None)
+
+
+def test_an_array_of_structures_says_it_is_not_a_quantity(qapp, panel, view):
+    # The shape every left click on a folder of the tree takes: an element of a
+    # dynamic array is a struct_array node, named by the dictionary, with no
+    # path of its own.
+    panel_result = click(view, panel,
+                         makeNode('struct_array', name='time_slice',
+                                  path='time_slice[itime]', coordinates=()))
+
+    assert panel_result.kind() == NOTHING
+    assert 'time_slice' in panel_result.reason()
 
 
 def test_a_lone_number_says_what_it_is_not_drawn_against(qapp, panel, view):
@@ -339,3 +366,54 @@ def test_the_thumbnail_carries_no_slider_for_a_read_to_answer_to(qapp, panel, vi
     # kill, and this one is drawn, not plotted.
     assert not isinstance(panel, QVizCurvePlot)
     assert not hasattr(panel, 'sliderGroup')
+
+
+# ---------------------------------------------------------------------------
+# The two shapes the tree really shows for a node that is not a quantity.
+#
+# Measured on the reference case before this was pinned: every left click on a
+# folder of the tree died in the panel. The stub above could not show it, because
+# a stub built with a path under it is not what the builder hands over for a
+# structure -- and the refusal names the node, which is where the missing path
+# was asked for.
+
+
+@pytest.fixture(scope='module')
+def caseTree(qapp, request):
+    return loadCaseTrees(qapp, ('equilibrium',), request=request)
+
+
+def caseNode(caseTree, view, path):
+    """The node the shot view shows under that path, as the builder leaves it."""
+    element, walked = elementByTreePath(caseTree['trees']['equilibrium'],
+                                        'equilibrium', path)
+    return nodeAsTheBuilderBuildsIt(element, 'equilibrium',
+                                    caseTree['runtime']['equilibrium'], view,
+                                    path=walked)
+
+
+@pytest.mark.ui
+@pytest.mark.case
+def test_the_element_of_a_dynamic_array_of_the_case_is_refused_by_name(qapp, panel,
+                                                                       view, caseTree):
+    node = caseNode(caseTree, view, 'equilibrium/time_slice(0)')
+    assert node.getDataType() == 'struct_array'
+    assert node.getParametrizedPath() is None
+
+    click(view, panel, node)
+
+    assert panel.kind() == NOTHING
+    assert 'time_slice' in panel.reason()
+
+
+@pytest.mark.ui
+@pytest.mark.case
+def test_a_structure_of_the_case_is_refused_by_name(qapp, panel, view, caseTree):
+    node = caseNode(caseTree, view, 'equilibrium/time_slice(0)/profiles_1d')
+    assert node.getDataType() == 'structure'
+    assert node.getParametrizedPath() is None
+
+    click(view, panel, node)
+
+    assert panel.kind() == NOTHING
+    assert 'profiles_1d' in panel.reason()

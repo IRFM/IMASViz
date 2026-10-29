@@ -114,6 +114,29 @@ def nodeOf(view, path):
                          % (path, len(view.signalsList)))
 
 
+def nodeInTree(view, path):
+    """The node on screen under that path, structures included.
+
+    `signalsList` holds quantities only, so it cannot answer for the two shapes
+    that are not one: an element of a dynamic array and a structure are on the
+    screen and in no list of signals.
+    """
+
+    def walk(item):
+        for number in range(item.childCount()):
+            child = item.child(number)
+            if child.getPath() == path:
+                return child
+            found = walk(child)
+            if found is not None:
+                return found
+
+    found = walk(view.IDSRoots[IDS_NAME])
+    if found is None:
+        raise AssertionError('no node %r in the tree of %s' % (path, IDS_NAME))
+    return found
+
+
 # --------------------------------------------------------------------------
 # The values are the ones the IDS object holds
 # --------------------------------------------------------------------------
@@ -217,6 +240,36 @@ def test_a_leaf_the_opened_object_does_not_hold_is_named_by_the_runtime(view):
         node.resolvePath('magnetics.flux_loop[0].flux.not_a_node')
     assert 'flux_loop[0]/flux' in str(raised.value)
     assert 'not_a_node' in str(raised.value)
+
+
+# --------------------------------------------------------------------------
+# The data path a node has, and the one it has not
+# --------------------------------------------------------------------------
+
+def test_a_leaf_is_named_by_its_parametrized_data_path(view):
+    node = nodeOf(view, 'magnetics/flux_loop(0)/flux/data')
+
+    assert node.getParametrizedDataPath() == 'magnetics.flux_loop[i].flux.data'
+
+
+def test_a_node_that_is_not_a_leaf_has_no_data_path(view):
+    """Nothing to append a name to: the walk spells the path on a leaf only.
+
+    A structure and an element of a dynamic array carry a name -- the dictionary
+    gives them one -- and no parametrized path. Measured on the reference case:
+    `magnetics/flux_loop(0)` and `magnetics/flux_loop(0)/flux` both answer None.
+    The thumbnail the left click asks for names the node it refuses, so while
+    this accessor answered `None + '.' + name` every click on a folder of the
+    tree died with TypeError in that panel.
+    """
+    for path, dataType in (('magnetics/flux_loop(0)', 'struct_array'),
+                           ('magnetics/flux_loop(0)/flux', 'structure')):
+        node = nodeInTree(view, path)
+
+        assert node.getDataType() == dataType
+        assert node.getName() is not None
+        assert node.getParametrizedPath() is None
+        assert node.getParametrizedDataPath() is None
 
 
 # --------------------------------------------------------------------------

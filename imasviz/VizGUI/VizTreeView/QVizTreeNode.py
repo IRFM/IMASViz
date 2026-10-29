@@ -378,6 +378,16 @@ class QVizTreeNode(QTreeWidgetItem):
 
     def getParametrizedDataPath(self):
         # e.g: 'magnetics.flux_loop[i].position[j].r'
+        # Only a leaf is spelled this way: the walk writes the parametrized path
+        # on a leaf and nowhere else, so a structure or an element of a dynamic
+        # array has no data path to name. The callers answer the node's name when
+        # they get nothing (QVizNodePlotting.path, QVizSlices.labelOf, the
+        # dataPathOf of every plot frame), which is the right answer for such a
+        # node. Appending the name to a path that is not there is not: it killed
+        # every left click on a folder of the tree, inside the panel that refuses
+        # a node by naming it.
+        if not self.parametrizedPath:
+            return None
         return self.parametrizedPath + "." + self.getName()
 
     def getOccurrence(self):
