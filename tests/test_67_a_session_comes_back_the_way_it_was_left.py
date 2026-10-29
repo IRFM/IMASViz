@@ -45,7 +45,8 @@ from PySide6.QtWidgets import QMdiArea
 
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
-    QVizSessionFile, QVizSessionLoad, QVizSessionSelection)
+    QVizSessionFile, QVizSessionLoad, QVizSessionSelection, QVizSessionCursor,
+    QVizSessionCursors)
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence import \
     QVizLoadOccurrence
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import \
@@ -106,14 +107,22 @@ class Session:
         self.others.append(api)
         return api
 
-    def openCase(self, uri, ddVersion=None):
+    def openCase(self, uri, ddVersion=None, api=None):
+        """Open the case on `api`, or on this run's api when none is named.
+
+        The api argument is how a test asks for a session of its own: the case
+        record is one per case for the process, so a second api opens the same
+        case cheaply and gets its own view of it -- as the application does when
+        the user opens a second shot view.
+        """
+        api = self.api if api is None else api
         source = QVizDataSourceFactory().create(uri)
         if ddVersion:
             source.dd_version = ddVersion
-        already = self.api.isDataSourceAlreadyOpened(source)
-        view = (self.api.GetDTVFor(source.getKey()) if already
-                else self.api.CreateDataTree(source).dataTreeView)
-        self.api.ShowDataTree(view)
+        already = api.isDataSourceAlreadyOpened(source)
+        view = (api.GetDTVFor(source.getKey()) if already
+                else api.CreateDataTree(source).dataTreeView)
+        api.ShowDataTree(view)
         return view
 
     def leaf(self, view, name):
@@ -307,3 +316,170 @@ def test_a_quantity_the_reopened_tree_does_not_hold_is_named_and_the_rest_comes_
 
     assert 'equilibrium/time_slice(0)/gone/quantity' in caplog.text
     assert sorted(session.pathsInSelection(view)) == sorted(CURVE_PATHS)
+
+
+# --------------------------------------------------------------------------
+# Version 2: what the user had left on a window.
+
+MAGNETICS = 'magnetics'
+# One element of an array of structures, and the array itself: the only shape
+# this case offers where a figure keeps a slider the user can move.
+FLUX_AT_TWO = 'magnetics/flux_loop(2)/flux/data'
+FLUX_LOOP = ('AOS', MAGNETICS, 'flux_loop')
+MOVED_TO = 9
+STEP = 10
+# The window as the user left it: moved, resized, then hidden -- hidden is not
+# closed, and the Show/Hide menu still addresses it by its key.
+PLACE = (120, 90, 640, 420)
+
+
+def aRunWithMagnetics(session):
+    """A run of its own, reading the IDS the error lines were measured on.
+
+    Measured while writing this file: the walk of `magnetics` occurrence 0 keeps
+    **9426** signals and costs **1,03 s**, against **0,55 s** and **3368** signals
+    for `equilibrium`; the tensor figure of one flux loop costs **0,26 s**, one
+    slider 0,001 s, the bars at a step of 10 **0,002 s** and the band **0,051 s**.
+    """
+    api = session.freshApi()
+    view = session.openCase(CASE_URI, CASE_DATA_DICTIONARY_VERSION, api=api)
+    QVizLoadOccurrence(dataTreeView=view, idsName=MAGNETICS, occurrence=0,
+                       asynch=False).execute()
+    return api, view
+
+
+def aWindowLeftAsTheUserLeftIt(session):
+    """The window as the user left it, and the session file that says so.
+
+    One slider moved, the two error lines switched on, the x axis zoomed by hand
+    and the y axis left to fit itself, the window moved, resized and then hidden:
+    every one of those is a question the user answered, and the file is what the
+    next run reads instead of asking them again.
+    """
+    api, view = aRunWithMagnetics(session)
+    node = [entry for entry in view.signalsList
+            if entry.getPath() == FLUX_AT_TWO][0]
+    figure = QVizPlotOneNode(view, node, tensor=True).execute()
+    api.addPlotWidgetToMDI(figure)
+
+    assert figure.sliceControls.keys() == [FLUX_LOOP]
+    figure.sliceControls.setIndex(FLUX_LOOP, MOVED_TO)
+    assert figure.errors.showErrorBars(step=STEP) == 1
+    assert figure.errors.showConfidenceBands() == 1
+    figure.pgPlotWidget.getViewBox().setRange(xRange=[0., 1.], padding=0.,
+                                              disableAutoRange=True)
+    window = api.mdiWindowOf(figure)
+    assert window is not None, 'a figure the user can place has a window'
+    window.setGeometry(*PLACE)
+    window.hide()
+
+    return QVizSaveSession(api, name='left_as_it_was').execute()
+
+
+def test_the_band_the_lines_and_the_zoom_come_back_on_the_restored_window(session):
+    """The point of version 2: the second run draws the same curves and answers
+    the same questions -- same element, same step, same range on the screen."""
+    path = aWindowLeftAsTheUserLeftIt(session)
+    saved = QVizSessionFile.read(path)
+    state = saved.figures[0]
+    assert state.cursors.cursors[0].index == MOVED_TO
+    assert state.errors == (STEP, True)
+    # The axes are pinned apart: only x was zoomed, so only x is put back.
+    assert state.view.autoX is False and state.view.autoY is True
+
+    fresh = session.freshApi()
+    QVizRestoreSession(fresh, path=path).execute()
+    back = fresh.figureframes['SlicesPlot1']
+
+    assert back.sliceControls.keys() == [FLUX_LOOP]
+    assert back.sliceControls.indices()[FLUX_LOOP] == MOVED_TO
+    assert back.errors.errorBarCount() == 1
+    # The step is not re-asked: the user answered that question when they clicked.
+    assert back.errors.stepUsed() == STEP
+    assert back.errors.bandCount() == 1
+    # What the file says is what is on the screen. Without `padding=0` this is
+    # where the answer would be wider than the number the file holds, a little
+    # more at every save and restore.
+    restored = back.pgPlotWidget.getViewBox().viewRange()
+    assert restored[0] == pytest.approx([state.view.x0, state.view.x1])
+
+    window = fresh.mdiWindowOf(back)
+    assert (window.geometry().x(), window.geometry().y(),
+            window.geometry().width(), window.geometry().height()) == PLACE
+    assert window.isHidden() is True
+
+
+def test_a_window_left_alone_comes_back_as_the_drawing_leaves_it(session):
+    """Nothing set is not the same thing as a state: no `<View>`, no `<Errors>`,
+    and the second run fits both axes to the curves it drew.
+
+    And no `<Cursors>` either: this entry draws an **element**, so the array the
+    tree stood on is pinned with no slider of its own -- the index comes back
+    because the quantity is read from where it was read, not because a state was
+    replayed.
+    """
+    api, view = aRunWithMagnetics(session)
+    node = [entry for entry in view.signalsList
+            if entry.getPath() == FLUX_AT_TWO][0]
+    figure = QVizPlotOneNode(view, node).execute()
+    api.addPlotWidgetToMDI(figure)
+    assert figure.sliceControls.keys() == []
+    path = QVizSaveSession(api, name='untouched').execute()
+    saved = QVizSessionFile.read(path)
+
+    assert saved.figures[0].view is None and saved.figures[0].errors is None \
+        and saved.figures[0].cursors is None
+
+    fresh = session.freshApi()
+    QVizRestoreSession(fresh, path=path).execute()
+    back = fresh.figureframes['SlicesPlot1']
+
+    assert back.errors.errorBarCount() == 0
+    assert back.pgPlotWidget.getViewBox().state['autoRange'] == [True, True]
+    assert back.curveCount() == 1
+
+
+def test_a_slider_key_the_restored_window_has_no_slider_for_is_named(session,
+                                                                    caplog):
+    """A session written for another release, or by hand, can name an axis this
+    window does not walk. The key is named on the log of the case and the rest of
+    the window comes back -- an index silently dropped is a curve of another
+    element than the one the user left on screen."""
+    saved = QVizSessionFile.read(
+        os.path.join(str(session.home), '.imasviz', 'left_as_it_was.vsess'))
+    figure = saved.figures[0]
+    figure.cursors.cursors.append(
+        QVizSessionCursor(key=('AOS', MAGNETICS, 'no_such_array'), index=4))
+    path = saved.write(os.path.join(str(session.home), '.imasviz',
+                                    'bogus_slider.vsess'))
+
+    fresh = session.freshApi()
+    QVizRestoreSession(fresh, path=path).execute()
+    back = fresh.figureframes['SlicesPlot1']
+
+    assert 'AOS/magnetics/no_such_array' in caplog.text
+    assert 'no such slider' in caplog.text
+    assert back.sliceControls.indices() == {FLUX_LOOP: MOVED_TO}
+
+
+def test_a_session_naming_a_band_for_a_window_of_panels_says_that_shape_is_not_kept(
+        session, caplog):
+    """A table keeps one band per panel, and a `<Cursors>` under a `<Figure>`
+    cannot say which panel: the file is read, the shape is named, and the panels
+    come back as the drawing leaves them."""
+    saved = QVizSessionFile.read(session.sessionPath())
+    place = [index for index, entry in enumerate(saved.figures)
+             if entry.kind == 'table'][0]
+    saved.figures[place] = saved.figures[place]._replace(
+        cursors=QVizSessionCursors(
+            folded=None,
+            cursors=[QVizSessionCursor(key=('AOS', IDS_NAME, 'time_slice'),
+                                       index=3)]))
+    path = saved.write(os.path.join(str(session.home), '.imasviz',
+                                    'table_band.vsess'))
+
+    fresh = session.freshApi()
+    QVizRestoreSession(fresh, path=path).execute()
+
+    assert 'one band per panel' in caplog.text
+    assert fresh.figureframes['TablePlotView:1'].panelCount() == 2

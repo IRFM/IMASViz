@@ -48,7 +48,7 @@ from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import (
     QVizConfigurationFile, QVizQuantity, PLOT)
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, CURVE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
-    FIRST, INDEX_PREFIX)
+    FIRST, INDEX_PREFIX, cursorKeyText)
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence import \
     QVizLoadOccurrence
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import \
@@ -59,6 +59,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import \
     QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import \
     QVizPlotAsStacked
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 
 
 class QVizRestoreSession:
@@ -222,8 +223,23 @@ class QVizRestoreSession:
             frames.append(self.replayTable(figure, view))
         else:
             frames.extend(self.replayOneNode(figure, view))
-        for frame in frames:
+        for frame in self.distinctFrames(frames):
             self.showInMDI(frame)
+        for frame in self.distinctFrames(frames):
+            self.applyState(figure, frame, view)
+
+    @staticmethod
+    def distinctFrames(frames):
+        """The frames to work on, once each.
+
+        `replayOneNode` answers the same frame for every quantity that joined it,
+        and putting a state back twice is a curve re-read twice for nothing.
+        """
+        once = []
+        for frame in frames:
+            if frame is not None and not any(frame is seen for seen in once):
+                once.append(frame)
+        return once
 
     def viewOf(self, figure, views):
         """The view to draw this window through: the case of its first quantity.
@@ -326,6 +342,144 @@ class QVizRestoreSession:
         if frame is None or self.api.mdiWindowOf(frame) is not None:
             return
         self.api.addPlotWidgetToMDI(frame)
+
+    # ---------------------------------------------------- what was set on a window
+    def applyState(self, figure, frame, view):
+        """Put back what the user had set on that window, in the order that holds.
+
+        The order is not a taste. The sliders come first, and moving one re-reads
+        the figure through the band's own `changed` signal -- measured on the
+        reference case, **0,001 s** for one move over a 17-element array and
+        **0,003 s** for five, so a session of a handful of sliders costs
+        thousandths of a second. The error lines come *after* those moves: a bar
+        drawn over samples the sliders then move is not out of date, it is wrong,
+        and `refresh` would have redrawn it a second time for nothing. The view
+        range comes after the drawing, because the drawing is what fits the axes
+        and only then can the file take that back. The window geometry comes last,
+        because it is the only one of the four that Qt answers about a window that
+        has to be on screen.
+        """
+        self.applyCursors(figure, frame, view)
+        self.applyErrors(figure, frame, view)
+        self.applyView(figure, frame, view)
+        self.applyWindow(figure, frame, view)
+
+    def applyCursors(self, figure, frame, view):
+        """Move the band's sliders to where the file left them.
+
+        A key the window does not answer is named, not guessed: the same file read
+        against a case whose array is shorter, or a quantity that is no longer in
+        the tree, asks for a slider that is not on screen -- and moving the nearest
+        slider by level would draw a curve the user never moved.
+        """
+        state = figure.cursors
+        if state is None:
+            return
+        controls = getattr(frame, 'sliceControls', None)
+        if controls is None:
+            logging.getLogger(view.uri).warning(
+                'The figure "%s" of "%s" says where its sliders stood; this %s '
+                'window keeps one band per panel, and a session does not carry '
+                'those yet.' % (figure.key, self.path, figure.kind))
+            return
+        for cursor in state.cursors:
+            if not controls.setIndex(cursor.key, cursor.index):
+                logging.getLogger(view.uri).error(
+                    'The figure "%s" of "%s" puts its %s slider at %d: this '
+                    'window has no such slider.'
+                    % (figure.key, self.path, cursorKeyText(cursor.key),
+                       cursor.index))
+        if state.folded is not None and controls.isFoldable() \
+                and controls.isFolded() != state.folded:
+            controls.toggleFold()
+
+    def applyErrors(self, figure, frame, view):
+        """The bars and the band the user had switched on, at the step they were at.
+
+        The step is not re-asked: *Show error bars (with slicing)* asks a step once,
+        and a restore that asked again would make the user answer their own click.
+        A quantity this case holds no error for is named by `QVizCurveErrors`
+        itself, on the log of the case it was read from.
+        """
+        state = figure.errors
+        if state is None:
+            return
+        errors = getattr(frame, 'errors', None)
+        if errors is None:
+            logging.getLogger(view.uri).warning(
+                'The figure "%s" of "%s" had error lines on it: a %s window draws '
+                'none.' % (figure.key, self.path, figure.kind))
+            return
+        if state.bars is not None:
+            # Measured on `magnetics/flux_loop(0)/flux/data`: 0,012 s for a bar
+            # over every one of 17 344 samples, 0,002 s at a step of 10.
+            errors.showErrorBars(step=state.bars)
+        if state.bands:
+            # 0,051 s for the two borders and the fill between them.
+            errors.showConfidenceBands()
+
+    def applyView(self, figure, frame, view):
+        """Take back the range the drawing fitted, where the file says it was set.
+
+        Only the axes the file pins are given to pyqtgraph: `setRange` with
+        `disableAutoRange` turns auto off for the axes whose range arrives and
+        leaves the others to fit themselves, which is what a file naming `x0`/`x1`
+        without an `autoY` asks for. Measured, a range put back this way **survives
+        the re-read** the sliders cause, and costs 0,0007 s.
+        """
+        state = figure.view
+        if state is None:
+            return
+        box = self.viewBoxOf(frame)
+        if box is None:
+            logging.getLogger(view.uri).warning(
+                'The figure "%s" of "%s" says what it was zoomed onto: a %s window '
+                'answers no single view to put that back on.'
+                % (figure.key, self.path, figure.kind))
+            return
+        xRange = None if state.autoX else [state.x0, state.x1]
+        yRange = None if state.autoY else [state.y0, state.y1]
+        if xRange is not None or yRange is not None:
+            # `padding=0.`, measured: what the file holds is the range that was on
+            # screen, and pyqtgraph pads a *requested* range by `suggestPadding` --
+            # asking this box for [0, 1] answers [[-0.0416, 1.0416], ...]. Re-padding
+            # a stored view would widen the window a little at every save and restore.
+            box.setRange(xRange=xRange, yRange=yRange, padding=0.,
+                         disableAutoRange=True)
+        if state.xInverted:
+            box.invertX(True)
+        if state.yInverted:
+            box.invertY(True)
+
+    @staticmethod
+    def viewBoxOf(frame):
+        """The one view box of a curve figure, or None for the other windows."""
+        if not isinstance(frame, QVizCurvePlot):
+            return None
+        return frame.pgPlotWidget.getViewBox()
+
+    def applyWindow(self, figure, frame, view):
+        """Where the window sat, whether it was maximized, whether it was hidden.
+
+        `setGeometry` then `showMaximized` then `hide`: measured off screen, the
+        four numbers round-trip unchanged, a maximized window answers its geometry
+        back after a `showNormal`, and a window hidden here stays addressable by
+        its key in the Show/Hide menu -- hidden is not closed.
+        """
+        state = figure.window
+        if state is None:
+            return
+        window = self.api.mdiWindowOf(frame)
+        if window is None:
+            logging.getLogger(view.uri).warning(
+                'The figure "%s" of "%s" says where its window sat: that window is '
+                'not in the MDI area.' % (figure.key, self.path))
+            return
+        window.setGeometry(state.x, state.y, state.w, state.h)
+        if state.maximized:
+            window.showMaximized()
+        if state.hidden:
+            window.hide()
 
     # ------------------------------------------------------------- selection
     def applySelection(self, case, view):

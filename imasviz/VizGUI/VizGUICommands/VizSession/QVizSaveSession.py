@@ -39,6 +39,8 @@ from imasviz.VizDataAccess.VizTimeSlices import (ALL_SLICES, ONE_IN_TEN,
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, QVizSessionCase, QVizSessionLoad, QVizSessionExpanded,
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
+    QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
+    QVizSessionWindow,
     CURVE, IMAGE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
     FIRST, INDEX_PREFIX)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
@@ -202,7 +204,11 @@ class QVizSaveSession:
                                                               kind),
                                  axis=self.axisOf(frame),
                                  tensor=bool(getattr(frame, 'walkingArrays',
-                                                     ())))
+                                                     ())),
+                                 cursors=self.cursorsOf(frame),
+                                 view=self.viewOf(figureKey, frame),
+                                 errors=self.errorsOf(figureKey, frame),
+                                 window=self.windowOf(figureKey, frame))
 
     def quantitiesOf(self, figureKey, frame, kind):
         """The quantities that figure holds, as the figure bookkeeping knows them.
@@ -242,3 +248,100 @@ class QVizSaveSession:
         if isinstance(frame, (QVizTablePlot, QVizStackedPlot)):
             return frame.getPlotAxis()
         return None
+
+    # ------------------------------------------------ what the user had set on a
+    #                                                          figure of version 2
+    # Each of these four reads asks the frame what it already keeps, in the words
+    # the frame itself uses for it. None of them invents a widget state: a session
+    # that recorded a pen or a font is the one that wrote no file at all.
+
+    @staticmethod
+    def cursorsOf(frame):
+        """Where each slider of the band stands, and whether the band is folded.
+
+        A curve figure and an image window carry their band (`sliceControls`); a
+        table and a stacked window keep one band per panel, and those are not
+        saved: a panel's sliders belong to a cell, and the file would have to say
+        which cell -- that is the same shape as the table's places, and it is not
+        what a version 2 `<Cursors>` under a `<Figure>` can say.
+        """
+        controls = getattr(frame, 'sliceControls', None)
+        if controls is None:
+            return None
+        indices = controls.indices()
+        if not indices:
+            return None
+        return QVizSessionCursors(
+            folded=controls.isFolded() if controls.isFoldable() else None,
+            cursors=[QVizSessionCursor(key=key, index=index)
+                     for key, index in indices.items()])
+
+    @staticmethod
+    def viewOf(figureKey, frame):
+        """The range the window is looking at, and which axes fit themselves.
+
+        Asked of a curve figure only: that is the one window whose zoom the user
+        drives through the right-click menu, and the one with a single view box to
+        ask. An image window answers one view box per picture -- a range there is
+        a per-picture state, and writing one range for several pictures would say
+        something nobody set.
+        """
+        if not isinstance(frame, QVizCurvePlot):
+            return None
+        box = frame.pgPlotWidget.getViewBox()
+        (x0, x1), (y0, y1) = box.viewRange()
+        autoX, autoY = box.state['autoRange'][0], box.state['autoRange'][1]
+        xInverted, yInverted = box.xInverted(), box.yInverted()
+        if autoX is not False and autoY is not False \
+                and not xInverted and not yInverted:
+            # Nothing was set: the drawing fits both axes itself, and a stale
+            # range written here would pin what the restore is about to choose.
+            return None
+        return QVizSessionView(x0=x0, x1=x1, y0=y0, y1=y1,
+                               autoX=autoX is not False,
+                               autoY=autoY is not False,
+                               xInverted=xInverted, yInverted=yInverted)
+
+    @staticmethod
+    def errorsOf(figureKey, frame):
+        """Which of the three right-click lines are on, and at what step.
+
+        Counted off what the frame drew rather than asked back from the menu: a
+        bar that is on screen is in `errors.bars`, and the step it was drawn at is
+        `errors.stepUsed()`. A curve frame is the only one that owns an
+        `QVizCurveErrors`, so an image window answers None and no `<Errors>`.
+        """
+        errors = getattr(frame, 'errors', None)
+        if errors is None:
+            return None
+        bars = errors.errorBarCount()
+        bands = errors.bandCount()
+        if not bars and not bands:
+            return None
+        # The step of the bars that are on screen. None when there are none: a
+        # window with only a band must come back with only a band, and answering
+        # 1 here would draw bars the user never asked for.
+        step = (errors.stepUsed() or 1) if bars else None
+        return QVizSessionErrors(bars=step, bands=bool(bands))
+
+    def windowOf(self, figureKey, frame):
+        """Where the window sits in the MDI area.
+
+        `mdiWindowOf` is the same reading the Show/Hide and Delete menus use, so
+        the geometry is taken for the window those menus address. A frame with no
+        window of its own is said rather than skipped quietly: it is a figure the
+        file records and the restore will show somewhere Qt puts it.
+        """
+        window = self.api.mdiWindowOf(frame)
+        if window is None:
+            logging.getLogger('logPanel').warning(
+                'The window "%s" has no place in the MDI area: its geometry is '
+                'not saved, and the restore will show it where Qt puts it.'
+                % figureKey)
+            return None
+        geometry = window.geometry()
+        return QVizSessionWindow(x=geometry.x(), y=geometry.y(),
+                                 w=geometry.width(), h=geometry.height(),
+                                 maximized=window.isMaximized(),
+                                 hidden=window.isHidden())
+

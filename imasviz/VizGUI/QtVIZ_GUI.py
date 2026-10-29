@@ -24,6 +24,9 @@ sys.path.append((os.environ['VIZ_HOME']))
 
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
+from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
+from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRestoreSession
+from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences,QVizGlobalOperations, QVizLogger, UserInputs
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
@@ -397,9 +400,78 @@ class QVizMainWindow(QMainWindow):
             QVizGlobalOperations.YesNo(question='Exit IMAS_VIZ?',
                                        caption='Please confirm')
         if answer==True:
+            # Written here, before any window is taken away, and not from a
+            # `destroyed` handler: by the time Qt starts destroying widgets the
+            # session has already lost the windows it is supposed to describe.
+            self.saveLastSession()
             event.accept()
         else:
             event.ignore()
+
+    def sessionApi(self):
+        """The api this session's menus drive -- its shot views and its figures.
+
+        One api serves the whole session, and it lives where the *Open* gesture
+        was built: the start window, its central frame, that frame's menu
+        controller. It is reached and not moved: the menus already hold it, and a
+        second copy would be a second bookkeeping of the same windows.
+        """
+        frame = self.startWindow.centralWidget()
+        controller = getattr(frame, 'mainMenuController', None)
+        openShotView = getattr(controller, 'openShotView', None)
+        return getattr(openShotView, 'api', None)
+
+    def saveLastSession(self):
+        """Write the session that is on screen, under a name nobody chose.
+
+        Refused rather than silent when it cannot be written -- the user is
+        leaving, and the one thing they should hear is that the next start will
+        not look like this one.
+        """
+        api = self.sessionApi()
+        if api is None:
+            return
+        try:
+            QVizSaveSession(api, path=QVizSessionFile.lastSession()).execute()
+        except ValueError as e:
+            logging.getLogger('logPanel').error(
+                'The session was not kept for the next start: %s' % e)
+
+    def restoreLastSession(self):
+        """Put back the session the previous run left behind.
+
+        Only ever called on an answer, so the question stays where the user
+        answers it and this stays a call a script can make.
+        """
+        api = self.sessionApi()
+        if api is None:
+            return
+        try:
+            QVizRestoreSession(api,
+                               path=QVizSessionFile.lastSession()).execute()
+        except ValueError as e:
+            logging.getLogger('logPanel').error(
+                'The last session was not restored: %s' % e)
+
+    def askForLastSession(self):
+        """Offer the session of the previous run, and put it back if it is taken.
+
+        Asked only when the file is there: a start window that asks about a
+        session nobody saved is a question the user answers for nothing, and on a
+        first run that is every run. The answer belongs here, at the top level of
+        the application, and not inside the command that does the work.
+        """
+        if not QVizSessionFile.hasLastSession():
+            return False
+        if not QVizGlobalOperations.YesNo(
+                question='Restore the session IMASViz was closed with?',
+                caption='Please confirm'):
+            logging.getLogger('logPanel').info(
+                'The last session was left closed: open it from the File menu if '
+                'it is the one you want.')
+            return False
+        self.restoreLastSession()
+        return True
 
     def getMDI(self):
         if self.MDI != None:
@@ -447,6 +519,9 @@ def main():
     logging.getLogger('logPanel').info("Please report any issue to ITER JIRA: https://jira.iter.org/")
 
     window.show()
+    # Asked once the windows are on screen, so what the restore embeds lands in an
+    # MDI area the user can see -- and only when the previous run left a session.
+    window.askForLastSession()
     sys.exit(app.exec())
 
 
