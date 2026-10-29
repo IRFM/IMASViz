@@ -11,12 +11,16 @@
 
 The manual documents it under *Plot Configuration and Customization*: a window
 listing the plots of a plot display and the properties that can be changed by
-hand. It is offered by the plots of the Profiles plugin, and the manual says
-twice that a :guilabel:`Table Plot View` panel and a :guilabel:`Stacked Plot
-View` display do not offer it.
+hand. The plots of the Profiles plugin have offered it since before this file
+existed; a :guilabel:`Plot Figure`, a :guilabel:`Table Plot
+View` panel and a :guilabel:`Stacked Plot View` display offer it too now, each
+of them answering the three questions on itself -- `QVizPlotStyling` is that
+answer, and the entry on their right-click menu. An :guilabel:`Image` figure
+still refuses it: a picture has no trace to tell apart, and its colour scale
+answers for all of them.
 
-The contract with the caller is **asked, not guessed**. The view box that offers
-the entry answers three questions, and each answer decides what is on screen:
+The contract with the caller is **asked, not guessed**. Whoever offers the entry
+answers three questions, and each answer decides what is on screen:
 
     styleCurves()    the curves hand styling may change
     styleText()      the plot item holding the title and the axis labels
@@ -70,10 +74,13 @@ window that has no panel layout answers None and gets no section, in place of th
 bare `QWidget()` the old fallback handed back.
 
 The Legend section is gone, and with it `SampleCopyFromLegend` -- **339** lines.
-Measured, the dialogue answers **3** sections on its only caller, because there
-is no legend to copy a marker from, and no figure offers the entry at all.
-Nothing documented dies: `doc/source` names no legend styling, and what the
-legend says is the curve's own label, which no section here touches.
+Measured on its only caller then, the dialogue answers **3** sections, because
+there is no legend to copy a marker from: `plotItem.legend` answers None on all
+**41** of the plugin's panels. A figure of curves does have a legend, and needs
+no section for it either: `LegendItem.ItemSample.paint` reads `self.item.opts`
+when it paints (`LegendItem.py:355`), so the swatch of a trace follows a colour
+and a width set here with nothing else asked of it. Where the legend sits and how
+big its text is remain pyqtgraph's business, as they were.
 """
 
 import pyqtgraph as pg
@@ -166,10 +173,17 @@ class CurveStyle(object):
     One of these per drawn curve -- and that is the point: the old dialogue held
     one flat dictionary for the whole tab, written once per row and read back by
     every callback, so all rows wrote the same, last, curve.
+
+    `onChange` is told which curve an edit landed on, and nothing else -- the
+    window does not report the new values, because whoever records them reads
+    the curve itself when it needs them. A frame that way knows which of its
+    curves a hand has been on, which is the only way to tell a coloured trace
+    from one the palette handed out grey: both carry a pen.
     """
 
-    def __init__(self, curve, parent):
+    def __init__(self, curve, parent, onChange=None):
         self.curve = curve
+        self.onChange = onChange
         # What this curve looked like when the window opened, so Cancel can put
         # it back -- the changes are applied live, as the manual describes them.
         pen = penOf(curve)
@@ -227,33 +241,45 @@ class CurveStyle(object):
 
     # -- writing: one property, this curve, live --------------------------
 
+    def changed(self):
+        """Say which curve a hand just moved, and let the values be read back."""
+        if self.onChange is not None:
+            self.onChange(self.curve)
+
     def setColour(self):
         pen = penOf(self.curve)
         pen.setColor(self.colorButton.color())
         self.curve.setPen(pen)
+        self.changed()
 
     def setStyle(self):
         pen = penOf(self.curve)
         pen.setStyle(GlobalQtStyles.stylesDict[self.styleBox.currentText()])
         self.curve.setPen(pen)
+        self.changed()
 
     def setWidth(self):
         pen = penOf(self.curve)
         pen.setWidth(self.widthBox.value())
         self.curve.setPen(pen)
+        self.changed()
 
     def setSymbol(self):
         self.curve.setSymbol(GlobalPgSymbols.symbolsDict[
             self.symbolBox.currentText()])
+        self.changed()
 
     def setSymbolSize(self):
         self.curve.setSymbolSize(self.symbolSizeBox.value())
+        self.changed()
 
     def setSymbolBrush(self):
         self.curve.setSymbolBrush(self.symbolColorButton.color())
+        self.changed()
 
     def setSymbolPen(self):
         self.curve.setSymbolPen(self.symbolOutlineButton.color())
+        self.changed()
 
     def restore(self):
         """Put back the pen and the symbols this curve had on opening."""
@@ -270,13 +296,20 @@ class TextLabel(QWidget):
     A plot title and an axis label are the same question -- what text, bold,
     italic, what size -- with different ways in. The subclass answers `write()`
     and `restore()`; the widgets and their state live here once.
+
+    `key` is how this line is named to whoever records the edits: 'title', or the
+    side an axis label sits on. `restore()` reports nothing -- a window being
+    cancelled is not an edit.
     """
 
     COLUMNS = ('Text', 'Bold', 'Italic', 'Size')
 
-    def __init__(self, heading, text, style, parent=None):
+    def __init__(self, heading, text, style, parent=None, key=None,
+                 onChange=None):
         super(TextLabel, self).__init__(parent)
 
+        self.key = key
+        self.onChange = onChange
         self.originalText = text
         self.originalStyle = dict(style)
 
@@ -336,6 +369,11 @@ class TextLabel(QWidget):
     def italic(self):
         return self.italicButton.isChecked()
 
+    def notify(self):
+        """Say which line of text a hand just changed."""
+        if self.onChange is not None:
+            self.onChange(self.key)
+
     def write(self):
         raise NotImplementedError
 
@@ -346,9 +384,9 @@ class TextLabel(QWidget):
 class TitleLabel(TextLabel):
     """The plot's own title."""
 
-    def __init__(self, titleLabel, parent=None):
+    def __init__(self, titleLabel, parent=None, onChange=None):
         TextLabel.__init__(self, 'Title', titleLabel.text, titleLabel.opts,
-                           parent)
+                           parent, key='title', onChange=onChange)
         self.titleLabel = titleLabel
 
     def write(self):
@@ -360,6 +398,7 @@ class TitleLabel(TextLabel):
         """
         self.titleLabel.setText(self.text(), size=self.size(),
                                 bold=self.bold(), italic=self.italic())
+        self.notify()
 
     def restore(self):
         """Write the title back as it was, knobs included.
@@ -383,9 +422,9 @@ class AxisLabel(TextLabel):
         self.boldButton.setChecked(style.get('font-weight') == 'bold')
         self.italicButton.setChecked(style.get('font-style') == 'italic')
 
-    def __init__(self, axis, side, parent=None):
+    def __init__(self, axis, side, parent=None, onChange=None):
         TextLabel.__init__(self, 'Axis %s' % side.capitalize(), axis.labelText,
-                           axis.labelStyle, parent)
+                           axis.labelStyle, parent, key=side, onChange=onChange)
         self.axis = axis
 
     def write(self):
@@ -394,6 +433,7 @@ class AxisLabel(TextLabel):
         style['font-style'] = 'italic' if self.italic() else 'normal'
         style['font-size'] = self.size()
         self.axis.setLabel(self.text(), **style)
+        self.notify()
 
     def restore(self):
         self.axis.setLabel(self.originalText, **self.originalStyle)
@@ -403,19 +443,39 @@ class QVizPlotStyleUI(QDialog):
     """The Configure Plot dialogue, built from what the caller answers.
 
     Arguments:
-        viewBox (pg.ViewBox) : the view box that offered the entry. It answers
-                               `styleCurves()`, `styleText()` and
-                               `styleMargins()`, as the Profiles plugin's own
-                               `CustomizedViewBox` does.
+        styleSource (object) : whoever offered the entry. It answers `styleCurves()`,
+                               `styleText()` and `styleMargins()`. The plots of the
+                               Profiles plugin answer them on their own view box, as
+                               `CustomizedViewBox` does; a figure of curves and a
+                               panel of a table or a stacked window answer them on
+                               themselves.
+        onChange (callable)  : told the curve an edit landed on, or the key of the
+                               line of text edited -- 'title', or the side an axis
+                               label sits on. What the edit was is not reported:
+                               whoever records it reads the item back when it needs
+                               the values, and a frame can then tell a trace a hand
+                               coloured from one the palette handed out grey -- both
+                               of them carry a pen.
+        onReject (callable)  : told when the window is cancelled, after everything it
+                               found has been written back -- so a record of what the
+                               hand touched can go back with the rest.
     """
 
-    def __init__(self, viewBox, parent=None, size=(1000, 400)):
+    def __init__(self, styleSource, parent=None, size=(1000, 400),
+                 onChange=None, onReject=None):
         super(QVizPlotStyleUI, self).__init__(parent)
 
-        self.viewBox = viewBox
-        self.curves = [CurveStyle(curve, self) for curve in viewBox.styleCurves()]
-        self.plotItem = viewBox.styleText()
-        self.marginsLayout = viewBox.styleMargins()
+        # The three answers are read here and nowhere else, and the source is not
+        # kept: a window holding on to the frame whose curves it styles is a cycle,
+        # and a frame freed by the cyclic collector rather than at its refcount is
+        # what this package has already died of on this Qt stack -- see
+        # QVizCurveErrors and the widget-ownership guard of tests/test_44.
+        self.curves = [CurveStyle(curve, self, onChange)
+                       for curve in styleSource.styleCurves()]
+        self.plotItem = styleSource.styleText()
+        self.marginsLayout = styleSource.styleMargins()
+        self.onChange = onChange
+        self.onReject = onReject
 
         self.setObjectName("QVizPlotStyleUI")
         heading = self.plotItem.titleLabel.text or ''
@@ -423,7 +483,7 @@ class QVizPlotStyleUI(QDialog):
                             else 'Configure Plot')
         self.resize(*size)
 
-        self.titleEditor = TitleLabel(self.plotItem.titleLabel, self)
+        self.titleEditor = TitleLabel(self.plotItem.titleLabel, self, onChange)
         self.axisEditors = self.labelsOfAxes()
         self.marginBoxes = None
 
@@ -456,7 +516,7 @@ class QVizPlotStyleUI(QDialog):
             axis = self.plotItem.getAxis(side)
             if not axis.labelText and not axis.label.isVisible():
                 continue
-            editors.append(AxisLabel(axis, side, self))
+            editors.append(AxisLabel(axis, side, self, self.onChange))
         return editors
 
     def curveTab(self):
@@ -562,4 +622,9 @@ class QVizPlotStyleUI(QDialog):
             editor.restore()
         if self.marginsLayout is not None:
             self.showMargins(self.originalMargins)
+        if self.onReject is not None:
+            # The record of what the hand touched goes back with the values: a
+            # curve styled in an earlier window and restored by this one is still
+            # styled, and one touched only here is not styled at all.
+            self.onReject()
         super(QVizPlotStyleUI, self).reject()

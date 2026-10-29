@@ -109,10 +109,45 @@ What version 3 does not keep: the time index the plugin's own slider stands at,
 and the tabs a user added inside the Profiles panel. The restore replays the
 entry, so the window comes back as that entry draws it.
 
-Versions 1, 2 and 3 are all read, and writing produces 3. A version 1 file simply
+Version 4, and what it adds
+---------------------------
+
+A session of version 3 came back with its windows, its sliders and its zoom, and
+without the one thing a user reaches for on a plot twice a day: a trace a hand
+coloured and a label a hand bolded were both gone. The dialogue exists and the
+frames answer it -- what was missing was a writer. And it could not simply write
+every pen: since T33 every trace carries one, so a file describing all of them
+would freeze the palette into the session, and a case opened a month later would
+draw the colours of the day it was saved instead of the colours of its own traces.
+
+So version 4 writes the traces a hand actually touched, with the values read back
+off the live curves when the file is written:
+
+* ``<Style trace color style width symbol size fill outline/>`` under a
+  ``<Quantity>``, one per hand-styled trace of that quantity. ``trace`` ranks a
+  trace among the traces *of that quantity* -- it is not a position in the figure,
+  because a quantity read at several rows draws several traces, and the order the
+  figure holds them in is the order they were drawn, not an identity;
+* ``<TextStyle side text bold italic size/>`` -- under its ``<Figure>`` for the
+  title and the four axes of a figure of curves, under its ``<Quantity>`` for the
+  labels of one panel of a Table or a Stacked window. The two places are not one
+  because a panel owns its plot item: the window opened on a panel styles that
+  panel and no neighbour.
+
+``side`` is what pyqtgraph calls the labels of a plot item: ``title``, ``bottom``,
+``left``, ``top``, ``right``. ``text`` is written along with the font because a
+title a hand cleared is itself a style, and a file holding only fonts would put
+the default title back over it.
+
+An untouched window writes neither element, which is the whole reason a record of
+what was touched is kept on the frame: values are read live at save time, so a
+session does not have to know what a pen looked like the day it was written.
+
+Versions 1 to 4 are all read, and writing produces 4. A version 1 file simply
 has no state element, which is the same as the user having set nothing; a version
 2 file has no ``<PluginWindow>``, which is the same as having no plugin window
-open.
+open; a version 3 file has no ``<Style>``, which is the same as nobody having
+styled anything.
 
 One version, and a refusal rather than a guess: ``version`` is checked, and an
 element this module does not know is named in a ``ValueError``. Ignoring what it
@@ -132,7 +167,19 @@ QVizSessionLoad = namedtuple('QVizSessionLoad', 'ids occurrence slices')
 QVizSessionExpanded = namedtuple('QVizSessionExpanded', 'ids occurrence')
 QVizSessionSelection = namedtuple('QVizSessionSelection', 'path occurrence')
 QVizSessionQuantity = namedtuple('QVizSessionQuantity',
-                                 'path occurrence uri row column')
+                                 'path occurrence uri row column styles text',
+                                 # A quantity of a version 3 file names no style
+                                 # at all, which is the same answer as a trace
+                                 # nobody touched: the palette colours it again.
+                                 defaults=((), ()))
+# One trace a hand was on, and what the hand left on it. The values are read off
+# the live curve when the file is written and put back on the curve it lands on,
+# so this holds no copy of a pen -- only the attributes the user actually changed
+# are here, and an attribute this dict leaves out is left to the drawing.
+QVizSessionCurveStyle = namedtuple('QVizSessionCurveStyle', 'trace attributes')
+# One line of text a hand was on: the figure's title, one of its four axes, or
+# the labels of one panel. `side` is pyqtgraph's own name for it.
+QVizSessionTextStyle = namedtuple('QVizSessionTextStyle', 'side attributes')
 QVizSessionCursor = namedtuple('QVizSessionCursor', 'key index')
 QVizSessionCursors = namedtuple('QVizSessionCursors', 'folded cursors')
 QVizSessionView = namedtuple('QVizSessionView',
@@ -142,10 +189,11 @@ QVizSessionWindow = namedtuple('QVizSessionWindow',
                                'x y w h maximized hidden')
 QVizSessionFigure = namedtuple(
     'QVizSessionFigure',
-    'key kind quantities axis tensor cursors view errors window',
+    'key kind quantities axis tensor cursors view errors window text',
     # A figure written before version 2 has no state to carry, and the four
-    # fields being absent is exactly that: nothing was set.
-    defaults=(None, None, None, None))
+    # fields being absent is exactly that: nothing was set. Version 3 adds no
+    # `<TextStyle>`, which is a figure nobody styled.
+    defaults=(None, None, None, None, ()))
 
 QVizSessionCase = namedtuple('QVizSessionCase',
                              'uri dd_version label loads expanded selection '
@@ -166,13 +214,14 @@ QVizSessionPluginWindow = namedtuple('QVizSessionPluginWindow',
                                      'key plugin entry ids occurrence')
 
 ROOT = 'IMASVizSession'
-VERSION = '3'
-# All three are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
+VERSION = '4'
+# All four are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
 # or `<Window>`, which is the same answer as a user who set nothing on those
 # windows; a version 2 file holds no `<PluginWindow>`, which is the same answer
-# as a screen with no plugin window open. Neither is guessed at: what a version
-# does not name comes back as the drawing leaves it.
-READABLE_VERSIONS = ('1', '2', '3')
+# as a screen with no plugin window open; a version 3 file holds no `<Style>`,
+# which is the same answer as a figure nobody coloured. None is guessed at: what
+# a version does not name comes back as the drawing leaves it.
+READABLE_VERSIONS = ('1', '2', '3', '4')
 
 # The name of the session the application writes when it closes and offers when
 # it starts. A name, not a path: where it lives is the folder's business, and the
@@ -193,6 +242,15 @@ IMAGE = 'image'
 TABLE = 'table'
 STACKED = 'stacked'
 KINDS = (CURVE, IMAGE, TABLE, STACKED)
+
+# The attributes of a hand-styled trace, and the sides a label can be on. This is
+# the file's vocabulary: `QVizPlotStyling` keeps the same words on its side of the
+# seam, and `tests/test_72_...` pins the two lists against each other, because a
+# name either side renames alone is a style that silently stops being written.
+CURVE_STYLE_ATTRIBUTES = ('color', 'style', 'width', 'symbol', 'size', 'fill',
+                          'outline')
+TEXT_SIDES = ('title', 'bottom', 'left', 'top', 'right')
+TEXT_STYLE_ATTRIBUTES = ('text', 'bold', 'italic', 'size')
 
 # How many elements of a dynamic array of structures a view keeps. Spelled as a
 # word here because an integer would be a promise about the case: the reference
@@ -400,6 +458,9 @@ class QVizSessionFile:
                 if quantity.row is not None and quantity.column is not None:
                     leaf.set('row', str(quantity.row))
                     leaf.set('column', str(quantity.column))
+                self._writeStyles(leaf, quantity.styles)
+                self._writeTextStyles(leaf, quantity.text)
+            self._writeTextStyles(element, figure.text)
             self._writeCursors(element, figure.cursors)
             self._writeView(element, figure.view)
             self._writeErrors(element, figure.errors)
@@ -410,11 +471,41 @@ class QVizSessionFile:
         return path
 
     # ------------------------------------------------- what was set on a window
-    # Each of the four elements below is written only when there is something to
+    # Each of the elements below is written only when there is something to
     # say, and an attribute inside one only when it is not what a freshly drawn
     # window answers. A file that repeats the default of every window pins what
     # the drawing would have chosen anyway -- and a stale range is worse than no
     # range at all.
+
+    @staticmethod
+    def _writeStyles(element, styles):
+        """One `<Style>` per trace of this quantity a hand was on.
+
+        Nothing is written for the traces nobody touched: they carry a pen all the
+        same (the palette gives them one), and writing it would pin the colours of
+        the day the file was written onto a case opened a month later.
+        """
+        for style in styles or ():
+            child = ET.SubElement(element, 'Style')
+            child.set('trace', str(style.trace))
+            for name in CURVE_STYLE_ATTRIBUTES:
+                value = style.attributes.get(name)
+                if value is not None:
+                    child.set(name, str(value))
+
+    @staticmethod
+    def _writeTextStyles(element, styles):
+        """One `<TextStyle>` per label of this element a hand was on."""
+        for style in styles or ():
+            child = ET.SubElement(element, 'TextStyle')
+            child.set('side', style.side)
+            for name in TEXT_STYLE_ATTRIBUTES:
+                value = style.attributes.get(name)
+                # `text` is written even when it is empty: a title a hand cleared
+                # is a style, and a file holding only its font would put the
+                # default title back over it.
+                if value is not None:
+                    child.set(name, str(value))
 
     @staticmethod
     def _writeCursors(element, cursors):
@@ -560,7 +651,8 @@ def _figureOf(element, path):
         raise ValueError('"%s" holds a <Figure kind="%s">: this application '
                          'draws %s.' % (path, kind, ' / '.join(KINDS)))
     _knownChildren(element,
-                   ('Quantity', 'Cursors', 'View', 'Errors', 'Window'), path)
+                   ('Quantity', 'TextStyle', 'Cursors', 'View', 'Errors',
+                    'Window'), path)
     return QVizSessionFigure(
         key=_attribute(element, 'key', path, 'Figure'),
         kind=kind,
@@ -571,7 +663,9 @@ def _figureOf(element, path):
         cursors=_cursorsOf(element.find('Cursors'), path),
         view=_viewOf(element.find('View'), path),
         errors=_errorsOf(element.find('Errors'), path),
-        window=_windowOf(element.find('Window'), path))
+        window=_windowOf(element.find('Window'), path),
+        text=tuple(_textStyleOf(child, path)
+                   for child in element.findall('TextStyle')))
 
 
 def _quantityOf(element, path):
@@ -582,10 +676,70 @@ def _quantityOf(element, path):
                          'names %s without %s.'
                          % (path, 'row' if row is not None else 'column',
                             'column' if row is not None else 'row'))
+    _knownChildren(element, ('Style', 'TextStyle'), path)
     return QVizSessionQuantity(
         path=_attribute(element, 'path', path, 'Quantity'),
         occurrence=_integer(element, 'occurrence', 0, path),
-        uri=element.get('uri'), row=row, column=column)
+        uri=element.get('uri'), row=row, column=column,
+        styles=tuple(_styleOf(child, path) for child in element.findall('Style')),
+        text=tuple(_textStyleOf(child, path)
+                   for child in element.findall('TextStyle')))
+
+
+def _styleOf(element, path):
+    """One trace of one quantity, and what a hand left on it.
+
+    `trace` is required: a style that does not say which trace it dresses would
+    have to be applied to all of them, which is how a figure of three rows of one
+    quantity comes back with two of them coloured by a click that was on one.
+    """
+    trace = _integer(element, 'trace', None, path)
+    if trace is None:
+        raise ValueError('"%s" holds a <Style> with no trace: a style says which '
+                         'trace of its quantity it dresses.' % path)
+    if trace < 0:
+        raise ValueError('"%s" gives a <Style trace="%d">: a trace is ranked from '
+                         '0.' % (path, trace))
+    attributes = _styleAttributes(element, CURVE_STYLE_ATTRIBUTES, path,
+                                  'Style', 'trace')
+    if not attributes:
+        raise ValueError('"%s" holds a <Style trace="%d"> naming none of %s: it '
+                         'styles nothing, and a session that cannot say what was '
+                         'set says nothing at all.'
+                         % (path, trace, ' '.join(CURVE_STYLE_ATTRIBUTES)))
+    return QVizSessionCurveStyle(trace=trace, attributes=attributes)
+
+
+def _textStyleOf(element, path):
+    """One label of a figure or a panel, and the text and font a hand left on it."""
+    side = _attribute(element, 'side', path, 'TextStyle')
+    if side not in TEXT_SIDES:
+        raise ValueError('"%s" styles the text of a side named "%s": a plot item '
+                         'labels %s.' % (path, side, ' / '.join(TEXT_SIDES)))
+    attributes = _styleAttributes(element, TEXT_STYLE_ATTRIBUTES, path,
+                                  'TextStyle', 'side')
+    if not attributes:
+        raise ValueError('"%s" holds a <TextStyle side="%s"> naming none of %s: '
+                         'it styles nothing.'
+                         % (path, side, ' '.join(TEXT_STYLE_ATTRIBUTES)))
+    return QVizSessionTextStyle(side=side, attributes=attributes)
+
+
+def _styleAttributes(element, allowed, path, tag, identifier):
+    """The attributes of a style element, refusing one the format does not know.
+
+    An unknown attribute is a name misspelled by a writer, and dropping it is a
+    style that silently stops being put back -- which is the same failure this
+    module refuses for an unknown *element*, one level deeper. `identifier` is the
+    one attribute that says *which* thing is styled (`trace`, `side`) and is not
+    part of the answer.
+    """
+    for name in element.keys():
+        if name not in allowed and name != identifier:
+            raise ValueError('"%s" gives a <%s %s="...">: a style names %s.'
+                             % (path, tag, name, ' '.join(allowed)))
+    return dict((name, element.get(name))
+                for name in allowed if element.get(name) is not None)
 
 
 def _cursorsOf(element, path):

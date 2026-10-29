@@ -42,7 +42,10 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, QVizSessionCase, QVizSessionLoad, QVizSessionExpanded,
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
-    QVizSessionWindow, QVizSessionPluginWindow, CURVE, IMAGE, TABLE, STACKED,
+    QVizSessionWindow, QVizSessionPluginWindow,
+    QVizSessionCurveStyle, QVizSessionTextStyle,
+    CURVE_STYLE_ATTRIBUTES, TEXT_STYLE_ATTRIBUTES, TEXT_SIDES,
+    CURVE, IMAGE, TABLE, STACKED,
     cursorKeyOf, cursorKeyText)
 from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import \
@@ -310,15 +313,15 @@ def test_a_file_of_another_root_is_refused_naming_that_root():
 @pytest.mark.ui
 def test_a_file_of_another_version_is_refused_naming_both_versions():
     """Guessing a format this module does not know is how a session comes back
-    describing less than it says. Version 1 is read -- it simply carries no
-    state; version 4 is not, because there is nothing to guess from."""
-    path = _write('future.vsess', '<IMASVizSession version="4"><Case uri="x"/>'
+    describing less than it says. Version 3 is read -- it simply carries no
+    styling; version 5 is not, because there is nothing to guess from."""
+    path = _write('future.vsess', '<IMASVizSession version="5"><Case uri="x"/>'
                                   '</IMASVizSession>')
 
     with pytest.raises(ValueError) as raised:
         QVizSessionFile.read(path)
 
-    assert '"4"' in str(raised.value) and 'writes version 3' \
+    assert '"5"' in str(raised.value) and 'writes version 4' \
         in str(raised.value)
 
 
@@ -932,7 +935,7 @@ def test_a_session_of_an_older_version_names_no_plugin_window():
 
 
 @pytest.mark.ui
-def test_a_plugin_window_written_by_this_release_is_version_3():
+def test_a_plugin_window_written_by_this_release_is_version_4():
     written = QVizSessionFile(
         cases=[QVizSessionCase(uri=URI, dd_version=None, label=None, loads=[],
                                expanded=[], selection=[],
@@ -943,7 +946,7 @@ def test_a_plugin_window_written_by_this_release_is_version_3():
     with open(written) as handle:
         body = handle.read()
 
-    assert 'version="3"' in body and '<PluginWindow' in body
+    assert 'version="4"' in body and '<PluginWindow' in body
 
 
 @pytest.mark.ui
@@ -1240,3 +1243,162 @@ def _write(name, body):
 
 def _path(name):
     return os.path.join(QVizConfigurationFile.directory(), name)
+
+
+# ---------------------------------------------------------------------------
+# Version 4: what a hand left on a trace or a label.
+
+def aStyledFigure():
+    """One figure, its second trace coloured, its left axis bolded, its title set."""
+    coloured = QVizSessionQuantity(
+        'magnetics/bpol(0)/x', 0, URI, None, None,
+        styles=(QVizSessionCurveStyle(
+            trace=1,
+            attributes={'color': '#ff0000', 'width': '3',
+                        'symbol': 'circle'}),))
+    panel = QVizSessionQuantity(
+        'foo/time_slice(i)/vector', 0, URI, 1, 1,
+        styles=(QVizSessionCurveStyle(trace=0,
+                                      attributes={'color': '#00ff00'}),),
+        text=(QVizSessionTextStyle(side='left', attributes={'bold': '1'}),))
+    return QVizSessionFigure(
+        key='SlicesPlot1', kind=CURVE,
+        quantities=[QVizSessionQuantity('magnetics/flux_loop(3)/flux/data', 0,
+                                        URI, None, None),
+                    coloured, panel],
+        axis=None, tensor=False,
+        text=(QVizSessionTextStyle(side='title',
+                                   attributes={'text': 'Flux loops',
+                                               'size': '22px'}),
+              QVizSessionTextStyle(side='left',
+                                   attributes={'bold': '1',
+                                               'italic': '0',
+                                               'size': '20px'})))
+
+
+@pytest.mark.ui
+def test_what_a_hand_left_on_a_trace_and_a_label_comes_back_through_the_file():
+    written = QVizSessionFile(cases=[], figures=[aStyledFigure()]).write(
+        QVizSessionFile.named('styled'))
+    read = QVizSessionFile.read(written)
+
+    assert read.figures[0].text == aStyledFigure().text
+    assert read.figures[0].quantities[0].styles == ()
+    assert read.figures[0].quantities[0].text == ()
+    assert read.figures[0].quantities[1].styles == \
+        aStyledFigure().quantities[1].styles
+    # The labels of a panel live under its quantity, and the labels of the figure
+    # under the figure: two places because a panel owns its plot item.
+    assert read.figures[0].quantities[2].text == \
+        aStyledFigure().quantities[2].text
+    assert read.figures[0].quantities[2].styles == \
+        aStyledFigure().quantities[2].styles
+
+
+@pytest.mark.ui
+def test_a_cleared_title_is_written_as_cleared_and_not_as_no_title():
+    """`text=""` is a style: a file holding only the font would write the default back."""
+    figure = QVizSessionFigure(
+        key='SlicesPlot1', kind=CURVE, quantities=[], axis=None, tensor=False,
+        text=(QVizSessionTextStyle(side='title',
+                                   attributes={'text': '', 'size': '18px'}),))
+
+    written = QVizSessionFile(cases=[], figures=[figure]).write(
+        QVizSessionFile.named('cleared'))
+    read = QVizSessionFile.read(written)
+
+    assert read.figures[0].text == (QVizSessionTextStyle(
+        side='title', attributes={'text': '', 'size': '18px'}),)
+    assert 'text=""' in open(written).read()
+
+
+@pytest.mark.ui
+def test_a_window_nobody_styled_writes_neither_element():
+    """Every trace carries a pen since T33, so writing them all would pin the palette.
+
+    A session that wrote the colour of every trace would come back with the colours
+    of the day it was saved; the file says nothing about a trace nobody touched and
+    the palette colours it again for the case it is read against.
+    """
+    written = QVizSessionFile(cases=[], figures=[QVizSessionFigure(
+        'SlicesPlot1', CURVE,
+        [QVizSessionQuantity('a/b', 0, URI, None, None)], axis=None,
+        tensor=False)]).write(QVizSessionFile.named('plain'))
+    with open(written) as handle:
+        body = handle.read()
+
+    assert '<Style' not in body and '<TextStyle' not in body
+    assert QVizSessionFile.read(written).figures[0].text == ()
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('version', ['1', '2', '3'])
+def test_a_file_of_an_older_version_names_no_style(version):
+    """A version 3 file holds no `<Style>`, which is a figure nobody coloured."""
+    path = _write('v%s_style.vsess' % version, """
+    <IMASVizSession version="%s">
+      <Figure key="SlicesPlot1" kind="curve">
+        <Quantity path="a/b" occurrence="0"/>
+      </Figure>
+    </IMASVizSession>""" % version)
+
+    read = QVizSessionFile.read(path)
+    assert read.figures[0].text == ()
+    assert read.figures[0].quantities[0].styles == ()
+    assert read.figures[0].quantities[0].text == ()
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('body,expected', [
+    ('<Style color="#ff0000"/>', 'no trace'),
+    ('<Style trace="0"/>', 'styles nothing'),
+    ('<Style trace="0" colour="#ff0000"/>', 'a style names'),
+    ('<Style trace="zero" color="#ff0000"/>', 'trace'),
+    ('<Style trace="-1" color="#ff0000"/>', 'ranked from 0'),
+    ('<Stlye trace="0" color="#ff0000"/>', '<Stlye>'),
+])
+def test_a_style_that_cannot_be_put_back_is_refused_at_the_file(body, expected):
+    """Half a style is not a style with the other half missing: it is a guess."""
+    path = _write('style.vsess',
+                  '<IMASVizSession version="4"><Figure key="F" kind="curve">'
+                  '<Quantity path="a/b" occurrence="0">%s</Quantity>'
+                  '</Figure></IMASVizSession>' % body)
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert expected in str(raised.value), str(raised.value)
+    assert 'style.vsess' in str(raised.value)
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('body,expected', [
+    ('<TextStyle side="middle" bold="1"/>', 'a plot item labels'),
+    ('<TextStyle side="title"/>', 'it styles nothing'),
+    ('<TextStyle side="left" weight="bold"/>', 'a style names'),
+])
+def test_a_label_style_that_names_nothing_puttable_is_refused(body, expected):
+    path = _write('label.vsess',
+                  '<IMASVizSession version="4"><Figure key="F" kind="curve">'
+                  '%s</Figure></IMASVizSession>' % body)
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert expected in str(raised.value), str(raised.value)
+
+
+@pytest.mark.ui
+def test_the_words_of_the_file_are_the_words_the_frame_answers():
+    """The seam between the format and the styling record, pinned in both halves.
+
+    `QVizPlotStyling` names the attributes of a pen and `QVizSessionFile` names the
+    attributes of a `<Style>`. Two lists that drift apart are a style silently
+    dropped on the way to the file, and neither module would say a word.
+    """
+    from imasviz.VizGUI.VizPlot.QVizPlotStyling import CURVE_ATTRIBUTES, \
+        TEXT_ATTRIBUTES
+
+    assert CURVE_STYLE_ATTRIBUTES == tuple(CURVE_ATTRIBUTES)
+    assert TEXT_STYLE_ATTRIBUTES == tuple(TEXT_ATTRIBUTES)
+    assert TEXT_SIDES == ('title', 'bottom', 'left', 'top', 'right')

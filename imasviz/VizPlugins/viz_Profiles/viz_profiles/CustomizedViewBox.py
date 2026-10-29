@@ -9,6 +9,7 @@ from pyqtgraph.graphicsItems.ViewBox.ViewBoxMenu import ViewBoxMenu
 from PySide6.QtWidgets import QMessageBox, QLineEdit, QMenu
 from PySide6.QtGui import QAction
 from imasviz.VizGUI.VizPlot.QVizPlotStyleUI import QVizPlotStyleUI
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import ENTRY as CONFIGURE_PLOT
 from imasviz.VizGUI.VizPlot.QVizCurveErrors import (CONFIDENCE_BANDS, ERROR_BARS,
                                                     ERROR_BARS_SLICED,
                                                     QVizCurveErrors)
@@ -129,8 +130,9 @@ class CustomizedViewBox(pg.ViewBox):
         # - Add to main menu
         self.menu.addAction(self.actionAutoRange)
 
-        # Configure plot
-        self.actionConfigurePlot = QAction("Configure Plot", self.menu)
+        # Configure plot -- the same words a figure of curves and a panel of a
+        # table answer, because the window behind them is the same one.
+        self.actionConfigurePlot = QAction(CONFIGURE_PLOT, self.menu)
         self.actionConfigurePlot.triggered.connect(self.showConfigurePlot)
         # - Add to main menu
         self.menu.addAction(self.actionConfigurePlot)
@@ -219,7 +221,7 @@ class CustomizedViewBox(pg.ViewBox):
     def showConfigurePlot(self):
         """Set and show custom plot configuration GUI.
         """
-        self.plotConfDialog = QVizPlotStyleUI(viewBox=self)
+        self.plotConfDialog = QVizPlotStyleUI(styleSource=self)
         self.plotConfDialog.show()
 
     # -- what the Configure Plot dialogue asks this view box ---------------

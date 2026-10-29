@@ -36,6 +36,17 @@ asked are written with it, because a restore has no one to answer a modal
 plot windows, so the same walk meets it; it is saved where that walk finds the
 stamp the plugin left (`QVizPluginWindow`), and a frame carrying no stamp is
 still named as unsaved.
+
+Version 4 adds what a hand changed on the window itself: the colour of a trace,
+the weight of a label. A trace style is written under the `<Quantity>` that drew
+it, because that is what ranks it (`<Style trace="N" .../>` ranks a trace among
+the traces of *its* quantity), and a label goes under the element that owns the
+plot it is attached to -- the `<Figure>` for a figure of curves, the `<Quantity>`
+of the panel for a Table or a Stacked window. Only the traces a hand actually
+touched are written, and their values are read off the live curves here: every
+trace carries a pen since T33, so a session that wrote all of them would freeze
+the palette into the file, and the case opened next month would draw yesterday's
+colours instead of the contrast those colours were chosen for.
 """
 
 import logging
@@ -47,8 +58,11 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
     QVizSessionWindow, QVizSessionPluginWindow,
+    QVizSessionCurveStyle, QVizSessionTextStyle,
     CURVE, IMAGE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
     FIRST, INDEX_PREFIX)
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import (styleKey, styledText,
+                                                    styledTraces)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
@@ -256,7 +270,8 @@ class QVizSaveSession:
                                  cursors=self.cursorsOf(frame),
                                  view=self.viewOf(figureKey, frame),
                                  errors=self.errorsOf(figureKey, frame),
-                                 window=self.windowOf(figureKey, frame))
+                                 window=self.windowOf(figureKey, frame),
+                                 text=self.textOf(frame))
 
     def quantitiesOf(self, figureKey, frame, kind):
         """The quantities that figure holds, as the figure bookkeeping knows them.
@@ -266,18 +281,55 @@ class QVizSaveSession:
         table, the cell each panel sits in is read from the layout -- the same
         reading the plot configuration saves use, because a place computed from
         the panel count is what put two panels in one cell.
+
+        The styles a hand left on each quantity travel with it, which is where the
+        file writes them: a `<Style>` belongs to the trace's quantity, and a panel
+        of a table or a stacked window owns the labels written under its own
+        `<Quantity>`.
         """
         places = self.placesOf(frame)
+        styles = self.stylesOf(frame)
         quantities = []
         for uri, treeNode in self.api.figToNodes.get(figureKey, {}).values():
             place = places.get(treeNode)
+            key = styleKey(treeNode)
             quantities.append(QVizSessionQuantity(
                 path=treeNode.getPath(),
                 occurrence=treeNode.getOccurrence(),
                 uri=uri,
                 row=None if place is None else place[0],
-                column=None if place is None else place[1]))
+                column=None if place is None else place[1],
+                styles=styles.get(key, ()),
+                text=self.textOf(frame, key)))
         return quantities
+
+    # --------------------------------------------------------------- styling
+    @staticmethod
+    def stylesOf(frame):
+        """{styleKey: [QVizSessionCurveStyle]} for the traces a hand was on.
+
+        Values are read off the live curves here, at the moment the session is
+        written -- the frame keeps only *which* traces were touched, so a colour
+        changed by hand stays a colour the palette would not have answered, and a
+        colour the palette gave is never written at all.
+        """
+        styles = {}
+        for treeNode, index, attributes in styledTraces(frame):
+            styles.setdefault(styleKey(treeNode), []).append(
+                QVizSessionCurveStyle(trace=index, attributes=dict(attributes)))
+        return dict((key, tuple(entries)) for key, entries in styles.items())
+
+    @staticmethod
+    def textOf(frame, key=None):
+        """The labels a hand was on: `key=None` for the window's own title and axes.
+
+        A figure of curves has one plot, so its labels are figure level; a table
+        and a stacked window own one plot per panel, so their labels are written
+        under the `<Quantity>` of the panel that drew them.
+        """
+        return tuple(QVizSessionTextStyle(side=side, attributes=dict(attributes))
+                     for node, side, attributes in styledText(frame)
+                     if (None if node is None else styleKey(node)) == key)
 
     @staticmethod
     def placesOf(frame):
@@ -298,10 +350,11 @@ class QVizSaveSession:
         return None
 
     # ------------------------------------------------ what the user had set on a
-    #                                                          figure of version 2
-    # Each of these four reads asks the frame what it already keeps, in the words
-    # the frame itself uses for it. None of them invents a widget state: a session
-    # that recorded a pen or a font is the one that wrote no file at all.
+    #                                                                       window
+    # Each of these reads asks the frame what it already keeps, in the words the
+    # frame itself uses for it. None of them invents a widget state -- and none of
+    # them asks a window that has nothing to answer: a picture figure holds no
+    # trace and no record, so it writes neither `<Style>` nor `<TextStyle>`.
 
     @staticmethod
     def cursorsOf(frame):

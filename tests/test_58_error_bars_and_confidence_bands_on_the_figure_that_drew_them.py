@@ -70,6 +70,7 @@ from imasviz.VizGUI.VizPlot.QVizCurveErrors import (CONFIDENCE_BANDS,
                                                     ERROR_BARS,
                                                     ERROR_BARS_SLICED,
                                                     QVizCurveErrors)
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import ENTRY
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.CustomizedViewBox \
@@ -85,10 +86,12 @@ WITH_ERRORS = 'magnetics/flux_loop(0)/flux/data'
 WITHOUT_ERRORS = 'magnetics/time'
 SECOND = 'magnetics/bpol_probe(0)/field/data'
 
-# pyqtgraph's own four lines, then the three this row carries onto the figure.
-# Measured on a curve figure of the reference case, in menu order.
+# pyqtgraph's own four lines, then the three this row carries onto the figure,
+# then the styling line the Configure Plot row carries. Measured on a curve figure
+# of the reference case, in menu order.
 PYQTGRAPH_LINES = ['View All', 'X axis', 'Y axis', 'Mouse Mode']
 DOCUMENTED_LINES = [ERROR_BARS, ERROR_BARS_SLICED, CONFIDENCE_BANDS]
+STYLING_LINE = ENTRY
 
 # What the case answers for `magnetics/flux_loop(0)/flux/data` along time.
 POINTS = 17344
@@ -191,7 +194,7 @@ def test_the_figure_answers_the_three_lines_the_manual_names(session):
     texts = [action.text() for action
              in frame.pgPlotWidget.getViewBox().menu.actions()
              if action.text()]
-    assert texts == PYQTGRAPH_LINES + DOCUMENTED_LINES, texts
+    assert texts == PYQTGRAPH_LINES + DOCUMENTED_LINES + [STYLING_LINE], texts
     assert [line for line in DOCUMENTED_LINES if line not in texts] == []
 
 

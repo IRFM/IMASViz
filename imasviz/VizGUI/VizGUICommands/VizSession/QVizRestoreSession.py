@@ -59,6 +59,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import \
     QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import \
     QVizPlotAsStacked
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import replayCurves, replayText
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 
 
@@ -349,8 +350,9 @@ class QVizRestoreSession:
     def applyState(self, figure, frame, view):
         """Put back what the user had set on that window, in the order that holds.
 
-        The order is not a taste. The sliders come first, and moving one re-reads
-        the figure through the band's own `changed` signal -- measured on the
+        The order is not a taste. The styling goes on first, then the sliders:
+        moving one re-reads the figure through the band's own `changed` signal
+        -- measured on the
         reference case, **0,001 s** for one move over a 17-element array and
         **0,003 s** for five, so a session of a handful of sliders costs
         thousandths of a second. The error lines come *after* those moves: a bar
@@ -360,11 +362,66 @@ class QVizRestoreSession:
         and only then can the file take that back. The window geometry comes last,
         because it is the only one of the four that Qt answers about a window that
         has to be on screen.
+
+        The numbers are small because the restore replays them, it does not replay
+        the drawing -- and the styling comes first of them for that same reason: a
+        pen belongs to the trace, and moving a slider re-reads the samples under the
+        pen that is already on it (measured on the reference case: a colour set by
+        hand survives a `refresh`), so putting the colours back before the sliders
+        move costs one pass over the traces and nothing has to be drawn twice.
         """
+        self.applyStyles(figure, frame, view)
         self.applyCursors(figure, frame, view)
         self.applyErrors(figure, frame, view)
         self.applyView(figure, frame, view)
         self.applyWindow(figure, frame, view)
+
+    def applyStyles(self, figure, frame, view):
+        """The pens and the labels a hand left on that window, put back.
+
+        A style names a quantity, so it is read back against the node of that view
+        standing on the same path and run -- the identity the file writes. What the
+        window does not draw is named and left alone: a colour that should have come
+        back and did not is worth a line in the log of the case, and a colour put on
+        the trace next to it is a lie about the data.
+        """
+        log = logging.getLogger(view.uri)
+        for quantity in figure.quantities:
+            if not quantity.styles and not quantity.text:
+                continue
+            node = self.findNode(view, quantity.path, quantity.occurrence)
+            if node is None:
+                log.warning(
+                    'The styling of "%s" is not put back on the figure "%s" of '
+                    '"%s": that quantity is not in the tree of this case, and its '
+                    'window draws no trace to dress.'
+                    % (quantity.path, figure.key, self.path))
+                continue
+            if quantity.styles:
+                applied = replayCurves(frame, [(node, style.trace,
+                                                style.attributes)
+                                               for style in quantity.styles])
+                if applied < len(quantity.styles):
+                    log.warning(
+                        'The figure "%s" of "%s" styles %d trace(s) of "%s": this '
+                        'window draws %d of them.'
+                        % (figure.key, self.path, len(quantity.styles),
+                           quantity.path, applied))
+            if quantity.text:
+                replayText(frame, [(node, style.side, style.attributes)
+                                   for style in quantity.text])
+        if figure.text:
+            # A `<TextStyle>` under the `<Figure>` belongs to the window itself:
+            # its title and its four axes. A table and a stacked window own one
+            # plot per panel and answer none, so the entry is named rather than
+            # spread over the panels, which would style labels nobody styled.
+            if replayText(frame, [(None, style.side, style.attributes)
+                                  for style in figure.text]) == 0:
+                log.warning(
+                    'The figure "%s" of "%s" says how its own title and axes were '
+                    'written: a %s window has one plot per panel, and its labels '
+                    'are saved under the quantity of the panel they belong to.'
+                    % (figure.key, self.path, figure.kind))
 
     def applyCursors(self, figure, frame, view):
         """Move the band's sliders to where the file left them.

@@ -210,8 +210,8 @@ Core concepts, in the vocabulary used by the code and docs:
   old ones (`styledPanels`).
 - **a session** — `VizConfigurations/QVizSessionFile.py` owns the third kind,
   `.vsess` under the same folder and behind the same name guard and listing
-  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="3">` root (`1`
-  and `2` stay readable), one `<Case uri dd_version label>` per case holding
+  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="4">` root (`1`, `2`
+  and `3` stay readable), one `<Case uri dd_version label>` per case holding
   `<Load ids occurrence slices>`, `<Expanded ids [occurrence]>`,
   `<Selection path occurrence>` and `<PluginWindow key plugin entry ids
   occurrence>`, then one `<Figure key kind [axis] [tensor]>`
@@ -219,14 +219,25 @@ Core concepts, in the vocabulary used by the code and docs:
   only when the user actually set something — `<Cursors folded><Cursor key
   index/></Cursors>`, `<View x0 x1 y0 y1 autoX autoY xInverted yInverted/>`,
   `<Errors bars="all|step=N" bands="1"/>` and `<Window x y w h maximized
-  hidden/>`. `VizGUICommands/VizSession/` holds the two commands: `QVizSaveSession`
+  hidden/>`. Version 4 adds what a hand changed through *Configure Plot*: a
+  `<Style trace color style width symbol size fill outline/>` under the
+  `<Quantity>` that drew the trace — `trace` being its rank among **that quantity's**
+  traces, never its position in the window — and a `<TextStyle side text bold italic
+  size/>` under `<Figure>` for the window's own title and axes or under `<Quantity>` for
+  the labels of one panel. Both are written **only** for what a hand touched: the frame
+  records which traces and labels were touched and the values are read off the live
+  curves at save time, so the palette a figure chose for itself is chosen again next
+  time rather than frozen into the file (measured: an untouched two-trace figure writes
+  **0** `<Style>`, one coloured trace writes **1**; an image window writes neither,
+  having no trace to dress). `VizGUICommands/VizSession/` holds the two commands: `QVizSaveSession`
   reads the screen out of the api, `QVizRestoreSession` **replays the gestures**
   rather than rebuilding widgets — the body of `QVizOpenShotView.Open`,
   `QVizLoadOccurrence`, `QVizPlotOneNode`, `QVizPlotAsTable`,
   `QVizPlotAsStacked`, and the plugin entry behind a plugin window — so a restored
   window owns its sliders, its abscissa and
-  its menu line; the four states are then put back **after** the window is drawn
-  and re-shown, in that order: cursors (moving an index reloads the curves that
+  its menu line; the states are then put back **after** the window is drawn
+  and re-shown, in that order: styling (a style is a hand, and a replayed one must be
+  dressed before anything moves its traces), cursors (moving an index reloads the curves that
   stand on it), error lines, range, window. Three consequences of that choice,
   each said in the module: the loads are synchronous (a figure whose tree is
   still being built is an empty window), a case that cannot be opened costs
@@ -692,7 +703,12 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   session is written and read by the two commands T40a created, from `QtVIZ_GUI`. T40c
   added **none** either: version 3 of the format, the `QVizPluginWindow` stamp and the
   `answers` argument all live in modules the sweep already walked, which is why the
-  sweep answers **114** modules and **113** imports after both tasks. Note that
+  sweep answers **114** modules and **113** imports after both tasks. T43 added **1**:
+  `VizGUI/VizPlot/QVizPlotStyling.py`, the *Configure Plot* entry of every window that
+  draws curves, the record of **which** traces and labels a hand touched, the two
+  readers/writers of a pen and of a label, and the window-level
+  `sourcesOf`/`styledTraces`/`styledText`/`replayCurves`/`replayText` a session asks of
+  a window — so the sweep answers **115** modules and **114** imports. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
@@ -759,12 +775,26 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   where it was **445**, and the three lines its menu offers call the same `QVizCurveErrors`
   a curve figure builds — what the plugin keeps is its menu and its node-to-curves map.
   A curve figure answers those three lines too: its right click goes from pyqtgraph's
-  **4** entries to **7**, and `Configure Plot` is the one entry that stayed plugin-only
-  (it is row T32 of `LEGACY_REPLACEMENT.md`, and the dialogue behind it is
-  `QVizPlotStyleUI`). That dialogue **asks** its caller and does not name it: the
-  view box answers `styleCurves()`, `styleText()` and `styleMargins()`, and
+  **4** entries to **7**, and since T43 `Configure Plot` is **not** plugin-only any more:
+  row T32 of `LEGACY_REPLACEMENT.md` is answered on every window that draws curves — the
+  curve figure (whose right click then answers **8** lines), each panel of a Table Plot
+  View, each display of a Stacked Plot View — by `VizGUI/VizPlot/QVizPlotStyling.py`,
+  which owns the entry, the record of **which** traces and labels a hand touched, the two
+  readers/writers of a pen (`curveStyle`/`applyCurveStyle`) and of a label
+  (`textStyle`/`applyTextStyle`), and the window-level `styledTraces`/`replayCurves`/
+  `styledText`/`replayText` a session asks of a window. `CustomizedViewBox` imports
+  `ENTRY` from that module, so the plugin and the frames cannot drift apart in spelling.
+  That dialogue **asks** its caller and does not name it: the view box answers
+  `styleCurves()`, `styleText()` and `styleMargins()`, and
   `QVizTablePlotView.panelLayout()` answers `ci.layout` — the layout its panels
-  live in. A window answering `None` gets no margins section.
+  live in. A window answering `None` gets no margins section. T43 added a fourth
+  question, `tracesForStyling()` answering `[(treeNode, rank, curve)]`, whose `rank`
+  ranks a trace among **its own quantity's** traces and not in the figure: a figure of two
+  single-trace quantities holds two traces both at rank **0** — and the session keys a
+  style by `(path, occurrence)` (`styleKey()`), never by object identity, because a Table
+  Plot View fills its panels from a configuration file, so the node a panel holds is not
+  the node the gesture named. An image window answers no such entry: it has no trace to
+  dress, and the manual says so.
 - **pyqtgraph 0.13.7 hands out no colour of its own**, so a figure cannot rely on it:
   `colorCycle`, `colorLists` and `currentColor` appear **0** time in the package, and a
   curve drawn without a pen keeps the instance default `opts['pen'] == (200, 200, 200)`

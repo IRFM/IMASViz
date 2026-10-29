@@ -89,13 +89,16 @@ are available in the right-click menu.
    :guilabel:`X axis` and :guilabel:`Y axis` (whose sub-window holds the range,
    the Auto/Manual choice, :guilabel:`Invert Axis`, :guilabel:`Mouse Enabled`
    and the axis link) and :guilabel:`Mouse Mode` -- and the scene adds one line,
-   :guilabel:`Export...`. A :guilabel:`Plot Figure` adds the three IMASViz lines
+   :guilabel:`Export...`. A :guilabel:`Plot Figure` adds the four IMASViz lines
    named below -- :guilabel:`Show/Hide error bars`,
-   :guilabel:`Show error bars (with slicing)` and
-   :guilabel:`Show/Hide confidence bands` -- because the figure that drew the
-   curve is the one holding it; an :guilabel:`Image` figure answers pyqtgraph's
-   lines only, and no figure offers :guilabel:`Configure Plot`: that dialog
-   belongs to the plots of the :ref:`Profiles plugin <plugins>`. The menu that
+   :guilabel:`Show error bars (with slicing)`,
+   :guilabel:`Show/Hide confidence bands` and :guilabel:`Configure Plot` --
+   because the figure that drew the curve is the one holding it. An
+   :guilabel:`Image` figure answers pyqtgraph's lines only: it draws no trace, and
+   what says how a picture is read is its colour scale, which belongs to the
+   picture. The same :guilabel:`Configure Plot` line is answered one panel at a
+   time on a :guilabel:`Table Plot View` and a :guilabel:`Stacked Plot View`, and
+   by the plots of the :ref:`Profiles plugin <plugins>`. The menu that
    carried these entries on the old figure window was deleted with that window,
    and the frames drawn today answer the error-bar lines themselves. Two of the
    sections below describe lines that menu carried: :guilabel:`Auto Range` is
@@ -216,7 +219,10 @@ Setting color and line properties of plots shown in the Plot Display.
 
 Each plot can be customized. By selecting this feature a separate GUI window
 will open, listing the curves of the plot whose menu was used and the properties
-that can be changed on each of them by hand.
+that can be changed on each of them by hand. On a :guilabel:`Plot Figure` that
+window lists every trace the figure draws; on a :guilabel:`Table Plot View` or a
+:guilabel:`Stacked Plot View`, it lists the traces of the one panel whose menu was
+used -- styling a panel changes that panel and no neighbour.
 
    .. figure:: images/plotDisplay_configurePlot_window.png
      :align: center
@@ -231,16 +237,22 @@ that can be changed on each of them by hand.
 The window answers three questions, in three sections: the properties of each
 drawn curve -- colour, line style and thickness, symbol, symbol size and the two
 symbol colours; the text of the plot and of the axes it draws a label for, with
-bold, italic and size; and, for a window that lays several plots out, the
-margins around them. Each change is applied to the plot as it is made.
-:guilabel:`Cancel` puts back what the window found when it opened, and
-:guilabel:`OK` leaves the changes in place.
+bold, italic and size; and, for a window that lays several plots out in one
+layout, the margins around them -- a :guilabel:`Plot Figure` has one plot above
+its own controls, so it answers no margins section. Each change is applied to the
+plot as it is made. :guilabel:`Cancel` puts back what the window found when it
+opened, and :guilabel:`OK` leaves the changes in place.
 
 A curve drawn without a symbol offers :guilabel:`None` in its symbol list, which
 is how a symbol already drawn is taken back off. The error bars and confidence
 bands of section :ref:`plotting_error_bars_and_confidence_bands` are not listed
 as curves to style: they belong to a curve, and are turned on and off from the
 right-click menu.
+
+What was changed by hand is kept by a saved session (see
+:ref:`save_load_session`) and nothing else is: the colour the figure
+gave a trace on its own is chosen again the next time the case is drawn, which is
+what keeps two traces of a new figure legible side by side.
 
 Plot options
 ^^^^^^^^^^^^
@@ -705,9 +717,9 @@ the image below.
    :ref:`Profiles plugin <plugins>`, whose menu carries them too. They are not
    offered on an :guilabel:`Image` figure or on a MultiPlot display: an error bar
    or a band belongs to a curve, and those windows draw none. The image below is
-   a :ref:`Profiles plugin <plugins>` menu, whose two extra lines
-   :guilabel:`Auto Range` and :guilabel:`Configure Plot` a :guilabel:`Plot
-   Figure` does not offer.
+   a :ref:`Profiles plugin <plugins>` menu, whose extra line :guilabel:`Auto
+   Range` a :guilabel:`Plot Figure` does not answer with a line of its own; its
+   :guilabel:`Configure Plot` line, a curve figure answers too.
 
   .. figure:: images/plot_menu_error_bars.png
      :align: center
@@ -828,11 +840,12 @@ To create a new :guilabel:`Table Plot View`, follow the following steps:
    :ref:`plotting_2d_arrays`).
 
 .. note::
-   Each panel is drawn from the data and is not customized by hand: the
-   :guilabel:`Configure Plot` dialog that the plots of the
-   :ref:`Profiles plugin <plugins>` offer on right-click is not offered on a
-   :guilabel:`Table Plot View` panel. What can be changed is
-   what the panel answers for, through the controls it carries.
+   Each panel is drawn from the data, and each one answers the same
+   :guilabel:`Configure Plot` line the plots of the
+   :ref:`Profiles plugin <plugins>` carry: the right click is asked of a panel,
+   and the window it opens lists that panel's traces and labels -- the curves of a
+   neighbour are untouched. What else can be changed is what the panel answers
+   for, through the controls it carries.
 
 .. note::
    Scrolling down the :guilabel:`Table Plot View` window using the middle mouse
@@ -1035,11 +1048,12 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
    selection is drawn (see :ref:`plotting_2d_arrays` to see it as a picture).
 
 .. note::
-   Each display is drawn from the data and is not customized by hand: the
-   :guilabel:`Configure Plot` dialog that the plots of the
-   :ref:`Profiles plugin <plugins>` offer on right-click is not offered on a
-   :guilabel:`Stacked Plot View` display. What can be changed is
-   what the display answers for, through the controls it carries, and what it
+   Each display is drawn from the data, and each one answers the same
+   :guilabel:`Configure Plot` line the plots of the
+   :ref:`Profiles plugin <plugins>` carry: the right click is asked of a display,
+   and the window it opens lists that display's traces and labels -- a neighbour's
+   curves are untouched. What else can be changed is what the display answers
+   for, through the controls it carries, and what it
    shares with its neighbours, through the two checkboxes.
 
 .. note::

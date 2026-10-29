@@ -34,6 +34,8 @@ from PySide6.QtWidgets import QScrollArea, QVBoxLayout, QWidget
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
 
 
@@ -62,6 +64,11 @@ class QVizPanel(QWidget):
         self.pgPlotWidget.showGrid(x=True, y=True)
         self.sliceControls = QVizSliceControls(self)
         self.sliceControls.changed.connect(self.refresh)
+        # The *Configure Plot* entry on this panel's own right click, as the
+        # Profiles plugin offers it on its panels: the menu pyqtgraph built is the
+        # view box's own, so styling one panel cannot reach another.
+        self.styling = QVizPlotStyling(self)
+        self.styling.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -107,7 +114,12 @@ class QVizPanel(QWidget):
         self.pgPlotWidget.clear()
         self._curves = []
         for index in range(y.shape[0]):
-            self._curves.append(self.pgPlotWidget.plot(x[0], y[index]))
+            # One colour per trace, in the order they were laid down, as a figure
+            # of curves does: a panel drawing several rows of one quantity drew
+            # them all in pyqtgraph's own default (200, 200, 200), which is the
+            # same grey twice over on the one window meant to compare them.
+            self._curves.append(self.pgPlotWidget.plot(x[0], y[index],
+                                                       pen=penFor(index)))
 
         self.pgPlotWidget.setTitle(self._frame.dataPathOf(treeNode))
         self.setAxisLabels(treeNode, axesSpec, alongTime)
@@ -133,6 +145,26 @@ class QVizPanel(QWidget):
 
     def curves(self):
         return list(getattr(self, '_curves', []))
+
+    # ---------------------------------- what the Configure Plot window is asked
+
+    def styleCurves(self):
+        """The traces of this panel hand styling may change."""
+        return list(self.pgPlotWidget.getPlotItem().listDataItems())
+
+    def styleText(self):
+        """The plot item holding this panel's title and its two labels."""
+        return self.pgPlotWidget.getPlotItem()
+
+    def styleMargins(self):
+        """None: the window lays its panels out, and its margins are its business."""
+        return None
+
+    def tracesForStyling(self):
+        """[(treeNode, index, curve)] -- one quantity per panel, so one rank each."""
+        node = getattr(self, 'treeNode', None)
+        return [(node, index, curve)
+                for index, curve in enumerate(self.curves())]
 
     def setAxisLabels(self, treeNode, axesSpec, alongTime):
         """Label both axes from the axes the read actually drew.

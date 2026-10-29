@@ -209,9 +209,9 @@ def test_a_window_with_no_panel_layout_gets_no_margins_section(qapp):
     table, laidOut, _ = pluginPanel()
     _, bare, _ = pluginPanel(table=table, withLayout=False)
 
-    assert tabsOf(QVizPlotStyleUI(viewBox=laidOut)) == \
+    assert tabsOf(QVizPlotStyleUI(styleSource=laidOut)) == \
         ['Curve Properties', 'Text Properties', 'Plot Design Properties']
-    assert tabsOf(QVizPlotStyleUI(viewBox=bare)) == \
+    assert tabsOf(QVizPlotStyleUI(styleSource=bare)) == \
         ['Curve Properties', 'Text Properties']
 
 
@@ -227,7 +227,7 @@ def test_the_header_labels_are_the_columns_of_a_row(qapp):
     """
     table, box, plotItem = pluginPanel()
     plotItem.plot([1, 2, 3], name='first')
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     assert headerLabels(dialog) == ['Curve'] + list(CURVE_COLUMNS)
     for row in range(1, len(dialog.curves) + 1):
@@ -251,7 +251,7 @@ def test_a_curve_drawn_without_a_pen_still_opens_the_dialogue(qapp):
     unstyled = plotItem.plot([7, 8, 9], name='no pen given')
     assert unstyled.opts['pen'] == LIBRARY_PEN_RGB
 
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
     row = [style for style in dialog.curves if style.curve is unstyled][0]
 
     assert penOf(unstyled).color().getRgb()[:3] == LIBRARY_PEN_RGB
@@ -271,7 +271,7 @@ def test_a_row_changes_the_curve_it_is_the_row_of(qapp):
     table, box, plotItem = pluginPanel()
     first = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='first')
     second = plotItem.plot([4, 5, 6], pen=pg.mkPen((128, 0, 0)), name='second')
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     rows = {}
     rows['first'] = rowOf(dialog, first)
@@ -296,7 +296,7 @@ def test_the_style_and_symbol_boxes_answer_the_shared_dictionaries(qapp):
     """
     table, box, plotItem = pluginPanel()
     curve = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='only')
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
     row = rowOf(dialog, curve)
 
     assert list(GlobalQtStyles.stylesDict) == \
@@ -341,7 +341,7 @@ def test_the_axes_offered_are_the_ones_drawing_a_label(qapp):
     built.
     """
     table, box, plotItem = pluginPanel()
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     assert [side for side in AXIS_SIDES
             if plotItem.getAxis(side).labelText] == ['bottom', 'left']
@@ -362,7 +362,7 @@ def test_an_axis_label_is_written_the_way_pyqtgraph_reads_it(qapp):
     left = plotItem.getAxis('left')
     assert left.labelStyle == FRESH_AXIS_STYLE
 
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
     editor = [row for row in dialog.axisEditors
               if row.text() == 'the left label'][0]
     editor.lineEdit.setText('renamed left')
@@ -388,7 +388,7 @@ def test_a_title_knows_its_size_and_hides_nothing_on_opening(qapp):
     dialogue wrote into that style too.
     """
     table, box, plotItem = pluginPanel()
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     assert fontSizeOf(FRESH_AXIS_STYLE) == 15
     assert fontSizeOf({'font-size': '26px'}) == 26
@@ -407,7 +407,7 @@ def test_the_dialogue_is_named_for_the_plot_it_stands_on(qapp):
     nothing else in the package read; it is gone with it.
     """
     table, box, plotItem = pluginPanel()
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     assert dialog.windowTitle() == 'Configure Plot - probe panel'
     assert not hasattr(box, 'id')
@@ -433,7 +433,7 @@ def test_the_margins_are_written_where_the_panels_live(qapp):
     app = qapp
     app.processEvents()
 
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
     layout = dialog.marginsLayout
     assert layout is table.ci.layout
     assert layout.getContentsMargins() == tuple(float(m) for m in DEFAULT_MARGINS)
@@ -457,7 +457,7 @@ def test_the_margins_are_written_where_the_panels_live(qapp):
 def test_the_margins_section_offers_the_way_back_it_documents(qapp):
     """`Restore previous` and `Restore default`, asked of the live layout."""
     table, box, _ = pluginPanel()
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     dialog.marginBoxes['Top'].setValue(80)
     assert dialog.marginsLayout.getContentsMargins()[1] == 80.0
@@ -493,7 +493,7 @@ def test_cancel_writes_back_everything_the_window_changed(qapp):
     curve = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='only')
     left = plotItem.getAxis('left')
 
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
     row = rowOf(dialog, curve)
     row.colorButton.setColor((7, 7, 7))
     row.colorButton.sigColorChanging.emit(row.colorButton)
@@ -534,7 +534,7 @@ def test_ok_leaves_the_changes_where_they_are(qapp):
     """
     table, box, plotItem = pluginPanel()
     curve = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='only')
-    dialog = QVizPlotStyleUI(viewBox=box)
+    dialog = QVizPlotStyleUI(styleSource=box)
 
     row = rowOf(dialog, curve)
     row.colorButton.setColor((7, 7, 7))

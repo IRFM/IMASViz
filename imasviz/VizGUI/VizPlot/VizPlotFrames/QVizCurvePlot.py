@@ -65,6 +65,7 @@ from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
 from imasviz.VizGUI.VizPlot.QVizCurveErrors import QVizCurveErrors
+from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
 
 
@@ -165,6 +166,13 @@ class QVizCurvePlot(QWidget):
         # -- which on this Qt stack is a segfault, not a leak. See QVizCurveErrors.
         self.errors = QVizCurveErrors(self.pgPlotWidget.getViewBox(), self)
         self.errors.addMenuEntries(self.pgPlotWidget.getViewBox().menu)
+        # The other line the manual documents on a plot display, *Configure Plot*.
+        # The dialogue has been in the package since T32 and only the plots of the
+        # Profiles plugin offered it, because its three questions were answered in
+        # one place; this frame answers them on itself now, so the entry the manual
+        # describes is on the menu of the window the manual describes it on.
+        self.styling = QVizPlotStyling(self)
+        self.styling.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
 
         self.sliceControls = QVizSliceControls(self, foldable=True)
         # The read asks this widget for the indices of the axes a trace lets
@@ -375,6 +383,45 @@ class QVizCurvePlot(QWidget):
         only place holding the pairing.
         """
         return [(trace.treeNode, trace.curve) for trace in self._curves]
+
+    # ---------------------------------- what the Configure Plot window is asked
+
+    def styleCurves(self):
+        """The traces hand styling may change, in the order they were drawn.
+
+        `listDataItems()` answers the `PlotDataItem`s of the plot and none of what
+        this frame adds to it -- error bars, confidence band, legend -- so no list
+        of item types to skip is needed to keep the decorations out of the rows.
+        """
+        return list(self.pgPlotWidget.getPlotItem().listDataItems())
+
+    def styleText(self):
+        """The plot item holding this figure's title and its two labels."""
+        return self.pgPlotWidget.getPlotItem()
+
+    def styleMargins(self):
+        """None: the margins section belongs to a window that lays panels out.
+
+        A figure of curves has one plot over its own controls; a margin there is a
+        strip of nothing between the plot and its sliders, not room between panels.
+        """
+        return None
+
+    def tracesForStyling(self):
+        """[(treeNode, index, curve)]; the index ranks a trace among *its* quantity's.
+
+        A session names a trace by the quantity it came from and its rank among the
+        traces that quantity drew, because a figure gains and loses quantities
+        while a file sits in a folder: a rank over the whole figure would move when
+        somebody adds a curve, and style the wrong trace.
+        """
+        ranks = {}
+        entries = []
+        for trace in self._curves:
+            index = ranks.get(trace.treeNode, 0)
+            ranks[trace.treeNode] = index + 1
+            entries.append((trace.treeNode, index, trace.curve))
+        return entries
 
     def sliceKeys(self):
         return list(self._slices)

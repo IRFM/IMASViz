@@ -258,13 +258,21 @@ session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
    cases of the file still come back.
 
 .. warning::
-   What a session does not keep: the **styling** of a window (title, axis labels,
-   margins) -- no window of :guilabel:`Plot Figure` or :guilabel:`Image` offers
-   the dialogue that would set it, which belongs to the plots of the
-   :ref:`Profiles plugin <plugins>` -- and the state that belongs to a **panel**
-   rather than to a window: the time sliders of a :guilabel:`Table Plot View` or a
-   :guilabel:`Stacked Plot View` are per panel, and the zoom of an :guilabel:`Image`
-   figure is per picture. Those windows come back as the drawing leaves them.
+   What a session does not keep: the state that belongs to a **panel** rather than
+   to a window -- the time sliders of a :guilabel:`Table Plot View` or a
+   :guilabel:`Stacked Plot View` are per panel, and the zoom of an
+   :guilabel:`Image` figure is per picture. Those windows come back as the drawing
+   leaves them.
+
+   What a hand styled **is** kept, and only that. The pen of a trace (colour, line
+   style and thickness, symbol, symbol size and the two symbol colours) and the
+   text of a title or an axis label are written under the quantity that drew them,
+   for the traces the hand actually touched -- which is why the colour a figure
+   chose for itself is chosen again the next time the case is drawn, and two traces
+   of a new figure stay legible side by side. A :guilabel:`Image` figure writes
+   none of it, having no trace to dress. A style whose quantity the reopened case
+   no longer draws is named in the log of the case and costs its own style and
+   nothing else.
 
 .. warning::
    A plugin window comes back **as its entry draws it**, not as the user left it.
