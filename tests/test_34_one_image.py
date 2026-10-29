@@ -484,3 +484,91 @@ def test_a_single_picture_still_answers_its_slices(figure):
     np.testing.assert_allclose(x, RHO)
     np.testing.assert_allclose(y, [sliceValues(0)[row][1]
                                    for row in range(len(RHO))])
+
+
+# ---------------------------------------------------------------------------
+# A coordinate that does not ascend must not pin the line to one value.
+#
+# InfiniteLine clamps by max then min (InfiniteLine.setPos): bounds spelled
+# (values[0], values[-1]) of a descending axis are (high, low), and every
+# position -- the initial one included -- collapses onto the last element. The
+# line then stands on one edge of the picture and no drag moves it: the shape
+# every stuck cursor of a real image figure takes.
+
+
+def _withTheta(values):
+    """One picture, with theta taking the values given."""
+    ids = _ids(dynamic=False)
+    ids.theta_poloidal = list(values)
+    return FakeAxesNode(ids, 'foo', 'foo', 'FLT_2D',
+                        name='matrix', units='Pa',
+                        coordinates=('rho_tor', 'theta_poloidal'),
+                        coordinateUnits={1: 'm', 2: 'rad'})
+
+
+@pytest.mark.ui
+def test_a_descending_coordinate_leaves_the_line_its_whole_picture(figure):
+    figure.plot(_withTheta(reversed(THETA)))
+
+    line = figure.sliceLine('left')
+    assert line.bounds() == (pytest.approx(min(THETA)), pytest.approx(max(THETA)))
+    for position in (0.1, 0.4):
+        line.setPos(position)
+        assert line.value() == pytest.approx(position)
+
+    # The cursor on the slice under the other line runs along theta too.
+    marker = figure.sliceMarkers('bottom')[0]
+    assert marker.bounds() == (pytest.approx(min(THETA)),
+                               pytest.approx(max(THETA)))
+
+
+@pytest.mark.ui
+def test_a_flat_coordinate_leaves_the_line_on_the_ranks_of_its_axis(figure):
+    # A coordinate carrying one value everywhere says nothing about where an
+    # element sits: the line falls back to the element ranks, or it is clamped
+    # onto that single value and has nowhere to go.
+    figure.plot(_withTheta([0.5] * len(THETA)))
+
+    line = figure.sliceLine('left')
+    assert line.bounds() == (0, len(THETA) - 1)
+    line.setPos(1.5)
+    assert line.value() == pytest.approx(1.5)
+
+
+# ---------------------------------------------------------------------------
+# Each picture names the frame it stands for -- and says it again every read.
+
+def titles(figure):
+    return [plotItem.titleLabel.item.toPlainText()
+            for plotItem in figure.plotItems()]
+
+
+@pytest.mark.ui
+def test_the_pictures_name_the_frames_they_stand_for_now(figure):
+    # The title of a picture is the one place saying which element of the
+    # dynamic array its colours stand for. Moving the window changes what each
+    # picture holds and says nothing to the titles: measured on the reference
+    # radiance case, after the slider moved the three titles still named the
+    # first three channels of the shot.
+    figure.plot(_inTime())
+    assert titles(figure) == ['matrix[Pa] — time_slice 1 (t = 1 s)',
+                              'matrix[Pa] — time_slice 2 (t = 2 s)',
+                              'matrix[Pa] — time_slice 3 (t = 3 s)']
+
+    figure.framesControls.setStart(2)
+
+    assert titles(figure) == ['matrix[Pa] — time_slice 2 (t = 2 s)',
+                              'matrix[Pa] — time_slice 3 (t = 3 s)',
+                              'matrix[Pa] — time_slice 4 (t = 4 s)']
+
+
+@pytest.mark.ui
+def test_the_line_stays_where_the_user_put_it_when_the_window_moves(figure):
+    # The line is where the user put it; a re-read answers about the picture
+    # under it and must not move the answer's source.
+    figure.plot(_inTime())
+    figure.sliceLine('bottom').setPos(2.4)
+
+    figure.framesControls.setStart(3)
+
+    assert figure.sliceLine('bottom').value() == pytest.approx(2.4)

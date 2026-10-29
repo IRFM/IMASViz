@@ -278,3 +278,48 @@ def test_the_picture_carries_the_quantity_and_its_units(qapp, radiance):
         assert 'data' in frame.plotItem.titleLabel.text
     finally:
         frame.close()
+
+
+@pytest.mark.case
+def test_the_pictures_say_which_channels_are_up(qapp, radiance, case):
+    # The title of each picture is the one place naming the channel its colours
+    # stand for. Measured before this was pinned: after the window moved, the
+    # images came back as channels 5, 6 and 7 and the titles still read 0, 1, 2.
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        frame.framesControls.setStart(5)
+
+        titles = [plotItem.titleLabel.item.toPlainText()
+                  for plotItem in frame.plotItems()]
+        assert titles == ['data[(photons).s^-1.m^-2.sr^-1] — channel %d' % k
+                          for k in (5, 6, 7)]
+    finally:
+        frame.close()
+
+
+@pytest.mark.case
+def test_the_slice_lines_span_the_picture_they_answer(qapp, radiance, case):
+    # The lines are the user's way of asking for a slice of the picture. Their
+    # interval is the one the picture is laid over, and a position asked for
+    # inside it has to be an answer they get: pyqtgraph clamps a line by max
+    # then min, so bounds spelled the wrong way round would collapse every
+    # position onto one edge and no drag would move the line at all.
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        time = timeOf(case['runtime'][IDS_NAME], 0)
+
+        bottom = frame.sliceLine('bottom')
+        left = frame.sliceLine('left')
+        assert bottom.bounds() == (pytest.approx(time[0]), pytest.approx(time[-1]))
+        assert left.bounds() == (0, BANDS - 1)
+
+        asked = time[0] + 0.25 * (time[-1] - time[0])
+        bottom.setPos(asked)
+        assert bottom.value() == pytest.approx(asked)
+        # The slice under a line standing on time runs along the energy bands.
+        x, y = frame.sliceNumbers('bottom')
+        assert x.size == BANDS and y.size == BANDS
+    finally:
+        frame.close()

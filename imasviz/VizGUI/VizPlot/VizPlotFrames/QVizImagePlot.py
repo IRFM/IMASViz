@@ -238,15 +238,30 @@ class QVizImagePlot(QWidget):
         drawn = [position for position in plotted
                  if self._frames is None or position != self._frames.position]
 
-        for position, (handle, _, _) in enumerate(self._read()):
+        quantity = self.quantityLabel(self._treeNode)
+        first = None
+        for position, (handle, _, frameLabel) in enumerate(self._read()):
             if position >= len(self._pictures):
                 break
             self._drawPicture(position, handle, axesSpec, drawn)
+            # The title is the one place naming which element of the array the
+            # picture's colours stand for -- and the window has just moved.
+            self._pictures[position][0].setTitle(
+                quantity + (' — ' + frameLabel if frameLabel else ''))
+            if first is None:
+                first = handle
         # The lines stay where the user put them and answer the picture that is
         # up now: the slice is an answer about this picture, not about the one
-        # that was up when the line was dragged.
+        # that was up when the line was dragged. Another element can carry a
+        # grid of its own, so the lines are bounded on the axes just read.
         if self.sliceLines.isPosed() and self._screen:
-            self.sliceLines.updateValues(self._screen[0])
+            if first is None:
+                self.sliceLines.updateValues(self._screen[0])
+            else:
+                axes = self._sliceAxes(axesSpec, drawn, first)
+                self.sliceLines.retarget(axes, self._screen[0])
+                for side, label in self._sliceLabels.items():
+                    label.setText(axes[side].spelling() + ':')
         return self.sliceControls.indices()
 
     def imageCount(self):
@@ -320,16 +335,24 @@ class QVizImagePlot(QWidget):
 
         The same numbers the extent is taken from: the lines, the slice abscissa
         and the picture have to agree on where an element sits, or the line the
-        user drags answers for a place they are not pointing at.
+        user drags answers for a place they are not pointing at. A coordinate
+        holding one value everywhere says nothing about where an element sits
+        either, and a line bounded by it collapses onto that value: the ranks of
+        the axis are what the numbers mean then.
         """
         try:
             values = np.asarray(handle.getCoordinateValues(dim), dtype=float)
         except (TypeError, ValueError):
             values = np.asarray([])
-        if values.size == 0:
-            rank = self._screen[0].shape[dim - 1] if self._screen else 0
-            values = np.arange(rank)
-        return values
+        if values.size > 1 and float(values.max()) > float(values.min()):
+            return values
+        # The screen shape, not the read's: the frame may have laid the read out
+        # the other way round, and the ranks are of the axis the line stands on.
+        shape = self._screen[0].shape if self._screen else ()
+        rank = 0
+        if len(shape) >= 2:
+            rank = shape[0] if dim == self._xAxis else shape[1]
+        return np.arange(max(rank, values.size))
 
     def _sliceAxes(self, axesSpec, drawn, handle):
         """The two axes a picture draws, named and valued, for the slice lines."""
@@ -408,20 +431,20 @@ class QVizImagePlot(QWidget):
         """Span the picture over the coordinates it was taken on.
 
         Without this an axis labelled in metres carries element ranks under it.
-        A coordinate the dictionary names but this case leaves empty leaves the
-        image on its ranks, which is what the numbers actually are then.
+        Each drawn axis is spanned on its own: one coordinate the case leaves
+        flat says nothing about where the *other* axis's elements sit, and
+        giving up on both would drop the metres the case does spell. The bounds
+        are the min and the max, not the first and the last: a coordinate may
+        descend, and a rect of negative height draws nothing.
         """
         extents = []
         for dim in (self._xAxis, self._yAxis):
-            try:
-                values = np.asarray(handle.getCoordinateValues(dim), dtype=float)
-            except (TypeError, ValueError):
-                values = np.asarray([])
+            values = self._coordinateValues(handle, dim)
             if values.size == 0:
                 return
-            low, high = float(np.min(values)), float(np.max(values))
+            low, high = float(values.min()), float(values.max())
             if high == low:
-                return
+                high = low + max(values.size, 1)
             extents.append((low, high))
 
         (x0, x1), (y0, y1) = extents

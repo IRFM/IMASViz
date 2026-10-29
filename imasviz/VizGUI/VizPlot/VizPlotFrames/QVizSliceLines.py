@@ -57,6 +57,17 @@ class QVizDrawnAxis:
         """How the axis is named on screen: rho_tor[m], units and all."""
         return self.name + ('[' + self.units + ']' if self.units else '')
 
+    def interval(self):
+        """The bounds to clamp a line standing on this axis to.
+
+        pyqtgraph clamps by max then min (InfiniteLine.setPos), so the two ends
+        have to arrive in order: spelling them (values[0], values[-1]) of a
+        descending coordinate is (high, low), and every position -- the initial
+        one included -- collapses onto the low end. A line so bounded stands on
+        one edge of the picture and no drag moves it.
+        """
+        return (float(np.min(self.values)), float(np.max(self.values)))
+
     def labelFormat(self):
         """The pyqtgraph label format: it re-formats itself on every move."""
         return self.spelling() + '={value:g}'
@@ -113,8 +124,7 @@ class QVizSliceLines:
             line = pg.InfiniteLine(pos=float(axis.values[len(axis.values) // 2]),
                                    angle=90 if side == self.BOTTOM else 0,
                                    movable=True,
-                                   bounds=(float(axis.values[0]),
-                                           float(axis.values[-1])),
+                                   bounds=axis.interval(),
                                    label=axis.labelFormat())
             line.label.setZValue(1000)
             # On the view box rather than the plot: the line has to stay above
@@ -159,11 +169,31 @@ class QVizSliceLines:
         axis = self._axes[side].other
         marker = pg.InfiniteLine(pos=float(axis.values[len(axis.values) // 2]),
                                  angle=90, movable=True,
-                                 bounds=(float(axis.values[0]),
-                                         float(axis.values[-1])),
+                                 bounds=axis.interval(),
                                  label=axis.labelFormat())
         self._plots[side].addItem(marker)
         return marker
+
+    def retarget(self, axes, values):
+        """The picture the lines answer was re-read: put them on it again.
+
+        Moving the window of pictures, or a pinned axis, can change the values
+        the two drawn axes carry -- another element, another grid. The line is
+        where the user put it, so it keeps its value and only the interval
+        clamps it again; the slice is an answer about the picture up now, so it
+        follows. A kept slice does not: it is a record of the picture that was
+        up when it was kept, which is what makes two of them comparable.
+        """
+        self._axes = dict(axes)
+        self._axes[self.BOTTOM].other = self._axes[self.LEFT]
+        self._axes[self.LEFT].other = self._axes[self.BOTTOM]
+        for side in self.SIDES:
+            self._lines[side].setBounds(self._axes[side].interval())
+            for marker in self._markers.get(side, []):
+                # A marker reads a position off the slice, so it stands on the
+                # other axis.
+                marker.setBounds(self._axes[side].other.interval())
+        self._draw(values)
 
     def updateValues(self, values, quantity=''):
         """The picture under the lines changed: the lines stay, the slice moves.
