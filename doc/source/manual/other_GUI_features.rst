@@ -177,9 +177,10 @@ Save/Load Session
 
 A **session** is what is on the screen when :guilabel:`IMASViz` is closed: the
 case views that are open, the IDS occurrences they have loaded, the quantities
-that are selected, and the plot windows that were drawn. The two commands
-:guilabel:`Actions` -> :guilabel:`Save session` and :guilabel:`Actions` ->
-:guilabel:`Load session` write that down and put it back.
+that are selected, the plot windows that were drawn, and what had been set on
+each of those windows. The two commands :guilabel:`Actions` -> :guilabel:`Save
+session` and :guilabel:`Actions` -> :guilabel:`Load session` write that down and
+put it back.
 
 To save a session, select :guilabel:`Save session` and type a name in the dialog.
 The session is written to :file:`$HOME/.imasviz/<name>.vsess`, beside the plot and
@@ -211,6 +212,15 @@ session comes back without retyping the database parameters.
 | axis, table cells, and the **key**  | command that drew it the first time,    |
 | of each                             | under the key it had -- see below       |
 +-------------------------------------+-----------------------------------------+
+| What had been set on each window:   | Put back after the window is drawn, in  |
+| where its time sliders stood, which | that order: the sliders (which reload   |
+| of the **error lines** were on and  | the curves they stand on), then the     |
+| at what step, the range a           | lines at the step they were at, then    |
+| :guilabel:`Plot Figure` was zoomed  | the range, then the place. A window of  |
+| onto, whether the window was        | the area is moved, maximized or hidden  |
+| maximized or hidden, and where it   | as it was left: hidden is not closed,   |
+| sat                                 | and its key stays in the menus          |
++-------------------------------------+-----------------------------------------+
 
 The key of a window is not a label: it is the name the :guilabel:`Show/Hide` and
 :guilabel:`Delete` menus address it by, and the name the *Plot X to -> Figure*
@@ -241,11 +251,32 @@ session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
    cases of the file still come back.
 
 .. warning::
-   What a session does not keep yet: the styling of a window (title, axis labels,
-   margins, error bars), the position and size of a window in the area, and the
+   What a session does not keep: the **styling** of a window (title, axis labels,
+   margins) -- no window of :guilabel:`Plot Figure` or :guilabel:`Image` offers
+   the dialogue that would set it, which belongs to the plots of the
+   :ref:`Profiles plugin <plugins>` -- and the state that belongs to a **panel**
+   rather than to a window: the time sliders of a :guilabel:`Table Plot View` or a
+   :guilabel:`Stacked Plot View` are per panel, and the zoom of an :guilabel:`Image`
+   figure is per picture. Those windows come back as the drawing leaves them. The
    windows drawn by a plugin (:guilabel:`Profiles`, :guilabel:`Equilibrium
-   overview`) -- those are drawn from a question the plugin asks, so they are left
-   out and the log says which windows were skipped.
+   overview`) are left out too, and the log says which windows were skipped: they
+   are drawn from a question the plugin asks, not from a selection of this session.
+
+The session of the run that ended
+`````````````````````````````````
+
+Closing :guilabel:`IMASViz` writes the session that was on screen to
+:file:`$HOME/.imasviz/last_session.vsess`, under one name nobody chose, and the
+next start asks once:
+
+   Restore the session IMASViz was closed with?
+
+Answering no opens nothing and leaves the file where :guilabel:`Load session`
+lists it; answering yes puts that session back. The question is only asked when
+such a file is there, so the first run -- and every run that followed one closed
+with nothing open -- asks nothing. The file is a session like the ones you name
+yourself, so it can be opened by hand, copied, or read over: it is a file, not a
+hidden state.
 
 
 

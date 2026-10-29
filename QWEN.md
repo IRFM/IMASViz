@@ -210,23 +210,43 @@ Core concepts, in the vocabulary used by the code and docs:
   old ones (`styledPanels`).
 - **a session** — `VizConfigurations/QVizSessionFile.py` owns the third kind,
   `.vsess` under the same folder and behind the same name guard and listing
-  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="1">` root, one
-  `<Case uri dd_version label>` per case holding `<Load ids occurrence slices>`,
-  `<Expanded ids [occurrence]>` and `<Selection path occurrence>`, then one
-  `<Figure key kind [axis] [tensor]>` per window holding
-  `<Quantity path occurrence [uri] [row column]/>`. `VizGUICommands/VizSession/`
-  holds the two commands: `QVizSaveSession` reads the screen out of the api,
-  `QVizRestoreSession` **replays the gestures** rather than rebuilding widgets —
-  the body of `QVizOpenShotView.Open`, `QVizLoadOccurrence`, `QVizPlotOneNode`,
-  `QVizPlotAsTable`, `QVizPlotAsStacked` — so a restored window owns its sliders,
-  its abscissa and its menu line. Three consequences of that choice, each said in
-  the module: the loads are synchronous (a figure whose tree is still being built
-  is an empty window), a case that cannot be opened costs **its own** windows and
-  names the file and the URI in the log, and the selection is applied **last**
-  because a Stacked Plot View is filled from the selection of its view. The
-  plugin windows (`PlotView:`, `EquiPlotView:`) are left out and named, because
-  they are drawn from a question a plugin asks — the Profiles one is a modal
-  `QInputDialog`.
+  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="2">` root (`1`
+  stays readable), one `<Case uri dd_version label>` per case holding
+  `<Load ids occurrence slices>`, `<Expanded ids [occurrence]>` and
+  `<Selection path occurrence>`, then one `<Figure key kind [axis] [tensor]>`
+  per window holding `<Quantity path occurrence [uri] [row column]/>` and —
+  only when the user actually set something — `<Cursors folded><Cursor key
+  index/></Cursors>`, `<View x0 x1 y0 y1 autoX autoY xInverted yInverted/>`,
+  `<Errors bars="all|step=N" bands="1"/>` and `<Window x y w h maximized
+  hidden/>`. `VizGUICommands/VizSession/` holds the two commands: `QVizSaveSession`
+  reads the screen out of the api, `QVizRestoreSession` **replays the gestures**
+  rather than rebuilding widgets — the body of `QVizOpenShotView.Open`,
+  `QVizLoadOccurrence`, `QVizPlotOneNode`, `QVizPlotAsTable`,
+  `QVizPlotAsStacked` — so a restored window owns its sliders, its abscissa and
+  its menu line; the four states are then put back **after** the window is drawn
+  and re-shown, in that order: cursors (moving an index reloads the curves that
+  stand on it), error lines, range, window. Three consequences of that choice,
+  each said in the module: the loads are synchronous (a figure whose tree is
+  still being built is an empty window), a case that cannot be opened costs
+  **its own** windows and names the file and the URI in the log, and the
+  selection is applied **last** because a Stacked Plot View is filled from the
+  selection of its view. The plugin windows (`PlotView:`, `EquiPlotView:`) are
+  left out and named, because they are drawn from a question a plugin asks — the
+  Profiles one is a modal `QInputDialog`. Two things a version 2 `<Figure>`
+  cannot say are said at the restore instead of pretended: the band of a table
+  or stacked window belongs to a **panel**, and an image window answers one view
+  box per **picture**. Two Qt facts behind the shape of those elements:
+  `QMdiArea` has **no** `saveState`/`restoreState` on this PySide6 (measured with
+  `hasattr`), so the place of a window is four numbers in the clear; and
+  pyqtgraph **pads** a range it is asked for, so replaying a stored one needs
+  `setRange(..., padding=0.)` — asking that box for `[0, 1]` answers
+  `[[-0,0416, 1,0416]]` otherwise, and a window would widen at every save.
+  A slider's key is the tuple `QVizAxis.key()` answers, spelled
+  `AOS/magnetics/flux_loop`, with the **level as a number** — a letter matches
+  no axis. Closing the application writes `last_session.vsess` from
+  `QVizMainWindow.closeEvent` (before Qt starts taking windows away, not from a
+  `destroyed` handler) and the next start **asks** whether to put it back; no
+  file, no question, and *Load session* lists it like any other name.
 - **reading a case is lazy** — `QVizIMASDataSource.LAZY_READS` is `True`, so every
   `entry.get()` of the application asks IMAS-Python for a lazy IDS: the handle is a
   window onto the open file, and the values are read when something asks for them.
@@ -381,7 +401,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1007 passed, 1 xfailed, ~145 s, offscreen
+python3 -m pytest tests/ -q     # 1043 passed, 1 xfailed, ~155 s, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -640,7 +660,9 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   of trace colours a curve figure hands out in the order the traces were drawn — pyqtgraph
   hands out none of its own, see the colour bullet below. T40a added **4**:
   `VizGUI/VizConfigurations/QVizSessionFile.py` and the `VizGUICommands/VizSession/`
-  package (`__init__`, `QVizSaveSession`, `QVizRestoreSession`). Note that
+  package (`__init__`, `QVizSaveSession`, `QVizRestoreSession`); T40b added **none** —
+  version 2 of the session format lives in the module that owns version 1, and the last
+  session is written and read by the two commands T40a created, from `QtVIZ_GUI`. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new

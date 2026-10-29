@@ -191,9 +191,16 @@ for, the selection, and the plot windows with the key the Show/Hide and Delete
 menus address them by — to **$HOME/.imasviz/\<name\>.vsess**. **Actions -> Load
 session** lists those files and puts one back: the cases are reopened and the
 windows drawn again by the same commands that drew them the first time, so a
-restored window owns its sliders, its axis and its legend. See the manual,
-*Other GUI features -> Save/Load Session*, for what the file keeps and what it
-does not keep yet.
+restored window owns its sliders, its axis and its legend. What had been *set* on
+a window comes back with it: where its time sliders stood, which of the error
+lines were on and at what step, the range a plot figure was zoomed onto, and
+where its window sat in the area — maximized or hidden, hidden not closed. See
+the manual, *Other GUI features -> Save/Load Session*, for what the file keeps
+and what it does not keep.
+
+Closing IMASViz writes the session that was on screen to
+**$HOME/.imasviz/last_session.vsess**, and the next start asks once whether to
+put it back — a question that is not asked at all when no such file is there.
 
 The IDSs of a session are read lazily through IMAS-Python, which is what makes
 putting a session back affordable: on the reference case, building the tree of
