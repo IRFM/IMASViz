@@ -384,7 +384,11 @@ def test_the_entry_answers_the_node_beside_the_time_entry(view):
     node = _leaf()
     texts = popUpEntries(view, node)
 
-    assert texts.index(EXPLORE) == texts.index('Plot as function of time') + 1
+    # The pair of abscissae first, then the tensor, then the windows.
+    assert texts.index('Plot as function of its index') == \
+        texts.index('Plot as function of time') + 1
+    assert texts.index(EXPLORE) == \
+        texts.index('Plot as function of its index') + 1
     assert texts.index(EXPLORE) < texts.index('Plot z_ion to')
 
     # And it is not left behind in the submenu it came out of: one entry, one

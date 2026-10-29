@@ -27,7 +27,7 @@ it -- a right click must not extract a tensor to decide what to offer.
 """
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis, leafDataDimension
-from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae, axesLeftOut
+from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae, axesLeftOut, TIME
 from imasviz.VizDataAccess.QVizCurveAbscissa import choose as chooseAbscissa
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 
@@ -115,6 +115,23 @@ class QVizNodePlotting:
         cannot disagree about it.
         """
         return abscissae(self.axes)
+
+    def coordinateAbscissae(self):
+        """The abscissae a curve of this quantity can run along besides the clock.
+
+        The other half of the pair the manual documents. `curveAbscissae` answers
+        time first, and the plain plot entries follow it, so a quantity of the
+        dynamic array could only ever be drawn as a history: nothing asked for the
+        profile along `psi`, even though the read walks it on request and the
+        preview panel draws it.
+
+        Empty when the leaf has no abscissa but the clock -- and that covers the
+        quantity whose own coordinate *is* a time base (`flux_loop[i].flux.time`),
+        which `QVizCurveAbscissa` keys as `TIME`: a second entry there would offer
+        the same curve twice under two spellings.
+        """
+        return [abscissa for abscissa in abscissae(self.axes)
+                if abscissa != TIME]
 
     def tensorAxes(self, abscissa=None):
         """Which arrays of structures exploring the tensor would put under a slider.

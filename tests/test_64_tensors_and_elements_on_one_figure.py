@@ -72,6 +72,9 @@ COIL = (AOS, 'foo', 'coil')
 RADIAL = (LEAF, 'foo', 'dimension 1')
 
 EXPLORE = 'Explore this tensor along time axis'
+# The same quantity read along its own coordinate instead: another abscissa, so
+# another set of arrays left out of the curve, so another heading.
+ALONG_INDEX = 'Explore this tensor along its index'
 
 # Two time slices, two elements each, three points each. Two leaves of one array
 # (`z_ion`, `z_second`) answer the superposition of two tensors; a second array
@@ -216,12 +219,18 @@ def subMenu(menu, title):
                          % (title, [action.text() for action in menu.actions()]))
 
 
-def tensorEntries(view, node):
-    """(the heading of the tensor entry, the lines under it) for a right click."""
+def tensorEntries(view, node, heading=EXPLORE):
+    """(the heading of one tensor entry, the lines under it) for a right click.
+
+    The heading is asked for, because a quantity that can be read along two
+    abscissae now gets one tensor entry each: the arrays a figure leaves out
+    belong to the abscissa it runs against, so the two entries walk two slider
+    sets and no single heading can name both.
+    """
     node = _equipped(view, node)
     menu = QVizSignalHandling(dataTreeView=view,
                               treeNode=node).buildContextMenu(node)
-    tensor = subMenu(menu, 'Explore this tensor')
+    tensor = subMenu(menu, heading)
     return tensor.title(), [action.text() for action in tensor.actions()]
 
 
@@ -512,10 +521,53 @@ def test_a_figure_along_a_coordinate_walks_the_dynamic_array_it_left_out(view):
     assert plotted(figure)[1] == [40., 50., 60.]
 
     heading, lines = tensorEntries(view, _leaf('z_second'))
-    # A figure of its own would run along time; this one runs along the index,
-    # so the line says which abscissa its sliders belong to.
+    # Along the clock the curve is the dynamic array, so only `ion` is left out
+    # of it and the entry of its own has no figure to offer.
     assert heading == EXPLORE
-    assert lines == ['New', 'SlicesPlot1 (along its index)']
+    assert lines == ['New']
+
+    # This figure runs along the index, so the dynamic array is left out of it
+    # and it is offered under the heading that names *that* abscissa. The single
+    # heading this used to answer could only reach it by suffixing the line with
+    # an abscissa other than its own title -- the manual's slider on time_slice
+    # was one click away from a window no entry could open.
+    heading, lines = tensorEntries(view, _leaf('z_second'), ALONG_INDEX)
+    assert heading == ALONG_INDEX
+    assert lines == ['New', 'SlicesPlot1']
+
+
+@pytest.mark.ui
+def test_the_coordinate_heading_is_offered_before_any_figure_is_open(view):
+    """The manual's slider, reachable from a bare right click.
+
+    The heading along the coordinate used to need an open figure drawn along it,
+    and no entry knew how to open one: the promise was unreachable from the tree.
+
+    Triggered through the line of the menu, not by calling the slot: the abscissa
+    the heading promises travels to the command in the connection the menu makes,
+    and a slot called by hand with no opinion lets the figure settle on the clock
+    under a heading naming the index.
+    """
+    def clickNew(heading, node):
+        menu = QVizSignalHandling(dataTreeView=view,
+                                 treeNode=_equipped(view, node)
+                                 ).buildContextMenu(node)
+        lines = subMenu(menu, heading).actions()
+        assert lines[0].text() == 'New', [a.text() for a in lines]
+        lines[0].trigger()
+        return list(view.imas_viz_api.figureframes.values())[-1]
+
+    frame = clickNew(ALONG_INDEX, _leaf())
+    assert frame.abscissa == ('dimension', '')
+    assert frame.sliceControls.keys() == [DYNAMIC, ION]
+
+    # And the heading along the clock still opens one along the clock: two titles
+    # cannot answer the same abscissa. The band it walks is the clock's own
+    # leftovers -- `ion` and the leaf's coordinate -- which is what the entry
+    # into an open figure along time pins above.
+    frame = clickNew(EXPLORE, _leaf())
+    assert frame.abscissa == ('time',)
+    assert frame.sliceControls.keys() == [ION, RADIAL]
 
 
 # -- the same rules, on the numbers of the case -------------------------

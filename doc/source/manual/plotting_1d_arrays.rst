@@ -430,22 +430,26 @@ same picture:
   leaf's own coordinate -- the index inside **flux.data** -- and that keeps a
   control of its own.
 * the **tensor** — :guilabel:`Explore this tensor along <axis>`, in the pop-up
-  menu itself, just under :guilabel:`Plot as function of time` and above the
-  :guilabel:`Plot <node> to` submenu. Those two entries answer one question about
-  the quantity — run along time, or walk the arrays that hold it — and neither
-  answer needs a window picked, so they sit side by side; the submenu below them
-  is the one that says *which window*. One figure where every axis the curve
-  leaves out gets a slider, so the elements of that array can be walked one
-  after the other. The figure opens on the element the tree was standing on, not
-  on the first one.
+  menu itself, just under the two entries that draw a single curve
+  (:guilabel:`Plot as function of time`, and :guilabel:`Plot as function of psi`
+  for a quantity that has a coordinate of its own) and above the
+  :guilabel:`Plot <node> to` submenu. Those entries answer one question about the
+  quantity — run along time, run along its own coordinate, or walk the arrays that
+  hold it — and none of them needs a window picked, so they sit side by side; the
+  submenu below them is the one that says *which window*. One figure where every
+  axis the curve leaves out gets a slider, so the elements of that array can be
+  walked one after the other. The figure opens on the element the tree was
+  standing on, not on the first one.
 
-  The heading names the axis the figure runs along — :guilabel:`Explore this
-  tensor along time axis` for a quantity of the dynamic array, :guilabel:`Explore
-  this tensor along psi` for one drawn against its own grid — because which
-  arrays are left out of the curve depends on it. A quantity held only by the
-  dynamic array has nothing left to explore along time: that array *is* the
-  curve. Drawn along ``psi`` instead, the same quantity leaves **time_slice**
-  out, and that is the slider it earns there.
+  There is **one such heading per abscissa** — :guilabel:`Explore this tensor
+  along time axis` for the history, :guilabel:`Explore this tensor along psi` for
+  the profile — because which arrays are left out of the curve depends on the axis
+  it runs along. A quantity held only by the dynamic array has nothing left to
+  explore along time: that array *is* the curve, and it gets the second heading
+  only. Drawn along ``psi`` instead, the same quantity leaves **time_slice** out,
+  and that is the slider it earns there. Each heading opens the figure it names:
+  the abscissa travels with the line that was clicked, so *New* under
+  :guilabel:`along psi` cannot open a window running along the clock.
 
   The entry is a sub-menu, because a tensor is not tied to a new window.
   :guilabel:`New` opens a figure of its own; every open figure whose sliders
@@ -509,8 +513,12 @@ Plotting 1D array as a function of coordinate1 along the time axis
 
 One of the IMASViz features is to plot data along coordinate1 specified
 in the IMAS Data Dictionary.
-This is allowed for IDS nodes, located within **time_slice[:]** structure, and
-it is already set as a default plotting feature for such arrays.
+This is allowed for IDS nodes, located within **time_slice[:]** structure, and it
+is what the entry :guilabel:`Plot as function of psi` does -- the entry takes the
+name of the coordinate the dictionary declares for that quantity, and sits in the
+pop-up menu just under :guilabel:`Plot as function of time`. An entry that names
+no abscissa runs along the clock, so the reading described here is the one that
+entry asks for.
 
 The curve answers the time slice the node names: right-clicking
 **equilibrium.time_slice[0].profiles_1d.phi** draws slice **0**, and the legend
@@ -536,9 +544,7 @@ on **equilibrium.time_slice[0].profiles_1d.phi** (Torodial Flux) array.
    node.
 
 3. From the pop-up menu, select the command
-   :guilabel:`Plot equilibrium.time_slice[0].profiles_1d.phi to`
-   |icon_plotSingle| -> :guilabel:`figure` |icon_Figure| ->
-   :guilabel:`New` |icon_new|.
+   :guilabel:`Plot as function of psi` |icon_plotSingle|.
 
    .. figure:: images/DTV_popupmenu_plotting_as_a_function_of_coordinate1.png
      :align: center
@@ -605,9 +611,11 @@ on **equilibrium.time_slice[0].profiles_1d.f** (Torodial Flux) array.
    node.
 
 3. From the pop-up menu, select the command
-   :guilabel:`Plot equilibrium.time_slice[0].profiles_1d.f to`
-   |icon_plotSingle| -> :guilabel:`figure` |icon_Figure| ->
-   :guilabel:`New` |icon_new|.
+   :guilabel:`Plot as function of time` |icon_plotSingle|.
+
+   :guilabel:`Plot as function of psi` sits just under it and draws the profile of
+   that same slice instead — one entry per abscissa the quantity has, each naming
+   the one it runs against.
 
    .. figure:: images/DTV_popupmenu_plotting_as_a_function_of_time.png
      :align: center

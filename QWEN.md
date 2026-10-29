@@ -601,16 +601,23 @@ artifacts of this codebase, and several are load-bearing:
   own coordinate keeps one. The tensor representation is a **separate entry**,
   *Explore this tensor along \<axis\>* (`QVizPlotOneNode(tensor=True)`), which puts a
   slider on every axis the curve leaves out, opened on the indices the tree stood on,
-  with *Keep this curve* freezing a trace so a family can pile up. The heading **names
-  the abscissa it explores** — `time axis`, `psi`, `its index` — because which arrays are
-  left out depends on it (`QVizCurveAbscissa.axisPhrase`); along time a quantity of the
-  dynamic array has **nothing** to explore, so the entry is not offered there. It is
-  answered by `QVizSignalHandling.menuExploreThisTensor(parentMenu)` and hung at the
-  **pop-up's top level**, right after *Plot as function of time* (T37) — not inside
+  with *Keep this curve* freezing a trace so a family can pile up. There is **one such
+  entry per abscissa** — `Explore this tensor along time axis`, `… along psi`,
+  `… along its index` (`QVizCurveAbscissa.axisPhrase`) — because which arrays are left
+  out depends on the axis the curve runs along: along time a quantity of the dynamic
+  array has **nothing** to explore, so only the second heading exists for it. Each
+  heading takes **its own** abscissa to the read (`exploreTensorCommand(alongTime=)`);
+  measured before T41, a heading that only *named* an abscissa while the command was
+  asked with no opinion opened a figure along the clock under a title saying `psi`. It
+  is answered by `QVizSignalHandling.menuExploreThisTensor(parentMenu)` and hung at the
+  **pop-up's top level**, right after the two single-curve entries (T37) — not inside
   `Plot <node> to → Figure`, where it sat below the list of figures it may join
-  while it answers a different question than "which window". Since T38 it is a
-  **sub-menu**: `New`, then one line per open figure whose sliders are those very arrays
-  (`exploreTensorCommand(intoFigureKey=)`). A Qt fact came with it: `QMenu(title, parent)`
+  while it answers a different question than "which window". Since T38 each is a
+  **sub-menu**: `New`, then one line per open figure drawn along that abscissa whose
+  sliders are those very arrays (`exploreTensorCommand(intoFigureKey=)`). Since T41
+  there are several, held in `self.exploreTensorMenus` — the single `exploreTensorMenu`
+  of T38 could only ever name one abscissa.
+  A Qt fact came with it: `QMenu(title, parent)`
   only sets the Qt **parent** — nothing hung it on the pop-up, and a QMenu no Python
   reference holds dies with the wrapper that made it (the dangling submenu T0 removed);
   `parentMenu.addMenu(menu)` is what makes it appear.
@@ -812,6 +819,17 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   label sites of `QVizTreeNode`. A quantity with **no axis of its own** (a scalar held
   by an array) has nothing to disagree with, so it takes the figure's abscissa and is
   spread over it, said in the log; refused on an empty figure.
+  `abscissae()` answers TIME **first**, and that is the reading of every plain entry —
+  which left the coordinate half of the model with no way in from the tree: the preview
+  panel asked the read with `along_time=False` and drew the profile while the pop-up
+  could not (T41). `QVizNodePlotting.coordinateAbscissae()` is the answer, and
+  `QVizSignalHandling.actionPlotAsFunctionOfCoordinate()` hangs it as a third top-level
+  line titled by `axisPhrase` — **Plot as function of psi** on
+  `equilibrium.time_slice[i].profiles_1d.f`, **101** points where its neighbour answers
+  **49** — refusing the line where the leaf has no abscissa but the clock, a coordinate
+  that *is* a time base (`flux_loop[i].flux.time`) being the same axis spelled
+  differently, not a second curve to offer. `test_70` pins both entries, on the stubs
+  and on the case.
 - The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
   -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
   two `conf.py` warnings, and it is the only route that works — `make doc` itself still
