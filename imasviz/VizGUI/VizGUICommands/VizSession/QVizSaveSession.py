@@ -24,12 +24,18 @@ of windows the menus address, not a parallel list that can drift. The tree state
 is taken from the items themselves (`isExpanded`), because "which branches were
 open" is only recorded there.
 
-Two kinds of window are left out, and said in the log rather than kept quiet:
-the Profiles plugin's window and the Equilibrium chart. Neither is drawn from a
-selection of this session -- the first asks which occurrence to plot through a
-dialog of its own, the second is a matplotlib window that registers no node in
-`figToNodes` at all -- so a file recording them would promise a window the
-restore has no gesture to replay.
+Two kinds of window used to be left out and said in the log: the Profiles
+plugin's window and the Equilibrium chart. Neither is drawn from a selection of
+this session -- the first asks which occurrence to plot through a dialog of its
+own, the second is a matplotlib window that registers no node in `figToNodes` at
+all. Since version 3 of the format they are saved, as a `<PluginWindow>` under
+the case whose gesture opened them: the gesture belongs to a shot view -- its
+catalog is what offers the entry -- and the two answers that entry would have
+asked are written with it, because a restore has no one to answer a modal
+`QInputDialog`. A plugin window is registered in `figureframes` like the four
+plot windows, so the same walk meets it; it is saved where that walk finds the
+stamp the plugin left (`QVizPluginWindow`), and a frame carrying no stamp is
+still named as unsaved.
 """
 
 import logging
@@ -40,7 +46,7 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, QVizSessionCase, QVizSessionLoad, QVizSessionExpanded,
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
-    QVizSessionWindow,
+    QVizSessionWindow, QVizSessionPluginWindow,
     CURVE, IMAGE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
     FIRST, INDEX_PREFIX)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
@@ -71,25 +77,61 @@ class QVizSaveSession:
         """Write the session, and answer with the file that holds it."""
         if self.path is None:
             raise ValueError('No file was named to save the session to.')
-        session = QVizSessionFile(cases=[self.caseOf(view)
-                                         for view in self.api.DTVlist],
+        windows = self.pluginWindowsByCase()
+        cases = []
+        for view in self.api.DTVlist:
+            cases.append(self.caseOf(view, windows.pop(view.dataSource.uri,
+                                                       [])))
+        for uri, left in windows.items():
+            # A plugin window whose case is no longer on screen: its entry
+            # belongs to a shot view, so no case in the file can replay it.
+            logging.getLogger('logPanel').warning(
+                'The plugin window%s %s is not saved: no shot view of the case '
+                '"%s" is open, and the entry that drew it belongs to that view.'
+                % ('s' if len(left) > 1 else '',
+                   ', '.join('"%s"' % window.key for window in left), uri))
+        session = QVizSessionFile(cases=cases,
                                   figures=self.figures(),
                                   path=self.path)
         session.write(self.path)
         logging.getLogger('logPanel').info(
-            'Session saved to "%s": %d case(s), %d figure(s).'
-            % (self.path, len(session.cases), len(session.figures)))
+            'Session saved to "%s": %d case(s), %d figure(s), %d plugin '
+            'window(s).'
+            % (self.path, len(session.cases), len(session.figures),
+               sum(len(case.pluginWindows) for case in session.cases)))
         return self.path
 
+    def pluginWindowsByCase(self):
+        """The plugin windows of the run, under the case that opened each one.
+
+        The key is taken from `figureframes` -- the bookkeeping the Show/Hide and
+        Delete menus address a window by -- because measured, neither registered
+        plugin window knows its own: the Profiles panel has no `figureKey` and no
+        `key` attribute, and the Equilibrium chart has neither. The rest comes
+        from the stamp the plugin left, which is the only place the entry number
+        and the occurrence it answered are kept.
+        """
+        windows = {}
+        for figureKey, frame in list(self.api.figureframes.items()):
+            stamp = getattr(frame, 'pluginWindow', None)
+            if stamp is None:
+                continue
+            windows.setdefault(stamp.uri, []).append(
+                QVizSessionPluginWindow(key=figureKey, plugin=stamp.plugin,
+                                        entry=stamp.entry, ids=stamp.ids,
+                                        occurrence=stamp.occurrence))
+        return windows
+
     # ----------------------------------------------------------------- cases
-    def caseOf(self, view):
+    def caseOf(self, view, pluginWindows=()):
         return QVizSessionCase(uri=view.dataSource.uri,
                                dd_version=getattr(view.dataSource,
                                                   'dd_version', None),
                                label=self.labelOf(view),
                                loads=self.loadsOf(view),
                                expanded=self.expandedOf(view),
-                               selection=self.selectionOf(view))
+                               selection=self.selectionOf(view),
+                               pluginWindows=pluginWindows)
 
     @staticmethod
     def labelOf(view):
@@ -168,18 +210,24 @@ class QVizSaveSession:
 
     # --------------------------------------------------------------- figures
     def figures(self):
-        """Every window the figure bookkeeping addresses.
+        """Every plot window the figure bookkeeping addresses.
 
         In the order they were opened: `figureframes` is a dict, and the order
-        the frames were registered in is the order the user met them.
+        the frames were registered in is the order the user met them. A plugin
+        window is not a `<Figure>`: it is saved under its case, and only a frame
+        that carries no stamp is named as lost -- measured, the four plugin
+        windows of a probe wrote a 432-byte file holding **0** `<Figure>` and
+        repeated one warning four times.
         """
         figures = []
         for figureKey, frame in list(self.api.figureframes.items()):
             kind = self.kindOf(frame)
             if kind is None:
+                if getattr(frame, 'pluginWindow', None) is not None:
+                    continue
                 logging.getLogger('logPanel').warning(
-                    'The window "%s" is not saved: it is drawn by a plugin, '
-                    'from a question the plugin asks, and a session has no '
+                    'The window "%s" is not saved: it is drawn by a plugin that '
+                    'says nothing about the window it drew, and a session has no '
                     'gesture to replay it.' % figureKey)
                 continue
             figures.append(self.figureOf(figureKey, frame, kind))

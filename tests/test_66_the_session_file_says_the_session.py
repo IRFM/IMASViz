@@ -42,8 +42,9 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, QVizSessionCase, QVizSessionLoad, QVizSessionExpanded,
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
-    QVizSessionWindow, CURVE, IMAGE, TABLE, STACKED, cursorKeyOf,
-    cursorKeyText)
+    QVizSessionWindow, QVizSessionPluginWindow, CURVE, IMAGE, TABLE, STACKED,
+    cursorKeyOf, cursorKeyText)
+from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import \
     QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
@@ -310,14 +311,14 @@ def test_a_file_of_another_root_is_refused_naming_that_root():
 def test_a_file_of_another_version_is_refused_naming_both_versions():
     """Guessing a format this module does not know is how a session comes back
     describing less than it says. Version 1 is read -- it simply carries no
-    state; version 3 is not, because there is nothing to guess from."""
-    path = _write('future.vsess', '<IMASVizSession version="3"><Case uri="x"/>'
+    state; version 4 is not, because there is nothing to guess from."""
+    path = _write('future.vsess', '<IMASVizSession version="4"><Case uri="x"/>'
                                   '</IMASVizSession>')
 
     with pytest.raises(ValueError) as raised:
         QVizSessionFile.read(path)
 
-    assert '"3"' in str(raised.value) and 'writes version 2' \
+    assert '"4"' in str(raised.value) and 'writes version 3' \
         in str(raised.value)
 
 
@@ -779,8 +780,14 @@ def test_a_table_writes_the_cell_each_panel_sits_in(qapp):
 @pytest.mark.ui
 def test_a_window_drawn_by_a_plugin_is_left_out_and_named_by_its_key(qapp,
                                                                      caplog):
-    """The Profiles window is drawn from a question the plugin asks; recording it
-    would promise a window the restore has no gesture to replay."""
+    """A plugin window is saved from what the plugin says about it.
+
+    Measured before that stamp existed: four plugin windows of a probe wrote a
+    432-byte file holding **0** `<Figure>`, and the same warning came out four
+    times -- a session that named its lost windows and lost all of them. A frame
+    still without a stamp is named for what it is: a window nothing in the file
+    says how it was drawn.
+    """
     view = FakeView()
     api = aSession(view)
     api.figureframes['PlotView:1'] = type(str('StubPluginWindow'), (), {})()
@@ -789,7 +796,154 @@ def test_a_window_drawn_by_a_plugin_is_left_out_and_named_by_its_key(qapp,
         QVizSaveSession(api, path=_path('plugin.vsess')).execute())
 
     assert session.figures == []
+    assert session.cases[0].pluginWindows == []
     assert 'PlotView:1' in caplog.text
+
+
+@pytest.mark.ui
+def test_a_plugin_window_is_written_under_the_case_that_offered_its_entry(qapp,
+                                                                        caplog):
+    """The gesture belongs to a shot view, so its window is written there.
+
+    The key comes from `figureframes`, which is what the Show/Hide and Delete
+    menus read; the entry number and the occurrence come from the stamp, because
+    measured, neither registered window keeps them: the Profiles panel answers
+    neither `figureKey` nor `key`, and the Equilibrium chart has neither.
+    """
+    view = FakeView()
+    api = aSession(view)
+    window = type(str('StampedPluginWindow'), (), {})()
+    window.pluginWindow = QVizPluginWindow(uri=URI, plugin='VizProfiles_plugin',
+                                           entry=0, ids='foo', occurrence=2)
+    api.figureframes['PlotView:1'] = window
+
+    path = QVizSaveSession(api, path=_path('stamped.vsess')).execute()
+    session = QVizSessionFile.read(path)
+
+    assert session.cases[0].pluginWindows == [
+        QVizSessionPluginWindow(key='PlotView:1', plugin='VizProfiles_plugin',
+                                entry=0, ids='foo', occurrence=2)]
+    assert session.figures == []
+    with open(path) as handle:
+        body = handle.read()
+    assert 'plugin="VizProfiles_plugin"' in body and '<Figure' not in body
+    assert 'is not saved' not in caplog.text
+
+
+@pytest.mark.ui
+def test_a_plugin_window_of_a_case_that_is_no_longer_open_is_named(qapp,
+                                                                   caplog):
+    """Its entry is a line of that view's Plugins menu: with no view, no replay.
+
+    The window is still in `figureframes`, so the save meets it -- and saying
+    nothing would leave the user looking for a window the next session will not
+    show.
+    """
+    view = FakeView()
+    api = aSession(view)
+    window = type(str('OrphanPluginWindow'), (), {})()
+    window.pluginWindow = QVizPluginWindow(uri='imas:hdf5?case=9',
+                                           plugin='VizProfiles_plugin',
+                                           entry=0, ids='foo', occurrence=2)
+    api.figureframes['PlotView:1'] = window
+
+    session = QVizSessionFile.read(
+        QVizSaveSession(api, path=_path('orphan.vsess')).execute())
+
+    assert session.cases[0].pluginWindows == []
+    assert 'PlotView:1' in caplog.text and 'no shot view' in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# The window a plugin drew, and the two answers its entry would have asked.
+
+@pytest.mark.ui
+def test_a_plugin_window_comes_back_with_the_answers_its_entry_would_ask():
+    """Which entry of which plugin, on which IDS of which case, at which
+    occurrence.
+
+    The occurrence is not optional here, even when it is 0: a restore that does
+    not carry it must ask for it, and the Profiles plugin asks it through a modal
+    `QInputDialog` -- measured, a probe left to answer that one sat for 240 s.
+    """
+    written = QVizSessionFile(
+        cases=[QVizSessionCase(
+            uri=URI, dd_version='3.35.0', label=None,
+            loads=[QVizSessionLoad('foo', 2, 'first')], expanded=[],
+            selection=[],
+            pluginWindows=[
+                QVizSessionPluginWindow('PlotView:1', 'VizProfiles_plugin', 1,
+                                        'foo', 2),
+                QVizSessionPluginWindow('EquiPlotView:1', 'equilibriumcharts',
+                                        0, 'foo', 0)])],
+        figures=[]).write(QVizSessionFile.named('plugins'))
+    read = QVizSessionFile.read(written)
+
+    assert read.cases[0].pluginWindows == [
+        QVizSessionPluginWindow('PlotView:1', 'VizProfiles_plugin', 1, 'foo', 2),
+        QVizSessionPluginWindow('EquiPlotView:1', 'equilibriumcharts', 0,
+                                'foo', 0)]
+    assert read.figures == []
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('part', ['key', 'plugin', 'entry', 'ids',
+                                  'occurrence'])
+def test_a_plugin_window_missing_one_of_its_five_parts_is_refused_naming_it(
+        part):
+    """Half a gesture is not a gesture the restore can replay.
+
+    A missing occurrence would open the dialog again; a missing entry number
+    would draw the other window the same plugin offers -- the Profiles plugin
+    offers two on this case, and the key in the file would then name a window
+    that is not the one that was saved.
+    """
+    attributes = {'key': 'PlotView:1', 'plugin': 'VizProfiles_plugin',
+                  'entry': '1', 'ids': 'foo', 'occurrence': '2'}
+    del attributes[part]
+    path = _write('half_window.vsess', """
+    <IMASVizSession version="3">
+      <Case uri="imas:hdf5?case=1">
+        <PluginWindow %s/>
+      </Case>
+    </IMASVizSession>""" % ' '.join('%s="%s"' % item
+                                    for item in attributes.items()))
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert part in str(raised.value) and path in str(raised.value)
+
+
+@pytest.mark.ui
+def test_a_session_of_an_older_version_names_no_plugin_window():
+    """Version 1 and version 2 are still read, and hold no plugin window.
+
+    That is the same answer as a screen with none open, which is why nothing here
+    is guessed: what a version does not say comes back as the drawing leaves it.
+    """
+    for version in ('1', '2'):
+        path = _write('v%s.vsess' % version, """
+        <IMASVizSession version="%s">
+          <Case uri="imas:hdf5?case=1"/>
+        </IMASVizSession>""" % version)
+
+        assert QVizSessionFile.read(path).cases[0].pluginWindows == []
+
+
+@pytest.mark.ui
+def test_a_plugin_window_written_by_this_release_is_version_3():
+    written = QVizSessionFile(
+        cases=[QVizSessionCase(uri=URI, dd_version=None, label=None, loads=[],
+                               expanded=[], selection=[],
+                               pluginWindows=[QVizSessionPluginWindow(
+                                   'PlotView:1', 'VizProfiles_plugin', 0,
+                                   'foo', 0)])],
+        figures=[]).write(QVizSessionFile.named('version'))
+    with open(written) as handle:
+        body = handle.read()
+
+    assert 'version="3"' in body and '<PluginWindow' in body
 
 
 @pytest.mark.ui

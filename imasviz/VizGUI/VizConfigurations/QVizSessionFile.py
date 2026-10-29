@@ -75,8 +75,44 @@ drawing: one ``refresh`` for all the sliders of a band costs **0,001 s** where
 one per slider costs **0,003 s**, and the whole of version 2 adds about **400
 bytes** to the 944-byte file of a two-figure session.
 
-Versions 1 and 2 are both read, and writing produces 2. A version 1 file simply
-has no such elements, which is the same as the user having set nothing.
+Version 3, and what it adds
+---------------------------
+
+A version 2 file says nothing about a window a plugin drew. Measured on a probe
+that had opened both registered plugins twice: the save took **0,013 s**, wrote a
+**432 byte** file holding **0** ``<Figure>``, and put the same warning in the log
+four times. So those windows were not merely unstated, they were named as
+unsavable -- and a user who opens the Profiles panel every morning pays its
+question again for it: that question is a modal ``QInputDialog``, and a probe
+left to answer it sat in ``askForOccurrence`` for **240 s**.
+
+So version 3 adds one element per ``<Case>``:
+
+* ``<PluginWindow key plugin entry ids occurrence/>`` -- the gesture, not the
+  window: which entry of which plugin, on which IDS of which case, with which
+  occurrence answered. It sits under its ``<Case>`` because the entry is a line of
+  that view's Plugins menu, and replaying it means asking that view's catalog. It
+  carries no ``<Quantity>`` (the plugin chose its own), no ``<View>`` and no
+  ``<Window>`` (measured: ``mdiWindowOf`` answers None for both registered
+  windows -- the Profiles panel is a top-level window, the Equilibrium chart is
+  parented to the shot view), and its key is honoured like a figure key, because
+  ``figureframes`` is how the Show/Hide and Delete menus reach it.
+
+What a plugin entry settled on is nowhere else: measured, neither window answers
+its own key (no ``figureKey``, no ``key`` attribute), so the plugin stamps a
+``QVizPluginWindow`` on the frame it registers and this file writes what the
+stamp says. The occurrence is written even when it is 0, and required on reading,
+because the restore must answer the entry's question in the user's place rather
+than open the dialog again.
+
+What version 3 does not keep: the time index the plugin's own slider stands at,
+and the tabs a user added inside the Profiles panel. The restore replays the
+entry, so the window comes back as that entry draws it.
+
+Versions 1, 2 and 3 are all read, and writing produces 3. A version 1 file simply
+has no state element, which is the same as the user having set nothing; a version
+2 file has no ``<PluginWindow>``, which is the same as having no plugin window
+open.
 
 One version, and a refusal rather than a guess: ``version`` is checked, and an
 element this module does not know is named in a ``ValueError``. Ignoring what it
@@ -112,14 +148,31 @@ QVizSessionFigure = namedtuple(
     defaults=(None, None, None, None))
 
 QVizSessionCase = namedtuple('QVizSessionCase',
-                             'uri dd_version label loads expanded selection')
+                             'uri dd_version label loads expanded selection '
+                             'pluginWindows',
+                             # A case of a version 2 file names no plugin window,
+                             # and that is the same answer as a screen with none
+                             # open -- so the field is absent rather than empty
+                             # by hand at every call site.
+                             defaults=((),))
+# The window a plugin drew, and the gesture that drew it: which entry of which
+# plugin, clicked on which IDS of which case, with which occurrence answered.
+# Not a `<Figure>`: it holds no quantity this session chose -- the plugin chose
+# its own -- and it stands outside the MDI area (measured: `mdiWindowOf` answers
+# None for both registered plugin windows), so none of version 2's four states
+# applies to it. It belongs to its `<Case>` because the gesture was a menu line
+# of that view, and the restore needs that view to ask its plugin catalog.
+QVizSessionPluginWindow = namedtuple('QVizSessionPluginWindow',
+                                     'key plugin entry ids occurrence')
 
 ROOT = 'IMASVizSession'
-VERSION = '2'
-# Both are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>` or
-# `<Window>`, which is the same answer as a user who set nothing on those
-# windows: the windows come back as the drawing leaves them.
-READABLE_VERSIONS = ('1', '2')
+VERSION = '3'
+# All three are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
+# or `<Window>`, which is the same answer as a user who set nothing on those
+# windows; a version 2 file holds no `<PluginWindow>`, which is the same answer
+# as a screen with no plugin window open. Neither is guessed at: what a version
+# does not name comes back as the drawing leaves it.
+READABLE_VERSIONS = ('1', '2', '3')
 
 # The name of the session the application writes when it closes and offers when
 # it starts. A name, not a path: where it lives is the folder's business, and the
@@ -128,11 +181,13 @@ READABLE_VERSIONS = ('1', '2')
 # it is the one session that is never asked for by hand.
 LAST_SESSION = 'last_session'
 
-# The four windows this application draws from a selection. A plugin window is
-# not one of them: it is built by the plugin, from a question the plugin asks
-# (the Profiles plugin asks which occurrence to plot through a modal dialog), so
-# a session file cannot say what it held. The Equilibrium chart is not in an MDI
-# window either, and holds no node of the tree.
+# The four windows this application draws itself, from a selection of this
+# session. A plugin window is not one of them and carries none of these kinds: it
+# is built by a plugin entry, from a question that entry asks, and it holds no
+# quantity this session chose -- so it is a `<PluginWindow>` under the `<Case>`
+# whose Plugins menu offered it, not a `<Figure>`. Measured, both registered
+# windows stand outside the MDI area (`mdiWindowOf` answers None for each), so
+# none of version 2's four states applies to either.
 CURVE = 'curve'
 IMAGE = 'image'
 TABLE = 'table'
@@ -314,6 +369,16 @@ class QVizSessionFile:
                 child = ET.SubElement(element, 'Selection')
                 child.set('path', selection.path)
                 child.set('occurrence', str(selection.occurrence))
+            for window in case.pluginWindows:
+                child = ET.SubElement(element, 'PluginWindow')
+                child.set('key', window.key)
+                child.set('plugin', window.plugin)
+                child.set('entry', str(window.entry))
+                child.set('ids', window.ids)
+                # Written even when it is 0, which is what the Equilibrium plugin
+                # reads and never asks: an absent occurrence would be a case the
+                # restore is free to plot on another one.
+                child.set('occurrence', str(window.occurrence))
         for figure in self.figures:
             element = ET.SubElement(root, 'Figure')
             element.set('key', figure.key)
@@ -429,7 +494,8 @@ class QVizSessionFile:
 
 
 def _caseOf(element, path):
-    _knownChildren(element, ('Load', 'Expanded', 'Selection'), path)
+    _knownChildren(element,
+                   ('Load', 'Expanded', 'Selection', 'PluginWindow'), path)
     uri = _attribute(element, 'uri', path, 'Case')
     return QVizSessionCase(
         uri=uri,
@@ -439,7 +505,9 @@ def _caseOf(element, path):
         expanded=[_expandedOf(child, path)
                   for child in element.findall('Expanded')],
         selection=[_selectionOf(child, path)
-                   for child in element.findall('Selection')])
+                   for child in element.findall('Selection')],
+        pluginWindows=[_pluginWindowOf(child, path)
+                       for child in element.findall('PluginWindow')])
 
 
 def _loadOf(element, path):
@@ -462,6 +530,27 @@ def _expandedOf(element, path):
 def _selectionOf(element, path):
     return QVizSessionSelection(
         path=_attribute(element, 'path', path, 'Selection'),
+        occurrence=_integer(element, 'occurrence', 0, path))
+
+
+def _pluginWindowOf(element, path):
+    """One plugin window, with the two answers its entry would have asked.
+
+    All five parts are required, the occurrence even when it is 0. A plugin entry
+    asks its question at run time, so a `<PluginWindow>` that leaves the
+    occurrence out cannot be replayed without asking it again -- and the Profiles
+    plugin asks it through a modal `QInputDialog` that costs 240 s with no one to
+    answer it. Defaulting `entry` to 0 would be worse than refusing: a plugin
+    offering two entries draws the other window, and the key in the file would
+    then name a window that is not the one that was saved.
+    """
+    for name in ('key', 'plugin', 'entry', 'ids', 'occurrence'):
+        _attribute(element, name, path, 'PluginWindow')
+    return QVizSessionPluginWindow(
+        key=element.get('key'),
+        plugin=element.get('plugin'),
+        entry=_integer(element, 'entry', 0, path),
+        ids=element.get('ids'),
         occurrence=_integer(element, 'occurrence', 0, path))
 
 

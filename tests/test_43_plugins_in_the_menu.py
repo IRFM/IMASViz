@@ -58,7 +58,7 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleShiftAndRightCli
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizPluginMenu \
     import QVizPluginMenu
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
-from imasviz.VizPlugins.VizPlugin import VizPlugin
+from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginAnswers
 
 from conftest import CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
 from support.fakes import FakeTreeNode
@@ -161,6 +161,53 @@ class DeclaresSeven:
 
     def execute(self, vizAPI, pluginEntry):
         RAN.append(('DeclaresSeven', vizAPI, pluginEntry))
+
+
+class TakesAnswers(VizPlugin):
+    """The extended contract: an entry that can be answered for the user.
+
+    A session replaying this line hands over what the user answered the first
+    time instead of letting the entry ask again, which is what the Profiles plugin
+    cannot be allowed to do at a restore: its question is a modal `QInputDialog`,
+    and a probe left to answer one sat there for 240 s.
+    """
+
+    def __init__(self):
+        super().__init__()
+        BUILT.append('TakesAnswers')
+
+    def isEnabled(self):
+        return True
+
+    def getEntries(self):
+        return [4]
+
+    def getAllEntries(self):
+        return [(4, 'the answered one')]
+
+    def execute(self, vizAPI, pluginEntry, answers=None):
+        RAN.append(('TakesAnswers', vizAPI, pluginEntry, answers))
+
+
+class TakesAnything(VizPlugin):
+    """The same contract through `**keywords`, which the check must not miss."""
+
+    def __init__(self):
+        super().__init__()
+        BUILT.append('TakesAnything')
+
+    def isEnabled(self):
+        return True
+
+    def getEntries(self):
+        return [5]
+
+    def getAllEntries(self):
+        return [(5, 'the wide one')]
+
+    def execute(self, vizAPI, pluginEntry, **keywords):
+        RAN.append(('TakesAnything', vizAPI, pluginEntry,
+                    keywords.get('answers')))
 
 
 class UndescribedNumber(VizPlugin):
@@ -484,6 +531,67 @@ def test_an_entry_is_logged_before_it_is_handed_over(monkeypatch, view, caplog):
     with caplog.at_level(logging.INFO, logger=view.uri):
         catalog.run(catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0])
     assert 'Running plugin DeclaresSeven, entry 7.' in caplog.text
+
+
+# --------------------------------------------------------------------------
+# The answers a session gives in the user's place
+# --------------------------------------------------------------------------
+
+def test_an_entry_that_takes_no_answers_is_refused_and_never_run(monkeypatch,
+                                                                view, caplog):
+    """`DeclaresSeven` honours the two-argument contract, as every plugin written
+    before the answers did.
+
+    Running such an entry from a session would not fail: it would ask its
+    question again. And the one registered plugin that asks a question asks it
+    through a modal `QInputDialog` -- measured, a probe left to answer that one
+    sat in `askForOccurrence` for 240 s. So the entry is named and left alone,
+    and the rest of the screen is put back.
+    """
+    registerStubs(monkeypatch, DeclaresSeven)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    with caplog.at_level(logging.INFO, logger=view.uri):
+        catalog.run(entry, answers=QVizPluginAnswers(occurrence=2,
+                                                     figureKey='PlotView:1'))
+
+    assert RAN == []
+    assert 'DeclaresSeven' in caplog.text and 'not replayed' in caplog.text
+
+
+def test_the_answers_a_session_gave_are_the_answers_the_entry_is_handed(
+        monkeypatch, view):
+    registerStubs(monkeypatch, TakesAnswers)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    answers = QVizPluginAnswers(occurrence=2, figureKey='PlotView:1')
+    catalog.run(entry, answers=answers)
+
+    assert RAN == [('TakesAnswers', 'the-api-of-this-view', 4, answers)]
+
+
+def test_the_menu_hands_no_answers_at_all(monkeypatch, view):
+    """From the menu the user is there to answer, so nothing is answered for them.
+
+    This is the difference the keyword marks: the same entry, asked from a right
+    click, still asks its own question, exactly as it did before sessions.
+    """
+    registerStubs(monkeypatch, TakesAnswers)
+    catalog = QVizPluginCatalog(view)
+    catalog.run(catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0])
+
+    assert RAN == [('TakesAnswers', 'the-api-of-this-view', 4, None)]
+
+
+def test_an_entry_taking_its_keywords_by_star_is_not_refused(monkeypatch, view):
+    """The check asks the signature, and `**keywords` takes the answers too."""
+    registerStubs(monkeypatch, TakesAnything)
+    catalog = QVizPluginCatalog(view)
+    entry = catalog.entriesFor(FakeTreeNode(idsName='equilibrium'))[0]
+    answers = QVizPluginAnswers(occurrence=0, figureKey='PlotView:1')
+    catalog.run(entry, answers=answers)
+
+    assert RAN == [('TakesAnything', 'the-api-of-this-view', 5, answers)]
 
 
 def test_a_plugin_is_bound_to_the_view_whose_catalog_built_it(monkeypatch,

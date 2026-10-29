@@ -27,7 +27,31 @@ in the package defines, so calling it answered `AttributeError`.
 What is left here is the contract the howto documents and the table that
 registration is read from. Deciding what a registered plugin offers, and running
 it, is `QVizPluginCatalog`.
+
+The two records below belong to the contract because they are what a plugin and
+the framework agree on about a window the plugin drew -- see `QVizPluginWindow`.
 """
+
+from collections import namedtuple
+
+# What a plugin says about the window it registered, so a session can put that
+# window back. Measured on the reference case, neither registered window answers
+# where it came from: the Profiles panel has no `figureKey` and no `key`
+# attribute, and the Equilibrium chart has neither either -- only the api's
+# `figureframes` bookkeeping knows the key, and only the plugin knew the entry
+# number and the occurrence its own dialog had answered. So the plugin stamps
+# this record on the frame it registers, and the session writes it.
+QVizPluginWindow = namedtuple('QVizPluginWindow',
+                              'uri plugin entry ids occurrence')
+
+# The answers a session hands back to a plugin entry it is replaying, so the
+# entry draws the window without asking the user a second time. The Profiles
+# plugin asks which occurrence to plot through a modal `QInputDialog`: measured,
+# a probe left to answer that dialog sat in `askForOccurrence` for 240 s until a
+# watchdog killed it, which is why a restore cannot go through the question.
+# `figureKey` is here for the same reason the plot commands take one: the key is
+# the identity the Show/Hide and Delete menus address the window by.
+QVizPluginAnswers = namedtuple('QVizPluginAnswers', 'occurrence figureKey')
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
@@ -94,8 +118,17 @@ class VizPlugin:
         """What this plugin can do, as `[(number, what the menu says)]`."""
         raise ValueError('plugin getAllEntries() method should be implemented!')
 
-    def execute(self, vizAPI, pluginEntry=None):
-        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it."""
+    def execute(self, vizAPI, pluginEntry=None, answers=None):
+        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it.
+
+        `answers` is what a session already answered in the place of the user --
+        a `QVizPluginAnswers`, or None when the entry was chosen from the menu.
+        A plugin whose entry asks a question of its own must take the answer from
+        here instead of asking it again: the Profiles plugin asks the occurrence
+        through a modal `QInputDialog`, and a restore that went through that
+        dialog would sit waiting for a click nobody is going to give it. A plugin
+        that ignores `answers` is refused by name at the restore, not run blind.
+        """
         raise ValueError('plugin execute() method should be implemented!')
 
     def getPluginsConfiguration(self):

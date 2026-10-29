@@ -41,6 +41,7 @@ and `execute(vizAPI, pluginEntry)` receives that number.
 """
 
 import importlib
+import inspect
 import logging
 import re
 
@@ -243,12 +244,19 @@ class QVizPluginCatalog:
                                           labels[number], tip))
         return entries
 
-    def run(self, entry):
+    def run(self, entry, answers=None):
         """Hand one entry to the plugin it names.
 
         Returns nothing; a plugin that refuses says so in the log with its name.
         The framework used to catch everything with a bare `except:` and print a
         traceback on stdout, so the user of the GUI saw the entry do nothing.
+
+        `answers` is what a session already gave the entry in the user's place
+        (a `QVizPluginAnswers`); from the menu it is None, and the entry asks its
+        own question as it always did. An entry that cannot take the answers is
+        refused here rather than run without them: run without them, it would ask
+        its question again, and the Profiles plugin asks it through a modal
+        `QInputDialog` -- measured, a probe waiting on that dialog sat for 240 s.
         """
         from PySide6.QtWidgets import QMainWindow
 
@@ -259,10 +267,20 @@ class QVizPluginCatalog:
         if not callable(execute):
             self._refuse(entry.pluginName, 'it has no execute() to run')
             return
+        if answers is not None and not _acceptsAnswers(execute):
+            self._log().error(
+                'The %s entry of plugin %s is not replayed: its execute() takes '
+                'no answers, so it would ask its question again -- a session has '
+                'no one to answer it.' % (entry.number, entry.pluginName))
+            return
         self._log().info('Running plugin %s, entry %s.'
                          % (entry.pluginName, entry.number))
         try:
-            execute(self.dataTreeView.imas_viz_api, entry.number)
+            if answers is None:
+                execute(self.dataTreeView.imas_viz_api, entry.number)
+            else:
+                execute(self.dataTreeView.imas_viz_api, entry.number,
+                        answers=answers)
         except ValueError as error:
             self._log().error('Plugin %s could not run: %s'
                               % (entry.pluginName, error))
@@ -287,6 +305,28 @@ class QVizPluginCatalog:
                            idsName=window.targetIDSroot,
                            occurrence=window.targetOccurrence).execute()
         window.show()
+
+
+def _acceptsAnswers(execute):
+    """Whether this `execute` can take an `answers=` keyword.
+
+    Asked of the signature, not tried and caught: running an entry that cannot
+    take the answers would not fail, it would open its own question -- and the
+    Profiles plugin asks its one through a modal `QInputDialog` parented to the
+    shot view, which is where a probe once sat for 240 s with no one to answer.
+    A plugin written against the older two-argument contract is therefore named
+    and left alone, and the session keeps the rest of the screen.
+    """
+    try:
+        parameters = inspect.signature(execute).parameters
+    except (TypeError, ValueError):
+        # A callable this Python cannot describe: assume the older contract,
+        # which is the safe answer -- the entry is refused rather than run blind.
+        return False
+    parameter = parameters.get('answers')
+    return (parameter is not None
+            or any(p.kind is inspect.Parameter.VAR_KEYWORD
+                   for p in parameters.values()))
 
 
 def _readFile(path):

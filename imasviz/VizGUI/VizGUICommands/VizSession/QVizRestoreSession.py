@@ -94,14 +94,16 @@ class QVizRestoreSession:
             views[case.uri] = self.openCase(case)
         for figure in session.figures:
             self.restoreFigure(figure, views)
+        windows = self.replayPluginWindows(session, views)
         for case in session.cases:
             if views.get(case.uri) is not None:
                 self.applySelection(case, views[case.uri])
 
         logging.getLogger('logPanel').info(
-            'Session "%s" restored: %d of %d case(s), %d figure(s).'
+            'Session "%s" restored: %d of %d case(s), %d figure(s), %d plugin '
+            'window(s).'
             % (self.path, sum(1 for view in views.values() if view), len(views),
-               len(session.figures)))
+               len(session.figures), windows))
         return views
 
     # ----------------------------------------------------------------- cases
@@ -480,6 +482,91 @@ class QVizRestoreSession:
             window.showMaximized()
         if state.hidden:
             window.hide()
+
+    # ---------------------------------------------------------- plugin windows
+    def replayPluginWindows(self, session, views):
+        """Ask each case's own Plugins menu the entry that drew one of its windows.
+
+        Answers how many windows came back. A plugin window is not drawn by a
+        command of this module: it is replayed through the catalog of the view the
+        user right-clicked, so the window that comes back owns its tabs, its time
+        slider and its line in the Show/Hide menu -- and it comes back under the
+        key of the file, because the answers handed to the entry carry it and the
+        plugin gives it to `FigureKeyFor`.
+        """
+        restored = 0
+        for case in session.cases:
+            if not case.pluginWindows:
+                continue
+            view = views.get(case.uri)
+            for window in case.pluginWindows:
+                if view is None:
+                    logging.getLogger('logPanel').error(
+                        'The plugin window "%s" named by "%s" is not drawn: the '
+                        'case "%s", whose Plugins menu offers the %s entry of '
+                        'plugin %s, is not open.'
+                        % (window.key, self.path, case.uri, window.entry,
+                           window.plugin))
+                    continue
+                if self.restorePluginWindow(window, view):
+                    restored += 1
+        return restored
+
+    def restorePluginWindow(self, window, view):
+        """Replay one entry of that view's catalog, answering it for the user.
+
+        Whether the window came back is read from `figureframes`, not assumed:
+        an entry can be offered and still draw nothing -- its case may be missing
+        what it needs, and the Profiles plugin logs a warning of its own and
+        returns when it finds no profiles. Counting the asks instead would report
+        a window that is not on screen.
+        """
+        from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+        from imasviz.VizPlugins.VizPlugin import QVizPluginAnswers
+
+        node = view.IDSRoots.get(window.ids)
+        if node is None:
+            logging.getLogger(view.uri).error(
+                'The plugin window "%s" named by "%s" is not drawn: the %s IDS '
+                'has no branch in the tree of %s, and the %s entry of plugin %s '
+                'is offered on that branch.'
+                % (window.key, self.path, window.ids, view.uri, window.entry,
+                   window.plugin))
+            return False
+
+        # The same catalog the right click builds, taken from the view when it is
+        # already there so the plugins of a view are not imported and built twice.
+        catalog = getattr(view, 'pluginCatalog', None)
+        if catalog is None:
+            catalog = QVizPluginCatalog(view)
+            view.pluginCatalog = catalog
+
+        offered = catalog.entriesFor(node)
+        entry = next((candidate for candidate in offered
+                      if candidate.pluginName == window.plugin
+                      and candidate.number == window.entry), None)
+        if entry is None:
+            logging.getLogger(view.uri).error(
+                'The plugin window "%s" named by "%s" is not drawn: the tree of '
+                '%s offers %s for the %s IDS, which holds no %s entry of plugin '
+                '%s.'
+                % (window.key, self.path, view.uri,
+                   'nothing' if not offered else
+                   ' / '.join('%s entry %s' % (one.pluginName, one.number)
+                              for one in offered),
+                   window.ids, window.entry, window.plugin))
+            return False
+
+        catalog.run(entry, answers=QVizPluginAnswers(
+            occurrence=window.occurrence, figureKey=window.key))
+        if window.key not in self.api.figureframes:
+            logging.getLogger(view.uri).error(
+                'The %s entry of plugin %s was asked for the window "%s" of "%s" '
+                'and drew nothing: the reason is in the line above, from the '
+                'plugin itself.'
+                % (window.entry, window.plugin, window.key, self.path))
+            return False
+        return True
 
     # ------------------------------------------------------------- selection
     def applySelection(self, case, view):

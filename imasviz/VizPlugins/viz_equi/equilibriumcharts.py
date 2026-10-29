@@ -40,7 +40,7 @@ from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, 
     QLabel, QMessageBox, QStatusBar, QCheckBox
 from PySide6 import QtCore
 
-from imasviz.VizPlugins.VizPlugin import VizPlugin
+from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginWindow
 from imasviz.VizUtils import FigureTypes
 
 # Figures options
@@ -1199,7 +1199,7 @@ class equilibriumcharts(VizPlugin):
     def isEnabled(self):
         return True
 
-    def execute(self, vizAPI, pluginEntry):
+    def execute(self, vizAPI, pluginEntry, answers=None):
 
         # The key is taken before the window is built and handed to the registry
         # only once it exists: `GetNextKeyForFigure` reads the registry, so a
@@ -1209,12 +1209,31 @@ class equilibriumcharts(VizPlugin):
         # measured before, `figureframes` stayed empty and the only way out of a
         # window was its own Exit entry, while each new click on the menu built
         # another one on top of the previous.
-        figureKey = vizAPI.GetNextKeyForFigure(
-            FigureTypes.EQUILIBRIUMPLOTTYPE)
+        figureKey = vizAPI.FigureKeyFor(FigureTypes.EQUILIBRIUMPLOTTYPE,
+                                        None if answers is None
+                                        else answers.figureKey)
+        # This entry asks nothing, so the only answer a session can bring is the
+        # occurrence -- and this plugin reads occurrence 0 of `equilibrium` and of
+        # `wall` whatever it is offered, because `DataGen` settles it. A file
+        # naming another one is refused by name rather than answered with a window
+        # whose curves come from somewhere else.
+        if answers is not None and answers.occurrence != 0:
+            raise ValueError('the Equilibrium overview reads occurrence 0 of the '
+                             'equilibrium and wall IDSs, so it cannot be opened '
+                             'on occurrence %d as "%s" asks.'
+                             % (answers.occurrence, answers.figureKey))
         self.frame = PlotFrame(self.selectedTreeNode, vizAPI,
                                parent=self.dataTreeView,
                                title=PlotFrame.title + ' [' + figureKey + ']')
         vizAPI.figureframes[figureKey] = self.frame
+        # What a session needs to put this window back. Measured, the frame answers
+        # neither its key nor its entry, and `mdiWindowOf` answers None: it is a
+        # top-level window parented to the shot view, so its place in the file is
+        # the case of that view, not an MDI geometry.
+        self.frame.pluginWindow = QVizPluginWindow(
+            uri=self.frame.uri, plugin='equilibriumcharts',
+            entry=pluginEntry, ids=self.selectedTreeNode.getIDSName(),
+            occurrence=0)
         self.frame.show()
 
     def getEntries(self):

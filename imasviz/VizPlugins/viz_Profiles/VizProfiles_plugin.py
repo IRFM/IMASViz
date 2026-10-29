@@ -11,7 +11,7 @@ import logging
 
 from PySide6.QtWidgets import QInputDialog
 
-from imasviz.VizPlugins.VizPlugin import VizPlugin
+from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginWindow
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.VizProfiles import VizProfiles, Request
 
 
@@ -23,8 +23,14 @@ class VizProfiles_plugin(VizPlugin):
         self.IDS_parameters = {}
         self.supported_idss = ['edge_profiles', 'core_profiles', 'equilibrium', 'core_sources', 'core_transport']
 
-    def execute(self, vizAPI, pluginEntry):
+    def execute(self, vizAPI, pluginEntry, answers=None):
         """Main plugin function.
+
+        `answers` is what a session replaying this entry already answered for the
+        user: the occurrence and the key of the window. Without it the entry asks
+        its question the way it always did; with it, nothing is asked, because a
+        restore has no one in front of a modal `QInputDialog` (measured: a probe
+        left to answer that one sat here for 240 s).
         """
         try:
             # Get dataSource from the VizAPI (Application Program Interface)
@@ -46,7 +52,9 @@ class VizProfiles_plugin(VizPlugin):
                                  % selected_ids)
 
             occurrence = occurrences[0]
-            if len(occurrences) > 1:
+            if answers is not None:
+                occurrence = answers.occurrence
+            elif len(occurrences) > 1:
                 occurrence = self.askForOccurrence(selected_ids, occurrences)
 
 
@@ -174,8 +182,18 @@ class VizProfiles_plugin(VizPlugin):
                         requests_list.append(request)
 
             if len(requests_list) > 0:
-                self.edge_profiles_main_window = VizProfiles(vizAPI, self.IDS_parameters, self.selectedTreeNode,
-                                                             self.dataTreeView, requests_list, selected_ids, plotAxis)
+                self.edge_profiles_main_window = VizProfiles(
+                    vizAPI, self.IDS_parameters, self.selectedTreeNode,
+                    self.dataTreeView, requests_list, selected_ids, plotAxis,
+                    figureKey=None if answers is None else answers.figureKey)
+                # What a session needs to put this window back, and the only
+                # place it exists: measured, the panel answers neither `figureKey`
+                # nor `key`, and the entry number and the occurrence it settled on
+                # live nowhere but here.
+                self.edge_profiles_main_window.pluginWindow = QVizPluginWindow(
+                    uri=dataSource.uri, plugin='VizProfiles_plugin',
+                    entry=pluginEntry, ids=selected_ids,
+                    occurrence=occurrence)
             else:
                 message = "No profiles found for " + selected_ids + " IDS."
                 logging.getLogger(self.dataTreeView.uri).warning(message)

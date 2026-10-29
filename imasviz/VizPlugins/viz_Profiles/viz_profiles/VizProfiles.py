@@ -20,7 +20,7 @@ from PySide6.QtGui import QScreen, QGuiApplication
 from PySide6.QtCore import Qt, QSize, Signal, Slot, QThread, QObject
 from PySide6.QtGui import QDoubleValidator
 
-from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalOperations, QVizGlobalValues, FigureTypes
 from imasviz.Viz_API import Viz_API
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView import QVizTablePlotView
@@ -32,12 +32,17 @@ class VizProfiles(QMainWindow):
     updateProgressBar = Signal()
 
     def __init__(self, viz_api, IDS_parameters, selectedTreeNode,
-                 dataTreeView, requests_list, ids_name, plotAxis):
+                 dataTreeView, requests_list, ids_name, plotAxis,
+                 figureKey=None):
         """
         Arguments:
             IDS_parameters (Dictionary) : Dictionary containing IDS parameters
                                           (shot, run, user, database)
             ids            (obj)        : IDS object
+            figureKey      (str)        : the key this window is to be registered
+                                          under, when something already named one
+                                          -- a session file. Left free, the api
+                                          hands out the next one.
         """
         super(VizProfiles, self).__init__()
 
@@ -71,7 +76,8 @@ class VizProfiles(QMainWindow):
         else:
             raise ValueError("Unexpected plot Axis")
 
-        figureKey = viz_api.GetNextKeyForProfilesPlotView()
+        figureKey = viz_api.FigureKeyFor(FigureTypes.PROFILESPLOTTYPE,
+                                         figureKey)
 
         self.setWindowTitle(title + ' [' + str(figureKey) + ']')
         self.selectedTreeNode = selectedTreeNode
