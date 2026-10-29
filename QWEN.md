@@ -210,10 +210,11 @@ Core concepts, in the vocabulary used by the code and docs:
   old ones (`styledPanels`).
 - **a session** — `VizConfigurations/QVizSessionFile.py` owns the third kind,
   `.vsess` under the same folder and behind the same name guard and listing
-  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="2">` root (`1`
-  stays readable), one `<Case uri dd_version label>` per case holding
-  `<Load ids occurrence slices>`, `<Expanded ids [occurrence]>` and
-  `<Selection path occurrence>`, then one `<Figure key kind [axis] [tensor]>`
+  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="3">` root (`1`
+  and `2` stay readable), one `<Case uri dd_version label>` per case holding
+  `<Load ids occurrence slices>`, `<Expanded ids [occurrence]>`,
+  `<Selection path occurrence>` and `<PluginWindow key plugin entry ids
+  occurrence>`, then one `<Figure key kind [axis] [tensor]>`
   per window holding `<Quantity path occurrence [uri] [row column]/>` and —
   only when the user actually set something — `<Cursors folded><Cursor key
   index/></Cursors>`, `<View x0 x1 y0 y1 autoX autoY xInverted yInverted/>`,
@@ -222,7 +223,8 @@ Core concepts, in the vocabulary used by the code and docs:
   reads the screen out of the api, `QVizRestoreSession` **replays the gestures**
   rather than rebuilding widgets — the body of `QVizOpenShotView.Open`,
   `QVizLoadOccurrence`, `QVizPlotOneNode`, `QVizPlotAsTable`,
-  `QVizPlotAsStacked` — so a restored window owns its sliders, its abscissa and
+  `QVizPlotAsStacked`, and the plugin entry behind a plugin window — so a restored
+  window owns its sliders, its abscissa and
   its menu line; the four states are then put back **after** the window is drawn
   and re-shown, in that order: cursors (moving an index reloads the curves that
   stand on it), error lines, range, window. Three consequences of that choice,
@@ -230,9 +232,19 @@ Core concepts, in the vocabulary used by the code and docs:
   still being built is an empty window), a case that cannot be opened costs
   **its own** windows and names the file and the URI in the log, and the
   selection is applied **last** because a Stacked Plot View is filled from the
-  selection of its view. The plugin windows (`PlotView:`, `EquiPlotView:`) are
-  left out and named, because they are drawn from a question a plugin asks — the
-  Profiles one is a modal `QInputDialog`. Two things a version 2 `<Figure>`
+  selection of its view. A plugin window (`PlotView:`, `EquiPlotView:`) is **not**
+  a `<Figure>` — it is not in the MDI area and answers no key of its own — so it
+  is a `<PluginWindow>` under the case whose view offered its entry, and the
+  restore asks that entry again through `view.pluginCatalog` (built there if the
+  menu was never opened) with `QVizPluginAnswers(occurrence, figureKey)`: nothing
+  is asked of the user, where the Profiles occurrence question is a **modal
+  `QInputDialog`** that held a probe **240 s**. That needs two things of a plugin,
+  both in the howto: `execute(self, vizAPI, pluginEntry, answers=None)`, and a
+  `QVizPluginWindow(uri, plugin, entry, ids, occurrence)` stamp left on the window
+  it drew — `QVizPluginCatalog.run(entry, answers=)` refuses by name an `execute`
+  that cannot take the answers. A window comes back **as its entry draws it**: the
+  time index it starts on, not the one a slider was dragged to, and no tab the
+  user added. Two things a `<Figure>`
   cannot say are said at the restore instead of pretended: the band of a table
   or stacked window belongs to a **panel**, and an image window answers one view
   box per **picture**. Two Qt facts behind the shape of those elements:
@@ -291,7 +303,8 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    `isEnabled()` (return `True` to activate), `getEntries()` (the entry *numbers* this
    node earns), `getAllEntries()` (`[(number, menu_text), …]` — the text is looked up
    **by that number**, and a number it does not describe is refused by name),
-   `execute(vizAPI, pluginEntry)` (receiving that same number), optional
+   `execute(vizAPI, pluginEntry, answers=None)` (receiving that same number, and the
+   `QVizPluginAnswers` of a session restore when the entry is replayed), optional
    `getPluginsConfiguration()`, `getDescription()`. Gate on
    `self.selectedTreeNode.getIDSName()` against a `supported_idss` list — that is how
    plugins claim IDSs. Inheriting `VizPlugin` is not what puts a plugin in the menu: the
@@ -302,7 +315,14 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    it holds — answered `AttributeError` on the first line of `execute()`, and the guard in
    `QVizPluginCatalog.run` reported it as `Plugin ... failed`, so the entry looked broken
    rather than unbound. A test that only checks "a failing plugin is named in the log"
-   passes right over that; `test_43` now pins the binding itself.
+   passes right over that; `test_43` now pins the binding itself. A window the plugin
+   draws is in a session only if the plugin says so: it leaves a
+   `QVizPluginWindow(uri, plugin, entry, ids, occurrence)` stamp on the frame it opened
+   (`VizPlugins/VizPlugin.py`), and its `execute` must accept `answers` —
+   `QVizPluginCatalog.run(entry, answers=)` reads the signature with `inspect` and refuses
+   by name an entry that cannot be handed the answers, which is what a restore needs to
+   skip the question the entry would otherwise ask (the Profiles occurrence question is a
+   **modal `QInputDialog`**: measured, a probe sat in it **240 s**).
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
    (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
    that is what the catalog takes out of the module). Several entries are commented out —
@@ -662,7 +682,10 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `VizGUI/VizConfigurations/QVizSessionFile.py` and the `VizGUICommands/VizSession/`
   package (`__init__`, `QVizSaveSession`, `QVizRestoreSession`); T40b added **none** —
   version 2 of the session format lives in the module that owns version 1, and the last
-  session is written and read by the two commands T40a created, from `QtVIZ_GUI`. Note that
+  session is written and read by the two commands T40a created, from `QtVIZ_GUI`. T40c
+  added **none** either: version 3 of the format, the `QVizPluginWindow` stamp and the
+  `answers` argument all live in modules the sweep already walked, which is why the
+  sweep answers **114** modules and **113** imports after both tasks. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new

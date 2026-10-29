@@ -172,6 +172,8 @@ those available options.
 
    :guilabel:`Show/Hide/Delete DTV` popup menu.
 
+.. _save_load_session:
+
 Save/Load Session
 -----------------
 
@@ -221,6 +223,11 @@ session comes back without retyping the database parameters.
 | maximized or hidden, and where it   | as it was left: hidden is not closed,   |
 | sat                                 | and its key stays in the menus          |
 +-------------------------------------+-----------------------------------------+
+| A window a plugin drew: which       | Its menu line is asked again of that    |
+| plugin, which entry of it, on which | case view, with the occurrence it was   |
+| IDS of which case, and the answers  | given and the key it had handed over,   |
+| that entry was given                | so nothing is asked of the user again   |
++-------------------------------------+-----------------------------------------+
 
 The key of a window is not a label: it is the name the :guilabel:`Show/Hide` and
 :guilabel:`Delete` menus address it by, and the name the *Plot X to -> Figure*
@@ -257,10 +264,20 @@ session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
    :ref:`Profiles plugin <plugins>` -- and the state that belongs to a **panel**
    rather than to a window: the time sliders of a :guilabel:`Table Plot View` or a
    :guilabel:`Stacked Plot View` are per panel, and the zoom of an :guilabel:`Image`
-   figure is per picture. Those windows come back as the drawing leaves them. The
-   windows drawn by a plugin (:guilabel:`Profiles`, :guilabel:`Equilibrium
-   overview`) are left out too, and the log says which windows were skipped: they
-   are drawn from a question the plugin asks, not from a selection of this session.
+   figure is per picture. Those windows come back as the drawing leaves them.
+
+.. warning::
+   A plugin window comes back **as its entry draws it**, not as the user left it.
+   The file keeps the gesture -- which entry, on which IDS, at which occurrence --
+   and replays it, so the :guilabel:`Profiles` panel returns with its tabs and its
+   time slider at the index the entry starts on, and any tab added by hand is
+   gone. What the entry itself refuses is named in the log of the case: an
+   occurrence the plugin does not read (the :guilabel:`Equilibrium overview` reads
+   occurrence 0 of :guilabel:`equilibrium` and :guilabel:`wall`, and says so rather
+   than drawing curves from an occurrence the file did not name), a plugin that
+   offers no such entry on that node, or an entry whose code cannot be handed the
+   answers -- which leaves that one window out and puts the rest of the screen
+   back.
 
 The session of the run that ended
 `````````````````````````````````

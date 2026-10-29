@@ -187,14 +187,19 @@ To browse IMASViz documentation, just type:
 
 **Actions -> Save session** writes what is on the screen — the cases that are
 open, the IDS occurrences they have loaded and the time slices each was asked
-for, the selection, and the plot windows with the key the Show/Hide and Delete
-menus address them by — to **$HOME/.imasviz/\<name\>.vsess**. **Actions -> Load
+for, the selection, the plot windows with the key the Show/Hide and Delete
+menus address them by, and the windows a plugin drew — to
+**$HOME/.imasviz/\<name\>.vsess**. **Actions -> Load
 session** lists those files and puts one back: the cases are reopened and the
 windows drawn again by the same commands that drew them the first time, so a
 restored window owns its sliders, its axis and its legend. What had been *set* on
 a window comes back with it: where its time sliders stood, which of the error
 lines were on and at what step, the range a plot figure was zoomed onto, and
-where its window sat in the area — maximized or hidden, hidden not closed. See
+where its window sat in the area — maximized or hidden, hidden not closed. A
+plugin window comes back by the same rule: the file names which plugin, which
+entry of it, on which IDS and at which occurrence, and the restore asks that
+entry again with those answers, so the user is asked nothing — the window returns
+as its entry draws it, which means a tab added by hand is gone. See
 the manual, *Other GUI features -> Save/Load Session*, for what the file keeps
 and what it does not keep.
 

@@ -126,7 +126,7 @@ Mandatory method functions
 
 The plugin class must contain 5 mandatory method functions (besides constructor):
 
-- **execute(self, vizAPI, pluginEntry)**
+- **execute(self, vizAPI, pluginEntry, answers=None)**
 - **getEntries(self)**
 - **getPluginsConfiguration(self)**
 - **getAllEntries(self)**
@@ -240,6 +240,48 @@ In your :file:`myPlugin.py` file add:
     ax.legend()
     # - Draw/Show plots
     plt.show()
+
+.. _plugin_answers_and_sessions:
+
+What the framework hands :guilabel:`execute()`, and what it needs back
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The third argument, :guilabel:`answers`, is ``None`` when the entry was chosen
+from the menu -- the user is there to answer anything the entry wants to ask. It
+is a ``QVizPluginAnswers(occurrence, figureKey)`` when a **saved session** is
+replaying that entry (section :ref:`save_load_session`), and then the entry must
+take its answers from it instead of asking them: a restore has no one in front of
+a dialog. The :guilabel:`Profiles` plugin asks which occurrence to plot through a
+modal ``QInputDialog``, and a probe left to answer one such dialog sat there for
+**240 s**, which is why the restore answers it in the user's place.
+
+.. note::
+   An entry whose ``execute()`` cannot take the keyword is **refused by name** at
+   the restore and never run -- writing the older two-argument signature is
+   therefore not an error, it only means the window of that plugin is not put
+   back, and the log panel says so under the plugin's name. Taking the keyword is
+   what costs nothing else: ``def execute(self, vizAPI, pluginEntry,
+   answers=None)`` is enough, and so is ``**keywords``.
+
+A window a plugin draws is put back by asking that plugin's menu line again, not
+by rebuilding a widget. For the session to be able to ask it, the plugin says
+where the window came from, by stamping the frame it registers:
+
+.. code-block:: python
+
+    from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
+
+    frame.pluginWindow = QVizPluginWindow(uri=uri, plugin='myPlugin',
+                                          entry=pluginEntry, ids='magnetics',
+                                          occurrence=occurrence)
+
+The **key** is not part of that record: it is the key the window is registered
+under in ``Viz_API.figureframes``, which is what the :guilabel:`Show/Hide` and
+:guilabel:`Delete` menus address it by -- measured, neither registered plugin
+window knows its own key, so the session takes it from the bookkeeping. A window
+that is never registered in ``figureframes`` (a plain ``matplotlib`` window, like
+the one this tutorial draws) is not in the session at all, and the
+:guilabel:`Plot windows` menus do not reach it either.
 
 getEntries()
 """"""""""""
