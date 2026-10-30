@@ -339,5 +339,18 @@ from :menuselection:`File --> Load session`, copied, or read over: it is a file,
 not a hidden state. And with the preference off, saving by hand changes nothing
 about it -- a session you name is always available, kept or not.
 
+The look of the application
+---------------------------
+
+The chrome of the application -- the menu bar and the menus, the tree and its
+selection, the docks, the log panel, the input fields, the title of a window and
+the canvas all the windows float on -- is dressed with one of two themes,
+``light`` (the default) or ``dark``. It is a line in the preferences file, read at
+start-up; see :ref:`user_preferences`.
+
+What a theme does not dress is the inside of a plot: a figure keeps its black
+ground either way. The trace colours, the colour maps and the slice lines were all
+picked against that black, on either theme.
+
 
 

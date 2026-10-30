@@ -109,10 +109,41 @@ class QVizPreferences:
     # at the next start. Off: a run that ends leaves nothing behind on the disk,
     # and the next run asks nothing. The *File* menu saves whenever asked.
     Auto_save_session = 0
+    # Which of the two themes the application is dressed with -- see
+    # ``VizGUI/VizGuiCustomization/QVizStyle.py``, which holds both palettes and
+    # is what refuses a name it does not wear. Light is the default: the tool is
+    # used on a desktop in a lit room, and it is what the manual's screenshots
+    # were taken on.
+    Theme = 'light'
+
+    def colour(text):
+        """One of the two colour options, read as the manual writes it.
+
+        The manual says ``Nodes_selection_colour=#ff0000``; the reader took an
+        index into the six ``GlobalColors`` brushes with ``int(text) - 1``, so
+        the file the manual tells the user to write answered ``ValueError`` --
+        and ``build()`` is called by ``QtVIZ_GUI.main()`` with nothing around
+        it, which stopped the application before a window appeared. Both
+        spellings are read here, and a third one (a Qt colour name) comes along
+        for free; what neither spelling can mean is named, not raised.
+        """
+        from PySide6.QtGui import QBrush, QColor
+
+        asked = text.strip()
+        if asked.isdigit():
+            if not 1 <= int(asked) <= 6:
+                raise ValueError('%r is not one of the six colours: number one '
+                                 'from 1 to 6, or write it as #rrggbb' % asked)
+            return GlobalColors.getAvailableColorForNodes(int(asked) - 1)
+        hexed = asked if asked.startswith('#') else '#' + asked
+        colour = QColor(hexed) if len(hexed) in (4, 5, 7, 9) else QColor(asked)
+        if not colour.isValid():
+            raise ValueError('%r is not a colour: write it as #rrggbb, or number '
+                             'one of the six from 1 to 6' % asked)
+        return QBrush(colour)
 
     def build(self):
         if not QVizPreferences.userPreferencesInitialized:
-            from PySide6.QtGui import QBrush, QColor
             QVizPreferences.ColorOfNodesContainingData = GlobalColors.BLUE
             QVizPreferences.SelectionColor = GlobalColors.RED
             option1 = "Colour_of_data_nodes_containing_data="
@@ -120,29 +151,63 @@ class QVizPreferences:
             option3 = "Allow_data_to_be_plotted_with_different_units="
             option4 = "Ignore_GGD="
             option5 = "Auto_save_session="
+            option6 = "Theme="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
                     for line in f:
-                        if line.startswith(option1):
-                            color_str = line[len(option1):]
-                            QVizPreferences.ColorOfNodesContainingData = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
-                        elif line.startswith(option2):
-                            color_str = line[len(option2):]
-                            QVizPreferences.SelectionColor = GlobalColors.getAvailableColorForNodes(int(color_str) - 1)
-                        elif line.startswith(option3):
-                            value = line[len(option3):]
-                            QVizPreferences.Allow_data_to_be_plotted_with_different_units = int(value)
-                        elif line.startswith(option4):
-                            value = line[len(option4):]
-                            QVizPreferences.Ignore_GGD = int(value)
-                        elif line.startswith(option5):
-                            value = line[len(option5):]
-                            QVizPreferences.Auto_save_session = int(value)
+                        # One bad line used to cost the whole start-up. Each
+                        # option now answers for itself: what it cannot read is
+                        # named in the log and costs its own option, so a typo
+                        # in the colour leaves the theme, the tree and the
+                        # windows of the run exactly where they were.
+                        try:
+                            if line.startswith(option1):
+                                QVizPreferences.ColorOfNodesContainingData = \
+                                    QVizPreferences.colour(line[len(option1):])
+                            elif line.startswith(option2):
+                                QVizPreferences.SelectionColor = \
+                                    QVizPreferences.colour(line[len(option2):])
+                            elif line.startswith(option3):
+                                QVizPreferences.Allow_data_to_be_plotted_with_different_units = \
+                                    int(line[len(option3):])
+                            elif line.startswith(option4):
+                                QVizPreferences.Ignore_GGD = int(line[len(option4):])
+                            elif line.startswith(option5):
+                                QVizPreferences.Auto_save_session = \
+                                    int(line[len(option5):])
+                            elif line.startswith(option6):
+                                QVizPreferences.Theme = QVizPreferences.theme(
+                                    line[len(option6):])
+                        except ValueError as bad:
+                            logging.warning('Ignoring %s in %s: %s',
+                                            line.split('=', 1)[0],
+                                            userPreferencesFile, bad)
 
                 QVizPreferences.userPreferencesInitialized = True
             else:
                 logging.info("No user preferences file found.")
+
+    def theme(text):
+        """Which theme to wear, refusing a name IMASViz does not dress in.
+
+        What exists is asked of ``QVizStyle`` -- it holds the two palettes -- so
+        the answer to ``Theme=`` cannot drift from the colours on screen. What
+        the refusal *names* is what the file says, as it was typed: the name is
+        matched case-insensitively, and a line reading ``Theme=Night`` answered
+        ``unknown theme 'night'``, which is a word nobody wrote.
+        """
+        from imasviz.VizGUI.VizGuiCustomization import QVizStyle
+
+        asked = text.strip().lower()
+        try:
+            QVizStyle.forName(asked)
+        except ValueError:
+            raise ValueError('%r is not a theme: IMASViz wears %s'
+                             % (text.strip(),
+                                ' or '.join(repr(one)
+                                            for one in QVizStyle.NAMES)))
+        return asked
 
 
 class QVizGlobalValues:
@@ -233,21 +298,46 @@ class GlobalIDs:
 
 
 class GlobalFonts:
-    """Global fonts.
+    """The four fonts the chrome of the application is drawn with.
+
+    A family name is a wish, not a font. ``QFont('Open Sans')``, which every one
+    of these four used to name, is not installed on this node -- ``QFontInfo``
+    answers ``DejaVu Sans`` for it -- so the tree, the menus and the labels were
+    drawn with a substitute nobody had asked for, at a size the theme had no say
+    in either. The family is decided once, by ``QVizStyle``, and put here with
+    ``useFamily``, so the application font and these four cannot be two faces.
     """
     from PySide6.QtGui import QFont
 
-    TITLE_MEDIUM = QFont('Open Sans', 11)
-    # TITLE.setStyleHint(QFont.TypeWriter)
+    #: The family the four currently stand on.
+    FAMILY = 'Sans Serif'
+
+    TITLE_MEDIUM = QFont(FAMILY, 11)
     TITLE_MEDIUM.setBold(True)
 
-    TITLE_BIG = QFont('Open Sans', 15)
-    # TITLE.setStyleHint(QFont.TypeWriter)
+    TITLE_BIG = QFont(FAMILY, 15)
     TITLE_BIG.setBold(True)
 
-    TEXT_MEDIUM = QFont('Open Sans', 10)
-    TEXT_BIG = QFont('Open Sans', 11)
-    # TEXT.setStyleHint(QFont.TypeWriter)
+    TEXT_MEDIUM = QFont(FAMILY, 10)
+    TEXT_BIG = QFont(FAMILY, 11)
+
+    @staticmethod
+    def useFamily(family):
+        """Rebuild the four on one installed family, and answer that family.
+
+        Called once, from ``QVizStyle.applyToApplication``, with the family
+        ``QFontInfo`` resolved. The sizes stay -- they are what the tree and the
+        labels were laid out for; only the face follows the theme.
+        """
+        from PySide6.QtGui import QFont
+        GlobalFonts.FAMILY = family
+        GlobalFonts.TITLE_MEDIUM = QFont(family, 11)
+        GlobalFonts.TITLE_MEDIUM.setBold(True)
+        GlobalFonts.TITLE_BIG = QFont(family, 15)
+        GlobalFonts.TITLE_BIG.setBold(True)
+        GlobalFonts.TEXT_MEDIUM = QFont(family, 10)
+        GlobalFonts.TEXT_BIG = QFont(family, 11)
+        return family
 
 
 class GlobalQtStyles:

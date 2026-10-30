@@ -331,11 +331,17 @@ def test_every_colour_a_reader_has_to_read_clears_the_contrast_floor():
 
 def test_the_button_names_itself_in_a_legible_colour():
     """A filled button is the one place the ink is the accent and the accent the ground."""
-    light, dark = tokenBlock('light'), tokenBlock('dark')
-    # The light page writes the button's text in its surface, the dark page in its
-    # canvas -- both are in imasviz.css, and both are checked here.
-    assert contrast(rgbOf(light['surface']), rgbOf(light['accent'])) >= CONTRAST_FLOOR
-    assert contrast(rgbOf(dark['canvas']), rgbOf(dark['accent'])) >= CONTRAST_FLOOR
+    # That ink has its own token, ``--on-accent``, because it is the one colour
+    # that flips between the themes: white on the dark accent of the light page,
+    # near-black on the light accent of the dark one. Reading it off ``surface``
+    # or ``canvas`` would have passed while the sheet painted something else.
+    for kind in ('light', 'dark'):
+        tokens = tokenBlock(kind)
+        assert 'on-accent' in tokens, '%s declares no --on-accent' % kind
+        assert contrast(rgbOf(tokens['on-accent']),
+                        rgbOf(tokens['accent'])) >= CONTRAST_FLOOR, \
+            '%s: on-accent on accent answers %0.2f' % (
+                kind, contrast(rgbOf(tokens['on-accent']), rgbOf(tokens['accent'])))
 
 
 def test_the_sheet_is_not_the_blue_it_replaces():

@@ -472,7 +472,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1043 passed, 1 xfailed, ~155 s, offscreen
+python3 -m pytest tests/ -q     # 1285 passed, 1 xfailed, 12 warnings, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -481,6 +481,16 @@ import time, **before** any test imports `imasviz` — which is mandatory, becau
 `QVizGlobalValues` and `QVizGlobalOperations.checkEnvSettings()` can `sys.exit()`.
 Markers: `ui`, `dd`, `case`; `timeout = 180` caps every test. The 1
 `xfail(strict=True)` entry is an environment limit, listed in `TESTING.md` §4.
+
+`pytest.ini` carries one `filterwarnings` line, narrowed to
+`matplotlib.backends.backend_qt`, and its comment says why: that module asks Qt
+for the deprecated `AA_UseHighDpiPixmaps` attribute **every time it is asked for
+an icon pixmap**, and `QApplication.setStyle`/`setStyleSheet` re-polishes every
+live widget — so a test that dresses the application while another file's
+matplotlib toolbar is still alive collects one warning per icon per dressing
+(**1940 warnings** on such a run before the filter, **0** from the same file run
+alone; a real session dresses the application once, before any plugin window
+exists). Anything raised from IMASViz's own code still shows.
 
 A test that **shows** a plot frame must keep it alive for the whole session —
 `support/ownership.py`'s `keep()`, which is what the application does through
@@ -763,11 +773,68 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   application window (the session entries, the way out, and the refill on
   `aboutToShow`) — so the sweep answers **118** modules and **117** imports,
   measured with `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints
-  **119 passed, 1 xfailed** for those 118. Note that
+  **119 passed, 1 xfailed** for those 118. T47 added **none** — the house style of
+  the manual is a `.css`, a `.js` and an `.svg`, not a module. T48 added **1**:
+  `VizGUI/VizGuiCustomization/QVizStyle.py`, the theme of the application (the two
+  palettes, the palette a Qt style paints from, the style sheet that paints what a
+  palette has no role for, the font resolution, the log colour, the window mark),
+  so the sweep answers **119** modules and **118** imports — measured with
+  `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints **120 passed,
+  1 xfailed** for those 119. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
   module costs four more ids and no counter anywhere.
+- **The application wears a theme, and it is the manual's palette** (T48).
+  `VizGUI/VizGuiCustomization/QVizStyle.py` holds both of them (`light`, `dark`),
+  **19** colour names each, byte for byte the `tokens:begin` block of
+  `doc/source/_static/imasviz.css` — `test_77` refuses the drift token by token and
+  pins that `FONT_FAMILIES` is the head of the CSS `--font-sans`. `QtVIZ_GUI.main()`
+  calls `QVizStyle.applyToApplication(app)` after `QVizPreferences().build()` and
+  before `QVizMainWindow()`; the theme is the `Theme=` line of
+  `$HOME/.imasviz/preferences`, `light` by default, chosen at start-up — there is no
+  live switch, on purpose, because every colour on screen is read against the ground
+  a theme moves. Three measured Qt facts decide the shape: `QStyleFactory.keys()`
+  answers `['Windows', 'Fusion']` here and the `Windows` style ignores most of what a
+  palette is handed, so `Fusion` is asked first; once a style sheet is set,
+  `app.style()` is a `QStyleSheetStyle` whose `objectName()` is the **empty string**,
+  so the style can only be recognised through a metric it delegates
+  (`PM_ScrollBarExtent` **14** where Windows answers **16**, `PM_MenuPanelWidth` **0**
+  where it answers **2**); and a `QMdiArea` paints its **own** ground from
+  `QPalette::Dark`, read **once at construction** — a `background` rule in a style
+  sheet never reaches it, and a palette changed after the widget exists does not move
+  it either (`setBackground` does). Measured: `#9f9f9f` (Qt's stock derived grey)
+  before, `#eef1f3` light / `#0f1317` dark after `paletteFor` named `Dark`. A fresh
+  `QPalette` whose `Window` is set still answers `#9f9f9f` for `Dark` — derived roles
+  are **not** recomputed from the colours you set. Two sheet rules that measured
+  false were dropped for this reason (a `background` on `QMdiArea`, and
+  `QStatusBar#statusbar`, an id the main window's bar does not carry); a rule that
+  matches nothing is worse than no rule, because the next reader believes the colour
+  is on screen. `titlebar-close-icon: none` went too — it removes the button that
+  closes a dock.
+- **A theme never reaches a plot.** No rule of `styleSheet` names a `QGraphicsView`
+  and none names `QWidget` with a `background`; a pyqtgraph figure answers
+  **`#000000`** under either theme (measured, and pinned by `test_77`), which is what
+  keeps the trace palettes (T33/T34), the colour maps (T44) and the slice-line colours
+  (T45) true. The chrome it does paint, per theme: tree `#ffffff`/`#181d22`, header
+  and menu bar `#f7f9fa`/`#141a1f`, selection `#bfe3ea`/`#22505a`, input
+  `#f4f7f8`/`#12171b`, log `#f6f8f9`/`#12171b`, a sub-window title
+  `#f7f9fa`/`#141a1f`. `QWidget.grab()`
+  renders a widget that was never `show()`n, which is how a theme test samples pixels
+  without entering the paint-queue hazard `tests/support/ownership.py` exists for.
+- **Naming a font is not getting one, and one bad preference line is not a stop.**
+  `GlobalFonts` named `'Open Sans'` on all four of its fonts; `QFontInfo` answers
+  `DejaVu Sans` for that name here. `QVizStyle.resolvedFontFamily()` asks
+  `QFontInfo` over `FONT_FAMILIES` and returns the one that answers for itself —
+  **Cantarell** on this node — at `POINT_SIZE` **10**, and `GlobalFonts.useFamily()`
+  rebuilds the four on it (sizes and bold flags kept) in the same call that dresses
+  the application. On the same path: `build()` is called by `main()` with nothing
+  around it, and the two colour options were read with `int(text)` while the manual
+  documents `Nodes_selection_colour=#ff0000` — the file the manual tells you to write
+  raised `ValueError` and the run died before a window appeared. Each line answers for
+  itself now (`QVizPreferences.colour` reads a hex with or without `#`, a Qt colour
+  name, or the index **1..6**; `theme()` asks `QVizStyle` and names what was *typed*),
+  the value is named in the log panel, and the rest of the file is still read.
 - In this PySide6 build `Slot`, `Signal`, `QThread` and `exec_()` **do** exist, while
   `QVariant` and `pyqtProperty` do **not**. `QWidget`/`QGridLayout`/`QMainWindow` are in
   `QtWidgets`; `QIntValidator` is in `QtGui`.

@@ -25,9 +25,11 @@ missing 2 required positional arguments: 'item' and 'dataTreeView'`.
 """
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QBrush, QColor
 from PySide6.QtWidgets import QFormLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
-from imasviz.VizUtils import GlobalColors, GlobalFonts
+from imasviz.VizUtils import GlobalFonts
+from imasviz.VizGUI.VizGuiCustomization import QVizStyle
 from .QVizNodeFacts import QVizNodeFacts
 
 # What the panel says before the user has clicked anything.
@@ -42,7 +44,14 @@ class QVizNodeDocumentationPanel(QWidget):
         self.setObjectName("QVizNodeDocumentationPanel")
         self.setAutoFillBackground(True)
         palette = self.palette()
-        palette.setBrush(self.backgroundRole(), GlobalColors.LIGHT_CYAN)
+        # The dock ground of the theme, not one colour painted in here. It used
+        # to be ``GlobalColors.LIGHT_CYAN`` -- #cce5ff, which answers **1,01**
+        # against the ink of the dark theme: a panel asking to be a panel and a
+        # panel asking to be legible had stopped being the same question.
+        # ``surface-alt`` is what the palette says a dock is painted with in
+        # either theme, and the text on it clears 13,97 light / 13,41 dark.
+        palette.setBrush(self.backgroundRole(),
+                         QBrush(QColor(QVizStyle.colour('surface-alt'))))
         self.setPalette(palette)
 
         self._rows = []

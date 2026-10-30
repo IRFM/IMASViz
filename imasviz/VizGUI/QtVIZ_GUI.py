@@ -22,7 +22,7 @@ from pathlib import Path
 # Append imasviz source path
 sys.path.append((os.environ['VIZ_HOME']))
 
-from imasviz.VizGUI.VizGuiCustomization import QVizDefault
+from imasviz.VizGUI.VizGuiCustomization import QVizDefault, QVizStyle
 from imasviz.VizGUI.VizGUICommands import QVizMainMenuController, QVizFileMenu
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRestoreSession
@@ -567,6 +567,10 @@ def main():
     app = QApplication(sys.argv)
     QVizGlobalOperations.checkEnvSettings()
     QVizPreferences().build()
+    # After the preferences, because which of the two themes is worn is one of
+    # them; before the window, because a window built under the desktop's own
+    # palette paints its first frame in colours the user did not ask for.
+    QVizStyle.applyToApplication(app)
     window = QVizMainWindow()
     logging.getLogger('logPanel').info("Welcome to Viz!")
     logging.getLogger('logPanel').info("Please report any issue to ITER JIRA: https://jira.iter.org/")

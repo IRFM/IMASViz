@@ -24,11 +24,26 @@ class QVizLogger( logging.Handler ):
     def emit(self, record):
         msg = self.format(record)
         if self.use_rich_text:
-            if 'ERROR' in msg or 'WARNING' in msg:
-                msg = "<font color='red'>" + msg + "</font>"
-            elif 'INFO' in msg:
-                msg = "<font color='black'>" + msg + "</font>"
+            # The colour of the level, from the theme the application wears --
+            # never a hardcoded one. Two readings used to decide it: whether the
+            # formatted line contained the word ERROR or WARNING, and a fixed
+            # red or black. The first coloured a line whose *text* happened to
+            # quote an error while its level was INFO; the second painted every
+            # information line in black, which is invisible the moment the log
+            # panel is dressed for the dark theme.
+            msg = "<font color='%s'>%s</font>" % (logColour(record.levelno), msg)
         self.new_signal_emiter.send_signal(msg)
+
+
+def logColour(level):
+    """The colour one log level is painted with, asked of the theme.
+
+    Imported where it is asked and not at the top of the module: the palette
+    lives in ``VizGUI``, which imports this package, so a module-level import
+    would be a cycle.
+    """
+    from imasviz.VizGUI.VizGuiCustomization.QVizStyle import logColour as asked
+    return asked(level)
 
 
 class SignalEmiter( QObject ):

@@ -43,6 +43,7 @@
   --accent: #0b7285;
   --accent-strong: #085c6b;
   --accent-soft: #e3f0f2;
+  --on-accent: #ffffff;
   --selection: #bfe3ea;
   --on-selection: #10222a;
   --log-ground: #f6f8f9;
@@ -50,8 +51,8 @@
   --log-warn: #9a5b00;
   --log-error: #b3261e;
 
-  --font-sans: "Inter", "Segoe UI", "Cantarell", "DejaVu Sans", system-ui,
-    -apple-system, sans-serif;
+  --font-sans: "Inter", "Segoe UI", "Cantarell", "DejaVu Sans",
+    "Liberation Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "DejaVu Sans Mono", "Liberation Mono", ui-monospace, Consolas,
     monospace;
   --measure: 46rem;
@@ -73,6 +74,7 @@ html[data-theme="dark"] {
   --accent: #5fd4e4;
   --accent-strong: #8ce3ef;
   --accent-soft: #1d3238;
+  --on-accent: #0f1317;
   --selection: #22505a;
   --on-selection: #eaf6f8;
   --log-ground: #12171b;
@@ -607,13 +609,11 @@ div.body input[type="submit"], div.body button {
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
-  color: var(--surface);
+  /* --on-accent is the ink that is legible ON the accent, which is the one
+     ground whose own ink flips between the two themes: the accent is dark in
+     the light theme and light in the dark one. */
+  color: var(--on-accent);
   cursor: pointer;
-}
-
-html[data-theme="dark"] div.body input[type="submit"],
-html[data-theme="dark"] div.body button {
-  color: var(--canvas);
 }
 
 div.body input[type="submit"]:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
