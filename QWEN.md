@@ -58,7 +58,9 @@ remotely through **UDA**.
   `ModuleNotFoundError` inside a leaf import.
 - Documentation is a first-class artifact of the repo: Sphinx/RST under `doc/source`, built with
   `make doc`. The RST manual is the authoritative user guide — consult it before inventing
-  behavior.
+  behavior. Its look is **in the repository**: Sphinx's own `basic` theme plus
+  `doc/source/_static/imasviz.css` and `imasviz.js`, so a build needs no theme package. The sheet
+  carries its colours as a light/dark token block between `/* tokens:begin … */` markers.
 
 ### Qt binding — corrected in this pass
 
@@ -105,7 +107,7 @@ export UDA_DISABLED=1          # optional: no remote UDA servers
 | Command | Effect |
 | --- | --- |
 | `make` | Default is now `all: doc` — builds docs only. The `default` target (submodule fetch) still exists for explicit `make default`, but no submodule is configured any more (see ETSViz note). |
-| `make doc` / `make -C doc html` | Sphinx route (`cd doc && make html`). **It stops on this node, but not for the reason this row used to give**: `sphinx-build` **is** reachable — 7.2.6, at `Python-bundle-PyPI/2023.10-GCCcore-13.2.0/bin/sphinx-build`, on PATH without loading any module — and what is missing is the theme `doc/source/conf.py:90` asks for: `Theme error: no theme named 'sphinx_rtd_theme' found (missing theme.conf?)`, `make: *** [Makefile:27: doc] Error 2`. `pip3 install sphinx_rtd_theme` is what `make doc` still needs; `doc/build/` is gitignored. |
+| `make doc` / `make -C doc html` | Sphinx route (`cd doc && make html`), and it **works**: `build succeeded`, exit 0, **0 warnings**, **3,87 s**, 21 sources → **23** pages under `doc/build/html` (gitignored). Nothing but Sphinx is needed — since T47 the manual wears `doc/source/_static/imasviz.css` over the `basic` theme. What it stopped on before is recorded because the docs and the README said the opposite: `sphinx-build` 7.2.6 has been on PATH here all along (no module), and what was missing was the theme `conf.py` asked for — `Theme error: no theme named 'sphinx_rtd_theme' found (missing theme.conf?)`, `make: *** [Makefile:27: doc] Error 2`. The two `conf.py` warnings the override route used to print (`language = None`, the pre-1.0 `intersphinx_mapping` form) are gone with those settings. |
 | `make clean` | Deletes `doc/build` only. It used to delete `$HOME/.imasviz/VizGeneratedCode` as well; that folder is gone with the reflection based parser. |
 | `make -C doc html` / `-M latexpdf` | Direct Sphinx route; `doc/Makefile` adds a custom `latexpdf` rule copying `source/_static/*.mp4` next to the LaTeX output. |
 
@@ -126,11 +128,13 @@ viz -u <user> -d <database> -s <shot> -r <run> -b <backend>   # backend 13 = HDF
 `module` is a shell function: piping a `module load` into another command runs it in a subshell
 and loses `MODULEPATH` — load it in the same shell as the consuming command.
 
-Sphinx 7.2.6 is on this node and needs no module; `sphinx_rtd_theme` is not installed, and
-that is what `make doc` stops on. `python3 -m sphinx -b html -D html_theme=alabaster
-doc/source <out>` is how the manual gets built and checked here: 21 source files, exit 0,
-two warnings, both about `conf.py` itself (`language = None`, and the pre-1.0
-`intersphinx_mapping` form).
+Sphinx 7.2.6 is on this node and needs no module, and since T47 nothing else is needed either:
+the manual's look is `doc/source/_static/imasviz.css` (+ `imasviz.js` for the light/dark choice)
+over the `basic` theme, so `make doc` builds. `-D html_theme=alabaster` is no longer how the
+manual is built and checked here — it is no longer *needed* — and the two `conf.py` warnings it
+used to answer (`language = None`, the pre-1.0 `intersphinx_mapping` form) went with the settings
+that caused them: `language = 'en'`, and `sphinx.ext.intersphinx` out of `extensions` (its one mapping —
+`docs.python.org` — was fetched over the network for **0** `:py:` roles in a manual documenting a GUI).
 
 There is a pytest suite (see Testing below), but **no CI config, linter config, or
 packaging manifest** in this repo.
@@ -993,8 +997,16 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   that *is* a time base (`flux_loop[i].flux.time`) being the same axis spelled
   differently, not a second curve to offer. `test_70` pins both entries, on the stubs
   and on the case.
-- The manual **is** built and checked here, with the theme overridden: `python3 -m sphinx
-  -b html -D html_theme=alabaster doc/source <out>` answers exit 0 over 21 source files and
-  two `conf.py` warnings, and it is the only route that works — `make doc` itself still
-  fails, on `sphinx_rtd_theme`, not on Sphinx (`sphinx-build` 7.2.6 is on PATH here). Its
-  output is throwaway: `make clean` takes `doc/build` back.
+- The manual **is** built and checked here, with no theme override: `make doc` answers
+  `build succeeded`, exit 0 and **0 warnings** over **21** source files (**3,87 s**, 23 pages),
+  because the look is in the repository — `doc/source/_static/imasviz.css` over `basic`, with
+  `imasviz.js` choosing light or dark (T47). `tests/test_76_the_manual_wears_the_house_style.py`
+  (**24**) is the guard: it builds the manual in process through
+  `sphinx.cmd.build.build_main` into a `tmp_path_factory` folder, with the warnings going to a
+  file of their own (`-q` silences the console, not the complaints), and reads what came out — so
+  it refuses a build that warns, a sheet that loads before `basic.css`, a token used but never
+  declared, a colour pair under the WCAG 4,5 floor, the five pale values of the theme this sheet
+  replaces, and a `conf.py` that asks a theme this node does not have. Its one measured wrinkle:
+  Sphinx appends a content hash to every static href (`_static/imasviz.css?v=8a249c91`), which
+  the first cut of the sheet-order assertion read as `'imasviz.css' is not in list`. Its output
+  is throwaway: `make clean` takes `doc/build` back, and the test never writes there.

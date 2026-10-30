@@ -37,8 +37,10 @@ IMASViz requires the following libraries:
    - matplotlib
    - Sphinx
    (pip3 install sphinx)
-   - Sphinx RTD theme
-   (pip3 install sphinx_rtd_theme)
+   No Sphinx theme is needed: the manual is built on Sphinx's own ``basic``
+   theme and dressed by ``doc/source/_static/imasviz.css``, which is in the
+   repository. (It used to ask for ``sphinx_rtd_theme``, which is not installed
+   on the nodes IMASViz is built on -- ``make doc`` stopped there.)
 
 
 ### Obtaining the source code

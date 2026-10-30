@@ -1,0 +1,714 @@
+/*
+ * Copyright holders : Commissariat à l’Energie Atomique et aux Energies Alternatives (CEA), France;
+ * and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
+ * CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
+ * The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
+ *
+ * Authors L. Fleury, X. Li, D. Penko
+ *
+ * -----------------------------------------------------------------------------
+ * The house style of the IMASViz manual, and of the application.
+ *
+ * Written against the markup of Sphinx's own ``basic`` theme, so that a build
+ * needs nothing but Sphinx: the theme this file replaces (``sphinx_rtd_theme``)
+ * is not installed on the nodes IMASViz is built on, and its pale-blue admonition
+ * boxes are what the manual read as. Nothing here is fetched from a network: no
+ * web font, no CDN, no remote stylesheet.
+ *
+ * The colour block between ``tokens:begin`` and ``tokens:end`` is not a private
+ * detail of the manual: it is the palette the application is asked to wear too.
+ * ``tests/test_76_the_manual_wears_the_house_style.py`` pins the shape of that
+ * block -- two themes naming the same colours, every text-on-ground pair above
+ * the WCAG floor, the pale blues of the theme this sheet replaces refused by
+ * value -- and the test that reads both tables refuses any drift between the two.
+ * A colour that means the same thing in both places is written once per theme and
+ * has one value.
+ *
+ * The code palette below the block is deliberately outside that agreement: the
+ * manual highlights syntax and the application has nothing to highlight.
+ * -----------------------------------------------------------------------------
+ */
+
+/* tokens:begin light */
+:root {
+  --canvas: #eef1f3;
+  --surface: #ffffff;
+  --surface-alt: #f7f9fa;
+  --field: #f4f7f8;
+  --line: #dde3e7;
+  --line-soft: #eaeff1;
+  --ink: #1f2933;
+  --ink-soft: #4a5560;
+  --ink-faint: #616b77;
+  --accent: #0b7285;
+  --accent-strong: #085c6b;
+  --accent-soft: #e3f0f2;
+  --selection: #bfe3ea;
+  --on-selection: #10222a;
+  --log-ground: #f6f8f9;
+  --log-info: #1f2933;
+  --log-warn: #9a5b00;
+  --log-error: #b3261e;
+
+  --font-sans: "Inter", "Segoe UI", "Cantarell", "DejaVu Sans", system-ui,
+    -apple-system, sans-serif;
+  --font-mono: "DejaVu Sans Mono", "Liberation Mono", ui-monospace, Consolas,
+    monospace;
+  --measure: 46rem;
+  --radius: 4px;
+}
+/* tokens:end light */
+
+/* tokens:begin dark */
+html[data-theme="dark"] {
+  --canvas: #0f1317;
+  --surface: #181d22;
+  --surface-alt: #141a1f;
+  --field: #12171b;
+  --line: #2a333a;
+  --line-soft: #222a31;
+  --ink: #dbe2e8;
+  --ink-soft: #a7b3bd;
+  --ink-faint: #8494a0;
+  --accent: #5fd4e4;
+  --accent-strong: #8ce3ef;
+  --accent-soft: #1d3238;
+  --selection: #22505a;
+  --on-selection: #eaf6f8;
+  --log-ground: #12171b;
+  --log-info: #dbe2e8;
+  --log-warn: #e0b070;
+  --log-error: #f19a92;
+}
+/* tokens:end dark */
+
+/* The colours syntax highlighting is painted with -- manual only. */
+:root {
+  --code-comment: #5f6b76;
+  --code-keyword: #b03060;
+  --code-string: #1c6b4a;
+  --code-number: #8a5a00;
+  --code-name: #1a5fb4;
+}
+
+html[data-theme="dark"] {
+  --code-comment: #8b98a5;
+  --code-keyword: #e69fb8;
+  --code-string: #9fd6a8;
+  --code-number: #e3c08a;
+  --code-name: #8fc7f2;
+}
+
+/* -- the ground, and the type that sits on it --------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--canvas); }
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.65;
+  -webkit-text-size-adjust: 100%;
+}
+
+div.body {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+a:hover, a:focus {
+  color: var(--accent-strong);
+  border-bottom-color: currentColor;
+}
+
+p, ul, ol, dl, table { margin-bottom: 1.1em; }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 2.2em 0;
+}
+
+img { max-width: 100%; height: auto; }
+
+/* -- the bar along the top --------------------------------------------- */
+
+div.related {
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.85rem;
+  line-height: 1;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+div.related ul {
+  margin: 0;
+  padding: 0.6rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  list-style: none;
+}
+
+div.related li { display: inline-flex; align-items: center; }
+
+div.related li.right { float: none; margin-right: 0; }
+
+div.related a {
+  color: var(--ink-soft);
+  border-bottom: 0;
+  padding: 0.25rem 0.15rem;
+}
+
+div.related a:hover { color: var(--accent); }
+
+div.related li.nav-item-this > a,
+div.related li.nav-item-this {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* -- the page: content beside navigation ------------------------------- */
+
+div.document {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem 0;
+}
+
+div.documentwrapper {
+  flex: 1 1 auto;
+  min-width: 0;
+  float: none;
+  width: auto;
+  background: transparent;
+}
+
+div.bodywrapper {
+  float: none;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(16, 34, 42, 0.06);
+}
+
+div.body {
+  border-radius: var(--radius);
+  padding: 2rem 2.5rem 3rem;
+  max-width: var(--measure);
+  min-width: 0;
+}
+
+div.footer {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 2rem 1.5rem 2.5rem;
+  background: transparent;
+}
+
+/* -- the navigation column --------------------------------------------- */
+
+div.sphinxsidebar {
+  flex: 0 0 300px;
+  width: auto;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  position: sticky;
+  top: 3rem;
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+}
+
+div.sphinxsidebarwrapper {
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+div.sphinxsidebarwrapper > * {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+div.sphinxsidebar p.logo {
+  padding-top: 1.25rem;
+  text-align: left;
+}
+
+/* The mark is drawn at 64 and shown at 64: it is a mark, not a banner, and a
+   logo stretched across a navigation column reads as a missing image. */
+div.sphinxsidebar img.logo { max-width: 64px; }
+
+div.sphinxsidebar h3, div.sphinxsidebar h4 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  border: 0;
+  padding-top: 0;
+}
+
+div.sphinxsidebar ul { margin: 0; padding: 0; list-style: none; }
+
+div.sphinxsidebar ul li { margin: 0.05rem 0; }
+
+div.sphinxsidebar ul li a {
+  display: block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  color: var(--ink-soft);
+  border-bottom: 0;
+}
+
+div.sphinxsidebar ul li a:hover {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+div.sphinxsidebar ul.current > a,
+div.sphinxsidebar a.reference.current,
+div.sphinxsidebar li.current > a {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+/* -- headings ----------------------------------------------------------- */
+
+div.body h1, div.body h2, div.body h3,
+div.body h4, div.body h5, div.body h6 {
+  font-family: var(--font-sans);
+  font-weight: 650;
+  color: var(--ink);
+  line-height: 1.25;
+  margin: 1.9em 0 0.6em;
+  padding: 0;
+  background: none;
+  text-align: left;
+}
+
+div.body h1 {
+  font-size: 1.9rem;
+  margin-top: 0;
+  padding-bottom: 0.45em;
+  border-bottom: 2px solid var(--accent);
+}
+
+div.body h2 {
+  font-size: 1.35rem;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--line);
+}
+
+div.body h3 { font-size: 1.12rem; }
+div.body h4 { font-size: 1rem; color: var(--ink-soft); }
+div.body h5, div.body h6 { font-size: 0.95rem; color: var(--ink-soft); }
+
+a.headerlink {
+  color: var(--line);
+  border-bottom: 0;
+  font-weight: 400;
+  margin-left: 0.35em;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+h1:hover a.headerlink, h2:hover a.headerlink, h3:hover a.headerlink,
+h4:hover a.headerlink, h5:hover a.headerlink, h6:hover a.headerlink,
+a.headerlink:focus {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* -- inline marks ------------------------------------------------------- */
+
+code, tt, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+code, tt {
+  background: var(--field);
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  padding: 0.08em 0.32em;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+a code, a tt { color: inherit; border-bottom: 0; }
+
+kbd {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  padding: 0.1em 0.38em;
+  box-shadow: 0 1px 0 var(--line);
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+kbd kbd { border: 0; padding: 0; box-shadow: none; }
+
+span.menuselection { font-weight: 600; color: var(--ink); }
+
+span.menuselection .arrow {
+  color: var(--ink-faint);
+  font-weight: 400;
+  padding: 0 0.15em;
+}
+
+.guilabel {
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  padding: 0.05em 0.3em;
+}
+
+abbr[title], acronym[title] {
+  border-bottom: 1px dotted var(--ink-faint);
+  cursor: help;
+  text-decoration: none;
+}
+
+/* -- code blocks -------------------------------------------------------- */
+
+div.highlight, pre {
+  background: var(--field);
+  color: var(--ink);
+}
+
+pre {
+  margin: 0;
+  padding: 0.9em 1.1em;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  line-height: 1.55;
+  font-size: 0.84rem;
+}
+
+div.highlight + div.highlight, p + div.highlight { margin-top: 0.6em; }
+
+td.linenos pre { border: 0; border-right: 1px solid var(--line-soft); }
+
+blockquote {
+  margin: 1.1em 0;
+  padding-left: 1.1em;
+  border-left: 3px solid var(--line);
+  color: var(--ink-soft);
+}
+
+/* The light theme is what pygments was asked to emit; the dark theme has to
+   re-dress those spans itself, since one build carries one pygments sheet. */
+.highlight .c, .highlight .c1, .highlight .cm, .highlight .go { color: var(--code-comment); }
+.highlight .k, .highlight .kn, .highlight .kd, .highlight .kr { color: var(--code-keyword); font-weight: 600; }
+.highlight .s, .highlight .s1, .highlight .s2, .highlight .sd, .highlight .se { color: var(--code-string); }
+.highlight .m, .highlight .mi, .highlight .mf, .highlight .mh { color: var(--code-number); }
+.highlight .nf, .highlight .nc, .highlight .nb, .highlight .bp, .highlight .nn { color: var(--code-name); }
+.highlight .o, .highlight .ow { color: var(--ink-soft); }
+.highlight .hll { background: var(--accent-soft); }
+
+/* -- admonitions -------------------------------------------------------- */
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning, div.seealso,
+div.topic {
+  margin: 1.4em 0;
+  padding: 0.85em 1.1em;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  /* The plain ground first, the tinted one second: a browser without
+     color-mix keeps the readable box instead of none at all. */
+  background: var(--surface-alt);
+  background: color-mix(in srgb, var(--ink-soft) 7%, var(--surface));
+}
+
+div.admonition p, div.note p, div.warning p { margin-bottom: 0.5em; }
+
+div.admonition p:last-child, div.note p:last-child,
+div.warning p:last-child { margin-bottom: 0; }
+
+p.admonition-title, div.admonition-title {
+  margin: -0.15em 0 0.45em;
+  padding: 0;
+  font-weight: 700;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 0;
+}
+
+div.warning, div.attention, div.caution {
+  border-left-color: var(--log-warn);
+  background: var(--surface-alt);
+  background: color-mix(in srgb, var(--log-warn) 9%, var(--surface));
+}
+
+div.warning p.admonition-title,
+div.attention p.admonition-title,
+div.caution p.admonition-title { color: var(--log-warn); }
+
+div.danger, div.error {
+  border-left-color: var(--log-error);
+  background: var(--surface-alt);
+  background: color-mix(in srgb, var(--log-error) 9%, var(--surface));
+}
+
+div.danger p.admonition-title, div.error p.admonition-title {
+  color: var(--log-error);
+}
+
+div.tip, div.hint, div.important {
+  border-left-color: var(--accent);
+  background: var(--surface-alt);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+div.tip p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title { color: var(--accent); }
+
+/* -- tables ------------------------------------------------------------- */
+
+div.body table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: auto;
+  max-width: 100%;
+  display: table;
+  overflow: visible;
+  font-size: 0.92rem;
+  background: var(--surface);
+}
+
+/* A wide table scrolls instead of pushing the page sideways. */
+table.docutils { border: 1px solid var(--line); border-radius: var(--radius); }
+
+div.body table.docutils th, div.body table.docutils td {
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 0.45em 0.75em;
+  text-align: left;
+  vertical-align: top;
+}
+
+div.body table.docutils thead th,
+div.body table.docutils tbody th {
+  background: var(--surface-alt);
+  color: var(--ink);
+  font-weight: 650;
+}
+
+div.body table.docutils thead th {
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+div.body table.docutils tbody tr:nth-child(even) td { background: var(--field); }
+
+div.body table.docutils tbody tr:last-child td { border-bottom: 0; }
+
+/* -- figures ------------------------------------------------------------ */
+
+div.figure, figure { margin: 1.6em 0; }
+
+div.figure img, figure img {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+p.caption, figcaption {
+  margin-top: 0.6em;
+  font-size: 0.85rem;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+a.image-reference img { display: block; }
+
+img.align-center, .align-center { margin-left: auto; margin-right: auto; }
+
+/* -- the contents tree on the landing page ------------------------------ */
+
+div.toctree-wrapper { margin: 1.6em 0; }
+
+div.toctree-wrapper > p.caption {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: left;
+  margin-bottom: 0.5em;
+}
+
+div.toctree-wrapper ul { list-style: none; padding-left: 0; }
+
+div.toctree-wrapper li { margin: 0.25em 0; }
+
+div.toctree-wrapper li a { display: inline-block; padding: 0.1em 0.2em; }
+
+div.toctree-wrapper .toctree-l1 { font-weight: 600; margin-top: 0.8em; }
+
+div.toctree-wrapper .toctree-l2 { font-weight: 400; padding-left: 1.2em; }
+
+div.toctree-wrapper .toctree-l3 { padding-left: 2.4em; font-size: 0.94rem; }
+
+/* -- the search page ---------------------------------------------------- */
+
+div.body#search-results p.topless, .search-summary { color: var(--ink-soft); }
+
+div.body input[type="text"], div.body input[type="search"],
+input#search-documentation {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.45em 0.7em;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--field);
+  color: var(--ink);
+  min-width: min(22rem, 100%);
+}
+
+div.body input[type="submit"], div.body button {
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 0.45em 1em;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--surface);
+  cursor: pointer;
+}
+
+html[data-theme="dark"] div.body input[type="submit"],
+html[data-theme="dark"] div.body button {
+  color: var(--canvas);
+}
+
+div.body input[type="submit"]:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+
+div.sphinxsidebar input[type="text"], div.sphinxsidebar input[type="search"] {
+  width: 100%;
+  font-size: 0.86rem;
+  padding: 0.35em 0.55em;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--field);
+  color: var(--ink);
+}
+
+div.sphinxsidebar input[type="submit"] {
+  font-size: 0.8rem;
+  margin-top: 0.35rem;
+  padding: 0.3em 0.8em;
+}
+
+p.searchtip { color: var(--ink-faint); font-size: 0.82rem; }
+
+mark, .highlighted {
+  background: var(--selection);
+  color: var(--on-selection);
+  padding: 0.05em 0.15em;
+  border-radius: 2px;
+}
+
+/* -- the theme control --------------------------------------------------- */
+
+#imasviz-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  margin: 1rem 0 0.5rem;
+  padding: 0.35em 0.7em;
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+#imasviz-theme-toggle:hover {
+  color: var(--accent-strong);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+#imasviz-theme-toggle::before {
+  content: "";
+  width: 0.6em;
+  height: 0.6em;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* -- narrow screens ------------------------------------------------------ */
+
+@media (max-width: 1100px) {
+  div.document { flex-direction: column-reverse; gap: 1.25rem; }
+  div.sphinxsidebar {
+    position: static;
+    max-height: none;
+    flex: 1 1 auto;
+    width: 100%;
+  }
+  div.body { padding: 1.5rem 1.25rem 2rem; }
+}
+
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+  div.related ul { padding: 0.5rem 0.9rem; }
+  div.document { padding: 1rem 0.75rem 0; }
+  div.body { padding: 1.1rem 0.9rem 1.5rem; }
+}
+
+/* -- print --------------------------------------------------------------- */
+
+@media print {
+  html, body { background: #ffffff; color: #000000; }
+  div.related, div.sphinxsidebar, #imasviz-theme-toggle, div.footer {
+    display: none !important;
+  }
+  div.document { display: block; max-width: none; padding: 0; }
+  div.bodywrapper { border: 0; box-shadow: none; }
+  div.body { max-width: none; padding: 0; }
+  a { color: #000000; border-bottom: 0; }
+  a.headerlink { display: none; }
+  div.admonition, div.note, div.warning { background: #ffffff; }
+  pre { border: 1px solid #cccccc; }
+}

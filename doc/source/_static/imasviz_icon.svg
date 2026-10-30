@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  The IMASViz mark: nested flux surfaces, the shape a tokamak cross-section is
+  drawn with. Square, so the same file answers a favicon, a window icon and the
+  small size of a task bar.
+
+  The ring colour is the mid-tone of the house accent and is written here rather
+  than left to `currentColor`: an icon is loaded as an image, where the page's
+  variables do not reach it, and `currentColor` inside an image element answers
+  black. Measured on both grounds the manual and the application paint: 3,64 on
+  the light surface, 4,66 on the dark one, over the 3:1 a graphic element has to
+  clear.
+
+  The manual keeps a byte-exact copy under doc/source/_static/imasviz_icon.svg,
+  and tests/test_76 refuses the drift between the two.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 64 64" width="64" height="64"
+     role="img" aria-label="IMASViz">
+  <defs>
+    <path id="imasviz-flux-surface"
+          d="M14 10 H28 C42 10 50 19 50 32 C50 45 42 54 28 54 H14 Z"/>
+  </defs>
+  <g fill="none" stroke="#1493a8" stroke-linecap="round" stroke-linejoin="round">
+    <use href="#imasviz-flux-surface" xlink:href="#imasviz-flux-surface"
+         stroke-width="3.6"/>
+    <use href="#imasviz-flux-surface" xlink:href="#imasviz-flux-surface"
+         stroke-width="3.2"
+         transform="translate(32 32) scale(0.68) translate(-32 -32)"/>
+    <use href="#imasviz-flux-surface" xlink:href="#imasviz-flux-surface"
+         stroke-width="2.8"
+         transform="translate(32 32) scale(0.38) translate(-32 -32)"/>
+  </g>
+  <circle cx="29.5" cy="32" r="2.6" fill="#1493a8"/>
+</svg>

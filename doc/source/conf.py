@@ -43,12 +43,18 @@ release = '2022'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+#
+# Two of the six sphinx-quickstart left here in 2018 are gone, and both for the
+# same reason: they ask something of a build that the nodes IMASViz is built on
+# does not have. `sphinx.ext.intersphinx` reaches docs.python.org for an
+# inventory, and nothing in this manual points outside it -- not one `:py:` role
+# is written -- so on a node without a route to the network it bought one warning
+# per build and answered no link. `sphinx.ext.coverage` writes a report no
+# Makefile target ever read.
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'sphinx.ext.intersphinx',
     'sphinx.ext.todo',
-    'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
 ]
 
@@ -68,8 +74,9 @@ master_doc = 'index'
 # for a list of supported languages.
 #
 # This is also used if you do content translation via gettext catalogs.
-# Usually you set "language" from the command line for these cases.
-language = None
+# The manual is written in English, and naming it is what stops Sphinx taking the
+# build machine's locale for it and saying so on every build.
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -85,30 +92,62 @@ pygments_style = 'default'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-# html_theme = 'alabaster'
-# html_theme = 'classic'
-html_theme = 'sphinx_rtd_theme'
+# ``basic``, and not a theme of its own, on purpose: it ships with Sphinx, so a
+# build needs nothing but Sphinx. ``sphinx_rtd_theme`` used to be asked for here,
+# and on the nodes IMASViz is built on it is not installed -- ``make doc``
+# stopped with "no theme named 'sphinx_rtd_theme' found", which is why the manual
+# nobody could rebuild had kept its pale-blue admonition boxes and its 2018
+# layout. The look of the manual is now carried by ``_static/imasviz.css`` and put
+# on top of ``basic``, whose markup that stylesheet was written against.
+html_theme = 'basic'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+# The two widths ``basic`` takes are set to the numbers ``imasviz.css`` lays the
+# page out with; the measure of the text itself is the sheet's to make, so the
+# theme is told not to set one.
+html_theme_options = {
+    'sidebarwidth': 300,
+    'body_max_width': 'none',
+    'globaltoc_collapse': True,
+    'globaltoc_includehidden': False,
+    'globaltoc_maxdepth': 3,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# The house style, and the control that picks which of its two themes a page is
+# read with. Both are read from the head, after the theme's own sheet, so the
+# theme sets the markup and these set the look -- and neither reaches a network.
+html_css_files = ['imasviz.css']
+html_js_files = ['imasviz.js']
+
+# The mark of resources/VizIcons/imasviz_mark.svg, copied here byte for byte
+# (tests/test_76 refuses the drift), as the header mark and as the tab icon.
+html_logo = '_static/imasviz_icon.svg'
+html_favicon = '_static/imasviz_icon.svg'
+
+# What the browser tab and the top of the page are called.
+html_title = 'IMASViz'
+html_short_title = 'IMASViz'
+
+# The manual is a user manual: a reader is not shown the .rst behind the page.
+html_show_sourcelink = False
+
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #
-# The default sidebars (for documents that don't match any pattern) are
-# defined by theme itself.  Builtin themes are using these templates by
-# default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
-# 'searchbox.html']``.
-#
-# html_sidebars = {}
+# The whole tree on the left, collapsed to the branch being read, and the search
+# box under it. ``relations.html`` is not asked for twice: the prev/next links
+# live in the bar along the top, which ``basic`` draws without being told.
+html_sidebars = {
+    '**': ['globaltoc.html', 'searchbox.html'],
+}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------
@@ -190,11 +229,6 @@ epub_exclude_files = ['search.html']
 
 
 # -- Extension configuration -------------------------------------------------
-
-# -- Options for intersphinx extension ---------------------------------------
-
-# Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
 
 # -- Options for todo extension ----------------------------------------------
 
