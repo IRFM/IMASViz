@@ -269,10 +269,21 @@ session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
    text of a title or an axis label are written under the quantity that drew them,
    for the traces the hand actually touched -- which is why the colour a figure
    chose for itself is chosen again the next time the case is drawn, and two traces
-   of a new figure stay legible side by side. A :guilabel:`Image` figure writes
-   none of it, having no trace to dress. A style whose quantity the reopened case
-   no longer draws is named in the log of the case and costs its own style and
+   of a new figure stay legible side by side. A style whose quantity the reopened
+   case no longer draws is named in the log of the case and costs its own style and
    nothing else.
+
+   The colours of an :guilabel:`Image` figure are kept the same way, and for the
+   same reason: one **map** and one **level range** for the window -- never one per
+   picture, since the pictures of a window share a scale -- written only for the
+   half a hand actually moved. A window nobody dressed writes neither, so it opens
+   with the map this installation holds and the span its own pictures settle on,
+   rather than the colours and the numbers of the case the file was saved from. A
+   map this installation cannot draw -- a name written on another node, where the
+   library's own menu reaches the maps of matplotlib -- is named in the log of the
+   case, and the window keeps the colours it opens with while **the level range of
+   the file still stands**: losing the number because the colour is missing would
+   hide the half that still means something. See :ref:`2d_colour_scale`.
 
 .. warning::
    A plugin window comes back **as its entry draws it**, not as the user left it.

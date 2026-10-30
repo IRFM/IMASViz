@@ -210,8 +210,8 @@ Core concepts, in the vocabulary used by the code and docs:
   old ones (`styledPanels`).
 - **a session** — `VizConfigurations/QVizSessionFile.py` owns the third kind,
   `.vsess` under the same folder and behind the same name guard and listing
-  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="4">` root (`1`, `2`
-  and `3` stay readable), one `<Case uri dd_version label>` per case holding
+  (`EXTENSIONS` gained `SESSION`): an `<IMASVizSession version="5">` root (`1`, `2`,
+  `3` and `4` stay readable), one `<Case uri dd_version label>` per case holding
   `<Load ids occurrence slices>`, `<Expanded ids [occurrence]>`,
   `<Selection path occurrence>` and `<PluginWindow key plugin entry ids
   occurrence>`, then one `<Figure key kind [axis] [tensor]>`
@@ -229,7 +229,21 @@ Core concepts, in the vocabulary used by the code and docs:
   curves at save time, so the palette a figure chose for itself is chosen again next
   time rather than frozen into the file (measured: an untouched two-trace figure writes
   **0** `<Style>`, one coloured trace writes **1**; an image window writes neither,
-  having no trace to dress). `VizGUICommands/VizSession/` holds the two commands: `QVizSaveSession`
+  having no trace to dress). Version 5 adds the colours of a picture window: one
+  `<ColourScale map low high/>` under the `<Figure>` — **one for the window**, because
+  its pictures share one map and one level range — again written only for the half a
+  hand moved, so a window nobody dressed writes nothing and comes back with the map
+  this node holds (`viridis`) and the span its own pictures settle on. `QVizSaveSession
+  .scaleOf` reads it off `QVizImageColourScale.state()`, which answers `None` for a
+  figure that holds no picture, and `QVizRestoreSession.applyColourScale` puts it back
+  **after** the styling and **before** the cursors: on a picture window either half on
+  its own is a whole answer, and a name this node cannot resolve is named in the log of
+  the case while the **range still goes on** (measured: an undrawable map costs the
+  colours and not the numbers). A `<ColourScale>` naming neither a map nor a range, an
+  unknown attribute, an empty `map` and `low > high` are all refused at the file — the
+  last one because pyqtgraph answers the *midpoint* of two reversed ends, so a range
+  nobody wrote would reach the screen as a flat one.
+  `VizGUICommands/VizSession/` holds the two commands: `QVizSaveSession`
   reads the screen out of the api, `QVizRestoreSession` **replays the gestures**
   rather than rebuilding widgets — the body of `QVizOpenShotView.Open`,
   `QVizLoadOccurrence`, `QVizPlotOneNode`, `QVizPlotAsTable`,
@@ -708,7 +722,16 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   draws curves, the record of **which** traces and labels a hand touched, the two
   readers/writers of a pen and of a label, and the window-level
   `sourcesOf`/`styledTraces`/`styledText`/`replayCurves`/`replayText` a session asks of
-  a window — so the sweep answers **115** modules and **114** imports. Note that
+  a window — so the sweep answers **115** modules and **114** imports. T44 added **2**:
+  `VizGUI/VizPlot/QVizColourScales.py` (the colour scale of a picture window — one map
+  and one level range for all its pictures, the `viridis` default, the derived
+  `rounding`, the swatch a chooser paints, and the record of whether a hand was on
+  either) and `VizGUI/VizPlot/QVizColourScaleUI.py` (the *Colour Scale...* dialogue),
+  so the sweep answers **117** modules and **116** imports — measured with
+  `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints **118 passed, 1
+  xfailed** for those 117: two of the passed ids are `test_the_walk_finds_the_package`
+  and `test_known_unimportable_list_is_not_stale`, not modules, so the module count is
+  the id count minus two. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
@@ -826,6 +849,66 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `navy` — **uniformly**, because its 41 panels were measured to carry **41 distinct
   parametrized paths**: a colour there has nothing to group, and a cycle would answer the
   same colour five times in one window.
+- **A picture window colours with one map and one range** (T44), and the library pieces
+  that promise is built on were measured on `PyQtGraph/0.13.7-foss-2023b` before being
+  wired:
+
+  * `ColorBarItem.__init__` takes **`colorMap=`**, not the `cmap=` of the online
+    documentation — the snippet on the project's own docs page is for a newer release;
+    `rounding` defaults to **1 unit**, so dragging the handles of a quantity spanning
+    `0,011 .. 0,023` answers `(0, 1)` and empties the pictures. It is derived here
+    (`span/1000`, measured on the real radiance at **2,4e8**) with a `1e-12` floor for a
+    flat picture, which the library divides the drag by;
+  * `setImageItem` **accepts a list** (`img_list = [weakref.ref(item) for item in img]`,
+    `ColorBarItem.py:194`) and **replaces** it on every call. Calling it once per
+    picture — which is what this window did, on the reading that a bar answers one
+    image — leaves it driving the last one, and that single defect is what the manual's
+    "no `Configure Plot` on an image window" was covering: `colorMapMenu` is **True** by
+    default, so the right click on the bar already opened the library's map list and
+    recoloured one picture of three (`images luts [False, False, False]` before any map
+    was picked);
+  * with no `values`, the bar takes its levels off the one image it is bound to —
+    measured `(0.0, 15.0)` beside a window whose scale is `(0.0, 215.0)`. The numbers
+    next to the ramp were not the scale the pictures were painted against, which is the
+    one question a colour bar answers. So the window settles `_levels` over all the
+    pictures **before** drawing them and hands the bar `values=`;
+  * `setLevels(values=(low, None))` accepts a hole — "Either value can be None to leave
+    the previous value unchanged" — and **emits nothing**; one drag of the handles emits
+    `sigLevelsChanged` **3 times**. `setLevels` also refuses a reversal by answering the
+    **midpoint** of the two ends, which is why `low > high` is refused at the session
+    file rather than handed down;
+  * `ImageItem.setImage(data)` **re-fits the levels to that array** — a re-read of a
+    20x20 slice answered `(0, 399)` over a window scaled to `(0, 215)` — so every
+    repaint would undo a range the user set. `setImage(data, levels=…)` holds them,
+    which is what `_drawPicture` does now; and the lookup table **survives** both
+    `setImage` and `clear()`, so a chosen map does not have to be re-applied on every
+    refresh (an earlier probe said otherwise, from an ordering artifact: it looked at a
+    LUT that had never been set). `ImageItem` answers `setColorMap`/`getColorMap`/
+    `setLevels`/`getLevels` and has **no** `sigLevelsChanged` — the bar is the only
+    thing that moves a level;
+  * `pg.colormap.listMaps()` answers **71** names here (`colors/maps/*.csv|hex`);
+    `get(name, source='matplotlib')` resolves **182** more, which is what the library's
+    own bar menu offers. An unknown name raises `FileNotFoundError` naming a path inside
+    the package, so `mapNamed` refuses by the *name*. `ColorMap` answers `getGradient()`
+    (a `QLinearGradient` of **256** stops — that is what a chooser's swatch is painted
+    from), `getLookupTable()` and `getColors()`; there is no `getLut()` and no
+    `length()`;
+  * a `ViewBox` builds its `menu` in `__init__` when `enableMenu`, so each picture has a
+    real `QMenu` to hang *Colour Scale...* on; the bar's own view box answers `menu is
+    None`, because `ColorBarItem` calls `setMenuEnabled(False)` — its right click goes
+    through `mouseClickEvent` to a `ColorMapMenu` built on the spot.
+  The default is `viridis`: it ships here (CC0), it is uniform in perceptual distance,
+  and it stays legible to a colour-blind eye. Like the curve palette, it is a property
+  of **this node** and never written to a file by a window nobody dressed.
+- **A picture window is never freed at its refcount** (measured, and **not** fixed
+  here): a bare `QVizImagePlot` — nothing plotted, no colour scale involved — stays
+  reachable from the closure cells of `_makeSliceButtons` (`cad1c3c`, the two
+  `lambda checked=False, side=side:` connected to the *Keep this slice* and *Add a new
+  marker* buttons) even after `gc.collect()`. This is a **leak**, not the dangling-owner
+  crash of the T25 rule: the window is never freed at all, so nothing is freed while Qt
+  owes it a paint event. What it costs is that `test_58`'s behavioural ownership check
+  cannot be run on this frame, and that every picture window opened in a session is
+  retained to the end of it.
 - **A curve figure has one abscissa, and it is an identity, not a spelling** (T36).
   `QVizCurveAbscissa` answers it once: `TIME` unifies the three ways IMAS writes one
   clock — the dynamic array (`IDS.time`), `<aos>/time`, bare `time` — and which one a

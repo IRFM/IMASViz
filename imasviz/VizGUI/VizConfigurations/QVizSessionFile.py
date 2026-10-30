@@ -143,11 +143,36 @@ An untouched window writes neither element, which is the whole reason a record o
 what was touched is kept on the frame: values are read live at save time, so a
 session does not have to know what a pen looked like the day it was written.
 
-Versions 1 to 4 are all read, and writing produces 4. A version 1 file simply
+Version 5, and what it adds
+---------------------------
+
+A picture window kept its quantity, its window of pictures and its slice lines,
+and lost the one thing that makes a picture readable: the colours it was drawn
+with and the range of values those colours span. Two pictures of the same
+quantity on two days, one opened from a session and one drawn by hand, came back
+in different greys and said nothing about it.
+
+So version 5 writes, under the ``<Figure kind="image">`` it belongs to:
+
+* ``<ColourScale map low high/>`` -- the colour map every picture of the window
+  draws with, and the level range those colours span. One element per figure,
+  because one scale answers for every picture of a window: a map chosen for one
+  picture would make the colour mean two things on one screen.
+
+Both halves are written only when a hand was on them, and either alone is a
+complete answer: a session that changed the colours keeps the span the pictures
+settle on, and a session that dragged the handles keeps whatever map this node
+draws with. A window nobody touched writes nothing, for the reason version 4
+gives for a pen: the answer a drawing gives itself has to stay free to be given
+again -- and a level range is a statement about *this* case's values, which a
+file has no business pinning.
+
+Versions 1 to 5 are all read, and writing produces 5. A version 1 file simply
 has no state element, which is the same as the user having set nothing; a version
 2 file has no ``<PluginWindow>``, which is the same as having no plugin window
 open; a version 3 file has no ``<Style>``, which is the same as nobody having
-styled anything.
+styled anything; a version 4 file has no ``<ColourScale>``, which is the same as
+a picture drawn with the colours it opens with.
 
 One version, and a refusal rather than a guess: ``version`` is checked, and an
 element this module does not know is named in a ``ValueError``. Ignoring what it
@@ -180,6 +205,12 @@ QVizSessionCurveStyle = namedtuple('QVizSessionCurveStyle', 'trace attributes')
 # One line of text a hand was on: the figure's title, one of its four axes, or
 # the labels of one panel. `side` is pyqtgraph's own name for it.
 QVizSessionTextStyle = namedtuple('QVizSessionTextStyle', 'side attributes')
+# One picture window's colour scale: the map every picture of the window draws
+# with and the two ends of the range those colours span. `map` is a name this node
+# resolves with `mapNamed`, and any of the three can be None -- a hand that only
+# changed the colours left the span the pictures settle on, and one that only
+# dragged the handles left the map this node answers by default.
+QVizSessionColourScale = namedtuple('QVizSessionColourScale', 'map low high')
 QVizSessionCursor = namedtuple('QVizSessionCursor', 'key index')
 QVizSessionCursors = namedtuple('QVizSessionCursors', 'folded cursors')
 QVizSessionView = namedtuple('QVizSessionView',
@@ -189,11 +220,13 @@ QVizSessionWindow = namedtuple('QVizSessionWindow',
                                'x y w h maximized hidden')
 QVizSessionFigure = namedtuple(
     'QVizSessionFigure',
-    'key kind quantities axis tensor cursors view errors window text',
+    'key kind quantities axis tensor cursors view errors window text scale',
     # A figure written before version 2 has no state to carry, and the four
     # fields being absent is exactly that: nothing was set. Version 3 adds no
-    # `<TextStyle>`, which is a figure nobody styled.
-    defaults=(None, None, None, None, ()))
+    # `<Style>` nor `<TextStyle>`, which is a figure nobody coloured; version 4
+    # adds no `<ColourScale>`, which is a picture drawn with the colours it opens
+    # with.
+    defaults=(None, None, None, None, (), None))
 
 QVizSessionCase = namedtuple('QVizSessionCase',
                              'uri dd_version label loads expanded selection '
@@ -214,14 +247,16 @@ QVizSessionPluginWindow = namedtuple('QVizSessionPluginWindow',
                                      'key plugin entry ids occurrence')
 
 ROOT = 'IMASVizSession'
-VERSION = '4'
-# All four are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
+VERSION = '5'
+# All five are read. A version 1 file holds no `<Cursors>`, `<View>`, `<Errors>`
 # or `<Window>`, which is the same answer as a user who set nothing on those
 # windows; a version 2 file holds no `<PluginWindow>`, which is the same answer
 # as a screen with no plugin window open; a version 3 file holds no `<Style>`,
-# which is the same answer as a figure nobody coloured. None is guessed at: what
-# a version does not name comes back as the drawing leaves it.
-READABLE_VERSIONS = ('1', '2', '3', '4')
+# which is the same answer as a figure nobody coloured; a version 4 file holds no
+# `<ColourScale>`, which is the same answer as a picture drawn with the colours it
+# opens with. None is guessed at: what a version does not name comes back as the
+# drawing leaves it.
+READABLE_VERSIONS = ('1', '2', '3', '4', '5')
 
 # The name of the session the application writes when it closes and offers when
 # it starts. A name, not a path: where it lives is the folder's business, and the
@@ -251,6 +286,13 @@ CURVE_STYLE_ATTRIBUTES = ('color', 'style', 'width', 'symbol', 'size', 'fill',
                           'outline')
 TEXT_SIDES = ('title', 'bottom', 'left', 'top', 'right')
 TEXT_STYLE_ATTRIBUTES = ('text', 'bold', 'italic', 'size')
+
+# What a picture window's colour scale is made of: the map every picture draws
+# with and the two ends of the range those colours span. One element per figure
+# because one scale answers for a whole window -- and `low` and `high` are the
+# file's spelling of the handles on the colour bar, not of a data extent: a hand
+# sets them, and the drawing does not.
+COLOUR_SCALE_ATTRIBUTES = ('map', 'low', 'high')
 
 # How many elements of a dynamic array of structures a view keeps. Spelled as a
 # word here because an integer would be a promise about the case: the reference
@@ -461,6 +503,7 @@ class QVizSessionFile:
                 self._writeStyles(leaf, quantity.styles)
                 self._writeTextStyles(leaf, quantity.text)
             self._writeTextStyles(element, figure.text)
+            self._writeColourScale(element, figure.scale)
             self._writeCursors(element, figure.cursors)
             self._writeView(element, figure.view)
             self._writeErrors(element, figure.errors)
@@ -506,6 +549,34 @@ class QVizSessionFile:
                 # default title back over it.
                 if value is not None:
                     child.set(name, str(value))
+
+    @staticmethod
+    def _writeColourScale(element, scale):
+        """The colours a picture window was drawn with, and the range they span.
+
+        Written only when a hand was on one of them, and either half on its own is
+        a complete answer. The reason is the same one that keeps a pen nobody chose
+        out of a `<Style>`: a level range is a statement about the values of *this*
+        case, and the map is what this node answers by default -- pinning either
+        for a window nobody touched would redraw a case at a scale picked for the
+        one the file was saved from.
+        """
+        if scale is None or (scale.map is None and scale.low is None
+                             and scale.high is None):
+            # A record naming nothing is written as nothing, not as an empty
+            # element: the reader refuses a `<ColourScale>` that says neither a
+            # map nor a range, and a writer must not hand out a file its own
+            # reader turns down.
+            return
+        child = ET.SubElement(element, 'ColourScale')
+        if scale.map is not None:
+            child.set('map', scale.map)
+        for name, value in (('low', scale.low), ('high', scale.high)):
+            if value is not None:
+                # `repr(float)`, as a `<View>` range does: the number comes off the
+                # screen, and a rounded one would not come back as the range the
+                # user left -- a save and a restore would move the handles.
+                child.set(name, repr(float(value)))
 
     @staticmethod
     def _writeCursors(element, cursors):
@@ -651,8 +722,8 @@ def _figureOf(element, path):
         raise ValueError('"%s" holds a <Figure kind="%s">: this application '
                          'draws %s.' % (path, kind, ' / '.join(KINDS)))
     _knownChildren(element,
-                   ('Quantity', 'TextStyle', 'Cursors', 'View', 'Errors',
-                    'Window'), path)
+                   ('Quantity', 'TextStyle', 'ColourScale', 'Cursors', 'View',
+                    'Errors', 'Window'), path)
     return QVizSessionFigure(
         key=_attribute(element, 'key', path, 'Figure'),
         kind=kind,
@@ -665,7 +736,8 @@ def _figureOf(element, path):
         errors=_errorsOf(element.find('Errors'), path),
         window=_windowOf(element.find('Window'), path),
         text=tuple(_textStyleOf(child, path)
-                   for child in element.findall('TextStyle')))
+                   for child in element.findall('TextStyle')),
+        scale=_colourScaleOf(element.find('ColourScale'), path))
 
 
 def _quantityOf(element, path):
@@ -723,6 +795,43 @@ def _textStyleOf(element, path):
                          'it styles nothing.'
                          % (path, side, ' '.join(TEXT_STYLE_ATTRIBUTES)))
     return QVizSessionTextStyle(side=side, attributes=attributes)
+
+
+def _colourScaleOf(element, path):
+    """The colours of a picture window and the range they span, or nothing.
+
+    Either half on its own is a whole answer, and a file that names neither is a
+    writer that changed its mind -- so it is refused, as an empty `<Style>` is.
+    A `map` left empty is the same case in another spelling: `mapNamed('')` would
+    refuse it later, with a sentence about a name, over a file that never wrote
+    one. `low > high` is refused here rather than handed to pyqtgraph, which
+    answers the midpoint of the two -- a range nobody wrote.
+    """
+    if element is None:
+        return None
+    _knownChildren(element, (), path)
+    for name in element.keys():
+        if name not in COLOUR_SCALE_ATTRIBUTES:
+            raise ValueError('"%s" gives a <ColourScale %s="...">: a colour scale '
+                             'names %s.'
+                             % (path, name, ' '.join(COLOUR_SCALE_ATTRIBUTES)))
+    colorMap = element.get('map')
+    if 'map' in element.keys() and not (colorMap or '').strip():
+        raise ValueError('"%s" gives a <ColourScale map="">: a map is named, or '
+                         'the level range is, or the element says nothing.' % path)
+    low = (_number(element, 'low', path)
+           if element.get('low') is not None else None)
+    high = (_number(element, 'high', path)
+            if element.get('high') is not None else None)
+    if low is None and high is None and colorMap is None:
+        raise ValueError('"%s" holds a <ColourScale> naming none of %s: it says '
+                         'nothing about how a picture is drawn.'
+                         % (path, ' '.join(COLOUR_SCALE_ATTRIBUTES)))
+    if low is not None and high is not None and low > high:
+        raise ValueError('"%s" gives a <ColourScale low="%r" high="%r">: a range '
+                         'runs from its low end to its high one.'
+                         % (path, low, high))
+    return QVizSessionColourScale(map=colorMap, low=low, high=high)
 
 
 def _styleAttributes(element, allowed, path, tag, identifier):

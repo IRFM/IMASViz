@@ -59,6 +59,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import \
     QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import \
     QVizPlotAsStacked
+from imasviz.VizGUI.VizPlot.QVizColourScales import mapNamed, restoreColourScale
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import replayCurves, replayText
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 
@@ -350,7 +351,9 @@ class QVizRestoreSession:
     def applyState(self, figure, frame, view):
         """Put back what the user had set on that window, in the order that holds.
 
-        The order is not a taste. The styling goes on first, then the sliders:
+        The order is not a taste. The styling goes on first -- the pens of a
+        figure of curves, then the colours of a window of pictures -- and then the
+        sliders:
         moving one re-reads the figure through the band's own `changed` signal
         -- measured on the
         reference case, **0,001 s** for one move over a 17-element array and
@@ -368,13 +371,55 @@ class QVizRestoreSession:
         pen belongs to the trace, and moving a slider re-reads the samples under the
         pen that is already on it (measured on the reference case: a colour set by
         hand survives a `refresh`), so putting the colours back before the sliders
-        move costs one pass over the traces and nothing has to be drawn twice.
+        move costs one pass over the traces and nothing has to be drawn twice. A
+        picture window is dressed the same way for a blunter reason: its re-read
+        hands the new values to pyqtgraph *with* the level range, so a range put
+        back after the first move would be the moved one, not the saved one.
         """
         self.applyStyles(figure, frame, view)
+        self.applyColourScale(figure, frame, view)
         self.applyCursors(figure, frame, view)
         self.applyErrors(figure, frame, view)
         self.applyView(figure, frame, view)
         self.applyWindow(figure, frame, view)
+
+    def applyColourScale(self, figure, frame, view):
+        """The colours and the level range a hand left on a window of pictures.
+
+        One element for the whole window, because the window answers one scale for
+        all its pictures -- so this is put back once, and every picture changes
+        colour together. Two things can stop it, and they cost different amounts:
+
+        * a map this node cannot draw -- a name another install wrote, a map
+          matplotlib knows and this one does not have. It is named in the log and
+          the window keeps the colours it opens with. The **range** still goes on:
+          the two are separate answers, and losing a scale because a colour is
+          missing would hide the number the user set;
+        * a window that holds no colour scale at all -- the file wrote a picture
+          and the case now draws curves under that key. Said, and nothing else
+          about that window is touched.
+        """
+        scale = figure.scale
+        if scale is None:
+            return
+        colorMap = scale.map
+        if colorMap is not None:
+            try:
+                mapNamed(colorMap)
+            except ValueError as error:
+                logging.getLogger(view.uri).warning(
+                    'The colour map "%s" of the figure "%s" is not put back: %s '
+                    'The pictures keep the colours they open with, and the level '
+                    'range of the file still stands.'
+                    % (colorMap, figure.key, error))
+                colorMap = None
+        if colorMap is None and scale.low is None and scale.high is None:
+            return
+        if not restoreColourScale(frame, name=colorMap, low=scale.low,
+                                  high=scale.high):
+            logging.getLogger(view.uri).warning(
+                'The colour scale of the figure "%s" is not put back: a window of '
+                '%s draws no picture to colour.' % (figure.key, figure.kind))
 
     def applyStyles(self, figure, frame, view):
         """The pens and the labels a hand left on that window, put back.

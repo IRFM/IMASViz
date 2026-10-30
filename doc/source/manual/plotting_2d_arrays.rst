@@ -36,7 +36,15 @@ Plotting a single 2D array
    selected.
    Plottable FLT_2D nodes are colored **blue** (2D data array shapes > 0).
 
-   By clicking on the node a preview plot will be displayed as a black and white 2D image:
+   By clicking on the node a preview plot will be displayed: a 2D image of the
+   slice the tree stands on, drawn with the same colour map an image window opens
+   with (see :ref:`2d_colour_scale` below). Its own level range is left to fit the
+   one slice it shows, since nothing in a thumbnail is compared to a neighbour.
+
+   .. note::
+
+     The screenshot below was taken before the pictures were coloured: it shows
+     the grey ramp the library draws a value-less map with.
 
    .. figure:: images/2D_image_preview.png
      :align: center
@@ -91,13 +99,58 @@ saying only 1, 2, 3 cannot.
 One colour scale answers for every picture on the window, spanning all of them, and
 it does not move when the window does. Comparing two pictures means comparing
 colours, and a scale that re-fitted itself to each picture would make every picture
-look the same whatever it held.
+look the same whatever it held. :ref:`Choosing those colours and moving that range
+<2d_colour_scale>` is a command of its own.
 
 The axes of a picture are labelled with the coordinates they draw, units included,
 and the picture is laid over the extents those coordinates take. The cells
 themselves stay element ranks, because a dictionary grid need not be regular; what
 is exact is the extent, the labels, and the slice the colours stand for. When one of
 the two axes drawn is a time axis, it is laid horizontal.
+
+.. _2d_colour_scale:
+
+Colour scale
+^^^^^^^^^^^^
+
+A picture says nothing about its values until something maps them to colours. A
+window opens with the **viridis** map: it is uniform in perceptual distance -- an
+equal step of colour for an equal step of value, which is what reading a level off a
+picture asks -- and it stays legible to a colour-blind eye.
+
+One map and one level range belong to the **window**, not to a picture. A map chosen
+for one picture of a window would make the same colour mean two things on one
+screen, which is the mistake the shared scale exists to prevent. Two places reach
+them:
+
+* the **handles on the colour bar**. Drag either end and every picture of the window
+  is repainted at the new range together. The bar carries the numbers of that range,
+  which are the scale all the pictures are drawn against -- not the minimum and
+  maximum of whichever picture the bar happens to have been given to. The handles
+  move in steps of a thousandth of the span, so a quantity of order
+  :math:`10^{-2}` is not dragged onto a scale of one unit;
+* :guilabel:`Colour Scale...`, on the right click of **each** picture. It lists the
+  maps this installation holds -- 71 of them on the stack this manual was written
+  on -- each shown as the strip of colours it stands for, with a filter for the name.
+  The line answers the window wherever it was clicked: picking a map on the second
+  picture recolours the first, and the bar says why.
+
+A right click **on the bar itself** opens the library's own list, which reaches the
+maps of the plotting library matplotlib knows as well (182 more names here). Those
+names are read back from a session like any other when this installation can resolve
+them, and refused by name when it cannot.
+
+The range a hand set **holds**. Moving the window of pictures, or a pinned axis,
+re-reads the values and draws them under the range that is on screen -- not under the
+minimum and maximum of what just came in. On a radiance measured in photons per
+second, where one channel of a shot runs an order of magnitude above its neighbour,
+re-fitting on every move would decide what is worth seeing on each picture
+separately, which is the one comparison the window exists to make.
+
+A map that cannot be resolved -- a name another installation wrote into a session --
+is named in the log of the case, and the window keeps the colours it opens with. The
+**level range of the file still goes on**: two answers, and losing the number because
+a colour is missing would hide the half that still means something.
 
 Pinned axes
 ^^^^^^^^^^^
@@ -188,7 +241,11 @@ Other features
 Zooming, panning and the right-click menu of a picture are pyqtgraph's own: **View
 All**, **X axis** and **Y axis** (range, auto-range, invert and link in their
 sub-window) and **Mouse Mode**, and the scene adds **Export...**, as described for
-1D plots in :ref:`plotting_1d_arrays`. The IMASViz :guilabel:`Configure Plot`
-dialog is not offered on an image window: it configures curve properties, and a
-picture has no curve to configure -- what it has instead is the colour scale and
-the slice controls above.
+1D plots in :ref:`plotting_1d_arrays`. To those the picture adds one IMASViz line,
+:guilabel:`Colour Scale...` (:ref:`above <2d_colour_scale>`).
+
+The :guilabel:`Configure Plot` dialog of a curve figure is not offered here: it
+dresses the traces one by one, and a picture has no trace to dress. What a picture
+has instead -- one map and one level range, for all the pictures of the window
+together -- is the colour scale above, with its handles on the bar and its line on
+the menu of each picture.

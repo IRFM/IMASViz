@@ -47,6 +47,17 @@ touched are written, and their values are read off the live curves here: every
 trace carries a pen since T33, so a session that wrote all of them would freeze
 the palette into the file, and the case opened next month would draw yesterday's
 colours instead of the contrast those colours were chosen for.
+
+Version 5 adds what a hand left on the colours of a **picture**. A window of
+pictures answers one colour scale for all of them, so one ``<ColourScale>`` under
+its ``<Figure>`` says it: the map every picture draws with, and the two ends of
+the range those colours span -- the same two numbers the handles on the colour bar
+move. Both are written only when a hand was on them, and either alone is a whole
+answer: a session that changed the colours keeps the span the pictures settle on,
+and one that dragged the handles keeps whatever map this node draws with. The
+scale a window chose for itself is not written at all, for the reason a pen nobody
+chose is not: a level range is a statement about the values of *this* case, and
+pinning it would draw next month's case at yesterday's scale.
 """
 
 import logging
@@ -58,9 +69,10 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
     QVizSessionWindow, QVizSessionPluginWindow,
-    QVizSessionCurveStyle, QVizSessionTextStyle,
+    QVizSessionCurveStyle, QVizSessionTextStyle, QVizSessionColourScale,
     CURVE, IMAGE, TABLE, STACKED, ALL, ONE_IN_TEN as ONE_IN_TEN_WORD,
     FIRST, INDEX_PREFIX)
+from imasviz.VizGUI.VizPlot.QVizColourScales import colourScaleOf
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import (styleKey, styledText,
                                                     styledTraces)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
@@ -271,7 +283,8 @@ class QVizSaveSession:
                                  view=self.viewOf(figureKey, frame),
                                  errors=self.errorsOf(figureKey, frame),
                                  window=self.windowOf(figureKey, frame),
-                                 text=self.textOf(frame))
+                                 text=self.textOf(frame),
+                                 scale=self.scaleOf(frame))
 
     def quantitiesOf(self, figureKey, frame, kind):
         """The quantities that figure holds, as the figure bookkeeping knows them.
@@ -330,6 +343,22 @@ class QVizSaveSession:
         return tuple(QVizSessionTextStyle(side=side, attributes=dict(attributes))
                      for node, side, attributes in styledText(frame)
                      if (None if node is None else styleKey(node)) == key)
+
+    @staticmethod
+    def scaleOf(frame):
+        """The colour scale of a picture window, or None for a window with none.
+
+        Asked of the frame, which answers what a hand touched and not what the
+        drawing settled: `colourScaleOf` says nothing for a window nobody
+        recoloured and nothing for a curve figure, which dresses its traces one by
+        one and holds no picture to colour. A table and a stacked window answer no
+        `colourScale` either, so they are written as nothing here too.
+        """
+        state = colourScaleOf(frame)
+        if state is None:
+            return None
+        colorMap, low, high = state
+        return QVizSessionColourScale(map=colorMap, low=low, high=high)
 
     @staticmethod
     def placesOf(frame):

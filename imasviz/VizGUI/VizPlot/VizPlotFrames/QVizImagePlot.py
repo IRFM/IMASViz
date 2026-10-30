@@ -22,9 +22,14 @@ until one of those axes moved from inside the picture to between pictures. That
 axis is on screen, so it gets no slider: it gets a window, saying which of its
 elements are up and letting the user move on.
 
-The pictures all answer to one colour scale, fixed when the quantity is plotted.
-Comparing two of them means comparing colours, and a scale that re-fit itself to
-each picture would make every picture look the same whatever it held.
+The pictures all answer to one colour scale: one map and one level range, for the
+window. Comparing two of them means comparing colours, and a scale that re-fit
+itself to each picture would make every picture look the same whatever it held.
+The range is settled over all the pictures when the quantity is plotted and holds
+after that: moving the window of pictures does not move it, the handles on the
+colour bar do -- a hand that set a range is answering a question about this
+quantity, and nothing is entitled to overrule it mid-question. The map is chosen
+on the window too, so that the colour means one thing on one screen.
 
 The cells of the image are element ranks, laid over the coordinate extents: a
 dictionary grid need not be regular, and pyqtgraph draws an image as a regular
@@ -39,6 +44,8 @@ from PySide6.QtWidgets import (QHBoxLayout, QLabel, QPushButton, QSizePolicy,
 
 from imasviz.VizDataAccess.QVizTensorDataAccess import FRAMES, QVizTensorDataAccess
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle
+from imasviz.VizGUI.VizPlot.QVizColourScales import (QVizImageColourScale,
+                                                     roundingFor)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import (
     QVizFramesWindow, QVizSliceControls)
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceLines import (
@@ -76,6 +83,10 @@ class QVizImagePlot(QWidget):
         # first one.
         self.plotItem = None
         self.colorBar = None
+        # The map the pictures are drawn with and whether a hand was on either
+        # half of the scale. Held apart from the window because the chooser it
+        # opens must not hold a bound method of it back.
+        self.colourScale = QVizImageColourScale(self)
 
         self.sliceControls = QVizSliceControls(self)
         self.framesControls = QVizFramesWindow(self)
@@ -199,6 +210,21 @@ class QVizImagePlot(QWidget):
                              '": no values in the image.')
 
         quantity = self.quantityLabel(treeNode)
+        # Where the colour scale settles: over every picture on the figure, and
+        # before any of them is drawn. Handed to the read with the values, a
+        # picture is never painted against a span it is moved off afterwards --
+        # and `setImage` without levels would re-fit each picture to its own
+        # min and max, which is the one thing this window may not do.
+        self._levels = self._scaleOf([np.asarray(handle.arrayValues)
+                                      for handle, _, _ in frames])
+        # The bar is interactive: its handles are how a level range is set, and
+        # `rounding` comes from the span, because the library's default of 1
+        # flattens a quantity of order 0,01 to a scale of one unit.
+        self.colorBar = pg.ColorBarItem(values=self._levels, label=quantity,
+                                        interactive=True,
+                                        rounding=roundingFor(self._levels))
+        self.pgPlotWidget.addItem(self.colorBar, row=0, col=self._count)
+
         for position, (handle, _, frameLabel) in enumerate(frames):
             self._addPicture(position)
             self._drawPicture(position, handle, axesSpec, drawn)
@@ -206,16 +232,7 @@ class QVizImagePlot(QWidget):
             self._pictures[position][0].setTitle(title)
 
         self.plotItem = self._pictures[0][0]
-        # Where the colour scale settles: over every picture on the figure, once.
-        self._levels = self._scaleOf([np.asarray(handle.arrayValues)
-                                      for handle, _, _ in frames])
-        self.colorBar = pg.ColorBarItem(label=quantity, interactive=False)
-        self.pgPlotWidget.addItem(self.colorBar, row=0, col=self._count)
-        # One bar cannot drive several images -- pyqtgraph 0.13.7 keeps only the
-        # last item handed to setImageItem -- so it displays the scale and the
-        # scale is applied to each picture by hand.
-        self.colorBar.setImageItem(self.images()[0])
-        self._applyScale()
+        self.colourScale.bind(self.colorBar, self.images(), self.plotItems())
 
         self.addSlices(access.slicesFor(treeNode, plotWidget=self,
                                         as_function_of_time=False,
@@ -319,12 +336,15 @@ class QVizImagePlot(QWidget):
             return
 
         screen = self._forScreen(values)
-        imageItem.setImage(screen)
+        # The levels go in with the values. `setImage` on its own re-fits the
+        # picture to its own min and max -- measured: a re-read of a 20x20 slice
+        # answers levels (0, 399) over a window scaled to (0, 215) -- which would
+        # answer a different question on every picture and move the range under a
+        # hand that has just set it.
+        imageItem.setImage(screen, levels=self._levels)
         # Kept aside for the slices: a slice is cut out of the picture as it sits
         # on screen, and pyqtgraph stores the image as it drew it.
         self._screen[position] = screen
-        if self._levels is not None:
-            imageItem.setLevels(self._levels)
         # A different element of a static array can carry a grid of its own, so
         # the extent belongs to the slice just read, not to the first one.
         self._setExtent(imageItem, handle)
@@ -422,10 +442,23 @@ class QVizImagePlot(QWidget):
             return None
         return (min(low for low, _ in spans), max(high for _, high in spans))
 
-    def _applyScale(self):
+    def setColourLevels(self, levels):
+        """Move the range every picture is drawn against, and nothing else.
+
+        Through the colour bar, because the bar is what holds the pictures:
+        `setLevels` on it pushes the range onto each bound image and re-scales the
+        bar's own axis in one step, and it does *not* emit `sigLevelsChanged` --
+        so a range put back by a session does not count as a drag on the way in,
+        which is what `QVizImageColourScale.restore` is there to say.
+        """
+        self._levels = None if levels is None else tuple(levels)
+        if self._levels is None:
+            return
+        if self.colorBar is not None:
+            self.colorBar.setLevels(values=self._levels)
+            return
         for image in self.images():
-            if self._levels is not None:
-                image.setLevels(self._levels)
+            image.setLevels(self._levels)
 
     def _setExtent(self, imageItem, handle):
         """Span the picture over the coordinates it was taken on.

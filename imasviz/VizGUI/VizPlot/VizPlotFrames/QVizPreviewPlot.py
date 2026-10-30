@@ -25,6 +25,11 @@ with only a time base around it becomes its history -- and when nothing can be
 shown the panel says which of those is the case instead of keeping what was
 there. It reads one slice, through the same access the figures use, and hands
 that read no plot widget of its own: it has no control to be read through.
+
+A picture is drawn with the same colour map a window opens with. A thumbnail is
+a question about where the data is, and a grey ramp answers "is anything here"
+while hiding where it peaks; the level range is left to fit itself to the one
+slice, because nothing here is being compared to a neighbour.
 """
 
 import numpy as np
@@ -36,6 +41,7 @@ from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 from imasviz.VizDataAccess.QVizSlices import sliceLabel
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle
+from imasviz.VizGUI.VizPlot.QVizColourScales import DEFAULT_MAP, mapNamed
 
 CURVE, PICTURE, NOTHING = 'curve', 'picture', 'nothing'
 
@@ -62,6 +68,10 @@ class QVizPreviewPlot(QWidget):
         self.imagePlot.setObjectName('previewImage')
         self.imagePanel = self.imagePlot.addPlot(row=0, col=0)
         self.imageItem = pg.ImageItem()
+        # Once, here rather than on every draw: a re-read keeps the lookup table
+        # (measured on 0.13.7) and the levels are left to fit the slice, which is
+        # the only thing a thumbnail is asked.
+        self.imageItem.setColorMap(mapNamed(DEFAULT_MAP))
         self.imagePanel.addItem(self.imageItem)
 
         self.notice = QLabel(self)

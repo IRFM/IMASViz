@@ -43,8 +43,9 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionSelection, QVizSessionFigure, QVizSessionQuantity,
     QVizSessionCursor, QVizSessionCursors, QVizSessionView, QVizSessionErrors,
     QVizSessionWindow, QVizSessionPluginWindow,
-    QVizSessionCurveStyle, QVizSessionTextStyle,
+    QVizSessionCurveStyle, QVizSessionTextStyle, QVizSessionColourScale,
     CURVE_STYLE_ATTRIBUTES, TEXT_STYLE_ATTRIBUTES, TEXT_SIDES,
+    COLOUR_SCALE_ATTRIBUTES,
     CURVE, IMAGE, TABLE, STACKED,
     cursorKeyOf, cursorKeyText)
 from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
@@ -313,15 +314,15 @@ def test_a_file_of_another_root_is_refused_naming_that_root():
 @pytest.mark.ui
 def test_a_file_of_another_version_is_refused_naming_both_versions():
     """Guessing a format this module does not know is how a session comes back
-    describing less than it says. Version 3 is read -- it simply carries no
-    styling; version 5 is not, because there is nothing to guess from."""
-    path = _write('future.vsess', '<IMASVizSession version="5"><Case uri="x"/>'
+    describing less than it says. Version 4 is read -- it simply carries no
+    colour scale; version 6 is not, because there is nothing to guess from."""
+    path = _write('future.vsess', '<IMASVizSession version="6"><Case uri="x"/>'
                                   '</IMASVizSession>')
 
     with pytest.raises(ValueError) as raised:
         QVizSessionFile.read(path)
 
-    assert '"5"' in str(raised.value) and 'writes version 4' \
+    assert '"6"' in str(raised.value) and 'writes version 5' \
         in str(raised.value)
 
 
@@ -935,7 +936,7 @@ def test_a_session_of_an_older_version_names_no_plugin_window():
 
 
 @pytest.mark.ui
-def test_a_plugin_window_written_by_this_release_is_version_4():
+def test_a_plugin_window_written_by_this_release_is_version_5():
     written = QVizSessionFile(
         cases=[QVizSessionCase(uri=URI, dd_version=None, label=None, loads=[],
                                expanded=[], selection=[],
@@ -946,7 +947,7 @@ def test_a_plugin_window_written_by_this_release_is_version_4():
     with open(written) as handle:
         body = handle.read()
 
-    assert 'version="4"' in body and '<PluginWindow' in body
+    assert 'version="5"' in body and '<PluginWindow' in body
 
 
 @pytest.mark.ui
@@ -1402,3 +1403,154 @@ def test_the_words_of_the_file_are_the_words_the_frame_answers():
     assert CURVE_STYLE_ATTRIBUTES == tuple(CURVE_ATTRIBUTES)
     assert TEXT_STYLE_ATTRIBUTES == tuple(TEXT_ATTRIBUTES)
     assert TEXT_SIDES == ('title', 'bottom', 'left', 'top', 'right')
+
+
+# ---------------------------------------------------------------------------
+# Version 5: the colours of a picture window.
+
+def aPictureFigure(map=None, low=None, high=None):
+    """A picture window, and whatever of its colour scale a hand was on."""
+    return QVizSessionFigure(
+        key='SlicesImage1', kind=IMAGE,
+        quantities=[QVizSessionQuantity('e/f', 0, URI, None, None)],
+        axis=None, tensor=True,
+        scale=QVizSessionColourScale(map=map, low=low, high=high))
+
+
+@pytest.mark.ui
+def test_the_colours_and_the_range_of_a_picture_come_back_through_the_file():
+    """One map, one range, and both are the window's -- not one per picture.
+
+    The pictures of a window share a scale because comparing them is the whole
+    point of laying them side by side, so the file has one element to say it and
+    the restore has one answer to put back.
+    """
+    written = QVizSessionFile(cases=[], figures=[aPictureFigure(
+        map='CET-L9', low=1.5, high=2000.0)]).write(
+        QVizSessionFile.named('colours'))
+    read = QVizSessionFile.read(written)
+
+    assert read.figures[0].scale == QVizSessionColourScale(map='CET-L9',
+                                                           low=1.5,
+                                                           high=2000.0)
+    body = open(written).read()
+    assert '<ColourScale map="CET-L9"' in body, body
+    assert 'low="1.5"' in body and 'high="2000.0"' in body, body
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('arguments', [
+    {'map': 'turbo'},
+    {'low': 12., 'high': 40.},
+    {'low': -3.5, 'high': 3.5},
+    {'map': 'CET-D1', 'low': 0.0},
+    {'high': 1.0},
+])
+def test_either_half_of_a_colour_scale_is_a_whole_answer(arguments):
+    """A hand that only picked colours left the span the pictures settle on, and
+    one that only dragged the handles left the colours this node opens with. Both
+    are complete answers, so a file naming one of them is not half a file."""
+    written = QVizSessionFile(cases=[],
+                              figures=[aPictureFigure(**arguments)]).write(
+        QVizSessionFile.named('half'))
+
+    read = QVizSessionFile.read(written)
+
+    assert read.figures[0].scale == QVizSessionColourScale(
+        *[arguments.get(name) for name in COLOUR_SCALE_ATTRIBUTES])
+
+
+@pytest.mark.ui
+def test_a_picture_nobody_coloured_writes_no_colour_scale():
+    """The default is a property of this node, not a choice of that user.
+
+    Writing the map every window opens with would pin it: a release changing its
+    default, or a case opened on a node that resolves the name to another file,
+    and the figure comes back dressed in colours nobody picked. The range is the
+    same argument about the values of the case the file was written on.
+    """
+    written = QVizSessionFile(cases=[], figures=[aPictureFigure()]).write(
+        QVizSessionFile.named('plain_picture'))
+    body = open(written).read()
+
+    assert '<ColourScale' not in body
+    assert QVizSessionFile.read(written).figures[0].scale is None, \
+        'an element naming nothing is no answer, and the reader says so'
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('body,expected', [
+    ('<ColourScale/>', 'naming none of'),
+    ('<ColourScale colour="turbo"/>', 'a colour scale names'),
+    ('<ColourScale map=""/>', 'map=""'),
+    ('<ColourScale map="   "/>', 'map=""'),
+    ('<ColourScale map="turbo" low="20." high="5."/>', 'runs from its low end'),
+    ('<ColourScale low="a"/>', 'not a number'),
+    ('<ColourScale map="turbo" values="1,2"/>', 'a colour scale names'),
+])
+def test_a_colour_scale_that_cannot_be_put_back_is_refused_at_the_file(body,
+                                                                      expected):
+    """Every one of these would reach the window as a guess.
+
+    `low > high` is the one that would not even raise there: pyqtgraph answers the
+    midpoint of two reversed ends, so the window would come back with a flat range
+    nobody wrote.
+    """
+    path = _write('scale.vsess',
+                  '<IMASVizSession version="5"><Figure key="F" kind="image">'
+                  '<Quantity path="e/f" occurrence="0"/>%s'
+                  '</Figure></IMASVizSession>' % body)
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert expected in str(raised.value), str(raised.value)
+    assert 'scale.vsess' in str(raised.value)
+
+
+@pytest.mark.ui
+def test_a_colour_scale_under_a_quantity_is_refused_naming_the_quantity():
+    """The scale belongs to the window, because the pictures of a window share it.
+
+    A reader that accepted it under a `<Quantity>` would answer a picture whose
+    neighbour is drawn with other colours -- the one thing the bar above them
+    denies.
+    """
+    path = _write('scale_on_quantity.vsess',
+                  '<IMASVizSession version="5"><Figure key="F" kind="image">'
+                  '<Quantity path="e/f" occurrence="0">'
+                  '<ColourScale map="turbo"/></Quantity>'
+                  '</Figure></IMASVizSession>')
+
+    with pytest.raises(ValueError) as raised:
+        QVizSessionFile.read(path)
+
+    assert 'ColourScale' in str(raised.value), str(raised.value)
+
+
+@pytest.mark.ui
+@pytest.mark.parametrize('version', ['1', '2', '3', '4'])
+def test_a_file_of_an_older_version_names_no_colour_scale(version):
+    """A version 4 file holds no `<ColourScale>`, which is a picture drawn with
+    the colours it opens with -- not the colours of the run that saved it."""
+    path = _write('v%s_colour.vsess' % version, """
+    <IMASVizSession version="%s">
+      <Figure key="SlicesImage1" kind="image">
+        <Quantity path="e/f" occurrence="0"/>
+      </Figure>
+    </IMASVizSession>""" % version)
+
+    read = QVizSessionFile.read(path)
+
+    assert read.figures[0].scale is None
+
+
+@pytest.mark.ui
+def test_the_words_of_the_colour_scale_are_the_words_of_its_record():
+    """The file's attributes and the record's fields are one list, not two.
+
+    The other half of this seam -- the three-part answer a picture window gives the
+    session, in this order -- is pinned in `test_74`, where a real window is
+    present to answer it.
+    """
+    assert COLOUR_SCALE_ATTRIBUTES == QVizSessionColourScale._fields

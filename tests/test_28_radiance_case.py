@@ -39,6 +39,7 @@ from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 from imasviz.VizEntities.QVizDataArrayHandle import QVizDataArrayHandle
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
+from imasviz.VizGUI.VizPlot.QVizColourScales import DEFAULT_MAP
 
 from support.caseTrees import loadCaseTrees, leafByText, nodeAsTheBuilderBuildsIt
 from support.fakes import FakeTreeView
@@ -48,6 +49,8 @@ IDS_NAME = 'hard_x_rays'
 LEAF = 'hard_x_rays.channel[i].radiance.data'
 CHANNEL = (QVizAxis.AOS, IDS_NAME, 'channel')
 BANDS, SAMPLES = 8, 808
+# A map of this node's own that is not the one a window opens with.
+ANOTHER_MAP = 'CET-L9'
 
 
 @pytest.fixture(scope='module')
@@ -321,5 +324,118 @@ def test_the_slice_lines_span_the_picture_they_answer(qapp, radiance, case):
         # The slice under a line standing on time runs along the energy bands.
         x, y = frame.sliceNumbers('bottom')
         assert x.size == BANDS and y.size == BANDS
+    finally:
+        frame.close()
+
+
+# ------------------------------------------------------- the colours of the shot
+
+def realChannels(frame, ids):
+    """The values behind the pictures on screen, read off the IDS again."""
+    start = frame.framesControls.start()
+    return [radianceOf(ids, start + position)
+            for position in range(len(frame.images()))]
+
+
+@pytest.mark.case
+def test_every_channel_of_the_shot_is_drawn_with_one_map(qapp, radiance, case):
+    """Three channels of one radiance, one colour ramp, and the bar's numbers are
+    the scale all three are painted against.
+
+    The stubs of `test_73` pin the shape; this is the same promise on values nobody
+    wrote -- 38 channels of a WEST radiance, whose three first are drawn side by
+    side. Measured on this shot: channel 0 runs to 1,66e11, channel 1 to 2,44e11,
+    channel 2 to 7,16e10. So the window's scale is channel 1's top, and a bar
+    answering the picture it was bound to -- which is what it did before this row,
+    since `setImageItem` replaces its list on every call -- reads a scale two thirds
+    below what is on screen.
+    """
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        values = realChannels(frame, case['runtime'][IDS_NAME])
+
+        luts = [image.lut for image in frame.images()]
+        assert all(lut is not None for lut in luts), \
+            'a picture of the shot drawn in the library default grey'
+        assert np.array_equal(luts[0], luts[-1])
+        assert [image.getColorMap().name for image in frame.images()] \
+            == [DEFAULT_MAP] * len(frame.images())
+
+        low, high = frame.colourLevels()
+        assert tuple(float(value)
+                     for value in frame.colorBar.levels()) == frame.colourLevels()
+        assert low <= min(float(channel.min()) for channel in values)
+        assert high >= max(float(channel.max()) for channel in values)
+        assert [tuple(float(value) for value in image.getLevels())
+                for image in frame.images()] == [(low, high)] * len(values)
+        # The three assertions above hold for a scale fitted to the first picture
+        # too, so say which one it is not: this channel tops out well under the
+        # window's high end.
+        assert float(values[0].max()) < high
+        # And the handles move in steps of this quantity, not of one unit: measured,
+        # a thousandth of the span, which here is 2,4e8.
+        assert frame.colorBar.rounding == pytest.approx((high - low) / 1000.0)
+    finally:
+        frame.close()
+
+
+@pytest.mark.case
+def test_a_range_set_on_the_shot_holds_while_the_window_of_channels_moves(
+        qapp, radiance, case):
+    """The range is a decision about the quantity, not about the three channels
+    currently on screen.
+
+    Moving the window reads three channels that were never part of the choice.
+    Re-fitting then would pull the scale out from under the hand that set it -- and
+    on this radiance the three that come in (channels 5, 6, 7, measured to top out
+    at 2,4e10, 2,3e10 and 3,7e10) sit an order of magnitude below the 2,44e11 the
+    first window is drawn against. A re-fit would decide what is worth seeing on
+    each picture separately, which is the one comparison the window exists to make.
+    """
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        low, high = frame.colourLevels()
+        asked = (low + 0.25 * (high - low), low + 0.75 * (high - low))
+
+        frame.colorBar.region.setRegion(asked)
+        moved = frame.colourLevels()
+        assert moved != (low, high)
+
+        frame.framesControls.setStart(5)
+
+        assert frame.colourLevels() == moved
+        # The levels are what the picture is mapped through, so the channels that
+        # came in are painted under the range that was asked for, whatever their own
+        # span.
+        assert [tuple(float(value) for value in image.getLevels())
+                for image in frame.images()] == [moved] * len(frame.images())
+        values = realChannels(frame, case['runtime'][IDS_NAME])
+        assert max(float(channel.max()) for channel in values) < moved[0], \
+            'the channels that came in span what was asked: the assertion above ' \
+            'would not tell a re-fit from a range that held'
+    finally:
+        frame.close()
+
+
+@pytest.mark.case
+def test_a_map_chosen_on_the_shot_recolours_every_channel(qapp, radiance, case):
+    """The map is one answer for the window, so a right click that reaches one
+    picture only -- which is what `setColorMap` on a bar bound to a single image
+    does -- is a half-painted window."""
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        before = [image.lut for image in frame.images()]
+
+        frame.colourScale.setColourMap(ANOTHER_MAP)
+
+        after = [image.lut for image in frame.images()]
+        assert [image.getColorMap().name for image in frame.images()] \
+            == [ANOTHER_MAP] * len(after)
+        assert all(not np.array_equal(old, new)
+                   for old, new in zip(before, after))
+        assert np.array_equal(after[0], after[-1])
     finally:
         frame.close()
