@@ -731,7 +731,8 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints **118 passed, 1
   xfailed** for those 117: two of the passed ids are `test_the_walk_finds_the_package`
   and `test_known_unimportable_list_is_not_stale`, not modules, so the module count is
-  the id count minus two. Note that
+  the id count minus two. T45 added **none** — the colours of a cut live in
+  `QVizSliceLines`, the module that already owns the lines. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
@@ -900,6 +901,28 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   The default is `viridis`: it ships here (CC0), it is uniform in perceptual distance,
   and it stays legible to a colour-blind eye. Like the curve palette, it is a property
   of **this node** and never written to a file by a window nobody dressed.
+- **The cuts of a picture window are coloured by their side** (T45), and what made one
+  invisible was read off the library before being fixed: `pg.mkPen(width=1)` with no
+  colour falls back on `mkColor('l')` = **(200,200,200)** (`functions.py:58` with
+  `:355-356`) — the very grey a curve drawn without a pen gets — while
+  `QVizSliceLines` drew its live cut with `color='k'` **on the black ground** (the
+  user's report: *the plot under the pictures is invisible*) and every kept record
+  with that grey, so no two records told apart and none could be told from the curve
+  it was copied from. `QVizCurveColors` answers it now: `colourFor(0)` on the bottom
+  side, `colourFor(1)` on the left, worn by the line, its markers and the live curve —
+  the colour is the only cue saying which line a panel answers, since the panel under a
+  vertical line runs along the *other* axis. Kept records cycle from `colourFor(2)` and
+  close after `CYCLE - len(SIDES)` = **6** colours, so a record never wears a live
+  colour. Three library facts decide the shape: `InfiniteLine` with no pen takes
+  **(200,200,100)** olive with a pure-red hover pen (`InfiniteLine.py:87-93`) — the
+  lines were never the invisible part; `InfLineLabel` hands its options to `TextItem`
+  and does **not** follow the pen of its line, so a coloured line keeps a white label
+  (pin the pen, never the label); and `PlotItem.addItem` takes a legend entry from
+  `item.name()` **as it adds** (`PlotItem.py:516-552`), so `addLegend()` has to precede
+  the named `plot()` — which is why `keep()` asks for the legend there and then, and
+  `removeItem` drops the entry with the curve (`PlotItem.py:595`). A legend row is a
+  `(sample, LabelItem)` pair and its text is `label.text`, **not** `toPlainText()`
+  (`LegendItem.py:215-221`); `plotItem.titleLabel` is the same shape.
 - **A picture window is never freed at its refcount** (measured, and **not** fixed
   here): a bare `QVizImagePlot` — nothing plotted, no colour scale involved — stays
   reachable from the closure cells of `_makeSliceButtons` (`cad1c3c`, the two

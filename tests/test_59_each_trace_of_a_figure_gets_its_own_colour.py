@@ -343,9 +343,10 @@ def test_a_picture_figure_has_no_trace_to_colour(qapp):
     A picture figure answers its pictures through `images()` and `plotItems()`
     and holds no curve at all, so handing it a colour per trace would be
     inventing traces it does not have -- the mistake that would make the manual's
-    sentence about an :guilabel:`Image` figure a lie. Its slice-preview lines are
-    drawn by `QVizSliceLines`, which sets their pens itself and is out of this
-    row's scope.
+    sentence about an :guilabel:`Image` figure a lie. The cuts it draws under the
+    pictures are coloured by `QVizSliceLines` itself, one colour per side, and
+    `test_34` pins that answer; it is not the per-trace cycle this figure hands
+    out, which is why the frame still answers no `curves` of its own.
     """
     figure = ownership.keep(QVizImagePlot(title='imageNoColourGuard'))
 

@@ -47,6 +47,7 @@ from imasviz.VizUtils import FigureTypes
 from imasviz.Viz_API import Viz_API
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
+from imasviz.VizGUI.VizPlot.QVizCurveColors import CYCLE, colourFor
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
 
 from support.fakes import FakeAxesNode
@@ -572,3 +573,194 @@ def test_the_line_stays_where_the_user_put_it_when_the_window_moves(figure):
     figure.framesControls.setStart(3)
 
     assert figure.sliceLine('bottom').value() == pytest.approx(2.4)
+
+
+# ---------------------------------------------------------------------------
+# The colour of a slice.
+#
+# Reported from real use on WEST soft_x_rays: "the plot of the cut under the
+# picture is invisible". Measured on PyQtGraph/0.13.7-foss-2023b, it is exactly
+# that -- the live curve was drawn with `pg.mkPen(width=1, color='k')` on the
+# black the pictures sit on (`'background': 'k'`, pyqtgraph/__init__.py:45). And
+# `keep()` drew its record with `pg.mkPen(width=1)`, which falls back on
+# `mkColor('l')` = (200,200,200) (`functions.py:58` and `:355-356`), so every
+# kept slice wore the same grey and none of them could be told from the curve it
+# was copied from. The lines themselves were never invisible: `InfiniteLine` with
+# no pen takes (200,200,100) (`InfiniteLine.py:87-89`) -- an olive that said
+# nothing about which panel it answers.
+
+
+def penOf(curve):
+    return tuple(curve.opts['pen'].color().getRgb()[:3])
+
+
+def squaredDistance(one, other):
+    return sum((a - b) ** 2 for a, b in zip(one, other))
+
+
+@pytest.mark.ui
+def test_the_slice_curve_is_drawn_in_the_colour_of_its_line(figure):
+    figure.plot(_static())
+
+    assert penOf(figure.sliceCurve('bottom')) == figure.sliceColour('bottom')
+    assert penOf(figure.sliceCurve('left')) == figure.sliceColour('left')
+    # The palette these figures already answer for, and its first two entries.
+    assert figure.sliceColour('bottom') == colourFor(0)
+    assert figure.sliceColour('left') == colourFor(1)
+
+
+@pytest.mark.ui
+def test_a_slice_curve_is_not_the_black_it_is_drawn_on(figure):
+    figure.plot(_static())
+
+    for side in ('bottom', 'left'):
+        colour = penOf(figure.sliceCurve(side))
+        assert sum(colour) > 0, (
+            '%s: the slice is drawn in the colour of the ground under it'
+            % (colour,))
+        assert colour != (200, 200, 200), (
+            'the slice wears the default pen of a curve drawn without a colour')
+
+
+@pytest.mark.ui
+def test_the_two_slices_are_not_drawn_in_the_same_colour(figure):
+    figure.plot(_static())
+
+    bottom, left = figure.sliceColour('bottom'), figure.sliceColour('left')
+    assert bottom != left
+    assert squaredDistance(bottom, left) > 20000, (
+        'the two panels answer two questions the user has to tell apart')
+
+
+@pytest.mark.ui
+def test_the_line_and_its_cursors_wear_the_colour_of_their_slice(figure):
+    figure.plot(_static())
+
+    for side in ('bottom', 'left'):
+        expected = figure.sliceColour(side)
+        assert tuple(figure.sliceLine(side).pen.color().getRgb()[:3]) == expected
+        for marker in figure.sliceMarkers(side):
+            assert tuple(marker.pen.color().getRgb()[:3]) == expected
+        # A cursor added later belongs to the same panel, so it wears the same.
+        figure.addSliceMarker(side)
+        assert tuple(figure.sliceMarkers(side)[-1].pen.color().getRgb()[:3]) \
+            == expected
+
+
+@pytest.mark.ui
+def test_a_kept_slice_does_not_wear_the_colour_of_a_live_one(figure):
+    figure.plot(_static())
+    figure.sliceLine('bottom').setPos(1.0)
+
+    figure.keepSlice('bottom')
+
+    kept = figure.keptColours('bottom')
+    assert len(kept) == 1
+    live = (figure.sliceColour('bottom'), figure.sliceColour('left'))
+    assert kept[0] not in live
+    assert kept[0] != (200, 200, 200)
+    assert sum(kept[0]) > 0
+
+
+@pytest.mark.ui
+def test_two_kept_slices_are_not_drawn_in_the_same_colour(figure):
+    figure.plot(_static())
+    live = (figure.sliceColour('bottom'), figure.sliceColour('left'))
+
+    for position in (0.0, 1.0, 2.0, 3.0, 0.0, 1.0, 2.0, 3.0):
+        figure.sliceLine('bottom').setPos(position)
+        figure.keepSlice('bottom')
+
+    kept = figure.keptColours('bottom')
+    assert len(kept) == 8
+    # The cycle runs over the palette minus the two live colours, so it never
+    # answers the colour of a curve the user is still moving.
+    assert len(set(kept)) == CYCLE - len(live)
+    assert not set(kept) & set(live)
+    assert kept[CYCLE - len(live)] == kept[0]
+
+
+@pytest.mark.ui
+def test_a_kept_slice_keeps_its_colour_across_a_move_and_a_window(figure):
+    figure.plot(_inTime())
+    figure.sliceLine('bottom').setPos(1.0)
+    figure.keepSlice('bottom')
+    figure.sliceLine('bottom').setPos(3.0)
+    figure.sliceLine('left').setPos(0.5)
+
+    figure.framesControls.setStart(3)
+
+    assert figure.keptColours('bottom') == [colourFor(2)]
+    assert penOf(figure.sliceCurve('bottom')) == figure.sliceColour('bottom')
+
+
+@pytest.mark.ui
+def test_the_kept_colours_start_over_when_the_records_are_all_dropped(figure):
+    figure.plot(_static())
+    for position in (1.0, 3.0):
+        figure.sliceLine('bottom').setPos(position)
+        figure.keepSlice('bottom')
+    first = figure.keptColours('bottom')
+
+    figure.clearKeptSlices()
+    figure.sliceLine('bottom').setPos(2.0)
+    figure.keepSlice('bottom')
+
+    assert figure.keptColours('bottom') == [first[0]], (
+        'the panel is empty again, so the next record takes the first colour '
+        'rather than the fifth of a cycle nobody can see')
+
+
+@pytest.mark.ui
+def test_one_panel_keeps_its_colours_when_the_other_one_keeps(figure):
+    # Each side counts its own records: keeping under the vertical line must not
+    # recolour what is already kept under the horizontal one.
+    figure.plot(_static())
+    figure.sliceLine('bottom').setPos(1.0)
+    figure.keepSlice('bottom')
+
+    figure.sliceLine('left').setPos(0.25)
+    figure.keepSlice('left')
+    figure.keepSlice('left')
+
+    assert len(figure.keptColours('bottom')) == 1
+    assert figure.keptColours('bottom') == figure.keptColours('left')[:1]
+
+
+@pytest.mark.ui
+def test_the_panel_says_where_a_kept_slice_was_cut(figure):
+    # The label has been handed to pyqtgraph all along and never shown: no
+    # legend was ever posed on a slice panel. It is asked for with the first
+    # record, because an empty legend is a frame around nothing -- and before
+    # the curve is added, since PlotItem takes the entry from the item's name as
+    # it adds it (PlotItem.py:516-552).
+    figure.plot(_static())
+    figure.sliceLine('bottom').setPos(1.0)
+    panel = figure.slicePlot('bottom')
+    assert panel.legend is None
+
+    figure.keepSlice('bottom')
+
+    assert panel.legend is not None
+    assert len(panel.legend.items) == 1, (
+        'the live curve has no position to name and takes no entry')
+    # `LegendItem.items` holds (sample, LabelItem) -- and a LabelItem spells its
+    # text as an attribute: `toPlainText` is a TextItem's (LegendItem.py:215-221).
+    _, label = panel.legend.items[0]
+    assert label.text == 'rho_tor[m]=1'
+
+    figure.keepSlice('bottom')
+    assert len(panel.legend.items) == 2
+
+    figure.clearKeptSlices()
+    assert panel.legend.items == []
+
+
+@pytest.mark.ui
+def test_the_other_panel_gets_its_own_legend(figure):
+    figure.plot(_static())
+    figure.sliceLine('bottom').setPos(1.0)
+    figure.keepSlice('bottom')
+
+    assert figure.slicePlot('left').legend is None, (
+        'a legend on a panel holding no record is a frame around nothing')

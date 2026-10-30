@@ -33,10 +33,21 @@ viewBox, which these frames do not use. They are buttons on the figure now.
 One pair of lines, on the first picture. What the lines answer is that picture,
 and with a window of pictures side by side a line on each would be several
 answers to one question; the window control moves which picture that is.
+
+**One colour per side, worn by the line, its markers and the curve it produces.**
+The two slice plots run along different axes and say so only in their axis labels,
+and a curve nobody can see answers nothing: these plots are painted on the black
+the pictures sit on, and the live curve was drawn with ``color='k'`` on it. The
+palette is the curve figures' own (``QVizCurveColors``, measured legible on
+that ground), and a kept slice never wears a live colour -- the kept cycle runs
+over the rest of the palette, so the colour says *this one is a record* as well as
+telling two records apart.
 """
 
 import numpy as np
 import pyqtgraph as pg
+
+from imasviz.VizGUI.VizPlot.QVizCurveColors import CYCLE, colourFor
 
 
 class QVizDrawnAxis:
@@ -84,6 +95,27 @@ class QVizSliceLines:
     LEFT = 'left'
     SIDES = (BOTTOM, LEFT)
 
+    # Which entry of the curve palette each side wears. Two sides, so two
+    # colours, and they are the palette's first two: far apart in hue, and both
+    # hold up against the viridis ramp the pictures are painted with -- an
+    # orange and a cyan appear nowhere in it.
+    LIVE_COLOURS = {BOTTOM: 0, LEFT: 1}
+    # A kept slice answers a different question ("this is a record of where the
+    # line stood"), so it never wears a live colour: the kept cycle starts after
+    # them and runs over the rest of the palette.
+    KEPT_FIRST = len(SIDES)
+    KEPT_COLOURS = CYCLE - len(SIDES)
+
+    @classmethod
+    def liveColour(cls, side):
+        """The rgb the line on one side, its markers and its curve all wear."""
+        return colourFor(cls.LIVE_COLOURS[side])
+
+    @classmethod
+    def keptColour(cls, index):
+        """The rgb of the index-th kept slice, cycling clear of the live colours."""
+        return colourFor(cls.KEPT_FIRST + index % cls.KEPT_COLOURS)
+
     def __init__(self, layout):
         """
         Arguments:
@@ -97,6 +129,7 @@ class QVizSliceLines:
         self._plots = {}
         self._curves = {}
         self._kept = {}
+        self._keptCount = {}
         self._markers = {}
         self._values = np.asarray([])
         self._columns = 1
@@ -125,6 +158,7 @@ class QVizSliceLines:
                                    angle=90 if side == self.BOTTOM else 0,
                                    movable=True,
                                    bounds=axis.interval(),
+                                   pen=pg.mkPen(self.liveColour(side)),
                                    label=axis.labelFormat())
             line.label.setZValue(1000)
             # On the view box rather than the plot: the line has to stay above
@@ -170,6 +204,7 @@ class QVizSliceLines:
         marker = pg.InfiniteLine(pos=float(axis.values[len(axis.values) // 2]),
                                  angle=90, movable=True,
                                  bounds=axis.interval(),
+                                 pen=pg.mkPen(self.liveColour(side)),
                                  label=axis.labelFormat())
         self._plots[side].addItem(marker)
         return marker
@@ -212,8 +247,17 @@ class QVizSliceLines:
     def curve(self, side):
         return self._curves[side]
 
+    def panel(self, side):
+        """The plot under one line, where the slices kept from it are drawn."""
+        return self._plots[side]
+
     def numbers(self, side):
         return self._curves[side].getData()
+
+    def keptColours(self, side):
+        """The rgb of each slice kept on one panel, in the order they were kept."""
+        return [tuple(curve.opts['pen'].color().getRgb()[:3])
+                for _, curve in self._kept.get(side, [])]
 
     def labelText(self, side):
         return self._lines[side].label.toPlainText()
@@ -224,11 +268,28 @@ class QVizSliceLines:
         return (other.name or '', other.units or '')
 
     def keep(self, side):
-        """Record the slice under one line, and leave it on its plot."""
+        """Record the slice under one line, and leave it on its plot.
+
+        The record wears a colour of its own, and never the colour of the curve
+        it was copied from: two kept slices have to tell apart, and a kept slice
+        has to tell itself apart from the live curve it now runs beside.
+
+        The legend that names where each record was cut is asked for here and not
+        posed with the panel, because an empty legend is a frame around nothing on
+        a panel nobody has used yet. It has to be in place *before* the curve is
+        added: `PlotItem.addItem` takes the entry from `item.name()` as it adds
+        (measured on pyqtgraph 0.13.7, `PlotItem.py:516-552`), so a legend posed
+        afterwards would never be told about the curves already on the panel.
+        """
         x, y = self._curves[side].getData()
         label = self.labelText(side)
-        curve = self._plots[side].plot(np.asarray(x), np.asarray(y), name=label)
-        curve.setPen(pg.mkPen(width=1))
+        panel = self._plots[side]
+        if panel.legend is None:
+            panel.addLegend()
+        curve = panel.plot(np.asarray(x), np.asarray(y), name=label)
+        kept = self._keptCount.get(side, 0)
+        curve.setPen(pg.mkPen(self.keptColour(kept)))
+        self._keptCount[side] = kept + 1
         self._kept.setdefault(side, []).append((label, curve))
         return label
 
@@ -237,10 +298,13 @@ class QVizSliceLines:
                 for label, curve in self._kept.get(side, [])]
 
     def clearKept(self):
+        """Take the records away, and with them the count their colours came from:
+        the panel is empty again, so the next one kept wears the first colour."""
         for side, entries in self._kept.items():
             for _, curve in entries:
                 self._plots[side].removeItem(curve)
         self._kept = {}
+        self._keptCount = {}
 
     def isPosed(self):
         return bool(self._lines)
@@ -256,6 +320,7 @@ class QVizSliceLines:
         self._plots = {}
         self._curves = {}
         self._kept = {}
+        self._keptCount = {}
         self._markers = {}
         self._axes = {}
 
@@ -270,8 +335,11 @@ class QVizSliceLines:
             x, y = self._slice(side)
             curve = self._curves.get(side)
             if curve is None:
+                # The colour of the line that produced it -- the panels carry no
+                # other cue, and the pen before this one was 'k' on the black
+                # these figures paint, which is to say no answer at all.
                 curve = self._plots[side].plot(x, y)
-                curve.setPen(pg.mkPen(width=1, color='k'))
+                curve.setPen(pg.mkPen(self.liveColour(side)))
                 self._curves[side] = curve
             else:
                 curve.setData(x, y)

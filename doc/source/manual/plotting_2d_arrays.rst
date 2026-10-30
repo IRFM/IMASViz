@@ -180,29 +180,44 @@ values of the other axis of the picture -- the abscissa the picture already carr
 That curve answers the picture that is up now: moving the window of pictures, or a
 pinned axis, moves the slice with it.
 
+Each line wears one colour, and so does the curve it produces. That colour is the
+only thing saying which line a curve answers: the panel under a line standing on one
+axis runs along the *other* one, so its label names an axis its line does not stand
+on. The two lines take the first two colours of the palette the :ref:`1D curves
+<plotting_1d_arrays>` are drawn with, which is legible on the black these windows are
+painted on.
+
 Keep this slice
 ^^^^^^^^^^^^^^^
 
-:guilabel:`Keep this slice` copies the curve under a line onto its plot, labelled
-with where the line stood. Kept slices do not move when the window or a control
-does, which is what makes two of them comparable. Each line has its own button,
-named after the axis it stands on.
+:guilabel:`Keep this slice` copies the curve under a line onto its plot, in a colour
+of its own and labelled with where the line stood. A kept slice never wears the
+colour of a curve still being moved, and two of them never wear the same one: the
+records cycle through the rest of the palette -- six colours before it closes. The
+plot keeps a legend for them, naming where each was cut -- for instance
+:guilabel:`rho_tor[m]=1`, which a colour cannot say once the line has moved on. The
+legend appears with the first record kept and not before; the live curve takes no
+entry, having no position of its own to name. Kept slices do not move when the window
+or a control does, which is what makes two of them comparable. Each line has its own
+button, named after the axis it stands on.
 
 Delete the kept slices
 ^^^^^^^^^^^^^^^^^^^^^^
 
-:guilabel:`Delete the kept slices` removes everything kept, and leaves the lines and
-their slices where they are.
+:guilabel:`Delete the kept slices` removes everything kept, the entries naming them
+with it, and leaves the lines and their slices where they are. The next slice kept
+takes the first colour again: the plot holds nothing to tell apart.
 
 Markers
 ^^^^^^^
 
-Each slice carries a movable cursor of its own, so a position can be read off the
-curve without moving the line that produced it. The cursor says which axis it reads
-and its units -- for instance :guilabel:`theta_poloidal[rad]=0.5` -- so a slice
-running along a time axis reads seconds. :guilabel:`Add a new marker` puts another
-cursor on a slice, to compare two positions at once, and :guilabel:`Delete the
-markers` takes them all away; the slice itself stays.
+Each slice carries a movable cursor of its own, in the colour of its line, so a
+position can be read off the curve without moving the line that produced it. The
+cursor says which axis it reads and its units -- for instance
+:guilabel:`theta_poloidal[rad]=0.5` -- so a slice running along a time axis reads
+seconds. :guilabel:`Add a new marker` puts another cursor on a slice, to compare two
+positions at once, and :guilabel:`Delete the markers` takes them all away; the slice
+itself stays.
 
 Refusals
 ~~~~~~~~
@@ -248,4 +263,6 @@ The :guilabel:`Configure Plot` dialog of a curve figure is not offered here: it
 dresses the traces one by one, and a picture has no trace to dress. What a picture
 has instead -- one map and one level range, for all the pictures of the window
 together -- is the colour scale above, with its handles on the bar and its line on
-the menu of each picture.
+the menu of each picture. The cuts drawn under the pictures are coloured too, but by
+the line that produced them and, for the ones kept, by the next colours of the same
+palette; they are not dressed by hand.

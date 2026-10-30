@@ -439,3 +439,77 @@ def test_a_map_chosen_on_the_shot_recolours_every_channel(qapp, radiance, case):
         assert np.array_equal(after[0], after[-1])
     finally:
         frame.close()
+
+
+# ------------------------------------------------- the colour of a cut on the shot
+
+def penOf(curve):
+    return tuple(curve.opts['pen'].color().getRgb()[:3])
+
+
+@pytest.mark.case
+def test_the_cut_of_a_channel_is_visible_on_the_black_it_is_drawn_on(
+        qapp, radiance, case):
+    """Reported from this very window on a WEST radiance: the plot under the
+    pictures is invisible.
+
+    It was drawn with `pg.mkPen(width=1, color='k')` on the black the library
+    paints behind them, which is the ground here as much as it is on a curve
+    figure. The cut now wears the colour of the line that produced it, and the
+    two lines wear two colours, because the two panels differ only in the axis
+    label under them.
+    """
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+
+        for side in ('bottom', 'left'):
+            colour = penOf(frame.sliceCurve(side))
+            assert sum(colour) > 0, (
+                '%s: the cut of the shot is drawn in the colour of the ground '
+                'under it' % (colour,))
+            assert colour == frame.sliceColour(side)
+            assert colour == tuple(
+                frame.sliceLine(side).pen.color().getRgb()[:3])
+        assert frame.sliceColour('bottom') != frame.sliceColour('left')
+
+        # And the curve carries a cut of this shot, so being visible is not all
+        # it has going for it: the panel under the time line runs along the bands.
+        x, y = frame.sliceNumbers('bottom')
+        assert y.size == BANDS
+        assert float(np.max(y)) > float(np.min(y)), \
+            'a flat cut would make the colour the only thing to check'
+    finally:
+        frame.close()
+
+
+@pytest.mark.case
+def test_a_cut_kept_from_the_shot_does_not_wear_the_colour_of_the_live_one(
+        qapp, radiance, case):
+    """Two cuts kept from the shot have to tell apart, and neither may wear the
+    colour of the curve still being dragged."""
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        time = timeOf(case['runtime'][IDS_NAME], 0)
+        bottom = frame.sliceLine('bottom')
+        bottom.setPos(time[0] + 0.25 * (time[-1] - time[0]))
+        cut = np.asarray(frame.sliceNumbers('bottom')[1]).copy()
+
+        frame.keepSlice('bottom')
+        kept = frame.keptColours('bottom')
+
+        assert len(kept) == 1
+        assert kept[0] not in (frame.sliceColour('bottom'),
+                               frame.sliceColour('left'))
+        assert kept[0] != (200, 200, 200), \
+            'the record wears the pen of a curve drawn without a colour'
+        # The panel says where it was cut, which is the one thing a colour cannot
+        # say once the line has moved on.
+        _, label = frame.slicePlot('bottom').legend.items[0]
+        assert label.text.startswith('time')
+
+        frame.framesControls.setStart(5)
+        np.testing.assert_allclose(frame.keptSlices('bottom')[0][1], cut)
+    finally:
+        frame.close()

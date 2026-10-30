@@ -407,6 +407,18 @@ class QVizImagePlot(QWidget):
     def sliceNumbers(self, side):
         return self.sliceLines.numbers(side)
 
+    def slicePlot(self, side):
+        """The panel under one line, holding the slices kept from it."""
+        return self.sliceLines.panel(side)
+
+    def sliceColour(self, side):
+        """The rgb the line on one side, its markers and its curve all wear."""
+        return self.sliceLines.liveColour(side)
+
+    def keptColours(self, side):
+        """The rgb of each slice kept under one line, in the order they were kept."""
+        return self.sliceLines.keptColours(side)
+
     def sliceLabelText(self, side):
         return self.sliceLines.labelText(side)
 
