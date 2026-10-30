@@ -32,7 +32,11 @@ class QVizMainMenuController:
     def updateMenu(self, menu, listenerWidget):
         numWindows = len(self.openShotView.api.GetDTVFrames())
         self.menusShowHideAndDelete(numWindows, menu, listenerWidget)
-        self.menuSession(menu, listenerWidget)
+        # The session entries are not here: a session is the whole screen -- every
+        # case view and every figure -- so it belongs to the *File* menu of the
+        # application window, which is on screen whatever the user is looking at.
+        # This pop-up only exists on the start panel, under no title, and the
+        # manual named a menu (`Actions -> Save session`) that is nowhere.
         #if not self.hideAddPublicDBCommand:
         self.menuAddPublicDB(menu, listenerWidget)
         self.menuAddSpecificUserDB(menu, listenerWidget)
@@ -45,6 +49,9 @@ class QVizMainMenuController:
         remembering what it was called. An empty list leaves no sub-menu on
         screen -- the same reason the Plugins sub-menu answers how many lines it
         added -- and *Save session* is still there to make the first one.
+
+        The caller rebuilds this on every opening of its menu, so a session saved
+        a moment ago is on the list without restarting the application.
         """
         action_saveSession = QAction('Save session', listenerWidget)
         action_saveSession.triggered.connect(self.saveSession)
@@ -60,6 +67,18 @@ class QVizMainMenuController:
             action_loadSession.triggered.connect(partial(self.loadSession, name))
             submenu_loadSession.addAction(action_loadSession)
 
+    def dialogParent(self):
+        """The window a dialog of this controller belongs to.
+
+        `window()` answers the top-level window a widget lives in -- the
+        application window when the frame is embedded, the widget itself when it
+        is not, which is how a test drives these slots. Asking the frame directly
+        centres the dialog on the left panel of the start window.
+        """
+        if self.parent is None:
+            return None
+        return self.parent.window()
+
     def saveSession(self):
         """Ask a name, then write the session under it.
 
@@ -69,7 +88,7 @@ class QVizMainMenuController:
         on the name -- that it stays inside the configuration folder -- belongs
         to the format, and its refusal lands in the log panel below.
         """
-        name, ok = QInputDialog.getText(self.parent, 'Save session',
+        name, ok = QInputDialog.getText(self.dialogParent(), 'Save session',
                                         'Name of the session:',
                                         text=self.defaultSessionName())
         if not ok:

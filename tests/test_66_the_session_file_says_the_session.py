@@ -34,7 +34,7 @@ import os
 import xml.etree.ElementTree as ET
 
 import pytest
-from PySide6.QtWidgets import QMdiArea, QMenu, QWidget
+from PySide6.QtWidgets import QMdiArea
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
     QVizConfigurationFile
@@ -51,8 +51,6 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
 from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes import \
     QVizSelectNodes
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
-    import QVizMainMenuController
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable import \
     QVizPlotAsTable
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked import \
@@ -1175,63 +1173,11 @@ def test_the_session_the_close_writes_is_a_file_of_the_folder_that_can_be_found(
 
 
 # ---------------------------------------------------------------------------
-# The two entries of the main menu.
-
-class StubBrowser:
-    def getActiveUsername(self):
-        return ''
-
-
-class StubMainWindow:
-    """What the main menu controller asks of the window it belongs to."""
-
-    def __init__(self, mdi):
-        self.mdi = mdi
-        self.IMASdbBrowserWidget = StubBrowser()
-
-    def getMDI(self):
-        return self.mdi
-
-
-def menuLabels(menu):
-    return [action.text() for action in menu.actions()]
-
-
-def subMenusOf(menu):
-    return [action.menu() for action in menu.actions() if action.menu()]
-
-
-@pytest.mark.ui
-def test_the_main_menu_offers_to_save_the_session(qapp):
-    # The listener widget is held in a name, not passed as a temporary: the
-    # QActions the controller builds are parented on it, and a temporary dies
-    # when the call returns, taking the entries with it -- which is what the
-    # application avoids by passing a widget that lives as long as the menu.
-    listener = QWidget()
-    view = QMenu()
-    QVizMainMenuController(StubMainWindow(QMdiArea())).updateMenu(view,
-                                                                  listener)
-
-    assert 'Save session' in menuLabels(view)
-    # Nothing has been saved yet: an empty list leaves no sub-menu on screen.
-    assert [sub.title() for sub in subMenusOf(view)] == ['Show/Hide shot views',
-                                                         'Delete']
-
-
-@pytest.mark.ui
-def test_the_main_menu_lists_the_sessions_the_folder_holds(qapp):
-    aSessionFile().write(QVizSessionFile.named('weekend'))
-    aSessionFile().write(QVizSessionFile.named('monday'))
-    listener = QWidget()
-    view = QMenu()
-    QVizMainMenuController(StubMainWindow(QMdiArea())).updateMenu(view,
-                                                                  listener)
-
-    load = [sub for sub in subMenusOf(view) if sub.title() == 'Load session']
-    assert len(load) == 1
-    assert [action.text() for action in load[0].actions()] \
-        == ['monday.vsess', 'weekend.vsess']
-
+# The two entries of the main menu moved to ``test_75`` with the menu itself:
+# they had been pinned on the start panel's right-click pop-up, and a session is
+# the whole screen, so it is the application window's *File* menu that offers
+# them. What this file owns is the file -- including that the name the close
+# writes is one the *Load session* list shows.
 
 # ---------------------------------------------------------------------------
 

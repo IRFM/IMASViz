@@ -283,7 +283,13 @@ Core concepts, in the vocabulary used by the code and docs:
   no axis. Closing the application writes `last_session.vsess` from
   `QVizMainWindow.closeEvent` (before Qt starts taking windows away, not from a
   `destroyed` handler) and the next start **asks** whether to put it back; no
-  file, no question, and *Load session* lists it like any other name.
+  file, no question, and *Load session* lists it like any other name. **Both ends
+  of that are a preference now, and it is off** — `QVizPreferences.Auto_save_session`,
+  read from `$HOME/.imasviz/preferences` like the four options before it, decided
+  once by `QtVIZ_GUI.autoSavesSession()` (a module function, because `closeEvent`
+  and `askForLastSession` are driven on stand-ins that cannot carry a new method).
+  Off: nothing is written and nothing is asked, even when a `last_session.vsess`
+  an earlier release left is still in the folder.
 - **reading a case is lazy** — `QVizIMASDataSource.LAZY_READS` is `True`, so every
   `entry.get()` of the application asks IMAS-Python for a lazy IDS: the handle is a
   window onto the open file, and the values are read when something asks for them.
@@ -314,6 +320,22 @@ Core concepts, in the vocabulary used by the code and docs:
   leaves the subwindow hidden when the area is already on screen, which is the state of the
   running application, so `addPlotWidgetToMDI` shows what it embeds — and `ShowDataTree` shows
   the window it embeds a shot view in, since showing the frame is not what makes it visible.
+- **the *File* menu belongs to the root window** — `QVizFileMenu` (T46) hangs
+  `Save session` / `Load session ▸` / `Quit` (`Ctrl+Q`) on `QVizMainWindow.menuBar()`.
+  Before it, the application window had **no menu bar at all** — the only menu bars
+  in the package are a shot view's `Actions`/`Node Selection Actions`/`Plot windows`
+  (`QVizDataTreeView.addMenuBar`) and the plugins' own — while the manual sent the
+  user to `Actions → Save session` and `askForLastSession`'s log said "open it from
+  the File menu": the two entries existed only on the start panel's right-click
+  pop-up (`GUIFrame.showPopUpMenu`), under no title, and `updateMenu` no longer
+  calls `menuSession`. Two things to keep: `Viz_API` is **not** a singleton
+  (`QVizOpenShotView.__init__` makes one), so the entries are asked of the start
+  window's controller through `QVizMainWindow.startMenuController()` — a controller
+  of the menu's own would hold a second bookkeeping of the same windows and save an
+  empty session; and the menu is refilled on `aboutToShow`, which means deleting the
+  lines it is replacing — `QMenu.clear()` removes actions and **keeps the objects**,
+  and a sub-menu parented on the menu (the only shape that survives, see T0/T7/T21)
+  stays its child, so a refill that does not delete shows the same entries twice.
 
 Naming convention: Qt widget classes are prefixed `QViz` (`QVizCurvePlot`, `QVizLogger`);
 plain API/framework classes are not (`Viz_API`, `VizPlugin`). `__init__.py` files re-export with
@@ -732,7 +754,12 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   xfailed** for those 117: two of the passed ids are `test_the_walk_finds_the_package`
   and `test_known_unimportable_list_is_not_stale`, not modules, so the module count is
   the id count minus two. T45 added **none** — the colours of a cut live in
-  `QVizSliceLines`, the module that already owns the lines. Note that
+  `QVizSliceLines`, the module that already owns the lines. T46 added **1**:
+  `VizGUI/VizGUICommands/VizMenusManagement/QVizFileMenu.py`, the *File* menu of the
+  application window (the session entries, the way out, and the refill on
+  `aboutToShow`) — so the sweep answers **118** modules and **117** imports,
+  measured with `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints
+  **119 passed, 1 xfailed** for those 118. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new

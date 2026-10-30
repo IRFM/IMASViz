@@ -15,6 +15,7 @@ Few user preferences options are available:
 - plot of data with different units can be plotted on the same plot (not allowed by default)
 - the color of selected nodes can be customized (default color is red)
 - the color of nodes containing data (default color is blue) can be customized (not available currently for UDA; this is because UDA does not provide the information to know if a remote IMAS field contains data)
+- the session a run is closed with can be kept automatically, and offered back at the next start (not kept by default)
 
 
 To change user preferences, you need to create a text file named 'preferences' in your ~/.imasviz folder with
@@ -28,7 +29,9 @@ the following content:
 
 #Ignore_GGD=1
 
-These are the default values of the 4 currently available options.
+#Auto_save_session=0
+
+These are the default values of the 5 currently available options.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -65,3 +68,21 @@ Colour_of_data_nodes_containing_data option
 
 Change Colour_of_data_nodes_containing_data option value to change the color of nodes which contain data. Some available
 colors are listed above.
+
+Auto_save_session option
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Setting Auto_save_session to 1 makes IMASViz keep the session of a run on its own:
+when the application window closes, what is on the screen -- the case views, the
+occurrences they have loaded, the selected quantities, the plot windows and what
+had been set on them -- is written to ~/.imasviz/last_session.vsess, and the next
+start asks once whether to put it back.
+
+Setting it to 0 (the default) writes nothing at the close and asks nothing at the
+start. The option answers both ends of it together, so a file left behind by an
+earlier release does not bring the question back.
+
+This is only about doing it *without being asked*. The *File* menu of the
+application window offers Save session and Load session whatever this option says:
+a session you name yourself is always written, and always listed. See
+:ref:`save_load_session`.

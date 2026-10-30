@@ -37,6 +37,7 @@ from imasviz.VizGUI.QtVIZ_GUI import QVizMainWindow
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, QVizSessionCase)
 from imasviz.VizUtils.QVizGlobalOperations import QVizGlobalOperations
+from imasviz.VizUtils.QVizGlobalValues import QVizPreferences
 from imasviz.Viz_API import Viz_API
 
 from support import ownership
@@ -52,8 +53,15 @@ def privateHome(tmp_path, monkeypatch):
 
     Those helpers read ``HOME`` when they are called, which is what makes this
     enough -- the same pattern ``test_39`` uses for the configurations.
+
+    The preference is turned on here, and it is the reason this file can say
+    anything at all: ``Auto_save_session`` is **off** by default (T46), so with
+    nothing set neither the close nor the start would do what these tests pin.
+    What the default answers -- no write, no question -- is pinned in
+    ``test_75``, along with the *File* menu that saves when asked.
     """
     monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.setattr(QVizPreferences, 'Auto_save_session', 1)
     return tmp_path
 
 
@@ -67,6 +75,7 @@ class AWindow:
 
     saveLastSession = QVizMainWindow.saveLastSession
     restoreLastSession = QVizMainWindow.restoreLastSession
+    startMenuController = QVizMainWindow.startMenuController
 
     def __init__(self, api=None):
         self.api = api

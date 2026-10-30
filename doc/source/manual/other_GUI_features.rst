@@ -180,9 +180,18 @@ Save/Load Session
 A **session** is what is on the screen when :guilabel:`IMASViz` is closed: the
 case views that are open, the IDS occurrences they have loaded, the quantities
 that are selected, the plot windows that were drawn, and what had been set on
-each of those windows. The two commands :guilabel:`Actions` -> :guilabel:`Save
-session` and :guilabel:`Actions` -> :guilabel:`Load session` write that down and
-put it back.
+each of those windows. The two commands :menuselection:`File --> Save session`
+and :menuselection:`File --> Load session` write that down and put it back.
+
+.. note::
+   Those two lines are on the **File** menu of the application window, the bar
+   along the top of :guilabel:`IMASViz` -- not on a case view's
+   :guilabel:`Actions` menu. A session is the whole screen, every case view and
+   every figure together, so the gesture belongs to the window that holds them
+   and is on screen whatever you are looking at. That bar also holds
+   :menuselection:`File --> Quit` (:kbd:`Ctrl+Q`), which closes the application
+   the way the window's own button does -- asking first, and keeping the session
+   if you asked for that (:ref:`below <last_session>`).
 
 To save a session, select :guilabel:`Save session` and type a name in the dialog.
 The session is written to :file:`$HOME/.imasviz/<name>.vsess`, beside the plot and
@@ -190,8 +199,10 @@ selection configuration files.
 
 To put a session back, select :guilabel:`Load session` and choose one of the
 sessions that folder holds -- the sub-menu is only on the menu once at least one
-session has been saved. Nothing else is asked: the file names the cases, so a
-session comes back without retyping the database parameters.
+session has been saved, and the list is drawn again every time the menu opens, so
+a session saved a minute ago is there without restarting. Nothing else is asked:
+the file names the cases, so a session comes back without retyping the database
+parameters.
 
 +-------------------------------------+-----------------------------------------+
 | **What the file keeps**             | **How it comes back**                   |
@@ -298,10 +309,19 @@ session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
    answers -- which leaves that one window out and puts the rest of the screen
    back.
 
+.. _last_session:
+
 The session of the run that ended
 `````````````````````````````````
 
-Closing :guilabel:`IMASViz` writes the session that was on screen to
+**This is a preference, and it is off by default.** Nothing is written when you
+close :guilabel:`IMASViz`, and the next start asks you nothing. To have the session
+of a run kept without asking for it every time, set the option in
+:file:`$HOME/.imasviz/preferences` -- see :ref:`user_preferences`:
+
+  Auto_save_session=1
+
+With it on, closing writes the session that was on screen to
 :file:`$HOME/.imasviz/last_session.vsess`, under one name nobody chose, and the
 next start asks once:
 
@@ -310,9 +330,14 @@ next start asks once:
 Answering no opens nothing and leaves the file where :guilabel:`Load session`
 lists it; answering yes puts that session back. The question is only asked when
 such a file is there, so the first run -- and every run that followed one closed
-with nothing open -- asks nothing. The file is a session like the ones you name
-yourself, so it can be opened by hand, copied, or read over: it is a file, not a
-hidden state.
+with nothing open -- asks nothing. The option answers **both** ends of it at once:
+with it off there is no write and no question, even when a file an earlier release
+left behind is still in the folder.
+
+The file is a session like the ones you name yourself, so it can be opened by hand
+from :menuselection:`File --> Load session`, copied, or read over: it is a file,
+not a hidden state. And with the preference off, saving by hand changes nothing
+about it -- a session you name is always available, kept or not.
 
 
 

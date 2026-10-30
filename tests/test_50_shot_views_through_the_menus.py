@@ -90,13 +90,11 @@ SHOW_HIDE = 'Show/Hide shot views'
 DELETE = 'Delete'
 VIEWS = 'Views'
 
-# The two session entries the same controller hangs between the case views and
-# the databases. *Load session* is on the menu only when the configuration folder
-# holds a `.vsess`, so this file takes both out of its counts instead of pinning
-# them: it does not own that folder, and an exact list here would answer whatever
-# a developer happened to have saved. ``test_66`` owns a folder of its own and
-# pins those two entries there.
-SESSION_ENTRIES = ('Save session', 'Load session')
+# The session entries this controller used to hang between the case views and the
+# databases are gone from this menu (T46): a session is the whole screen, so the
+# *File* menu of the application window offers them, and ``test_75`` owns those two
+# lines. The list below is exact, and stays so whatever a developer has saved in
+# :file:`~/.imasviz`.
 
 pytestmark = [pytest.mark.case, pytest.mark.dd, pytest.mark.ui]
 
@@ -230,9 +228,7 @@ def viewTitles(session, menuTitle):
 def test_with_no_case_view_the_two_entries_are_there_and_disabled(session):
     menu = session.menu()
 
-    assert [title for title in titles(menu)
-            if title not in SESSION_ENTRIES] \
-        == [SHOW_HIDE, DELETE, 'Add public databases']
+    assert titles(menu) == [SHOW_HIDE, DELETE, 'Add public databases']
     # A user has to see that there is nothing to hide or delete: the entries are
     # on the menu, disabled, and carry no line.
     for title in (SHOW_HIDE, DELETE):

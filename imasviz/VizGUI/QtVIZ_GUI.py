@@ -23,13 +23,29 @@ from pathlib import Path
 sys.path.append((os.environ['VIZ_HOME']))
 
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault
-from imasviz.VizGUI.VizGUICommands import QVizMainMenuController
+from imasviz.VizGUI.VizGUICommands import QVizMainMenuController, QVizFileMenu
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRestoreSession
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences,QVizGlobalOperations, QVizLogger, UserInputs
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+
+
+def autoSavesSession():
+    """Whether IMASViz keeps the session of a run on its own, without being asked.
+
+    One preference, `Auto_save_session`, decides both ends of it: the session
+    written when the window closes, and the offer to put it back at the next
+    start. Off (the default), a run leaves nothing on the disk and the next run
+    asks nothing.
+
+    A function of the module and not a method of the window: the close event and
+    the start-up offer are driven on stand-ins that answer the few calls those two
+    paths make, and a method the window would have to own could not be asked of
+    them.
+    """
+    return QVizPreferences.Auto_save_session == 1
 
 
 class GUIFrame(QTabWidget):
@@ -388,8 +404,38 @@ class QVizMainWindow(QMainWindow):
         layout.addWidget(self.MDI, 0, 1, 1, 1)
         # Set central widget of the main window
         self.setCentralWidget(centralWidget)
+        # The File menu, once the start window exists: its session entries are
+        # asked of the menu controller that window was built with.
+        self.addFileMenu()
         # Resize to full screen
         self.showMaximized()
+
+    def addFileMenu(self):
+        """Hang the *File* menu on this window: the session, and the way out."""
+        self.fileMenu = QVizFileMenu(self.menuBar().addMenu(QVizFileMenu.TITLE),
+                                     self,
+                                     sessionMenu=self.sessionMenuEntries()).show()
+
+    def sessionMenuEntries(self):
+        """The controller's session entries, or None while it holds none.
+
+        The controller is the start window's own -- the one the *Open* gesture
+        drives -- because that is where the api of the session lives. Building a
+        second one would give this menu a second bookkeeping holding none of the
+        windows on screen (`Viz_API` is not a singleton).
+        """
+        controller = self.startMenuController()
+        return getattr(controller, 'menuSession', None)
+
+    def startMenuController(self):
+        """The menu controller the start window was built with, or None.
+
+        Reached with ``getattr`` where the frame may not be there yet: half a
+        start window is a normal state during the start-up sequence, and a menu
+        bar is not where an ``AttributeError`` should land.
+        """
+        frame = self.startWindow.centralWidget()
+        return getattr(frame, 'mainMenuController', None)
 
     def closeEvent(self, event):
         """Modify close event to request confirmation trough dialog. If
@@ -403,7 +449,10 @@ class QVizMainWindow(QMainWindow):
             # Written here, before any window is taken away, and not from a
             # `destroyed` handler: by the time Qt starts destroying widgets the
             # session has already lost the windows it is supposed to describe.
-            self.saveLastSession()
+            # And only on the user's say-so: `Auto_save_session` is off by
+            # default, so a run that ends leaves nothing behind on the disk.
+            if autoSavesSession():
+                self.saveLastSession()
             event.accept()
         else:
             event.ignore()
@@ -416,8 +465,7 @@ class QVizMainWindow(QMainWindow):
         controller. It is reached and not moved: the menus already hold it, and a
         second copy would be a second bookkeeping of the same windows.
         """
-        frame = self.startWindow.centralWidget()
-        controller = getattr(frame, 'mainMenuController', None)
+        controller = self.startMenuController()
         openShotView = getattr(controller, 'openShotView', None)
         return getattr(openShotView, 'api', None)
 
@@ -456,11 +504,16 @@ class QVizMainWindow(QMainWindow):
     def askForLastSession(self):
         """Offer the session of the previous run, and put it back if it is taken.
 
-        Asked only when the file is there: a start window that asks about a
-        session nobody saved is a question the user answers for nothing, and on a
-        first run that is every run. The answer belongs here, at the top level of
-        the application, and not inside the command that does the work.
+        Asked only when the user asked for this: `Auto_save_session` is off by
+        default, and a start that offers to put back a session the user never
+        agreed to keep is half the behaviour they turned off. Asked only when the
+        file is there, too: on a first run -- and on every run that follows one
+        closed with nothing open -- the question is one the user answers for
+        nothing. The answer belongs here, at the top level of the application, and
+        not inside the command that does the work.
         """
+        if not autoSavesSession():
+            return False
         if not QVizSessionFile.hasLastSession():
             return False
         if not QVizGlobalOperations.YesNo(
