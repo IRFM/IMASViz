@@ -362,10 +362,20 @@ class QVizDataTreeViewBuilder:
         for i in range(node.childCount() - 1, -1, -1):
             child = node.child(i)
             self._pruneTree(child)
+            
+            dataType = child.getDataType()
+            is_container = dataType in ('structure', 'struct_array') or (not child.isDynamicData() and not child.isStaticData() and not child.isIDSRoot())
+            
             if child.isDynamicData() or child.isStaticData():
                 if len(QVizNodePlotting(child).axes.leafAxes()) < 1:
                     node.removeChild(child)
                     if child in self.signalsList:
                         self.signalsList.remove(child)
+            elif is_container and not child.isIDSRoot():
+                while child.childCount() > 0:
+                    grandchild = child.child(0)
+                    child.removeChild(grandchild)
+                    node.addChild(grandchild)
+                node.removeChild(child)
             elif child.childCount() == 0 and not child.isIDSRoot():
                 node.removeChild(child)
