@@ -389,7 +389,8 @@ class VizProfiles(QMainWindow):
         # self.setFixedHeight(600)
 
         qtRectangle = self.frameGeometry()
-        centerPoint = QScreen().availableGeometry().center()
+        screen = QGuiApplication.primaryScreen()
+        centerPoint = screen.availableGeometry().center() if screen else qtRectangle.center()
 
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
@@ -723,7 +724,8 @@ class ProgressBar(QWidget):
         self.pbar.setMaximum(100)
         self.pbar.setValue(0)
         qtRectangle = self.frameGeometry()
-        centerPoint = QScreen().availableGeometry().center()
+        screen = QGuiApplication.primaryScreen()
+        centerPoint = screen.availableGeometry().center() if screen else qtRectangle.center()
         qtRectangle.moveCenter(centerPoint)
         self.move(qtRectangle.topLeft())
         # self.show()

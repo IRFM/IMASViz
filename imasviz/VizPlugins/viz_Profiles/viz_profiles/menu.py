@@ -424,7 +424,8 @@ if __name__ == "__main__":
     MainWidow.setWindowTitle("Core/edge profiles visualization found in IMAS data structures")
 
     qtRectangle = MainWidow.frameGeometry()
-    centerPoint = QScreen().availableGeometry().center()
+    screen = QtGui.QGuiApplication.primaryScreen()
+    centerPoint = screen.availableGeometry().center() if screen else qtRectangle.center()
     qtRectangle.moveCenter(centerPoint)
     MainWidow.move(qtRectangle.topLeft())
 
