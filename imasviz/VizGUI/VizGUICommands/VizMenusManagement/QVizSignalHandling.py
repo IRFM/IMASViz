@@ -81,6 +81,19 @@ class QVizSignalHandling(QObject):
         plotting = QVizNodePlotting(self.treeNode)
         signal = plotting.isPlottable()
 
+        if QVizPreferences.Show_only_tensors_rank_ge_1 == 1:
+            if signal:
+                self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
+                if plotting.inArrayOfStructures():
+                    self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
+            if plotting.isPlottable():
+                self.menuExploreThisTensor(self.contextMenu)
+            if signal:
+                self.contextMenu.addMenu(self.menuUnselectSignalNodes())
+            self.menusShowHideAndDelete(self.contextMenu)
+            self.menusPlugins()
+            return self.contextMenu
+
         # SET TOP ACTIONS
         # - Add action for setting signal node select/unselect status
         if signal:

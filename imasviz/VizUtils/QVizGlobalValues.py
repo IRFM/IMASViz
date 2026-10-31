@@ -109,6 +109,7 @@ class QVizPreferences:
     # at the next start. Off: a run that ends leaves nothing behind on the disk,
     # and the next run asks nothing. The *File* menu saves whenever asked.
     Auto_save_session = 0
+    Show_only_tensors_rank_ge_1 = 0
     # Which of the two themes the application is dressed with -- see
     # ``VizGUI/VizGuiCustomization/QVizStyle.py``, which holds both palettes and
     # is what refuses a name it does not wear. Light is the default: the tool is
@@ -152,6 +153,7 @@ class QVizPreferences:
             option4 = "Ignore_GGD="
             option5 = "Auto_save_session="
             option6 = "Theme="
+            option7 = "Show_only_tensors_rank_ge_1="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -179,6 +181,9 @@ class QVizPreferences:
                             elif line.startswith(option6):
                                 QVizPreferences.Theme = QVizPreferences.theme(
                                     line[len(option6):])
+                            elif line.startswith(option7):
+                                QVizPreferences.Show_only_tensors_rank_ge_1 = \
+                                    int(line[len(option7):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],

@@ -10,7 +10,8 @@
 import logging
 from threading import Thread, Condition
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
-from imasviz.VizUtils import QVizGlobalValues
+from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
+from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 
 class QVizDataTreeViewBuilder:
     def __init__(self):
@@ -118,6 +119,10 @@ class QVizDataTreeViewBuilder:
         self.setPath(viewerNode, path)
 
         if viewerNode.isDynamicData() or viewerNode.isStaticData():
+            if QVizPreferences.Show_only_tensors_rank_ge_1 == 1:
+                if QVizNodePlotting(viewerNode).rank() < 1:
+                    parentNode.removeChild(viewerNode)
+                    return viewerNode
             self.signalsList.append(viewerNode)
 
         return viewerNode
