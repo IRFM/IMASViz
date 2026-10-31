@@ -363,7 +363,7 @@ class QVizDataTreeViewBuilder:
             child = node.child(i)
             self._pruneTree(child)
             if child.isDynamicData() or child.isStaticData():
-                if QVizNodePlotting(child).rank() < 1:
+                if len(QVizNodePlotting(child).axes.leafAxes()) < 1:
                     node.removeChild(child)
                     if child in self.signalsList:
                         self.signalsList.remove(child)
