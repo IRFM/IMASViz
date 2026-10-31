@@ -231,7 +231,7 @@ class VizProfiles(QMainWindow):
         plottable_signals = results[filter_index]
         self.total_undisplayed_tabs[key][filter_index] -= nb_tabs_count
         for i in range(nb_tabs_count):
-            start_index = i * self.n_curves_per_page + self.signals_last_index[key][filter_index]
+            start_index = self.signals_last_index[key][filter_index]
             last_index = start_index + self.n_curves_per_page
             self.signals_last_index[key][filter_index] = last_index
             j = i + n_tabs_displayed + 1

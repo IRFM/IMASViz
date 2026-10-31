@@ -133,10 +133,11 @@ class VizProfiles_plugin(VizPlugin):
                              'time_slice/profiles_2d', 'time_slice/global_quantities', 'time_slice/coordinate_system',
                              'time_slice/convergence']
 
-                
+
                 if self.data_found(dataSource=dataSource, treeNode=self.selectedTreeNode, ids_name=selected_ids, dynamic_aos_name=slices_aos_name):
                     request = Request(selected_ids, tab_names, list_of_filters, slices_aos_name, plotAxis)
                     requests_list.append(request)
+
 
             elif selected_ids == 'core_sources':
                 source_index_max = len(dataSource.data_entry.core_sources.source) - 1
