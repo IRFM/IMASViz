@@ -526,6 +526,16 @@ class QVizDataTreeView(QTreeWidget):
         except ValueError as error:
             logging.getLogger(self.uri).error(error)
 
+    @Slot(bool)
+    def onToggleTensorsFilter(self, checked):
+        """Toggle tensor rank >= 1 filter on the data tree view."""
+        self.showOnlyTensorsRankGe1 = checked
+        QVizPreferences.Show_only_tensors_rank_ge_1 = 1 if checked else 0
+        for idsName in list(self.IDSRoots.keys()):
+            for occurrence in self.loadedOccurrences(idsName):
+                QVizLoadOccurrence(dataTreeView=self, idsName=idsName,
+                                   occurrence=occurrence).execute()
+
 
 class QVizDataTreeViewFrame(QMainWindow):
     """ Set QMainWindow to contain the QTreeWidget.
@@ -651,7 +661,7 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_toggleTensorsFilter = QAction('Show only tensors (rank >= 1)', self)
         action_toggleTensorsFilter.setCheckable(True)
         action_toggleTensorsFilter.setChecked(self.showOnlyTensorsRankGe1)
-        action_toggleTensorsFilter.triggered.connect(self.onToggleTensorsFilter)
+        action_toggleTensorsFilter.triggered.connect(self.dataTreeView.onToggleTensorsFilter)
         actions.addAction(action_toggleTensorsFilter)
 
         #-----------------------------------------------------------------------
@@ -711,17 +721,6 @@ class QVizDataTreeViewFrame(QMainWindow):
         QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self.dataTreeView)
         vizFiguresManagement.clear()
         QVizSignalHandlingObj.menusShowHideAndDelete(vizFiguresManagement)
-
-    @Slot(bool)
-    def onToggleTensorsFilter(self, checked):
-        """Toggle tensor rank >= 1 filter on the data tree view frame."""
-        self.showOnlyTensorsRankGe1 = checked
-        self.dataTreeView.showOnlyTensorsRankGe1 = checked
-        QVizPreferences.Show_only_tensors_rank_ge_1 = 1 if checked else 0
-        for idsName in list(self.dataTreeView.IDSRoots.keys()):
-            for occurrence in self.dataTreeView.loadedOccurrences(idsName):
-                QVizLoadOccurrence(dataTreeView=self.dataTreeView, idsName=idsName,
-                                   occurrence=occurrence).execute()
 
     def updateMenuNodeSelection(self, menu):
         """Update menu handling node selection.
