@@ -127,3 +127,10 @@ black does not read well on white, and the same palette would be worn on both.
 
 The name is matched without regard to case, so ``Theme=Dark`` works. A name that
 is neither of the two is named in the log panel and leaves the default standing.
+
+A theme changes colours and no size. The band along the edge of a window that
+resizes it, the arrows of the data tree, the scroll bars and the separators
+between panels answer the same numbers in both themes, set for a hand holding a
+stylus; see :ref:`other_GUI_features`. The title bar of a window is drawn by the
+widget style and tinted by the theme, which is what keeps its minimise, maximise
+and close buttons on it.

@@ -36,6 +36,24 @@ that black (T33, T34, T44, T45). A theme reaching a ``QGraphicsView`` would
 silently invalidate every one of those measurements, so one test renders a plot
 under each theme and refuses to let it be anything but ``#000000``.
 
+**And a colour on screen is not a control under the hand.** This file was written
+against a report from a tablet: a figure window could no longer be resized and
+the data tree showed no arrows. Both were this sheet's doing, and neither was a
+colour. A Qt style sheet takes over the subcontrol it names, and then the
+geometry of the control comes out of the rule: ``PM_MdiSubWindowFrameWidth`` --
+which ``QMdiSubWindow`` uses as its resize hit zone -- answered the ``border`` of
+the rule, so the corner of a window fell from 4 px to **1**; and a
+``QTreeView::branch`` rule that says only ``background`` draws **no** branch
+indicator at all (measured: 20 pixels of arrow with no rule, 0 with it, 0 even
+with an ``image`` that cannot be read). Naming the title subcontrol did the same
+to the window's reduce/restore/close buttons -- a dressed corner answers 2
+colours, the same corner undressed answers 39. Every colour of those three
+subcontrols was pinned here, and not one of the three affordances: paint, not
+controls. So the tests below now measure the *controls* too -- the width of the
+band a window is grabbed by, the pixels an arrow paints, the buttons a title
+corner holds -- and one test refuses the two rules by shape, so the next sheet
+cannot put them back by accident.
+
 The measured numbers this file stands on, all taken on this node with
 ``QT_QPA_PLATFORM=offscreen``: the MDI ground before the palette named ``Dark``
 was ``#9f9f9f`` in both themes (Qt's own derived grey); the chrome after, per
@@ -57,10 +75,11 @@ from conftest import REPO_ROOT
 from support.ownership import keep
 from test_76_the_manual_wears_the_house_style import contrast, rgbOf, tokenBlock
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QFontInfo, QPalette
-from PySide6.QtWidgets import (QLineEdit, QMdiArea, QMdiSubWindow,
-                               QLabel, QPlainTextEdit, QPushButton, QStyle,
-                               QTreeWidget, QTreeWidgetItem)
+from PySide6.QtWidgets import (QLabel, QLineEdit, QMdiArea, QMdiSubWindow,
+                               QPlainTextEdit, QPushButton, QScrollBar,
+                               QSplitter, QStyle, QTreeWidget, QTreeWidgetItem)
 
 import pyqtgraph as pg
 
@@ -180,6 +199,19 @@ def ruleFor(selector, kind):
     assert at >= 0, 'nothing in the %s sheet names %s' % (kind, selector)
     opening = sheet.index('{', at)
     return sheet[opening + 1:sheet.index('}', opening)]
+
+
+def declarationsOf(selector, sheet):
+    """Every declaration block one selector is given, comments taken out first.
+
+    The sheet explains in its own prose the two subcontrols it refuses to name,
+    and that prose spells them out. Read as a rule, the sentence about
+    ``QTreeView::branch`` swallows the body of the next real rule and reports a
+    violation the sheet does not contain.
+    """
+    code = re.sub(r'/\*.*?\*/', '', sheet, flags=re.S)
+    return [match.group(1) for match in re.finditer(
+        r'[ \t]*%s[^\n{]*\{([^}]*)\}' % re.escape(selector), code)]
 
 
 # --------------------------------------------------------------- one palette --
@@ -383,16 +415,25 @@ def test_the_chrome_is_painted_with_the_theme(dressed, qapp):
     """
     table = QVizStyle.TOKENS[dressed]
 
+    # Sampled off the widget, never off a pixel constant: the pointer pass moved
+    # the row height from 18 to 26 and the header from 20 to 32, and every hard
+    # coordinate this file used to carry walked off its own colour.
     tree = QTreeWidget()
     tree.resize(220, 140)
     tree.addTopLevelItem(QTreeWidgetItem(['une branche']))
     tree.addTopLevelItem(QTreeWidgetItem(['une autre']))
     tree.setCurrentItem(tree.topLevelItem(0))
     image = pixels(tree)
-    assert image.pixelColor(60, 90).name() == table['surface'], \
-        'the ground a tree is read on'
-    assert image.pixelColor(60, 6).name() == table['surface-alt'], 'its header'
-    assert image.pixelColor(60, 30).name() == table['selection'], 'the selected line'
+    border = tree.frameWidth()
+    header = tree.header().sizeHint().height()
+    assert image.pixelColor(60, border + header // 2).name() \
+        == table['surface-alt'], 'its header'
+    rows = pixels(tree.viewport())
+    line = tree.visualItemRect(tree.topLevelItem(0))
+    assert rows.pixelColor(150, line.center().y()).name() == table['selection'], \
+        'the selected line'
+    assert rows.pixelColor(150, line.bottom() + line.height()).name() \
+        == table['surface'], 'the ground a tree is read on'
 
     field = QLineEdit()
     field.resize(200, 30)
@@ -413,22 +454,174 @@ def test_the_chrome_is_painted_with_the_theme(dressed, qapp):
 
 
 @pytest.mark.ui
-def test_a_window_on_the_canvas_keeps_its_own_frame(dressed, qapp):
-    """A figure window is a surface with a title, not a hole in the canvas."""
+def test_a_window_on_the_canvas_gives_a_band_the_hand_can_grab(dressed, qapp):
+    """The border of a figure window **is** the place it is resized by.
+
+    ``QMdiSubWindow::mousePressEvent`` hit-tests the frame with
+    ``PM_MdiSubWindowFrameWidth``, and a style sheet answers that metric with the
+    width of the ``border`` it declares -- measured on this node: 4 px with no
+    sheet, exactly the number declared with one, so the ``border: 1px`` this rule
+    used to carry left one pixel to aim a stylus at. The band is what the report
+    was about, so it is pinned as a number and as a pixel: the number the metric
+    answers, and the ``line`` token it is painted in, against the ``surface`` of
+    the body two thirds of the way down.
+    """
     canvas = QMdiArea()
-    canvas.resize(340, 200)
+    canvas.resize(340, 240)
     sub = QMdiSubWindow()
     sub.setWidget(QLabel('figure'))
+    sub.setWindowTitle('SlicesPlot1')
     canvas.addSubWindow(sub)
-    sub.resize(200, 90)
+    sub.resize(220, 140)
     sub.show()
-    image = pixels(canvas)
-    frame = sub.frameGeometry()
+    qapp.processEvents()
     table = QVizStyle.TOKENS[dressed]
-    assert image.pixelColor(frame.center().x(), frame.top() + 4).name() \
-        == table['surface-alt'], 'the title of a window'
-    assert image.pixelColor(frame.center().x(), frame.bottom() - 10).name() \
-        == table['surface'], 'the body of a window'
+    frame = qapp.style().pixelMetric(QStyle.PM_MdiSubWindowFrameWidth, None, sub)
+    assert frame == QVizStyle.POINTER['WINDOW_FRAME'], \
+        'a sheet takes this metric off the rule, not off the style'
+    assert frame >= 8, '%d px is not a target a stylus hits' % frame
+
+    image = pixels(sub)
+    grab = image.pixelColor(1, image.height() - 30)
+    body = image.pixelColor(image.width() // 2, image.height() - 30)
+    assert grab.name() == table['line'], 'the band a window is resized by'
+    assert body.name() == table['surface'], 'the body of a window'
+
+
+@pytest.mark.ui
+def test_the_title_bar_still_holds_the_buttons_no_rule_can_promise(dressed,
+                                                                   qapp):
+    """Reduce, restore and close are drawn again -- and a rule cannot fake them.
+
+    The right end of the title bar is the only place those buttons live. With a
+    ``QMdiSubWindow::title`` rule on, that corner answered **2** colours in either
+    theme: a flat band and no buttons, because naming the subcontrol takes the
+    whole of it away from Fusion and a rule that says nothing about the buttons
+    draws none of them. The bar itself also dropped from 24 px to 20.
+
+    So this test counts distinct colours where the buttons are, which no gradient
+    reaches by accident. Measured with the two sheets of ``QVizStyle.py`` facing each
+    other, on the 72 pixels at the right end of the bar: **2** colours with a
+    ``::title`` rule, 23 without it in the light theme and 28 in the dark. And it
+    pins the height back at what the style answers.
+    """
+    canvas = QMdiArea()
+    canvas.resize(340, 240)
+    sub = QMdiSubWindow()
+    sub.setWidget(QLabel('figure'))
+    sub.setWindowTitle('SlicesPlot1')
+    canvas.addSubWindow(sub)
+    sub.resize(240, 140)
+    sub.show()
+    qapp.processEvents()
+    frame = qapp.style().pixelMetric(QStyle.PM_MdiSubWindowFrameWidth, None, sub)
+    title = qapp.style().pixelMetric(QStyle.PM_TitleBarHeight, None, sub)
+    assert title >= 24, 'the rule used to answer 20'
+
+    image = pixels(sub)
+    corner = {image.pixelColor(x, y).name()
+              for y in range(frame + 2, frame + title - 2)
+              for x in range(image.width() - frame - 60, image.width() - frame - 2)}
+    assert len(corner) > 8, \
+        '%d colours in the button corner is a flat band: the title subcontrol ' \
+        'has been claimed by a rule again (%s)' % (len(corner), sorted(corner))
+
+
+@pytest.mark.ui
+def test_the_tree_still_draws_the_arrows_that_open_a_node(dressed, qapp):
+    """The indicator, not the ground: a colour rule deleted a control.
+
+    ``QTreeView::branch`` was in the sheet to set a background, and a branch rule
+    makes Qt draw the branch from the sheet alone -- with no ``image`` declared,
+    nothing is drawn. Measured on the first row of a two-level tree: 20 pixels of
+    arrow with no rule, 20 again with it gone, **0** with it, and still 0 with a
+    rule carrying an ``image`` that cannot be read. The report called it "je ne
+    vois plus les petites fleches".
+    """
+    table = QVizStyle.TOKENS[dressed]
+    tree = QTreeWidget()
+    tree.setHeaderHidden(True)
+    tree.setIndentation(QVizStyle.TREE_INDENTATION)
+    tree.resize(240, 160)
+    parent = QTreeWidgetItem(['equilibrium'])
+    tree.addTopLevelItem(parent)
+    parent.addChild(QTreeWidgetItem(['time']))
+    tree.show()
+    qapp.processEvents()
+
+    image = pixels(tree.viewport())
+    line = tree.visualItemRect(parent)
+    ground = table['surface']
+    painted = {(x, y) for y in range(max(0, line.top()), line.bottom() + 1)
+               for x in range(0, tree.indentation())
+               if image.pixelColor(x, y).name() != ground}
+    assert painted, 'no branch indicator is drawn anywhere in the indent column'
+    xs = [x for x, _y in painted]
+    assert max(xs) - min(xs) >= 3, 'an arrow is not a stray pixel: %s' % sorted(
+        set(xs))
+
+
+def test_the_sheet_never_claims_a_subcontrol_it_cannot_finish(dressed):
+    """The two rules that deleted a control, refused by their shape.
+
+    A rendered test says the arrow is gone; this one says *why*, at the sheet, so
+    a rule cannot come back in a later colour pass with a comment saying it was
+    only ever a background.
+
+    The last two lines are the guard reading itself. The sheet holds no branch
+    rule at all now, so the loop above matches nothing and would pass whatever
+    the next colour pass wrote; without these, a vacuous guard is indistinguishable
+    from a satisfied one.
+    """
+    sheet = stylesheetOf(dressed)
+    for body in declarationsOf('QTreeView::branch', sheet):
+        assert 'image' in body, \
+            'a QTreeView::branch rule without an image draws no branch at all'
+    assert declarationsOf('QMdiSubWindow::title', sheet) == [], \
+        'naming the title subcontrol stops Fusion drawing its buttons'
+
+    assert declarationsOf('QTreeView::branch',
+                          'QTreeView::branch { background: #f7f9fa; border: 0; }'), \
+        'this reader no longer sees the rule that deletes the arrows'
+    assert declarationsOf('QMdiSubWindow::title',
+                          '/* QMdiSubWindow::title is refused */') == [], \
+        'a sentence about a subcontrol is not a rule for it'
+
+
+@pytest.mark.ui
+def test_the_chrome_is_sized_for_a_hand_holding_a_stylus(dressed, qapp):
+    """Every size the sheet decides is read back off the widget that decided it.
+
+    The scroll bar is what scrolls a list of hundreds of quantities; the splitter
+    is what separates the tree from the figures. Both were set to what looks light
+    on a desktop: 12 px and the style's own 4 px. Measured here: the bar answers
+    20 px, the handle of a splitter 14 px, a tree row 26 px tall, and the
+    indentation column -- the target of the gesture that opens a node -- 28 px.
+    """
+    bar = QScrollBar(Qt.Vertical)
+    bar.setRange(0, 1000)
+    bar.setPageStep(100)
+    assert bar.sizeHint().width() == QVizStyle.POINTER['SCROLL_BAR']
+
+    split = QSplitter(Qt.Horizontal)
+    split.addWidget(QLabel('a'))
+    split.addWidget(QLabel('b'))
+    split.resize(200, 120)
+    split.show()
+    qapp.processEvents()
+    assert split.handle(1).width() == QVizStyle.POINTER['SPLITTER'], \
+        'the handle between two panels is what separates the tree from the plots'
+
+    tree = QTreeWidget()
+    tree.setIndentation(QVizStyle.TREE_INDENTATION)
+    tree.resize(240, 120)
+    item = QTreeWidgetItem(['equilibrium'])
+    tree.addTopLevelItem(item)
+    tree.show()
+    qapp.processEvents()
+    assert tree.indentation() >= 24
+    assert tree.visualItemRect(item).height() >= 24, \
+        'a row of a tree you tap with a stylus'
 
 
 @pytest.mark.ui

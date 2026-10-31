@@ -352,5 +352,22 @@ What a theme does not dress is the inside of a plot: a figure keeps its black
 ground either way. The trace colours, the colour maps and the slice lines were all
 picked against that black, on either theme.
 
+A theme changes colours and nothing else. The size of the controls is the same in
+both, and it is set for a hand holding a stylus on a tablet rather than a mouse
+pointer: the band along the edge and the corner of a window that resizes it, the
+arrows that open and close a branch of the data tree, the scroll bars, the
+separators between panels, the height of a row of the tree. Two of those controls
+were lost for a while behind a thinner chrome -- a window could no longer be
+grabbed at its corner, and the tree showed no arrows -- so what holds them now is
+what each of them answers on screen, not how it looks: a 12 pixel band, a 20
+pixel scroll bar, a 14 pixel separator, a tree row 26 pixels tall, and a 28 pixel
+indentation column, which is the ground the gesture that opens a node has to
+land on.
+
+The title bar of a window is drawn by the widget style itself and only tinted by
+the theme. That is deliberate: the bar carries the buttons that minimise,
+maximise and close the window, and a rule that paints the bar takes those buttons
+with it.
+
 
 

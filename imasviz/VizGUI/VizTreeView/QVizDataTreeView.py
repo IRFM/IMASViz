@@ -22,6 +22,7 @@ from imasviz.VizDataSource.QVizCaseOccurrences import QVizCaseOccurrences
 from imasviz.VizDataAccess.VizTimeSlices import FIRST_SLICE
 from imasviz.VizGUI.VizConfigurations.QVizApplyConfigurations \
     import QVizApplyConfigurations
+from imasviz.VizGUI.VizGuiCustomization import QVizStyle
 from imasviz.VizGUI.VizGUICommands.VizDataExport.QVizExportToIDS \
     import QVizExportToIDS
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveNodeSelection \
@@ -566,6 +567,11 @@ class QVizDataTreeViewFrame(QMainWindow):
         self.dataTreeView.setColumnWidth(0, 150)
         self.dataTreeView.setAlternatingRowColors(True)
         self.dataTreeView.setUniformRowHeights(True)
+        # The column the branch arrow is drawn in is the target of the gesture
+        # that opens a node, and the arrow is 4 px wide inside it: 20 px, the
+        # style default, is not a target a stylus hits. Not a style sheet number
+        # -- QTreeView reads it here and nowhere else.
+        self.dataTreeView.setIndentation(QVizStyle.TREE_INDENTATION)
         self.dataTreeView.expandsOnDoubleClick()
         # self.dataTreeView.resize(400,500)
         self.setCentralWidget(self.dataTreeView)

@@ -472,8 +472,14 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1300 passed, 1 xfailed, 12 warnings, ~12 min, offscreen
+python3 -m pytest tests/ -q     # 1308 passed, 1 xfailed, 12 warnings, ~15 min, offscreen
 ```
+
+Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s**,
+so ~15 min is what this suite costs on this node right now; the **715,70 s** the T49
+row recorded no longer reproduces, and the 8 ids added since account for about 5 s
+of that. Wall time belongs to the node (AFS, other tenants), not to the tree: quote
+it with its date, and never explain it without measuring.
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
 `IMAS_VERSION`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
@@ -801,7 +807,10 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints **120 passed,
   1 xfailed** for those 119. T49 added **none** — the fix is one numpy name inside
   `viz_equi/equilibriumcharts.py` and its guard lives in `tests/`, so the sweep still
-  answers 119 modules and 118 imports. Note that
+  answers 119 modules and 118 imports. T50 added **none** either — the sizes are
+  constants of `QVizStyle.py` and one call in `QVizDataTreeView.py`, both modules the
+  walk already took, and the guard is in `tests/`; still 119 modules and 118 imports.
+  Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
@@ -839,10 +848,40 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   keeps the trace palettes (T33/T34), the colour maps (T44) and the slice-line colours
   (T45) true. The chrome it does paint, per theme: tree `#ffffff`/`#181d22`, header
   and menu bar `#f7f9fa`/`#141a1f`, selection `#bfe3ea`/`#22505a`, input
-  `#f4f7f8`/`#12171b`, log `#f6f8f9`/`#12171b`, a sub-window title
-  `#f7f9fa`/`#141a1f`. `QWidget.grab()`
+  `#f4f7f8`/`#12171b`, log `#f6f8f9`/`#12171b`, the body of a sub-window
+  `#ffffff`/`#181d22` inside a 12 px band of `line` (`#dde3e7`/`#2a333a`) — since T50
+  the title bar of that window is **not** in the list: Fusion paints it from the
+  palette (measured `#c9ecf3`-class tint in the light theme). `QWidget.grab()`
   renders a widget that was never `show()`n, which is how a theme test samples pixels
   without entering the paint-queue hazard `tests/support/ownership.py` exists for.
+- **A style sheet takes over the subcontrol it names, and then the geometry of the
+  control comes out of the rule** (T50). The report came from a tablet: a figure
+  window could no longer be resized by its corner, and the data tree showed no arrows.
+  Both were the T48 sheet's doing, and neither was a colour. `QMdiSubWindow` hit-tests
+  its own frame with `QStyle.PM_MdiSubWindowFrameWidth`, and a style sheet answers that
+  metric with the width of the `border` it declares: measured **4** with no sheet,
+  **1** with the `border: 1px` the sheet carried, and exactly the declared number
+  otherwise (8/12/16 all honoured). `QTreeView::branch { background: … }` with no
+  `image` draws **no** branch indicator at all — 20 px of arrow with no sheet, 20 with
+  the rule deleted, **0** with it, and **0 even when the rule carries an `image` that
+  cannot be read** — and the colour it set (`surface`) was the ground the view already
+  had. `QMdiSubWindow::title` stopped Fusion drawing the reduce/restore/close buttons:
+  the 72 px at the right end of the bar answers **2** colours dressed, 23 light / 28
+  dark undressed, and `PM_TitleBarHeight` fell 24 → 20. So the sheet now declares the
+  band it wants and names neither the branch nor the title (`QVizStyle.POINTER` =
+  `WINDOW_FRAME` 12, `SCROLL_BAR` 20 — style default 14, sheet of T48 12 — `SPLITTER`
+  14 — rendered 14 although `PM_SplitterWidth` still answers 4 — and a tree row 26 px
+  at the house font where T48 answered 20). `TREE_INDENTATION` 28 is **not** a QSS
+  number: `QTreeView` reads it from `setIndentation`, so `QVizDataTreeViewFrame` asks
+  `QVizStyle.TREE_INDENTATION` itself. `test_77` refuses the two rules by shape (a
+  `QTreeView::branch` rule must carry an `image`; no rule may name `QMdiSubWindow::title`)
+  — and that guard strips `/* */` comments before scanning, because the sheet *explains*
+  both removals in prose that spells the two names out: with the comments in, it matched
+  the sentence about the branch and read the body of the next real rule as its own. Two
+  things to keep: a colour on screen is not a control under the hand — `test_77` pinned
+  the colours of exactly these three subcontrols and none of their affordances — and the
+  sizes are identical in both themes (measured, light and dark, one table): band
+  1 → 12, bar 12 → 20, handle 4 → 14, arrows 0 → 20 px, row 20 → 26, indentation 20 → 28.
 - **Naming a font is not getting one, and one bad preference line is not a stop.**
   `GlobalFonts` named `'Open Sans'` on all four of its fonts; `QFontInfo` answers
   `DejaVu Sans` for that name here. `QVizStyle.resolvedFontFamily()` asks

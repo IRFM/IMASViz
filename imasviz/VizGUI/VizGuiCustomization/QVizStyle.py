@@ -26,8 +26,16 @@ Three things are decided here and nowhere else:
   the desktop's own greys;
 * **what the palette cannot reach** -- ``styleSheet``, for the few places a
   ``QPalette`` has no role for: the frame of an input, the section of a header
-  view, the handle of a scroll bar, the title of an MDI window, the ground of
-  the docks and of the log.
+  view, the handle of a scroll bar, the ground of the docks and of the log.
+
+A fourth belongs with them, because a style sheet settles geometry as well as
+colour: ``POINTER``, the sizes the chrome is drawn at. Two of the rules that
+paint this interface also *are* the size of the control they paint -- the band a
+figure window is resized by is its border, a scroll bar is as wide as its rule
+says -- and both had been set small enough to break the gesture under a stylus.
+See the comment on ``POINTER``, and on the two subcontrols that lost their
+drawing entirely as soon as a rule named them, the comments inside
+``styleSheet``.
 
 The style is set to ``Fusion`` before any of it, and that is a measured choice,
 not a taste: ``QStyleFactory.keys()`` answers ``['Windows', 'Fusion']`` on this
@@ -130,6 +138,37 @@ STYLE = 'Fusion'
 
 #: The mark, in the repository, that every window of the application carries.
 MARK = os.path.join('resources', 'VizIcons', 'imasviz_mark.svg')
+
+#: The sizes the chrome is drawn at, for a hand holding a stylus over a tablet.
+#:
+#: These are not decoration and not taste. A Qt style sheet takes over the
+#: subcontrol it names, and for three of them the geometry of the *control* is
+#: what the rule sets: the band a window is resized by **is** its border, a scroll
+#: bar is as wide as the rule says, a splitter handle as thick. Left at what the
+#: sheet of T48 said, the corner of a figure window offered one pixel to aim at --
+#: the ``Windows``/``Fusion`` frame it replaced offered four -- and the bars of a
+#: long list twelve. Measured against that, and against a stylus tip about 7 mm
+#: wide on a screen at a readable distance:
+#:
+#: ``WINDOW_FRAME``
+#:     ``QStyle.PM_MdiSubWindowFrameWidth``, which ``QMdiSubWindow`` uses as the
+#:     resize hit zone: measured 4 with no sheet, 1 with a ``border: 1px``, and
+#:     exactly the pixel width declared. Three times what the tool had before it
+#:     was dressed, at the cost of 24 px of useful width per window.
+#: ``SCROLL_BAR``
+#:     the width of a bar and the thickness of its handle. The sheet said 12; the
+#:     style's own answer is 14.
+#: ``SPLITTER``
+#:     the handle between two panels, which is what separates the tree from the
+#:     figures. ``PM_SplitterWidth`` answers 4 and the handle is that wide.
+#: ``TREE_INDENTATION``
+#:     the column the branch arrow is drawn in -- the target of the gesture that
+#:     opens a node. 20 is the style default; the arrow itself is 4 px wide in it,
+#:     which is not a target. Not a style-sheet number: ``QTreeView`` reads it from
+#:     ``setIndentation``, which is why ``QVizDataTreeViewFrame`` asks for it.
+POINTER = {'WINDOW_FRAME': 12, 'SCROLL_BAR': 20, 'SPLITTER': 14,
+           'TREE_INDENTATION': 28}
+TREE_INDENTATION = POINTER['TREE_INDENTATION']
 
 
 def forName(name):
@@ -261,21 +300,36 @@ QStatusBar { background: %(surfaceAlt)s; color: %(inkSoft)s;
              border-top: 1px solid %(line)s; }
 
 /* -- the windows floating on the canvas ------------------------------- */
-QMdiSubWindow { background: %(surface)s; border: 1px solid %(line)s; }
-QMdiSubWindow::title { background: %(surfaceAlt)s; color: %(inkSoft)s;
-                       padding: 3px 6px; }
-QMdiSubWindow::title:active { background: %(accentSoft)s;
-                              color: %(accentStrong)s; }
+/* The border IS the resize handle: QMdiSubWindow hit-tests its own frame with
+   QStyle.PM_MdiSubWindowFrameWidth, and a style sheet answers that metric with
+   the width declared here. Measured on this node: 4 px with no sheet, 1 px with
+   the `border: 1px` this rule used to carry, and exactly the number declared for
+   anything else. A hand holding a stylus needs the band, so the band is wide --
+   and it is the line colour, faint against the canvas (1,064) rather than
+   invisible, because knowing where to put the tip is worth more than a clean
+   edge. */
+QMdiSubWindow { background: %(surface)s; border: %(frame)dpx solid %(line)s; }
+/* No rule for `QMdiSubWindow::title`, deliberately, and this is the second half
+   of the same Qt mechanism: naming a subcontrol takes its drawing away from the
+   style, and a title rule says nothing about its buttons -- so Fusion stopped
+   drawing them. Measured on the 72 pixels at the right end of the bar, the two
+   sheets of this file facing each other: the dressed bar answers **2** colours
+   in that corner (its background and its text), the same bar with the rule taken
+   out answers 23 in the light theme and 28 in the dark -- the buttons. The bar
+   itself fell from 24 px to 20 with it (`PM_TitleBarHeight`). Undressed, Fusion
+   paints the title from the palette, which puts it at #c9ecf3 in the light
+   theme: a light of the house selection colour, not a desktop grey. The buttons
+   and the height come back with the rule gone. */
 
 /* -- the menus -------------------------------------------------------- */
 QMenuBar { background: %(surfaceAlt)s; color: %(inkSoft)s;
            border-bottom: 1px solid %(line)s; }
-QMenuBar::item { background: transparent; padding: 4px 9px; }
+QMenuBar::item { background: transparent; padding: 9px 12px; }
 QMenuBar::item:selected { background: %(accentSoft)s;
                           color: %(accentStrong)s; border-radius: 4px; }
 QMenu { background: %(surface)s; color: %(ink)s;
         border: 1px solid %(line)s; padding: 4px 0; }
-QMenu::item { padding: 4px 22px 4px 20px; }
+QMenu::item { padding: 9px 24px 9px 22px; }
 QMenu::item:selected { background: %(accentSoft)s; color: %(accentStrong)s; }
 QMenu::item:disabled { color: %(inkFaint)s; }
 QMenu::separator { height: 1px; background: %(lineSoft)s; margin: 4px 8px; }
@@ -287,19 +341,29 @@ QTreeView, QTableView, QListView {
     border: 1px solid %(line)s; selection-background-color: %(selection)s;
     selection-color: %(onSelection)s; outline: 0;
 }
-QTreeView::item, QTableView::item, QListView::item { padding: 2px 1px; }
+/* A row of the tree is what a stylus has to land on: measured at the house font
+   (10 pt), the sheet of T48 answered 20 px per row and this padding answers 26,
+   in both themes -- a theme moves colours and no size. */
+QTreeView::item, QTableView::item, QListView::item { padding: 5px 2px; }
 QTreeView::item:selected, QTableView::item:selected,
 QListView::item:selected { background: %(selection)s; color: %(onSelection)s; }
-QTreeView::branch { background: %(surface)s; }
+/* No rule for `QTreeView::branch`, and that is not an oversight: once a style
+   sheet names the branch subcontrol, Qt draws the branch from the sheet alone --
+   and a rule that only says `background` draws no indicator at all. Measured on
+   the first row of a two-level tree: 20 pixels of arrow with no sheet, 20 again
+   with this rule gone, 0 with it, and still 0 when it carries an `image` that
+   cannot be read. So the arrows of the data tree were erased by a rule that only
+   meant to set a colour -- a colour the tree already had, since the rule said
+   `surface`, which is the ground of the view itself. */
 QHeaderView { background: %(surfaceAlt)s; border: 0; }
 QHeaderView::section { background: %(surfaceAlt)s; color: %(inkSoft)s;
                        border: 0; border-bottom: 1px solid %(line)s;
-                       padding: 4px 6px; }
+                       padding: 8px 8px; }
 
 /* -- what the user types into ----------------------------------------- */
 QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QAbstractSpinBox, QComboBox {
     background: %(field)s; color: %(ink)s; border: 1px solid %(line)s;
-    border-radius: 4px; padding: 3px 6px;
+    border-radius: 4px; padding: 7px 8px;
     selection-background-color: %(selection)s;
     selection-color: %(onSelection)s;
 }
@@ -307,7 +371,7 @@ QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QComboBox:focus { border: 1px solid %(accent)s; }
 QLineEdit:disabled, QTextEdit:disabled, QComboBox:disabled,
 QSpinBox:disabled, QDoubleSpinBox:disabled { color: %(inkFaint)s; }
-QComboBox::drop-down { border: 0; width: 18px; }
+QComboBox::drop-down { border: 0; width: 30px; }
 QComboBox QAbstractItemView { background: %(surface)s; color: %(ink)s;
     border: 1px solid %(line)s; selection-background-color: %(selection)s;
     selection-color: %(onSelection)s; }
@@ -315,7 +379,7 @@ QComboBox QAbstractItemView { background: %(surface)s; color: %(ink)s;
 /* -- the buttons ------------------------------------------------------ */
 QPushButton { background: %(surface)s; color: %(ink)s;
               border: 1px solid %(line)s; border-radius: 4px;
-              padding: 4px 12px; }
+              padding: 8px 16px; }
 QPushButton:hover { border-color: %(accent)s; background: %(accentSoft)s;
                     color: %(accentStrong)s; }
 QPushButton:pressed { background: %(accent)s; color: %(onAccent)s; }
@@ -323,7 +387,7 @@ QPushButton:default { border: 1px solid %(accent)s; background: %(accent)s;
                       color: %(onAccent)s; }
 QPushButton:disabled { color: %(inkFaint)s; background: %(surfaceAlt)s; }
 QToolButton { background: transparent; color: %(inkSoft)s; border: 0;
-              border-radius: 4px; padding: 3px; }
+              border-radius: 4px; padding: 7px; }
 QToolButton:hover, QToolButton:checked { background: %(accentSoft)s;
                                          color: %(accentStrong)s; }
 
@@ -331,14 +395,14 @@ QToolButton:hover, QToolButton:checked { background: %(accentSoft)s;
 QTabWidget::pane { border: 1px solid %(line)s; background: %(surface)s; }
 QTabBar::tab { background: %(surfaceAlt)s; color: %(inkSoft)s;
                border: 1px solid %(line)s; border-bottom: 0;
-               padding: 5px 12px; }
+               padding: 10px 16px; }
 QTabBar::tab:selected { background: %(surface)s; color: %(accentStrong)s; }
 QTabBar::tab:hover { color: %(accent)s; }
 
 /* -- the docks: the log and the node documentation -------------------- */
 QDockWidget { color: %(inkSoft)s; }
 QDockWidget::title { background: %(surfaceAlt)s; color: %(inkSoft)s;
-                     padding: 4px 8px; border-bottom: 1px solid %(line)s; }
+                     padding: 10px 10px; border-bottom: 1px solid %(line)s; }
 QDockWidget::title:active { color: %(accentStrong)s; }
 QPlainTextEdit, #DockWidgetContents_LOG {
     background: %(logGround)s; color: %(ink)s; border: 1px solid %(line)s;
@@ -354,10 +418,14 @@ QPlainTextEdit, #DockWidgetContents_LOG {
 }
 
 /* -- the scroll bars -------------------------------------------------- */
-QScrollBar:vertical { background: %(surface)s; width: 12px; margin: 0; }
-QScrollBar:horizontal { background: %(surface)s; height: 12px; margin: 0; }
-QScrollBar::handle { background: %(line)s; border-radius: 5px;
-                     min-height: 24px; min-width: 24px; }
+/* As wide as the rule says, and the style's own answer (14) was already thin for
+   a finger: a long list of quantities is scrolled by dragging this, on a screen
+   the size of a sheet of paper. The handle keeps a generous minimum so a short
+   bar is still grabbable at both ends. */
+QScrollBar:vertical { background: %(surface)s; width: %(bar)dpx; margin: 0; }
+QScrollBar:horizontal { background: %(surface)s; height: %(bar)dpx; margin: 0; }
+QScrollBar::handle { background: %(line)s; border-radius: %(radius)dpx;
+                     min-height: %(handle)dpx; min-width: %(handle)dpx; }
 QScrollBar::handle:hover { background: %(inkFaint)s; }
 QScrollBar::add-line, QScrollBar::sub-line { background: none; border: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: none; }
@@ -365,7 +433,13 @@ QScrollBar::add-page, QScrollBar::sub-page { background: none; }
 /* -- the rest of the chrome ------------------------------------------- */
 QToolTip { background: %(surface)s; color: %(ink)s;
            border: 1px solid %(accent)s; padding: 4px 6px; }
+/* The handle between two panels is what separates the tree from the figures, and
+   a splitter is only as wide as this says -- 4 px from the style, which is a line
+   to aim at and not a target. */
 QSplitter::handle { background: %(lineSoft)s; }
+QSplitter::handle:horizontal { width: %(splitter)dpx; }
+QSplitter::handle:vertical { height: %(splitter)dpx; }
+QSplitter::handle:hover { background: %(accentSoft)s; }
 QGroupBox { border: 1px solid %(line)s; border-radius: 4px; margin-top: 8px; }
 QGroupBox::title { subcontrol-origin: margin; left: 8px; padding: 0 4px;
                    color: %(inkSoft)s; }
@@ -379,7 +453,11 @@ QProgressBar::chunk { background: %(accent)s; }
        'accent': c('accent'), 'accentStrong': c('accent-strong'),
        'accentSoft': c('accent-soft'), 'onAccent': c('on-accent'),
        'selection': c('selection'), 'onSelection': c('on-selection'),
-       'logGround': c('log-ground')}
+       'logGround': c('log-ground'),
+       'frame': POINTER['WINDOW_FRAME'], 'bar': POINTER['SCROLL_BAR'],
+       'handle': POINTER['SCROLL_BAR'] + 10,
+       'radius': POINTER['SCROLL_BAR'] // 2 - 1,
+       'splitter': POINTER['SPLITTER']}
 
 
 def logColour(level):
