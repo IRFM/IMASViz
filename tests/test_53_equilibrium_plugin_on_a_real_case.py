@@ -359,6 +359,15 @@ def test_the_fourteen_axes_hold_the_curves_the_case_answers(session):
         assert RADIAL_POINTS in widths, index
     assert [frame.axes[7].get_ylabel(), frame.axes[13].get_ylabel()] == \
         ['q', "P'"]
+    # The coordinate the seven radial charts run along is spelled out of a
+    # fixed-width numpy array -- `np.dtype((np.str_, 12))`, and both labels are
+    # exactly twelve characters. A width short by one truncates without a word:
+    # `Eq_space_pts` would reach the axis as `Eq_space_pt`. Pinned on the axis,
+    # where the reader sees it, and on the array, where it is decided.
+    labels = set(str(label) for label in frame.rho_tor_label)
+    assert labels <= {'rho_tor_norm', 'Eq_space_pts'}, labels
+    assert frame.axes[7].get_xlabel() in labels
+    assert frame.axes[13].get_xlabel() == frame.axes[7].get_xlabel()
 
 
 def test_the_slider_moves_the_drawn_slice_and_its_labels(session):

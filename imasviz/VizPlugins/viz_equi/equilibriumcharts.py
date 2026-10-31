@@ -256,7 +256,13 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
             "nor a profiles_2d slice of grid_type.index 1. The magnetic-surfaces "
             "chart needs one." % occurrence)
 
-    unicode_type = np.dtype((np.unicode_, 12))
+    # np.str_, not np.unicode_: the second was removed in NumPy 2.0, and the
+    # run that asked for it died here -- before a single chart was drawn -- with
+    # nothing in the log but the AttributeError. np.str_ is the name both
+    # generations answer (measured: <U12 under 1.26.2 and under 2.4.6), which is
+    # what this plugin needs, since the suite runs on the 1.x of the module
+    # stack and cannot meet a name only NumPy 2 refuses.
+    unicode_type = np.dtype((np.str_, 12))
 
     min_Psi_val = np.zeros(lenArrTimes)
     max_Psi_val = np.zeros(lenArrTimes)

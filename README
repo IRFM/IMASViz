@@ -35,6 +35,16 @@ IMASViz requires the following libraries:
    - PySide6 (Qt for Python — the sources import PySide6, not PyQt5)
    - pyqtgraph
    - matplotlib
+   - numpy. The code asks only names that NumPy 1 and NumPy 2 both answer, which is
+     what lets it run on a stack built on either. That is a rule the test suite
+     enforces -- a test walks every source of the package and refuses a name the
+     other generation removed -- and it went unenforced once: the Equilibrium
+     overview plugin asked np.unicode_, NumPy 2 has no such name, and the plugin was
+     refused on a numpy 2 stack with one line in the log panel where its window
+     should have been. What has *not* been verified is a whole run under numpy 2: on
+     the node these sources are tested on that is impossible, because the Access
+     Layer there is compiled against numpy 1 and forcing a numpy 2 makes
+     ``import imas`` die in scipy with a binary incompatibility.
    - Sphinx
    (pip3 install sphinx)
    No Sphinx theme is needed: the manual is built on Sphinx's own ``basic``

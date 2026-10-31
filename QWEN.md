@@ -472,7 +472,7 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1285 passed, 1 xfailed, 12 warnings, offscreen
+python3 -m pytest tests/ -q     # 1300 passed, 1 xfailed, 12 warnings, ~12 min, offscreen
 ```
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
@@ -491,6 +491,25 @@ matplotlib toolbar is still alive collects one warning per icon per dressing
 (**1940 warnings** on such a run before the filter, **0** from the same file run
 alone; a real session dresses the application once, before any plugin window
 exists). Anything raised from IMASViz's own code still shows.
+
+The suite runs on **one numpy generation and the tool has to survive the other**.
+Measured here: the module stack brings numpy **1.26.2**
+(`SciPy-bundle/2023.11-gfbf-2023b`) and `~/.local` holds **2.4.6**, with the module
+paths winning `sys.path` — so every case test, every plugin and every plot of this
+suite runs on NumPy 1, and a name only NumPy 2 refuses is invisible to all of them.
+That is how the Equilibrium overview plugin died in the field: `np.dtype((np.unicode_,
+12))` answers `<U12>` under 1.26.2 and raises `AttributeError` under NumPy 2, and every
+test that ever drove that plugin passed. The suite **cannot** be moved onto numpy 2 here
+to watch it fail — forcing `~/.local` first makes `import imas` die in scipy with
+`numpy.dtype size changed, may indicate binary incompatibility`, the Access Layer being
+compiled against numpy 1. `tests/test_78_*` is the guard: an AST walk of every source of
+the package (following `import numpy as np` and `from numpy import x` alike) against a
+table of names measured present on NumPy 1 and refused on NumPy 2, the far generation
+read in a subprocess and the table's own recommendations checked on both sides. Two
+asymmetries worth knowing before editing that table: `np.float_` is refused by NumPy 2
+and answered here — the canonical-looking spelling, and the shape of answer numpy's own
+message suggests — while `np.bool` is refused **here** (removed in 1.24, with a
+`FutureWarning`) and answered by NumPy 2, where it names the scalar type.
 
 A test that **shows** a plot frame must keep it alive for the whole session —
 `support/ownership.py`'s `keep()`, which is what the application does through
@@ -780,7 +799,9 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   palette has no role for, the font resolution, the log colour, the window mark),
   so the sweep answers **119** modules and **118** imports — measured with
   `python3 -m pytest tests/test_99_import_sweep.py -q`, which prints **120 passed,
-  1 xfailed** for those 119. Note that
+  1 xfailed** for those 119. T49 added **none** — the fix is one numpy name inside
+  `viz_equi/equilibriumcharts.py` and its guard lives in `tests/`, so the sweep still
+  answers 119 modules and 118 imports. Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
