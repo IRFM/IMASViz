@@ -94,6 +94,12 @@ class QVizFileMenu:
             return
         if self._sessionMenu is not None:
             self._sessionMenu(self.menu, self.menu)
+
+        # Add "New Plugin..." action
+        action_new_plugin = QAction("New Plugin...", self.menu)
+        action_new_plugin.triggered.connect(self.openPluginCreator)
+        self.menu.addAction(action_new_plugin)
+
         action_quit = QAction(self.QUIT, self.menu)
         action_quit.setShortcut(QKeySequence.Quit)
         action_quit.triggered.connect(self.quit)
@@ -126,3 +132,12 @@ class QVizFileMenu:
             return False
         window.close()
         return True
+
+    def openPluginCreator(self):
+        """Open the interactive plugin creator dialog."""
+        window = self._window()
+        if window is None:
+            return
+        from imasviz.VizPlugins.QVizPluginCreatorDialog import QVizPluginCreatorDialog
+        dlg = QVizPluginCreatorDialog(window)
+        dlg.exec()
