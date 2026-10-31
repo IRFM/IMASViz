@@ -14,10 +14,11 @@ from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 
 class QVizDataTreeViewBuilder:
-    def __init__(self):
+    def __init__(self, showOnlyTensorsRankGe1=None):
         self.arrayParentNodes = {}
         self.signalsList = []
         self.ids_root_node = None
+        self.showOnlyTensorsRankGe1 = showOnlyTensorsRankGe1
 
     def getSignalsList(self):
         return self.signalsList
@@ -119,7 +120,8 @@ class QVizDataTreeViewBuilder:
         self.setPath(viewerNode, path)
 
         if viewerNode.isDynamicData() or viewerNode.isStaticData():
-            if QVizPreferences.Show_only_tensors_rank_ge_1 == 1:
+            filter_active = self.showOnlyTensorsRankGe1 if self.showOnlyTensorsRankGe1 is not None else (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
+            if filter_active:
                 if QVizNodePlotting(viewerNode).rank() < 1:
                     parentNode.removeChild(viewerNode)
                     return viewerNode

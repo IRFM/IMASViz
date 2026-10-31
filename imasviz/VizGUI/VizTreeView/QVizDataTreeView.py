@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QDockWidget, QMenuBar, QMenu
 from PySide6.QtWidgets import QMainWindow, QTreeWidget, QTreeWidgetItem, \
     QWidget, QGridLayout, QPlainTextEdit
 from PySide6.QtWidgets import QApplication
-from imasviz.VizUtils import QVizLogger, QVizGlobalValues, GlobalIDs,getWindowSize
+from imasviz.VizUtils import QVizLogger, QVizGlobalValues, QVizPreferences, GlobalIDs,getWindowSize
 from imasviz.VizDataSource.QVizCaseOccurrences import QVizCaseOccurrences
 from imasviz.VizDataAccess.VizTimeSlices import FIRST_SLICE
 from imasviz.VizGUI.VizConfigurations.QVizApplyConfigurations \
@@ -81,6 +81,7 @@ class QVizDataTreeView(QTreeWidget):
         self.selectedItem = None
         self.uri = dataSource.uri
         self.mappingFilesDirectory = mappingFilesDirectory
+        self.showOnlyTensorsRankGe1 = (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
 
         # What the opened case holds, asked of the case itself: which
         # occurrences of an IDS exist is the first question of every load, and
@@ -390,7 +391,7 @@ class QVizDataTreeView(QTreeWidget):
         """
         if idsData is None:
             return
-        nodeBuilder = QVizDataTreeViewBuilder()
+        nodeBuilder = QVizDataTreeViewBuilder(showOnlyTensorsRankGe1=self.showOnlyTensorsRankGe1)
         self.buildTreeView(nodeBuilder, idsName, idsInstance, occurrence, idsData,
                            sliceSelection)
         nodeBuilder.endBuildView(idsName, occurrence, self)
@@ -552,11 +553,14 @@ class QVizDataTreeViewFrame(QMainWindow):
         # Set title (QMainWindow)
         self.setWindowTitle("URI: " + dataSource.uri)
 
+        self.showOnlyTensorsRankGe1 = (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
+
         # Set Qt TreeView
         self.dataTreeView = \
             QVizDataTreeView(parent=self,
                              dataSource=dataSource,
                              mappingFilesDirectory=os.environ['TS_MAPPINGS_DIR'])
+        self.dataTreeView.showOnlyTensorsRankGe1 = self.showOnlyTensorsRankGe1
         self.dataTreeView.imas_viz_api = imas_viz_api
 
 
@@ -643,6 +647,13 @@ class QVizDataTreeViewFrame(QMainWindow):
         action_onExportToLocal.triggered.connect(self.onExportToLocal)
         actions.addAction(action_onExportToLocal)
 
+        # Toggle tensors filter action
+        action_toggleTensorsFilter = QAction('Show only tensors (rank >= 1)', self)
+        action_toggleTensorsFilter.setCheckable(True)
+        action_toggleTensorsFilter.setChecked(self.showOnlyTensorsRankGe1)
+        action_toggleTensorsFilter.triggered.connect(self.onToggleTensorsFilter)
+        actions.addAction(action_toggleTensorsFilter)
+
         #-----------------------------------------------------------------------
 
         # Set menu handling node selection features
@@ -700,6 +711,17 @@ class QVizDataTreeViewFrame(QMainWindow):
         QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self.dataTreeView)
         vizFiguresManagement.clear()
         QVizSignalHandlingObj.menusShowHideAndDelete(vizFiguresManagement)
+
+    @Slot(bool)
+    def onToggleTensorsFilter(self, checked):
+        """Toggle tensor rank >= 1 filter on the data tree view frame."""
+        self.showOnlyTensorsRankGe1 = checked
+        self.dataTreeView.showOnlyTensorsRankGe1 = checked
+        QVizPreferences.Show_only_tensors_rank_ge_1 = 1 if checked else 0
+        for idsName in list(self.dataTreeView.IDSRoots.keys()):
+            for occurrence in self.dataTreeView.loadedOccurrences(idsName):
+                QVizLoadOccurrence(dataTreeView=self.dataTreeView, idsName=idsName,
+                                   occurrence=occurrence).execute()
 
     def updateMenuNodeSelection(self, menu):
         """Update menu handling node selection.
@@ -873,6 +895,16 @@ class QVizDataTreeViewFrame(QMainWindow):
             QVizExportToIDS(self.dataTreeView).execute()
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
+
+    @Slot(bool)
+    def onToggleTensorsFilter(self, checked):
+        """Toggle tensor rank >= 1 filter on the data tree view."""
+        self.showOnlyTensorsRankGe1 = checked
+        QVizPreferences.Show_only_tensors_rank_ge_1 = 1 if checked else 0
+        for idsName in list(self.IDSRoots.keys()):
+            for occurrence in self.loadedOccurrences(idsName):
+                QVizLoadOccurrence(dataTreeView=self, idsName=idsName,
+                                   occurrence=occurrence).execute()
 
     # TODO:
     # def onCloseAndReopenDatabase()
