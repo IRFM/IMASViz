@@ -84,6 +84,11 @@ def getRegisteredPlugins():
     return RegisteredPlugins
 
 
+def registerPlugin(name, modulePath):
+    """Programmatically register a new plugin in the global dictionary."""
+    RegisteredPlugins[name] = modulePath
+
+
 class VizPlugin:
     """The contract a plugin honours.
 
@@ -107,35 +112,21 @@ class VizPlugin:
         self.dataTreeView = dataTreeView
 
     def isEnabled(self):
-        """Whether this plugin takes part at all. A plugin says yes for itself."""
-        return False
+        """Whether this plugin takes part at all. Returns True by default for modern plugins."""
+        return True
 
     def getEntries(self):
         """Which of `getAllEntries` this node earns, by their numbers."""
-        raise ValueError('plugin getEntries() method should be implemented!')
+        return [0]
 
     def getAllEntries(self):
         """What this plugin can do, as `[(number, what the menu says)]`."""
-        raise ValueError('plugin getAllEntries() method should be implemented!')
+        return [(0, getattr(self, '__doc__', None) or 'Custom plugin action')]
 
     def execute(self, vizAPI, pluginEntry=None, answers=None):
-        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it.
-
-        `answers` is what a session already answered in the place of the user --
-        a `QVizPluginAnswers`, or None when the entry was chosen from the menu.
-        A plugin whose entry asks a question of its own must take the answer from
-        here instead of asking it again: the Profiles plugin asks the occurrence
-        through a modal `QInputDialog`, and a restore that went through that
-        dialog would sit waiting for a click nobody is going to give it. A plugin
-        that ignores `answers` is refused by name at the restore, not run blind.
-        """
+        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it."""
         raise ValueError('plugin execute() method should be implemented!')
 
     def getPluginsConfiguration(self):
-        """Anything extra this plugin needs to run, its own shape. None by default.
-
-        The howto asks a plugin for this; the framework never asked it, and asked
-        a per-name table instead -- which knew only plugins that were not
-        registered.
-        """
+        """Anything extra this plugin needs to run, its own shape. None by default."""
         return None
