@@ -343,6 +343,11 @@ class QVizDataTreeViewBuilder:
     def endBuildView(self, idsName, occurrence, dataTreeView):
         ids_root_node = self.getIDSRootNode()
         ids_root_occurrence = ids_root_node.child(0)
+
+        filter_active = self.showOnlyTensorsRankGe1 if self.showOnlyTensorsRankGe1 is not None else (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
+        if filter_active:
+            self._pruneTree(ids_root_occurrence)
+
         dataTreeView.signalsList.extend(self.getSignalsList())
         ids_root_node.removeChild(ids_root_occurrence)
 
@@ -352,3 +357,15 @@ class QVizDataTreeViewBuilder:
 
         # Expand the tree item
         dataTreeView.DTVRoot.setExpanded(True)
+
+    def _pruneTree(self, node):
+        for i in range(node.childCount() - 1, -1, -1):
+            child = node.child(i)
+            self._pruneTree(child)
+            if child.isDynamicData() or child.isStaticData():
+                if QVizNodePlotting(child).rank() < 1:
+                    node.removeChild(child)
+                    if child in self.signalsList:
+                        self.signalsList.remove(child)
+            elif child.childCount() == 0 and not child.isIDSRoot():
+                node.removeChild(child)
