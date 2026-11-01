@@ -60,9 +60,9 @@ the next command in the terminal:
 Setting plugin source structure
 -------------------------------
 
-All plugin source files must be stored in a separate directory under
-:file:`$VIZ_HOME/imasviz/VizPlugins/<folder_name>`. The name of the directory
-should start with "**viz_**".
+A plugin you develop inside the IMASViz sources lives in a directory of its own
+under :file:`$VIZ_HOME/imasviz/VizPlugins/<folder_name>`; the name of the
+directory should start with "**viz_**".
 
 For the purposes of this tutorial create a new directory with label
 **viz_my_example** to distinguish it from other plugins. The full path is then
@@ -70,6 +70,14 @@ For the purposes of this tutorial create a new directory with label
 
 Inside the newly created directory create a new Python script file. In this case
 name it as :file:`myPlugin.py`. The script can be left empty for now.
+
+.. note::
+   A plugin of your own does **not** have to live in the IMASViz sources, and is
+   then not registered at all: anything under
+   :file:`$HOME/.imasviz/plugins/<folder_name>/<ClassName>.py` is found by
+   looking, offered on the next right click, and editable in IMASViz itself --
+   see :ref:`your_own_plugins`. The layout asked there is the one this tutorial
+   teaches: a folder, a module, and a class bearing that module's name.
 
 Python code
 -----------
@@ -169,9 +177,9 @@ In your :file:`myPlugin.py` file add:
     uri = dataSource.uri
     occurrence = 0
 
-    # Displaying basic case information
-    print('Reading data...')
-    print('URI    =', uri)
+    # Displaying basic case information -- in the log panel of this case, which
+    # is what shows what is logged under the case's URI
+    logging.getLogger(uri).info('Reading data of %s...', uri)
 
 **2. Checking if the IDS data was already fetched**
 
@@ -180,8 +188,8 @@ In case the data have not been yet fetched, it can be done with the use of the
 **LoadIDSData** function (moreover, using this function, IMASViz data
 tree view browser is updated automatically).
 
-The IDS object is then obtained with the use of **getImasEntry()** function
-for given occurrence (default occurrence value is 0).
+The IDS object is then obtained from the data source, for one
+:guilabel:`(IDS, occurrence)` pair, with its **get()** function.
 
 In your :file:`myPlugin.py` file add:
 
@@ -190,11 +198,19 @@ In your :file:`myPlugin.py` file add:
     # Check if the IDS data is already loaded in IMASviz. If it is not,
     # load it
     if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'magnetics', occurrence):
-        logging.info('Loading magnetics IDS...')
+        logging.getLogger(uri).info('Loading magnetics IDS...')
         vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
-    # Get IDS data entry object
-    self.ids = dataSource.getImasEntry(occurrence)
+    # Get the loaded IDS object for that occurrence
+    self.ids = dataSource.get('magnetics', occurrence)
+
+.. note::
+   ``dataSource.get`` is the handle the tree and the plot commands read, so a
+   plugin that asks it shares the one copy of the case the session holds instead
+   of opening it again. Ask it **after** the load: a lazy handle only answers once
+   the occurrence is in memory. And say what the plugin did through
+   ``logging.getLogger(uri)``, not ``print``: the log panel of a case shows what
+   is logged under that case's URI, and nothing else.
 
 **3. Extracting and plotting the data from the IDS**
 
@@ -367,6 +383,16 @@ isEnabled()
 Through the :guilabel:`isEnabled()` method function the custom plugin can be
 either **enabled** (returns ``True``) or **disabled** (returns ``False``).
 
+.. note::
+   The base class answers ``False`` to this and refuses the other two by name
+   (``getEntries()`` and ``getAllEntries()`` raise ``should be implemented``).
+   That is deliberate: an entry invented for a plugin that declared nothing -- a
+   number it never asked for, a label read out of its docstring -- would sit on
+   the :guilabel:`Plugins` menu exactly like one that works, and the only way to
+   tell them apart would be that nothing happens when it is clicked. So the five
+   method functions above are what a plugin has to write; what it does not write
+   is refused in the log panel of the opened case, under the plugin's name.
+
 In your :file:`myPlugin.py` file add:
 
 .. code-block:: python
@@ -397,8 +423,12 @@ steps in the previous subsections.
         def __init__(self):
             pass
 
-        def execute(self, vizAPI, pluginEntry):
+        def execute(self, vizAPI, pluginEntry, answers=None):
             """Main plugin function.
+
+            ``answers`` is what a saved session hands back in the user's place;
+            taking the keyword is what lets a session replay this entry instead of
+            naming it as un-replayable.
             """
 
             # Get dataSource from the VizAPI (IMASViz Application Program Interface)
@@ -412,15 +442,14 @@ steps in the previous subsections.
             # Check if the IDS data is already loaded in IMASviz. If it is not,
             # load it
             if not vizAPI.IDSDataAlreadyFetched(self.dataTreeView, 'magnetics', occurrence):
-                logging.info('Loading magnetics IDS...')
+                logging.getLogger(uri).info('Loading magnetics IDS...')
                 vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
-            # Get IDS
-            self.ids = dataSource.getImasEntry(occurrence)
+            # Get the loaded IDS object for that occurrence
+            self.ids = dataSource.get('magnetics', occurrence)
 
-            # Displaying basic information
-            print('Reading data...')
-            print('URI    =', uri)
+            # Displaying basic information -- in the log panel of this case
+            logging.getLogger(uri).info('Reading data of %s...', uri)
 
             # Get some data from the IDS and pass it to plot (using matplotlib)
             # - Set subplot
@@ -471,7 +500,14 @@ steps in the previous subsections.
 Registering plugin in IMASViz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In order to register a plugin in IMASViz, a single entry is required in the
+.. note::
+   This section is for a plugin developed **inside the IMASViz sources** -- the
+   one case where the table below is the way in. A plugin of your own under
+   :file:`$HOME/.imasviz/plugins` is found by looking and needs no registration
+   at all, and is the only kind IMASViz will let you edit while it runs: see
+   :ref:`your_own_plugins`.
+
+A plugin added to the sources is registered by a single entry in the
 :guilabel:`RegisteredPlugins` dictionary at the top of the
 :file:`$VIZ_HOME/imasviz/VizPlugins/VizPlugin.py` file.
 

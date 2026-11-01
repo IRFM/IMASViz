@@ -13,6 +13,86 @@ IMASViz allows the use of custom-made plugins which further extend the IMASViz
 functionality. The plugins currently available are listed here together with a
 manual section on how to use them.
 
+.. _your_own_plugins:
+
+The plugins IMASViz ships, and the ones you wrote
+-------------------------------------------------
+
+Every plugin is offered the same way -- a line in the :guilabel:`Plugins`
+sub-menu of a node -- and every plugin answers that menu for the nodes it
+claims. What differs is **whose file it is**, and that decides one thing: a
+plugin IMASViz ships is read here and not changed; a plugin of your own is
+changed in place.
+
+Two entries on the :menuselection:`File` menu of the application window reach
+both:
+
+- :menuselection:`File --> New plugin...` writes a plugin of your own from a
+  name and the :guilabel:`IDS` it is for. It lands in
+  :file:`$HOME/.imasviz/plugins`, next to the preferences and the plot
+  configuration files, and nothing has to be registered anywhere: what is in
+  that folder is looked for each time the menu is built.
+- :menuselection:`File --> Plugins...` opens the table of every plugin this
+  session can offer -- the ones IMASViz ships and the ones you wrote -- with
+  four columns: which plugin, whose it is, what the opened cases said about it,
+  and where the file lives.
+
+.. note::
+   The *State* column says ``ok``, ``refused: <why>`` or ``not asked yet``. The
+   third is an answer and not a gap: a case view nobody has right-clicked has
+   asked its plugins nothing yet.
+
+Reading a shipped plugin, and changing one
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Select a row and the button says what it will do: :menuselection:`Read...` for a
+plugin IMASViz ships, :menuselection:`Edit...` for one of your own. A shipped
+plugin opens in a text area you cannot type in, and the box says what to do
+instead: :menuselection:`Copy into my plugins...` takes its whole folder --
+sub-packages and all -- into :file:`$HOME/.imasviz/plugins` under a name of your
+choosing, rewriting the class name wherever it appears. The copy is yours to
+change; the one it came from is not touched.
+
+The same boundary is in the :guilabel:`Plugins` sub-menu of a node: a plugin of
+your own gets a second line there, :menuselection:`Edit <plugin>...`, and a
+shipped plugin does not get one at all.
+
+A saved plugin is a running plugin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Saving a plugin of your own puts it back into the session that is already
+running: the file is watched, and a save -- of IMASViz's editor or of any other
+-- is picked up a moment later, so the next right click answers with what is on
+disk now. :menuselection:`Reload now` in the *Plugins* window asks for the same
+thing without waiting, which is what to press when the folder is on a file system
+that announces nothing.
+
+Three things a reload does **not** do, said so that they are not mistaken for a
+failure:
+
+- a window a plugin already opened stays as it was drawn. It is not re-drawn
+  with the new code -- close it and open it again;
+- a plugin IMASViz ships is never re-imported during a run;
+- a file that no longer parses is refused, and **the plugin that worked keeps
+  working**: the reason, with the line the interpreter stopped at, is written in
+  the log panel of every opened case, and the *State* column of the *Plugins*
+  window repeats it.
+
+What a plugin you have just written does
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A plugin written by :menuselection:`File --> New plugin...` is not a stub: its
+first click draws a real figure in the :guilabel:`Plot Figure` machinery of
+IMASViz, through the same command the tree's own *Plot* gesture uses. Click it on
+a node of the :guilabel:`IDS` it was written for, and a window appears -- before
+a single line of the plugin has been changed.
+
+.. note::
+   A plugin is Python, and it runs at the same trust level as IMASViz itself.
+   What is in your own plugin folder is imported without being checked over; it
+   is your folder, and it is your responsibility. To write one, see
+   :ref:`plugin_simple_plot_example`.
+
 Equilibrium overview plugin
 ---------------------------
 
