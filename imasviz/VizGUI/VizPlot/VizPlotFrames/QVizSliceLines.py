@@ -34,6 +34,17 @@ One pair of lines, on the first picture. What the lines answer is that picture,
 and with a window of pictures side by side a line on each would be several
 answers to one question; the window control moves which picture that is.
 
+**Which window answers which line, and when neither does.** The window whose
+abscissa is the picture's own horizontal axis goes directly under the pictures, so
+the two scales line up, and the cut the vertical line takes comes below it. Asked
+the other way round, dragging the vertical line leaves the bottom window untouched
+-- the report this ordering answers. A line is posed only where both halves of its
+question can be asked, too: more than one element to choose on the axis it stands
+on and more than one to draw along the axis its cut runs along, or the interval is
+``(v, v)``, no drag moves the line, and its window reads as a slice that stopped
+answering. The test is symmetric, so a picture one element wide -- a WEST
+``soft_x_rays`` channel: one energy band by 6356 times -- poses no line at all.
+
 **One colour per side, worn by the line, its markers and the curve it produces.**
 The two slice plots run along different axes and say so only in their axis labels,
 and a curve nobody can see answers nothing: these plots are painted on the black
@@ -125,6 +136,7 @@ class QVizSliceLines:
         self._layout = layout
         self._picture = None
         self._axes = {}
+        self._sides = []
         self._lines = {}
         self._plots = {}
         self._curves = {}
@@ -151,8 +163,26 @@ class QVizSliceLines:
         self._axes[self.BOTTOM].other = self._axes[self.LEFT]
         self._axes[self.LEFT].other = self._axes[self.BOTTOM]
         self._columns = max(int(columns), 1)
+        # A line answers a question only when both of its halves can be asked:
+        # the axis it stands on has to have more than one element to choose, and
+        # the axis its cut runs along has to have more than one to draw. The test
+        # is the same for both sides, so either both lines stand or neither does.
+        # Measured on soft_x_rays, where a channel's brightness is one energy band
+        # by 6356 times: the vertical line stood on time and answered a single
+        # point, the horizontal one held the whole time series and its interval
+        # was (0, 0), so no drag could move it. Either window reads as a slice
+        # that stopped answering, and a picture that thin has no cut to take --
+        # the curve entry is what draws a strip like that.
+        drawable = all(len(self._axes[side].values) > 1 for side in self.SIDES)
+        # The window whose abscissa is the picture's own horizontal axis goes
+        # directly under it, so the two scales line up; the cut the vertical
+        # line takes -- which runs along the picture's vertical axis -- comes
+        # below it. Measured the other way round: dragging the vertical line
+        # left the bottom window untouched, which is exactly how the two windows
+        # read as swapped.
+        self._sides = [self.LEFT, self.BOTTOM] if drawable else []
 
-        for side in self.SIDES:
+        for row, side in enumerate(self._sides, start=1):
             axis = self._axes[side]
             line = pg.InfiniteLine(pos=float(axis.values[len(axis.values) // 2]),
                                    angle=90 if side == self.BOTTOM else 0,
@@ -167,13 +197,17 @@ class QVizSliceLines:
             line.sigPositionChanged.connect(self._onMoved)
             self._lines[side] = line
 
-            plotItem = self._layout.addPlot(row=1 if side == self.BOTTOM else 2,
-                                            col=0, colspan=self._columns)
+            plotItem = self._layout.addPlot(row=row, col=0,
+                                            colspan=self._columns)
             plotItem.setLabel('bottom', axis.other.name or '',
                               units=axis.other.units or '')
             plotItem.setLabel('left', quantity)
             self._plots[side] = plotItem
             self._markers[side] = [self._newMarker(side)]
+
+    def sides(self):
+        """The sides a line was posed on, in the order their windows lay out."""
+        return list(self._sides)
 
     def addMarker(self, side):
         """Pose one more read-out cursor on the slice plot under one line.
@@ -222,7 +256,7 @@ class QVizSliceLines:
         self._axes = dict(axes)
         self._axes[self.BOTTOM].other = self._axes[self.LEFT]
         self._axes[self.LEFT].other = self._axes[self.BOTTOM]
-        for side in self.SIDES:
+        for side in self._sides:
             self._lines[side].setBounds(self._axes[side].interval())
             for marker in self._markers.get(side, []):
                 # A marker reads a position off the slice, so it stands on the
@@ -323,6 +357,7 @@ class QVizSliceLines:
         self._keptCount = {}
         self._markers = {}
         self._axes = {}
+        self._sides = []
 
     def _onMoved(self, line):
         self._draw(self._values)
@@ -331,7 +366,7 @@ class QVizSliceLines:
         self._values = np.asarray(values)
         if not self._lines or self._values.size == 0:
             return
-        for side in self.SIDES:
+        for side in self._sides:
             x, y = self._slice(side)
             curve = self._curves.get(side)
             if curve is None:

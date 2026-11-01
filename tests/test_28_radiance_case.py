@@ -328,6 +328,33 @@ def test_the_slice_lines_span_the_picture_they_answer(qapp, radiance, case):
         frame.close()
 
 
+@pytest.mark.case
+def test_the_cut_of_the_vertical_line_is_the_lower_window(qapp, radiance, case):
+    # Reported on a real shot: "dragging the vertical marker leaves the cut drawn
+    # in the bottom window unchanged". Each line has always fed its own window --
+    # what was wrong is *which* one. The vertical line stands on time and cuts
+    # along the energy bands, and its window sat above the one whose abscissa is
+    # the picture's own horizontal axis, so the window the user watched never
+    # moved and the two read as swapped.
+    frame = QVizImagePlot(title='Image:55799')
+    try:
+        frame.plot(radiance)
+        assert frame.sliceLine('bottom').angle == 90
+        assert (frame.slicePlot('left').pos().y()
+                < frame.slicePlot('bottom').pos().y())
+
+        cut = np.asarray(frame.sliceNumbers('bottom')[1]).copy()
+        other = np.asarray(frame.sliceNumbers('left')[1]).copy()
+        low, high = frame.sliceLine('bottom').bounds()
+        frame.sliceLine('bottom').setPos(low + (high - low) * 0.1)
+
+        assert not np.array_equal(cut, frame.sliceNumbers('bottom')[1]), (
+            'the line was dragged and its cut did not move')
+        np.testing.assert_array_equal(other, frame.sliceNumbers('left')[1])
+    finally:
+        frame.close()
+
+
 # ------------------------------------------------------- the colours of the shot
 
 def realChannels(frame, ids):

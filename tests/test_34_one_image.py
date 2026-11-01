@@ -39,6 +39,7 @@ checkout holds one.
 """
 
 import numpy as np
+import pyqtgraph as pg
 import pytest
 from PySide6.QtCore import QObject, Qt
 from PySide6.QtWidgets import QMdiArea, QPushButton
@@ -324,6 +325,112 @@ def test_the_slice_plots_are_labelled_like_the_picture(figure):
 
     assert figure.sliceAxisLabel('bottom') == ('theta_poloidal', 'rad')
     assert figure.sliceAxisLabel('left') == ('rho_tor', 'm')
+
+
+# ---------------------------------------------------------------------------
+# Which window answers which line.
+#
+# Reported from real use: "dragging the vertical marker leaves the cut drawn in
+# the bottom window unchanged". Measured, each line has always fed its own
+# window -- what was wrong is *which* window that was. The vertical line stands
+# on the picture's horizontal axis and cuts along its vertical one; its window
+# sat above the other, so the window the user watched never moved, and the two
+# read as swapped. The window whose abscissa is the picture's own horizontal axis
+# goes directly under the pictures -- the two scales line up -- and the cut the
+# vertical line takes comes below it.
+
+
+def panelDepth(figure, side):
+    """How far down the figure a slice window sits -- what the user counts."""
+    return figure.slicePlot(side).pos().y()
+
+
+@pytest.mark.ui
+def test_the_cut_of_the_vertical_line_is_the_lower_window(figure):
+    figure.plot(_static())
+    # The vertical line stands on the bottom axis, the horizontal one on the left.
+    assert figure.sliceLine('bottom').angle == 90
+    assert figure.sliceLine('left').angle == 0
+
+    assert panelDepth(figure, 'left') < panelDepth(figure, 'bottom')
+    # The window directly under the pictures is the one running along rho_tor,
+    # the axis the picture itself spans horizontally.
+    assert figure.sliceAxisLabel('left') == ('rho_tor', 'm')
+
+
+@pytest.mark.ui
+def test_moving_a_line_moves_its_own_window_and_not_the_other(figure):
+    figure.plot(_static())
+    before = {side: np.asarray(figure.sliceNumbers(side)[1]).copy()
+              for side in ('bottom', 'left')}
+
+    figure.sliceLine('bottom').setPos(0.0)
+
+    moved = [side for side in before
+             if not np.array_equal(before[side], figure.sliceNumbers(side)[1])]
+    assert moved == ['bottom'], (
+        'the window the user watches has to be the one the line they dragged '
+        'answers')
+
+
+@pytest.mark.ui
+def test_the_windows_lay_out_in_the_order_the_lines_answer_them(figure):
+    figure.plot(_static())
+
+    assert figure.sliceLines.sides() == ['left', 'bottom']
+    assert figure.sliceButtons.isVisibleTo(figure)
+
+
+# ---------------------------------------------------------------------------
+# A picture that is a strip has no cut to take.
+#
+# Reported on WEST soft_x_rays: `channel(0).brightness.data` is one energy band
+# by 6356 times. The horizontal line held the whole time series and its interval
+# was (0, 0), so no drag could move it; the vertical one stood on time and
+# answered a single point. Either window reads as a slice that stopped answering.
+# A line is worth posing only when both halves of its question can be asked: more
+# than one element to choose on the axis it stands on, more than one to draw on
+# the axis its cut runs along. The test is symmetric, so either both lines stand
+# or neither does.
+
+
+def _thinPicture():
+    """Two drawn axes, one of them carrying a single element."""
+    ids = _ids(dynamic=False)
+    ids.theta_poloidal = [0.]
+    ids.matrix = [[10. * row] for row in RHO]
+    return FakeAxesNode(ids, 'foo', 'foo', 'FLT_2D', name='matrix', units='Pa',
+                        coordinates=('rho_tor', 'theta_poloidal'),
+                        coordinateUnits={1: 'm', 2: 'rad'})
+
+
+@pytest.mark.ui
+def test_a_picture_one_element_wide_poses_no_line(figure):
+    figure.plot(_thinPicture())
+
+    assert figure.sliceLines.sides() == []
+    assert not figure.sliceLines.isPosed()
+    # A `ColorBarItem` is a `PlotItem` (measured on 0.13.7), so the count has to
+    # take the pictures and the bar out by identity to say what is left.
+    left = [item for item in figure.pgPlotWidget.ci.items
+            if isinstance(item, pg.PlotItem)
+            and item is not figure.colorBar
+            and all(item is not plot for plot in figure.plotItems())]
+    assert left == [], (
+        'a window under a line nobody can drag answers nothing')
+    assert not figure.sliceButtons.isVisibleTo(figure), (
+        'a bar of commands with no line to keep is a strip of grey')
+
+
+@pytest.mark.ui
+def test_a_strip_is_still_drawn_when_its_cut_is_refused(figure):
+    # Taking the cut away is not taking the picture away: the strip is still
+    # drawn with its values, and only the slice commands are gone.
+    figure.plot(_thinPicture())
+
+    assert figure.isDrawing()
+    drawn = sorted(np.asarray(figure.images()[0].image).flatten())
+    assert drawn == pytest.approx([10. * row for row in RHO])
 
 
 # ---------------------------------------------------------------------------

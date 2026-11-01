@@ -277,8 +277,7 @@ class QVizImagePlot(QWidget):
             else:
                 axes = self._sliceAxes(axesSpec, drawn, first)
                 self.sliceLines.retarget(axes, self._screen[0])
-                for side, label in self._sliceLabels.items():
-                    label.setText(axes[side].spelling() + ':')
+                self._relabelSlices(axes)
         return self.sliceControls.indices()
 
     def imageCount(self):
@@ -388,15 +387,34 @@ class QVizImagePlot(QWidget):
 
         The lines answer that picture, and the window control says which picture
         that is. Each command is named after the axis the line stands on: a
-        picture carries two lines, and 'this slice' says nothing without that.
+        picture carries two lines, and 'this slice' says nothing without that --
+        and it carries two only when both drawn axes have something to choose.
         """
         axes = self._sliceAxes(axesSpec, drawn, handle)
         self.sliceLines.forQuantity(self._pictures[0][0], quantity, axes,
                                     self._count)
-        for side, label in self._sliceLabels.items():
-            label.setText(axes[side].spelling() + ':')
-        self.sliceButtons.setVisible(True)
+        self._relabelSlices(axes)
         self.sliceLines.updateValues(self._screen[0])
+
+    def _relabelSlices(self, axes):
+        """Name each command row after the axis its line stands on.
+
+        A row naming an axis the figure posed no line on is a button with nothing
+        behind it: the commands are per line, and a line the user cannot see has
+        no business offering to be kept. With no line at all the bar goes away,
+        rather than leaving a strip of grey nothing can press.
+        """
+        sides = self.sliceLines.sides()
+        for side, label in self._sliceLabels.items():
+            visible = side in sides
+            label.setVisible(visible)
+            self._keepButtons[side].setVisible(visible)
+            self._markerButtons[side].setVisible(visible)
+            if visible:
+                label.setText(axes[side].spelling() + ':')
+        self.deleteKeptButton.setVisible(bool(sides))
+        self.deleteMarkersButton.setVisible(bool(sides))
+        self.sliceButtons.setVisible(bool(sides))
 
     def sliceLine(self, side):
         return self.sliceLines.line(side)
