@@ -27,6 +27,8 @@ from imasviz.VizGUI.VizGUICommands.VizDataExport.QVizExportToIDS \
     import QVizExportToIDS
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSaveNodeSelection \
     import QVizSaveNodeSelection
+from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes \
+    import QVizSelectNodes
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizDisplayCurrentSelection \
     import QVizDisplayCurrentSelection
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizHandleRightClick \
@@ -145,6 +147,36 @@ class QVizDataTreeView(QTreeWidget):
         # display string is how a wording change would break the file.
         self.sliceSelections = {}
 
+        # Every view this tree currently shows, keyed (IDS name, occurrence, how
+        # that occurrence is sliced) -> its node. `ids_roots_occurrence` can only
+        # hold the last view of an occurrence, which is what the menus and the
+        # session file read; this is what tells a redraw the node it has to take
+        # out of the tree. The slice choice belongs to the identity because two
+        # views of one occurrence are a documented feature (the manual's *Add a
+        # new view*), while a view replayed with the choice it already had is the
+        # same view twice.
+        self.occurrenceViews = {}
+
+        # The roots of the views this tree has replaced, kept alive on purpose.
+        #
+        # Taking a node out of a `QTreeWidget` does not merely hide it: when the
+        # last reference to it goes, Qt deletes it and its whole subtree with it,
+        # and a reference to one of its leaves then answers ``Internal C++ object
+        # (QTreeWidgetItem) already deleted`` (measured on this stack). A redrawn
+        # view is not only held by this tree: a figure's trace keeps the node it
+        # drew with and reads it again on every slider move
+        # (`QVizCurvePlot.QVizTrace.treeNode`, `QVizPanel.treeNode`,
+        # `QVizImagePlot._treeNode`), `Viz_API.figToNodes` keeps the one the
+        # gesture named, and a plugin may hold any of them. Holding the root of a
+        # retired subtree keeps every node of it readable -- measured, a kept root
+        # answers its children.
+        #
+        # The cost is what the tree used to pay by leaving its old branches on
+        # screen: one subtree per redraw. Nothing is retained that the previous
+        # behaviour did not retain already; what changed is that the tree shows
+        # one view instead of one per pass.
+        self.discardedViews = []
+
         # key=occurrence, value=IDS name
         self.IDSNameSelected = {}
 
@@ -246,6 +278,111 @@ class QVizDataTreeView(QTreeWidget):
         """
         return self.sliceSelections.get(idsName + '/' + str(occurrence),
                                         FIRST_SLICE)
+
+    def viewKeyFor(self, idsName, occurrence, sliceSelection):
+        """The identity of one displayed view: an occurrence, seen one way."""
+        return (idsName, int(occurrence),
+                (FIRST_SLICE if sliceSelection is None
+                 else sliceSelection).viewLabel())
+
+    def showOccurrenceView(self, idsName, occurrence, sliceSelection, node,
+                           signals):
+        """Put a freshly built view on screen, in place of the view it replays.
+
+        Every load used to append its node under the IDS root and then forget the
+        one that was there -- in a dictionary. A view replayed therefore left
+        another ``occurrence 0 [...]`` on the tree behind it, and the *Show only
+        tensors* checkbox replays every occurrence the view holds on every click:
+        the tree grew one branch per pass, while nothing but the newest node was
+        recorded anywhere. ``signalsList`` grew the same way -- measured on the
+        reference case, 3 368 signals, then 3 416 after a pass to the tensor view,
+        then 6 784 after the pass back, for a tree showing 3 368 -- and that list
+        is what *Plot* asks for everything, what a Table Plot View fills its
+        panels from, and what the family of a selected AOS walks.
+
+        A node taken out of the tree takes its whole subtree with it as far as Qt
+        is concerned, so the records this view answers from are settled here in
+        one breath -- the signals, the occurrence record, the selection. What
+        lives outside those records (a figure's trace, `Viz_API.figToNodes`, a
+        plugin) is why the retired root goes to `discardedViews` rather than being
+        forgotten.
+        """
+        key = self.viewKeyFor(idsName, occurrence, sliceSelection)
+        replaced = self.occurrenceViews.get(key)
+        stale = self._nodesOf(replaced) if replaced is not None else set()
+        if stale:
+            parent = replaced.parent()
+            if parent is not None:
+                parent.removeChild(replaced)
+            # Readable for whatever still holds one of its nodes, and out of the
+            # records this view answers from -- both are said in `discardedViews`.
+            self.discardedViews.append(replaced)
+            self.signalsList = [signal for signal in self.signalsList
+                                if signal not in stale]
+
+        self.IDSRoots[idsName].addChild(node)
+        self.signalsList.extend(signals)
+        self.ids_roots_occurrence[idsName + '/' + str(int(occurrence))] = node
+        self.occurrenceViews[key] = node
+        self._moveSelectionOnto(stale)
+
+        # Expand the tree item
+        self.DTVRoot.setExpanded(True)
+
+    @staticmethod
+    def _nodesOf(node):
+        """Every node of the subtree `node` heads, `node` with them.
+
+        Walked with `child`/`childCount`, the two accessors a `QTreeWidgetItem`
+        answers here -- `children` is a `QObject` method and this is not one.
+        """
+        found, pending = set(), [node]
+        while pending:
+            current = pending.pop()
+            found.add(current)
+            pending.extend(current.child(i) for i in range(current.childCount()))
+        return found
+
+    def _moveSelectionOnto(self, stale):
+        """Put the selection back on the nodes this tree now holds.
+
+        A selection entry is keyed by name, uri, path and occurrence -- an
+        identity that outlives the tree a quantity was picked from -- so a redraw
+        can answer the same key with the node it has just built. Leaving the old
+        node in the entry would leave a selection the tree contradicts: the colour
+        that says *selected* was on the branch that was taken down, and the three
+        plot commands, the node selection window, the session file and the menu
+        pointing the tree at the first selected quantity all read that node.
+
+        A key no displayed node answers leaves the selection, and is said. The
+        entry would still be readable -- the retired root keeps it so -- but it
+        would be a quantity the tree cannot show, counted by the menu, drawn by
+        *Plot selected nodes*, and reachable by no gesture.
+        """
+        if not stale:
+            return
+        displayed = {}
+        for node in self.signalsList:
+            displayed.setdefault(self.dataSource.dataKey(node), node)
+        lost = []
+        for key, entry in list(self.selectedSignalsDict.items()):
+            if entry.get('QTreeWidgetItem') not in stale:
+                continue
+            fresh = displayed.get(key)
+            if fresh is None:
+                lost.append(entry['QTreeWidgetItem'].getPath())
+                del self.selectedSignalsDict[key]
+            else:
+                entry['QTreeWidgetItem'] = fresh
+                QVizSelectNodes.style(fresh, self)
+        if lost:
+            logging.getLogger(self.uri).info(
+                '%d selected %s no longer displayed by this view and left the '
+                'selection: %s.'
+                % (len(lost), 'quantity is' if len(lost) == 1
+                   else 'quantities are',
+                   ', '.join(lost[:5])
+                   + (' and %d more' % (len(lost) - 5) if len(lost) > 5 else '')))
 
     def isLoadInFlight(self, idsName, occurrence):
         """Whether this view is already building this occurrence."""
@@ -392,9 +529,10 @@ class QVizDataTreeView(QTreeWidget):
         if idsData is None:
             return
         nodeBuilder = QVizDataTreeViewBuilder(showOnlyTensorsRankGe1=self.showOnlyTensorsRankGe1)
+        selection = FIRST_SLICE if sliceSelection is None else sliceSelection
         self.buildTreeView(nodeBuilder, idsName, idsInstance, occurrence, idsData,
-                           sliceSelection)
-        nodeBuilder.endBuildView(idsName, occurrence, self)
+                           selection)
+        nodeBuilder.endBuildView(idsName, occurrence, self, selection)
 
     def buildTreeView(self, nodeBuilder, idsName, idsInstance, occurrence,
                       idsData, sliceSelection):
@@ -528,13 +666,43 @@ class QVizDataTreeView(QTreeWidget):
 
     @Slot(bool)
     def onToggleTensorsFilter(self, checked):
-        """Toggle tensor rank >= 1 filter on the data tree view."""
+        """Rebuild every view of this tree the way it is displayed, filtered.
+
+        Each occurrence is asked back the way it was asked for the first time
+        (`sliceSelectionFor`): with no choice given, the load falls back on the
+        first slice and a view standing on the tenth element of a dynamic array
+        came back on its first one, under a label rewritten to say so.
+        """
         self.showOnlyTensorsRankGe1 = checked
         QVizPreferences.Show_only_tensors_rank_ge_1 = 1 if checked else 0
         for idsName in list(self.IDSRoots.keys()):
             for occurrence in self.loadedOccurrences(idsName):
+                selection = self.sliceSelectionFor(idsName, occurrence)
+                self._sayWhatTheRedrawLeavesAlone(idsName, occurrence, selection)
                 QVizLoadOccurrence(dataTreeView=self, idsName=idsName,
-                                   occurrence=occurrence).execute()
+                                   occurrence=occurrence,
+                                   sliceSelection=selection).execute()
+
+    def _sayWhatTheRedrawLeavesAlone(self, idsName, occurrence, selection):
+        """Name the views of an occurrence this redraw cannot reach.
+
+        *Add a new view* is documented with two views of one occurrence side by
+        side, and the load guard is per occurrence -- asking both at once would
+        have the second refused as already loading. So one view per occurrence is
+        redrawn, and the screen mixing the two presentations is said rather than
+        left to the user to wonder at.
+        """
+        others = [key[2] for key in self.occurrenceViews
+                  if key[0] == idsName and key[1] == int(occurrence)
+                  and key[2] != selection.viewLabel()]
+        if not others:
+            return
+        logging.getLogger(self.uri).info(
+            'Occurrence %d of the %s IDS is displayed in %d views: the one %s is '
+            'redrawn, the view %s keeps its current presentation -- one '
+            'occurrence cannot be loaded twice at once in the same view.'
+            % (occurrence, idsName, len(others) + 1, selection.viewLabel(),
+               ' and '.join(others)))
 
 
 class QVizDataTreeViewFrame(QMainWindow):

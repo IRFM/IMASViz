@@ -340,7 +340,15 @@ class QVizDataTreeViewBuilder:
 
         return itemDataDict, extra_attributes
 
-    def endBuildView(self, idsName, occurrence, dataTreeView):
+    def endBuildView(self, idsName, occurrence, dataTreeView, sliceSelection):
+        """Hand the tree the walk built over to the view that asked for it.
+
+        What happens to the node that view already shows for that occurrence is
+        the view's decision -- see `QVizDataTreeView.showOccurrenceView`. Hanging
+        the new node off the IDS root and overwriting the record of the old one
+        used to be the whole of it, so every replay of a view left its
+        predecessor on screen.
+        """
         ids_root_node = self.getIDSRootNode()
         ids_root_occurrence = ids_root_node.child(0)
 
@@ -349,15 +357,10 @@ class QVizDataTreeViewBuilder:
                 ids_root_occurrence,
                 self._filledPaths(dataTreeView, idsName, occurrence))
 
-        dataTreeView.signalsList.extend(self.getSignalsList())
         ids_root_node.removeChild(ids_root_occurrence)
-
-        dataTreeView.IDSRoots[idsName].addChild(ids_root_occurrence)
-        key = idsName + "/" + str(occurrence)
-        dataTreeView.ids_roots_occurrence[key] = ids_root_occurrence
-
-        # Expand the tree item
-        dataTreeView.DTVRoot.setExpanded(True)
+        dataTreeView.showOccurrenceView(idsName, occurrence, sliceSelection,
+                                        ids_root_occurrence,
+                                        self.getSignalsList())
 
     def _tensorFilterActive(self):
         if self.showOnlyTensorsRankGe1 is not None:
