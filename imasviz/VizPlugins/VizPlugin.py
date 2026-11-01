@@ -74,19 +74,24 @@ RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
 
 
 def getRegisteredPlugins():
-    """The plugins this application offers, name to where they come from.
+    """The plugins this application ships, name to where they come from.
 
     A name mapped to a dotted path is a Python plugin under `imasviz.VizPlugins`,
     its class named after the key. A name mapped to a dictionary is a window
     drawn in Qt Designer, described by `UiFile`, `dir`, `targetIDSroot` and
     `targetOccurrence`.
+
+    This is the table of what IMASViz *ships*, and nothing else. What a user wrote
+    is not added here: it lives in a folder of their own and is found by looking,
+    which is what makes a plugin created in the middle of a session show up
+    without anyone editing a file of the package -- see `QVizPluginSource`. A
+    previous `registerPlugin` did the opposite, writing into this table at run
+    time, and that cannot work twice over: a catalog is built once per shot view,
+    so a plugin injected after the first right click would sit on that view's menu
+    for ever and on no other view's at all -- and it would make a shipped name look
+    editable, when nothing in this table is.
     """
     return RegisteredPlugins
-
-
-def registerPlugin(name, modulePath):
-    """Programmatically register a new plugin in the global dictionary."""
-    RegisteredPlugins[name] = modulePath
 
 
 class VizPlugin:
@@ -95,6 +100,12 @@ class VizPlugin:
     A plugin decides from `self.selectedTreeNode`, the node it was offered on, and
     reaches its case through `self.dataTreeView`; both are set when the menu is
     built, so a plugin keeps no case of its own.
+
+    The base class answers **no** to everything it cannot know. A plugin that
+    declares nothing is refused in words, not handed a default entry: an entry
+    invented here -- a number the plugin never asked for, a label read out of its
+    docstring -- would sit on the menu exactly like one that works, and the only
+    way the user would tell them apart is that nothing happens when it is clicked.
     """
 
     def __init__(self, *args, **kwargs):
@@ -112,21 +123,35 @@ class VizPlugin:
         self.dataTreeView = dataTreeView
 
     def isEnabled(self):
-        """Whether this plugin takes part at all. Returns True by default for modern plugins."""
-        return True
+        """Whether this plugin takes part at all. A plugin says yes for itself."""
+        return False
 
     def getEntries(self):
         """Which of `getAllEntries` this node earns, by their numbers."""
-        return [0]
+        raise ValueError('plugin getEntries() method should be implemented!')
 
     def getAllEntries(self):
         """What this plugin can do, as `[(number, what the menu says)]`."""
-        return [(0, getattr(self, '__doc__', None) or 'Custom plugin action')]
+        raise ValueError('plugin getAllEntries() method should be implemented!')
 
     def execute(self, vizAPI, pluginEntry=None, answers=None):
-        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it."""
+        """Do one of them. `pluginEntry` is the number `getAllEntries` gave it.
+
+        `answers` is what a session already answered in the place of the user --
+        a `QVizPluginAnswers`, or None when the entry was chosen from the menu.
+        A plugin whose entry asks a question of its own must take the answer from
+        here instead of asking it again: the Profiles plugin asks the occurrence
+        through a modal `QInputDialog`, and a restore that went through that
+        dialog would sit waiting for a click nobody is going to give it. A plugin
+        that ignores `answers` is refused by name at the restore, not run blind.
+        """
         raise ValueError('plugin execute() method should be implemented!')
 
     def getPluginsConfiguration(self):
-        """Anything extra this plugin needs to run, its own shape. None by default."""
+        """Anything extra this plugin needs to run, its own shape. None by default.
+
+        The howto asks a plugin for this; the framework never asked it, and asked
+        a per-name table instead -- which knew only plugins that were not
+        registered.
+        """
         return None

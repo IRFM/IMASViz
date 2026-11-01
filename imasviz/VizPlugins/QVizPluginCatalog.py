@@ -38,6 +38,16 @@ asked on its own, so the one that fails is named and the others are still offere
 An entry carries its own number, which is also what `execute` is asked for,
 because the manual documents `getAllEntries` as `[(config number, description)]`
 and `execute(vizAPI, pluginEntry)` receives that number.
+
+What a view can offer comes from **two** places now: the table IMASViz ships, and
+this user's own plugin folder -- see `QVizPluginSource`, which owns that
+difference. A user plugin is found by looking, so one created in the middle of a
+session is on the menu of the next right click with nothing else edited. That is
+also what makes a *reload* something that has to exist: the cache that stops a
+view paying twice for the same plugins is the same cache that would keep an edited
+plugin running the code it had when the view was built. `reload()` puts one view
+back to what the disk says now; `reloadEverywhere(api)` puts every open shot view
+back, which is what the watcher on the application window calls.
 """
 
 import importlib
@@ -46,6 +56,12 @@ import logging
 import re
 
 from imasviz.VizPlugins.VizPlugin import getRegisteredPlugins
+from imasviz.VizPlugins.QVizPluginSource import (BUILTIN, USER,
+                                                 attachUserPackage,
+                                                 builtinSource,
+                                                 forgetUserModules,
+                                                 userPluginsFolder,
+                                                 userSources)
 
 # A .ui plugin whose interface is only Qt classes is built as written. One that
 # embeds a widget class of its own cannot: measured with the loader this PySide6
@@ -62,21 +78,35 @@ _CUSTOM_WIDGET = re.compile(r'<customwidget>.*?<class>(\w+)</class>', re.S)
 
 
 class QVizPluginEntry:
-    """One line of the Plugins menu: a plugin, the feature it offers, its words."""
+    """One line of the Plugins menu: a plugin, the feature it offers, its words.
 
-    def __init__(self, pluginName, plugin, number, label, description=None):
+    `source` says which plugin that is and where it came from, which is what lets
+    the menu offer *Edit* for a plugin of the user's own and not for one IMASViz
+    shipped. It is optional so that a line built without it stays a line: the
+    origin then reads as shipped, which is the safe answer -- nothing offers to
+    edit what nobody has.
+    """
+
+    def __init__(self, pluginName, plugin, number, label, description=None,
+                 source=None):
         self.pluginName = pluginName
         self.plugin = plugin
         self.number = number
         self.label = label
         self.description = description or pluginName
+        self.source = source
 
     def __repr__(self):
         return '<%s entry %s "%s">' % (self.pluginName, self.number, self.label)
 
+    @property
+    def origin(self):
+        return self.source.origin if self.source is not None else BUILTIN
+
 
 class QVizPluginCatalog:
-    """The registered plugins of one shot view, asked one at a time.
+    """The plugins of one shot view -- shipped and the user's own -- asked one at
+    a time.
 
     Built once per view, on the first menu that needs it. A plugin that cannot be
     imported, built, or asked what it offers is named in the log of that case and
@@ -86,7 +116,14 @@ class QVizPluginCatalog:
     def __init__(self, dataTreeView):
         self.dataTreeView = dataTreeView
         self._plugins = None
+        self._sourceOf = {}
         self.refusals = []
+        # The same refusals, keyed by plugin name. `refusals` is what the log
+        # panel shows, one line per event, in the order they happened; this is
+        # what the plugin manager reads to say why a row of its table has no
+        # entry -- and reading it back out of the sentences would mean depending
+        # on how `_refuse` happens to be worded.
+        self.refused = {}
 
     def _log(self):
         return logging.getLogger(self.dataTreeView.uri)
@@ -95,7 +132,75 @@ class QVizPluginCatalog:
         """Leave a plugin out of the menu, and say so where the user reads."""
         message = 'Plugin %s is not offered: %s' % (pluginName, why)
         self.refusals.append(message)
+        self.refused[pluginName] = why
         self._log().error(message)
+
+    def _sources(self):
+        """What the view may offer: the shipped table, then this user's folder.
+
+        The shipped table is asked through the name imported *here*, because that
+        is the seam the menu tests replace to hand over a stub plugin; a helper
+        called somewhere else would hide it. What comes off the user's folder is
+        appended, never merged in place: the order the table holds is the order of
+        the menu, and a plugin that arrived later goes last.
+        """
+        sources = [builtinSource(name, registration)
+                   for name, registration in getRegisteredPlugins().items()]
+        shipped = {source.name for source in sources}
+        for source in userSources(userPluginsFolder()):
+            if source.name in shipped:
+                # Two plugins of one name is a question the menu cannot answer,
+                # and silently letting the user's file replace the shipped one is
+                # the worse of the two ways to answer it.
+                self._refuse(source.name, 'your plugin folder holds a plugin '
+                                          'named %s, which IMASViz already '
+                                          'ships -- give yours another name, the '
+                                          'shipped one is not replaced'
+                             % source.name)
+                continue
+            sources.append(source)
+        return sources
+
+    def _import(self, source):
+        """Take the module of one plugin, from wherever it was found to live.
+
+        A shipped plugin keeps the import path it always had. A plugin of the
+        user's is imported under the package `QVizPluginSource` puts over their
+        folder, which is what keeps its name stable across a reload and lets it
+        hold a sub-package of its own.
+        """
+        if source.origin == USER:
+            attachUserPackage(userPluginsFolder())
+        return importlib.import_module(source.importName)
+
+    def reload(self):
+        """Put this view's plugins back to what the disk says now.
+
+        Every module under the package the user's folder is imported under is
+        dropped, the folder's own package with it -- not just the plugins this
+        view happens to have built. `sys.modules` is one table for the process, so
+        forgetting only what *this* view imported would leave a plugin another view
+        built still on its old code, and a plugin the user deleted altogether
+        would never be forgotten at all: it is no longer on the folder to be
+        found. What is dropped is therefore the whole subtree of the user's
+        folder, however it got there.
+
+        A shipped plugin is never re-imported in the middle of a session: the
+        windows already on screen belong to the copy that drew them, and a second
+        copy of its classes -- with matplotlib bound to both -- is how a session
+        ends up with two figures that refuse each other. What the user just
+        changed is their own file, and that is the one that comes back.
+
+        Nothing here opens a window or touches a menu. The sub-menu is rebuilt on
+        every right click, so the next one shows what the disk holds; and a view
+        whose catalog was never built has nothing to put back, since it will build
+        it fresh from the same folder.
+        """
+        forgetUserModules()
+        self._plugins = None
+        self._sourceOf = {}
+        self.refusals = []
+        self.refused = {}
 
     def _loadUiPlugin(self, pluginName, configuration):
         """Build the window a .ui plugin describes, or refuse it with its reason.
@@ -144,25 +249,29 @@ class QVizPluginCatalog:
         return window
 
     def _pluginsNow(self):
-        """Import and build every registered plugin once, each on its own."""
+        """Import and build every plugin this view may offer, once, each on its own."""
         if self._plugins is not None:
             return self._plugins
         self._plugins = []
-        for pluginName, registration in getRegisteredPlugins().items():
-            if isinstance(registration, dict):
-                window = self._loadUiPlugin(pluginName, registration)
+        for source in self._sources():
+            pluginName = source.name
+            self._sourceOf[pluginName] = source
+            if source.isUi:
+                window = self._loadUiPlugin(pluginName, source.registration)
                 if window is not None:
                     self._plugins.append((pluginName, window))
                 continue
             try:
-                module = importlib.import_module('imasviz.VizPlugins.'
-                                                 + registration)
+                module = self._import(source)
                 importedClass = getattr(module, pluginName)
                 plugin = importedClass()
             except Exception as error:
                 # A stale entry in the registration table used to take the whole
                 # menu down: ModuleNotFoundError escaped the loop that built it.
+                # The same guard is what names a plugin of the user's that no
+                # longer parses -- it costs its own line, not the menu.
                 self._refuse(pluginName, '%s: %s' % (type(error).__name__, error))
+                del self._sourceOf[pluginName]
                 continue
             # A plugin reaches its case through `self.dataTreeView`, which the
             # contract says is set when the menu is built. The catalog bound the
@@ -178,6 +287,11 @@ class QVizPluginCatalog:
 
     def plugins(self):
         return self._pluginsNow()
+
+    def sourceOf(self, pluginName):
+        """Where that plugin came from, once the view has been asked once."""
+        self._pluginsNow()
+        return self._sourceOf.get(pluginName)
 
     def entriesFor(self, node):
         """The lines this node earns, in registration order.
@@ -201,13 +315,15 @@ class QVizPluginCatalog:
     def _entriesOf(self, pluginName, plugin, node):
         from PySide6.QtWidgets import QMainWindow
 
+        source = self._sourceOf.get(pluginName)
         if isinstance(plugin, QMainWindow):
             # A .ui window has no methods to ask: it claims one fixed IDS, and
             # its one entry is the window itself.
             if plugin.targetIDSroot != node.getIDSName():
                 return []
             return [QVizPluginEntry(pluginName, plugin, 0,
-                                   'Show the %s panel' % pluginName)]
+                                   'Show the %s panel' % pluginName,
+                                   source=source)]
 
         bind = getattr(plugin, 'setSelectedTreeNode', None)
         if callable(bind):
@@ -241,7 +357,7 @@ class QVizPluginCatalog:
                              % (number, sorted(labels)))
                 continue
             entries.append(QVizPluginEntry(pluginName, plugin, number,
-                                          labels[number], tip))
+                                          labels[number], tip, source=source))
         return entries
 
     def run(self, entry, answers=None):
@@ -305,6 +421,77 @@ class QVizPluginCatalog:
                            idsName=window.targetIDSroot,
                            occurrence=window.targetOccurrence).execute()
         window.show()
+
+
+def reloadEverywhere(api):
+    """Put the plugins of every open shot view back to what the disk says now.
+
+    One edited file has to reach every view, and a view that has never built its
+    catalog needs nothing: it has nothing cached, so it reads the folder the next
+    time a menu asks. The modules of the user's plugins are dropped even then --
+    something else may have imported one (the plugin manager does, to tell the
+    user what it holds) -- and the answer is how many views were put back, because
+    a reload nobody can count is a reload nobody believes.
+    """
+    forgetUserModules()
+    views = getattr(api, 'DTVlist', None) or []
+    reloaded = 0
+    for view in views:
+        catalog = getattr(view, 'pluginCatalog', None)
+        if catalog is None:
+            continue
+        catalog.reload()
+        reloaded += 1
+    return reloaded
+
+
+def refusalsOf(api):
+    """What the opened views refused, by plugin name.
+
+    Read off the catalogs that already exist, so asking it costs nothing: a plugin
+    is refused while a menu is being built, and the reason stays in the catalog of
+    that view. A view nobody has right-clicked has no catalog, so an empty answer
+    here is not the same as "nothing is wrong" -- the plugin manager says which of
+    the two it is rather than leaving the column blank.
+    """
+    refusals = {}
+    for view in getattr(api, 'DTVlist', None) or []:
+        catalog = getattr(view, 'pluginCatalog', None)
+        if catalog is not None:
+            refusals.update(catalog.refused)
+    return refusals
+
+
+def openEditor(source, parent=None):
+    """Show the source of one plugin, and tell it where to announce a save.
+
+    One entry point for every gesture that opens the editor -- the plugin manager
+    and the *Edit* line of the Plugins sub-menu -- so the reload cannot be wired
+    by one and forgotten by the other. It is a **signal connection**, not a
+    callback handed over and stored: a plain helper kept on a widget that answers
+    with a bound method of that widget makes a cycle, and a widget freed by the
+    cyclic collector is freed on this Qt while it still owes a paint event.
+    """
+    from imasviz.VizPlugins.QVizPluginEditor import QVizPluginEditor
+
+    editor = QVizPluginEditor(source, parent)
+    editor.saved.connect(lambda path: reloadEverywhere(_apiOf(parent)))
+    editor.show()
+    return editor
+
+
+def _apiOf(widget):
+    """The api of the session a widget belongs to, or None.
+
+    Walked the way the *File* menu walks it -- the window that owns the widget,
+    the start window's menu controller, the open gesture's api. `Viz_API` is not a
+    singleton, so an api built here would be a second bookkeeping holding none of
+    the windows on screen.
+    """
+    window = widget
+    while window is not None and getattr(window, 'sessionApi', None) is None:
+        window = window.parent()
+    return window.sessionApi() if window is not None else None
 
 
 def _acceptsAnswers(execute):
