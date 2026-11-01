@@ -35,8 +35,13 @@ class simplePlotPluginExample(VizPlugin):
     def __init__(self):
         pass
 
-    def execute(self, vizAPI, pluginEntry):
+    def execute(self, vizAPI, pluginEntry, answers=None):
         """Main plugin function.
+
+        `answers` is what a saved session already gave this entry in the user's
+        place. This example asks nothing, so it takes the argument and ignores
+        it -- and taking it is what lets a session replay the entry instead of
+        naming it as un-replayable.
         """
 
         # Get dataSource from the VizAPI (IMASViz Application Program Interface)
@@ -53,13 +58,14 @@ class simplePlotPluginExample(VizPlugin):
             logging.getLogger(dataSource.uri).info('Loading magnetics IDS...')
             vizAPI.LoadIDSData(self.dataTreeView, 'magnetics', occurrence)
 
-        # Get IDS object
-        self.ids = dataSource.getImasEntry(occurrence)
+        # Get IDS object. `dataSource.get` is the loaded handle for one
+        # (IDS, occurrence) -- the same handle the tree and the plots read, and
+        # the only way to ask it once instead of opening the case again.
+        self.ids = dataSource.get('magnetics', occurrence)
 
         # Displaying basic case information
-        print('Reading data...')
-        print('URI    =', uri)
-        
+        logging.getLogger(uri).info('Reading magnetics of %s...', uri)
+
         # Get some data from the IDS and pass it to plot (using matplotlib)
         # - Set subplot
         fig, ax = plt.subplots()
