@@ -8,12 +8,17 @@
 # ****************************************************
 
 import logging
+import re
 from threading import Thread, Condition
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import QVizTreeNode
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences
 from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
 
 class QVizDataTreeViewBuilder:
+    # The index an array of structures leaves in a path: the letter the walk
+    # parametrizes with, or the concrete element number.
+    INDEXED = re.compile(r'\[[^\]]*\]|\(\d+\)')
+
     def __init__(self, showOnlyTensorsRankGe1=None):
         self.arrayParentNodes = {}
         self.signalsList = []
@@ -120,11 +125,6 @@ class QVizDataTreeViewBuilder:
         self.setPath(viewerNode, path)
 
         if viewerNode.isDynamicData() or viewerNode.isStaticData():
-            filter_active = self.showOnlyTensorsRankGe1 if self.showOnlyTensorsRankGe1 is not None else (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
-            if filter_active:
-                if QVizNodePlotting(viewerNode).rank() < 1:
-                    parentNode.removeChild(viewerNode)
-                    return viewerNode
             self.signalsList.append(viewerNode)
 
         return viewerNode
@@ -344,9 +344,10 @@ class QVizDataTreeViewBuilder:
         ids_root_node = self.getIDSRootNode()
         ids_root_occurrence = ids_root_node.child(0)
 
-        filter_active = self.showOnlyTensorsRankGe1 if self.showOnlyTensorsRankGe1 is not None else (QVizPreferences.Show_only_tensors_rank_ge_1 == 1)
-        if filter_active:
-            self._pruneTree(ids_root_occurrence)
+        if self._tensorFilterActive():
+            self._flattenToNonEmptyTensors(
+                ids_root_occurrence,
+                self._filledPaths(dataTreeView, idsName, occurrence))
 
         dataTreeView.signalsList.extend(self.getSignalsList())
         ids_root_node.removeChild(ids_root_occurrence)
@@ -358,24 +359,89 @@ class QVizDataTreeViewBuilder:
         # Expand the tree item
         dataTreeView.DTVRoot.setExpanded(True)
 
-    def _pruneTree(self, node):
-        for i in range(node.childCount() - 1, -1, -1):
+    def _tensorFilterActive(self):
+        if self.showOnlyTensorsRankGe1 is not None:
+            return self.showOnlyTensorsRankGe1
+        return QVizPreferences.Show_only_tensors_rank_ge_1 == 1
+
+    def _collectDataLeaves(self, node, leaves):
+        for i in range(node.childCount()):
             child = node.child(i)
-            self._pruneTree(child)
-            
-            dataType = child.getDataType()
-            is_container = dataType in ('structure', 'struct_array') or (not child.isDynamicData() and not child.isStaticData() and not child.isIDSRoot())
-            
             if child.isDynamicData() or child.isStaticData():
-                if len(QVizNodePlotting(child).axes.leafAxes()) < 1:
-                    node.removeChild(child)
-                    if child in self.signalsList:
-                        self.signalsList.remove(child)
-            elif is_container and not child.isIDSRoot():
-                while child.childCount() > 0:
-                    grandchild = child.child(0)
-                    child.removeChild(grandchild)
-                    node.addChild(grandchild)
-                node.removeChild(child)
-            elif child.childCount() == 0 and not child.isIDSRoot():
-                node.removeChild(child)
+                leaves.append(child)
+            else:
+                self._collectDataLeaves(child, leaves)
+
+    def _tensorKeyOf(self, leaf):
+        """The path naming this tensor, free of any array index.
+
+        The filled paths of an IDS are spelled without an index for its arrays
+        of structures, so a tree path only becomes comparable to them once the
+        indices it carries -- the letters of the parametrized path, or the
+        concrete index of the walk -- are taken out.
+        """
+        path = leaf.getParametrizedDataPath()
+        if path:
+            if '.' in path:
+                path = path.split('.', 1)[1]
+        else:
+            path = leaf.getPath() or ''
+        return self.INDEXED.sub('', path.replace('.', '/'))
+
+    def _filledPaths(self, dataTreeView, idsName, occurrence):
+        """The paths this occurrence holds data at, or None when unknowable.
+
+        Reading one array per tensor to ask whether it is empty costs the whole
+        read; the entry answers the same question for every path at once without
+        touching a value. An occurrence the case does not hold at all answers a
+        refusal, and so does a source that is not the IMAS one: both mean "no
+        opinion", and the tree then keeps what the dictionary alone can tell.
+        """
+        try:
+            entry = dataTreeView.dataSource.db_entry
+            return set(entry.list_filled_paths(idsName, occurrence))
+        except Exception as error:
+            logging.getLogger(dataTreeView.uri).info(
+                "The filled paths of '%s' occurrence %s cannot be asked (%s): "
+                "the tensors shown are those the dictionary declares."
+                % (idsName, occurrence, type(error).__name__))
+            return None
+
+    def _flattenToNonEmptyTensors(self, root, filled):
+        """One node per non-empty tensor, hanging off the occurrence itself.
+
+        The walk goes through the dictionary, so a tensor held by an array of
+        structures is met once per element of that array, nested in the folders
+        that hold it, and a tensor the case never filled looks exactly like one
+        it did. Here the folders are taken out, the tensors of rank 0 with them,
+        and each remaining tensor keeps its first element in tree order.
+        """
+        leaves = []
+        self._collectDataLeaves(root, leaves)
+
+        kept, keys = [], set()
+        for leaf in leaves:
+            if len(QVizNodePlotting(leaf).axes.leafAxes()) < 1:
+                continue
+            key = self._tensorKeyOf(leaf)
+            if key in keys or (filled is not None and key not in filled):
+                continue
+            keys.add(key)
+            kept.append(leaf)
+
+        # Settled before anything is taken out of the tree: a node that loses
+        # both its parent and its last reference has its C++ side deleted, and
+        # asking a question of the wrapper left behind answers RuntimeError.
+        self.signalsList = list(kept)
+        keptSet = set(kept)
+
+        for leaf in kept:
+            parent = leaf.parent()
+            if parent is not root:
+                parent.removeChild(leaf)
+                root.addChild(leaf)
+
+        for i in range(root.childCount() - 1, -1, -1):
+            child = root.child(i)
+            if child not in keptSet:
+                root.removeChild(child)

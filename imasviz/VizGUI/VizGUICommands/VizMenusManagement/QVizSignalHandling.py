@@ -81,7 +81,11 @@ class QVizSignalHandling(QObject):
         plotting = QVizNodePlotting(self.treeNode)
         signal = plotting.isPlottable()
 
-        if QVizPreferences.Show_only_tensors_rank_ge_1 == 1:
+        # The tensor view of this tree, not the preference the application
+        # started with: the checkbox of one shot view answers for its own tree,
+        # and a menu that asked the preference would keep offering tensor-only
+        # lines to a view whose checkbox is off.
+        if getattr(self.dataTreeView, 'showOnlyTensorsRankGe1', False):
             if signal:
                 self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
                 if plotting.inArrayOfStructures():

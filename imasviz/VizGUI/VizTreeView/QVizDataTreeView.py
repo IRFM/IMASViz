@@ -895,15 +895,5 @@ class QVizDataTreeViewFrame(QMainWindow):
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
-    @Slot(bool)
-    def onToggleTensorsFilter(self, checked):
-        """Toggle tensor rank >= 1 filter on the data tree view."""
-        self.showOnlyTensorsRankGe1 = checked
-        QVizPreferences.Show_only_tensors_rank_ge_1 = 1 if checked else 0
-        for idsName in list(self.IDSRoots.keys()):
-            for occurrence in self.loadedOccurrences(idsName):
-                QVizLoadOccurrence(dataTreeView=self, idsName=idsName,
-                                   occurrence=occurrence).execute()
-
     # TODO:
     # def onCloseAndReopenDatabase()
