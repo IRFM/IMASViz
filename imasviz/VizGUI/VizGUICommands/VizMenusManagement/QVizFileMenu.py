@@ -39,6 +39,8 @@ import weakref
 
 from PySide6.QtGui import QAction, QKeySequence
 
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMenuRefill import refill
+
 
 class QVizFileMenu:
     """The *File* menu: the session of this run, and the way out."""
@@ -86,12 +88,7 @@ class QVizFileMenu:
         pile up on it -- one more pair for every opening -- while the sub-menu
         would stay a child nobody can reach.
         """
-        for action in list(self.menu.actions()):
-            submenu = action.menu()
-            self.menu.removeAction(action)
-            action.deleteLater()
-            if submenu is not None:
-                submenu.deleteLater()
+        refill(self.menu)
         if self._window() is None:
             return
         if self._sessionMenu is not None:

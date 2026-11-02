@@ -19,7 +19,8 @@ although the read walks its axes. The time entry reads the node from
 its index from `infoDict['i']` -- the loop letter of the *first* enclosing array
 of structures, so a quantity held by two of them is plotted at the outer element.
 The submenu is built with `menu.addMenu('Figure')`, which is the dangling-submenu
-defect T0 removed from the Show/Hide menus: the entry is there to look at and
+defect T0 removed from the window menus of the time: the entry is there to
+look at and
 gone to click.
 
 What is pinned is the shape of the replacement: the same entries ask the read how
@@ -239,7 +240,7 @@ def test_a_quantity_no_frame_can_draw_costs_no_window(view, caplog):
 def test_the_window_is_registered_under_the_key_its_title_carries(view):
     plotOne(view, _vector())
 
-    # The key is how Show/Hide and Delete address a window: a frame registered
+    # The key is how the *Windows* menu addresses a window: a frame registered
     # nowhere is a window the user cannot close from any menu.
     keys = view.imas_viz_api.GetFiguresKeys(figureType=FigureTypes.CURVEPLOTTYPE)
     assert len(keys) == 1

@@ -14,7 +14,7 @@ by the same commands the user drives: the case is opened the way the *Open* entr
 opens it, each occurrence is loaded through `QVizLoadOccurrence`, each quantity
 is drawn through `QVizPlotOneNode`, a Table Plot View through `QVizPlotAsTable`,
 a Stacked Plot View through `QVizPlotAsStacked`. So a restored window has its
-sliders, its abscissa, its legend and its entry in the Show/Hide menu, because it
+sliders, its abscissa, its legend and its line of the *Windows* menu, because
 is one of the frames rather than a description of one -- which is the difference
 with the legacy state saving, whose writer serialised pyqtgraph options and whose
 reader kept two attributes of them.
@@ -33,7 +33,8 @@ Three consequences of replaying rather than restoring, and each is a choice:
 * the figure keys of the file are honoured. Replaying the gestures and letting
   the api hand out the next key would renumber the windows (measured:
   `SlicesPlot1` came back as `SlicesPlot2`), and the key is the name the
-  Show/Hide, Delete and "add to that figure" menus address.
+  the *Windows* menu, its *Delete* sub-menu and the "add to that figure"
+  entries address.
 
 The selection is applied last, because a Stacked Plot View is filled from the
 selection of its view: a stacked window of three quantities would otherwise draw
@@ -568,7 +569,7 @@ class QVizRestoreSession:
         `setGeometry` then `showMaximized` then `hide`: measured off screen, the
         four numbers round-trip unchanged, a maximized window answers its geometry
         back after a `showNormal`, and a window hidden here stays addressable by
-        its key in the Show/Hide menu -- hidden is not closed.
+        its key in the *Windows* menu -- hidden is not closed.
         """
         state = figure.window
         if state is None:
@@ -592,7 +593,7 @@ class QVizRestoreSession:
         Answers how many windows came back. A plugin window is not drawn by a
         command of this module: it is replayed through the catalog of the view the
         user right-clicked, so the window that comes back owns its tabs, its time
-        slider and its line in the Show/Hide menu -- and it comes back under the
+        slider and its line of the *Windows* menu -- and it comes back under the
         key of the file, because the answers handed to the entry carry it and the
         plugin gives it to `FigureKeyFor`.
         """

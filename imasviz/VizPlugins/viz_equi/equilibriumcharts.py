@@ -34,6 +34,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 import matplotlib.ticker as tick
 import numpy as np
 import logging
+import weakref
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QDockWidget, QMenuBar, QApplication, QMainWindow, QTreeWidget, \
     QTreeWidgetItem, QWidget, QGridLayout, QVBoxLayout, QLineEdit, QSlider, QPushButton, QHBoxLayout,  \
@@ -42,6 +43,7 @@ from PySide6 import QtCore
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginWindow
 from imasviz.VizUtils import FigureTypes
+from imasviz.Viz_API import QVizClosableWindow
 
 # Figures options
 nbr_levels         = 30  # For Psi (magnetic flux function)
@@ -430,7 +432,7 @@ def DataGen(vizTreeNode, vizAPI, dataTreeView):
            rho_tor_label, prof_1d, \
            boundPlasma, magAxis, wall, b0, r0, xPoint
 
-class PlotFrame(QMainWindow):
+class PlotFrame(QVizClosableWindow, QMainWindow):
     """ The main frame of the application
     """
 
@@ -439,8 +441,13 @@ class PlotFrame(QMainWindow):
     def __init__(self, vizTreeNode, vizAPI, parent=None, title=title):
 
         super(PlotFrame, self).__init__(parent)
+        # The entry that opened this window registered it in that api, and the
+        # api is what knows what the close box of a window means here. Held
+        # weakly: this window is the Qt owner of nothing that may keep the api's
+        # lifetime back, so the answer is simply None once the api is gone.
+        self._api = weakref.ref(vizAPI)
         # The title names the registry key the window was handed, and the
-        # Show/Hide and Delete menus list that key: measured before, the title
+        # *Windows* menu lists that key: measured before, the title
         # argument was accepted by this signature and used by no statement, so
         # the window sat on screen with an empty title bar while its entry in
         # those menus read 'EquiPlotView:1' -- nothing told the user which
@@ -483,6 +490,17 @@ class PlotFrame(QMainWindow):
 
         self.textbox.setText(' '.join(map(str, self.dataTimes)))
         self.draw_figure()
+
+    def windowApi(self):
+        """The api this window is registered in -- the one that holds the rule.
+
+        This window stands on its own: the entry parents it on the shot view and
+        shows it itself, so it is not an MDI subwindow and :class:`QVizMdiSubWindow`
+        never sees its close box. Mixing in :class:`QVizClosableWindow` is what
+        routes that box to the same rule the *Windows* menu follows -- hide, unless
+        ``Close_button_deletes`` says the box means close.
+        """
+        return self._api()
 
     def create_menu(self):
 
@@ -1211,7 +1229,7 @@ class equilibriumcharts(VizPlugin):
         # only once it exists: `GetNextKeyForFigure` reads the registry, so a
         # refused run (a case missing what this plugin needs) costs nothing and
         # the next run is handed the same number. Registered, the window is
-        # reachable from the Show/Hide and Delete menus like every other figure;
+        # reachable from the *Windows* menu and its *Delete* sub-menu like
         # measured before, `figureframes` stayed empty and the only way out of a
         # window was its own Exit entry, while each new click on the menu built
         # another one on top of the previous.

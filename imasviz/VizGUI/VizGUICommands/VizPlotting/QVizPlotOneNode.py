@@ -31,7 +31,7 @@ on, and the index pinned is the one the tree carries, because both come from the
 node itself rather than from whatever happened to be selected.
 
 The figure keys live in the namespaces the selection command uses (FigureTypes):
-one bookkeeping for the frames the new path knows how to fill, so the Show/Hide
+one bookkeeping for the frames the new path knows how to fill, so the
 and Delete menus, the submenu here and the frames themselves cannot disagree.
 """
 

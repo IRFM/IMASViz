@@ -294,12 +294,31 @@ where the window came from, by stamping the frame it registers:
                                           occurrence=occurrence)
 
 The **key** is not part of that record: it is the key the window is registered
-under in ``Viz_API.figureframes``, which is what the :guilabel:`Show/Hide` and
-:guilabel:`Delete` menus address it by -- measured, neither registered plugin
+under in ``Viz_API.figureframes``, which is what the :guilabel:`Windows` menu and
+its :guilabel:`Delete` lines address it by -- measured, neither registered plugin
 window knows its own key, so the session takes it from the bookkeeping. A window
 that is never registered in ``figureframes`` (a plain ``matplotlib`` window, like
 the one this tutorial draws) is not in the session at all, and the
-:guilabel:`Plot windows` menus do not reach it either.
+:guilabel:`Windows` menu does not reach it either.
+
+A registered window of your own should follow the same close rule as the rest of
+the application. A window inside the MDI area already does: the subwindow it sits
+in asks the api what its close box is worth. A top-level window -- one you show
+yourself, outside the MDI area -- has to answer that for itself, by mixing in
+``QVizClosableWindow`` and answering ``windowApi()`` with the api the window is
+registered in::
+
+    from imasviz.Viz_API import QVizClosableWindow
+
+    class MyPanel(QVizClosableWindow, QMainWindow):
+        def windowApi(self):
+            return self.api
+
+Without that, the close box hides the window and says nothing to anyone: it stays
+in ``figureframes``, so the *Windows* menu keeps naming a window that no gesture
+on screen can bring back. With it, the box hides the window by default, and closes
+it for good when the user sets ``Close_button_deletes=1`` -- see
+:ref:`user_preferences`.
 
 getEntries()
 """"""""""""

@@ -10,7 +10,9 @@
 import os
 import logging
 import sys
+import weakref
 import numpy as np
+import shiboken6
 
 from imasviz.VizUtils import (QVizGlobalOperations, FigureTypes,
                               QVizPreferences)
@@ -24,20 +26,130 @@ def getNodePath(node):
 
 
 class QVizMdiSubWindow(QMdiSubWindow):
-    """The MDI window a figure frame is embedded in.
+    """The MDI window a frame is embedded in -- a figure or a case view.
 
-    The window is what the user closes to get rid of a figure when no command is
-    involved, so it is what tells the api the key is free again. PySide6 6.6 does
-    not expose QMdiSubWindow.aboutToClose, hence the close event.
+    The window is what the user closes when no command is involved, so it is
+    what applies the close rule to the frame it holds. PySide6 6.6 does not
+    expose ``QMdiSubWindow.aboutToClose``, hence the close event.
+
+    A case view used to be embedded in a bare ``QMdiSubWindow``, which receives
+    no close event of its own: the close box hid the window and said nothing to
+    anyone. It is embedded here now so that the one rule reaches all three
+    families of window -- figures, case views, and the top-level windows a
+    plugin draws (:class:`QVizClosableWindow`).
     """
 
     def __init__(self, imas_viz_api):
         super(QVizMdiSubWindow, self).__init__()
-        self.imas_viz_api = imas_viz_api
+        # Held weakly, because the api reaches the frame this window is the
+        # parent of: a strong reference here closes a cycle through a Qt widget,
+        # and a widget freed by the cyclic collector is freed while Qt still
+        # owes it a paint event. The api lives as long as the session does --
+        # the menu controller that opened the case holds it.
+        self.imas_viz_api = weakref.ref(imas_viz_api)
 
     def closeEvent(self, event):
         super(QVizMdiSubWindow, self).closeEvent(event)
-        self.imas_viz_api.ForgetFigureOf(self.widget())
+        api = self.imas_viz_api()
+        if api is None:
+            return
+        if api.closeFromTitleBar(self.widget()):
+            # The frame is out of the bookkeeping: take the window with it, so
+            # the MDI area does not keep a hidden window nobody can reach. The
+            # hide comes first -- a hide reaches the children recursively, which
+            # is how the frames nested in this one leave the paint queue before
+            # Qt deletes them.
+            self.hide()
+            self.deleteLater()
+
+
+class QVizClosableWindow:
+    """The close rule for a window that is its own top level.
+
+    A plugin panel is registered like a figure and closed like a window, but it
+    is not inside the MDI area, so no :class:`QVizMdiSubWindow` sees its close
+    box. A plugin that draws such a window mixes this in and answers
+    ``windowApi()`` with the api it registers its window in.
+    """
+
+    def windowApi(self):
+        """The api the window is registered in, or None.
+
+        Left to the window: the framework cannot know where a plugin keeps its
+        collaborator, and a window that answers nothing is a window the close
+        box cannot take out of the bookkeeping.
+        """
+        return None
+
+    def closeEvent(self, event):
+        super().closeEvent(event)
+        api = self.windowApi()
+        if api is None:
+            return
+        api.closeFromTitleBar(self)
+
+
+class QVizWindowRecord:
+    """One window the user can see, as the *Windows* menu asks for it.
+
+    The frame and the api are both held weakly. The menu hands a record to a
+    QAction, and on a shot view that QAction lives in a menu bar the frame owns:
+    a strong reference either way is a cycle through a Qt widget, and that is
+    the shape that frees a widget on the cyclic collector while Qt still owes it
+    a paint event. A record whose frame is gone answers ``None`` and the line
+    does nothing -- the menu is rebuilt on every opening anyway.
+    """
+
+    def __init__(self, kindLabel, iconLabel, label, frame, figureKey, api):
+        """
+        Arguments:
+            kindLabel (str) : the group the line is drawn in -- a case view, or
+                              one of the names in ``FigureTypes.MENU_ORDER``
+            iconLabel (str) : the ``GlobalIcons`` name, or None
+            label     (str) : what the user reads on the line
+            frame     (QWidget) : the window's content
+            figureKey (str) : the key the window answers to, or None for a case
+                              view -- which is addressed by its frame
+            api       (Viz_API) : the bookkeeping the window lives in
+        """
+        self.kindLabel = kindLabel
+        self.iconLabel = iconLabel
+        self.label = label
+        self.figureKey = figureKey
+        self._frame = weakref.ref(frame)
+        self._api = weakref.ref(api)
+
+    def frame(self):
+        """The window's content, or None once Qt has taken it away.
+
+        A frame released with ``deleteLater`` keeps its Python wrapper as long as
+        anything else holds a reference to it, and asking that wrapper anything
+        then answers ``RuntimeError: Internal C++ object ... already deleted``. A
+        menu line opened before another gesture closed its window is exactly that
+        -- so the record answers nothing and the stale line costs nothing, which
+        is what :meth:`Viz_API.DeleteFigure` does for a key nobody holds.
+        """
+        frame = self._frame()
+        if frame is None or not shiboken6.isValid(frame):
+            return None
+        return frame
+
+    def api(self):
+        return self._api()
+
+    def visible(self):
+        """Whether this window is on the screen right now.
+
+        The same question ``mdiWindowOf`` answers, because that is what hides
+        and shows: a window the user took off the screen with its own close box,
+        a window the *Windows* menu hid, and a window nobody embedded are three
+        spellings of one state, and the line is unchecked for all three.
+        """
+        api, frame = self.api(), self.frame()
+        if api is None or frame is None:
+            return False
+        window = api.mdiWindowOf(frame)
+        return (window if window is not None else frame).isVisible()
 
 
 class Viz_API:
@@ -160,7 +272,10 @@ class Viz_API:
 
             # If MDI is present, add the DTV to it as a subwindow
             if self.getMDI() is not None:
-                subWindow = QMdiSubWindow()
+                # The same window class a figure is embedded in: the close box
+                # of a case view has to answer the same question it answers for
+                # a figure, and a bare QMdiSubWindow receives no close event.
+                subWindow = QVizMdiSubWindow(self)
                 subWindow.setWidget(dataTreeView)
 
                 self.getMDI().addSubWindow(subWindow)
@@ -172,7 +287,7 @@ class Viz_API:
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
             frame = dataTreeView.parent
-            # The frame may be hidden (Show/Hide) or its window may be: showing
+            # The frame may be hidden (a *Windows* menu line) or its window
             # the frame is not enough, since hiding the window hides everything
             # in it whether the frame is shown or not.
             window = self.mdiWindowOf(frame)
@@ -244,34 +359,132 @@ class Viz_API:
     def ShowHideFigure(self, figureKey):
         """Shows/Hides a figure.
 
-        :param figureKey: (str) A figure key (e.g. 'Figure:0)
+        The spelling the scripting API and the session commands use; the
+        *Windows* menu asks :meth:`showHideWindow` of the frame it drew a line
+        for. One verb between the two, because a figure, a case view and a
+        window a plugin drew differ in where they live, not in what hiding one
+        costs.
+
+        :param figureKey: (str) A figure key (e.g. 'SlicesPlot1')
         """
-        frame = self.figureframes[figureKey]
+        return self.showHideWindow(self.figureframes[figureKey])
+
+    def showHideWindow(self, frame):
+        """Take one window off the screen, or put it back.
+
+        Whether the frame sits in a subwindow or stands alone is asked, never
+        assumed -- the same question :meth:`mdiWindowOf` answers, for the same
+        reason: hiding the window hides everything in it, so showing a frame
+        whose window is hidden changes nothing on screen.
+
+        :param frame: the window's content
+        :returns: (bool) whether the window is on the screen afterwards
+        """
+        window = self.mdiWindowOf(frame)
+        target = window if window is not None else frame
+        if target.isVisible():
+            target.hide()
+        else:
+            target.show()
+            if window is not None:
+                frame.show()
+        return target.isVisible()
+
+    SHOTVIEW_KIND = ('Shot view', 'Figure')
+
+    def openWindows(self):
+        """Every window the user can see, in the order the menus draw them.
+
+        The one answer to "what is open". The two menu builders this replaces
+        each walked half of the bookkeeping and neither could name the other's
+        windows: a case view is in ``DTVframeList``, a figure is in
+        ``figureframes`` under one of the prefixes of ``FigureTypes.MENU_ORDER``.
+        A kind holding nothing is left out -- a group nobody can click is a group
+        that should not be drawn -- and a window no key holds is not on the
+        list, which is exactly what the close box used to leave behind.
+
+        :returns: (list) :class:`QVizWindowRecord` for each window, case views
+                          first, then the figures in ``MENU_ORDER`` order
+        """
+        windows = []
+        kindLabel, iconLabel = self.SHOTVIEW_KIND
+        for frame in list(self.DTVframeList):
+            label = frame.dataTreeView.dataSource.getLongLabel()
+            windows.append(QVizWindowRecord(kindLabel, iconLabel, label,
+                                            frame, None, self))
+        for kindLabel, iconLabel, figureType in FigureTypes.MENU_ORDER:
+            for figureKey in self.GetFiguresKeys(figureType):
+                windows.append(QVizWindowRecord(kindLabel, iconLabel,
+                                                figureKey,
+                                                self.figureframes[figureKey],
+                                                figureKey, self))
+        return windows
+
+    def forgetWindow(self, frame):
+        """Take a frame out of the bookkeeping: its key, or its case.
+
+        :param frame: the window's content
+        :returns: (bool) whether the frame was in the bookkeeping at all
+        """
+        figureKey = self.GetFigureKeyOf(frame)
+        if figureKey is not None:
+            self.ForgetFigure(figureKey)
+            return True
+        if frame in self.DTVframeList:
+            # The frame was the last one showing this case: the IDSs loaded for
+            # it go with it, which is what makes closing a case view cost more
+            # than hiding one -- and what the manual says out loud.
+            self.RemoveDTVFrame(frame)
+            return True
+        return False
+
+    def closeFromTitleBar(self, frame):
+        """What the close box of a window costs the frame it was clicked on.
+
+        With ``Close_button_deletes`` off -- the default -- nothing: the window
+        is taken off the screen and stays where it is, so the *Windows* menu
+        keeps naming it (unchecked) and clicking the line puts it back, and a
+        saved session writes it hidden. Measured before the rule existed, a
+        curve figure closed with its own box left ``figureframes`` empty, its
+        window hidden inside the MDI area, its frame alive with no key reaching
+        it, and the next curve figure of that kind took ``SlicesPlot1`` again:
+        two windows under one name, one of them unreachable by any gesture.
+
+        With it on, the frame leaves the bookkeeping and the caller releases the
+        window it owns -- :class:`QVizMdiSubWindow` does, hiding it first, so
+        the nested frames leave the paint queue before Qt deletes them.
+
+        :returns: (bool) whether the window is to be released
+        """
+        if not QVizPreferences.Close_button_deletes:
+            return False
+        return self.forgetWindow(frame)
+
+    def closeWindow(self, frame):
+        """Take one window off the screen and out of the bookkeeping for good.
+
+        The *Delete* entry of the *Windows* menu. It is the same shape as what
+        the close box does when the preference says to close, so the two cannot
+        disagree about what a closed window leaves behind.
+        """
         window = self.mdiWindowOf(frame)
         if window is not None:
-            # Hide/Show MDI subwindow
-            if window.isVisible():
-                window.hide()  # the window the frame is embedded in
-            else:
-                # To show the figure, closed with X button, then both MDI
-                # subwindow AND the embedded plot frame must be shown
-                window.show()
-                frame.show()
+            window.hide()
+            window.deleteLater()
         else:
-            if frame.isVisible():
-                frame.hide()
-            else:
-                frame.show()
+            frame.hide()
+            frame.deleteLater()
+        return self.forgetWindow(frame)
 
     def mdiWindowOf(self, frame):
         """The MDI window a frame is embedded in, or None if it stands alone.
 
         A frame lives either inside a :class:`QMdiSubWindow` handed out by
-        `addPlotWidgetToMDI`, or on its own. Show/Hide and Delete have to know
+        `addPlotWidgetToMDI`, or on its own. The *Windows* menu and its
         which, and the old test was the *name* of the top-level window
         ("IMASViz root window"), which only holds while the frame sits under the
         application's main window. Measured on a plain MDI area, that test fails
-        and both entries then act on the frame instead of the window: Show/Hide
+        and both entries then act on the frame instead of the window: a line
         hides the frame and leaves an empty window on screen, and Delete closes
         the frame and leaves the window visible. Asking what the parent *is*
         says the same thing about the application's windows and the right thing
@@ -320,7 +533,7 @@ class Viz_API:
         Counting the open figures instead -- what this did when every kind had
         its own accessor -- hands back a number that is already taken as soon as
         one of the lower figures was deleted. Two figures then share a key, and
-        the key is how show/hide and delete address a figure: one of the two
+        the key is how the *Windows* menu and its *Delete* lines address a
         becomes unreachable.
 
         :param figureType: (str) a FigureTypes prefix
@@ -335,7 +548,7 @@ class Viz_API:
 
         Left free, that is the next key of the kind. Named, it is the key a
         session file recorded -- and the reason a restoring command may name one
-        is that a key is not a label but the identity a menu addresses: show/hide,
+        is that a key is not a label but the identity a menu addresses:
         delete and "add this quantity to that figure" all read `figureframes` by
         it, so replaying the gestures of a session without its keys would put the
         same windows under other names (measured: `SlicesPlot1` came back as
@@ -392,7 +605,7 @@ class Viz_API:
         """Take a figure out of the bookkeeping, leaving its window alone.
 
         The window is already going away: this is what the user closing it does.
-        A frame left registered stays in the show/hide and delete menus as a
+        A frame left registered stays in the *Windows* menu as a
         figure that is not there, and keeps a number the next figure of that kind
         is then not entitled to.
 
@@ -414,19 +627,21 @@ class Viz_API:
         return None
 
     def DeleteFigure(self, figureKey):
-        """Deletes the specified figure.
+        """Take a figure out of the run: its window and its key both go.
 
-        :param figureKey: A figure key (e.g. 'Figure:0)
+        The relay the plot commands use when the read refuses what they were
+        about to show -- they started the window, and it is theirs to take back.
+        The *Windows* menu asks :meth:`closeWindow` of the frame it drew a line
+        for; both go through it, so a deleted figure leaves the same thing behind
+        whichever gesture asked for it.
+
+        :param figureKey: A figure key (e.g. 'SlicesPlot1')
+        :returns: (bool) whether that key held a figure at all
         """
-        if figureKey in self.figureframes:
-            frame = self.figureframes[figureKey]
-            window = self.mdiWindowOf(frame)
-            if window is not None:
-                window.hide()
-                window.deleteLater()
-            else:
-                frame.close()
-        self.ForgetFigure(figureKey)
+        if figureKey not in self.figureframes:
+            return False
+        self.closeWindow(self.figureframes[figureKey])
+        return True
 
     def GetFigureKey(self, userKey, figureType):
         """Get the figure key.
@@ -760,14 +975,14 @@ class Viz_API:
     def ForgetFigureOf(self, plotWidget):
         """Take a frame out of the bookkeeping under whichever key holds it.
 
-        Closing the window is not going through DeleteFigure: no command sees it,
-        so without this the frame stays in the registry, keeps a number the next
-        figure of that kind is not entitled to, and stays in the menus as a
-        figure that is not there any more.
+        Kept for the scripts that close a window without going through a
+        command. The close box does not call this: it calls
+        :meth:`closeFromTitleBar`, which is the one that decides whether the
+        window is only taken off the screen or really gone -- and a frame that
+        is only hidden keeps its key, so it stays in the *Windows* menu and in
+        the session, under the same name.
         """
-        figureKey = self.GetFigureKeyOf(plotWidget)
-        if figureKey is not None:
-            self.ForgetFigure(figureKey)
+        return self.forgetWindow(plotWidget)
 
     def addPlotWidgetToMDI(self, plotWidget):
         """Embeds the plotWidget inside MDI subwindow, and puts it on screen.
@@ -778,7 +993,7 @@ class Viz_API:
         case with the area shown, three of the four plot entries — the selected
         signals as slices, the table view and the stacked view — registered and
         embedded a window that stayed invisible: the figure was in the
-        bookkeeping, named in the Show/Hide and Delete menus, and never reached
+        bookkeeping, named by the *Windows* menu, and never reached
         the screen. The one entry that worked did it by calling `show()` itself,
         which is why the fix lives here: whoever embeds a figure means the user
         to see it.

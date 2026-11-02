@@ -160,7 +160,7 @@ class QVizStackedPlot(QWidget):
         """Record the selection entry a panel answers for.
 
         The figure registry needs it to answer "which quantity is this window
-        showing", which is what the Show/Hide and Delete entries list.
+        showing", which is what the *Windows* menu lists.
         """
         panel = self.panelFor(treeNode)
         if panel is None:

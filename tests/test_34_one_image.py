@@ -235,7 +235,8 @@ def test_the_figure_is_recorded_under_the_key_its_title_carries(view):
 def test_no_legacy_image_key_is_produced(view):
     plotOne(view, _inTime())
 
-    # Two namespaces for one kind of window is two Show/Hide menus and one
+    # Two namespaces for one kind of window is two lines in the *Windows*
+    # menu and one
     # figure the "add to" entries cannot fill. Spelled as a prefix, because the
     # 'Image:' and the 'Figure:' namespaces are gone: an entry in FigureTypes
     # for either would outlive the only frame that ever produced one.

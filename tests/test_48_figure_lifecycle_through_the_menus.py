@@ -8,34 +8,41 @@
 # ****************************************************
 
 """The life of a figure window, from the menu that shows it to the menu that
-deletes it.
+closes it.
 
-Show/Hide and Delete are the only way a user gets rid of a window they did not
-open themselves, so what is pinned here is the whole span: the two menus when
-nothing is open, the entries they offer once three kinds are drawn, what one
-entry changes on screen, and what a deletion leaves in the two registries the
-menus are built from. Measured on the reference case (``west`` 54924, ``equilibrium``
-occurrence 0, **3 368** signals), the commands handed out ``SlicesPlot1``,
-``TablePlotView:1`` and ``StackedPlotView:1``, and with no figure open both
-menus came back disabled with **0** entry each.
+Show/hide and delete are the only way a user gets rid of a window they did not
+open themselves, so what is pinned here is the whole span: the menu when nothing
+is open, the lines it offers once three kinds are drawn, what one line changes on
+screen, and what a deletion leaves in the two registries the menu is built from.
+Measured on the reference case (``west`` 54924, ``equilibrium`` occurrence 0,
+**3 368** signals), the commands handed out ``SlicesPlot1``, ``TablePlotView:1``
+and ``StackedPlotView:1``, and with no figure open the *Windows* menu came back
+disabled with **0** line.
 
 Three measured properties of this path are worth naming before they are pinned.
 
-Show/Hide acts on the MDI window, and only when the widget's top-level window is
-the application's root: the code asks ``frame.window().objectName() == "IMASViz
-root window"``, and a bare :class:`QMdiArea` does not answer that. Measured on
-such a bare area, the entry did nothing at all -- the frame and its subwindow
-stayed invisible through two triggers. So the session here is built the way the
-application builds it: a :class:`QMainWindow` carrying that object name, with the
-MDI area inside it.
+Hiding acts on the MDI window, and only when the widget's top-level window is
+found for what it *is*: the code used to ask ``frame.window().objectName() ==
+"IMASViz root window"``, and a bare :class:`QMdiArea` does not answer that.
+Measured on such a bare area, the entry did nothing at all -- the frame and its
+subwindow stayed invisible through two triggers. So the session here is built the
+way the application builds it: a :class:`QMainWindow` carrying that object name,
+with the MDI area inside it, and the bare-area case is driven on purpose by
+``test_showHide_and_delete_act_on_the_window_under_any_MDI_area``.
 
-Delete takes the figure out of *both* registries (``figureframes`` and
+Deleting takes the figure out of *both* registries (``figureframes`` and
 ``figToNodes``), but the ``QMdiSubWindow`` it hides stays a child of the area
-until ``deleteLater`` runs, so a window count right after a delete still lists
-it -- hidden. And the number of a deleted figure is only given back when its
-kind is empty: deleting the middle of ``SlicesPlot1..3`` left the next curve at
+until ``deleteLater`` runs, so a window count right after a delete still lists it
+-- hidden. And the number of a deleted figure is only given back when its kind is
+empty: deleting the middle of ``SlicesPlot1..3`` left the next curve at
 ``SlicesPlot4``, while deleting the only table view put the next one back at
 ``TablePlotView:1``.
+
+Closing a window with its own box is a third gesture, and since T52 it is not the
+same as deleting: it hides, and the window keeps the key the menu addresses it
+by. That half belongs to ``test_86``, which drives it for the three families of
+window; what stays here is that a hidden figure is still a figure -- the same
+key, the same registries, and its own line on the menu, unchecked.
 
 One gesture is not reproducible here: the ``QInputDialog`` that asks for a time
 slice index, and the modal ``exec_()`` of the tree's context menu. The menu is
@@ -53,8 +60,8 @@ from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
     import QVizLoadOccurrence
 from imasviz.VizGUI.VizGUICommands.VizDataSelection.QVizSelectNodes \
     import QVizSelectNodes
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
-    import QVizSignalHandling
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu import \
+    QVizWindowMenu
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices \
     import QVizPlotAsSlices
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked \
@@ -81,19 +88,22 @@ CURVE_KEY = FigureTypes.CURVEPLOTTYPE + '1'
 TABLE_KEY = FigureTypes.TABLEPLOTTYPE + '1'
 STACKED_KEY = FigureTypes.STACKEDPLOTTYPE + '1'
 
-# The two menus are walked by figure kind, in FigureTypes.MENU_ORDER. Only the
-# kinds with an open figure are listed; the order they arrive in is pinned in
-# test_30_figure_registry, not here.
+DELETE = QVizWindowMenu.DELETE
+ALL = QVizWindowMenu.ALL
+
+# The menu walks the kinds in FigureTypes.MENU_ORDER and lists only the ones with
+# an open window. The order they arrive in is pinned in test_30_figure_registry,
+# not here.
 pytestmark = [pytest.mark.case, pytest.mark.dd, pytest.mark.ui]
 
 
 class Session:
-    """One application session, driven through the menus of its shot view.
+    """One application session, driven through the menu of its shot view.
 
-    The root window carries the object name ``Viz_API.ShowHideFigure`` compares
-    against: without it the Show/Hide entry changes nothing on screen, which is
-    the first number this file measured. Everything the session builds is handed
-    to :func:`support.ownership.keep`, because a frame the harness drops can be
+    The root window carries the object name the api used to compare against:
+    without it the hide entry changes nothing on screen, which is the first
+    number this file measured. Everything the session builds is handed to
+    :func:`support.ownership.keep`, because a frame the harness drops can be
     painted after it is gone.
     """
 
@@ -129,11 +139,11 @@ class Session:
             self.api.addPlotWidgetToMDI(frame)
         return frames
 
-    def menus(self):
-        """The Show/Hide and Delete menus, as the right click builds them."""
+    def menu(self):
+        """The *Windows* menu, as a menu bar fills it -- on ``aboutToShow``."""
         menu = QMenu()
         ownership.keep(menu)
-        QVizSignalHandling(dataTreeView=self.view).menusShowHideAndDelete(menu)
+        QVizWindowMenu(menu, self.api).show()
         return menu
 
     def windows(self):
@@ -186,24 +196,63 @@ def titles(menu):
     return [action.text() for action in menu.actions()]
 
 
+def windowTitles(menu):
+    """The lines that name a window, the fixed entries of the menu left out.
+
+    The shot view of the session is one of those lines -- the *Windows* menu
+    lists the case views and the figures together -- so a test that counts
+    figures says so by naming the case first.
+    """
+    fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL, DELETE,
+             QVizWindowMenu.NEXT, QVizWindowMenu.PREVIOUS)
+    return [action.text() for action in menu.actions()
+            if not action.isSeparator() and action.text() not in fixed]
+
+
+def caseTitle(session):
+    """The line the session's own case view is named by."""
+    return session.view.dataSource.getLongLabel()
+
+
+def allOf(menu, figureKey):
+    """The *All* line of the group that figureKey opens in the *Delete* menu.
+
+    The groups are separated, not nested, and a group opens with the line of its
+    first window -- so the key says which group is meant.
+    """
+    groups, current = {}, None
+    for action in subNamed(menu, DELETE).actions():
+        if action.isSeparator():
+            current = None
+        elif current is None:
+            current = action.text()
+            groups[current] = []
+        if action.text() == ALL:
+            groups[current].append(action)
+    if figureKey not in groups or not groups[figureKey]:
+        raise AssertionError('no %r line for the group of %r in %r'
+                             % (ALL, figureKey, titles(subNamed(menu, DELETE))))
+    return groups[figureKey][0]
+
+
 # --------------------------------------------------------------------------
 # Nothing open yet
 # --------------------------------------------------------------------------
 
-def test_with_no_figure_open_both_menus_are_disabled(session, qapp):
-    menu = session.menus()
+def test_with_no_figure_open_the_menu_names_the_case_view_it_holds(session, qapp):
+    menu = session.menu()
 
-    # The two entries are always there -- a user needs to see that there is
-    # nothing to close -- but they carry no sub-menu and cannot be opened.
-    assert titles(menu) == ['Show/Hide', 'Delete']
-    for action in menu.actions():
-        assert action.isEnabled() is False
-        assert len(action.menu().actions()) == 0
+    # Nothing has been drawn yet, but the session does hold a window: the case
+    # view is a window like any other, and this is the only menu that names it.
+    # An empty run leaves the entry on the bar, disabled and holding no line --
+    # which is `test_86`, on a session with no case at all.
+    assert windowTitles(menu) == [caseTitle(session)]
+    assert menu.isEnabled() is True
     assert session.api.figureframes == {}
 
 
 # --------------------------------------------------------------------------
-# Three kinds drawn, and what the menus offer for them
+# Three kinds drawn, and what the menu offers for them
 # --------------------------------------------------------------------------
 
 def test_the_three_kinds_are_registered_under_their_own_prefix(session, qapp):
@@ -221,45 +270,53 @@ def test_the_three_kinds_are_registered_under_their_own_prefix(session, qapp):
     assert len(session.windows()) == 3
 
 
-def test_delete_offers_one_entry_per_figure_plus_all_and_showHide_does_not(qapp,
-                                                                          session):
-    menu = session.menus()
-    showHide = subNamed(menu, 'Show/Hide')
-    delete = subNamed(menu, 'Delete')
+def test_the_menu_holds_one_line_per_figure_and_delete_groups_them(qapp,
+                                                                  session):
+    menu = session.menu()
+    delete = subNamed(menu, DELETE)
 
-    assert showHide.isEnabled() and delete.isEnabled()
-    # Hiding every figure of a kind is not an entry: there is no "hide all",
-    # only "delete all". Measured, the Show/Hide submenus carry the figures and
-    # nothing else.
-    for label, key in (('SlicesPlot', CURVE_KEY),
-                       ('TablePlotView', TABLE_KEY),
-                       ('StackedPlotView', STACKED_KEY)):
-        assert titles(subNamed(showHide, label)) == [key]
-        assert titles(subNamed(delete, label)) == [key, 'All']
+    # One line per window, at the top level, checked because the window is on the
+    # screen: the state of the window is the state of its line, which is the half
+    # the old ``Show/Hide`` menu never said.
+    assert windowTitles(menu) == [caseTitle(session), TABLE_KEY, STACKED_KEY,
+                              CURVE_KEY]
+    for action in menu.actions():
+        if action.text() in (TABLE_KEY, STACKED_KEY, CURVE_KEY):
+            assert action.isCheckable() and action.isChecked()
+
+    # Deleting is the other question, so it is its own sub-menu: one line per
+    # window and one *All* per kind, which is what the old ``Delete`` menu did
+    # without listing every window twice.
+    assert titles(delete) == [caseTitle(session), ALL, '',
+                              TABLE_KEY, ALL, '', STACKED_KEY, ALL, '',
+                              CURVE_KEY, ALL]
 
 
 # --------------------------------------------------------------------------
-# Show/Hide, triggered the way the click triggers it
+# Hiding, triggered the way the click triggers it
 # --------------------------------------------------------------------------
 
-def test_showHide_hides_the_mdi_window_and_the_figure_with_it(session, qapp):
+def test_hiding_takes_the_mdi_window_and_the_figure_with_it(session, qapp):
     frame = session.api.figureframes[CURVE_KEY]
     window = frame.parent()
     assert window in session.windows() and window.isVisible()
 
-    showHide = subNamed(session.menus(), 'Show/Hide')
-    actNamed(subNamed(showHide, 'SlicesPlot'), CURVE_KEY).trigger()
+    actNamed(session.menu(), CURVE_KEY).trigger()
     qapp.processEvents()
     assert window.isVisible() is False
     assert frame.isVisible() is False
 
-    actNamed(subNamed(showHide, 'SlicesPlot'), CURVE_KEY).trigger()
+    # The line now says what the screen says, because the menu is redrawn on
+    # every opening.
+    assert actNamed(session.menu(), CURVE_KEY).isChecked() is False
+
+    actNamed(session.menu(), CURVE_KEY).trigger()
     qapp.processEvents()
     assert window.isVisible() is True
     assert frame.isVisible() is True
 
-    # Show/Hide is a view of the figure, not a change of state: the registries
-    # are what they were, so the figure can be hidden and shown again.
+    # Hiding is a view of the figure, not a change of state: the registries are
+    # what they were, so the figure can be hidden and shown again.
     assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == [CURVE_KEY]
 
 
@@ -294,8 +351,7 @@ def test_showHide_and_delete_act_on_the_window_under_any_MDI_area(qapp):
 
     api.ShowHideFigure('SlicesPlot1')
     qapp.processEvents()
-    assert window.isVisible() is True
-    assert frame.isVisible() is True
+    assert window.isVisible() is True and frame.isVisible() is True
 
     api.DeleteFigure('SlicesPlot1')
     qapp.processEvents()
@@ -313,8 +369,7 @@ def test_deleting_a_figure_takes_it_out_of_both_registries(session, qapp):
     window = frame.parent()
     other = session.api.figureframes[TABLE_KEY]
 
-    actNamed(subNamed(subNamed(session.menus(), 'Delete'), 'SlicesPlot'),
-             CURVE_KEY).trigger()
+    actNamed(subNamed(session.menu(), DELETE), CURVE_KEY).trigger()
     qapp.processEvents()
 
     assert CURVE_KEY not in session.api.figureframes
@@ -329,20 +384,15 @@ def test_deleting_a_figure_takes_it_out_of_both_registries(session, qapp):
 
 
 def test_a_deleted_figure_is_offered_no_more(session, qapp):
-    menu = session.menus()
-
-    assert titles(subNamed(menu, 'Show/Hide')) == ['TablePlotView',
-                                                   'StackedPlotView']
-    assert titles(subNamed(menu, 'Delete')) == ['TablePlotView',
-                                                'StackedPlotView']
+    assert windowTitles(session.menu()) == [caseTitle(session), TABLE_KEY,
+                                            STACKED_KEY]
 
 
 def test_deleting_all_of_a_kind_leaves_the_other_kind(session, qapp):
     stacked = session.api.figureframes[STACKED_KEY]
     ownership.keep(stacked)
 
-    actNamed(subNamed(subNamed(session.menus(), 'Delete'), 'StackedPlotView'),
-             'All').trigger()
+    allOf(session.menu(), STACKED_KEY).trigger()
     qapp.processEvents()
 
     assert session.api.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE) == []
@@ -363,13 +413,12 @@ def test_the_number_of_a_figure_in_the_middle_is_not_given_back(session, qapp):
 
     middle = keys[0]
     ownership.keep(session.api.figureframes[middle])
-    actNamed(subNamed(subNamed(session.menus(), 'Delete'), 'SlicesPlot'),
-             middle).trigger()
+    actNamed(subNamed(session.menu(), DELETE), middle).trigger()
     qapp.processEvents()
 
-    # The key is how Show/Hide and Delete address a figure, so a number already
-    # handed to a live figure cannot be handed twice: the next curve is one past
-    # the highest still open, not the first hole.
+    # The key is how the menu addresses a figure, so a number already handed to a
+    # live figure cannot be handed twice: the next curve is one past the highest
+    # still open, not the first hole.
     assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == \
         ['SlicesPlot2']
     assert session.api.GetNextKeyForFigure(FigureTypes.CURVEPLOTTYPE) == \
@@ -382,8 +431,7 @@ def test_a_kind_emptied_by_a_delete_hands_its_number_to_the_next_figure(session,
     keys = session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE)
     for key in keys:
         ownership.keep(session.api.figureframes[key])
-        actNamed(subNamed(subNamed(session.menus(), 'Delete'), 'SlicesPlot'),
-                 key).trigger()
+        actNamed(subNamed(session.menu(), DELETE), key).trigger()
     qapp.processEvents()
     assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == []
 
@@ -397,7 +445,7 @@ def test_a_kind_emptied_by_a_delete_hands_its_number_to_the_next_figure(session,
     assert drawn[0].parent().windowTitle() == FigureTypes.CURVEPLOTTYPE + '1'
 
 
-def test_the_X_of_a_window_gives_its_key_back_as_a_delete_does(session, qapp):
+def test_the_X_of_a_window_hides_it_and_keeps_its_key(session, qapp):
     key = session.api.GetFiguresKeys(FigureTypes.TABLEPLOTTYPE)[0]
     frame = session.api.figureframes[key]
     ownership.keep(frame)
@@ -406,13 +454,22 @@ def test_the_X_of_a_window_gives_its_key_back_as_a_delete_does(session, qapp):
     window.close()
     qapp.processEvents()
 
-    # Closing the window is the user's own gesture, with no command involved:
-    # the subwindow tells the api the key is free, and both registries lose it,
-    # exactly as the Delete entry does.
-    assert key not in session.api.figureframes
-    assert key not in session.api.figToNodes
-    assert session.api.GetNextKeyForFigure(FigureTypes.TABLEPLOTTYPE) == \
-        FigureTypes.TABLEPLOTTYPE + '1'
+    # The box is the user's gesture for "get this out of my way", and a figure
+    # costs a read of the case to redraw, so it hides. The key stays with the
+    # window: the menu still names it, unchecked, and clicking the line puts it
+    # back. Measured before the rule, the box left ``figureframes`` empty, the
+    # window hidden inside the area, and the next figure of that kind was handed
+    # this key again -- two windows under one name, one of them unreachable.
+    assert key in session.api.figureframes
+    assert key in session.api.figToNodes
+    assert session.api.GetNextKeyForFigure(FigureTypes.TABLEPLOTTYPE) != key
+    # The menu still names the window, and says that it is off the screen.
+    assert key in windowTitles(session.menu())
+    assert actNamed(session.menu(), key).isChecked() is False
+
+    actNamed(session.menu(), key).trigger()
+    qapp.processEvents()
+    assert window.isVisible() is True
 
 
 def test_deleting_a_key_that_is_no_longer_registered_costs_nothing(session,

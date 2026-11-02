@@ -6,3 +6,4 @@ from .QVizFileMenu import *
 from .QVizOccurrenceMenu import *
 from .QVizPluginMenu import *
 from .QVizSignalHandling import *
+from .QVizWindowMenu import *

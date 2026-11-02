@@ -17,6 +17,8 @@ Few user preferences options are available:
 - the color of nodes containing data (default color is blue) can be customized (not available currently for UDA; this is because UDA does not provide the information to know if a remote IMAS field contains data)
 - the session a run is closed with can be kept automatically, and offered back at the next start (not kept by default)
 - the theme the application is dressed with can be set to light (default) or dark
+- the box in the corner of a window can take that window off the screen (default)
+  or close it for good
 
 
 To change user preferences, you need to create a text file named 'preferences' in your ~/.imasviz folder with
@@ -34,7 +36,9 @@ the following content:
 
 #Theme=light
 
-These are the default values of the 6 currently available options.
+#Close_button_deletes=0
+
+These are the default values of the 7 currently available options.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -128,7 +132,25 @@ black does not read well on white, and the same palette would be worn on both.
 The name is matched without regard to case, so ``Theme=Dark`` works. A name that
 is neither of the two is named in the log panel and leaves the default standing.
 
-A theme changes colours and no size. The band along the edge of a window that
+Close_button_deletes option
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The box in the corner of a window title bar takes that window off the screen and
+keeps it: the *Windows* menu still names it, unchecked, clicking that line puts it
+back, and a saved session writes it hidden. See :ref:`other_GUI_features`.
+
+Setting Close_button_deletes to 1 makes that box close the window for good -- out
+of the menu, out of the session, and, for a case view, out of the case: the IDSs
+that were loaded for it go with the last view that was showing it. It is the same
+thing the *Delete* line of the *Windows* menu does.
+
+Hiding is the default because a plot window costs a read of the case to redraw,
+and the box is what most users reach for when they want a window out of the way
+rather than one thrown away.
+
+The switch answers 0 or 1. Anything else is named in the log panel and leaves the
+default standing -- ``Close_button_deletes`` will not read ``2`` as a third state,
+and will not guess what ``purple`` was meant to say. The band along the edge of a window that
 resizes it, the arrows of the data tree, the scroll bars and the separators
 between panels answer the same numbers in both themes, set for a hand holding a
 stylus; see :ref:`other_GUI_features`. The title bar of a window is drawn by the

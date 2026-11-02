@@ -118,7 +118,7 @@ class QVizPlotAsStacked(QVizAbstractCommand):
         return True if self.plotAxis == 'TIME' else None
 
     def newFigure(self):
-        # The key is the name the Show/Hide and Delete menus address this window
+        # The key is the name the *Windows* menu and its *Delete* sub-menu address
         # by, so a session that names one gets it: handing out the next key would
         # put the window of a restored session somewhere else than where its file
         # says it is.

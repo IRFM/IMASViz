@@ -13,41 +13,67 @@ Other GUI features
 
 Other :guilabel:`IMASViz` GUI features are listed here.
 
-Hide/Show Plot Window
----------------------
+The Windows menu
+----------------
 
-To **hide** or **show** any of the plot windows (:guilabel:`Figure`,
-:guilabel:`Table Plot View` etc.), first right-click on any
-signal node. From the shown pop-up menu, select the command
-:guilabel:`Show/Hide` |icon_showHide| and select the plot window you wish to
-show or hide.
+Every window the run holds is listed once, under :guilabel:`Windows`. That entry
+is on the menu bar of the application window -- the bar along the top of
+:guilabel:`IMASViz`, on screen whatever you are looking at -- and on the menu bar
+of every case view, where the same list is closer to the work.
+
+.. list-table::
+   :header-rows: 0
+
+   * - the name of a window
+     - one line per window: a case view by the case it shows, a plot window by the
+       key its title carries. The line is **checked** while the window is on the
+       screen, and clicking it hides a shown window or shows a hidden one. The
+       windows of one kind are grouped together, case views first.
+   * - :guilabel:`Show all` / :guilabel:`Hide all`
+     - the same for every window at once.
+   * - :guilabel:`Delete`
+     - one line per window, again grouped by kind, and one :guilabel:`All` per
+       group.
+   * - :guilabel:`Next window` / :guilabel:`Previous window`
+     - on the application bar only, with :kbd:`Ctrl+Tab` and
+       :kbd:`Ctrl+Shift+Tab`.
+
+The check mark reports the screen, not the menu: a window taken off the screen by
+its own close box, or by a gesture that never went through the menu, shows the
+same unchecked line.
 
 .. note::
-   Shown plot windows will be hidden while hidden windows will be shown.
-
-.. figure:: images/DTV_popupmenu_show_hide.png
-   :align: center
-   :scale: 75%
-
-   Show/Hide plot window.
-
-Delete Plot Window
-------------------
-
-To delete any of the plot windows, first right-click on any signal node.
-From the shown pop-up menu, select the command
-:guilabel:`Delete` and select the plot window you wish to delete or delete
-all plot windows of certain type (:guilabel:`Figure`,
-:guilabel:`Table Plot View` etc.).
+   Hiding a window is not closing it. It keeps the data it read from the case, it
+   keeps the key its title shows, and a saved session writes it hidden and puts it
+   back hidden.
 
 .. warning::
-   The plot window will be deleted permanently.
+   :guilabel:`Delete` takes a window out of the run for good. On a case view it
+   closes the case: the IDSs that were loaded for it go with the last view that
+   was showing it, so drawing one of its quantities again means reading the case
+   again.
 
-.. figure:: images/DTV_popupmenu_delete.png
-   :align: center
-   :scale: 75%
+Closing a window with its own box
+---------------------------------
 
-   Delete plot window.
+The box in the corner of a window's title bar **hides** the window: it leaves the
+screen, stays on the :guilabel:`Windows` menu -- unchecked -- and clicking that
+line puts it back where it was, with the curves it had already read. A plot
+window costs a read of the case to redraw, and the box is what most users reach
+for when they want a window out of the way rather than one thrown away.
+
+To make the box close the window for good instead, add this line to
+:file:`~/.imasviz/preferences` (see :ref:`user_preferences`)::
+
+    Close_button_deletes=1
+
+It then does what :guilabel:`Delete` does: the window leaves the menu, the
+session, and the case data it was holding.
+
+The three families of window -- a case view, a plot window, and the window a
+plugin draws -- follow that one rule. A plugin that draws a window of its own
+outside the MDI area has to say so: see
+:ref:`plugin_answers_and_sessions`.
 
 Export IDS
 ----------
@@ -159,18 +185,23 @@ size etc.
 Hide/Show/Delete DTV
 --------------------
 
-This feature allows the user to either hide, show or delete existing
-**Data Tree Views** (DTVs).
+A **Data Tree View** (DTV) -- the case view a shot and a run were opened into --
+is a window like any other, so it is on the :ref:`Windows menu
+<other_GUI_features>` beside the plot windows: its line is the case it shows,
+clicking it hides the view or brings it back, and :guilabel:`Delete` closes the
+case for good.
 
-This feature is available from the starting dialog window (the one where the
-database parameters **user**/**database**/**shot**/**run** are being set) by
-right clicking anywhere inside the window. A popup menu will be shown displaying
-those available options.
+It used to be elsewhere, and only there: those three commands were on the
+right-click pop-up of the starting dialog (the one where the database parameters
+**user**/**database**/**shot**/**run** are set), which was the only place in the
+application able to bring a hidden case view back -- on a panel that looks like a
+form, and nowhere you would right-click looking for a menu. The pop-up now offers
+the databases and nothing else.
 
-.. figure:: images/ShowHideDeleteDTV_1.png
-   :align: center
-
-   :guilabel:`Show/Hide/Delete DTV` popup menu.
+.. note::
+   Hiding a case view takes the menu bar it owns off the screen with it, which is
+   why the list of windows is also on the application bar: a hidden view cannot
+   hide the gesture that brings it back.
 
 .. _save_load_session:
 
@@ -240,9 +271,9 @@ parameters.
 | that entry was given                | so nothing is asked of the user again   |
 +-------------------------------------+-----------------------------------------+
 
-The key of a window is not a label: it is the name the :guilabel:`Show/Hide` and
-:guilabel:`Delete` menus address it by, and the name the *Plot X to -> Figure*
-menu offers when a quantity is added to a window that is already open. A saved
+The key of a window is not a label: it is the name the :guilabel:`Windows` menu
+and its :guilabel:`Delete` lines address it by, and the name the *Plot X to ->
+Figure* menu offers when a quantity is added to a window that is already open. A saved
 session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
 :guilabel:`SlicesPlot1`, and the menus still name one line for it.
 

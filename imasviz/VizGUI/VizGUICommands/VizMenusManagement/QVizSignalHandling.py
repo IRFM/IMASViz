@@ -11,7 +11,7 @@ from functools import partial
 import re, logging
 from PySide6.QtCore import QObject, Slot
 from PySide6.QtGui import QAction
-from PySide6.QtWidgets import QMenu, QApplication, QStyle
+from PySide6.QtWidgets import QMenu, QApplication
 from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsSlices import QVizPlotAsSlices
@@ -94,7 +94,6 @@ class QVizSignalHandling(QObject):
                 self.menuExploreThisTensor(self.contextMenu)
             if signal:
                 self.contextMenu.addMenu(self.menuUnselectSignalNodes())
-            self.menusShowHideAndDelete(self.contextMenu)
             self.menusPlugins()
             return self.contextMenu
 
@@ -132,8 +131,13 @@ class QVizSignalHandling(QObject):
             self.contextMenu.addMenu(
                 self.menuPlotSelectedSignalNodes(parentMenu=self.contextMenu))
 
-        # - Add menu for handling show/hide and deletion of the open figures
-        self.menusShowHideAndDelete(self.contextMenu)
+        # The open windows are not listed here any more: this pop-up is about
+        # the node under the mouse, and the windows of the run are on the
+        # *Windows* menu -- the application's bar and each shot view's, both
+        # filled by ``QVizWindowMenu`` from ``Viz_API.openWindows``. It used to
+        # be the widest part of this menu, offered whether or not anything was
+        # open, and one of three places a user had to think about before knowing
+        # where to look.
         self.menusPlugins()
 
         # TODO:
@@ -408,7 +412,7 @@ class QVizSignalHandling(QObject):
 
         # Built as a child of the menu it belongs to: the QMenu that addMenu()
         # makes from a title is owned by Python, which is the dangling submenu T0
-        # removed from the Show/Hide menus -- there to look at, gone to click.
+        # removed from the *Windows* menu -- there to look at, gone to click.
         #
         # The submenu is named after the frame the entry is about to open, since
         # the two frames answer different questions and nothing else in the menu
@@ -524,7 +528,7 @@ class QVizSignalHandling(QObject):
             # carries the controls for the axes its frame leaves out.
             #
             # Submenus built as QMenu(title, parent) -- the dangling submenu T0
-            # removed from the Show/Hide menus.
+            # removed from the *Windows* menu.
             subMenu_figure = QMenu('Figure', menu)
             subMenu_figure.setIcon(GlobalIcons.getCustomQIcon(QApplication,
                                                               'Figure'))
@@ -640,82 +644,12 @@ class QVizSignalHandling(QObject):
 
         return menu
 
-    def menusShowHideAndDelete(self, menu):
-        """Add the Show/Hide and Delete entries for the figures that are open.
-
-        The kinds of figure are listed once, next to the key prefixes they are
-        registered under (FigureTypes.MENU_ORDER), and the two menus walk that
-        list: a kind left out of the list is a window the user has no way left
-        to close. That is what the five hand-copied branches, and the counts
-        they were fed, bought us.
-
-        :param menu: the QMenu being filled (the tree context menu, or the shot
-                     view's "Plot windows" menu bar entry)
-        """
-        menu_showHide = QMenu('Show/Hide', menu)
-        menu_showHide.setIcon(GlobalIcons.getCustomQIcon(QApplication,
-                                                         'showHide'))
-        menu_delete = QMenu('Delete', menu)
-        menu_delete.setIcon(GlobalIcons.getStandardQIcon(QApplication,
-                                                         QStyle.SP_DialogDiscardButton))
-
-        openFigures = [(label, icon, figureType)
-                       for label, icon, figureType in FigureTypes.MENU_ORDER
-                       if self.imas_viz_api.GetFiguresCount(figureType) > 0]
-
-        menu_showHide.setDisabled(not openFigures)
-        menu_delete.setDisabled(not openFigures)
-
-        for label, icon, figureType in openFigures:
-            self.figureTypeMenus(menu_showHide, menu_delete, label, icon,
-                                 figureType)
-
-        menu.addMenu(menu_showHide)
-        menu.addMenu(menu_delete)
-
-    def figureTypeMenus(self, menu_showHide, menu_delete, label, iconLabel,
-                        figureType):
-        """One submenu for one kind of figure, in each of the two menus: an
-        entry per open figure, plus "All" under Delete.
-
-        Arguments:
-            label      (str) : what the user reads, and the prefix the window
-                               title shows
-            iconLabel  (str) : the GlobalIcons name; None leaves it uniconed
-            figureType (str) : the key prefix the kind is registered under
-        """
-        # Built parented rather than with addMenu(label): PySide6 keeps the menu
-        # that call creates under Python, so it is deleted when the local variable
-        # goes out of scope here and the entry the user clicks on dangles.
-        submenu_showHide = QMenu(label, menu_showHide)
-        subMenu_delete = QMenu(label, menu_delete)
-        menu_showHide.addMenu(submenu_showHide)
-        menu_delete.addMenu(subMenu_delete)
-        icon = GlobalIcons.getCustomQIcon(QApplication, iconLabel)
-        if icon is not None:
-            submenu_showHide.setIcon(icon)
-            subMenu_delete.setIcon(icon)
-
-        for figureKey in self.imas_viz_api.GetFiguresKeys(
-                figureType=figureType):
-            # Get figure number out of the key string (e.g. 'SlicesPlot2' -> 2),
-            # which is what the show/hide and delete actions are keyed on
-            figureNum = self.imas_viz_api.getFigureKeyNum(figureKey, figureType)
-
-            action_showHide = QAction(figureKey, self)
-            action_showHide.triggered.connect(
-                partial(self.showHideFigure, figureNum, figureType))
-            submenu_showHide.addAction(action_showHide)
-
-            action_delete = QAction(figureKey, self)
-            action_delete.triggered.connect(
-                partial(self.deleteFigure, figureNum, figureType))
-            subMenu_delete.addAction(action_delete)
-
-        action_deleteAll = QAction('All', self)
-        action_deleteAll.triggered.connect(
-            partial(self.deleteAllFigures, figureType=figureType))
-        subMenu_delete.addAction(action_deleteAll)
+    # The Show/Hide and Delete builders that used to sit here are gone: the open
+    # windows of a run are one list, case views and figures together, and it is
+    # drawn by ``QVizWindowMenu`` on the *Windows* menu of the application bar
+    # and of each shot view. Two copies of that walk -- one here, one on the
+    # "Plot windows" menu bar of the view -- is how a kind of window could be
+    # on one menu and not the other.
 
     def selectSignal(self):
         QVizSelectNodes(self.dataTreeView, self.treeNode).execute()
@@ -932,41 +866,7 @@ class QVizSignalHandling(QObject):
         except ValueError as e:
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
-    @Slot(int, str)
-    def showHideFigure(self, numFig, figureType):
-        """Show/Hide the window holding one figure of one kind.
-
-        Arguments:
-            numFig     (int) : Figure number identificator.
-            figureType (str) : the prefix that kind of figure is registered
-                               under -- the menus pass the one they were built
-                               from, so a default here would be a kind the
-                               caller never asked about.
-        """
-        # The key is what the registry addresses a figure by
-        figureKey = \
-            self.imas_viz_api.GetFigureKey(str(numFig), figureType)
-        self.imas_viz_api.ShowHideFigure(figureKey)
-
-    @Slot(str)
-    def deleteAllFigures(self, figureType):
-        figureKeys = self.imas_viz_api.GetFiguresKeys(figureType)
-        for figureKey in figureKeys:
-            self.imas_viz_api.DeleteFigure(figureKey)
-
-    @Slot(int, str)
-    def deleteFigure(self, numFig, figureType):
-        """Delete the window holding one figure of one kind.
-
-        Arguments:
-            numFig     (int) : Figure number identificator.
-            figureType (str) : the prefix that kind of figure is registered
-                               under, as above.
-        """
-        try:
-            # The key is what the registry addresses a figure by
-            figureKey = self.imas_viz_api. \
-                GetFigureKey(str(numFig), figureType)
-            self.imas_viz_api.DeleteFigure(figureKey)
-        except ValueError as e:
-            logging.getLogger(self.dataTreeView.uri).error(str(e))
+    # The show/hide and delete slots that used to follow went with the menus that
+    # fed them. ``QVizWindowMenu`` acts on the window itself, addressed through
+    # ``Viz_API.showHideWindow`` and ``closeWindow``, so a menu line no longer has
+    # to take a number back out of a figure key to find the window it stands for.

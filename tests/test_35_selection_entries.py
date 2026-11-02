@@ -288,7 +288,8 @@ def test_the_selection_entry_keeps_the_legacy_figure_namespace_out(view):
 
     entry(view).plotSelectedSignals(all_DTV=False)
 
-    # A second namespace for one kind of window is two Show/Hide menus and one
+    # A second namespace for one kind of window is two lines in the *Windows*
+    # menu and one
     # window the "add to" entries cannot fill.
     assert not [key for key in view.imas_viz_api.figureframes
                 if key.startswith('Figure:')]

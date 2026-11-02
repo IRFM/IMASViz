@@ -50,7 +50,7 @@ QVizPluginWindow = namedtuple('QVizPluginWindow',
 # a probe left to answer that dialog sat in `askForOccurrence` for 240 s until a
 # watchdog killed it, which is why a restore cannot go through the question.
 # `figureKey` is here for the same reason the plot commands take one: the key is
-# the identity the Show/Hide and Delete menus address the window by.
+# the identity the *Windows* menu and its *Delete* sub-menu address the
 QVizPluginAnswers = namedtuple('QVizPluginAnswers', 'occurrence figureKey')
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',

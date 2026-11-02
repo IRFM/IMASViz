@@ -396,7 +396,7 @@ def test_a_page_the_panel_drew_is_a_figure_the_session_puts_back(run, qapp):
     """The payoff of drawing through the application's commands.
 
     A page plotted by the panel is a Table Plot View under a `TablePlotView:` key
-    in `figureframes`, so *Show/Hide*, *Delete*, *Configure Plot* and the session
+    in `figureframes`, so the *Windows* menu, *Configure Plot* and the session
     file reach it like any window the tree's own right click produced. Measured on
     the reference case: the smallest group of `equilibrium` occurrence 0 draws one
     panel, and the file that follows names it, its kind and its one quantity.

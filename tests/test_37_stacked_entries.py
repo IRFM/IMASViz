@@ -609,16 +609,27 @@ def test_the_window_is_registered_under_the_stacked_namespace(view):
 
 
 @pytest.mark.ui
-def test_closing_the_window_frees_its_key(view):
+def test_the_box_hides_the_stack_and_the_delete_line_frees_its_key(view,
+                                                                   monkeypatch):
     # The old window registered its key twice and embedded itself in a plain
     # QMdiSubWindow, so closing it left the key: measured, 'StackedPlotView:1'
     # was registered before and after close(), and the next window was handed :2.
+    # That is what the box does on purpose now (T52) -- hide, keep the key, so the
+    # *Windows* menu can put the same window back. The key is freed by the answer
+    # the *Delete* line gives.
+    from imasviz.VizUtils.QVizGlobalValues import QVizPreferences
+    monkeypatch.setattr(QVizPreferences, 'Close_button_deletes', 0)
     select(view, _vector())
 
     entry(view).onPlotToStackedPlotView(all_DTV=False, plotAxis='TIME')
 
+    frame = view.imas_viz_api.figureframes[FigureTypes.STACKEDPLOTTYPE + '1']
     subWindow = view.imas_viz_api.parent.findChild(QVizMdiSubWindow)
     subWindow.close()
 
+    assert subWindow.isHidden()
+    assert list(view.imas_viz_api.figureframes) == [frame.figureKey]
+
+    view.imas_viz_api.closeWindow(frame)
     assert view.imas_viz_api.figureframes == {}
     assert view.imas_viz_api.figToNodes == {}

@@ -68,9 +68,10 @@ Plotting a single 2D array
      :align: center
      :width: 550px
 
-4. The image window opens, titled :guilabel:`SlicesImage1`, and is listed in the
-   :guilabel:`Show/Hide` and :guilabel:`Delete` menus under
-   :guilabel:`SlicesImage`.
+4. The image window opens, titled :guilabel:`SlicesImage1`, and is a line of the
+   :guilabel:`Windows` menu under that name. Clicking the line hides the window
+   and keeps it; the :guilabel:`Delete` lines under the same menu close it for
+   good.
 
    .. figure:: images/2D_image_plotwidget.png
      :align: center

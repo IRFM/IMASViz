@@ -738,7 +738,8 @@ def test_the_selection_is_written_in_the_order_it_was_picked(qapp):
 
 @pytest.mark.ui
 def test_a_saved_figure_keeps_the_key_the_api_handed_it(qapp):
-    """A key is not a label: the Show/Hide and Delete menus address a window by
+    """A key is not a label: the *Windows* menu and its *Delete* lines address a
+    window by
     it, so a file that renumbered its windows would stop describing the screen."""
     view = FakeView()
     api = aSession(view)
@@ -807,7 +808,8 @@ def test_a_plugin_window_is_written_under_the_case_that_offered_its_entry(qapp,
                                                                         caplog):
     """The gesture belongs to a shot view, so its window is written there.
 
-    The key comes from `figureframes`, which is what the Show/Hide and Delete
+    The key comes from `figureframes`, which is what the *Windows* menu and its
+    *Delete* lines
     menus read; the entry number and the occurrence come from the stamp, because
     measured, neither registered window keeps them: the Profiles panel answers
     neither `figureKey` nor `key`, and the Equilibrium chart has neither.
@@ -990,7 +992,8 @@ def test_the_stacked_command_takes_the_key_its_file_names(qapp):
     A Stacked Plot View is filled from the selection, so its key was the one the
     api handed out whatever the session asked for: a file naming
     `StackedPlotView:7` came back as `StackedPlotView:1`, and the key is the name
-    the *Show/Hide* and *Delete* menus address that window by -- the two commands
+    the *Windows* menu and its *Delete* lines address that window by -- the two
+    commands
     that read the session's own file.
     """
     view = FakeView()
@@ -1081,7 +1084,7 @@ def test_a_window_that_fits_itself_writes_no_range_and_a_zoom_writes_one_axis_at
 
 @pytest.mark.ui
 def test_the_place_of_a_window_is_taken_from_the_mdi_window_that_holds_it(qapp):
-    """`mdiWindowOf` is the reading the Show/Hide and Delete menus use, so the
+    """`mdiWindowOf` is the reading the *Windows* menu uses, so the
     file describes the window those menus address -- hidden included, because
     hidden is not closed."""
     area = ownership.keep(QMdiArea())

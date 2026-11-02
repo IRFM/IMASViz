@@ -83,8 +83,8 @@ from PySide6.QtWidgets import QMainWindow, QMdiArea, QMenu
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
-from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
-    import QVizSignalHandling
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu \
+    import QVizWindowMenu
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
 from imasviz.VizUtils import FigureTypes, QVizPreferences
 
@@ -154,11 +154,21 @@ def actionNamed(menu, title):
     return None
 
 
-def figureMenus(view):
-    """The Show/Hide and Delete menus, as the shot view builds them."""
+def windowsMenu(api):
+    """The *Windows* menu, as a menu bar builds it."""
     menu = QMenu()
-    QVizSignalHandling(dataTreeView=view).menusShowHideAndDelete(menu)
+    ownership.keep(menu)
+    QVizWindowMenu(menu, api).show()
     return menu
+
+
+def windowTitles(menu):
+    """The lines that name a window, the fixed entries of the menu left out."""
+    fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL,
+             QVizWindowMenu.DELETE, QVizWindowMenu.NEXT,
+             QVizWindowMenu.PREVIOUS)
+    return [action.text() for action in menu.actions()
+            if not action.isSeparator() and action.text() not in fixed]
 
 
 def elapsed(action, *args):
@@ -447,22 +457,27 @@ def test_a_second_click_gets_its_own_key(session):
     assert session.runCost < 5.0, 'the second run cost %.2f s' % session.runCost
 
 
-def test_the_two_menus_list_the_windows_and_delete_takes_one_away(session):
-    menu = figureMenus(session.view)
-    showHide = subMenuNamed(menu, 'Show/Hide')
-    delete = subMenuNamed(menu, 'Delete')
-    assert [a.text() for a in showHide.actions() if a.menu()] == ['Equilibrium']
-    kindMenu = subMenuNamed(showHide, 'Equilibrium')
-    assert [a.text() for a in kindMenu.actions()] == [FIRST_KEY, SECOND_KEY]
-    assert [a.text() for a in subMenuNamed(delete, 'Equilibrium').actions()] \
-        == [FIRST_KEY, SECOND_KEY, 'All']
+def test_the_menu_lists_the_plugin_windows_and_delete_takes_one_away(session):
+    menu = windowsMenu(session.api)
+    delete = subMenuNamed(menu, QVizWindowMenu.DELETE)
 
-    # The Show/Hide line addresses the window it names: this one is not embedded
-    # in the MDI area, so the entry acts on the frame itself.
-    actionNamed(kindMenu, FIRST_KEY).trigger()
+    # The plugin's matplotlib window is a figure like the others: its kind is in
+    # ``MENU_ORDER``, so it is a line of the one list -- next to the case view of
+    # the session, which the same menu names.
+    assert windowTitles(menu) == [session.view.dataSource.getLongLabel(),
+                                  FIRST_KEY, SECOND_KEY]
+    assert [a.text() for a in delete.actions() if not a.isSeparator()] == \
+        [session.view.dataSource.getLongLabel(), 'All', FIRST_KEY, SECOND_KEY,
+         'All']
+
+    # The line addresses the window it names: this one is not embedded in the MDI
+    # area, so the entry acts on the frame itself.
+    actionNamed(menu, FIRST_KEY).trigger()
     session.qapp.processEvents()
     assert not session.api.figureframes[FIRST_KEY].isVisible()
-    actionNamed(kindMenu, FIRST_KEY).trigger()
+    redrawn = windowsMenu(session.api)
+    assert actionNamed(redrawn, FIRST_KEY).isChecked() is False
+    actionNamed(redrawn, FIRST_KEY).trigger()
     session.qapp.processEvents()
     assert session.api.figureframes[FIRST_KEY].isVisible()
 
@@ -471,11 +486,40 @@ def test_the_two_menus_list_the_windows_and_delete_takes_one_away(session):
     # window itself -- and asking it is the point, a key silently replaced by
     # another frame would pass the assertion above and leave a window on screen.
     frame = session.api.figureframes[FIRST_KEY]
-    actionNamed(subMenuNamed(delete, 'Equilibrium'), FIRST_KEY).trigger()
+    actionNamed(delete, FIRST_KEY).trigger()
     session.qapp.processEvents()
     assert session.api.GetFiguresKeys(figureType=KIND) == [SECOND_KEY]
     assert not frame.isVisible()
     assert session.api.GetFigureKeyOf(frame) is None
+
+
+def test_the_close_box_of_the_plugin_window_hides_it_and_keeps_its_key(session,
+                                                                       monkeypatch):
+    """The window the plugin shows itself obeys the same rule as an MDI window.
+
+    Nothing else routes this one: it is not in the MDI area, so
+    ``QVizMdiSubWindow`` never sees its close box, and the plugin's own ``show()``
+    is the only thing that puts it on screen. So the window has to answer the rule
+    for itself -- mix in ``QVizClosableWindow``, answer ``windowApi()``. Measured
+    when the *Windows* menu was written, this matplotlib window was the third
+    family left out of the rule, while the manual and the plugin howto already
+    said all three follow it.
+    """
+    monkeypatch.setattr(QVizPreferences, 'Close_button_deletes', 0)
+    frame = session.api.figureframes[SECOND_KEY]
+    assert frame.isVisible()
+
+    frame.close()
+    session.qapp.processEvents()
+    assert not frame.isVisible()
+    # The key survives, so this is not the ghost the close box used to leave: the
+    # menu still names the window, unchecked, and its line puts it back.
+    assert session.api.GetFiguresKeys(figureType=KIND) == [SECOND_KEY]
+    menu = windowsMenu(session.api)
+    assert actionNamed(menu, SECOND_KEY).isChecked() is False
+    actionNamed(menu, SECOND_KEY).trigger()
+    session.qapp.processEvents()
+    assert session.api.figureframes[SECOND_KEY].isVisible()
 
 
 # --------------------------------------------------------------------------

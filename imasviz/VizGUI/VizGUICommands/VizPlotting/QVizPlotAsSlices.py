@@ -27,8 +27,8 @@ FigureTypes. A frame drawn here is only ever offered to the entries that know
 how to fill it: a picture window holds one quantity and no "add to" gesture
 adds to it, and the two prefixes the legacy windows used to hand out are gone
 with the frames behind them. The keys are still handed out by the api, because
-the Show/Hide and Delete menus read the same bookkeeping and two ways of
-numbering it is how a key gets reused under a live window.
+the *Windows* menu and its *Delete* sub-menu read the same bookkeeping, and
+numbering it two ways is how a key gets reused under a live window.
 """
 
 import logging

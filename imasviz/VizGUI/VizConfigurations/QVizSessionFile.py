@@ -29,7 +29,7 @@ built, not a screenshot of one: it responds to every gesture because it *is* one
 of the frames, with its sliders, its abscissa and its legend.
 
 The figure key is in the file on purpose. A key is the identity of a window:
-the Show/Hide sub-menu, the Delete sub-menu and the "add this quantity to that
+the *Windows* menu lines, the *Delete* sub-menu and the "add this quantity to that
 figure" entries all read ``Viz_API.figureframes`` by that key, and
 ``GetNextKeyForFigure`` answers max+1. Replaying the gestures without the keys
 would renumber the windows -- measured on a session of two curve figures and one
@@ -96,7 +96,7 @@ So version 3 adds one element per ``<Case>``:
   ``<Window>`` (measured: ``mdiWindowOf`` answers None for both registered
   windows -- the Profiles panel is a top-level window, the Equilibrium chart is
   parented to the shot view), and its key is honoured like a figure key, because
-  ``figureframes`` is how the Show/Hide and Delete menus reach it.
+  ``figureframes`` is how the *Windows* menu and its *Delete* sub-menu reach it.
 
 What a plugin entry settled on is nowhere else: measured, neither window answers
 its own key (no ``figureKey``, no ``key`` attribute), so the plugin stamps a

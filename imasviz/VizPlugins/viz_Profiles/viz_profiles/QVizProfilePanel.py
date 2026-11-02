@@ -13,7 +13,8 @@ This panel names quantities; it does not draw them. Every drawing gesture here e
 in a command of the application (`QVizPlotAsTable`, `QVizPlotOneNode`), so a window
 this plugin opens is a Table Plot View, a curve figure or an image window like the
 one the tree's own right click produces: it is in `api.figureframes` under a
-`FigureTypes` key, so *Show/Hide* and *Delete* reach it, a ``.vsess`` session puts
+`FigureTypes` key, so a line of the *Windows* menu and one of its *Delete*
+sub-menu reach it, a ``.vsess`` session puts
 it back, *Configure Plot* dresses its traces and the export dialogue offers its
 formats. The panel carries none of that itself, which is why it carries no plot
 widget either.
@@ -90,6 +91,7 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import \
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfileOffer import \
     OWN_AXIS, PAGE, QVizProfileOffer
 from imasviz.VizUtils import FigureTypes
+from imasviz.Viz_API import QVizClosableWindow
 
 
 class QVizProfilePage(QWidget):
@@ -238,7 +240,7 @@ class QVizProfilePage(QWidget):
         return self.panel().drawQuantity(pages[self.page][row])
 
 
-class QVizProfilePanel(QMainWindow):
+class QVizProfilePanel(QVizClosableWindow, QMainWindow):
     """What one IDS occurrence holds that can be drawn, and the clicks to draw it."""
 
     def __init__(self, vizAPI, dataTreeView, idsName, occurrence,
@@ -308,6 +310,17 @@ class QVizProfilePanel(QMainWindow):
 
         self.ensureLoaded()
         self.rebuild()
+
+    def windowApi(self):
+        """The api this window is registered in -- the one that holds the rule.
+
+        This panel is a top-level window: it is registered in `figureframes`
+        like any figure, but no `QMdiSubWindow` sees its close box, so the rule
+        has to be asked of the window itself. Answering it is what makes the
+        close box cost the same as the *Delete* line of the *Windows* menu,
+        whichever of the two the user clicks.
+        """
+        return self.api
 
     # ------------------------------------------------------------------ state
     def groups(self):

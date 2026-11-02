@@ -23,7 +23,8 @@ from pathlib import Path
 sys.path.append((os.environ['VIZ_HOME']))
 
 from imasviz.VizGUI.VizGuiCustomization import QVizDefault, QVizStyle
-from imasviz.VizGUI.VizGUICommands import QVizMainMenuController, QVizFileMenu
+from imasviz.VizGUI.VizGUICommands import (QVizMainMenuController, QVizFileMenu,
+                                           QVizWindowMenu)
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRestoreSession
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
@@ -408,6 +409,12 @@ class QVizMainWindow(QMainWindow):
         # The File menu, once the start window exists: its session entries are
         # asked of the menu controller that window was built with.
         self.addFileMenu()
+        # ... and the Windows menu next to it, for the same reason: a window is
+        # the content of this screen, so the gesture that finds one belongs on a
+        # bar that is on screen whatever the user is looking at -- including
+        # when the window they are after is the case view whose menu bar they
+        # just hid.
+        self.addWindowMenu()
         # One watcher for the folder of the user's own plugins, for the whole
         # run: what they save answers the next right click, without a restart.
         # It sits here and not on a shot view because it watches a folder, not a
@@ -424,6 +431,19 @@ class QVizMainWindow(QMainWindow):
         self.fileMenu = QVizFileMenu(self.menuBar().addMenu(QVizFileMenu.TITLE),
                                      self,
                                      sessionMenu=self.sessionMenuEntries()).show()
+
+    def addWindowMenu(self):
+        """Hang the *Windows* menu on this window: every window of the run.
+
+        The api is the session's own -- the one the *Open* gesture drives, the
+        same one *Save session* writes -- because a second bookkeeping would
+        list windows that are not on the screen. The menu is kept on the window:
+        its ``aboutToShow`` slot lives on it, and a menu filler nobody holds
+        dies before it can fill anything.
+        """
+        self.windowMenu = QVizWindowMenu(
+            self.menuBar().addMenu(QVizWindowMenu.TITLE),
+            self.sessionApi(), applicationBar=True).show()
 
     def sessionMenuEntries(self):
         """The controller's session entries, or None while it holds none.

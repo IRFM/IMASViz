@@ -23,22 +23,22 @@ class FigureTypes:
     # would be handed a frame they do not know how to fill. Separate namespace,
     # same registry. Two prefixes died with the frames that produced them: the
     # legacy image frame's "Image:", and the "Figure:" one the legacy widget
-    # handed out. A second namespace for one kind of window is two Show/Hide
+    # handed out. A second namespace for one kind of window is two *Windows* menu
     # entries and one window the "add to" entries cannot fill; a namespace with
-    # no frame left behind it is a Show/Hide entry that can never be filled.
+    # no frame left behind it is a *Windows* menu group that can never be filled.
     CURVEPLOTTYPE = "SlicesPlot"
     IMAGEPLOTTYPE = "SlicesImage"
     # The window the Equilibrium plugin builds is a figure like the others: it is
-    # registered in `figureframes`, so Show/Hide and Delete reach it. It is not
-    # drawn through the axes model, so it keeps its own prefix and registers no
+    # registered in `figureframes`, so the *Windows* menu and its *Delete*
+    # sub-menu reach it. It is not drawn through the axes model, so it keeps its own prefix and registers no
     # node in `figToNodes` -- the "add this quantity to that figure" entries walk
     # that record and could not fill a matplotlib window.
     EQUILIBRIUMPLOTTYPE = "EquiPlotView:"
 
     # Every kind of figure the commands can draw, in menu order: the label the
     # user reads (it is the prefix the window title shows), the icon named in
-    # GlobalIcons, and the prefix its key carries. The Show/Hide and Delete
-    # menus iterate this, because a kind missing here is a window the user has
+    # GlobalIcons, and the prefix its key carries. The *Windows* menu and its
+    # *Delete* sub-menu iterate this, because a kind missing here is a window the user has
     # no way left to close -- and a kind listed here that no command draws any
     # more is a sub-menu that can never be filled.
     MENU_ORDER = (('TablePlotView', 'TPV', TABLEPLOTTYPE),
@@ -116,6 +116,14 @@ class QVizPreferences:
     # used on a desktop in a lit room, and it is what the manual's screenshots
     # were taken on.
     Theme = 'light'
+    # What the box in the corner of a window title bar is worth. Off (the
+    # default): it takes the window off the screen and keeps it -- the *Windows*
+    # menu still names it, unchecked, and clicking the line puts it back. On: it
+    # closes the window for good, out of the bookkeeping and out of the session.
+    # Hiding is the default because a figure costs a read of the case to redraw,
+    # and the box is where a user reaches for "get this out of my way" far more
+    # often than for "throw it away".
+    Close_button_deletes = 0
 
     def colour(text):
         """One of the two colour options, read as the manual writes it.
@@ -154,6 +162,7 @@ class QVizPreferences:
             option5 = "Auto_save_session="
             option6 = "Theme="
             option7 = "Show_only_tensors_rank_ge_1="
+            option8 = "Close_button_deletes="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -184,6 +193,9 @@ class QVizPreferences:
                             elif line.startswith(option7):
                                 QVizPreferences.Show_only_tensors_rank_ge_1 = \
                                     int(line[len(option7):])
+                            elif line.startswith(option8):
+                                QVizPreferences.Close_button_deletes = \
+                                    QVizPreferences.yesNo(line[len(option8):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],
@@ -213,6 +225,21 @@ class QVizPreferences:
                                 ' or '.join(repr(one)
                                             for one in QVizStyle.NAMES)))
         return asked
+
+    def yesNo(text):
+        """One of the two switches that mean something else when they are on.
+
+        ``int(text)`` would read ``Close_button_deletes=purple`` as a
+        ``ValueError`` and say nothing about what the line was asked to hold,
+        and would read ``2`` as a third state nothing answers. Both are refused
+        by what the file says, and the switch stays at its default: the line
+        answers for itself, the rest of the file is read (T48).
+        """
+        asked = text.strip()
+        if asked not in ('0', '1'):
+            raise ValueError('%r is not a yes/no switch: write 0 to keep the '
+                             'default or 1 to change it' % asked)
+        return int(asked)
 
 
 class QVizGlobalValues:

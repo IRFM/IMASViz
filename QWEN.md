@@ -173,17 +173,48 @@ Core concepts, in the vocabulary used by the code and docs:
   (`SlicesPlot1`, `SlicesImage1`, `TablePlotView0`, `StackedPlotView0`, `ProfilesPlot…`).
   Five kinds since T22(c): the `Figure:` namespace the legacy curve window handed out is
   gone with the window, as the `Image:` one went before it — a prefix with no frame behind
-  it is a Show/Hide sub-menu that can never be filled. Because of that, `GetFiguresCount`,
+  it is a *Windows* menu group that can never be filled. Because of that, `GetFiguresCount`,
   `GetNextKeyForFigure`, `GetFiguresKeys` and `GetFigureKey` take no default `figureType`:
   a call naming no kind used to mean the dead one silently.
   Allocate keys through
   the `GetNextKeyFor*` accessors, never by hand — **except when a key arrives from
   a session file**, which is answered by `Viz_API.FigureKeyFor(type, key)`: the key
-  is the identity the *Show/Hide*, *Delete* and *add to that figure* menus address
+  is the identity the *Windows* menu — its lines, and the *Delete* sub-menu beside
+  them — and the *add to that figure* entries address
   a window by, so the three plot commands take a `figureKey=` and honour it, and a
   key a live window already holds is refused (measured before that: a file naming
   `SlicesPlot1` came back as `SlicesPlot2`, and `QVizPlotAsStacked` was the last of
   the three still asking for the next key).
+- **the windows of a run** — `Viz_API.openWindows()` is the one answer to "what is open":
+  the case views of `DTVframeList` first, then `figureframes` walked through
+  `FigureTypes.MENU_ORDER`, each window a `QVizWindowRecord` (kind label, icon, label, and
+  weakrefs to the frame and the api — a menu line that outlives its window costs nothing, and
+  `QVizWindowRecord.frame()` asks `shiboken6.isValid` because a QWidget released with
+  `deleteLater()` **keeps its Python wrapper** while anything else holds a reference, so asking
+  that wrapper answers `RuntimeError: Internal C++ object … already deleted`).
+  `VizGUICommands/VizMenusManagement/QVizWindowMenu.py` draws that list on the application menu
+  bar **and** on every shot view's bar — one object, refilled on `aboutToShow` through
+  `QVizMenuRefill.refill`. One checkable line per window (the check is the screen, the click
+  toggles), grouped by kind, then `Show all` / `Hide all`, then a separate `Delete` sub-menu
+  (one line per window plus one `All` per kind); `Next window` / `Previous window` on `Ctrl+Tab`
+  / `Ctrl+Shift+Tab` hang on the application bar only, a shot view owning no MDI area. The node
+  right-click pop-up lists no window any more — it is about the node under the mouse — and the
+  shot view's old *Plot windows* menu is gone. Why `refill` exists: `QMenu.clear()` removes
+  actions and **keeps the child QMenus** (measured: **7** children and **0** actions after three
+  refills), while `refill()` leaves **1** once the deferred deletes are flushed.
+- **what the close box of a window costs** — **hide, and keep the key**.
+  `QVizMdiSubWindow.closeEvent` and the `QVizClosableWindow` mixin (which answers `windowApi()`)
+  ask `Viz_API.closeFromTitleBar`: the window leaves the screen, `figureframes` is left alone, so
+  the *Windows* menu still names it (unchecked) and a saved session writes it `hidden`.
+  `Close_button_deletes=1` in `$HOME/.imasviz/preferences` makes the box mean what the *Delete*
+  line means — `closeWindow`, i.e. hide + `deleteLater()` + `forgetWindow`. Measured before the
+  rule: a curve figure closed with its own box left `figureframes` **empty**, its subwindow
+  hidden inside `subWindowList()`, its frame alive with no key reaching it, and the next figure
+  of that kind was handed `SlicesPlot1` again — two windows under one name, one unreachable by
+  any gesture. A plugin window the plugin shows itself (`PlotView:` and `EquiPlotView:` are both
+  top-level, parented on the shot view) is not an MDI subwindow, so nothing routes its box for
+  it: the frame mixes in `QVizClosableWindow` and answers `windowApi()` with the api it is
+  registered in — held through a `weakref`, per the T25 rule.
 - **commands** — everything user-facing is a `QViz*` object with an `.execute()` method
   (`QVizLoadOccurrence`, `QVizSelectNodes`, `QVizSelectFromConfiguration`,
   `QVizSaveNodeSelection`, `QVizSavePlotConfiguration`, `QVizPlotOneNode`,
@@ -327,7 +358,7 @@ Core concepts, in the vocabulary used by the code and docs:
 - **the *File* menu belongs to the root window** — `QVizFileMenu` (T46) hangs
   `Save session` / `Load session ▸` / `Quit` (`Ctrl+Q`) on `QVizMainWindow.menuBar()`.
   Before it, the application window had **no menu bar at all** — the only menu bars
-  in the package are a shot view's `Actions`/`Node Selection Actions`/`Plot windows`
+  in the package were a shot view's `Actions`/`Node Selection Actions`/`Plot windows`
   (`QVizDataTreeView.addMenuBar`) and the plugins' own — while the manual sent the
   user to `Actions → Save session` and `askForLastSession`'s log said "open it from
   the File menu": the two entries existed only on the start panel's right-click
@@ -340,6 +371,10 @@ Core concepts, in the vocabulary used by the code and docs:
   lines it is replacing — `QMenu.clear()` removes actions and **keeps the objects**,
   and a sub-menu parented on the menu (the only shape that survives, see T0/T7/T21)
   stays its child, so a refill that does not delete shows the same entries twice.
+  Since T52 both that menu and the *Windows* menu answer it with the one helper,
+  `VizGUICommands/VizMenusManagement/QVizMenuRefill.refill(menu)`; the *Windows* menu
+  of the application bar hangs next to *File* (`QVizMainWindow.addWindowMenu`), and
+  `Plot windows` is gone from the shot view, which hangs a *Windows* menu instead.
 
 Naming convention: Qt widget classes are prefixed `QViz` (`QVizCurvePlot`, `QVizLogger`);
 plain API/framework classes are not (`Viz_API`, `VizPlugin`). `__init__.py` files re-export with
@@ -375,7 +410,12 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    `QVizPluginCatalog.run(entry, answers=)` reads the signature with `inspect` and refuses
    by name an entry that cannot be handed the answers, which is what a restore needs to
    skip the question the entry would otherwise ask (the Profiles occurrence question is a
-   **modal `QInputDialog`**: measured, a probe sat in it **240 s**).
+   **modal `QInputDialog`**: measured, a probe sat in it **240 s**). A window the plugin
+   shows itself is a third thing the plugin owes: it is not an MDI subwindow, so nothing
+   routes its close box — the frame mixes in `QVizClosableWindow` and answers `windowApi()`
+   with the api it is registered in, which is what makes that box hide the window and keep
+   its key (or close it for good under `Close_button_deletes=1`) instead of leaving a window
+   no *Windows* menu line can bring back.
 2. Register the class in the `RegisteredPlugins` dict in `VizPlugins/VizPlugin.py`
    (`'PluginName': 'viz_<name>.PluginName'` — the class must bear the key's name, since
    that is what the catalog takes out of the module). Several entries are commented out —
@@ -500,7 +540,8 @@ the reference case by `tests/test_51_*` and `tests/test_85_*` (Profiles),
 The Equilibrium one (`viz_equi/equilibriumcharts.py`, **1 253 l.**, author J. Morales) is
 the only matplotlib window in the application: it does not draw through the axes model, so
 it is registered under its own `FigureTypes.EQUILIBRIUMPLOTTYPE` (`EquiPlotView:`) — a
-**6th** `MENU_ORDER` kind, so *Show/Hide* and *Delete* reach it — and it registers **no**
+**6th** `MENU_ORDER` kind, so a line of the *Windows* menu and one of its *Delete*
+sub-menu reach it — and it registers **no**
 node in `figToNodes`, which is why the "add this quantity to that figure" entries do not
 offer it. Measured facts worth keeping: it reads **occurrence 0** and does not ask (the
 Profiles panel, which offers every occurrence the case holds, carries that choice as a
@@ -509,7 +550,10 @@ subwindow (`mdiWindowOf` answers `None`), so it goes
 with the view it came from; **6,73 s** cold for the first run of a process, **0,98–1,45 s**
 once the IDS is in memory. And `QVizPreferences.Ignore_GGD` does **not** cover the plugin's
 own `get`: with the GGD walk of the tree reactivated, the same case cost **287 s** in a
-probe, which is why `test_53` pins that preference at **1**.
+probe, which is why `test_53` pins that preference at **1**. Because that window is shown
+by the plugin and not embedded, its close box is routed by the frame itself: `PlotFrame`
+mixes in `QVizClosableWindow` and answers `windowApi()` with a `weakref` to the api it is
+registered in, so its box hides it and keeps its key like every other window's.
 
 ### matplotlib is not pinned here
 
@@ -554,15 +598,15 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1394 passed, 1 xfailed, 12 warnings, ~15 min, offscreen
+python3 -m pytest tests/ -q     # 1461 passed, 1 xfailed, 12 warnings, ~13 min, offscreen
 ```
 
-Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s**,
-and the run that closed this pass answers **873,26 s** for **1394** ids, so ~15 min
-is what this suite costs on this node right now; the **715,70 s** the T49
-row recorded no longer reproduces, and the 8 ids added since account for about 5 s
-of that. Wall time belongs to the node (AFS, other tenants), not to the tree: quote
-it with its date, and never explain it without measuring.
+Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s**;
+the run that closed T52 answers **797,34 s** for **1461** ids, against the **794,17 s**
+for **1429** ids the T51 row recorded — 32 ids more for the same wall time, so the
+menus and their stand-in frames cost nothing measurable. ~13 to ~15 min is what this
+suite costs on this node right now. Wall time belongs to the node (AFS, other tenants),
+not to the tree: quote it with its date, and never explain it without measuring.
 
 `tests/conftest.py` sets the whole environment (`VIZ_HOME`, `VIZ_PRODUCTION`,
 `IMAS_VERSION`, `QT_QPA_PLATFORM=offscreen`, …) at conftest
@@ -910,7 +954,11 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `viz_profiles/QVizProfilePanel.py` replaces it — so the sweep answers **122** modules
   and **121** imports, measured the same way, which prints **123 passed, 1 xfailed**
   (two of those ids are `test_the_walk_finds_the_package` and
-  `test_known_unimportable_list_is_not_stale`, not modules).
+  `test_known_unimportable_list_is_not_stale`, not modules). The *Windows* menu of T52
+  adds **2** — `VizGUICommands/VizMenusManagement/QVizWindowMenu.py` (the one menu, hung
+  by both bars) and `QVizMenuRefill.py` (the refill that does not leave its sub-menus
+  behind) — so the sweep answers **123** modules and **122** imports, measured the same
+  way, which prints **125 passed, 1 xfailed**.
   Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
@@ -1102,7 +1150,7 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `drawQuantities` builds a `QVizConfigurationFile(kind=PLOT, quantities=[QVizQuantity(
   path, occurrence, None, None, uri)])` and hands it to `QVizPlotAsTable(configuration=)` —
   the in-memory seam the command already offered — so a page is a `TablePlotView:` key in
-  the MDI area, listed by *Show/Hide*, styled by *Configure Plot*, put back by a session
+  the MDI area, a line of the *Windows* menu, styled by *Configure Plot*, put back by a session
   (`test_69` restores a page and reads `panelCount()` and `getPlotAxis()` back off it).
   `drawQuantity` is `QVizPlotOneNode`, which is how a quantity of two axes of its own
   leaves the panel and becomes a picture. Six things this panel does **not** do, and each

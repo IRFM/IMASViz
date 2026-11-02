@@ -38,6 +38,8 @@ from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement\
     .QVizHandleShiftAndRightClick \
     import QVizHandleShiftAndRightClick
+from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu \
+    import QVizWindowMenu
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPreviewPlot \
     import QVizPreviewPlot
 from imasviz.VizGUI.VizTreeView.QVizDataTreeViewBuilder import QVizDataTreeViewBuilder
@@ -877,18 +879,17 @@ class QVizDataTreeViewFrame(QMainWindow):
         nodeSelection.aboutToShow.connect(partial(self.updateMenuNodeSelection,
             menu=nodeSelection))
 
-        vizFiguresManagement = menuBar.addMenu('Plot windows')
-        vizFiguresManagement.aboutToShow.connect(partial(self.updateMenuNodePlotWindows,
-                                                  vizFiguresManagement))
+        # The windows of the run, listed the way the application window lists
+        # them -- the same object, the same api, so the two bars cannot answer
+        # the same question differently. This one leaves out the keyboard
+        # entries, which belong to the application window.
+        self.windowMenu = QVizWindowMenu(
+            menuBar.addMenu(QVizWindowMenu.TITLE),
+            self.dataTreeView.imas_viz_api).show()
 
         # Set menu bar
         self.setMenuBar(menuBar)
 
-
-    def updateMenuNodePlotWindows(self, vizFiguresManagement):
-        QVizSignalHandlingObj = QVizSignalHandling(dataTreeView=self.dataTreeView)
-        vizFiguresManagement.clear()
-        QVizSignalHandlingObj.menusShowHideAndDelete(vizFiguresManagement)
 
     def updateMenuNodeSelection(self, menu):
         """Update menu handling node selection.

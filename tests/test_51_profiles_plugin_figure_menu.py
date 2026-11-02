@@ -21,7 +21,7 @@ keeps only a child that `isDynamicData()`, so an IDS written at
 `homogeneous_time = 1` -- `magnetics`, `wall`, most of the dictionary -- had
 nothing to show and the entry said so by not existing. It drew its own grid, so
 nothing it produced was in `figureframes` under a key the rest of the application
-knows: no *Show/Hide* line, no session, no *Configure Plot*, no error bars.
+knows: no *Windows* menu line, no session, no *Configure Plot*, no error bars.
 
 What the run answers on the reference case (WEST 54924 run 0, data dictionary
 3.35.0, `Ignore_GGD = 1`, the tensor-rank preference off), in absolute numbers. The
@@ -331,7 +331,7 @@ def test_a_page_of_the_panel_is_a_table_of_the_application(session):
         'the window the plugin drew is not in the MDI area'
     assert cost < 5.0, 'the page cost %.2f s' % cost
     # The window is the api's, so the menus that reach a figure reach it: a key
-    # in the `TablePlotView:` namespace, listed by Show/Hide.
+    # in the `TablePlotView:` namespace, listed by the *Windows* menu.
     assert session.api.GetFiguresKeys(
         figureType=FigureTypes.TABLEPLOTTYPE) == [frame.figureKey]
     session.frames.append(frame)

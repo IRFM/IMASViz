@@ -12,7 +12,7 @@
 ``test_66`` pins the format. This file pins the promise: close IMASViz, open it
 again, ask for the session, and the windows are the ones that were there -- the
 case, the occurrence that had been loaded and the way it was asked for, the
-selection, the figures and the keys those windows answer to in the Show/Hide and
+selection, the figures and the keys those windows answer to in the *Windows* menu
 Delete menus.
 
 Everything here goes through the gestures, never through a frame constructor: the
@@ -329,7 +329,7 @@ FLUX_LOOP = ('AOS', MAGNETICS, 'flux_loop')
 MOVED_TO = 9
 STEP = 10
 # The window as the user left it: moved, resized, then hidden -- hidden is not
-# closed, and the Show/Hide menu still addresses it by its key.
+# closed, and the *Windows* menu still addresses it by its key.
 PLACE = (120, 90, 640, 420)
 
 

@@ -139,11 +139,11 @@ takes a few seconds. After that the plugin window will appear.
    combo on its own window instead.
 
 .. note::
-   The window is managed like a plot window: it appears in the
-   :guilabel:`Show/Hide` and :guilabel:`Delete` menus under :guilabel:`Plot
-   windows`, under the name :guilabel:`Equilibrium` and the line
-   ``EquiPlotView:1`` (a second opening gets ``EquiPlotView:2``). It belongs to
-   the shot view it was opened from, so it is taken down with that view.
+   The window is managed like a plot window: it is a line of the
+   :guilabel:`Windows` menu, in the :guilabel:`Equilibrium` group, under the line
+   ``EquiPlotView:1`` (a second opening gets ``EquiPlotView:2``). Its own close
+   box hides it -- see :ref:`other_GUI_features` -- and it belongs to the shot
+   view it was opened from, so it is taken down with that view.
 
 Equilibrium overview plugin GUI features
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -263,9 +263,9 @@ of 2 (100 on this page, 100 per page)``. Three buttons:
   gesture: a curve figure, or an image window for a quantity with two axes of its
   own.
 
-The window a click opens belongs to the application, not to the plugin. It is listed
-by :menuselection:`Plot windows` and by *Show/Hide* and *Delete*, a saved session
-puts it back (section :ref:`save_load_session`), each panel answers
+The window a click opens belongs to the application, not to the plugin. It is a
+line of the :guilabel:`Windows` menu, which is also where it is closed for good, a
+saved session puts it back (section :ref:`save_load_session`), each panel answers
 :guilabel:`Configure Plot` on its own right click, and the export dialogue offers
 its formats.
 
@@ -301,8 +301,8 @@ IDS with no time base.
    count for what was pruned while the tree was built.
 
 .. note::
-   The plugin's window is registered like a figure (``PlotView:1``) and is listed by
-   *Show/Hide* and *Delete*, but it is not inside the MDI area: it travels with the
+   The plugin's window is registered like a figure (``PlotView:1``) and is a line of
+   the *Windows* menu, but it is not inside the MDI area: it travels with the
    shot view it was opened from, and a session puts it back by asking the plugin's
    menu line again -- see :ref:`plugin_answers_and_sessions`.
 

@@ -17,7 +17,7 @@ caller was ``GUIFrame.showPopUpMenu`` -- the right-click pop-up of the *start
 panel*, where the entries hang under no title. The application window has no menu
 bar at all (measured before this file: ``QVizMainWindow`` never calls
 ``menuBar()``, and the only menu bars in the package are a shot view's
-``Actions``/``Node Selection Actions``/``Plot windows`` and the plugins' own),
+``Actions``/``Node Selection Actions``/``Windows`` and the plugins' own),
 while ``manual/other_GUI_features.rst`` sent the user to
 :menuselection:`Actions --> Save session` and ``askForLastSession`` told the one
 who refused to "open it from the File menu". Neither menu existed.

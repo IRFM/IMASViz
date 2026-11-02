@@ -19,7 +19,7 @@ names quantities and a place in a table, and the abscissa of one window.
 So this command reads what the api already keeps, and writes it as questions
 rather than as answers: a case URI, an IDS name, an occurrence, a slice choice,
 a node path, a figure key. The figures come from `figureframes` and `figToNodes`
--- which is what the Show/Hide and Delete menus read, so what is saved is the set
+-- which is what the *Windows* menu reads, so what is saved is the set
 of windows the menus address, not a parallel list that can drift. The tree state
 is taken from the items themselves (`isExpanded`), because "which branches were
 open" is only recorded there.
@@ -130,7 +130,7 @@ class QVizSaveSession:
     def pluginWindowsByCase(self):
         """The plugin windows of the run, under the case that opened each one.
 
-        The key is taken from `figureframes` -- the bookkeeping the Show/Hide and
+        The key is taken from `figureframes` -- the bookkeeping the *Windows*
         Delete menus address a window by -- because measured, neither registered
         plugin window knows its own: the Profiles panel has no `figureKey` and no
         `key` attribute, and the Equilibrium chart has neither. The rest comes
@@ -457,7 +457,7 @@ class QVizSaveSession:
     def windowOf(self, figureKey, frame):
         """Where the window sits in the MDI area.
 
-        `mdiWindowOf` is the same reading the Show/Hide and Delete menus use, so
+        `mdiWindowOf` is the same reading the *Windows* menu uses, so
         the geometry is taken for the window those menus address. A frame with no
         window of its own is said rather than skipped quietly: it is a figure the
         file records and the restore will show somewhere Qt puts it.

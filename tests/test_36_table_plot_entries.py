@@ -34,7 +34,7 @@ back. Measured on real tree nodes, four things went wrong at once:
 
 And the window itself: `QVizMultiPlotWindow` registers its key twice and embeds
 itself in the MDI area in a plain `QMdiSubWindow`, so closing it left the key
-registered -- the same defect T0 removed from the Show/Hide/Delete menus.
+registered -- the same defect T0 removed from the window menus of the time.
 
 The gate the entries hid behind, `shareSameCoordinates`, measured `False` for a
 selection of two quantities on different coordinates that the window drew
@@ -441,9 +441,16 @@ def test_every_panel_carries_the_selection_entry_the_saver_asks_for(view):
 
 
 @pytest.mark.ui
-def test_closing_the_window_frees_its_key(view):
+def test_the_box_hides_the_table_and_the_delete_line_frees_its_key(view,
+                                                                   monkeypatch):
     # The legacy window registered its key twice and embedded itself in the MDI
-    # area in a plain QMdiSubWindow, so closing it left the key behind.
+    # area in a plain QMdiSubWindow, so closing it left the key behind. The box
+    # hides on purpose now (T52): the key is what puts that same window back, with
+    # the panels it already read. Freeing it is the *Delete* line's answer, which
+    # is what `closeWindow` is -- and what the box gives when the user asked for
+    # that behaviour.
+    from imasviz.VizUtils.QVizGlobalValues import QVizPreferences
+    monkeypatch.setattr(QVizPreferences, 'Close_button_deletes', 0)
     select(view, _vector())
 
     entry(view).onPlotToTablePlotView(all_DTV=False, plotAxis='TIME')
@@ -452,6 +459,10 @@ def test_closing_the_window_frees_its_key(view):
     subWindow = view.imas_viz_api.parent.findChild(QVizMdiSubWindow)
     subWindow.close()
 
+    assert subWindow.isHidden()
+    assert list(view.imas_viz_api.figureframes) == [frame.figureKey]
+
+    view.imas_viz_api.closeWindow(frame)
     assert view.imas_viz_api.figureframes == {}
     assert view.imas_viz_api.figToNodes == {}
 
