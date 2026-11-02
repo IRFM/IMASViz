@@ -46,25 +46,18 @@ The confidence band of `QVizCurveErrors` is filled with `Qt.red`, so this palett
 holds **no pure red**: a band and a trace in the same colour is the confusion this
 row exists to remove, not one it should reintroduce.
 
-`LIGHT_CURVE_COLOURS` is the same answer for a window that paints the other
-ground. The Profiles plugin's table window sets `setBackground((255, 255, 255))`
-(`QVizTablePlotView.py:75`), measured `SolidPattern (255, 255, 255, 255)` on its
-view: it is the only `setBackground` in the package, and it is white. Half of the
-black palette vanishes there -- measured contrast against that white: cyan
-**1,25**, chartreuse **1,30**, spring green **1,35**, gold **1,40**, orange
-**2,33**, magenta **3,14** -- so the plugin asks this list instead. Its entries
-are picked against the same three rules, measured here: a contrast of at least
-**4,5** on white (the weakest, teal, answers **4,77**), no pure red (those panels
-carry the same `QVizCurveErrors` band as a curve figure), and no colour whose
-three channels are all at or above 128 -- a near-white on a white ground. Ordered
-so the cycle stays legible where it closes: the smallest squared rgb distance
-between two consecutive entries, the last and the first included, is **32 768**.
-
-The plugin draws **one** of these, the first, on every panel -- and not because a
-palette of 8 was too small for it. Measured on the reference case, its window
-holds **41** panels carrying **41 distinct parametrized paths**, one panel per
-path: there is nothing for a colour to group, and cycling would answer the same
-colour five times in one window.
+There is **one** palette, because there is one ground. The only window in the
+package that painted the other one was the Profiles plugin's own table
+(`QVizTablePlotView.py:75`, `setBackground((255, 255, 255))` -- measured
+`SolidPattern (255, 255, 255, 255)` on its view), and half of this list vanishes
+against that white: cyan **1,25**, chartreuse **1,30**, spring green **1,35**,
+gold **1,40**, orange **2,33**. A second palette existed for it (`LIGHT_CURVE_COLOURS`,
+navy/maroon/green/purple/teal/dark magenta/blue/sienna, weakest contrast **4,77**)
+and went with the window: a panel of the application's own Table Plot View is
+painted by `QVizPanel`, which never calls `setBackground`, so it is black like a
+curve figure. What keeps that true is `tests/test_61_a_colour_for_the_ground_a_window_paints.py`,
+which refuses a `setBackground` anywhere in the package rather than keeping a
+palette for a ground nothing draws.
 """
 
 import pyqtgraph as pg
@@ -99,32 +92,3 @@ def nameFor(index):
 def penFor(index):
     """The pen of the index-th trace, of the library's own default width."""
     return pg.mkPen(colourFor(index))
-
-
-# For a window that paints white, and so cannot use the list above: half of it
-# answers a contrast under 2,5 there. Same three rules -- contrast on the ground
-# it is painted on, no pure red (the confidence band is red wherever it is drawn),
-# no near-white -- and an order that keeps the cycle legible where it closes.
-# `lightColourFor(0)` is what the Profiles plugin draws every panel with.
-LIGHT_CURVE_COLOURS = (
-    ('navy', (0, 0, 128)),
-    ('maroon', (128, 0, 0)),
-    ('green', (0, 128, 0)),
-    ('purple', (128, 0, 128)),
-    ('teal', (0, 128, 128)),
-    ('dark magenta', (140, 0, 110)),
-    ('blue', (0, 0, 255)),
-    ('sienna', (160, 82, 45)),
-)
-
-LIGHT_CYCLE = len(LIGHT_CURVE_COLOURS)
-
-
-def lightColourFor(index):
-    """The rgb triple of the index-th trace drawn on a white ground."""
-    return LIGHT_CURVE_COLOURS[index % LIGHT_CYCLE][1]
-
-
-def lightNameFor(index):
-    """What that colour is called -- for a test, a log line, or the manual."""
-    return LIGHT_CURVE_COLOURS[index % LIGHT_CYCLE][0]

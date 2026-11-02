@@ -230,6 +230,16 @@ class QVizTablePlot(QWidget):
     def panels(self):
         return list(self._panels)
 
+    def styleMargins(self):
+        """The room between panels, which belongs to the window laying them out.
+
+        This is what the *Plot Design Properties* section of *Configure Plot*
+        writes, asked through the panel whose right click opened the dialogue.
+        One answer per window, never per panel, because one grid lays the whole
+        table out -- the same reason `layoutTable` asks its width once.
+        """
+        return self.grid
+
     def panelCount(self):
         return len(self._panels)
 

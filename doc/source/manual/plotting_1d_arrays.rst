@@ -97,8 +97,9 @@ are available in the right-click menu.
    :guilabel:`Image` figure answers pyqtgraph's lines only: it draws no trace, and
    what says how a picture is read is its colour scale, which belongs to the
    picture. The same :guilabel:`Configure Plot` line is answered one panel at a
-   time on a :guilabel:`Table Plot View` and a :guilabel:`Stacked Plot View`, and
-   by the plots of the :ref:`Profiles plugin <plugins>`. The menu that
+   time on a :guilabel:`Table Plot View` and a :guilabel:`Stacked Plot View` --
+   which covers the windows the :ref:`Profiles plugin <plugins>` opens, since a page
+   of that panel is a table of these. The menu that
    carried these entries on the old figure window was deleted with that window,
    and the frames drawn today answer the error-bar lines themselves. Two of the
    sections below describe lines that menu carried: :guilabel:`Auto Range` is
@@ -713,13 +714,16 @@ the image below.
 
 .. note::
    The three lines below are answered by a :guilabel:`Plot Figure` -- the window
-   that drew the curve is the one asked -- and by the plots of the
-   :ref:`Profiles plugin <plugins>`, whose menu carries them too. They are not
-   offered on an :guilabel:`Image` figure or on a MultiPlot display: an error bar
-   or a band belongs to a curve, and those windows draw none. The image below is
-   a :ref:`Profiles plugin <plugins>` menu, whose extra line :guilabel:`Auto
-   Range` a :guilabel:`Plot Figure` does not answer with a line of its own; its
-   :guilabel:`Configure Plot` line, a curve figure answers too.
+   that drew the curve is the one asked. They are **not** offered on an
+   :guilabel:`Image` figure, on a MultiPlot display, or on a panel of one: an error
+   bar or a band is read off a curve, and it lives in the frame that drew that
+   curve. A :ref:`Profiles plugin <plugins>` window therefore answers
+   :guilabel:`Configure Plot` on a panel and no error-bar line; the curve those
+   bars belong to is the one :guilabel:`Draw the selected quantity` opens. The
+   image below shows the three lines beside pyqtgraph's own, as a window that drew
+   a curve answers them; the :guilabel:`Auto Range` line it also carries belonged
+   to that window's view box, and on the frames drawn today the equivalent is the
+   Auto/Manual pair in the axis sub-window.
 
   .. figure:: images/plot_menu_error_bars.png
      :align: center
@@ -841,8 +845,8 @@ To create a new :guilabel:`Table Plot View`, follow the following steps:
 
 .. note::
    Each panel is drawn from the data, and each one answers the same
-   :guilabel:`Configure Plot` line the plots of the
-   :ref:`Profiles plugin <plugins>` carry: the right click is asked of a panel,
+   :guilabel:`Configure Plot` line every window that draws curves answers:
+   the right click is asked of a panel,
    and the window it opens lists that panel's traces and labels -- the curves of a
    neighbour are untouched. What else can be changed is what the panel answers
    for, through the controls it carries.
@@ -1049,8 +1053,8 @@ To create a new :guilabel:`Stacked Plot View`, follow the next steps:
 
 .. note::
    Each display is drawn from the data, and each one answers the same
-   :guilabel:`Configure Plot` line the plots of the
-   :ref:`Profiles plugin <plugins>` carry: the right click is asked of a display,
+   :guilabel:`Configure Plot` line every window that draws curves answers:
+   the right click is asked of a display,
    and the window it opens lists that display's traces and labels -- a neighbour's
    curves are untouched. What else can be changed is what the display answers
    for, through the controls it carries, and what it

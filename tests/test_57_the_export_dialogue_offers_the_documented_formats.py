@@ -56,8 +56,8 @@ import pyqtgraph
 from pyqtgraph.exporters import Exporter
 
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.CustomizedViewBox \
-    import CustomizedViewBox
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import QVizPanel
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 
 from support.fakes import FakeAxesNode
 from support.ownership import keep
@@ -127,21 +127,23 @@ def test_the_dialogue_offers_the_formats_the_manual_lists(qtbot):
 
 
 @pytest.mark.ui
-def test_a_plugin_view_box_takes_no_format_away_from_another_figure(qtbot):
+def test_another_window_takes_no_format_away_from_a_figure(qtbot):
     """The reason the patch was worth deleting rather than fixing.
 
-    The Profiles plugin used to run its patch from this view box's constructor, so
+    The Profiles plugin used to run its patch from its view box's constructor, so
     a plugin window existing at all was enough. `Exporters` is a class attribute
     of `Exporter`, so the format was gone from every dialogue of the process --
-    including the one opened here, on a figure the plugin never touched.
+    including the one opened here, on a figure the plugin never touched. The patch
+    is gone, so the check is that building any other window of the application
+    leaves the list alone -- here a panel of a Table Plot View, whose view box is
+    pyqtgraph's own.
     """
     frame, item = curveFigure(quantity('gap', [100., 200.]))
-    holder = pyqtgraph.PlotWidget()
-    qtbot.addWidget(holder)
-
-    viewBox = CustomizedViewBox(qWidgetParent=holder, imas_viz_api=None)
-    keep(viewBox)
-    assert viewBox.qWidgetParent is holder
+    table = QVizTablePlot(title='TablePlotView:probe')
+    keep(table)
+    panel = QVizPanel(table)
+    keep(panel)
+    assert panel.pgPlotWidget.getViewBox().menu is not None
 
     assert dialogueFormats(item) == DOCUMENTED
 

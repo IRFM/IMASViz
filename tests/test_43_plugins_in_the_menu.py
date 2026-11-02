@@ -168,8 +168,10 @@ class TakesAnswers(VizPlugin):
 
     A session replaying this line hands over what the user answered the first
     time instead of letting the entry ask again, which is what the Profiles plugin
-    cannot be allowed to do at a restore: its question is a modal `QInputDialog`,
-    and a probe left to answer one sat there for 240 s.
+    used to need: its question was a modal `QInputDialog`, and a probe left to
+    answer one sat there for 240 s. It asks nothing now -- the occurrence is a
+    control of its window -- but the contract stays, because a plugin that draws
+    its window from a session answer is what a restore can replay.
     """
 
     def __init__(self):
@@ -187,6 +189,33 @@ class TakesAnswers(VizPlugin):
 
     def execute(self, vizAPI, pluginEntry, answers=None):
         RAN.append(('TakesAnswers', vizAPI, pluginEntry, answers))
+
+
+class ClaimsEquilibriumOnly(VizPlugin):
+    """A plugin that offers itself on one IDS name and on no other.
+
+    The Profiles plugin used to be exactly this -- five names spelled in its own
+    code -- and 42 of the 55 IDSs of the reference case got a 'Plugins' sub-menu
+    with nothing in it because of it. Now that every IDS earns that line from its
+    own tree, the two refusals an unclaimed IDS answers are pinned on a plugin
+    that still refuses by name.
+    """
+
+    def __init__(self):
+        super().__init__()
+        BUILT.append('ClaimsEquilibriumOnly')
+
+    def isEnabled(self):
+        return self.selectedTreeNode.getIDSName() == 'equilibrium'
+
+    def getEntries(self):
+        return [3]
+
+    def getAllEntries(self):
+        return [(3, 'only on equilibrium')]
+
+    def execute(self, vizAPI, pluginEntry, answers=None):
+        RAN.append(('ClaimsEquilibriumOnly', vizAPI, pluginEntry, answers))
 
 
 class TakesAnything(VizPlugin):
@@ -800,40 +829,45 @@ def aShotView(qapp):
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
-def test_the_reference_case_offers_three_lines_for_equilibrium(qtbot):
+def test_the_reference_case_offers_two_lines_for_equilibrium(qtbot):
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     entries = QVizPluginCatalog(frame.dataTreeView).entriesFor(
         frame.dataTreeView.IDSRoots['equilibrium'])
-    # equilibriumcharts offers one, VizProfiles_plugin two -- and the numbers
-    # they run under are theirs, not their place in the menu.
+    # equilibriumcharts offers one and VizProfiles_plugin one -- and the numbers
+    # they run under are theirs, not their place in the menu. The Profiles plugin
+    # used to answer two lines here, each spelling the array of structures and the
+    # abscissa in its text; the window asks both with a control now.
     assert [(entry.pluginName, entry.number, entry.label)
             for entry in entries] == [
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
-        ('VizProfiles_plugin', 0, 'Visualization of 1D nodes from '
-                                  'time_slice(itime) along coordinate1 axis...'),
-        ('VizProfiles_plugin', 1, 'Visualization of 0D/1D nodes from '
-                                  'time_slice(itime) along time axis...')]
+        ('VizProfiles_plugin', 0, 'Plot what the equilibrium IDS holds...')]
 
 
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
-def test_the_reference_case_offers_two_lines_for_core_profiles(qtbot):
+def test_the_reference_case_offers_a_line_for_core_profiles(qtbot):
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     entries = QVizPluginCatalog(frame.dataTreeView).entriesFor(
         frame.dataTreeView.IDSRoots['core_profiles'])
+    # An IDS with no list of quantities of its own used to get no line at all: the
+    # Profiles plugin knew five IDSs by name. What it can offer is the tree's
+    # answer, so any IDS root earns the line.
     assert [(entry.pluginName, entry.number) for entry in entries] == \
-        [('VizProfiles_plugin', 0), ('VizProfiles_plugin', 1)]
+        [('VizProfiles_plugin', 0)]
 
 
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
-def test_an_ids_no_plugin_claims_gets_no_plugins_sub_menu(qtbot):
+def test_an_ids_no_plugin_claims_gets_no_plugins_sub_menu(qtbot, monkeypatch):
     # Measured: 42 of the 55 IDS names of this case are claimed by no plugin,
-    # and every one of them got a 'Plugins' sub-menu with nothing in it.
+    # and every one of them got a 'Plugins' sub-menu with nothing in it. The
+    # Profiles plugin no longer claims five IDSs by name -- every IDS earns its
+    # line -- so the refusal is pinned on a stub that still refuses by name.
+    registerStubs(monkeypatch, ClaimsEquilibriumOnly)
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
@@ -848,9 +882,10 @@ def test_an_ids_no_plugin_claims_gets_no_plugins_sub_menu(qtbot):
 @pytest.mark.ui
 @pytest.mark.dd
 def test_the_shift_right_click_of_an_unclaimed_ids_logs_instead_of_opening_a_menu(
-        qtbot, caplog):
+        qtbot, caplog, monkeypatch):
     # This gesture offers the plugins and nothing else, so it used to open an
     # empty menu on 42 IDSs out of 55.
+    registerStubs(monkeypatch, ClaimsEquilibriumOnly)
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
@@ -884,10 +919,7 @@ def test_the_right_click_menu_of_a_node_offers_the_plugins_of_that_node(qtbot):
     assert shiboken6.isValid(plugins)
     assert [action.text() for action in plugins.actions()] == [
         'Equilibrium overview...',
-        'Visualization of 1D nodes from time_slice(itime) along coordinate1 '
-        'axis...',
-        'Visualization of 0D/1D nodes from time_slice(itime) along time '
-        'axis...']
+        'Plot what the equilibrium IDS holds...']
 
 
 @pytest.mark.case
@@ -906,4 +938,4 @@ def test_a_view_asks_its_two_plugins_once_across_its_menus(qtbot):
     for _ in range(3):
         menu = QMenu()
         menu.setParent(view)
-        assert QVizPluginMenu().buildPluginsMenu(equilibrium, view, menu) == 3
+        assert QVizPluginMenu().buildPluginsMenu(equilibrium, view, menu) == 2
