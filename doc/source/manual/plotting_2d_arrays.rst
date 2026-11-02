@@ -170,7 +170,7 @@ one summary line, because there the legend spells the same thing out.
 Slices
 ^^^^^^
 
-One movable line stands on each axis of the picture. A line is placed in the
+One line stands on each axis of the picture. A line is placed in the
 coordinates the picture is laid over rather than in element ranks, and cannot leave
 their extents; it says where it stands, for instance :guilabel:`rho_tor[m]=2`. The
 element it reads is the nearest one, since a slice is an element of the array and on
@@ -179,7 +179,16 @@ an irregular grid the nearest one is not the one below.
 The slice under each line is drawn as a 1D curve under the pictures, against the
 values of the other axis of the picture -- the abscissa the picture already carries.
 That curve answers the picture that is up now: moving the window of pictures, or a
-pinned axis, moves the slice with it.
+pinned axis, moves the slice with it. The window whose abscissa is the axis the
+picture spans horizontally is the one directly under the pictures, so the two scales
+line up; the other cut comes below it.
+
+A window is drawn when it has a curve to show: the axis its cut runs along has to
+carry more than one element. An axis the line *stands* on may carry one -- a camera
+channel with a single energy band, for instance -- and then that line simply has
+one place to stand, while the window under it still shows the only cut there is,
+which is the whole trace along the other axis. The window that would hold a single
+value is not drawn, and its command row goes with it.
 
 Each line wears one colour, and so does the curve it produces. That colour is the
 only thing saying which line a curve answers: the panel under a line standing on one

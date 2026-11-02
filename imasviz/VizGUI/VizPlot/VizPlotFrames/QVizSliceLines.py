@@ -30,20 +30,22 @@ And the commands to keep a slice -- the point of the exercise, since comparing
 slices is why anyone drags a line -- lived in a context menu built by the legacy
 viewBox, which these frames do not use. They are buttons on the figure now.
 
-One pair of lines, on the first picture. What the lines answer is that picture,
+One line per drawn axis, on the first picture. What the lines answer is that picture,
 and with a window of pictures side by side a line on each would be several
 answers to one question; the window control moves which picture that is.
 
-**Which window answers which line, and when neither does.** The window whose
+**Which window answers which line, and when one of them does not.** The window whose
 abscissa is the picture's own horizontal axis goes directly under the pictures, so
 the two scales line up, and the cut the vertical line takes comes below it. Asked
 the other way round, dragging the vertical line leaves the bottom window untouched
--- the report this ordering answers. A line is posed only where both halves of its
-question can be asked, too: more than one element to choose on the axis it stands
-on and more than one to draw along the axis its cut runs along, or the interval is
-``(v, v)``, no drag moves the line, and its window reads as a slice that stopped
-answering. The test is symmetric, so a picture one element wide -- a WEST
-``soft_x_rays`` channel: one energy band by 6356 times -- poses no line at all.
+-- the report this ordering answers. A line is posed where its **window** can answer:
+the axis its cut runs along has to carry more than one element to draw. The axis the
+line stands on may carry one, and then the line simply has nowhere to move -- the
+window below still shows the only cut there is. On a WEST ``soft_x_rays`` channel
+(one energy band by 6356 times) that leaves the trace along time under the pictures
+and refuses the window that would hold a single value; asking the test of both
+halves of the question at once refuses the two together, which is the answer that
+went missing.
 
 **One colour per side, worn by the line, its markers and the curve it produces.**
 The two slice plots run along different axes and say so only in their axis labels,
@@ -163,24 +165,25 @@ class QVizSliceLines:
         self._axes[self.BOTTOM].other = self._axes[self.LEFT]
         self._axes[self.LEFT].other = self._axes[self.BOTTOM]
         self._columns = max(int(columns), 1)
-        # A line answers a question only when both of its halves can be asked:
-        # the axis it stands on has to have more than one element to choose, and
-        # the axis its cut runs along has to have more than one to draw. The test
-        # is the same for both sides, so either both lines stand or neither does.
-        # Measured on soft_x_rays, where a channel's brightness is one energy band
-        # by 6356 times: the vertical line stood on time and answered a single
-        # point, the horizontal one held the whole time series and its interval
-        # was (0, 0), so no drag could move it. Either window reads as a slice
-        # that stopped answering, and a picture that thin has no cut to take --
-        # the curve entry is what draws a strip like that.
-        drawable = all(len(self._axes[side].values) > 1 for side in self.SIDES)
+        # A window answers when the cut it holds is a curve: the axis its line
+        # runs along has to carry more than one element to draw. The axis the line
+        # *stands* on may carry one -- then there is exactly one cut to show, the
+        # line cannot move because there is nowhere else to stand, and the window
+        # below still answers it. Measured on the WEST ``soft_x_rays`` strip (one
+        # energy band by 6356 times): the vertical line stands on time and its cut
+        # is a single value, so its window is refused; the horizontal line stands
+        # on the only band and its cut is the whole trace along time, and that
+        # window is the answer the user is after. The first cut of this rule asked
+        # the test of both halves at once and refused the two windows together,
+        # which took that trace away with the one-point window -- reported as the
+        # cut windows having disappeared.
         # The window whose abscissa is the picture's own horizontal axis goes
-        # directly under it, so the two scales line up; the cut the vertical
-        # line takes -- which runs along the picture's vertical axis -- comes
-        # below it. Measured the other way round: dragging the vertical line
-        # left the bottom window untouched, which is exactly how the two windows
-        # read as swapped.
-        self._sides = [self.LEFT, self.BOTTOM] if drawable else []
+        # directly under it, so the two scales line up; the cut the vertical line
+        # takes -- which runs along the picture's vertical axis -- comes below it.
+        # Measured the other way round: dragging the vertical line left the bottom
+        # window untouched, which is exactly how the two windows read as swapped.
+        self._sides = [side for side in (self.LEFT, self.BOTTOM)
+                       if len(self._axes[side].other.values) > 1]
 
         for row, side in enumerate(self._sides, start=1):
             axis = self._axes[side]

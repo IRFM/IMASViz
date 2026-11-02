@@ -388,7 +388,8 @@ class QVizImagePlot(QWidget):
         The lines answer that picture, and the window control says which picture
         that is. Each command is named after the axis the line stands on: a
         picture carries two lines, and 'this slice' says nothing without that --
-        and it carries two only when both drawn axes have something to choose.
+        and it carries two only when each of them has a cut to draw, so a picture
+        one element wide keeps the one line whose cut is a curve.
         """
         axes = self._sliceAxes(axesSpec, drawn, handle)
         self.sliceLines.forQuantity(self._pictures[0][0], quantity, axes,

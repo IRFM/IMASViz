@@ -383,16 +383,19 @@ def test_the_windows_lay_out_in_the_order_the_lines_answer_them(figure):
 
 
 # ---------------------------------------------------------------------------
-# A picture that is a strip has no cut to take.
+# A picture that is a strip keeps the one cut that holds a curve.
 #
 # Reported on WEST soft_x_rays: `channel(0).brightness.data` is one energy band
-# by 6356 times. The horizontal line held the whole time series and its interval
-# was (0, 0), so no drag could move it; the vertical one stood on time and
-# answered a single point. Either window reads as a slice that stopped answering.
-# A line is worth posing only when both halves of its question can be asked: more
-# than one element to choose on the axis it stands on, more than one to draw on
-# the axis its cut runs along. The test is symmetric, so either both lines stand
-# or neither does.
+# by 6356 times. The report first was "dragging the vertical marker leaves the cut
+# drawn in the bottom window unchanged" -- answered by the ordering above. Then
+# came the report this section pins: **both cut windows had disappeared**. The
+# first answer to the swap asked the test of both halves of a line's question at
+# once -- something to choose on the axis it stands on *and* something to draw
+# along the axis its cut runs along -- and that test is symmetric, so a strip
+# refused its two windows together. It threw away the answer with the
+# degeneracy: the line standing on the single band has nowhere to move, but the
+# cut it takes is the whole trace along time. A window is therefore refused for
+# what it holds, not for whether its line can be dragged.
 
 
 def _thinPicture():
@@ -406,27 +409,61 @@ def _thinPicture():
 
 
 @pytest.mark.ui
-def test_a_picture_one_element_wide_poses_no_line(figure):
+def test_a_strip_keeps_the_window_whose_cut_is_the_trace(figure):
     figure.plot(_thinPicture())
 
-    assert figure.sliceLines.sides() == []
-    assert not figure.sliceLines.isPosed()
-    # A `ColorBarItem` is a `PlotItem` (measured on 0.13.7), so the count has to
-    # take the pictures and the bar out by identity to say what is left.
+    # One line, the one whose cut runs along the axis that has elements to draw.
+    assert figure.sliceLines.sides() == ['left']
+    assert figure.sliceLines.isPosed()
+    assert figure.sliceAxisLabel('left') == ('rho_tor', 'm')
+    x, y = figure.sliceNumbers('left')
+    assert len(y) == len(RHO), (
+        'the whole strip is the only cut there is, and it is the answer the user '
+        'came for')
+    np.testing.assert_array_equal(np.asarray(y), [10. * row for row in RHO])
+
+
+@pytest.mark.ui
+def test_the_window_that_would_hold_one_point_is_refused(figure):
+    figure.plot(_thinPicture())
+
+    # The vertical line stands on time and its cut is the single band: a curve of
+    # one point answers nothing, and it is the window the swap report mistook for
+    # a stuck one.
+    assert 'bottom' not in figure.sliceLines.sides()
+    with pytest.raises(KeyError):
+        figure.slicePlot('bottom')
+    # A `ColorBarItem` is a `PlotItem` (measured on 0.13.7), so what is left on
+    # the figure has to be taken out by identity to say anything.
     left = [item for item in figure.pgPlotWidget.ci.items
             if isinstance(item, pg.PlotItem)
             and item is not figure.colorBar
             and all(item is not plot for plot in figure.plotItems())]
-    assert left == [], (
-        'a window under a line nobody can drag answers nothing')
-    assert not figure.sliceButtons.isVisibleTo(figure), (
-        'a bar of commands with no line to keep is a strip of grey')
+    assert left == [figure.slicePlot('left')]
+    # The command bar answers the lines that stand, one row each.
+    assert figure.sliceButtons.isVisibleTo(figure)
+    assert figure._sliceLabels['left'].isVisibleTo(figure)
+    assert not figure._sliceLabels['bottom'].isVisibleTo(figure)
+    assert not figure._keepButtons['bottom'].isVisibleTo(figure)
 
 
 @pytest.mark.ui
-def test_a_strip_is_still_drawn_when_its_cut_is_refused(figure):
-    # Taking the cut away is not taking the picture away: the strip is still
-    # drawn with its values, and only the slice commands are gone.
+def test_a_line_standing_on_one_element_stays_where_it_stands(figure):
+    # Its interval is (v, v): there is one band, so there is one place to stand.
+    # The window below is not stuck -- it is showing the only cut there is.
+    figure.plot(_thinPicture())
+    line = figure.sliceLine('left')
+
+    line.setPos(THETA[-1] + 1.)
+
+    assert line.value() == pytest.approx(0.)
+    assert len(figure.sliceNumbers('left')[1]) == len(RHO)
+
+
+@pytest.mark.ui
+def test_a_strip_is_still_drawn_when_half_its_cuts_are_refused(figure):
+    # Refusing a window is not refusing the picture: the strip is still drawn with
+    # its values and its colour scale.
     figure.plot(_thinPicture())
 
     assert figure.isDrawing()
