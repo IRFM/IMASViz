@@ -132,10 +132,11 @@ takes a few seconds. After that the plugin window will appear.
 
 .. note::
    The plugin reads **occurrence 0** of the :guilabel:`equilibrium` IDS and of the
-   :guilabel:`wall` IDS. It does not ask which occurrence: unlike the *Profiles*
-   plugin, it has no occurrence question to answer. If that occurrence is not in
-   memory, nothing is opened and the reason is written in the log panel of the
-   shot view the menu was built on.
+   :guilabel:`wall` IDS. It does not ask which occurrence, and it has no occurrence
+   control: if that occurrence is not in memory, nothing is opened and the reason is
+   written in the log panel of the shot view the menu was built on. The *Profiles*
+   panel, which offers every occurrence the case holds, carries that choice as a
+   combo on its own window instead.
 
 .. note::
    The window is managed like a plot window: it appears in the
@@ -193,80 +194,115 @@ To enable grid on all plots check the :guilabel:`Enable Grid` option.
 'Profiles' plugin overview
 --------------------------
 
-This plugin allows to plot 0D/1D data embedded in dynamic AOS. It currently supports the following IDSs:
+This plugin answers one question for the node you are on: **what does this IDS hold
+that can be drawn, and how would it be drawn?** It is offered on every IDS root of
+the opened case -- there is no list of supported IDSs in the plugin, and there used
+to be one. What the window holds is read off the tree that loading that occurrence
+built, so the tabs are the arrays of structures *this* IDS has, and the quantities
+in them are the ones the application knows how to plot.
 
-- core_profiles
-- core_transport
-- core_sources
-- equilibrium
-- edge_profiles
+On the case this manual was written against (WEST 54924, run 0, data dictionary
+3.35.0), the same entry answers four different IDSs:
+
++---------------+-----------+-------------+----------------+---------------------+
+| IDS           | tabs      | quantities  | error fields   | occurrences         |
++===============+===========+=============+================+=====================+
+| equilibrium   | 10        | 191         | 536            | 0, 1, 2, 3          |
++---------------+-----------+-------------+----------------+---------------------+
+| core_profiles | 9         | 220         | 558            | 0, 1, 2, 3          |
++---------------+-----------+-------------+----------------+---------------------+
+| magnetics     | 4         | 21          | 16             | 0, 1                |
++---------------+-----------+-------------+----------------+---------------------+
+| wall          | 4         | 52          | 96             | 0                   |
++---------------+-----------+-------------+----------------+---------------------+
+
+``magnetics`` and ``wall`` are the two that used to answer nothing at all: they are
+written with ``homogeneous_time = 1``, and the read the plugin used kept only what
+it called dynamic.
 
 Executing the 'Profiles' plugin
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Here is a scenario example on executing the IMASViz **Profiles plugin**:
+1. Navigate to the IDS you want -- any IDS of the opened case.
 
-1. Navigate to the **core_sources**, **core_profiles**, **core_transport**, **edge_profiles** or **equilibrium**  IDS.
+2. **right-click** on its root node. The :menuselection:`Plugins` sub-menu lists
+   :guilabel:`Plot what the <ids> IDS holds...`.
 
-2. **right-click** on the **core_profiles** node for example. The available plugin actions appear in the popup menu.
+3. Choose it. The window opens on the first occurrence the case holds, with one tab
+   per array of structures of that IDS and one tab for the quantities outside any of
+   them.
 
-    .. figure:: images/Profiles_plugin_profiles_plugin_menu.png
-     :align: center
-     :scale: 80%
-     :alt: Profiles plugin popup menu
+Nothing is asked in a dialog: the two choices are combos on the window.
 
-     Profiles plugin popup menu
+- :guilabel:`Occurrence`, bounded by the occurrences this case holds. Choosing
+  another one loads it and asks the tree again, so the tabs change with it.
+- :guilabel:`Plot along`: either the clock of the IDS, or *its own axis*, which
+  leaves the read to answer per quantity. Those are the same two strategies as
+  :guilabel:`New ('TIME' axis)` and :guilabel:`New (default axis)` in the tree's own
+  menu (section :ref:`plotting_a_selection_to_figure`). An IDS with no clock of its
+  own answers only the second.
 
-3. Select **Visualization of 1D nodes from profiles_1d(itime) along coordinate1 axis**. All 1D data contained contained in profiles_1d(itime) are plotted along the coordinate1 axis.
+The line under them states the whole answer: how many tabs, how many quantities, and
+-- named as a refusal rather than hidden -- how many of those quantities are error
+fields.
 
-    .. figure:: images/Profiles_plugin_plots_along_coordinate1_example.png
-     :align: center
-     :scale: 80%
-     :alt: Plots example along the 'coordinate1' axis using the 'Profiles' plugin
+What a tab holds, and what a click draws
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-     Plots example along the coordinate1 axis using the 'Profiles' plugin
+A tab lists one page of its group and says which page that is -- this is the line
+the ``time_slice/constraints`` tab of ``equilibrium`` occurrence **2** answers, on a
+group longer than a page: ``111 quantities along time (the clock of the IDS), page 1
+of 2 (100 on this page, 100 per page)``. Three buttons:
+
+- :guilabel:`Draw this page` puts one panel per quantity into a
+  :ref:`Table Plot View <TPV>`;
+- :guilabel:`Add the next page` puts the page after this one into a window **of its
+  own**, because a table asks the width of its grid once for the whole table and
+  panels arriving afterwards would be laid out twice;
+- :guilabel:`Draw the selected quantity` runs the tree's own *Plot this node*
+  gesture: a curve figure, or an image window for a quantity with two axes of its
+  own.
+
+The window a click opens belongs to the application, not to the plugin. It is listed
+by :menuselection:`Plot windows` and by *Show/Hide* and *Delete*, a saved session
+puts it back (section :ref:`save_load_session`), each panel answers
+:guilabel:`Configure Plot` on its own right click, and the export dialogue offers
+its formats.
+
+A tab that lists fewer quantities than its array holds names the ones it leaves out
+and why: a quantity with two axes of its own has no panel to sit in, and
+:guilabel:`Draw the selected quantity` opens it as a picture. A page whose
+quantities hold no value along the chosen axis is refused in the log panel of the
+shot view, and no empty window is left on the screen -- ``wall`` occurrence 0 of
+this case answers 22 such quantities.
+
+The time cursors
+^^^^^^^^^^^^^^^^
+
+A window drawn along the clock needs no cursor: its abscissa *is* the time array. A
+window drawn along each quantity's own axis pins one element of that array per
+panel, and the band at the bottom of the plugin window moves those panels together.
+It is folded into one line -- :guilabel:`More` puts the sliders back -- and it offers
+a base only when a window this panel opened actually answers a row for it. That is
+why the band is empty over a window drawn along time, and absent altogether for an
+IDS with no time base.
 
 .. note::
-   Every panel of that window draws its curve in the same colour, and on white.
-   This is not an oversight: the window holds one quantity **per panel**, so a
-   colour would have nothing there to tell apart, and the ground is the window's
-   own — unlike a :guilabel:`Plot Figure`, which paints black and gives each of
-   its traces a colour of its own (section :ref:`plotting_1d_arrays`). The
-   colours of that palette are chosen so that they stay legible on white.
+   The 536 error fields of ``equilibrium`` occurrence 0 are counted and refused
+   here, not drawn. An error field is a bar on the curve it belongs to, and the bars
+   live in a figure of curves (section
+   :ref:`plotting_error_bars_and_confidence_bands`): a panel of a table answers
+   :guilabel:`Configure Plot` and no error-bar line. :guilabel:`Draw the selected
+   quantity` opens the curve those bars belong to.
 
-4. Move the time slider. Each plot is updated accordingly.
+.. note::
+   With the shot view's :guilabel:`Show only tensors (rank >= 1)` filter on, the tabs
+   hold what survived that filter, and the window says so rather than inventing a
+   count for what was pruned while the tree was built.
 
-5. **right-click** on a particular plot. A popup menu displays.
-
-    .. figure:: images/Profiles_plugin_plots_menu.png
-     :align: center
-     :scale: 80%
-     :alt: Plot menu
-
-     Plot menu
-
-6. Select 'Plot this in a new separate figure'
-
-.. Note::
-   For the 'core_sources' and 'core_transport' IDS, you will be asked for the index i1 of the 'source(i1) AOS' (index i1 of the model(i1) AOS respectively), 
-   in order to select all data contained in 'source(i1)/profiles_1d' and 'source(i1)/global_quantities' ('model(i1)/profile_1d' respectively).
-
-   The time slider appears only for plots along the 'coordinate1' axis.
-
-Each table of plots can be managed (hide/show and delete) from the menu 'Plot windows' as shown below:
-
-    .. figure:: images/Profiles_plugin_plots_windows_menu.png
-     :align: center
-     :scale: 80%
-     :alt: Plots windows menu
-
-     Plots windows menu
-
-Time value can be converted in time slice index using the field 'Time value':
-
-1. Enter the time value in the field 'Time value'. The time value is automatically converted in time index in the field 'Time slice index'
-2. Click the button 'Plot' in order to update the plots accordingly
-
-.. Note::
-   The plots are automatically updated if the checkbox 'Refresh plot(s) automatically on time index change' is enabled.
+.. note::
+   The plugin's window is registered like a figure (``PlotView:1``) and is listed by
+   *Show/Hide* and *Delete*, but it is not inside the MDI area: it travels with the
+   shot view it was opened from, and a session puts it back by asking the plugin's
+   menu line again -- see :ref:`plugin_answers_and_sessions`.
 

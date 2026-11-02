@@ -356,9 +356,11 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    **by that number**, and a number it does not describe is refused by name),
    `execute(vizAPI, pluginEntry, answers=None)` (receiving that same number, and the
    `QVizPluginAnswers` of a session restore when the entry is replayed), optional
-   `getPluginsConfiguration()`, `getDescription()`. Gate on
-   `self.selectedTreeNode.getIDSName()` against a `supported_idss` list — that is how
-   plugins claim IDSs. Inheriting `VizPlugin` is not what puts a plugin in the menu: the
+   `getPluginsConfiguration()`, `getDescription()`. A plugin may gate on
+   `self.selectedTreeNode.getIDSName()` against a `supported_idss` list — that is how the
+   Equilibrium chart claims its one IDS — or claim every IDS root and ask the case what it
+   holds, which is what `VizProfiles_plugin` does now: `isEnabled` is true for any IDS, and
+   `execute` refuses by name when the occurrence it was handed is not in the case. Inheriting `VizPlugin` is not what puts a plugin in the menu: the
    catalog binds `setSelectedTreeNode(node)` **and** `setDataTreeView(view)` and asks the
    methods, so a plugin outside the hierarchy that honours them is offered like any other.
    The view binding is load-bearing and was missing for three slices: a plugin that reads
@@ -425,7 +427,11 @@ all for a shipped plugin — `QVizPluginMenu.editable`), and `writeSource`, whic
 write whatever asked for it. Reading a shipped plugin is useful only if changing one starts
 from it, so `copyIntoUserFolder` takes its **whole folder** — sub-packages included,
 `__pycache__` left out — renames the module to the class name and rewrites that identifier
-across every file it copies (measured: 3 files for `VizProfiles_plugin`), and returns the
+across every file it copies (measured for `VizProfiles_plugin`: the copy carries **3**
+files — the entry module and the two of its sub-package — and rewrites the name in **1**
+of them, because since the panel replaced the plugin's own grid only the entry module
+spells `VizProfiles_plugin`; `test_82` pins both numbers and compiles every file of the
+copy), and returns the
 copy plus the files it touched; the file is renamed **before** the words are rewritten, or
 the answer names paths that no longer exist.
 
@@ -487,16 +493,19 @@ in a `finally`.
 plugin without the full GUI. `tests/test_43_plugins_in_the_menu.py` drives the menu
 instead, with stub plugins registered through a fake module in `sys.modules`.
 
-**Two** plugins are registered (`VizPlugin.py:32-36`), and both are now run end to end on
-the reference case by `tests/test_51_*` (Profiles) and `tests/test_53_*` (Equilibrium).
+**Two** plugins are registered (`VizPlugin.py:32-36`), and both are run end to end on
+the reference case by `tests/test_51_*` and `tests/test_85_*` (Profiles),
+`tests/test_69_*` (what a session does with a Profiles window) and `tests/test_53_*`
+(Equilibrium).
 The Equilibrium one (`viz_equi/equilibriumcharts.py`, **1 253 l.**, author J. Morales) is
 the only matplotlib window in the application: it does not draw through the axes model, so
 it is registered under its own `FigureTypes.EQUILIBRIUMPLOTTYPE` (`EquiPlotView:`) — a
 **6th** `MENU_ORDER` kind, so *Show/Hide* and *Delete* reach it — and it registers **no**
 node in `figToNodes`, which is why the "add this quantity to that figure" entries do not
-offer it. Measured facts worth keeping: it reads **occurrence 0** and does not ask (unlike
-Profiles, whose occurrence question is a modal `QInputDialog`); its window is parented to
-the shot view and is **not** an MDI subwindow (`mdiWindowOf` answers `None`), so it goes
+offer it. Measured facts worth keeping: it reads **occurrence 0** and does not ask (the
+Profiles panel, which offers every occurrence the case holds, carries that choice as a
+combo on its own window); its window is parented to the shot view and is **not** an MDI
+subwindow (`mdiWindowOf` answers `None`), so it goes
 with the view it came from; **6,73 s** cold for the first run of a process, **0,98–1,45 s**
 once the IDS is in memory. And `QVizPreferences.Ignore_GGD` does **not** cover the plugin's
 own `get`: with the GGD walk of the tree reactivated, the same case cost **287 s** in a
@@ -894,7 +903,14 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   rewrite adds **1**: `VizPlugins/viz_Profiles/viz_profiles/QVizProfileOffer.py`, what
   one IDS of one case can be drawn as, read off the tree that case built instead of
   listed by hand — so the sweep answers **126** modules and **125** imports, measured
-  the same way, which prints **127 passed, 1 xfailed**.
+  the same way, which prints **127 passed, 1 xfailed**. The second step takes **5**
+  out and puts **1** back: the plugin's own figure island (`viz_profiles/VizProfiles.py`,
+  `QVizTablePlotView.py`, `CustomizedViewBox.py`, `tabQt.py`, `menu.py` — 5 files that
+  drew a grid the rest of the application could not see) goes, and
+  `viz_profiles/QVizProfilePanel.py` replaces it — so the sweep answers **122** modules
+  and **121** imports, measured the same way, which prints **123 passed, 1 xfailed**
+  (two of those ids are `test_the_walk_finds_the_package` and
+  `test_known_unimportable_list_is_not_stale`, not modules).
   Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
@@ -1015,32 +1031,41 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   and `Viz_API` both call it at start-up, a test has to.
 - A plugin entry **is** run end to end now — `tests/test_51_profiles_plugin_figure_menu.py`
   chooses the registered Profiles entry on the reference case and pins what it puts on
-  screen (**2** tabs, **41** plots, **41** curves, `PlotView:1`). Two measured defects
-  in that plugin stood in the way, and both are fixed: labelling its time slider
-  formatted a 0D time node, which on IMAS-Python is an `IDSFloat0D` — a `numbers.Real`
-  wrapper with `__float__` and **no `__format__`** — so `f"{tmin:.2f}"` raised
+  screen (**10** tabs and **191** quantities for `equilibrium` occurrence 0, and the same
+  entry offered for `core_profiles`, `magnetics` and `wall` — the two last of those never
+  had a line, because the read that panel used kept only what it called dynamic). Two
+  measured defects stood in the way when that file was written, and both went with the
+  code that carried them: labelling the old window's time slider formatted a 0D time node,
+  which on IMAS-Python is an `IDSFloat0D` — a `numbers.Real` wrapper with `__float__` and
+  **no `__format__`** — so `f"{tmin:.2f}"` raised
   `TypeError: unsupported format string passed to IDSFloat0D.__format__`
-  (`VizProfiles.py:504`) inside `setUI`, leaving everything under the tabs unbuilt;
-  and `CustomizedViewBox.getMenu` walked `self.menu.leftMenu`, which pyqtgraph
-  **0.13.7** does not keep (the actions are in `ViewBoxMenu.mouseModes`), so the right
-  click on a plugin plot answered `AttributeError` before the menu opened. What is
-  **still** true of that plugin: the occurrence question is a **modal `QInputDialog`**
-  — with the **4** occurrences this case holds for `equilibrium` a probe sat in
-  `VizProfiles_plugin.askForOccurrence` for **240 s** until the watchdog killed it — so
-  a test patches the dialog at module level (`setattr(profilesPlugin, 'QInputDialog',
-  StubDialog)`) and asserts on the question rather than answering it by hand. And a
-  plugin window is registered like a figure (`PlotView:1` in `figureframes`) but is a
-  **top-level** window: measured `parent() is None`, never embedded in the MDI area.
-  Since T22(b) its three figure gestures run `QVizPlotOneNode` like every other gesture,
-  so the frames they build are `SlicesPlot1`/`SlicesPlot2` in the MDI area, and the
+  (`VizProfiles.py:504`) inside `setUI`, leaving everything under the tabs unbuilt (the
+  Equilibrium plugin had the same defect in its own label, and still guards against it);
+  and `CustomizedViewBox.getMenu` walked `self.menu.leftMenu`, which pyqtgraph **0.13.7**
+  does not keep (the actions are in `ViewBoxMenu.mouseModes`), so the right click on a
+  plugin plot answered `AttributeError` before the menu opened. That island — the plugin's
+  grid, view box, tabs and page arithmetic — is gone: the panel names quantities and
+  `QVizPlotAsTable` / `QVizPlotOneNode` draw them, so what the plugin puts in
+  `figureframes` is one `PlotView:` window of its own plus the `TablePlotView:` and
+  `SlicesPlot:` figures its clicks ask for.
+  What is **no longer** true of it: the occurrence question is not a **modal
+  `QInputDialog`** any more — that dialog is what a probe left alone for **240 s** on this
+  case, and it is a combo bounded by the case now, which a session restore answers in the
+  user's place. A test asserts the absence (`not hasattr(profilesPlugin, 'QInputDialog')`)
+  rather than patching the dialog. And a plugin window is still registered like a figure
+  (`PlotView:1` in `figureframes`) but is a **top-level** window: measured
+  `parent() is None`, never embedded in the MDI area.
+  The gestures inside that window run `QVizPlotOneNode` like every other gesture,
+  so the frames they build are `SlicesPlot:` figures in the MDI area, and the
   "add this quantity to that figure" gate lives on `Viz_API`
   (`figureDrawsSameCurveAxis`, which since T36 asks **the frame** — `figureframes`
   and the abscissa it carries — and no longer re-walks the `figToNodes` record)
   where the shot
-  view's menu and a plugin's view box ask the same question. Since T25 its view box no
-  longer carries the error-bar behaviour either: `CustomizedViewBox.py` is **272** lines
-  where it was **445**, and the three lines its menu offers call the same `QVizCurveErrors`
-  a curve figure builds — what the plugin keeps is its menu and its node-to-curves map.
+  view's menu and a plugin's view box ask the same question. The plugin no longer carries
+  any error-bar behaviour of its own: `QVizCurveErrors` is owned by the curve frame alone
+  (`test_58` pins it), so a panel of a Table Plot View — which is what a Profiles page is
+  — answers *Configure Plot* and **no** error-bar line, and the error fields the offer
+  counts reach their bars through *Draw the selected quantity*.
   A curve figure answers those three lines too: its right click goes from pyqtgraph's
   **4** entries to **7**, and since T43 `Configure Plot` is **not** plugin-only any more:
   row T32 of `LEGACY_REPLACEMENT.md` is answered on every window that draws curves — the
@@ -1049,12 +1074,18 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   which owns the entry, the record of **which** traces and labels a hand touched, the two
   readers/writers of a pen (`curveStyle`/`applyCurveStyle`) and of a label
   (`textStyle`/`applyTextStyle`), and the window-level `styledTraces`/`replayCurves`/
-  `styledText`/`replayText` a session asks of a window. `CustomizedViewBox` imports
-  `ENTRY` from that module, so the plugin and the frames cannot drift apart in spelling.
+  `styledText`/`replayText` a session asks of a window. `ENTRY` is spelled once in that
+  module and hung by `QVizCurvePlot` and by `QVizPanel`, so a figure and a panel cannot
+  drift apart in spelling — and since the plugin's own view box is gone, there is no third
+  place it could.
   That dialogue **asks** its caller and does not name it: the view box answers
-  `styleCurves()`, `styleText()` and `styleMargins()`, and
-  `QVizTablePlotView.panelLayout()` answers `ci.layout` — the layout its panels
-  live in. A window answering `None` gets no margins section. T43 added a fourth
+  `styleCurves()`, `styleText()` and `styleMargins()`; for a panel, `styleMargins()`
+  delegates to its frame, and `QVizTablePlot.styleMargins()` and
+  `QVizStackedPlot.styleMargins()` answer the **one** grid their panels live in — never one
+  answer per panel, the same reason `layoutTable` asks its width once. A curve frame answers
+  `None`, so it gets no margins section. (The window that used to answer it was the Profiles
+  plugin's own grid; deleting that left the section with no caller, which is how the two
+  methods came to exist.) T43 added a fourth
   question, `tracesForStyling()` answering `[(treeNode, rank, curve)]`, whose `rank`
   ranks a trace among **its own quantity's** traces and not in the figure: a figure of two
   single-trace quantities holds two traces both at rank **0** — and the session keys a
@@ -1062,6 +1093,46 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   Plot View fills its panels from a configuration file, so the node a panel holds is not
   the node the gesture named. An image window answers no such entry: it has no trace to
   dress, and the manual says so.
+- **The Profiles panel is a list of quantities and three buttons, and every window it
+  opens is one of the application's.** `viz_Profiles/VizProfiles_plugin.py` (entry, offered
+  on **any** IDS root) → `viz_profiles/QVizProfileOffer.py` (what this occurrence can be
+  drawn as, walked off the view's nodes: groups, pages, error fields, time bases) →
+  `viz_profiles/QVizProfilePanel.py` (the window: occurrence combo, abscissa combo, one tab
+  per array of structures, a page list, three buttons, one folded `QVizSliceControls` band).
+  `drawQuantities` builds a `QVizConfigurationFile(kind=PLOT, quantities=[QVizQuantity(
+  path, occurrence, None, None, uri)])` and hands it to `QVizPlotAsTable(configuration=)` —
+  the in-memory seam the command already offered — so a page is a `TablePlotView:` key in
+  the MDI area, listed by *Show/Hide*, styled by *Configure Plot*, put back by a session
+  (`test_69` restores a page and reads `panelCount()` and `getPlotAxis()` back off it).
+  `drawQuantity` is `QVizPlotOneNode`, which is how a quantity of two axes of its own
+  leaves the panel and becomes a picture. Six things this panel does **not** do, and each
+  is pinned where it is said:
+  * it does not draw a page that read nothing: `QVizPlotAsTable.execute()` **raises**
+    `ValueError: Nothing to plot: none of the quantities named gave a value along an axis
+    a panel can draw.` and deletes the frame it had started, so the panel logs the sentence
+    in the log of the case and answers `None` — no empty window (measured on `wall`
+    occurrence 0: 22 quantities, 0 panels);
+  * it does not invent an occurrence: the entry asks `view.occurrences.occurrencesOf(ids)`
+    and refuses by name — `the opened case holds no occurrence 7 of the wall IDS: it
+    answers 0.` — which is what a session file naming another one reads back;
+  * it does not load asynchronously: the offer walks the tree that load builds, so the
+    entry and `ensureLoaded` both ask `QVizLoadOccurrence(..., asynch=False)` (**0,6 s** for
+    `equilibrium`);
+  * it does not offer a cursor for an axis a window draws: the band holds the subset of
+    `offer().timeBases()` that an open window's panels actually pin, and `magnetics`
+    (`homogeneous_time = 1`) answers no base at all;
+  * it does not carry the plugin's own view box, grid or palette any more, so a table
+    panel answers *Configure Plot* and no error-bar line (`QVizCurveErrors` belongs to the
+    curve frame, `test_58`), and its traces wear the one palette every other frame uses;
+  * it does not write anything: like the rest of the read path it works on the **lazy**
+    handles IMAS-Python hands back, which are read-only to `put` — the export command is
+    the one that has to re-read whole (see the lazy bullet above).
+  Measured on the reference case: `equilibrium` 0 **0,67 s / 10 tabs / 191 quantities / 536
+  error fields**; `core_profiles` **0,30 s / 9 / 220 / 558**; `magnetics` **0,91 s / 4 / 21
+  / 16**; `wall` **0,20 s / 4 / 52 / 96**; occurrence **2** adds a `profiles_2d` tab, **289**
+  quantities, and the one group longer than a page (**111** in `time_slice/constraints` —
+  drawing that page costs **45 s**, so `test_85` pins the paging at the list level).
+  **Never draw a `constraints` page in a test.**
 - **pyqtgraph 0.13.7 hands out no colour of its own**, so a figure cannot rely on it:
   `colorCycle`, `colorLists` and `currentColor` appear **0** time in the package, and a
   curve drawn without a pen keeps the instance default `opts['pen'] == (200, 200, 200)`
@@ -1080,19 +1151,24 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   reported the Profiles plugin's **white** window as black; and the confidence band of
   `QVizCurveErrors` is filled with `(255, 0, 0)` in `DiagCrossPattern`, which is why
   neither palette holds pure red.
-- A window that paints the other ground asks `LIGHT_CURVE_COLOURS` of the same module.
-  The Profiles plugin's table window is the only `setBackground` in the package — white,
-  `QVizTablePlotView.py:75` — and **5** of the 8 colours of the black palette answer a
-  contrast under **2,5** there (cyan 1,25, chartreuse 1,30, spring green 1,35, gold 1,40,
-  orange 2,33); the light list's weakest answers **4,77**. Until T34 that window drew all
-  **41** of its curves in `getRGBColorList()[0]`, one blue reached by walking
+- **There is one trace palette, because there is one ground.** The other ground used to be
+  the Profiles plugin's table window — the only `setBackground` in the package (white,
+  `QVizTablePlotView.py:75`) — and it justified a second palette: **5** of the 8 colours of
+  the black list answer a contrast under **2,5** on white (cyan 1,25, chartreuse 1,30,
+  spring green 1,35, gold 1,40, orange 2,33), where the light list's weakest answered
+  **4,77**. That window is gone, its curves are drawn by `QVizTablePlot` panels on the
+  black every other frame paints, and `LIGHT_CURVE_COLOURS` / `LIGHT_CYCLE` /
+  `lightColourFor` / `lightNameFor` went with it. `test_61` keeps the reason alive in both
+  directions: an AST walk of the package refuses any call named `setBackground` or
+  `setBackgroundColor` (so a second ground cannot come back unnoticed), pins the weakest
+  contrast of the shipped palette on black at **4,66** (violet, floor 4,5), and pins that
+  the same 8 colours would fail on white — **5** of them under **2,5** — so the palette is
+  known to be ground-specific, not merely "the house colours". Until T34 that window drew
+  all **41** of its curves in `getRGBColorList()[0]`, one blue reached by walking
   `GlobalColors.__dict__` for attributes ending in `HEX` — **8** of those 18 answers are
   under a contrast of 2 on the white they were drawn on. The function and the eighteen
   `*_HEX` attributes are gone (`GlobalColors` itself stays: the tree, the preferences and
-  the documentation panel ask its six brushes), and the plugin asks `lightColourFor(0)` —
-  `navy` — **uniformly**, because its 41 panels were measured to carry **41 distinct
-  parametrized paths**: a colour there has nothing to group, and a cycle would answer the
-  same colour five times in one window.
+  the documentation panel ask its six brushes).
 - **A picture window colours with one map and one range** (T44), and the library pieces
   that promise is built on were measured on `PyQtGraph/0.13.7-foss-2023b` before being
   wired:

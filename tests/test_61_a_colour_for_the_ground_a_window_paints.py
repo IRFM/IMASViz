@@ -31,7 +31,7 @@ when it was painted white.
 That happened once. The Profiles plugin drew its own table (`QVizTablePlotView.py:
 75`) over `setBackground((255, 255, 255))`, and against that white **5** of the
 **8** colours of this palette are barely there: cyan **1,25**, chartreuse **1,30**,
-spring green **1,35**, gold **1,40**, orange **2,33. A second palette was written
+spring green **1,35**, gold **1,40**, orange **2,33**. A second palette was written
 for that window -- 8 dark colours, weakest contrast **4,77** on white -- and it
 went with the window it was written for. A panel of the application's Table Plot
 View is painted by `QVizPanel`, which never calls `setBackground`, so it is black
@@ -72,8 +72,9 @@ BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 CONTRAST_FLOOR = 4.5
 
-# What a confidence band is filled with, wherever the band is offered -- and a
-# panel offers it: `QVizPanel` builds the same `QVizCurveErrors` a figure does.
+# What a confidence band is filled with, on the window that offers one: a
+# QVizCurvePlot owns the QVizCurveErrors that fills a band, and a panel of a
+# table draws a curve without offering that line (test_58 pins who owns it).
 BAND_RGB = (255, 0, 0)
 
 

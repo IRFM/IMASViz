@@ -267,9 +267,11 @@ from the menu -- the user is there to answer anything the entry wants to ask. It
 is a ``QVizPluginAnswers(occurrence, figureKey)`` when a **saved session** is
 replaying that entry (section :ref:`save_load_session`), and then the entry must
 take its answers from it instead of asking them: a restore has no one in front of
-a dialog. The :guilabel:`Profiles` plugin asks which occurrence to plot through a
-modal ``QInputDialog``, and a probe left to answer one such dialog sat there for
-**240 s**, which is why the restore answers it in the user's place.
+a dialog. The :guilabel:`Profiles` plugin used to ask which occurrence to plot
+through a modal ``QInputDialog``, and a probe left to answer one such dialog sat
+there for **240 s**; the panel carries that choice as a combo on its own window
+now, so nothing stands between the entry and the window, and a restore hands it
+the number the file names.
 
 .. note::
    An entry whose ``execute()`` cannot take the keyword is **refused by name** at

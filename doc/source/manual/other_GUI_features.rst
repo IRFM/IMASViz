@@ -299,9 +299,12 @@ session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
 .. warning::
    A plugin window comes back **as its entry draws it**, not as the user left it.
    The file keeps the gesture -- which entry, on which IDS, at which occurrence --
-   and replays it, so the :guilabel:`Profiles` panel returns with its tabs and its
-   time slider at the index the entry starts on, and any tab added by hand is
-   gone. What the entry itself refuses is named in the log of the case: an
+   and replays it, so the :guilabel:`Profiles` panel returns with the tabs of the
+   occurrence the **file** names, which need not be the first one the menu would
+   have chosen, and with its time cursors at the index the entry starts on: what
+   was set inside that window -- a page moved on, a cursor dragged, a tab added by
+   a plugin of your own -- is gone. What the entry itself refuses is named in the
+   log of the case: an
    occurrence the plugin does not read (the :guilabel:`Equilibrium overview` reads
    occurrence 0 of :guilabel:`equilibrium` and :guilabel:`wall`, and says so rather
    than drawing curves from an occurrence the file did not name), a plugin that
