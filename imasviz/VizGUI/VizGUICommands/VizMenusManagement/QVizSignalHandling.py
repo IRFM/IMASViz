@@ -91,7 +91,20 @@ class QVizSignalHandling(QObject):
                 if plotting.inArrayOfStructures():
                     self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
             if plotting.isPlottable():
-                self.menuExploreThisTensor(self.contextMenu)
+                if plotting.curveAbscissae():
+                    # A tensor that can run along a curve goes to its sliders,
+                    # and to the figures that draw along the same abscissa.
+                    self.menuExploreThisTensor(self.contextMenu)
+                else:
+                    # A dataset with two axes of its own has no abscissa a
+                    # curve figure can run along: it is an image, and the
+                    # tensor entry above refuses it by name. The view keeps it
+                    # in the tree (it owns an axis), so it must be drawable --
+                    # this is the entry the plain view hands it, the one that
+                    # draws the picture.
+                    self.contextMenu.addMenu(
+                        self.menuPlotCurrentSignalNode(
+                            parentMenu=self.contextMenu))
             if signal:
                 self.contextMenu.addMenu(self.menuUnselectSignalNodes())
             self.menusPlugins()
