@@ -17,36 +17,39 @@ the keys the file names, **without asking their user anything again**.
 
 What made this worth measuring, in absolute numbers, on the reference case:
 
-* before it, four plugin windows of a probe wrote a **432 byte** file holding
-  **0** ``<Figure>`` in **0,013 s**, and the same warning came out four times. A
-  session that named its lost windows and lost all of them;
-* the Profiles entry asks which occurrence to plot through a modal
-  ``QInputDialog``, and a probe left to answer that one sat in
-  ``askForOccurrence`` for **240 s** until a watchdog killed it. So the answers
-  travel in the file and the restore hands them over; a plugin that cannot take
-  them is refused by name rather than run into its own dialog;
-* the cost of putting both windows back: the case view **1,55 s**, the Profiles
-  entry **0,27 s** with its interface **0,31 s** later (the tabs are built on a
-  thread of its own), the Equilibrium chart **2,88 s** cold and **0,34 s** once
-  the IDS is in memory. A restore of the four windows of the probe took **2,23 s**
-  for the file and **3,78 s** more before the Profiles interface was on screen;
-* neither window answers where it came from: measured, the Profiles panel has no
-  ``figureKey`` and no ``key`` attribute and the Equilibrium chart has neither,
-  while ``mdiWindowOf`` answers None for both -- so the key comes from
-  ``figureframes`` and the rest from the stamp the plugin leaves.
+* before it, four plugin windows of a probe wrote a **432 byte** file holding **0**
+  ``<Figure>`` in **0,013 s**, and the same warning came out four times. A session
+  that named its lost windows and lost all of them;
+* the Profiles entry used to ask which occurrence to plot through a modal
+  ``QInputDialog``: a probe left to answer that one sat in ``askForOccurrence`` for
+  **240 s** until a watchdog killed it. The answers still travel in the file and the
+  restore still hands them over -- what changed is that the entry has nothing left
+  to ask, so the last test of this file refuses a modal question in the source of
+  the three modules of the plugin, and a ``<PluginWindow>`` naming another
+  occurrence is answered by the panel sitting on that one;
+* neither window is in the MDI area: measured, ``mdiWindowOf`` answers None for
+  both, so the key comes from ``figureframes`` and where the window came from comes
+  from the stamp the plugin leaves. The panel answers a ``figureKey`` of its own
+  (``PlotView:1``) because that is the key a session names it by; the Equilibrium
+  chart answers none, and its stamp is the only answer there is.
 
 The window that comes back is the one the entry draws, not the one the user left:
-its time slider stands at 0 and the tabs a user added inside the panel are not in
-the file. That is said here rather than fixed, because keeping it would be a
-state of a widget -- the thing this file format refuses to record.
+its occurrence combo stands where the file put it and its abscissa at the first
+choice, because keeping a combo position would be a state of a widget -- the thing
+this file format refuses to record. What *does* come back now is everything that
+panel drew: a page plotted by the panel is a Table Plot View of the application, so
+it is a ``<Figure>`` of the file like any other window, and the last-but-one test
+here puts one back.
 """
 
+import ast
 import time
 
 import pytest
 from PySide6.QtWidgets import QMainWindow, QMdiArea
 
 import imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin as profilesPlugin
+from imasviz.VizDataAccess.QVizCurveAbscissa import TIME
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import (
     QVizSessionFile, QVizSessionPluginWindow)
@@ -58,7 +61,10 @@ from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import \
     QVizSaveSession
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
 from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.VizProfiles import VizProfiles
+from imasviz.VizPlugins.viz_Profiles.viz_profiles import QVizProfileOffer as \
+    offerModule, QVizProfilePanel as panelModule
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfilePanel import \
+    QVizProfilePanel
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI, case_uri_or_skip)
 from support import ownership
@@ -68,10 +74,11 @@ PROFILES = 'VizProfiles_plugin'
 CHARTS = 'equilibriumcharts'
 ROOT_WINDOW = 'IMASViz root window'
 
-# What the stub below answers. Not the first occurrence the case holds: the file
-# has to carry the difference, and a restore that ignored it would draw
-# occurrence 0 while the file says 2.
-OCCURRENCE = 2
+# What the entry takes when nobody answers for it: the first occurrence the case
+# holds. The case holds [0, 1, 2, 3], so the other test below can name one the
+# entry would never have chosen and check the file's answer wins.
+OCCURRENCE = 0
+OTHER_OCCURRENCE = 2
 
 pytestmark = [pytest.mark.case, pytest.mark.dd, pytest.mark.ui]
 
@@ -89,32 +96,14 @@ class RootWindow(QMainWindow):
         return self.MDI
 
 
-class StubDialog:
-    """The occurrence question, recorded rather than asked.
-
-    The tests read this list: an empty one after a restore is the promise that no
-    modal dialog was opened in the user's place.
-    """
-
-    asked = []
-
-    def __init__(self, parent=None):
-        self.parent = parent
-
-    @staticmethod
-    def getInt(parent, title, label, value, minimum, maximum):
-        StubDialog.asked.append((title, label, value, minimum, maximum))
-        return (OCCURRENCE, True)
-
-
 def waitFor(qapp, what, whatFor, limit=120.):
     """Pump events until `what` answers something.
 
-    Waiting is for the **interface**, not for the key: the Profiles panel
-    registers itself in `figureframes` inside its constructor and builds its tabs
-    on a thread of its own, so reading `spinBox_timeIndex` right after the entry
-    answers `<absent>` -- and a process that dies while that thread runs dies
-    with `QThread: Destroyed while thread is still running` and a core dump.
+    Kept for the Equilibrium chart, whose window is a matplotlib figure built
+    inside the entry. The Profiles panel is built synchronously in the entry, so
+    its tabs are on screen when the entry returns -- and the panel starts no
+    thread of its own, which is what a `QThread: Destroyed while thread is still
+    running` core dump used to come from.
     """
     deadline = time.time() + limit
     while time.time() < deadline:
@@ -126,13 +115,12 @@ def waitFor(qapp, what, whatFor, limit=120.):
     raise AssertionError('%s never arrived within %.0f s' % (whatFor, limit))
 
 
-def profilesInterface(api, key):
-    """The Profiles window of that key, once its interface exists."""
+def profilesPanel(api, key):
+    """The Profiles window of that key, once its tabs are built."""
 
     def ask():
         window = api.figureframes.get(key)
-        if window is not None and getattr(window, 'spinBox_timeIndex',
-                                          None) is not None:
+        if window is not None and window.tabs.count():
             return window
         return None
 
@@ -184,6 +172,7 @@ class Run:
         # alive, exactly as it does in the application.
         ownership.keep(root)
         ownership.keep(api)
+        ownership.keep(api)
         return api
 
 
@@ -198,14 +187,12 @@ def run(qapp, tmp_path_factory):
     # suite does not isolate that folder anywhere else, and a test that lets the
     # application write there leaves a session the next run will be offered.
     patch.setenv('HOME', str(home))
-    patch.setattr(profilesPlugin, 'QInputDialog', StubDialog)
-    StubDialog.asked = []
     made = Run(qapp)
     try:
         made.openCase(CASE_URI, CASE_DATA_DICTIONARY_VERSION)
         made.catalog.run(made.entry(PROFILES))
-        waitFor(qapp, profilesInterface(made.api, 'PlotView:1'),
-                'the Profiles interface')
+        waitFor(qapp, profilesPanel(made.api, 'PlotView:1'),
+                'the Profiles panel')
         made.catalog.run(made.entry(CHARTS))
         waitFor(qapp, lambda: made.api.figureframes.get('EquiPlotView:1'),
                 'the Equilibrium frame')
@@ -219,15 +206,13 @@ def run(qapp, tmp_path_factory):
 # What the run writes
 # --------------------------------------------------------------------------
 
-def test_the_run_asks_its_occurrence_once_and_the_file_carries_the_answer(run):
-    """The question is real on this case, and it is answered in the file.
+def test_the_run_writes_both_windows_and_no_figure(run):
+    """The two plugin windows are lines of their case, not `<Figure>`s.
 
-    The case holds occurrences [0, 1, 2, 3] of `equilibrium`, so the entry has to
-    choose -- and what it chose is the only way a later run can skip the dialog.
+    Neither holds a quantity this session chose, and neither stands in the MDI
+    area, so what a file can say about them is the entry that drew them -- which
+    is exactly what the next run needs to ask for them again.
     """
-    assert [title for title, _, _, _, _ in StubDialog.asked] \
-        == ['Which occurrence of the equilibrium IDS?']
-
     saved = QVizSessionFile.read(
         QVizSaveSession(run.api, name='panels').execute())
     windows = saved.cases[0].pluginWindows
@@ -236,24 +221,53 @@ def test_the_run_asks_its_occurrence_once_and_the_file_carries_the_answer(run):
         QVizSessionPluginWindow('PlotView:1', PROFILES, 0, IDS_NAME,
                                 OCCURRENCE),
         QVizSessionPluginWindow('EquiPlotView:1', CHARTS, 0, IDS_NAME, 0)]
-    # Not a `<Figure>`: it holds no quantity this session chose, and it stands
-    # outside the MDI area.
     assert saved.figures == []
 
 
-def test_the_window_is_stamped_with_what_nothing_else_answers(run):
-    """Neither registered window says where it came from, so the plugin says it.
+def test_the_plugin_entry_asks_nothing_of_its_user():
+    """No modal question in the click path of any module of the plugin.
 
-    Measured on the reference case: the Profiles panel has no `figureKey` and no
-    `key` attribute, and the Equilibrium chart has neither.
+    Measured once, on this case: the occurrence question was a `QInputDialog` and
+    a probe sat in it **240 s** with no way out, because nothing in an automated
+    run can answer a dialog. The occurrence is now a combo the panel fills from
+    the case, so the entry has nothing to ask -- and the guard is on the source,
+    because a question put back a year from now is exactly what no test of a
+    session restore would notice.
+    """
+    asked = ('getInt', 'getItem', 'getDouble', 'getText', 'getMultiLineText',
+             'exec', 'exec_', 'open')
+    for module in (profilesPlugin, offerModule, panelModule):
+        with open(module.__file__) as handle:
+            tree = ast.parse(handle.read())
+        calls = {node.func.attr for node in ast.walk(tree)
+                 if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Attribute)}
+        names = {node.id for node in ast.walk(tree) if isinstance(node,
+                                                                  ast.Name)}
+        assert not (calls & set(asked)), '%s still asks its user by hand: %r' \
+                                         % (module.__name__,
+                                            sorted(calls & set(asked)))
+        assert 'QInputDialog' not in names and 'QMessageBox' not in names, \
+            '%s still imports a dialog' % module.__name__
+
+
+def test_the_window_is_stamped_with_what_nothing_else_answers(run):
+    """The stamp says which plugin, entry, IDS and occurrence drew the window.
+
+    The panel answers a `figureKey` -- it needs one to be in `figureframes`, and
+    a session names it by that key -- but a key says nothing about where a window
+    came from, and the chart answers no key at all. Measured: `mdiWindowOf`
+    answers None for both, so neither can be found through the MDI area.
     """
     panel = run.api.figureframes['PlotView:1']
     chart = run.api.figureframes['EquiPlotView:1']
 
-    assert not hasattr(panel, 'figureKey') and not hasattr(panel, 'key')
+    assert panel.figureKey == 'PlotView:1'
     assert panel.pluginWindow == QVizPluginWindow(uri=CASE_URI, plugin=PROFILES,
                                                   entry=0, ids=IDS_NAME,
                                                   occurrence=OCCURRENCE)
+    assert run.api.mdiWindowOf(panel) is None
+    assert not hasattr(chart, 'figureKey')
     assert run.api.mdiWindowOf(chart) is None
     assert chart.pluginWindow == QVizPluginWindow(uri=CASE_URI, plugin=CHARTS,
                                                   entry=0, ids=IDS_NAME,
@@ -268,23 +282,19 @@ def test_the_windows_come_back_under_their_own_keys_without_a_question(run,
                                                                       qapp):
     """The point of T40c: the same windows, the same keys, nobody asked again."""
     path = QVizSaveSession(run.api, name='panels').execute()
-    askedBefore = len(StubDialog.asked)
 
     other = run.freshApi()
     views = QVizRestoreSession(other, path=path).execute()
 
     assert list(views) == [CASE_URI]
     assert sorted(other.figureframes) == ['EquiPlotView:1', 'PlotView:1']
-    assert len(StubDialog.asked) == askedBefore, \
-        'the restore asked the user something: %r' % (StubDialog.asked
-                                                      [askedBefore:],)
 
-    back = waitFor(qapp, profilesInterface(other, 'PlotView:1'),
-                   'the restored Profiles interface')
-    assert isinstance(back, VizProfiles)
-    # The occurrence the file named, not the first the case holds.
-    assert back.IDS_parameters['occurrence'] == OCCURRENCE
-    assert back.ids_related == IDS_NAME
+    back = waitFor(qapp, profilesPanel(other, 'PlotView:1'),
+                   'the restored Profiles panel')
+    assert isinstance(back, QVizProfilePanel)
+    assert back.idsName == IDS_NAME
+    assert back.occurrence == OCCURRENCE
+    assert back.figureKey == 'PlotView:1'
     assert back.pluginWindow == QVizPluginWindow(uri=CASE_URI, plugin=PROFILES,
                                                  entry=0, ids=IDS_NAME,
                                                  occurrence=OCCURRENCE)
@@ -292,8 +302,37 @@ def test_the_windows_come_back_under_their_own_keys_without_a_question(run,
     assert chart.uri == CASE_URI
 
     # What is *not* kept, and said here rather than hidden: the entry draws its
-    # window, so the time index it stands at is the one the entry gives it.
-    assert back.time_index == 0
+    # window, so the panel stands where the entry puts it -- the first abscissa the
+    # offer answers -- and no line of the file says which tab was on screen.
+    assert back.abscissa() == TIME
+    assert back.tabs.currentIndex() == 0
+
+
+def test_an_occurrence_the_entry_would_not_choose_is_answered_by_the_file(run,
+                                                                         qapp):
+    """The file's answer wins over the first occurrence the case holds.
+
+    The entry takes occurrence **0** of this case, which holds [0, 1, 2, 3]. A
+    ``<PluginWindow>`` naming occurrence 2 has to put the panel on 2, or the
+    restore draws curves of another occurrence under a window saying it is the
+    second one.
+    """
+    saved = QVizSessionFile.read(
+        QVizSaveSession(run.api, name='panels').execute())
+    saved.cases[0] = saved.cases[0]._replace(
+        pluginWindows=[QVizSessionPluginWindow('PlotView:1', PROFILES, 0,
+                                               IDS_NAME, OTHER_OCCURRENCE)])
+    path = saved.write(QVizSessionFile.named('other_occurrence'))
+
+    other = run.freshApi()
+    QVizRestoreSession(other, path=path).execute()
+
+    back = waitFor(qapp, profilesPanel(other, 'PlotView:1'),
+                   'the Profiles panel of occurrence %d' % OTHER_OCCURRENCE)
+    assert back.occurrence == OTHER_OCCURRENCE
+    assert back.occurrenceBox.currentData() == OTHER_OCCURRENCE
+    assert [back.occurrenceBox.itemData(index)
+            for index in range(back.occurrenceBox.count())] == [0, 1, 2, 3]
 
 
 def test_a_window_the_restore_cannot_ask_is_named_and_costs_the_rest_nothing(
@@ -314,7 +353,6 @@ def test_a_window_the_restore_cannot_ask_is_named_and_costs_the_rest_nothing(
                                                'no_such_ids', 0),
                        QVizSessionPluginWindow('PlotView:1', PROFILES, 0,
                                                IDS_NAME, OCCURRENCE)])
-    askedBefore = len(StubDialog.asked)
     path = saved.write(QVizSessionFile.named('bad_lines'))
 
     other = run.freshApi()
@@ -323,12 +361,8 @@ def test_a_window_the_restore_cannot_ask_is_named_and_costs_the_rest_nothing(
     assert 'NoSuchPlugin' in caplog.text
     assert 'no_such_ids' in caplog.text
     assert sorted(other.figureframes) == ['PlotView:1']
-    assert len(StubDialog.asked) == askedBefore
-    # Waited for, not left behind: the entry builds its interface on a thread of
-    # its own, and a process that ends while that thread runs dies with
-    # `QThread: Destroyed while thread is still running` and a core dump.
-    waitFor(qapp, profilesInterface(other, 'PlotView:1'),
-            'the Profiles interface of the window that was kept')
+    waitFor(qapp, profilesPanel(other, 'PlotView:1'),
+            'the Profiles panel of the window that was kept')
 
 
 def test_an_entry_that_reads_one_occurrence_refuses_another_by_name(run, qapp,
@@ -344,7 +378,7 @@ def test_an_entry_that_reads_one_occurrence_refuses_another_by_name(run, qapp,
     saved.cases[0] = saved.cases[0]._replace(
         pluginWindows=[QVizSessionPluginWindow('EquiPlotView:1', CHARTS, 0,
                                                IDS_NAME, 2)])
-    path = saved.write(QVizSessionFile.named('other_occurrence'))
+    path = saved.write(QVizSessionFile.named('other_occurrence_for_charts'))
 
     other = run.freshApi()
     QVizRestoreSession(other, path=path).execute()
@@ -352,3 +386,42 @@ def test_an_entry_that_reads_one_occurrence_refuses_another_by_name(run, qapp,
     assert 'reads occurrence 0' in caplog.text
     assert 'drew nothing' in caplog.text
     assert other.figureframes == {}
+
+
+# --------------------------------------------------------------------------
+# What the panel drew comes back as a figure of its own
+# --------------------------------------------------------------------------
+
+def test_a_page_the_panel_drew_is_a_figure_the_session_puts_back(run, qapp):
+    """The payoff of drawing through the application's commands.
+
+    A page plotted by the panel is a Table Plot View under a `TablePlotView:` key
+    in `figureframes`, so *Show/Hide*, *Delete*, *Configure Plot* and the session
+    file reach it like any window the tree's own right click produced. Measured on
+    the reference case: the smallest group of `equilibrium` occurrence 0 draws one
+    panel, and the file that follows names it, its kind and its one quantity.
+
+    Last in the file on purpose: the windows this test opens are in `figureframes`
+    for the tests above, which count what the run left there.
+    """
+    panel = run.api.figureframes['PlotView:1']
+    group = min(panel.groups(), key=lambda one: len(one.following(
+        panel.abscissa())))
+    frame = panel.drawQuantities(group, group.following(panel.abscissa()))
+    assert frame is not None, 'no panel drawn from the smallest group'
+    assert frame.figureKey.startswith('TablePlotView:')
+
+    path = QVizSaveSession(run.api, name='with_a_page').execute()
+    saved = QVizSessionFile.read(path)
+    drawn = [figure for figure in saved.figures
+             if figure.key == frame.figureKey]
+    assert len(drawn) == 1
+    assert drawn[0].kind == 'table'
+    assert len(drawn[0].quantities) == len(frame.panels())
+
+    other = run.freshApi()
+    QVizRestoreSession(other, path=path).execute()
+    back = other.figureframes.get(frame.figureKey)
+    assert back is not None, 'the window the panel drew did not come back'
+    assert back.panelCount() == frame.panelCount()
+    assert back.getPlotAxis() == frame.getPlotAxis()

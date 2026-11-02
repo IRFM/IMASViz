@@ -42,7 +42,10 @@ Those counts are **quantities**, not tree nodes. The same case answers 945 leave
 for `equilibrium` and 1 423 for `magnetics`, because the tree keeps one node per
 *element* of a static array -- 130 `bpol_probe` holding 10 quantities. What a panel
 draws is a quantity at an index, so the index is a control and the group answers
-`elementsOf` to say how far that control reaches.
+`elementsOf` to say how far that control reaches. Measured on that case, no path of
+`signalsList` is shared by two nodes: the 130 probes answer 130 different paths
+(`magnetics/flux_loop(0)/flux/data`, `flux_loop(1)/…`), so a page names the element
+it draws and the command that resolves the path has nothing to guess.
 
 Two things this deliberately does **not** do:
 
@@ -76,6 +79,13 @@ PAGE = 100
 # Spelled once here so the panel and that walk cannot disagree about what an
 # error field is.
 ERROR_FIELD = '_error_'
+
+# The panel's other strategy: **not** an abscissa identity, but the request "each
+# quantity along whatever axis it has of its own, along the clock only when it has
+# none". It is spelled here rather than in the panel because it is the same request
+# the Table Plot View answers with `plotAxis` left out -- and two spellings of one
+# request is how a tab came to list quantities its own window then refused.
+OWN_AXIS = 'own axis'
 
 
 class QVizProfileGroup:
@@ -119,6 +129,16 @@ class QVizProfileGroup:
         """
         return self._elements.get(leaf.getParametrizedDataPath(), 1)
 
+    def elementCount(self):
+        """The largest `elementsOf` this group answers, for a tab that has to say.
+
+        One number per tab, because a tab is one array: measured on the reference
+        case `flux_loop` answers 17 and `bpol_probe` 130, and the sentence the panel
+        writes names the array the reader is looking at rather than a count that
+        belongs to another tab.
+        """
+        return max([self.elementsOf(leaf) for leaf in self.leaves] or [1])
+
     def abscissae(self):
         """Every abscissa some quantity of this group can run along, TIME first.
 
@@ -136,7 +156,18 @@ class QVizProfileGroup:
         return known
 
     def following(self, abscissa):
-        """The quantities this abscissa can carry."""
+        """The quantities this abscissa can carry.
+
+        `abscissa` is an identity from `abscissae()`, or `OWN_AXIS` for the panel's
+        other strategy: each quantity along the axis it has of its own, and along
+        the clock only when it has none. `QVizCurveAbscissa.choose` is asked that
+        same question, so the list on the tab and the panels the window draws
+        answer for the same quantities.
+        """
+        if abscissa == OWN_AXIS:
+            return [leaf for leaf in self.leaves
+                    if choose(QVizNodePlotting(leaf).axes,
+                              alongTime=False) is not None]
         return [leaf for leaf in self.leaves
                 if abscissa in abscissae(QVizNodePlotting(leaf).axes)]
 
@@ -283,6 +314,30 @@ class QVizProfileOffer:
         names the preference that commands it and draws what the view holds.
         """
         return bool(getattr(self.view, 'showOnlyTensorsRankGe1', False))
+
+    def quantityCount(self):
+        """How many quantities the tabs hold, in the unit the tabs count in."""
+        return sum(len(group.leaves) for group in self.groups())
+
+    def timeBases(self):
+        """The dynamic arrays the tabs stand on, as the panels key their sliders.
+
+        One entry per time base, and the axis object itself, so the key a cursor
+        answers with is the key the panels' own rows are keyed by -- which is the
+        only way a cursor on this panel can move a slider in a window this panel
+        did not build. The length comes off the tree, so answering needs no read of
+        the case: measured, `equilibrium` answers one base (`time_slice`, 49
+        elements) and `magnetics` answers none, because that IDS is written at
+        `homogeneous_time = 1` and has no dynamic array to move.
+        """
+        bases = {}
+        for group in self.timeGroups():
+            if not group.leaves:
+                continue
+            for axis in QVizNodePlotting(group.leaves[0]).axes.axes:
+                if axis.origin == QVizAxis.AOS and axis.is_time:
+                    bases.setdefault(axis.key(), axis)
+        return list(bases.values())
 
     def abscissae(self, group=None):
         """The abscissae to offer, TIME first, for one group or for all of them."""

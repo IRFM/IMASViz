@@ -172,6 +172,16 @@ class QVizStackedPlot(QWidget):
     def panels(self):
         return list(self._panels)
 
+    def styleMargins(self):
+        """The room between the displays, which belongs to the window stacking them.
+
+        Asked through the panel whose right click opened *Configure Plot*, the
+        same way a Table Plot View answers it. One answer per window: the
+        displays of a stacked window share one column and one abscissa, so the
+        room between them is the grid's, not each panel's.
+        """
+        return self.grid
+
     def panelCount(self):
         return len(self._panels)
 

@@ -75,7 +75,12 @@ from imasviz.VizGUI.VizTreeView import QVizTreeNode
 from imasviz.VizGUI.VizTreeView.QVizTreeNode import resolveIDSPath
 from imasviz.VizGUI.VizGUICommands.VizDataLoading.QVizLoadOccurrence \
     import QVizLoadOccurrence
-from imasviz.VizPlugins.viz_Profiles.viz_profiles import VizProfiles
+from imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin \
+    import VizProfiles_plugin
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfileOffer \
+    import QVizProfileOffer
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfilePanel \
+    import QVizProfilePanel
 from imasviz.Viz_API import Viz_API
 
 from conftest import CASE_DATA_DICTIONARY_VERSION, CASE_URI, case_uri_or_skip
@@ -297,16 +302,22 @@ def _names_used_by(owner):
     return found
 
 
-@pytest.mark.parametrize('owner', [QVizTreeNode, VizProfiles],
-                         ids=['the shot view', 'the Profiles plugin'])
-def test_neither_module_evaluates_a_name_any_more(owner):
+@pytest.mark.parametrize('module',
+                         [inspect.getmodule(QVizTreeNode),
+                          inspect.getmodule(VizProfiles_plugin),
+                          inspect.getmodule(QVizProfileOffer),
+                          inspect.getmodule(QVizProfilePanel)],
+                         ids=['the shot view', 'the Profiles entry',
+                              'the Profiles offer', 'the Profiles panel'])
+def test_no_module_of_the_tree_or_the_plugin_evaluates_a_name(module):
     """`exec` binding a name and `eval` reading it back is what broke.
 
     Checked on the compiled module rather than on the case: it costs nothing, it
     needs no case, and it holds whatever the runtime underneath happens to answer
-    for `eval` itself.
+    for `eval` itself. The whole Profiles plugin is walked, not one module of it:
+    the idiom came back in the panel that replaced the old window, and a guard on
+    one file of a three-file plugin answers nothing about the other two.
     """
-    module = inspect.getmodule(owner)
-    names = _names_used_by(owner)
+    names = _names_used_by(module)
     assert 'eval' not in names, '%s still evaluates names' % module.__name__
     assert 'exec' not in names, '%s still binds names with exec' % module.__name__

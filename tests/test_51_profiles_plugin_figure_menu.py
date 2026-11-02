@@ -7,77 +7,47 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The Profiles plugin run end to end, and the menu its plots answer with.
+"""The Profiles plugin run end to end, on every IDS of the case.
 
-No test in this suite had ever *run* a plugin. `test_43` pins the menu that
-offers one and the catalog that builds it; what happens once an entry is chosen
-had never been asked. It mattered here because the Profiles plugin was the only
-door left to the legacy figure island (T22): its own `CustomizedViewBox` used to
-call `AddPlot1DToFig`, `plotVsCoordinate1AtGivenTime` and
-`plotVsTimeAtGivenCoordinate1`, which engine `QVizPlotWidget` and the `Figure:`
-namespace. That island could not be removed on the strength of a grep: the door
-had to be walked, and what it produced measured -- which is what this file does,
-and what made the deletion in step (c) safe. Two defects, both measured before
-either was touched, stood in the way of walking it.
+No test in this suite had ever *run* a plugin before this file: `test_43` pins the
+menu that offers one and the catalog that builds it, and what happened once an
+entry was chosen had never been asked. It mattered then because the plugin was the
+only door left to the legacy figure island (T22), and it matters now because the
+plugin is the one entry offered for **any** IDS of the case.
 
-**The window never got its bottom half.** The plugin builds its tabs, then lays
-out the time slider, the spin box, the time-value field and the *Plot* button.
-Labelling the slider asks the case for `time_slice[0].time`, which on
-IMAS-Python answers an `IDSFloat0D` -- a `numbers.Real` wrapper defining
-`__float__` and no `__format__` -- so the f-string `{tmin:.2f}` answered
-`TypeError: unsupported format string passed to IDSFloat0D.__format__`
-(`VizProfiles.py:504`). The exception left the tabs on screen and everything
-below them absent: measured, `slider_time`, `spinBox_timeIndex`,
-`lineEdit_timeValue` and `plotButton` do not exist, and `addNewTabsButton` is
-`None`. The manual's step 4 ("Move the time slider") was not a slow feature, it
-was no feature.
-
-**The plot menu could not open.** `CustomizedViewBox.getMenu` renamed the two
-mouse-mode choices by walking `self.menu.leftMenu.actions()`. On pyqtgraph 0.13.7
-that sub-menu is a *local* of `ViewBoxMenu.__init__` -- what the object keeps is
-`mouseModes` -- so the right click answered `AttributeError: 'ViewBoxMenu' object
-has no attribute 'leftMenu'`, and steps 5 and 6 of the manual ("right-click on a
-particular plot", "select 'Plot this in a new separate figure'") were unreachable
-whatever the rest of the code did.
+The old window knew five IDSs by name and about a hundred and twenty literals of
+paths and tab labels; it read its quantities through `getAll_0D_1D_Nodes`, which
+keeps only a child that `isDynamicData()`, so an IDS written at
+`homogeneous_time = 1` -- `magnetics`, `wall`, most of the dictionary -- had
+nothing to show and the entry said so by not existing. It drew its own grid, so
+nothing it produced was in `figureframes` under a key the rest of the application
+knows: no *Show/Hide* line, no session, no *Configure Plot*, no error bars.
 
 What the run answers on the reference case (WEST 54924 run 0, data dictionary
-3.35.0), in absolute numbers. The case holds occurrences **[0, 1, 2, 3]** of both
-`equilibrium` and `core_profiles`, and nothing of `edge_profiles`, `core_sources`
-or `core_transport` -- so on this case the plugin always has to ask which
-occurrence to plot, and it asks the view that owns the menu, bounded **0..3**.
-`run` returns in **4,94 s**; **6,5 s** later the window is on screen, registered
-as `PlotView:1`, a top-level window and not an MDI subwindow (measured: its
-parent is `None`), holding **2** tabs, **41** plots and **41** curves, every view
-box a `CustomizedViewBox`. Those 41 curves are not all the same width: **37** are
-drawn over the **101**-point radial coordinate and **4** over their own **72**
-points -- the boundary outlines, which carry their own base of points. The slider runs
-**0..48**, labelled `n_t = 49; t_min = 32.13` and `t_max = 48.55`, and the time
-field starts at `32.1336784362793`.
+3.35.0, `Ignore_GGD = 1`, the tensor-rank preference off), in absolute numbers. The
+case holds occurrences **[0, 1, 2, 3]** of `equilibrium` and `core_profiles`, **[0,
+1]** of `magnetics` and **[0]** of `wall`:
 
-`getMenu()` costs **0,03 s** and answers **13** actions. Its "Plot <quantity> to"
-sub-menu holds **0** lines while no curve figure is open: it lists the open figures
-whose curves run along the same abscissa as this quantity, and there are none yet.
-The two new-figure entries then build `SlicesPlot1` (**101** points along
-coordinate1, in **0,013 s**) and `SlicesPlot2` (**49** points along time, in
-**0,061 s**), each embedded in the MDI area; the sub-menu now lists both, and
-choosing one of its lines adds a curve to that figure without opening a window.
+    equilibrium     0,67 s   10 tabs   191 quantities   536 error fields refused
+    core_profiles   0,30 s    9 tabs   220 quantities   558 error fields refused
+    magnetics       0,91 s    4 tabs    21 quantities    16 error fields refused
+    wall            0,20 s    4 tabs    52 quantities    96 error fields refused
 
-Those two figures are not what this file first measured. Before the plugin's three
-entries were re-pointed at `QVizPlotOneNode` (T22 step b), the same two gestures
-opened `Figure:1` and `Figure:2` -- the legacy curve windows, in a namespace the
-Show/Hide and Delete menus listed but no other path could fill, and which no
-"add to" gesture offered. Measured then: **0,05 s** each, same curve widths. What
-the re-pointing changed is therefore not what lands on the screen -- the same
-curve, the same abscissa, at the same cost -- but which frame holds it: one the
-rest of the application knows how to fill, list, close and add to. Step (c) took
-those windows and their namespace out, so the two measurements above are the only
-figures this file can still reproduce.
+The time the panel costs includes loading the occurrence it was asked for, asked
+synchronously: the offer is a walk of the tree that load builds, so an
+asynchronous one leaves the panel with nothing to walk. The error-field count is a
+refusal the panel says out loud rather than a pile of panels -- `equilibrium`
+answers 727 plottable quantities and **536** of them are `*_error_upper` and
+friends, which the application draws as bars on the curve they belong to.
 
-The plots are counted through `layout.ci.items`, not through `findChildren`: a
-`GraphicsLayoutWidget` keeps its plots as scene items, and measured on this very
-window `findChildren(PlotItem)` answers **0** while 41 are drawn. An earlier
-probe read that as "the plugin builds no plot at all"; this file is what replaced
-that reading, and it pins the difference.
+Drawing is the application's command, and the numbers show what that costs and
+what it refuses: the `time_slice/profiles_1d` page of `equilibrium` occurrence 0
+holds **50** quantities and puts **37** panels on screen in **1,05 s**. The **13**
+that are missing each said why in the log of the case ("no values along the plotted
+axis"), and the window they were refused from is the one the tree's own right click
+would have opened: a `TablePlotView:` key in `figureframes`, embedded in the MDI
+area, dressed by *Configure Plot* and put back by a session -- see `test_69` for
+what a session does with it.
 """
 
 import time
@@ -91,10 +61,10 @@ import imasviz.VizPlugins.viz_Profiles.VizProfiles_plugin as profilesPlugin
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
-from imasviz.VizGUI.VizPlot.QVizCurveColors import lightColourFor, lightNameFor
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView \
-    import PLOT_LINE_WIDTH, QVizTablePlotView
+from imasviz.VizPlugins.VizPlugin import QVizPluginWindow
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfilePanel import \
+    QVizProfilePanel
 from imasviz.VizUtils import FigureTypes
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI, case_uri_or_skip)
@@ -105,29 +75,29 @@ PLUGIN = 'VizProfiles_plugin'
 WINDOW_KEY = 'PlotView:1'
 ROOT_WINDOW = 'IMASViz root window'
 
-# What the case answers, which is what makes the occurrence question below a
-# question the plugin really has to ask here rather than a stub's invention.
-OCCURRENCES = [0, 1, 2, 3]
-TABS = 2
-PLOTS = 41
-# Measured, the 41 curves are not all the same width: 37 of them are drawn over
-# the 101-point radial coordinate, and 4 over their own 72 points -- the four
-# boundary outlines, which carry their own base of points.
-WIDTHS = {101: 37, 72: 4}
-SLICES = 49
-MENU_ACTIONS = 13
+# What the case answers for each of the four IDSs this file walks: the occurrence
+# list the combo is bounded by, and the offer the tree answers for occurrence 0.
+CASE_ANSWERS = {
+    'equilibrium': ([0, 1, 2, 3], 10, 191, 536),
+    'core_profiles': ([0, 1, 2, 3], 9, 220, 558),
+    'magnetics': ([0, 1], 4, 21, 16),
+    'wall': ([0], 4, 52, 96)}
+
+# The tab bar of `equilibrium` occurrence 0: one tab per array of structures the
+# tree holds, and one for the quantities outside any of them.
+TABS = ['time_slice/boundary', 'time_slice/boundary_separatrix',
+        'time_slice/boundary_secondary_separatrix', 'time_slice/constraints',
+        'time_slice/global_quantities', 'time_slice/profiles_1d',
+        'time_slice/coordinate_system', 'time_slice/convergence',
+        'time_slice', 'no array of structures']
+
+# The page this file draws: 50 quantities along the clock, 37 panels, because 13
+# of those quantities hold no value along the plotted axis and each says so.
+PAGE = 'time_slice/profiles_1d'
+PAGE_QUANTITIES = 50
+PAGE_PANELS = 37
 
 pytestmark = [pytest.mark.case, pytest.mark.dd, pytest.mark.ui]
-
-
-class BrowserStub:
-    """The database browser, reduced to what the session reads from it."""
-
-    def getActiveUsername(self):
-        return ''
-
-    def addUserDB(self, username):
-        pass
 
 
 class RootWindow(QMainWindow):
@@ -137,61 +107,14 @@ class RootWindow(QMainWindow):
         super().__init__()
         self.setObjectName(ROOT_WINDOW)
         self.MDI = QMdiArea(self)
-        self.IMASdbBrowserWidget = BrowserStub()
+        self.IMASdbBrowserWidget = None
 
     def getMDI(self):
         return self.MDI
 
 
-class StubDialog:
-    """The occurrence question, recorded instead of asked.
-
-    Measured: this question is a modal `QInputDialog` spin box, and with the four
-    occurrences this case holds a probe sat inside `askForOccurrence` for 240 s
-    until the watchdog killed the process. What the tests assert on is the
-    question -- its parent, its bounds, its title; only its answer is supplied.
-    """
-
-    asked = []
-
-    def __init__(self, parent=None):
-        self.parent = parent
-
-    @staticmethod
-    def getInt(parent, title, label, value, minimum, maximum):
-        StubDialog.asked.append((parent, title, label, value, minimum, maximum))
-        return (0, True)
-
-
-def plotsOf(window):
-    """Every plot pyqtgraph holds, asked of the layouts that own them."""
-    found = []
-    for layout in window.findChildren(pyqtgraph.GraphicsLayoutWidget):
-        found.extend(item for item in layout.ci.items
-                     if isinstance(item, pyqtgraph.PlotItem))
-    return found
-
-
-def subMenuOf(box, title):
-    """The "Plot <quantity> to" sub-menu this class builds, by its title.
-
-    Asked through `box.getMenu()`, the gesture that fills it: `getMenu()` clears
-    the QMenu this class keeps as `box.contextMenu` and `buildContextMenu()`
-    rebuilds it from the figures that exist *now*, so reading that QMenu without
-    opening the menu first answers an empty menu rather than a refusal -- measured.
-    The sub-menus of the surrounding `ViewBoxMenu` are not safe to re-read, one
-    of them measured dead (see the menu tests below).
-    """
-    box.getMenu()
-    if box.contextMenu is None or box.contextMenu.title() != title:
-        raise AssertionError('no %r sub-menu on this plot, got %r'
-                             % (title, box.contextMenu is None
-                                and 'no menu yet' or box.contextMenu.title()))
-    return box.contextMenu
-
-
 class Session:
-    """One application session, with one plugin entry run on its case view.
+    """One application session, with one case view and one plugin entry run.
 
     The case view is opened the way the application opens it -- a source from the
     factory, the data dictionary the case was written with, then the api building
@@ -205,326 +128,277 @@ class Session:
         self.api = QVizMainMenuController(root).openShotView.api
         self.view = None
         self.catalog = None
-        self.window = None
+        self.panel = None
         self.windowKey = None
-        self.runCost = None
+        self.cost = None
+        self.frames = []
 
     def openCase(self, uri, ddVersion):
         source = QVizDataSourceFactory().create(uri)
         source.dd_version = ddVersion
         self.view = self.api.CreateDataTree(source).dataTreeView
-        # The catalog is the view's own, as QVizPluginMenu installs it: one set
-        # of plugins per shot view, however many menus are built on it.
-        self.catalog = self.view.pluginCatalog or QVizPluginCatalog(self.view)
+        self.catalog = QVizPluginCatalog(self.view)
         self.view.pluginCatalog = self.catalog
         self.api.ShowDataTree(self.view)
         self.qapp.processEvents()
 
-    def profilesEntry(self):
-        entries = self.catalog.entriesFor(self.view.IDSRoots[IDS_NAME])
-        chosen = [e for e in entries if e.pluginName == PLUGIN]
-        assert chosen, 'no %s entry among %r' % (PLUGIN, [e.pluginName
-                                                          for e in entries])
+    def entriesOf(self, idsName):
+        return [(entry.pluginName, entry.number, entry.label)
+                for entry in self.catalog.entriesFor(
+                    self.view.IDSRoots[idsName])]
+
+    def profilesEntry(self, idsName=IDS_NAME):
+        chosen = [entry for entry
+                  in self.catalog.entriesFor(self.view.IDSRoots[idsName])
+                  if entry.pluginName == PLUGIN]
+        assert chosen, 'no %s entry on the %s IDS' % (PLUGIN, idsName)
         return chosen[0]
 
     def run(self, entry):
-        """Choose the entry, then wait for what it puts on the screen.
-
-        The plugin walks the case in a thread of its own and builds its tabs back
-        on the GUI thread through a signal, so the window appears during the pump
-        and not inside `run`.
-        """
+        """Choose the entry and keep what it put on screen."""
         before = set(self.api.figureframes)
-        self.runCost = _elapsed(self.catalog.run, entry)
-        deadline = time.time() + 60
-        new = []
-        while time.time() < deadline:
-            self.qapp.processEvents()
-            new = sorted(set(self.api.figureframes) - before)
-            if new and plotsOf(self.api.figureframes[new[0]]):
-                break
-            time.sleep(0.02)
-        else:
-            raise AssertionError('the plugin entry built no plot within 60 s '
-                                 '(new figureframes: %r)' % new)
-        assert len(new) == 1, new
-        self.windowKey, self.window = new[0], self.api.figureframes[new[0]]
-        return self.window
+        t0 = time.time()
+        self.catalog.run(entry)
+        self.cost = time.time() - t0
+        self.qapp.processEvents()
+        new = sorted(set(self.api.figureframes) - before)
+        assert len(new) == 1, 'the entry registered %r' % (new,)
+        self.windowKey, self.panel = new[0], self.api.figureframes[new[0]]
+        return self.panel
 
-    def pump(self, times=300):
+    def pump(self, times=50):
         for _ in range(times):
             self.qapp.processEvents()
 
 
-def _elapsed(action, *args):
-    t0 = time.time()
-    action(*args)
-    return time.time() - t0
-
-
 @pytest.fixture(scope='module')
 def session(qapp):
-    """One case and one plugin run, shared below -- so these tests run in the
-    order written, each reading what the one before it left on the screen.
+    """One case, and the Profiles entry run on `equilibrium` -- so these tests
+    read what the entry left on screen, in the order they are written.
     """
     if case_uri_or_skip() is None:
         pytest.skip('reference case not reachable: %s' % CASE_URI)
-    patch = pytest.MonkeyPatch()
-    patch.setattr(profilesPlugin, 'QInputDialog', StubDialog)
-    StubDialog.asked = []
     root = RootWindow()
     root.show()
     qapp.processEvents()
     made = Session(qapp, root)
-    try:
-        made.openCase(CASE_URI, CASE_DATA_DICTIONARY_VERSION)
-        made.run(made.profilesEntry())
-        # The window, its api and the frames the entries add are what keeps every
-        # pyqtgraph view in this file alive -- which is what the application does
-        # with `figureframes`, and what the ownership guard asks a test for.
-        ownership.keep(made)
-        yield made
-    finally:
-        patch.undo()
+    made.openCase(CASE_URI, CASE_DATA_DICTIONARY_VERSION)
+    made.run(made.profilesEntry())
+    # The window, its api and the frames its buttons draw are what keeps every
+    # pyqtgraph view here alive -- which is what the application does through
+    # `figureframes`, and what the ownership guard of test_44 asks a test for.
+    ownership.keep(made)
+    yield made
 
 
 # --------------------------------------------------------------------------
-# What the case answers, and what the plugin asks back
+# What the menu offers, and on which IDS
 # --------------------------------------------------------------------------
 
-def test_the_case_holds_occurrences_the_plugin_has_to_choose_between(session):
-    # The stub above answers a question; this says the question is real here:
-    # both IDSs this plugin plots on this case hold four occurrences each, and
-    # the three others it claims to support hold none.
-    assert {ids: session.view.occurrences.occurrencesOf(ids)
-            for ids in ('equilibrium', 'core_profiles', 'edge_profiles',
-                        'core_sources', 'core_transport')} \
-        == {'equilibrium': OCCURRENCES, 'core_profiles': OCCURRENCES,
-            'edge_profiles': [], 'core_sources': [], 'core_transport': []}
+def test_the_entry_is_offered_on_every_ids_of_the_case(session):
+    """The plugin used to know five IDS names; the tree answers the question now.
+
+    Measured on this case: `magnetics` and `wall` carried no entry at all, because
+    their IDSs are written at `homogeneous_time = 1` and the old read kept only
+    what it called dynamic. Each of the four IDSs walked here earns the line, and
+    the text of the line says which IDS it was offered on.
+    """
+    assert session.entriesOf('magnetics') == \
+        [(PLUGIN, 0, 'Plot what the magnetics IDS holds...')]
+    assert session.entriesOf('wall') == \
+        [(PLUGIN, 0, 'Plot what the wall IDS holds...')]
+    # equilibrium carries the other plugin's line too, and the two numbers are the
+    # plugins' own, not their place in the menu.
+    assert session.entriesOf('equilibrium') == [
+        ('equilibriumcharts', 0, 'Equilibrium overview...'),
+        (PLUGIN, 0, 'Plot what the equilibrium IDS holds...')]
 
 
-def test_the_plugin_asks_its_own_view_which_occurrence_to_plot(session):
-    # Parented to the view whose node the menu was built on, and bounded by what
-    # the case holds -- not by the data dictionary, and not by the spin box's
-    # default ceiling of 2147483647.
-    assert StubDialog.asked == [
-        (session.view, 'Which occurrence of the equilibrium IDS?',
-         'Occurrence:', OCCURRENCES[0], OCCURRENCES[0], OCCURRENCES[-1])]
+def test_the_entry_asks_its_window_nothing_of_its_user(session):
+    """No dialog stands between the click and the window.
+
+    The occurrence question used to be a modal `QInputDialog` spin box: measured, a
+    probe sat in it **240 s** on this case, because nothing in an automated run can
+    answer a dialog. The occurrence is a combo on the window now, bounded by what
+    the case holds, and the entry takes the first of them when nobody answered.
+    """
+    assert not hasattr(profilesPlugin, 'QInputDialog')
+    assert session.panel.occurrences() == CASE_ANSWERS[IDS_NAME][0]
+    assert session.panel.occurrence == 0
 
 
 # --------------------------------------------------------------------------
-# What the entry builds
+# What the window holds
 # --------------------------------------------------------------------------
 
 def test_the_window_is_registered_held_and_shown(session):
     assert session.windowKey == WINDOW_KEY
-    assert type(session.window).__name__ == 'VizProfiles'
-    assert session.window.isVisible()
+    assert isinstance(session.panel, QVizProfilePanel)
+    assert session.panel.isVisible()
     assert WINDOW_KEY in session.api.GetFiguresKeys(
         FigureTypes.PROFILESPLOTTYPE)
-    # Measured: a top-level window of its own. The figure frames are embedded in
-    # the MDI area (T19); the plugin windows never were, and nothing hides them
-    # with the shot view they were opened from.
-    assert session.window.parent() is None
+    # A plugin window is not an MDI subwindow: measured, `mdiWindowOf` answers
+    # None, which is why it travels in a session as a `<PluginWindow>` and not as
+    # a `<Figure>`.
+    assert session.api.mdiWindowOf(session.panel) is None
+    assert session.panel.pluginWindow == QVizPluginWindow(
+        uri=CASE_URI, plugin=PLUGIN, entry=0, ids=IDS_NAME, occurrence=0)
+    # The whole entry, load included: the offer walks the tree the load builds.
+    assert session.cost < 2.0, 'the panel cost %.2f s' % session.cost
 
 
-def test_the_window_drew_every_curve_the_case_holds(session):
-    plots = plotsOf(session.window)
-    assert session.window.tabWidget.count() == TABS
-    assert len(plots) == PLOTS
-    assert {type(p.getViewBox()).__name__ for p in plots} == \
-        {'CustomizedViewBox'}
-    curves = [item for p in plots for item in p.listDataItems()]
-    assert len(curves) == PLOTS
-    # The curves are not all one width: the boundary outlines are drawn over the
-    # points of their own outline, not over the 101-point radial coordinate.
-    widths = {}
-    for curve in curves:
-        widths[len(curve.getData()[0])] = widths.get(len(curve.getData()[0]),
-                                                     0) + 1
-    assert widths == WIDTHS
-    titles = sorted(p.titleLabel.item.toPlainText() for p in plots)
-    assert [t for t in titles if 'separatrix' in t] == \
-        ['boundary_separatrix/outline/r', 'boundary_separatrix/outline/z']
-    # The count above is the only way to see these plots. Asked of the window,
-    # Qt answers no PlotItem at all -- an earlier probe read that as "the plugin
-    # builds 0 plot", on a window that had drawn 41.
-    assert session.window.findChildren(pyqtgraph.PlotItem) == []
+def test_the_tabs_are_the_arrays_of_the_case(session):
+    """One tab per array of structures, named the way the tree names it.
 
-
-def test_every_panel_of_the_window_is_drawn_in_one_named_colour(session):
-    """One colour, asked of the module that owns the palette.
-
-    Measured before: all **41** curves answered `(0, 0, 255)` at width 3, a
-    colour `getRGBColorList()[0]` had reached by walking `GlobalColors.__dict__`
-    and moving `BLUE_HEX` to the front. The window paints white, so it asks the
-    light palette now -- and it asks it **once**, because these 41 panels carry
-    41 distinct parametrized paths: a colour has nothing here to group, and a
-    cycle would answer the same colour five times in one window. What the window
-    keeps for itself is the width, 3, which a panel a few tens of points wide
-    needs and the library's default of 1 does not.
+    Not a list written in the plugin: the same entry on another IDS answers that
+    IDS' own arrays, which the two tests below measure.
     """
-    curves = [item for plot in plotsOf(session.window)
-              for item in plot.listDataItems()]
-    pens = [curve.opts['pen'] for curve in curves]
-
-    assert {pen.color().getRgb()[:3] for pen in pens} == {lightColourFor(0)}
-    assert {pen.width() for pen in pens} == {PLOT_LINE_WIDTH}
-    assert {pen.style().name for pen in pens} == {'SolidLine'}
-    # The colour has a name, so a refusal and the manual can say which one.
-    assert lightNameFor(0) == 'navy'
-    # And the ground it was picked against is the one these panels paint. It is
-    # the table view that paints, not the window holding the tabs: the view is a
-    # `QGraphicsView`, and it is where `setBackground` was called.
-    tables = session.window.findChildren(QVizTablePlotView)
-    assert len(tables) == TABS
-    assert {table.backgroundBrush().color().getRgb()[:3] for table in tables} \
-        == {(255, 255, 255)}
+    panel = session.panel
+    assert [panel.tabs.tabText(index) for index in range(panel.tabs.count())] \
+        == TABS
+    assert panel.offer().quantityCount() == CASE_ANSWERS[IDS_NAME][2]
+    assert '536 error fields are not plotted here' in panel.explains.text()
 
 
-def test_the_time_row_under_the_tabs_is_there(session):
-    # Measured with the defect in place, this row did not exist at all: labelling
-    # the slider formatted an IDSFloat0D with ':.2f' and took the rest of setUI
-    # down with it.
-    window = session.window
-    assert window.slider_time.minimum() == 0
-    assert window.slider_time.maximum() == SLICES - 1
-    assert window.label_slider_tmin.text() == ('n<sub>t</sub> = %d; '
-                                               't<sub>min</sub> = 32.13'
-                                               % SLICES)
-    assert window.label_slider_tmax.text() == 't<sub>max</sub> = 48.55'
-    assert window.spinBox_timeIndex.maximum() == SLICES - 1
-    assert window.lineEdit_timeValue.text() == '32.1336784362793'
-    assert window.plotButton.text() == 'Plot'
-    assert window.addNewTabsButton.text() == 'Add 1 tab of plots'
+@pytest.mark.parametrize('idsName', ['core_profiles', 'magnetics', 'wall'])
+def test_another_ids_answers_its_own_tabs(session, idsName):
+    """The same entry, another IDS, and no list of its own anywhere.
 
-
-# --------------------------------------------------------------------------
-# The menu a plot answers with, and what its entries build
-# --------------------------------------------------------------------------
-
-def test_right_clicking_a_plot_opens_a_menu(session):
-    box = plotsOf(session.window)[0].getViewBox()
-    menu = box.getMenu()
+    Measured, in seconds for the panel including its synchronous load:
+    `core_profiles` 0,30 s / 9 tabs, `magnetics` 0,91 s / 4 tabs, `wall` 0,20 s /
+    4 tabs. `magnetics` and `wall` are the two the old plugin refused to offer.
+    """
+    occurrences, tabs, quantities, errors = CASE_ANSWERS[idsName]
+    panel = ownership.keep(QVizProfilePanel(session.api, session.view, idsName,
+                                            0))
     session.pump()
 
-    assert len(menu.actions()) == MENU_ACTIONS
-    # The two choices this menu renames are asked of ViewBoxMenu.mouseModes, the
-    # list pyqtgraph keeps: the "Mouse Mode" sub-menu it builds them in is a
-    # local of its constructor, and measured on this window re-reading that
-    # QMenu answers `RuntimeError: Internal C++ object
-    # (PySide6.QtWidgets.QMenu) already deleted` -- the ownership trap T7 and
-    # T21 met in our own menus, standing in a third party's constructor. The
-    # actions are the objects the rename acts on, so the actions are what this
-    # asserts on.
-    assert [a.text() for a in box.menu.mouseModes] == ['Pan Mode',
-                                                       'Area Zoom Mode']
-    assert [a.text() for a in menu.actions()
-            if a.text().startswith('Plot this in a new separate figure')] \
-        == ['Plot this in a new separate figure']
+    assert panel.occurrences() == occurrences
+    assert [panel.occurrenceBox.itemData(index)
+            for index in range(panel.occurrenceBox.count())] == occurrences
+    assert panel.tabs.count() == tabs
+    assert panel.offer().quantityCount() == quantities
+    assert ('%d error fields are not plotted here' % errors) \
+        in panel.explains.text()
+    # The IDS' own arrays, not the equilibrium ones: `wall` is four outline
+    # structures and a 2D description, `magnetics` three static arrays.
+    assert all(panel.tabs.tabText(index) for index
+               in range(panel.tabs.count()))
 
 
-def test_a_second_right_click_adds_nothing(session):
-    # The rename and the custom entries are added once, behind `menuUpdate`; a
-    # user right-clicking the same plot twice gets the same menu, not a menu
-    # with its custom half repeated. Measured: 13 actions on each of three
-    # calls, and the "Plot <quantity> to" sub-menu present once.
-    box = plotsOf(session.window)[0].getViewBox()
-    counts = []
-    for _call in range(3):
-        counts.append(len(box.getMenu().actions()))
-        session.pump()
-    assert counts == [MENU_ACTIONS] * 3
-    assert [a for a in box.getMenu().actions()
-            if a.menu() is box.contextMenu].__len__() == 1
+def test_the_abscissa_choice_offers_the_two_readings_the_commands_honour(session):
+    """`TIME`, or the read answering per quantity -- and nothing else.
+
+    A Table Plot View cannot be told to run every panel along one named
+    coordinate: its panels are independent by design, so a third entry would
+    promise what the command cannot do.
+    """
+    box = session.panel.abscissaBox
+    assert [box.itemData(index) for index in range(box.count())] == \
+        [('time',), 'own axis']
+    assert session.panel.abscissa() == ('time',)
 
 
-def test_the_add_to_submenu_is_empty_while_there_is_nothing_to_add_to(session):
-    box = plotsOf(session.window)[0].getViewBox()
-    node = box.vizTreeNodesList[0]
-    sub = subMenuOf(box, 'Plot %s to' % node.getName())
+# --------------------------------------------------------------------------
+# What a click draws
+# --------------------------------------------------------------------------
 
-    # The sub-menu lists the open curve figures this quantity shares its abscissa
-    # with. None exists yet, so the documented step 6 has exactly one way to be
-    # taken: the entry that opens a new figure.
-    assert list(sub.actions()) == []
-    assert session.api.GetFiguresKeys(figureType=FigureTypes.CURVEPLOTTYPE) == []
+def test_a_page_of_the_panel_is_a_table_of_the_application(session):
+    """The click runs `QVizPlotAsTable`, so the window is one the api knows.
 
+    Measured: 50 quantities on the tab, **37** panels, in about a second. The 13
+    that are missing each said why in the log of the case; a panel that cannot
+    read its quantity is refused by name and takes its empty panel back with it,
+    which is why the count of panels is 37 and not 50.
+    """
+    panel = session.panel
+    tab = [panel.tabs.widget(index) for index in range(panel.tabs.count())
+           if panel.tabs.tabText(index) == PAGE][0]
+    assert tab.quantities.count() == PAGE_QUANTITIES
 
-def test_the_two_entries_build_the_two_figures_the_manual_promises(session):
-    box = plotsOf(session.window)[0].getViewBox()
-    menu = box.getMenu()
-    built = []
-    for label in ('Plot this in a new separate figure',
-                  'Plot in a new separate figure (along time axis)'):
-        action = [a for a in menu.actions() if a.text() == label]
-        assert action, '%r is not in %r' % (label, [a.text()
-                                                    for a in menu.actions()])
-        before = set(session.api.figureframes)
-        cost = _elapsed(action[0].trigger)
-        session.pump()
-        new = sorted(set(session.api.figureframes) - before)
-        assert len(new) == 1, new
-        built.append((new[0], session.api.figureframes[new[0]], cost))
+    before = set(session.api.figureframes)
+    t0 = time.time()
+    frame = tab.drawPage()
+    session.pump()
+    cost = time.time() - t0
 
-    keys = [key for key, _figure, _cost in built]
-    # The frames the plugin opens are the ones the rest of the application knows
-    # how to fill, list in the Show/Hide and Delete menus and offer to "add to"
-    # gestures -- not the legacy `Figure:` windows, which no other path can fill.
-    assert keys == ['%s1' % FigureTypes.CURVEPLOTTYPE,
-                    '%s2' % FigureTypes.CURVEPLOTTYPE]
+    assert frame is not None
+    assert sorted(set(session.api.figureframes) - before) == [frame.figureKey]
+    assert frame.figureKey == '%s1' % FigureTypes.TABLEPLOTTYPE
+    assert frame.panelCount() == PAGE_PANELS
+    assert frame.getPlotAxis() == 'TIME'
+    assert session.api.mdiWindowOf(frame) is not None, \
+        'the window the plugin drew is not in the MDI area'
+    assert cost < 5.0, 'the page cost %.2f s' % cost
+    # The window is the api's, so the menus that reach a figure reach it: a key
+    # in the `TablePlotView:` namespace, listed by Show/Hide.
     assert session.api.GetFiguresKeys(
-        figureType=FigureTypes.CURVEPLOTTYPE) == keys
-    # Spelled as a prefix: the 'Figure:' namespace is gone from FigureTypes, so
-    # an assertion here is a guard that nothing starts producing it again.
-    assert session.api.GetFiguresKeys(figureType='Figure:') == []
-    for key, figure, cost in built:
-        assert type(figure).__name__ == 'QVizCurvePlot', key
-        assert figure.isVisible()
-        # Unlike the plugin's own window, these are embedded in the MDI area.
-        assert session.api.mdiWindowOf(figure) is not None, key
-        assert cost < 1.0, '%s cost %.2f s' % (key, cost)
-    # One curve each: 101 points of the radial coordinate for the first, the 49
-    # time slices of this occurrence for the second, starting where the slider's
-    # label says the case starts.
-    curves = [item.getData()
-              for _key, figure, _cost in built
-              for p in figure.findChildren(pyqtgraph.PlotWidget)
-              for item in p.listDataItems()]
-    assert [len(x) for x, _y in curves] == [max(WIDTHS), SLICES]
-    assert curves[1][0][0] == pytest.approx(32.1336784362793, abs=1e-4)
-    assert curves[1][0][-1] == pytest.approx(48.5483, abs=1e-3)
+        figureType=FigureTypes.TABLEPLOTTYPE) == [frame.figureKey]
+    session.frames.append(frame)
 
 
-def test_the_add_to_submenu_then_lists_those_two_figures(session):
-    box = plotsOf(session.window)[0].getViewBox()
-    node = box.vizTreeNodesList[0]
-    sub = subMenuOf(box, 'Plot %s to' % node.getName())
+def test_the_panels_of_that_window_answer_their_own_right_click(session):
+    """*Configure Plot* is on each panel's menu, and one panel at a time.
 
-    # Both figures are listed: every curve in them runs along the same abscissa
-    # as this quantity -- the 101-point psi coordinate of this IDS.
-    assert [a.text() for a in sub.actions()] == ['%s1' % FigureTypes.CURVEPLOTTYPE,
-                                                 '%s2' % FigureTypes.CURVEPLOTTYPE]
+    Nothing of the plugin's own view box is left to dress a panel: the entry is
+    spelled once in `QVizPlotStyling.ENTRY`, so the windows this plugin opens and
+    the ones the tree's own right click opens cannot drift apart in wording. The
+    menu belongs to the panel's own view box, so styling one panel never reaches
+    its neighbour -- and the room between panels, which no panel owns, is asked of
+    the window: that is what the margins section writes.
+
+    The error-bar lines are **not** on this menu, and that is said here rather
+    than left to be discovered: they belong to a figure of curves, the only frame
+    owning a `QVizCurveErrors` (pinned in `test_58`). Which is why the tab offers
+    *Draw the selected quantity* beside the page -- an error field is a bar on a
+    curve, and the curve lives in the other kind of window.
+    """
+    frame = session.frames[0]
+    panel, neighbour = frame.panels()[0], frame.panels()[1]
+    lines = [action.text()
+             for action in panel.pgPlotWidget.getViewBox().menu.actions()]
+
+    assert 'Configure Plot' in lines
+    assert not any('error bars' in line for line in lines), \
+        'a table panel now claims the bars of a curve figure'
+    assert panel.styleMargins() is frame.grid
+    assert panel.pgPlotWidget.getViewBox() is not \
+        neighbour.pgPlotWidget.getViewBox(), 'one menu for two panels'
 
 
-def test_choosing_a_submenu_line_adds_the_curve_without_opening_a_window(session):
-    key = '%s1' % FigureTypes.CURVEPLOTTYPE
-    box = plotsOf(session.window)[0].getViewBox()
-    node = box.vizTreeNodesList[0]
-    line = [a for a in subMenuOf(box, 'Plot %s to' % node.getName()).actions()
-            if a.text() == key]
-    assert len(line) == 1
+def test_a_single_quantity_goes_through_the_tree_s_own_command(session):
+    """*Draw the selected quantity* is `QVizPlotOneNode`, not a panel of its own.
 
-    figure = session.api.figureframes[key]
-    before = figure.curveCount()
-    registered = set(session.api.figureframes)
-    cost = _elapsed(line[0].trigger)
+    Asked for a quantity the page above already drew, so the answer is about the
+    frame the gesture opens: a curve figure under a `SlicesPlot:` key, embedded
+    like any other, and not a widget of the plugin's making. A quantity of two
+    axes of its own answers an image window instead -- which is what the tab's
+    sentence about the left-out quantities promises.
+    """
+    panel = session.panel
+    leaf = session.frames[0].panels()[0].treeNode
+
+    frame = panel.drawQuantity(leaf)
     session.pump()
 
-    # The quantity joined the figure it was asked for: no new window, one curve
-    # more in that one, running along the abscissa the figure is labelled with.
-    assert set(session.api.figureframes) == registered, 'a window was opened'
-    assert figure.curveCount() == before + 1
-    x, _y = figure.curves()[-1].getData()
-    assert len(x) == max(WIDTHS)
-    assert cost < 1.0, 'adding a curve cost %.2f s' % cost
+    assert type(frame).__name__ == 'QVizCurvePlot'
+    assert frame.figureKey.startswith(FigureTypes.CURVEPLOTTYPE)
+    assert session.api.mdiWindowOf(frame) is not None
+
+
+def test_the_panel_names_what_its_abscissa_cannot_carry(session):
+    """A tab that shows fewer rows than its array holds says which and why.
+
+    Measured on `time_slice/coordinate_system`: 3 quantities along the clock and
+    **18** left out -- `volume_element`, `r`, `z`, the Jacobian and friends, each
+    with two axes of its own. Counting panels without naming the difference is
+    how a tab reads as a bug.
+    """
+    panel = session.panel
+    tab = [panel.tabs.widget(index) for index in range(panel.tabs.count())
+           if panel.tabs.tabText(index) == 'time_slice/coordinate_system'][0]
+
+    assert tab.quantities.count() == 3
+    assert len(tab.group.leftOut(panel.abscissa())) == 18
+    assert '18 cannot be read along' in tab.summary.text()
+    assert 'volume_element' in tab.summary.text()

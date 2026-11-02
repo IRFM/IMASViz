@@ -65,8 +65,6 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import QVizPanel
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlot import QVizStackedPlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.CustomizedViewBox \
-    import CONFIGURE_PLOT
 from imasviz.VizUtils import QVizPreferences
 
 from conftest import CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip
@@ -166,8 +164,6 @@ def test_the_menu_carries_the_line_the_manual_documents(session):
 
     assert ENTRY not in PYQTGRAPH_LINES + ERROR_LINES
     assert menuLines(frame) == PYQTGRAPH_LINES + ERROR_LINES + [ENTRY]
-    # The same words the plugin's menu answers: one window behind both lines.
-    assert ENTRY == CONFIGURE_PLOT
 
 
 def test_the_window_lists_every_trace_under_the_name_the_figure_gives_it(session):
@@ -497,9 +493,13 @@ def test_every_panel_offers_the_line_on_its_own_right_click(view, kind):
         # neighbour, and one panel's window lists one curve.
         dialog = panel.styling.show()
         assert len(dialog.curves) == panel.curveCount() == 1
+        # Three sections here and two on a figure of curves (the test above): the
+        # room between panels belongs to the window that lays them out, and these
+        # two windows answer `styleMargins` with their own grid. The curve frame
+        # answers None, so its dialogue has no margins section to lie with.
         assert [dialog.tabWidget.tabText(index)
                 for index in range(dialog.tabWidget.count())] == \
-            ['Curve Properties', 'Text Properties']
+            ['Curve Properties', 'Text Properties', 'Plot Design Properties']
 
 
 @pytest.mark.parametrize('kind', ['table', 'stacked'])

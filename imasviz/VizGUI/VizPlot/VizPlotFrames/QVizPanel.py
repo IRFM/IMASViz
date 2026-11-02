@@ -157,8 +157,17 @@ class QVizPanel(QWidget):
         return self.pgPlotWidget.getPlotItem()
 
     def styleMargins(self):
-        """None: the window lays its panels out, and its margins are its business."""
-        return None
+        """The room between panels, which belongs to the window laying them out.
+
+        Asked of the frame, because a panel has no margins of its own: a Table
+        Plot View and a Stacked Plot View answer the grid their panels live in,
+        and a figure of curves answers None -- it holds one plot, and a margin
+        there is a strip of nothing between it and its own sliders. Refusing here
+        instead would leave that section with no caller at all, since the window
+        that used to answer it was the Profiles plugin's own grid.
+        """
+        asked = getattr(self._frame, 'styleMargins', None)
+        return asked() if asked is not None else None
 
     def tracesForStyling(self):
         """[(treeNode, index, curve)] -- one quantity per panel, so one rank each."""

@@ -10,11 +10,14 @@
 """Styling a plot by hand: what the Configure Plot dialogue is asked, and what
 Cancel gives back.
 
-The manual documents the entry under *Plot Configuration and Customization*, and
-it belongs to the plots of the Profiles plugin. The window those plots live in is
-the plugin's own `QVizTablePlotView`, so these tests build that window empty and
-add the curves by hand: every number here is about the dialogue and its contract
-with the caller, not about what a case answers.
+The manual documents the entry under *Plot Configuration and Customization*. The
+caller today is a panel of a Table or Stacked Plot View (`QVizPanel`): it answers
+the traces and the text of its own quantity, and it relays the margins question to
+the window that lays the panels out -- a grid belongs to the window, never to one
+panel. A figure of curves answers no layout, so its right click has two sections
+instead of three. These tests build those windows empty and draw the curves by
+hand: every number here is about the dialogue and its contract with the caller,
+not about what a case answers.
 
 Three defects the replaced dialogue carried, pinned here so they cannot come
 back.
@@ -27,13 +30,14 @@ changing the first row's colour left the first curve *and* the second untouched.
 **The header did not describe the row.** Eight header labels, chosen from the
 caller's *name*, for seven widgets -- measured, the first widget of a row, a
 colour button, sat under the label `Line`, because the caller has no legend
-marker: `plotItem.legend` answers None on all **41** of the plugin's panels.
+marker: `plotItem.legend` answers None on all **41** of the panels the old plugin
+window drew.
 
 **Cancel changed nothing.** Measured: a margin written through the old dialogue
 read back `(40.0, 9.0, 9.0, 9.0)` after `reject()` -- the changes are live, and
 nothing had recorded what came before.
 
-And the contract: the view box answers `styleCurves()`, `styleText()` and
+And the contract: the caller answers `styleCurves()`, `styleText()` and
 `styleMargins()`. The old dialogue asked none of that; it walked
 `qWidgetParent.objectName()` through four branches -- `TablePlotView`,
 `StackedPlotView`, `QVizPlugin` and a dead `else` reading `pgPlotWidget`, an
@@ -56,10 +60,9 @@ from imasviz.VizGUI.VizPlot.QVizPlotStyleUI import (AXIS_SIDES,
                                                     QVizPlotStyleUI,
                                                     fontSizeOf, penOf,
                                                     styleNameOf, symbolNameOf)
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.CustomizedViewBox \
-    import CustomizedViewBox
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizTablePlotView \
-    import QVizTablePlotView
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import QVizPanel
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 from imasviz.VizUtils import GlobalPgSymbols, GlobalQtStyles
 
 from support import ownership
@@ -71,35 +74,39 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LIBRARY_PEN_RGB = (200, 200, 200)
 FRESH_AXIS_STYLE = {'color': '#969696'}
 
-
-class NoPanelLayout:
-    """A window that answers no layout for its panels."""
-
-    def panelLayout(self):
-        return None
+# What a Table Plot View asks its own grid for, in its constructor. Not
+# `DEFAULT_MARGINS`: that is the dialogue's way back, and the two answers have to
+# be different for *Restore previous* to mean anything.
+TABLE_MARGINS = (4, 4, 4, 4)
 
 
-def pluginPanel(table=None, withLayout=True):
-    """One panel of the plugin's own window, with a curve drawn the plugin's way.
+def dressedPanel(frame):
+    """A panel of `frame`, titled and labelled as a drawn panel would be."""
+    panel = ownership.keep(QVizPanel(frame))
+    panel.pgPlotWidget.setTitle('probe panel')
+    panel.pgPlotWidget.setLabel('left', 'the left label')
+    panel.pgPlotWidget.setLabel('bottom', 'the bottom label')
+    return panel
 
-    The view box has to be the plugin's subclass, built by hand: `addViewBox()`
-    is pyqtgraph's and answers a plain `ViewBox`, which answers none of the three
-    questions the dialogue asks.
+
+def panelInTable(table=None):
+    """[(table, panel, plot item)] -- one panel laid in a Table Plot View.
+
+    The panel is in the window's grid because that is what the margins question
+    is about: `panel.styleMargins()` answers the layout its neighbour sits in too.
     """
     if table is None:
-        table = ownership.keep(QVizTablePlotView(None, None, 1, 'profiles_1d',
-                                                 -1))
-    box = CustomizedViewBox(qWidgetParent=table if withLayout else NoPanelLayout(),
-                            imas_viz_api=None)
-    plotItem = table.addPlot(x=[0, 1, 2], y=[1, 2, 3], title='probe panel',
-                             viewBox=box)
-    # The plugin does this itself at the end of its `plot()`; pyqtgraph 0.13.7
-    # gives a ViewBox no `plotItem` of its own.
-    box.plotItem = plotItem
-    box.plotAxis = 'TIME'
-    plotItem.setLabel('left', 'the left label')
-    plotItem.setLabel('bottom', 'the bottom label')
-    return table, box, plotItem
+        table = ownership.keep(QVizTablePlot(title='probe window'))
+    panel = dressedPanel(table)
+    table.grid.addWidget(panel, 0, 0)
+    return table, panel, panel.pgPlotWidget.getPlotItem()
+
+
+def panelOfFigure():
+    """[(figure, panel, plot item)] -- a panel of a window with no grid of panels."""
+    figure = ownership.keep(QVizCurvePlot(title='probe figure'))
+    panel = dressedPanel(figure)
+    return figure, panel, panel.pgPlotWidget.getPlotItem()
 
 
 def curveNames(dialog):
@@ -136,8 +143,9 @@ def penRGB(curve):
 def rowOf(dialog, curve):
     """The row of one curve, taken by identity.
 
-    The panel `pluginPanel` builds already holds a curve -- the one `addPlot`
-    drew -- so a row is never at a position counted from the curve added later.
+    A panel of this package starts empty -- the curve comes from the read, not
+    from the window -- so a row is never at a position counted from the first
+    curve the test draws.
     """
     rows = [style for style in dialog.curves if style.curve is curve]
     assert len(rows) == 1, 'one row per curve: %d for %r' % (len(rows), curve)
@@ -153,18 +161,18 @@ def tabsOf(dialog):
 
 @pytest.mark.ui
 def test_the_window_that_drew_the_curve_answers_the_three_questions(qapp):
-    """`styleCurves` / `styleText` / `styleMargins`, on the plugin's own classes.
+    """`styleCurves` / `styleText` / `styleMargins`, on the app's own classes.
 
-    Measured on the window the manual describes: the third answer **is**
-    `ci.layout`, the grid that positions the panels.
+    The margins answer is the grid of the window, not a layout of the panel: a
+    panel has no room between its neighbours, the table laying them out does.
     """
-    table, box, plotItem = pluginPanel()
-    extra = plotItem.plot([4, 5, 6], pen=pg.mkPen((128, 0, 0)), name='extra')
+    table, panel, plotItem = panelInTable()
+    plotItem.plot([4, 5, 6], pen=pg.mkPen((128, 0, 0)), name='extra')
 
-    assert box.styleCurves() == list(plotItem.listDataItems())
-    assert len(box.styleCurves()) == 2
-    assert box.styleText() is plotItem
-    assert box.styleMargins() is table.ci.layout
+    assert panel.styleCurves() == list(plotItem.listDataItems())
+    assert len(panel.styleCurves()) == 1
+    assert panel.styleText() is plotItem
+    assert panel.styleMargins() is table.grid
 
 
 @pytest.mark.ui
@@ -172,13 +180,14 @@ def test_a_decoration_of_the_plot_is_not_offered_as_a_curve(qapp):
     """Error bars and the band are drawn on the panel, not styled as curves.
 
     `listDataItems()` answers the `PlotDataItem`s and nothing else: measured on a
-    panel holding 4 curves plus an `ErrorBarItem`, an `InfiniteLine` and a
-    `FillBetweenItem` -- all three of those in `addedItems` -- it answers **4**.
-    So the answer needs no list of item types to skip, and cannot offer a
-    decoration as if it were one of the traces.
+    panel holding one curve, an `ErrorBarItem` and an `InfiniteLine` -- all three
+    in the view box's `addedItems` -- it answers **1**. So the answer needs no
+    list of item types to skip, and cannot offer a decoration as if it were one of
+    the traces.
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     plotItem.plot([1, 2, 3], name='only')
+    box = panel.pgPlotWidget.getViewBox()
     line = pg.InfiniteLine(pos=1.0)
     plotItem.addItem(line)
     # Arrays, not lists: `ErrorBarItem.paint` divides `height` into the samples,
@@ -192,23 +201,26 @@ def test_a_decoration_of_the_plot_is_not_offered_as_a_curve(qapp):
     # The replaced tab built one row per `viewBox.addedItems` entry, and that
     # list holds the decorations: measured on a panel holding 5 curves and 3 of
     # them, it answers **8**, where `listDataItems()` answers **5**. Here the
-    # answer is the curves and nothing else, so no skip-list is needed.
-    assert len(box.addedItems) == 4 and len(box.styleCurves()) == 2
-    assert box.styleCurves() == list(plotItem.listDataItems())
-    assert line not in box.styleCurves() and error not in box.styleCurves()
+    # answer is the curve and nothing else, so no skip-list is needed.
+    assert len(box.addedItems) == 3 and len(panel.styleCurves()) == 1
+    assert panel.styleCurves() == list(plotItem.listDataItems())
+    assert line not in panel.styleCurves() and error not in panel.styleCurves()
 
 
 @pytest.mark.ui
-def test_a_window_with_no_panel_layout_gets_no_margins_section(qapp):
+def test_a_window_that_lays_out_no_panels_gets_no_margins_section(qapp):
     """In place of the bare `QWidget()` the old fallback handed back.
 
     Measured: three sections when the window answers a layout, two when it
     answers None -- and the two sections that stay are the ones that need
-    nothing from a layout.
+    nothing from a layout. A figure of curves is that second caller: one plot
+    over its own controls, so a margin there is a strip of nothing, not room
+    between panels.
     """
-    table, laidOut, _ = pluginPanel()
-    _, bare, _ = pluginPanel(table=table, withLayout=False)
+    _, laidOut, _ = panelInTable()
+    _, bare, _ = panelOfFigure()
 
+    assert laidOut.styleMargins() is not None and bare.styleMargins() is None
     assert tabsOf(QVizPlotStyleUI(styleSource=laidOut)) == \
         ['Curve Properties', 'Text Properties', 'Plot Design Properties']
     assert tabsOf(QVizPlotStyleUI(styleSource=bare)) == \
@@ -225,9 +237,9 @@ def test_the_header_labels_are_the_columns_of_a_row(qapp):
     `Line`, over a row whose first widget was a colour button -- the caller it
     was built for has no legend to take a marker from.
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     plotItem.plot([1, 2, 3], name='first')
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
 
     assert headerLabels(dialog) == ['Curve'] + list(CURVE_COLUMNS)
     for row in range(1, len(dialog.curves) + 1):
@@ -247,11 +259,11 @@ def test_a_curve_drawn_without_a_pen_still_opens_the_dialogue(qapp):
     has no attribute 'color'` -- pyqtgraph leaves a pen-less curve the plain
     tuple (200, 200, 200).
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     unstyled = plotItem.plot([7, 8, 9], name='no pen given')
     assert unstyled.opts['pen'] == LIBRARY_PEN_RGB
 
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
     row = [style for style in dialog.curves if style.curve is unstyled][0]
 
     assert penOf(unstyled).color().getRgb()[:3] == LIBRARY_PEN_RGB
@@ -268,10 +280,10 @@ def test_a_row_changes_the_curve_it_is_the_row_of(qapp):
     tab, the first row changed neither the first nor the second curve -- every
     row wrote the item the building loop had reached last.
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     first = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='first')
     second = plotItem.plot([4, 5, 6], pen=pg.mkPen((128, 0, 0)), name='second')
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
 
     rows = {}
     rows['first'] = rowOf(dialog, first)
@@ -294,9 +306,9 @@ def test_the_style_and_symbol_boxes_answer_the_shared_dictionaries(qapp):
     `GlobalPgSymbols` is `None` -- a symbol box that could not answer that would
     have no way to take a symbol back off.
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     curve = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='only')
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
     row = rowOf(dialog, curve)
 
     assert list(GlobalQtStyles.stylesDict) == \
@@ -332,16 +344,16 @@ def test_a_name_the_dictionaries_do_not_hold_answers_their_default(qapp):
 
 @pytest.mark.ui
 def test_the_axes_offered_are_the_ones_drawing_a_label(qapp):
-    """Two rows on a plugin panel, not four.
+    """Two rows on a panel, not four.
 
-    Measured: a `PlotItem` has four axes, but on the panel the plugin draws, the
-    top and the right answer an empty `labelText` and a hidden label. The old
-    tab built all four whatever the panel was, and one of its methods
+    Measured: a `PlotItem` has four axes, but on a panel of this package the top
+    and the right answer an empty `labelText` and a hidden label. The old tab
+    built all four whatever the panel was, and one of its methods
     (`updateAxisBottomLabel`) raised `AttributeError` for a widget it never
     built.
     """
-    table, box, plotItem = pluginPanel()
-    dialog = QVizPlotStyleUI(styleSource=box)
+    _, panel, plotItem = panelInTable()
+    dialog = QVizPlotStyleUI(styleSource=panel)
 
     assert [side for side in AXIS_SIDES
             if plotItem.getAxis(side).labelText] == ['bottom', 'left']
@@ -358,11 +370,11 @@ def test_an_axis_label_is_written_the_way_pyqtgraph_reads_it(qapp):
     replaces `labelStyle` with them; a fresh axis carries a colour and nothing
     else, measured.
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     left = plotItem.getAxis('left')
     assert left.labelStyle == FRESH_AXIS_STYLE
 
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
     editor = [row for row in dialog.axisEditors
               if row.text() == 'the left label'][0]
     editor.lineEdit.setText('renamed left')
@@ -387,8 +399,8 @@ def test_a_title_knows_its_size_and_hides_nothing_on_opening(qapp):
     reads 15 where the style says nothing, which is the size the replaced
     dialogue wrote into that style too.
     """
-    table, box, plotItem = pluginPanel()
-    dialog = QVizPlotStyleUI(styleSource=box)
+    _, panel, plotItem = panelInTable()
+    dialog = QVizPlotStyleUI(styleSource=panel)
 
     assert fontSizeOf(FRESH_AXIS_STYLE) == 15
     assert fontSizeOf({'font-size': '26px'}) == 26
@@ -404,66 +416,65 @@ def test_the_dialogue_is_named_for_the_plot_it_stands_on(qapp):
     """The panel's own title, not a number.
 
     The old window title read `viewBox.id`, an attribute the plugin set and
-    nothing else in the package read; it is gone with it.
+    nothing else in the package read; it is gone with the window.
     """
-    table, box, plotItem = pluginPanel()
-    dialog = QVizPlotStyleUI(styleSource=box)
+    _, panel, _ = panelInTable()
+    dialog = QVizPlotStyleUI(styleSource=panel)
 
     assert dialog.windowTitle() == 'Configure Plot - probe panel'
-    assert not hasattr(box, 'id')
 
 
 # -- the margins section ---------------------------------------------------
 
 @pytest.mark.ui
 def test_the_margins_are_written_where_the_panels_live(qapp):
-    """`ci.layout`, and the panels really move.
+    """The window's own grid, and the panels really move.
 
-    Measured: a fresh window reads (9.0, 9.0, 9.0, 9.0), and a left margin of
-    120 moved its panel from x = 9.0 to x = 120.0. The name the replaced code
-    probed for, `centralLayout`, is a C++ object pyqtgraph deleted when it
-    replaced its central widget: reading it answers `RuntimeError: Internal C++
-    object (QGraphicsGridLayout) already deleted`.
+    Measured: a Table Plot View asks its grid 4 px on each side, and a left
+    margin of 120 moved its panel from x = 4.0 to x = 120.0. The name the
+    replaced code probed for, `centralLayout`, is a C++ object pyqtgraph deleted
+    when it replaced its central widget: reading it answers `RuntimeError:
+    Internal C++ object (QGraphicsGridLayout) already deleted`.
     """
-    table = ownership.keep(QVizTablePlotView(None, None, 1, 'profiles_1d', -1))
+    table, panel, _ = panelInTable()
     table.resize(900, 600)
     table.show()
     qapp.processEvents()
-    _, box, _ = pluginPanel(table=table)
-    app = qapp
-    app.processEvents()
 
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
     layout = dialog.marginsLayout
-    assert layout is table.ci.layout
-    assert layout.getContentsMargins() == tuple(float(m) for m in DEFAULT_MARGINS)
+    assert layout is table.grid
+    assert layout.getContentsMargins() == tuple(float(m) for m in TABLE_MARGINS)
 
-    with pytest.raises(RuntimeError):
-        table.centralLayout.count()
-
-    positions = [round(panel.pos().x(), 1) for panel in table.ci.items
-                 if isinstance(panel, pg.PlotItem)]
+    positions = [round(other.pos().x(), 1)
+                 for other in table.gridHost.findChildren(QVizPanel)]
     dialog.marginBoxes['Left'].setValue(120)
-    app.processEvents()
-    moved = [round(panel.pos().x(), 1) for panel in table.ci.items
-             if isinstance(panel, pg.PlotItem)]
+    qapp.processEvents()
+    moved = [round(other.pos().x(), 1)
+             for other in table.gridHost.findChildren(QVizPanel)]
 
-    assert layout.getContentsMargins() == (120.0, 9.0, 9.0, 9.0)
+    assert layout.getContentsMargins() == (120.0,) + tuple(
+        float(m) for m in TABLE_MARGINS[1:])
     assert moved > positions, 'the panels did not move: %r -> %r' % (positions,
                                                                     moved)
 
 
 @pytest.mark.ui
 def test_the_margins_section_offers_the_way_back_it_documents(qapp):
-    """`Restore previous` and `Restore default`, asked of the live layout."""
-    table, box, _ = pluginPanel()
-    dialog = QVizPlotStyleUI(styleSource=box)
+    """`Restore previous` and `Restore default`, asked of the live layout.
+
+    The two buttons answer different numbers here on purpose: the window asked 4
+    px for its grid, the dialogue's default is `DEFAULT_MARGINS`. A test that
+    started from the default could not tell the two apart.
+    """
+    _, panel, _ = panelInTable()
+    dialog = QVizPlotStyleUI(styleSource=panel)
+    started = tuple(float(m) for m in TABLE_MARGINS)
 
     dialog.marginBoxes['Top'].setValue(80)
     assert dialog.marginsLayout.getContentsMargins()[1] == 80.0
     dialog.previousButton.click()
-    assert dialog.marginsLayout.getContentsMargins() == \
-        tuple(float(m) for m in DEFAULT_MARGINS)
+    assert dialog.marginsLayout.getContentsMargins() == started
 
     dialog.marginBoxes['Right'].setValue(33)
     dialog.defaultButton.click()
@@ -486,14 +497,13 @@ def test_cancel_writes_back_everything_the_window_changed(qapp):
     no `bold` at all -- measured -- so a bold set through the window stayed bold
     until the two knobs were forced back.
     """
-    table = ownership.keep(QVizTablePlotView(None, None, 1, 'profiles_1d', -1))
+    table, panel, plotItem = panelInTable()
     table.show()
     qapp.processEvents()
-    _, box, plotItem = pluginPanel(table=table)
     curve = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='only')
     left = plotItem.getAxis('left')
 
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
     row = rowOf(dialog, curve)
     row.colorButton.setColor((7, 7, 7))
     row.colorButton.sigColorChanging.emit(row.colorButton)
@@ -521,7 +531,7 @@ def test_cancel_writes_back_everything_the_window_changed(qapp):
     assert left.labelText == 'the left label'
     assert left.labelStyle == FRESH_AXIS_STYLE
     assert dialog.marginsLayout.getContentsMargins() == \
-        tuple(float(m) for m in DEFAULT_MARGINS)
+        tuple(float(m) for m in TABLE_MARGINS)
     assert dialog.isVisible() is False
 
 
@@ -532,9 +542,9 @@ def test_ok_leaves_the_changes_where_they_are(qapp):
     The manual's three figures describe the dialogue as changing the plot; the
     difference between its two buttons is whether what changed stays.
     """
-    table, box, plotItem = pluginPanel()
+    _, panel, plotItem = panelInTable()
     curve = plotItem.plot([1, 2, 3], pen=pg.mkPen((0, 0, 128)), name='only')
-    dialog = QVizPlotStyleUI(styleSource=box)
+    dialog = QVizPlotStyleUI(styleSource=panel)
 
     row = rowOf(dialog, curve)
     row.colorButton.setColor((7, 7, 7))

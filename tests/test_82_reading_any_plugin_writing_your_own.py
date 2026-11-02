@@ -286,13 +286,27 @@ def test_a_shipped_plugin_copied_into_the_folder_is_the_user_s_to_change():
     assert copy.fileName.endswith('MyProfilesPlugin.py')
     assert os.path.exists(copy.fileName)
     # A plugin is a folder before it is a module: the Profiles plugin is one module
-    # and a sub-package of four, and the copy has to hang together the same way.
-    assert len(touched) == 3
-    for path in touched:
-        with open(path, encoding='utf-8') as handle:
-            text = handle.read()
-        assert SHIPPED_NAME not in text
-        compile(text, path, 'exec')
+    # and a sub-package, and the copy has to hang together the same way. How many
+    # files carry the old name is a fact about that plugin's text, not about the
+    # copy: since the panel replaced the plugin's own grid, only its entry module
+    # spells `VizProfiles_plugin`, so one file is rewritten -- while the
+    # sub-package still comes along, two modules deep.
+    assert len(touched) == 1
+    assert sorted(os.listdir(os.path.join(copy.folder, 'viz_profiles'))) == \
+        ['QVizProfileOffer.py', 'QVizProfilePanel.py']
+    assert not os.path.exists(os.path.join(copy.folder, 'VizProfiles_plugin.py'))
+    # Every file of the copy, not only the rewritten ones: a sub-package that kept
+    # the old name would import a module the copy does not hold, and the scan that
+    # finds the plugin would never say why it is missing.
+    for dirpath, _names, fileNames in os.walk(copy.folder):
+        for fileName in fileNames:
+            if not fileName.endswith('.py'):
+                continue
+            path = os.path.join(dirpath, fileName)
+            with open(path, encoding='utf-8') as handle:
+                text = handle.read()
+            assert SHIPPED_NAME not in text, path
+            compile(text, path, 'exec')
     compile(open(copy.fileName, encoding='utf-8').read(), copy.fileName, 'exec')
 
 

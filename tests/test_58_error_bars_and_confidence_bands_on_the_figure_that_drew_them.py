@@ -73,8 +73,8 @@ from imasviz.VizGUI.VizPlot.QVizCurveErrors import (CONFIDENCE_BANDS,
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import ENTRY
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizImagePlot import QVizImagePlot
-from imasviz.VizPlugins.viz_Profiles.viz_profiles.CustomizedViewBox \
-    import CustomizedViewBox
+from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfilePanel import \
+    QVizProfilePanel
 from imasviz.VizUtils import QVizPreferences
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, case_uri_or_skip)
@@ -380,33 +380,35 @@ def test_bars_and_bands_are_read_again_when_the_curve_is_read_again(session):
 
 
 @pytest.mark.ui
-def test_the_plugin_window_draws_its_bars_through_the_same_object(session):
-    """The move, from the other side: what the plugin kept is the menu only.
+def test_the_profiles_panel_draws_its_curves_through_the_same_object(session):
+    """The plugin has no view box of its own any more -- and needs none.
 
-    Its copy of the drawing code is gone; the view box still offers the three
-    lines, and what they call is the shared object, fed by the pairing this
-    window holds between a node and the curves it drew for it.
+    It used to draw its panels itself and carry the three error lines inside its
+    view box. It now asks the application's own commands, so the window it opens
+    for a quantity is a `QVizCurvePlot` and the object holding the bars is the
+    shared one, fed by the pairing that frame keeps between a node and the curves
+    it drew for it. That is what makes the manual's sentence about the three lines
+    true of a figure the plugin opened, as it always was of one the tree opened --
+    and it is why `magnetics`, which the old plugin never offered at all, answers
+    them here.
     """
-    holder = pg.PlotWidget()
-    ownership.keep(holder)
-    box = CustomizedViewBox(qWidgetParent=holder, imas_viz_api=session['api'])
-    ownership.keep(box)
+    panel = ownership.keep(QVizProfilePanel(session['api'], session['view'],
+                                            IDS_NAME, OCCURRENCE))
+    # flux_loop, bpol_probe, method, and the quantities no array holds -- the
+    # groups the tree answers, not a list the plugin writes.
+    assert [panel.tabs.tabText(i) for i in range(panel.tabs.count())] == \
+        ['flux_loop', 'bpol_probe', 'method', 'no array of structures']
 
-    node = session['nodes'][WITH_ERRORS]
-    frame = plotOf(session, WITH_ERRORS)
-    curve = frame.curves()[0]
-    box.addVizTreeNode(node)
-    box.addVizTreeNodeDataItems(node, [curve])
+    frame = panel.drawQuantity(session['nodes'][WITH_ERRORS])
+    assert type(frame) is QVizCurvePlot
+    assert isinstance(frame.errors, QVizCurveErrors)
 
-    assert box.errors.viewBox is box
-    assert [pair[1] for pair in box.errorQuantities()] == [curve]
-
-    assert box.errors.toggleErrorBars() is True
-    assert box.errors.errorBarCount() == 1
-    assert len([item for item in box.addedItems
+    assert frame.errors.toggleErrorBars() is True
+    assert frame.errors.errorBarCount() == 1
+    assert len([item for item in frame.pgPlotWidget.getViewBox().addedItems
                 if isinstance(item, pg.ErrorBarItem)]) == 1
-    assert box.errors.toggleErrorBars() is False
-    assert box.errors.errorBarCount() == 0
+    assert frame.errors.toggleErrorBars() is False
+    assert frame.errors.errorBarCount() == 0
 
 
 @pytest.mark.ui
@@ -415,11 +417,10 @@ def test_the_bars_belong_to_the_curve_figure_and_the_image_figure_has_none(qapp)
 
     Not a menu quirk but what each frame draws: a bar and a band are read off a
     curve and the node that curve came from, so the object holding them is built
-    by the frame that draws curves -- and by the plugin's view box, which draws
-    them too. An image frame draws pictures and builds neither, which is what the
-    note under *Basic plot display features* states. Pinned because that sentence
-    is negative, and because handing the object to a frame with no curve to read
-    it from is exactly how the sentence becomes a lie.
+    by the frame that draws curves. An image frame draws pictures and builds
+    neither, which is what the note under *Basic plot display features* states.
+    Pinned because that sentence is negative, and because handing the object to a
+    frame with no curve to read it from is exactly how the sentence becomes a lie.
     """
     curveFrame = QVizCurvePlot(title='errorsCurveGuard')
     imageFrame = QVizImagePlot(title='errorsImageGuard')
