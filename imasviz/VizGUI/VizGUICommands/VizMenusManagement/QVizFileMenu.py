@@ -45,6 +45,8 @@ class QVizFileMenu:
 
     TITLE = 'File'
     QUIT = 'Quit'
+    NEW_PLUGIN = 'New plugin...'
+    MANAGE = 'Plugins...'
 
     def __init__(self, menu, window, sessionMenu=None):
         """
@@ -95,10 +97,16 @@ class QVizFileMenu:
         if self._sessionMenu is not None:
             self._sessionMenu(self.menu, self.menu)
 
-        # Add "New Plugin..." action
-        action_new_plugin = QAction("New Plugin...", self.menu)
-        action_new_plugin.triggered.connect(self.openPluginCreator)
-        self.menu.addAction(action_new_plugin)
+        # The two plugin entries, and both are said by name: *New plugin...* to
+        # write one, *Plugins...* to look at the whole set -- what IMASViz ships
+        # and what this user wrote -- and edit their own. They belong on this bar
+        # because a plugin is not a gesture on one node: it is part of the session,
+        # and the folder it lives in is reached whether or not a case is open.
+        for title, slot in ((self.NEW_PLUGIN, self.openPluginCreator),
+                            (self.MANAGE, self.openPluginManager)):
+            action = QAction(title, self.menu)
+            action.triggered.connect(slot)
+            self.menu.addAction(action)
 
         action_quit = QAction(self.QUIT, self.menu)
         action_quit.setShortcut(QKeySequence.Quit)
@@ -134,10 +142,41 @@ class QVizFileMenu:
         return True
 
     def openPluginCreator(self):
-        """Open the interactive plugin creator dialog."""
+        """Write a plugin of this user's own, from a name and an IDS.
+
+        The box stays open after it writes, saying where the file went and which
+        gesture runs it: the plugin is on the menu of the next right click already,
+        and that is the answer to the question a user asks at that moment.
+        """
         window = self._window()
         if window is None:
-            return
-        from imasviz.VizPlugins.QVizPluginCreatorDialog import QVizPluginCreatorDialog
-        dlg = QVizPluginCreatorDialog(window)
-        dlg.exec()
+            return None
+        from imasviz.VizPlugins.QVizPluginCreatorDialog \
+            import QVizPluginCreatorDialog
+
+        dialog = QVizPluginCreatorDialog(window)
+        dialog.exec()
+        watcher = getattr(window, 'pluginWatcher', None)
+        if watcher is not None:
+            # The folder may not have existed until this moment.
+            watcher.watch()
+        return dialog.created
+
+    def openPluginManager(self):
+        """Open the table of every plugin this session can offer.
+
+        The api and the watcher are asked of the window, which is where both
+        already are -- the api because it belongs to the controller the *Open*
+        gesture was built with, the watcher because one watcher serves the session
+        and not one per window that happens to look at the folder.
+        """
+        window = self._window()
+        if window is None:
+            return None
+        from imasviz.VizPlugins.QVizPluginManager import QVizPluginManager
+
+        manager = QVizPluginManager(
+            window, apiOf=getattr(window, 'sessionApi', None),
+            watcher=getattr(window, 'pluginWatcher', None))
+        manager.show()
+        return manager

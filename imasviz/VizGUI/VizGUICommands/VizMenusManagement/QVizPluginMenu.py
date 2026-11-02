@@ -29,26 +29,38 @@ Here the lines are built from the view's catalog, one plugin at a time; a line
 carries its plugin and the entry number the plugin declared for it; and the
 caller is told how many lines there are, so a menu that would be empty is not
 added at all.
+
+A plugin of the user's own gets a second line, *Edit <plugin>...* -- the file
+that answers this menu is under the cursor, which is where the question "how do I
+change what it just did?" arrives. Only for their own: a plugin IMASViz ships is
+read through the Plugins window, where the copy gesture sits next to it, and
+offering to edit it here would be a line that can only answer "no".
 """
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QApplication, QMenu
 
-from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
+from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog, openEditor
+from imasviz.VizPlugins.QVizPluginSource import USER
 from imasviz.VizUtils import GlobalIcons
 
 
 class QVizPluginMenu:
     """Add the lines the plugins of this view offer for this node."""
 
+    EDIT = 'Edit %s...'
+
     def buildPluginsMenu(self, node, dataTreeView, parentMenu):
         """Fill `parentMenu`, and answer how many lines were added.
 
         The caller adds the sub-menu before asking, so the count is what lets it
         take the empty one back out again -- the behaviour measured for every IDS
-        no plugin claims.
+        no plugin claims. The count stays the number of **entries**: a plugin that
+        offers three features is three lines and one *Edit*, and the caller only
+        needs to know whether anything at all can be done here.
         """
         entries = self.catalogOf(dataTreeView).entriesFor(node)
+        already = set()
         for entry in entries:
             action = QAction(GlobalIcons.getCustomQIcon(QApplication, 'new'),
                              entry.label, dataTreeView)
@@ -58,7 +70,42 @@ class QVizPluginMenu:
                                      self.run(dataTreeView, line))
             parentMenu.setToolTipsVisible(True)
             parentMenu.addAction(action)
+            if self.editable(entry) and entry.pluginName not in already:
+                # Once per plugin, right under the lines that plugin drew: a
+                # plugin with several entries would otherwise offer its file
+                # several times over, and a menu is not where the user should
+                # have to wonder which of the copies is the real one.
+                already.add(entry.pluginName)
+                parentMenu.addAction(self.editAction(entry, dataTreeView))
         return len(entries)
+
+    @staticmethod
+    def editable(entry):
+        """Whether this entry's file is this user's to change.
+
+        Asked of the origin, not of a path on disk: a shipped plugin is read-only
+        whatever folder it lives in, and `QVizPluginSource.writeSource` refuses it
+        the same way, so the line and the guard cannot disagree.
+        """
+        source = getattr(entry, 'source', None)
+        return source is not None and source.origin == USER and source.writable
+
+    def editAction(self, entry, dataTreeView):
+        """The *Edit* line for one of the user's own plugins.
+
+        No icon: `GlobalIcons` has no picture for "edit", and asking it for one
+        answers None, which draws a gap where a glyph should be. The entry lines
+        above carry one because their icon says "this adds a window"; this line
+        says what it is in words, and the words are the whole answer.
+        """
+        action = QAction(self.EDIT % entry.pluginName, dataTreeView)
+        action.setStatusTip('Change %s -- the Plugins menu of every opened case '
+                            'answers with what you save.' % entry.pluginName)
+        action.setToolTip(action.statusTip())
+        action.triggered.connect(lambda checked=False, line=entry:
+                                 openEditor(line.source,
+                                            parent=dataTreeView))
+        return action
 
     def addPluginsMenu(self, node, dataTreeView, parentMenu, title='Plugins'):
         """Add a "Plugins" sub-menu, but only when a plugin has something to say.

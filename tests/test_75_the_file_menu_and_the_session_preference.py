@@ -65,6 +65,8 @@ from support import ownership
 
 SAVE = 'Save session'
 LOAD = 'Load session'
+NEW_PLUGIN = QVizFileMenu.NEW_PLUGIN
+MANAGE_PLUGINS = QVizFileMenu.MANAGE
 QUIT = 'Quit'
 GUI = __import__(QVizMainWindow.__module__, fromlist=['autoSavesSession'])
 CONTROLLER_MODULE = __import__(QVizMainMenuController.__module__,
@@ -245,10 +247,14 @@ def test_the_file_menu_is_on_the_window_its_menu_bar_holds(qapp):
 @pytest.mark.ui
 def test_a_window_that_holds_no_session_yet_offers_no_load_menu(qapp):
     """Nothing saved: an empty list leaves no sub-menu on screen, and *Save
-    session* is still there to make the first one."""
+    session* is still there to make the first one.
+
+    The two plugin lines are on the menu whatever the session holds: a plugin is
+    not part of a case, and the folder it lives in is reached with no case open.
+    """
     window, fileMenu = aFileMenu(aRealController())
 
-    assert labels(fileMenu.menu) == [SAVE, QUIT]
+    assert labels(fileMenu.menu) == [SAVE, NEW_PLUGIN, MANAGE_PLUGINS, QUIT]
     assert subMenuOf(fileMenu.menu, LOAD) is None
 
 
@@ -292,7 +298,8 @@ def test_refilling_the_menu_leaves_no_duplicate_line_on_it(qapp):
     for _ in range(4):
         openMenu(fileMenu.menu)
 
-    assert labels(fileMenu.menu) == [SAVE, LOAD, QUIT]
+    assert labels(fileMenu.menu) == [SAVE, LOAD, NEW_PLUGIN, MANAGE_PLUGINS,
+                                     QUIT]
     assert len(subMenuOf(fileMenu.menu, LOAD).actions()) == 1
 
 
@@ -319,16 +326,22 @@ def test_quitting_answers_the_standard_shortcut(qapp):
 
 
 @pytest.mark.ui
-def test_a_window_holding_no_controller_offers_a_menu_that_quits_only(qapp):
+def test_a_window_holding_no_controller_still_offers_a_way_out(qapp):
     """Half a start window is a normal state during the start-up sequence. A menu
     bar is not where an ``AttributeError`` should land, and *Quit* is worth
-    drawing on its own."""
+    drawing on its own.
+
+    The session lines are what a controller answers, so they are the ones missing
+    here. The plugin lines stay: they belong to the folder of the user's own
+    plugins, which is there whether or not a case was ever opened -- and *New
+    plugin...* is exactly the gesture that makes sense before one is.
+    """
     window = AWindow(controller=None)
 
     window.addFileMenu()
 
     assert window.sessionMenuEntries() is None
-    assert labels(window.fileMenu.menu) == [QUIT]
+    assert labels(window.fileMenu.menu) == [NEW_PLUGIN, MANAGE_PLUGINS, QUIT]
 
 
 # ---------------------------------------------------------------------------

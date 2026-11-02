@@ -30,6 +30,7 @@ from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences,QVizGlobalOperations, QVizLogger, UserInputs
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
+from imasviz.VizPlugins.QVizPluginWatcher import QVizPluginWatcher
 
 
 def autoSavesSession():
@@ -407,6 +408,14 @@ class QVizMainWindow(QMainWindow):
         # The File menu, once the start window exists: its session entries are
         # asked of the menu controller that window was built with.
         self.addFileMenu()
+        # One watcher for the folder of the user's own plugins, for the whole
+        # run: what they save answers the next right click, without a restart.
+        # It sits here and not on a shot view because it watches a folder, not a
+        # case -- and a session outlives the views that come and go through it.
+        # The watcher takes the folder under watch in its own constructor, and
+        # asks again after every reload, so a folder that appears later is not
+        # missed: nothing here has to call `watch`.
+        self.pluginWatcher = QVizPluginWatcher(self.sessionApi, parent=self)
         # Resize to full screen
         self.showMaximized()
 

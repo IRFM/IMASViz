@@ -381,7 +381,11 @@ callers import as `from imasviz.VizUtils import QVizLogger`.
    refused in the log of the case without costing the other plugins. No submodule-provided
    plugin remains: the ETSViz submodule and `imasviz/VizPlugins/viz_ETS/` were removed on
    request, so `'ETSpluginIMASViz'` must stay commented out (an active entry would now
-   raise `ModuleNotFoundError`).
+   raise `ModuleNotFoundError`). **That table is what IMASViz ships, and a plugin of the
+   user's own does not belong in it** — see *Two origins* below. `registerPlugin`, which
+   used to write into it at run time, is gone: a catalog is built once per shot view, so a
+   plugin injected that way was on one view's menu for ever and on no other's at all, and
+   it made a shipped name look editable when nothing in that table is.
 3. `.ui`-based plugins register a **dictionary** in `RegisteredPlugins` instead of a
    module path — `UiFile`, `dir` (anchored on `os.environ['VIZ_HOME']`), `targetIDSroot`,
    `targetOccurrence` — and are loaded by `QVizPluginCatalog._loadUiPlugin` with
@@ -408,6 +412,75 @@ screen, and builds that sub-menu with its parent at construction — `addMenu(ti
 out a QMenu the Python wrapper owns, which then dies before it can be clicked).
 `QVizPluginsHandler` and `QVizPluginsPopUpMenu` are gone, and so are the per-name lookup
 tables `VizPlugin` used to carry: a plugin is asked itself, once per view.
+
+### Two origins: what IMASViz ships, and what this user wrote
+
+`VizPlugins/QVizPluginSource.py` owns the difference, and the whole point of it is what
+may be **written**. A plugin is either `builtin` (the `RegisteredPlugins` table, code
+under `$VIZ_HOME/imasviz/VizPlugins/`) or `user` (a folder of their own,
+`$HOME/.imasviz/plugins`, next to `preferences` and the `.pcfg` files). `writable` is
+`origin == USER` and nothing else, so the three places the boundary is answered cannot
+disagree: the editor's text area, the *Edit* line of the Plugins sub-menu (not drawn at
+all for a shipped plugin — `QVizPluginMenu.editable`), and `writeSource`, which refuses the
+write whatever asked for it. Reading a shipped plugin is useful only if changing one starts
+from it, so `copyIntoUserFolder` takes its **whole folder** — sub-packages included,
+`__pycache__` left out — renames the module to the class name and rewrites that identifier
+across every file it copies (measured: 3 files for `VizProfiles_plugin`), and returns the
+copy plus the files it touched; the file is renamed **before** the words are rewritten, or
+the answer names paths that no longer exist.
+
+What is in the user's folder is **found by looking**, not registered: a folder counts as a
+plugin when it holds a module declaring a class of that module's name, read off the
+*source* with `ast` (`declaresClass`). Listing must not import — importing is where the
+cost is (the shipped set alone is where matplotlib comes in). A file that no longer parses
+is still listed: the plugin the user broke in the editor is the one they most need to
+open, and the catalog is where it is refused, by name. A name is a folder, a module and a
+class at once, so `checkPluginName` refuses what is not an identifier and what IMASViz
+already ships; `pluginNameFor` is the **one** spelling rule, asked by the creator and by
+*copy into my plugins* alike (two rules is how a plugin ends up with a module whose class
+has another name — the one thing the scan cannot read).
+
+A user plugin is imported under a **synthetic package**, `imasviz_user_plugins`, a module
+object with a `__path__` — not a `sys.path` entry, which is process-wide and already
+mutated at import time here. One package name gives every plugin a stable import name,
+which is what a reload needs: `forgetUserModules()` drops the whole subtree, the folder's
+own package with it (`importlib.reload` of one module leaves its siblings and the parent's
+cached attribute alone, so a deleted plugin would never be forgotten at all).
+
+Four modules carry the feature: `QVizPluginSource` (the boundary and the disk),
+`QVizPluginEditor` (a `QPlainTextEdit` with line numbers — every refusal IMASViz answers
+about a plugin names a line), `QVizPluginManager` (the table of both origins, opened from
+*File → Plugins...*, with `New plugin…`, `Read…`/`Edit…`, `Copy into my plugins…`, `Reload
+now`, `Delete`), and `QVizPluginWatcher` (the hot reload, held by `QVizMainWindow` as
+`pluginWatcher` — one instance per session, not per view). `File → New plugin...` and
+`File → Plugins...` are two of the `QVizFileMenu` entries. `createPlugin` writes into the
+user folder, and its template draws through `QVizPlotOneNode` — the same command the tree's
+*Plot* gesture uses — so the first click on a freshly created plugin puts a real figure in
+the MDI area instead of printing.
+
+**What a reload does and does not do**: `QVizPluginCatalog.reload()` puts one view back to
+the disk, `reloadEverywhere(api)` every open view (and answers how many, because a reload
+nobody can count is a reload nobody believes); the sub-menu is rebuilt on every right click,
+so no Qt menu surgery is needed. A window a plugin already opened is **not** re-drawn, and
+a shipped plugin is never re-imported mid-session (two copies of its classes, with
+matplotlib bound to both, is how a session ends up with figures that refuse each other).
+Three `QFileSystemWatcher` facts decided the watcher's shape, measured on this Qt: an
+in-place save is **one** `fileChanged`; a save by rename (vim, emacs) is **two** signals —
+a `directoryChanged` and a `fileChanged` naming the *old* path — and afterwards the file is
+**no longer in `files()`**, so `watch()` has to run again after every flush; a file that
+appears announces itself **only** as a `directoryChanged`. Hence one debounce timer
+(`DEBOUNCE = 300` ms) and a `compileCheck` **before** anything is replaced: a half-typed
+file costs its own entry — named in the log of every open case with the line that stopped
+it — and the module that answers the menu today stays.
+
+Two PySide6 6.6 facts found the hard way while wiring this: `QFileSystemWatcher` is in
+`QtCore`, not `QtWidgets`; and `QPlainTextEdit::viewportOffset` — the method every Qt
+line-number snippet calls — is **protected in C++ and not exposed** (`hasattr` answers
+False; `contentOffset` is the one that exists). Asking for it raised inside a paint event,
+which left the paint device open (`QPaintDevice: Cannot destroy paint device that is being
+painted`) and killed the process in a **later** paint event, in another window, with
+nothing in the traceback naming the file at fault — so `paintLineNumbers` ends its painter
+in a `finally`.
 
 `test_imas_viz_plugin.py` instantiates a plugin with a hardcoded `dictDataSource`
 (shot 50642, `west_equinox`) and calls `execute()` directly — the pattern for exercising a
@@ -472,11 +545,12 @@ There is now a **pytest + pytest-qt suite in `tests/`** (outside the package), w
 root after loading the modules:
 
 ```bash
-python3 -m pytest tests/ -q     # 1308 passed, 1 xfailed, 12 warnings, ~15 min, offscreen
+python3 -m pytest tests/ -q     # 1394 passed, 1 xfailed, 12 warnings, ~15 min, offscreen
 ```
 
 Two uncontended runs of the same tree (T50) agree at **874,27 s** and **875,65 s**,
-so ~15 min is what this suite costs on this node right now; the **715,70 s** the T49
+and the run that closed this pass answers **873,26 s** for **1394** ids, so ~15 min
+is what this suite costs on this node right now; the **715,70 s** the T49
 row recorded no longer reproduces, and the 8 ids added since account for about 5 s
 of that. Wall time belongs to the node (AFS, other tenants), not to the tree: quote
 it with its date, and never explain it without measuring.
@@ -810,6 +884,13 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   answers 119 modules and 118 imports. T50 added **none** either — the sizes are
   constants of `QVizStyle.py` and one call in `QVizDataTreeView.py`, both modules the
   walk already took, and the guard is in `tests/`; still 119 modules and 118 imports.
+  The plugin creator of the pass before this one added **2** (`VizPlugins/create_plugin.py`
+  and `VizPlugins/QVizPluginCreatorDialog.py`), and this one adds **4**:
+  `VizPlugins/QVizPluginSource.py` (where a plugin comes from, and whether it may be
+  written), `VizPlugins/QVizPluginEditor.py`, `VizPlugins/QVizPluginManager.py` and
+  `VizPlugins/QVizPluginWatcher.py` — so the sweep answers **125** modules and **124**
+  imports, measured with `python3 -m pytest tests/test_99_import_sweep.py -q`, which
+  prints **126 passed, 1 xfailed** for those 125.
   Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
