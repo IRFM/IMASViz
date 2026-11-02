@@ -890,7 +890,11 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   written), `VizPlugins/QVizPluginEditor.py`, `VizPlugins/QVizPluginManager.py` and
   `VizPlugins/QVizPluginWatcher.py` — so the sweep answers **125** modules and **124**
   imports, measured with `python3 -m pytest tests/test_99_import_sweep.py -q`, which
-  prints **126 passed, 1 xfailed** for those 125.
+  prints **126 passed, 1 xfailed** for those 125. The first step of the Profiles
+  rewrite adds **1**: `VizPlugins/viz_Profiles/viz_profiles/QVizProfileOffer.py`, what
+  one IDS of one case can be drawn as, read off the tree that case built instead of
+  listed by hand — so the sweep answers **126** modules and **125** imports, measured
+  the same way, which prints **127 passed, 1 xfailed**.
   Note that
   the sweep skips `test_*.py` by name, which is why the demo
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
