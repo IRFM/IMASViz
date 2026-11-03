@@ -51,6 +51,7 @@ through a Qt widget, which is freed on the cyclic collector while Qt still owes
 it a paint event.
 """
 
+import logging
 import weakref
 from functools import partial
 
@@ -58,7 +59,7 @@ from PySide6.QtGui import QAction, QKeySequence
 from PySide6.QtWidgets import QApplication, QMenu, QStyle
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMenuRefill import refill
-from imasviz.VizUtils import GlobalIcons
+from imasviz.VizUtils import GlobalIcons, QVizPreferences
 
 
 class QVizWindowMenu:
@@ -69,6 +70,11 @@ class QVizWindowMenu:
     HIDE_ALL = 'Hide all'
     DELETE = 'Delete'
     ALL = 'All'
+    DISPOSITION = 'Disposition'
+    ISOLATE = 'Show only this case'
+    CLOSE_CASE = 'Close this case'
+    HIDE_OTHERS = 'Hide others'
+    CLOSE_OTHERS = 'Close others'
     NEXT = 'Next window'
     PREVIOUS = 'Previous window'
 
@@ -109,32 +115,56 @@ class QVizWindowMenu:
 
     # -------------------------------------------------------------- the drawing
     def refresh(self):
-        """Draw the menu as the windows are now."""
+        """Draw the menu as the windows are now, grouped by case first.
+
+        The *Windows* menu is where the question "which windows are open, and
+        how do I get a handle on them?" is asked, and it is asked about a run
+        that holds several cases at once -- so the windows are grouped by the
+        case (URI) that owns them, not by the figure kind the flat list used to
+        show. A case and its figures sit together in one sub-menu; a figure that
+        serves several cases sits in each of them (the shared figure case); a
+        window a plugin drew, which serves no case, stays at the top level. The
+        *All* gestures act on the run, the *Disposition* sub-menu acts on the
+        MDI area, and the *Delete* sub-menu still closes by kind.
+        """
         refill(self.menu)
         windows = self.windows()
         # A bar entry that appears and disappears is a target that moves under
-        # the hand, so on a bar the entry stays and says there is nothing in it.
+        # the hand, so on a bar the entry stays and says there is nothing in it:
+        # no window to manage, no gesture to offer -- including the *Disposition
+        # sub-menu, which rearranges windows that are already on the screen, and
+        # which has nothing to rearrange yet. The layout a future case opens into
+        # is set from the preferences file, not from this menu.
         self.menu.setEnabled(bool(windows))
         if not windows:
             return
 
-        lastKind = None
+        caseUris = []
         for record in windows:
-            if lastKind is not None and record.kindLabel != lastKind:
-                self.menu.addSeparator()
-            lastKind = record.kindLabel
-            self.menu.addAction(self.lineFor(record))
+            for uri in record.cases:
+                if uri not in caseUris:
+                    caseUris.append(uri)
+        for uri in caseUris:
+            self.caseMenu(uri, windows)
+        for record in windows:
+            if not record.cases:
+                self.menu.addAction(self.lineFor(record))
 
-        self.menu.addSeparator()
+        if windows:
+            self.menu.addSeparator()
+
         for title, slot in ((self.SHOW_ALL, self.showAll),
-                            (self.HIDE_ALL, self.hideAll)):
+                            (self.HIDE_ALL, self.hideAll),
+                            (self.HIDE_OTHERS, self.hideOthers),
+                            (self.CLOSE_OTHERS, self.closeOthers)):
             action = QAction(title, self.menu)
             action.triggered.connect(slot)
             self.menu.addAction(action)
 
-        self.deleteMenu(windows)
-
+        if windows:
+            self.deleteMenu(windows)
         if self.applicationBar:
+            self.dispositionMenu()
             self.menu.addSeparator()
             for title, keys, slot in ((self.NEXT, 'Ctrl+Tab', self.nextWindow),
                                       (self.PREVIOUS, 'Ctrl+Shift+Tab',
@@ -143,6 +173,42 @@ class QVizWindowMenu:
                 action.setShortcut(QKeySequence(keys))
                 action.triggered.connect(slot)
                 self.menu.addAction(action)
+
+    def caseMenu(self, uri, windows):
+        """One sub-menu per case URI, with the gestures that case owns.
+
+        The windows a record serves are in this sub-menu, in the same
+        kind order they would hold in the flat listing they replace. The two
+        case gestures (*Show only this case* and *Close this case*) act on the
+        URI: a figure that serves this case and another stays shown when
+        *Show only this case* is picked, and is hidden -- not closed -- when
+        *Close this case* is picked. The header is the case's short label
+        (`caseLabel`) and the whole URI is in the tooltip. `caseLabel` is
+        imported here and not at module load: it lives in ``VizDataSource``,
+        which the tree view imports from this module -- a top-level import
+        would be a cycle that stops the very first import.
+        """
+        from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
+        sub = QMenu(caseLabel(uri), self.menu)
+        sub.setToolTip(uri)
+        lastKind = None
+        for record in windows:
+            if uri not in record.cases:
+                continue
+            if lastKind is not None and record.kindLabel != lastKind:
+                sub.addSeparator()
+            lastKind = record.kindLabel
+            sub.addAction(self.lineFor(record))
+        sub.addSeparator()
+        action = QAction(self.ISOLATE, sub)
+        action.setToolTip('Show this case, hide every other case')
+        action.triggered.connect(partial(self.isolate, uri))
+        sub.addAction(action)
+        action = QAction(self.CLOSE_CASE, sub)
+        action.setToolTip('Close this case for good; shared figures hidden, kept')
+        action.triggered.connect(partial(self.closeCase, uri))
+        sub.addAction(action)
+        self.menu.addMenu(sub)
 
     def lineFor(self, record):
         """One window: checked while it is on the screen, and the click bounces it."""
@@ -233,6 +299,85 @@ class QVizWindowMenu:
         for record in self.windows():
             if record.kindLabel == kindLabel:
                 self.closeOne(record)
+
+    def isolate(self, uri):
+        """Show this case and its figures, hide every other case's windows."""
+        api = self._api()
+        if api is None:
+            return
+        api.isolateCase(uri)
+
+    def closeCase(self, uri):
+        """Close this case for good; its shared figures hidden, not closed."""
+        api = self._api()
+        if api is None:
+            return
+        api.closeCase(uri)
+
+    def activeFrame(self):
+        """The frame behind the window the user is looking at, or None.
+
+        *Hide/Close others* act on "the one I am working in", and the MDI area
+        answers that with its active sub-window -- the tab, the window in front,
+        or the window with the keyboard focus, whichever mode the area wears.
+        No active window is a gesture with nothing to leave behind, so it is
+        refused, not spent.
+        """
+        api = self._api()
+        mdi = api.getMDI() if api is not None else None
+        if mdi is None:
+            return None
+        sub = mdi.activeSubWindow()
+        if sub is None:
+            return None
+        return sub.widget()
+
+    def hideOthers(self):
+        """Hide every window except the one on the screen the user is in."""
+        api = self._api()
+        frame = self.activeFrame()
+        if api is None or frame is None:
+            return
+        api.hideOthers(frame)
+
+    def closeOthers(self):
+        """Close every window except the one on the screen the user is in."""
+        api = self._api()
+        frame = self.activeFrame()
+        if api is None or frame is None:
+            return
+        api.closeOthers(frame)
+
+    def dispositionMenu(self):
+        """The *Disposition* sub-menu: how the MDI area lays its windows out.
+
+        Four checkable lines, the one the preference currently answers checked.
+        The choice is written to the preference as the user changes it, so the
+        next start-up opens the first case into the layout they last left.
+        """
+        sub = QMenu(self.DISPOSITION, self.menu)
+        modes = (('windowed', 'Windows'),
+                 ('tabbed', 'Tabs'),
+                 ('tiled', 'Tiled'),
+                 ('cascaded', 'Cascaded'))
+        for mode, label in modes:
+            action = QAction(label, sub)
+            action.setCheckable(True)
+            action.setChecked(QVizPreferences.Mdi_view_mode == mode)
+            action.setToolTip('Lay every window out as %s' % label.lower())
+            action.triggered.connect(partial(self.layout, mode))
+            sub.addAction(action)
+        self.menu.addMenu(sub)
+
+    def layout(self, mode):
+        """Ask the MDI area to lay its windows out in `mode`, and remember it."""
+        api = self._api()
+        if api is None:
+            return
+        try:
+            api.mdiLayout(mode)
+        except ValueError as e:
+            logging.getLogger('logPanel').error(str(e))
 
     def nextWindow(self):
         return self.activateWindow(next=True)

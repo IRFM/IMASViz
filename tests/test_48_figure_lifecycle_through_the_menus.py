@@ -185,11 +185,34 @@ def subNamed(menu, title):
 
 
 def actNamed(menu, title):
-    for action in menu.actions():
-        if action.text() == title:
-            return action
-    raise AssertionError('no %r entry in %r'
-                         % (title, [a.text() for a in menu.actions()]))
+    """The action named, walking any sub-menu the menu groups a window into.
+
+    Since the *Windows* menu groups a case and the figures it serves into a
+    sub-menu, a window's line is no longer necessarily at the top level -- this
+    walks in, the same way the *Delete* sub-menu does when it is named first.
+    A separator or a gesture sub-menu (*Delete*, *Disposition*) is skipped,
+    since a window's line does not live there.
+    """
+    gestureSub = (DELETE, QVizWindowMenu.DISPOSITION)
+
+    def find(m):
+        for action in m.actions():
+            if action.isSeparator():
+                continue
+            if action.menu() is not None:
+                if action.text() not in gestureSub:
+                    found = find(action.menu())
+                    if found is not None:
+                        return found
+            elif action.text() == title:
+                return action
+        return None
+
+    action = find(menu)
+    if action is None:
+        raise AssertionError('no %r entry in %r'
+                             % (title, [a.text() for a in menu.actions()]))
+    return action
 
 
 def titles(menu):
@@ -201,12 +224,28 @@ def windowTitles(menu):
 
     The shot view of the session is one of those lines -- the *Windows* menu
     lists the case views and the figures together -- so a test that counts
-    figures says so by naming the case first.
+    figures says so by naming the case first. The lines may sit inside the
+    case's sub-menu (the menu groups its windows by case), so they are walked
+    in, skipping the sub-menus that hold gestures rather than window state.
     """
     fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL, DELETE,
-             QVizWindowMenu.NEXT, QVizWindowMenu.PREVIOUS)
-    return [action.text() for action in menu.actions()
-            if not action.isSeparator() and action.text() not in fixed]
+             QVizWindowMenu.NEXT, QVizWindowMenu.PREVIOUS,
+             QVizWindowMenu.HIDE_OTHERS, QVizWindowMenu.CLOSE_OTHERS,
+             QVizWindowMenu.DISPOSITION, QVizWindowMenu.ISOLATE,
+             QVizWindowMenu.CLOSE_CASE)
+    gestureSub = (DELETE, QVizWindowMenu.DISPOSITION)
+    out = []
+    def walk(m):
+        for action in m.actions():
+            if action.isSeparator():
+                continue
+            if action.menu() is not None:
+                if action.text() not in gestureSub:
+                    walk(action.menu())
+            elif action.text() not in fixed:
+                out.append(action.text())
+    walk(menu)
+    return out
 
 
 def caseTitle(session):

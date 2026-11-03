@@ -19,6 +19,7 @@ Few user preferences options are available:
 - the theme the application is dressed with can be set to light (default) or dark
 - the box in the corner of a window can take that window off the screen (default)
   or close it for good
+- the MDI area can be laid out windowed (default), tabbed, tiled, or cascaded
 
 
 To change user preferences, you need to create a text file named 'preferences' in your ~/.imasviz folder with
@@ -38,7 +39,9 @@ the following content:
 
 #Close_button_deletes=0
 
-These are the default values of the 7 currently available options.
+#Mdi_view_mode=windowed
+
+These are the default values of the 8 currently available options.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -156,3 +159,18 @@ between panels answer the same numbers in both themes, set for a hand holding a
 stylus; see :ref:`other_GUI_features`. The title bar of a window is drawn by the
 widget style and tinted by the theme, which is what keeps its minimise, maximise
 and close buttons on it.
+
+Mdi_view_mode option
+~~~~~~~~~~~~~~~~~~~~
+
+The MDI area is laid out in one of four ways, and this option names which one a
+case is opened into: ``windowed`` (the default, the titled pile), ``tabbed``
+(every window as a tab in one strip), ``tiled`` (a grid, all visible at once),
+or ``cascaded`` (stacked diagonally, every title bar reachable). See
+:ref:`layout_modes`.
+
+It is set the same way either from the file or from the :guilabel:`Disposition`
+sub-menu of the Windows menu: the value is written into this file, so a run in
+the next session is opened laid out the way you left it. A name that is none of
+the four is named in the log panel and leaves the mode the application had
+standing.

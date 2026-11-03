@@ -124,6 +124,14 @@ class QVizPreferences:
     # and the box is where a user reaches for "get this out of my way" far more
     # often than for "throw it away".
     Close_button_deletes = 0
+    # How the MDI area lays its windows out -- windows, tabs, a tile grid, or a
+    # cascade -- answered by the *Disposition* sub-menu of the *Windows* menu,
+    # and read back at start-up to lay the area the first case is opened on.
+    # Windowed is the default, and the only state the area opens in when no
+    # choice is read: a pile of titled windows is the state a case is opened
+    # into, and a line nobody wrote keeps the case where it was.
+    Mdi_view_mode = 'windowed'
+    LAYOUT_MODES = ('windowed', 'tabbed', 'tiled', 'cascaded')
 
     def colour(text):
         """One of the two colour options, read as the manual writes it.
@@ -163,6 +171,7 @@ class QVizPreferences:
             option6 = "Theme="
             option7 = "Show_only_tensors_rank_ge_1="
             option8 = "Close_button_deletes="
+            option9 = "Mdi_view_mode="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -196,6 +205,10 @@ class QVizPreferences:
                             elif line.startswith(option8):
                                 QVizPreferences.Close_button_deletes = \
                                     QVizPreferences.yesNo(line[len(option8):])
+                            elif line.startswith(option9):
+                                QVizPreferences.Mdi_view_mode = \
+                                    QVizPreferences.layoutMode(
+                                        line[len(option9):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],
@@ -240,6 +253,24 @@ class QVizPreferences:
             raise ValueError('%r is not a yes/no switch: write 0 to keep the '
                              'default or 1 to change it' % asked)
         return int(asked)
+
+    def layoutMode(text):
+        """Which view the MDI area wears, refusing a name it cannot lay out in.
+
+        ``QVizPreferences.LAYOUT_MODES`` is what the *Disposition* sub-menu
+        answers, so a file that writes a name nobody wrote on a menu is a name
+        the application does not wear, and the line that spelled it is the one
+        that refuses it. The default the line reads to is what the MDI area
+        already answers, so nothing else changes.
+        """
+        asked = text.strip().lower()
+        if asked not in QVizPreferences.LAYOUT_MODES:
+            raise ValueError(
+                '%r is not a view for the MDI area: write %s'
+                % (text.strip(),
+                   ' or '.join(repr(one) for one in
+                               QVizPreferences.LAYOUT_MODES)))
+        return asked
 
 
 class QVizGlobalValues:
