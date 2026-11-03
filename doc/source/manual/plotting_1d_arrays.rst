@@ -719,7 +719,8 @@ the image below.
    bar or a band is read off a curve, and it lives in the frame that drew that
    curve. A :ref:`Profiles plugin <plugins>` window therefore answers
    :guilabel:`Configure Plot` on a panel and no error-bar line; the curve those
-   bars belong to is the one :guilabel:`Draw the selected quantity` opens. The
+   bars belong to is the one :guilabel:`Draw the selected quantities` opens when
+   that quantity alone is chosen. The
    image below shows the three lines beside pyqtgraph's own, as a window that drew
    a curve answers them; the :guilabel:`Auto Range` line it also carries belonged
    to that window's view box, and on the frames drawn today the equivalent is the

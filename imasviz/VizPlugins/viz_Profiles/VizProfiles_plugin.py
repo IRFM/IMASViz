@@ -79,6 +79,24 @@ class VizProfiles_plugin(VizPlugin):
                              % (occurrence, idsName,
                                 ' and '.join(str(one) for one in occurrences)))
 
+        # One window per IDS. A click on the menu already opened a panel for
+        # this IDS -- bring it to the front instead of opening a second one,
+        # which would ask the same case its questions again and hold two
+        # occurrence choices for one answer. A session restore (answers) is
+        # let through: it has named the key its file gave the window, and the
+        # panel it finds or builds must answer to that key.
+        if answers is None:
+            existing = QVizProfilePanel.findOpen(vizAPI, view, idsName)
+            if existing is not None:
+                self.profilesPanel = existing
+                existing.raise_()
+                existing.activateWindow()
+                logging.getLogger(view.uri).info(
+                    'The %s IDS panel is already open: %s is brought to the '
+                    'front instead of opening a second window for it.'
+                    % (idsName, existing.figureKey))
+                return
+
         # Loading is the same command the tree's own *Load* gesture runs, asked
         # synchronously: the offer is a walk of the tree that load builds, so an
         # asynchronous one here answers "no tree" and refuses an IDS that has

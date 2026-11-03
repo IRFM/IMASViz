@@ -30,10 +30,11 @@ wrong axis.
 
 import pyqtgraph as pg
 
-from PySide6.QtWidgets import QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+from imasviz.VizGUI.VizGuiCustomization import QVizStyle
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
 from imasviz.VizGUI.VizPlot.QVizPlotStyling import QVizPlotStyling
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import QVizSliceControls
@@ -69,11 +70,14 @@ class QVizPanel(QWidget):
         # view box's own, so styling one panel cannot reach another.
         self.styling = QVizPlotStyling(self)
         self.styling.addMenuEntry(self.pgPlotWidget.getViewBox().menu)
+        # The words the panel holds instead of a curve, when the read refused
+        # the quantity: read by whoever wants to say which panel refused what.
+        self.refusalText = None
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(self.pgPlotWidget)
-        layout.addWidget(self.sliceControls)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self.pgPlotWidget)
+        self.layout.addWidget(self.sliceControls)
 
     def getPlotAxis(self):
         """The abscissa strategy of the window this panel sits in.
@@ -85,6 +89,24 @@ class QVizPanel(QWidget):
 
     def plotItem(self):
         return self.pgPlotWidget.getPlotItem()
+
+    def showRefusal(self, quantity, message):
+        """Say, in this panel, why the quantity it was built for does not draw.
+
+        The read of one quantity of a page raised -- and the window keeps its
+        cell, with the reason under the name, rather than losing the panel to
+        the read that refused it and the user to a window with a hole. The
+        curve's widgets stand hidden under the words: the panel is still a
+        panel the window lays out, it is just not drawn.
+        """
+        self.refusalText = message
+        self.pgPlotWidget.hide()
+        self.sliceControls.hide()
+        words = QLabel('"%s": %s' % (quantity, message), self)
+        words.setWordWrap(True)
+        words.setStyleSheet('color: %s;' % QVizStyle.colour('log-error'))
+        self.refusalLabel = words
+        self.layout.insertWidget(0, words)
 
     def plot(self, treeNode, row, as_function_of_time=None):
         """Draw one quantity here. Returns how many curves were drawn."""

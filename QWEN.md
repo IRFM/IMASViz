@@ -855,8 +855,7 @@ artifacts of this codebase, and several are load-bearing:
   answers `axis.index is None` — and a curve figure's band **folds** to one summary line
   (`QVizSliceControls(foldable=True)`), while an image window and a table panel stay
   unfolded because there the rows are the only place saying which slice is drawn.
-- A Table Plot View asks the width of its grid **once for the table**, from how many
-  panels it holds (`QVizTablePlot.layoutTable` → `columnsFor(len(self._panels))`), and
+- A Table Plot View asks the width of its grid **once for the table** (`QVizTablePlot.layoutTable`), and
   lays the panels on that grid — never one panel at a time against a width read for
   that panel. Asked per arrival it answered 1, then 2 until the fifth, then 3, while the
   row came from the panel count: measured on a 15-panel table, **14 cells for 15
@@ -866,14 +865,23 @@ artifacts of this codebase, and several are load-bearing:
   on screen. What keeps the two answers together: `panelsInTable()` reads the layout,
   and `getPlotItemsDict()` reads it through that, because recomputing the places from
   the panel count wrote a `.pcfg` naming (0,2) where no panel sat and (1,1) once for
-  two panels, and re-applying such a file laid the overlap again. A quantity the read
-  refuses costs its panel **and takes it back** (`plot()` draws before it keeps the
-  panel, and calls `deleteLater()` on the refusal): a `QVizPanel(self)` that no layout
-  owns stays visible on the window, over the panels that were accepted. In the file, an
-  absent place is **no attribute** — the reader turns a missing `row` into a missing
-  place, so writing `str(None)` made the file unreadable (`invalid literal for int()
-  with base 10: 'None'`) and that entry drew nothing. `tests/test_65_*` pins all of it
-  on stubs, the 15- and 16-panel shapes cell by cell.
+  two panels, and re-applying such a file laid the overlap again. Since the profiles
+  work of Nov 2026 the width is the combo of the profiles panel
+  (`QVizProfilePanel.columnsBox` → `QVizPlotAsTable(..., columns=)` →
+  `QVizTablePlot.setColumns`): told a number the rows keep it (told zero or less,
+  refused by name), told none they keep the width the page size has always answered
+  (`columnsFor`), which is what the tree's own gesture, a session and a configuration
+  still give — the choice was asked of the panel's window, and of it alone. A quantity
+  the read refuses keeps its panel now (`QVizTablePlot.plot` calls
+  `QVizPanel.showRefusal` on the refusal and lays it like the rest): the words sit
+  under the name the window itself would give the panel, in the log-error colour, the
+  curve's widgets hidden under them, and the reason is still named in the log of the
+  case — a page of 50 quantities of this case is a window of 50 panels, 37 of them
+  drawn, the 13 saying why. A page that reads **nothing** is still refused out loud
+  and left no window. `tests/test_65_*` pins the layout and the refusal on stubs,
+  `test_90` pins the width, `test_51` the 50/37/13 page, `test_85` the whole-page
+  refusal and the paging, and `test_88` the window-per-IDS, the width combo and the
+  selection of the profiles list.
 
 ## Verified in situ (ACH/Gateway module stack)
 
@@ -1113,7 +1121,8 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   any error-bar behaviour of its own: `QVizCurveErrors` is owned by the curve frame alone
   (`test_58` pins it), so a panel of a Table Plot View — which is what a Profiles page is
   — answers *Configure Plot* and **no** error-bar line, and the error fields the offer
-  counts reach their bars through *Draw the selected quantity*.
+  counts reach their bars through *Draw the selected quantities*, with the one quantity
+  alone selected.
   A curve figure answers those three lines too: its right click goes from pyqtgraph's
   **4** entries to **7**, and since T43 `Configure Plot` is **not** plugin-only any more:
   row T32 of `LEGACY_REPLACEMENT.md` is answered on every window that draws curves — the

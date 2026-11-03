@@ -38,11 +38,14 @@ window with no layout owning it.
 
 The width is now asked once for the whole table, from the panels it holds; the
 panels a configuration named a cell for keep it and the others fill what is left.
-The places the window reports are read from the layout.
+The places the window reports are read from the layout, and the panel of a
+quantity whose read raised keeps its cell: it is laid like the rest and says in
+its own words why the window did not draw it, so a four-quantity page is a page
+of four panels, read refusal and all.
 """
 
 import pytest
-from PySide6.QtCore import QObject, QEvent, QCoreApplication
+from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMdiArea
 
 from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
@@ -51,7 +54,6 @@ from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfiguration import \
     QVizSavePlotConfiguration
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizSignalHandling \
     import QVizSignalHandling
-from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import QVizPanel
 from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 from imasviz.Viz_API import Viz_API
 
@@ -381,29 +383,36 @@ def test_a_file_naming_one_cell_twice_does_not_fill_it_twice(view):
 
 
 # ---------------------------------------------------------------------------
-# A quantity a panel cannot show costs its panel, and nothing else.
+# A quantity a panel cannot draw keeps its cell, with the reason in it.
 
 @pytest.mark.ui
-def test_a_refused_quantity_leaves_no_panel_on_the_window(view, caplog):
-    """The panel of a refused read must not stay a child of the window.
+def test_a_refused_quantity_keeps_its_panel_saying_why(view, caplog):
+    """The panel of a read that raised stays, holding why the quantity does not draw.
 
-    `plot()` used to build `QVizPanel(self)` before drawing it, so a quantity with
-    two axes to draw left that panel parented to the window and owned by no
-    layout: a curve-sized widget sitting over the table, on top of the panels
-    that were accepted.
+    « en cas d'exception générée par le traçé d'un tenseur, que le plugin puisse
+    continuer à tracer les autres tenseurs (mettre le message d'erreur dans la
+    fenêtre vide du tenseur qui a causé cette erreur). »  Before, that panel was
+    taken back with the read that refused it: four quantities asked, three
+    windows back, and the exception only in the log. The window holds a place
+    for every quantity asked, and the one the read refused says so under its
+    name -- which is the spelling the window itself would label the panel with,
+    so the `matrix` of this stub is not mistaken for whatever shares its name
+    in another array of structures.
 
-    The strategy is the default one here, and not by carelessness: along time that
-    same quantity has one axis to draw and is drawn, so the refusal -- and the
-    panel it costs -- only exists on a window that leaves the read to answer.
+    The strategy is the default one here, and not by carelessness: along time
+    that same quantity has one axis to draw and is drawn, so the refusal only
+    exists on a window that leaves the read to answer.
     """
     frame = fill(view, _quantities(3) + [_refused()], plotAxis='DEFAULT')
 
-    assert frame.panelCount() == 3
+    drawn, refused = frame.panels()[:3], frame.panels()[-1]
+    assert frame.panelCount() == 4, 'the refused quantity keeps its cell'
+    assert [panel.curveCount() for panel in drawn] == [1, 1, 1]
+    assert refused.curveCount() == 0
+    assert '2 axes to draw' in refused.refusalText
+    assert 'matrix' in refused.refusalText, \
+        'the words name the quantity they refuse'
+    assert refused.pgPlotWidget.isHidden()
     assert '2 axes to draw' in caplog.text
-
-    # deleteLater() takes the widget back when the events are flushed, which is
-    # what the application does as soon as it returns to its event loop.
-    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
-    assert len(frame.findChildren(QVizPanel)) == 3
-    assert frame.grid.count() == 3
-    assert cells(frame) == [(0, 0), (0, 1), (1, 0)]
+    assert cells(frame) == [(0, 0), (0, 1), (1, 0), (1, 1)]
+    assert frame.isDrawing()

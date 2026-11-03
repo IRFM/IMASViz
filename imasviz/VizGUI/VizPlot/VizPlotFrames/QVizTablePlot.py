@@ -45,6 +45,12 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import (QVizPanel,
 class QVizTablePlot(QWidget):
     """The panels of a Table Plot View, in the frame the api can manage."""
 
+    #: The room between the rows of panels, set on the grid below. Left to a
+    #: style the grid answers 6 on this node, which lays a panel's curve flush
+    #: against the one below it. A little more -- room, not a gap -- is the
+    #: vertical move the rows stack and the panels do not.
+    ROW_SPACING = 10
+
     def __init__(self, parent=None, title=''):
         super().__init__(parent)
         self.figureKey = None
@@ -56,6 +62,9 @@ class QVizTablePlot(QWidget):
         # The abscissa strategy the entry asked for: 'TIME', or 'DEFAULT' to let
         # each quantity answer for itself.
         self.plotAxis = 'DEFAULT'
+        # How many panels a row holds when it is told; None is the width the
+        # page size answers, which is what `layoutTable` asks by default.
+        self._columns = None
 
         self.scroll = QVizPanelScrollArea(self)
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -65,6 +74,9 @@ class QVizTablePlot(QWidget):
         self.gridHost = QWidget(self.scroll)
         self.grid = QGridLayout(self.gridHost)
         self.grid.setContentsMargins(4, 4, 4, 4)
+        # The row is the one that stacks the panels, so it is the one that
+        # needs the room: see `ROW_SPACING`.
+        self.grid.setVerticalSpacing(self.ROW_SPACING)
         self.scroll.setWidget(self.gridHost)
 
         layout = QVBoxLayout(self)
@@ -89,6 +101,32 @@ class QVizTablePlot(QWidget):
     def setPlotAxis(self, plotAxis):
         self.plotAxis = plotAxis
 
+    def columns(self):
+        """How many panels a row holds, or None for the width of the page size.
+
+        Asked by whoever lays the table out and by whoever wants to say which
+        one it is. `None` is the width `columnsFor` answers for how many panels
+        the table holds -- the width the page has always had -- and the one a
+        saved configuration's `row`/`column` were measured against when no width
+        was told to them.
+        """
+        return self._columns
+
+    def setColumns(self, columns):
+        """How many panels a row holds, or None to go back to the page size.
+
+        The width is asked of `layoutTable` once a row is laid, from here, rather
+        than from the panel count, so a width told to this window is the width
+        its rows are laid at. A zero or negative width is not a width, and is
+        refused by the name rather than laid out as one column.
+        """
+        if columns is not None and columns < 1:
+            raise ValueError(
+                'the table is told %r panels per row: a row holds at least '
+                'one, or nothing at all for the page size to answer'
+                % (columns,))
+        self._columns = columns
+
     def onSavePlotConf(self):
         """Write this table out as a '.pcfg' the api can apply again.
 
@@ -103,24 +141,32 @@ class QVizTablePlot(QWidget):
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def plot(self, treeNode, as_function_of_time=None, place=None):
-        """Give this quantity its own panel and draw it there.
+        """Give this quantity its panel, and the reason in it when it cannot draw.
 
         `place` is the (row, column) a saved configuration said this panel sat
         at; left out, the panel goes where the next free slot of the table is.
 
-        Returns how many curves the panel holds. A quantity the panel cannot
-        show raises, naming the quantity: the caller keeps going with the rest of
-        the selection, and the panel it was given is taken back with the read
-        that refused it -- a panel drawn before the grid is asked is a child of
-        this window that no layout owns, and it stays on screen over the panels
-        that were accepted.
+        Returns how many curves the panel holds -- zero when the read of this
+        quantity raised, the panel kept with the refusal in it, the reason
+        named in the log of the case, and the rest of the page drawn on:
+        a page is a window of panels, and taking the panel of the quantity
+        that raised used to leave the user one window short with the
+        exception only in the log. The name under the words is the one the
+        window itself would label the panel with, so a refusal under
+        `time_slice/i/point.r` is not mistaken for the same name in another
+        array of structures.
         """
         panel = QVizPanel(self)
+        drawn = 0
         try:
             drawn = panel.plot(treeNode, len(self._panels), as_function_of_time)
-        except Exception:
-            panel.deleteLater()
-            raise
+        except Exception as e:
+            # The read of this quantity raised; the page keeps its cell, with
+            # the reason holding it -- not a hole in the grid and a hole in
+            # the count the user is keeping.
+            panel.showRefusal(self.dataPathOf(treeNode), str(e))
+            if self.dataTreeView is not None:
+                logging.getLogger(self.dataTreeView.uri).error(str(e))
         self._panels.append(panel)
         if place is not None:
             self._places[panel] = (place[0], place[1])
@@ -144,8 +190,9 @@ class QVizTablePlot(QWidget):
     def layoutTable(self):
         """Lay every panel in a cell of its own, on a grid of one width.
 
-        The width is asked once for the whole table, from how many panels it
-        holds. Asked per panel as it arrives -- which is what this file did -- it
+        The width is asked once for the whole table: from the width told to the
+        window, or, told none, from how many panels it holds. Asked per panel as
+        it arrives -- which is what this file did -- it
         answers 1 for the first panel, 2 until the fifth and 3 after, so the
         first panels are laid on a narrower grid than the rest: measured, panels
         3 and 4 both land in cell (1,1) from five panels on, cell (0,2) is never
@@ -158,7 +205,10 @@ class QVizTablePlot(QWidget):
         before it is shown (QVizPlotAsTable.execute), so relaying it as panels
         arrive costs nothing on screen.
         """
-        columns = self.columnsFor(len(self._panels))
+        if self._columns is None:
+            columns = self.columnsFor(len(self._panels))
+        else:
+            columns = self._columns
         named = self._namedCells()
         free = self._freeCells(columns, set(named.values()))
         for panel in self._panels:

@@ -306,10 +306,11 @@ def test_the_abscissa_choice_offers_the_two_readings_the_commands_honour(session
 def test_a_page_of_the_panel_is_a_table_of_the_application(session):
     """The click runs `QVizPlotAsTable`, so the window is one the api knows.
 
-    Measured: 50 quantities on the tab, **37** panels, in about a second. The 13
-    that are missing each said why in the log of the case; a panel that cannot
-    read its quantity is refused by name and takes its empty panel back with it,
-    which is why the count of panels is 37 and not 50.
+    Measured: 50 quantities on the tab, a page of **50** panels, in about a
+    second -- of which **37** hold a curve and **13** keep their cell with the
+    reason the read refused the quantity, said in the words of the panel and
+    named in the log of the case. Before the refusal lived in the read, and the
+    read took its empty panel back with it: 37 of 50, and an explained hole.
     """
     panel = session.panel
     tab = [panel.tabs.widget(index) for index in range(panel.tabs.count())
@@ -325,7 +326,17 @@ def test_a_page_of_the_panel_is_a_table_of_the_application(session):
     assert frame is not None
     assert sorted(set(session.api.figureframes) - before) == [frame.figureKey]
     assert frame.figureKey == '%s1' % FigureTypes.TABLEPLOTTYPE
-    assert frame.panelCount() == PAGE_PANELS
+    assert frame.panelCount() == PAGE_QUANTITIES, \
+        'the page keeps a panel for every quantity it names'
+    drawn = [p for p in frame.panels() if p.curveCount() > 0]
+    refused = [p for p in frame.panels() if p.curveCount() == 0]
+    assert len(drawn) == PAGE_PANELS
+    assert len(refused) == PAGE_QUANTITIES - PAGE_PANELS
+    for one in refused:
+        assert one.refusalText, 'the refusal says why, in the panel'
+        assert one.pgPlotWidget.isHidden()
+        assert one.treeNode.getName() in one.refusalLabel.text(), \
+            'the reason sits under the name of the quantity it refuses'
     assert frame.getPlotAxis() == 'TIME'
     assert session.api.mdiWindowOf(frame) is not None, \
         'the window the plugin drew is not in the MDI area'
@@ -350,11 +361,14 @@ def test_the_panels_of_that_window_answer_their_own_right_click(session):
     The error-bar lines are **not** on this menu, and that is said here rather
     than left to be discovered: they belong to a figure of curves, the only frame
     owning a `QVizCurveErrors` (pinned in `test_58`). Which is why the tab offers
-    *Draw the selected quantity* beside the page -- an error field is a bar on a
-    curve, and the curve lives in the other kind of window.
+    *Draw the selected quantities* beside the page, with one selected -- an error
+    field is a bar on a curve, and the curve lives in the other kind of window.
     """
     frame = session.frames[0]
-    panel, neighbour = frame.panels()[0], frame.panels()[1]
+    # Two drawn panels: the page also holds the panels whose read was refused,
+    # and a panel that says why it does not draw is not where the menus live.
+    panels = [panel for panel in frame.panels() if panel.curveCount() > 0]
+    panel, neighbour = panels[0], panels[1]
     lines = [action.text()
              for action in panel.pgPlotWidget.getViewBox().menu.actions()]
 
@@ -367,7 +381,8 @@ def test_the_panels_of_that_window_answer_their_own_right_click(session):
 
 
 def test_a_single_quantity_goes_through_the_tree_s_own_command(session):
-    """*Draw the selected quantity* is `QVizPlotOneNode`, not a panel of its own.
+    """*Draw the selected quantities*, with one alone chosen, is `QVizPlotOneNode`,
+    not a panel of its own.
 
     Asked for a quantity the page above already drew, so the answer is about the
     frame the gesture opens: a curve figure under a `SlicesPlot:` key, embedded

@@ -337,20 +337,29 @@ def test_two_quantities_on_two_coordinates_each_get_their_own_abscissa(view):
 
 
 @pytest.mark.ui
-def test_a_quantity_of_two_axes_is_refused_by_name_and_costs_nothing_else(view,
-                                                                          caplog):
+def test_a_quantity_of_two_axes_is_refused_by_name_and_keeps_its_panel(view,
+                                                                       caplog):
     # The legacy entry died out of the menu handler with
     # `TypeError: 'QVizDataArrayHandle' object is not subscriptable`, after
     # registering a window with no view in it and recording both nodes.
-    select(view, _vector(), _matrix())
+    # Both selections are answered: the one that draws gets its curve, the one
+    # the read refuses keeps its panel with the reason in it -- and the reason
+    # is named in the log of the case.
+    vector, matrix = _vector(), _matrix()
+    select(view, vector, matrix)
 
     entry(view).onPlotToTablePlotView(all_DTV=False, plotAxis='DEFAULT')
 
     frame = tables(view)[0]
-    assert frame.panelCount() == 1
+    panels = {p.treeNode: p for p in frame.panels()}
+    assert frame.panelCount() == 2, 'both selections are answered'
+    assert set(panels) == {vector, matrix}
+    assert panels[vector].curveCount() == 1
+    assert panels[matrix].curveCount() == 0
+    assert 'matrix' in panels[matrix].refusalText
+    assert 'a picture needs a window of its own' in panels[matrix].refusalText
     assert 'matrix' in caplog.text
     assert 'a picture needs a window of its own' in caplog.text
-    assert len(view.imas_viz_api.figToNodes[FigureTypes.TABLEPLOTTYPE + '1']) == 1
 
 
 @pytest.mark.ui
