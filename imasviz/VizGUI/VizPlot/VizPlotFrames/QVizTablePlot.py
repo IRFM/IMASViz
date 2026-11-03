@@ -45,6 +45,12 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import (QVizPanel,
 class QVizTablePlot(QWidget):
     """The panels of a Table Plot View, in the frame the api can manage."""
 
+    #: The room between the rows of panels, set on the grid below. Left to a
+    #: style the grid answers 6 on this node, which lays a panel's curve flush
+    #: against the one below it. A little more -- room, not a gap -- is the
+    #: vertical move the rows stack and the panels do not.
+    ROW_SPACING = 10
+
     def __init__(self, parent=None, title=''):
         super().__init__(parent)
         self.figureKey = None
@@ -65,6 +71,9 @@ class QVizTablePlot(QWidget):
         self.gridHost = QWidget(self.scroll)
         self.grid = QGridLayout(self.gridHost)
         self.grid.setContentsMargins(4, 4, 4, 4)
+        # The row is the one that stacks the panels, so it is the one that
+        # needs the room: see `ROW_SPACING`.
+        self.grid.setVerticalSpacing(self.ROW_SPACING)
         self.scroll.setWidget(self.gridHost)
 
         layout = QVBoxLayout(self)
