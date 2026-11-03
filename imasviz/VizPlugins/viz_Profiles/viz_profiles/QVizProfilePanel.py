@@ -285,6 +285,15 @@ class QVizProfilePanel(QVizClosableWindow, QMainWindow):
         self.abscissaBox = QComboBox(self)
         self.abscissaBox.currentIndexChanged.connect(self.onAbscissaChosen)
         controls.addWidget(self.abscissaBox)
+        controls.addWidget(QLabel('Plots per row:', self))
+        self.columnsBox = QComboBox(self)
+        # Left to the page size is what the window has always answered, and it
+        # stays the default -- a page of two panels laid in three columns would
+        # be a surprise nobody asked for.
+        self.columnsBox.addItem('auto (from the page size)', None)
+        for count in range(1, 13):
+            self.columnsBox.addItem(str(count), count)
+        controls.addWidget(self.columnsBox)
         controls.addStretch(1)
         layout.addLayout(controls)
 
@@ -402,6 +411,16 @@ class QVizProfilePanel(QVizClosableWindow, QMainWindow):
     def abscissaWords(self):
         chosen = self.abscissaBox.currentData()
         return self.abscissaBox.currentText() if chosen else 'no axis'
+
+    def columns(self):
+        """How many panels a row holds in a window this panel opens, or None.
+
+        `None` is the width the window has always answered from how many panels
+        it holds; a number is the one the user left on the combo. Asked when a
+        page is drawn, so the choice on the combo is the one the next window
+        wears -- the windows already opened keep the width they were drawn with.
+        """
+        return self.columnsBox.currentData()
 
     def namesOf(self, leaves):
         """The quantities a refusal names, bounded so the line stays readable."""
@@ -596,7 +615,8 @@ class QVizProfilePanel(QVizClosableWindow, QMainWindow):
             command = QVizPlotAsTable(self.view,
                                       plotAxis='TIME' if self.abscissa() == TIME
                                       else 'DEFAULT',
-                                      configuration=configuration)
+                                      configuration=configuration,
+                                      columns=self.columns())
             frame = command.execute()
         except ValueError as e:
             logging.getLogger(self.view.uri).error(str(e))

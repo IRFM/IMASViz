@@ -152,3 +152,28 @@ def test_the_entry_of_another_ids_still_opens_its_own_window(session):
     assert {one.idsName for one in panels} == {IDS_NAME, OTHER_IDS}, panels
     assert len(panels) == len({one for one in panels}), \
         'two windows, one per IDS'
+
+
+# -----------------------------------------------------------------------------
+# The width the panel leaves on its pages
+# -----------------------------------------------------------------------------
+
+def test_the_width_the_panel_leaves_on_its_pages(session):
+    """What the combo says is what the command gets, and it starts on auto.
+
+    Left auto -- the first entry, and the default, because a page of two panels
+    laid in eight columns would be a surprise nobody asked for -- the command
+    answers no width and the page keeps the one its size gives it. A number on
+    the combo is carried through as the command's width, and `test_90` pins the
+    layout that width buys.
+    """
+    panel = panelsOf(session, IDS_NAME)[0]
+
+    assert panel.columnsBox.count() == 13, \
+        'auto plus one entry per width, one to twelve'
+    assert panel.columnsBox.currentText() == 'auto (from the page size)'
+    assert panel.columns() is None
+    panel.columnsBox.setCurrentIndex(3)
+    assert panel.columns() == 3
+    panel.columnsBox.setCurrentIndex(0)
+    assert panel.columns() is None

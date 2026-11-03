@@ -62,6 +62,9 @@ class QVizTablePlot(QWidget):
         # The abscissa strategy the entry asked for: 'TIME', or 'DEFAULT' to let
         # each quantity answer for itself.
         self.plotAxis = 'DEFAULT'
+        # How many panels a row holds when it is told; None is the width the
+        # page size answers, which is what `layoutTable` asks by default.
+        self._columns = None
 
         self.scroll = QVizPanelScrollArea(self)
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -97,6 +100,32 @@ class QVizTablePlot(QWidget):
 
     def setPlotAxis(self, plotAxis):
         self.plotAxis = plotAxis
+
+    def columns(self):
+        """How many panels a row holds, or None for the width of the page size.
+
+        Asked by whoever lays the table out and by whoever wants to say which
+        one it is. `None` is the width `columnsFor` answers for how many panels
+        the table holds -- the width the page has always had -- and the one a
+        saved configuration's `row`/`column` were measured against when no width
+        was told to them.
+        """
+        return self._columns
+
+    def setColumns(self, columns):
+        """How many panels a row holds, or None to go back to the page size.
+
+        The width is asked of `layoutTable` once a row is laid, from here, rather
+        than from the panel count, so a width told to this window is the width
+        its rows are laid at. A zero or negative width is not a width, and is
+        refused by the name rather than laid out as one column.
+        """
+        if columns is not None and columns < 1:
+            raise ValueError(
+                'the table is told %r panels per row: a row holds at least '
+                'one, or nothing at all for the page size to answer'
+                % (columns,))
+        self._columns = columns
 
     def onSavePlotConf(self):
         """Write this table out as a '.pcfg' the api can apply again.
@@ -153,8 +182,9 @@ class QVizTablePlot(QWidget):
     def layoutTable(self):
         """Lay every panel in a cell of its own, on a grid of one width.
 
-        The width is asked once for the whole table, from how many panels it
-        holds. Asked per panel as it arrives -- which is what this file did -- it
+        The width is asked once for the whole table: from the width told to the
+        window, or, told none, from how many panels it holds. Asked per panel as
+        it arrives -- which is what this file did -- it
         answers 1 for the first panel, 2 until the fifth and 3 after, so the
         first panels are laid on a narrower grid than the rest: measured, panels
         3 and 4 both land in cell (1,1) from five panels on, cell (0,2) is never
@@ -167,7 +197,10 @@ class QVizTablePlot(QWidget):
         before it is shown (QVizPlotAsTable.execute), so relaying it as panels
         arrive costs nothing on screen.
         """
-        columns = self.columnsFor(len(self._panels))
+        if self._columns is None:
+            columns = self.columnsFor(len(self._panels))
+        else:
+            columns = self._columns
         named = self._namedCells()
         free = self._freeCells(columns, set(named.values()))
         for panel in self._panels:

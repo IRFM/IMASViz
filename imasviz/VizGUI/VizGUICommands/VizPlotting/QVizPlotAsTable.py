@@ -51,7 +51,8 @@ class QVizPlotAsTable(QVizAbstractCommand):
     FIGURE_TYPE = FigureTypes.TABLEPLOTTYPE
 
     def __init__(self, dataTreeView, all_DTV=False, plotAxis=None,
-                 configFile=None, configuration=None, figureKey=None):
+                 configFile=None, configuration=None, figureKey=None,
+                 columns=None):
         """
         Arguments:
             all_DTV   (bool) : draw the selection of this view, or of every
@@ -76,6 +77,11 @@ class QVizPlotAsTable(QVizAbstractCommand):
                                hand is how two panels ended up in one cell.
             figureKey  (str) : the key the new window is to carry, for a session
                                put back under the names its file gave them.
+            columns    (int) : how many panels a row is to hold. Told, the
+                               window keeps that width; told none, it answers
+                               the width the page size gives it, which is what
+                               a window drawn without a choice has always had,
+                               and keeps it for the callers who pass nothing.
         """
         self.api = dataTreeView.imas_viz_api
         self.all_DTV = all_DTV
@@ -83,6 +89,7 @@ class QVizPlotAsTable(QVizAbstractCommand):
         self.configFile = configFile
         self.configuration = configuration
         self.figureKey = figureKey
+        self.columns = columns
         self.figure = None
         QVizAbstractCommand.__init__(self, dataTreeView, None)
 
@@ -235,5 +242,9 @@ class QVizPlotAsTable(QVizAbstractCommand):
         frame.figureKey = figureKey
         frame.dataTreeView = self.dataTreeView
         frame.setPlotAxis(self.plotAxis if self.plotAxis == 'TIME' else 'DEFAULT')
+        # Told a width keeps it; told none stays on the width the page size
+        # answers, which is what a window drawn without the choice always had.
+        if self.columns is not None:
+            frame.setColumns(self.columns)
         self.api.figureframes[figureKey] = frame
         return frame
