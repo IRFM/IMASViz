@@ -742,9 +742,9 @@ def test_a_saved_figure_keeps_the_key_the_api_handed_it(qapp):
     window by
     it, so a file that renumbered its windows would stop describing the screen."""
     view = FakeView()
-    api = aSession(view)
+    api = ownership.keep(aSession(view))
     view.signalsList = [leaf()]
-    frame = QVizPlotOneNode(view, view.signalsList[0]).execute()
+    frame = ownership.keep(QVizPlotOneNode(view, view.signalsList[0]).execute())
     assert frame is not None
 
     session = QVizSessionFile.read(
@@ -760,13 +760,13 @@ def test_a_saved_figure_keeps_the_key_the_api_handed_it(qapp):
 def test_a_table_writes_the_cell_each_panel_sits_in(qapp):
     """Read from the layout, the same reading a plot configuration uses."""
     view = FakeView()
-    api = aSession(view)
+    api = ownership.keep(aSession(view))
     first = leaf('vector', 'foo/time_slice(i)/vector')
     second = leaf('theta_vector', 'foo/time_slice(i)/theta_vector')
     view.signalsList = [first, second]
     QVizSelectNodes(view).selectNode(first)
     QVizSelectNodes(view).selectNode(second)
-    frame = QVizPlotAsTable(view, plotAxis='TIME').execute()
+    frame = ownership.keep(QVizPlotAsTable(view, plotAxis='TIME').execute())
     assert frame is not None
 
     session = QVizSessionFile.read(
