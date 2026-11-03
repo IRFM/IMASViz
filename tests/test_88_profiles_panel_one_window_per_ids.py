@@ -28,7 +28,7 @@ a page that is partly refused, which the case finally makes possible.
 import logging
 
 import pytest
-from PySide6.QtWidgets import QMainWindow, QMdiArea
+from PySide6.QtWidgets import QMainWindow, QMdiArea, QListWidget
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
@@ -177,3 +177,72 @@ def test_the_width_the_panel_leaves_on_its_pages(session):
     assert panel.columns() == 3
     panel.columnsBox.setCurrentIndex(0)
     assert panel.columns() is None
+
+
+# -----------------------------------------------------------------------------
+# One or several quantities from the list
+# -----------------------------------------------------------------------------
+
+def pageOf(session):
+    """The first tab of the equilibrium panel, as the panel ordered its tabs."""
+    panel = panelsOf(session, IDS_NAME)[0]
+    return panel, panel.tabs.widget(0)
+
+
+def select(page, rows):
+    """Leave exactly those rows selected in the page's list."""
+    page.quantities.clearSelection()
+    for row in rows:
+        page.quantities.item(row).setSelected(True)
+
+
+def test_the_list_takes_several_of_its_rows(session):
+    """« il faut donner à l'utilisateur la possibilité de sélectionner 1 ou
+    plusieurs tenseurs dans la liste actuellement présentée. »  Several rows at
+    once, with the clicks the list already gives, and the button that honours
+    them renamed to say what it draws.
+    """
+    panel, page = pageOf(session)
+
+    assert page.quantities.selectionMode() == QListWidget.ExtendedSelection
+    assert page.oneButton.text() == 'Draw the selected quantities'
+
+
+def test_selecting_one_row_keeps_the_tree_s_own_gesture(session, monkeypatch):
+    """One selection alone is still the tree's *Plot this node*, so a quantity
+    of two axes opens as a picture rather than as a panel the read refused."""
+    panel, page = pageOf(session)
+    current = page.pages()[page.page]
+
+    asked = {}
+    monkeypatch.setattr(panel, 'drawQuantity',
+                        lambda leaf: asked.setdefault('one', leaf))
+    monkeypatch.setattr(panel, 'drawQuantities',
+                        lambda group, leaves: asked.setdefault('several',
+                                                                list(leaves)))
+    select(page, [1])
+    page.drawSelected()
+    assert asked == {'one': current[1]}, asked
+    asked.clear()
+
+    select(page, [0, 2])
+    page.drawSelected()
+    assert asked == {'several': [current[0], current[2]]}, asked
+
+
+def test_no_selection_is_a_refusal_named_in_the_case(session, caplog):
+    """The button with no row under it says so, in the log of the case.
+
+    Not an empty window, and not a click that does nothing: the selection is
+    what is missing, so that is what is named.
+    """
+    panel, page = pageOf(session)
+    select(page, [])
+    before = set(session.api.figureframes)
+
+    with caplog.at_level(logging.INFO, logger=session.view.uri):
+        assert page.drawSelected() is None
+
+    assert 'No quantity is selected' in caplog.text
+    assert set(session.api.figureframes) == before, \
+        'a refusal of the selection opens no window'

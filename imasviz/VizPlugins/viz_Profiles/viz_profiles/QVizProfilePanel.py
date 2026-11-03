@@ -25,7 +25,7 @@ here because the offer counts the fields: the bars of an error field live in
 Plot View panel therefore answers *Configure Plot* and no error-bar line, which is
 why the 536 error fields `equilibrium` occurrence 0 earns are named as a refusal on
 the panel rather than drawn as panels, and why a tab offers *Draw the selected
-quantity* beside the page: that gesture opens the curve the bar belongs to.
+quantities* beside the page: one chosen alone opens the curve the bar belongs to.
 
 What the old panel did instead was build its own grid (`QVizTablePlotView`), read
 through `Viz_API.getAll_0D_1D_Nodes` and draw two rows per quantity. Two
@@ -49,7 +49,7 @@ panel along one named coordinate: its panels are independent by design, and a
 combo promising what the command cannot do is a refusal the user has to discover
 by clicking. What each strategy can carry is said on the tab, with the quantities
 it leaves out named -- a quantity of two axes of its own is a picture, and
-*Draw this quantity* opens it as one.
+*Draw the selected quantities*, with one chosen, opens it as one.
 
 The time cursors at the bottom drive the windows this panel opened rather than
 holding an index of their own. A panel of a Table Plot View carries a slider per
@@ -120,6 +120,11 @@ class QVizProfilePage(QWidget):
         layout.addWidget(self.summary)
 
         self.quantities = QListWidget(self)
+        # One or several rows, chosen with the clicks the list already knows: a
+        # selection the user can make is a selection the button honours, and a
+        # single choice and a selection of five answer two different windows --
+        # a curve figure and a table -- which the button below says.
+        self.quantities.setSelectionMode(QListWidget.ExtendedSelection)
         layout.addWidget(self.quantities, 1)
 
         buttons = QHBoxLayout()
@@ -127,7 +132,7 @@ class QVizProfilePage(QWidget):
         self.drawButton.clicked.connect(self.drawPage)
         self.nextButton = QPushButton('Add the next page', self)
         self.nextButton.clicked.connect(self.addNextPage)
-        self.oneButton = QPushButton('Draw the selected quantity', self)
+        self.oneButton = QPushButton('Draw the selected quantities', self)
         self.oneButton.clicked.connect(self.drawSelected)
         buttons.addWidget(self.drawButton)
         buttons.addWidget(self.nextButton)
@@ -195,8 +200,9 @@ class QVizProfilePage(QWidget):
                             max(pageCount, 1), len(page), PAGE)]
         if left:
             parts.append('%d cannot be read along %s and are not on the pages: %s '
-                         '-- they have two axes of their own, so *Draw this '
-                         'quantity* opens them as pictures.'
+                         '-- they have two axes of their own, so *Draw the '
+                         'selected quantities*, with that one alone chosen, '
+                         'opens them as pictures.'
                          % (len(left), panel.abscissaWords(),
                             panel.namesOf(left)))
         elements = self.group.elementCount()
@@ -229,16 +235,40 @@ class QVizProfilePage(QWidget):
         return self.drawPage()
 
     def drawSelected(self):
-        row = self.quantities.currentRow()
-        if row < 0:
-            logging.getLogger(self.panel().logOf()).info(
-                'No quantity is selected in the "%s" tab: select one, or draw the '
-                'whole page.' % self.group.title())
-            return None
+        """The quantities the list stands on, in the order the list reads them.
+
+        None selected is a refusal named; one is the tree's own gesture, so a
+        quantity the list holds answers the figure its own axes call for --
+        which is how the button opens a picture rather than a panel for a
+        quantity of two axes the pages happen to carry; several are a Table Plot
+        View of exactly those, in the order they stand in the list -- not the
+        page, because a page of a hundred is what the other button draws, and a
+        selection of five is what this one answers.
+        """
         pages = self.pages()
-        if self.page >= len(pages) or row >= len(pages[self.page]):
+        if self.page >= len(pages):
             return None
-        return self.panel().drawQuantity(pages[self.page][row])
+        page = pages[self.page]
+        leaves = [page[row] for row in self.selectedRows()
+                  if row < len(page)]
+        if not leaves:
+            logging.getLogger(self.panel().logOf()).info(
+                'No quantity is selected in the "%s" tab: select one or more, '
+                'or draw the whole page.' % self.group.title())
+            return None
+        if len(leaves) == 1:
+            return self.panel().drawQuantity(leaves[0])
+        return self.panel().drawQuantities(self.group, leaves)
+
+    def selectedRows(self):
+        """The selected rows of the list, in the order the list holds them.
+
+        The list is the page, so its item order is the answer: a row the list
+        no longer holds cannot be drawn, and a row held is the one the user's
+        clicks stood on -- never the current row, which one of several carries.
+        """
+        return sorted(self.quantities.row(item)
+                      for item in self.quantities.selectedItems())
 
 
 class QVizProfilePanel(QVizClosableWindow, QMainWindow):
