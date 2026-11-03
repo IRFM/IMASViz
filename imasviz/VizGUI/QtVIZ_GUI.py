@@ -14,7 +14,8 @@ from functools import partial
 from PySide6.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
-                             QPlainTextEdit, QGridLayout, QMdiArea, QTableView)
+                             QPlainTextEdit, QGridLayout, QMdiArea, QTableView,
+                             QLabel, QHBoxLayout)
 from PySide6.QtCore import Qt
 from pathlib import Path
 
@@ -30,6 +31,7 @@ from imasviz.VizGUI.VizGUICommands.VizSession.QVizRestoreSession import QVizRest
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
 from imasviz.VizUtils import QVizGlobalValues, QVizPreferences,QVizGlobalOperations, QVizLogger, UserInputs
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import QVizIMASdbBrowserWidget
+from imasviz.VizGUI.VizWidgets.QVizCaseSelector import QVizCaseSelector
 from imasviz.VizDataSource.QVizIMASDataSource import QVizIMASDataSource
 from imasviz.VizPlugins.QVizPluginWatcher import QVizPluginWatcher
 
@@ -54,30 +56,147 @@ class GUIFrame(QTabWidget):
     def __init__(self, parent):
         super(GUIFrame, self).__init__(parent)
 
-        #self.setGeometry(300, 300, 300, 200)
-        self.tab1 = QWidget()
-        self.tab2 = QWidget()
+        # Every widget the frame's methods and the command line drive is
+        # built here, as an attribute, before any of them runs; they are then
+        # laid out under one "Cas" tab behind a mode switch. The three
+        # presentations are the local case list (URI-first), the free URI line,
+        # and the legacy five-field form the -u -d -s -r -b command line fills.
+        # The start window used to be two tabs -- the five fields, and a bare
+        # URI line -- where the selection a user made was the five parameters
+        # behind a URI nobody saw; now the URI is the thing the selection is,
+        # and the parameters are one switch removed, in the mode that names them.
+        self.mainMenuController = QVizMainMenuController(self)
 
-        # The name the manual uses for this tab (manual/loading_IDS.rst:26 asks
-        # for the "Local data source" tab); "Legacy parameters" was the AL4-era
-        # name of a tab that still takes the five parameters the -u -d -s -r -b
-        # command line feeds it.
-        self.addTab(self.tab1, "Local data source")
-        self.addTab(self.tab2, "URI")
+        self.uriPanel = QVizCaseSelector(self)
+        self.uriPanel.uriOpened.connect(self.openUri)
+        # The frame's own URI line and the selector's free line are the same
+        # widget, so a gesture that reads frame.URI sees what the URI panel
+        # types, and the reverse.
+        self.URI = self.uriPanel.freeText
 
-        self.tabOne()
-        self.tabTwo()
+        default_user_name, default_machine, default_run = \
+            QVizDefault().getGUIEntries()
+        self.userName = QLineEdit(default_user_name)
+        self.userName.setStatusTip("Name of the user under which the case is stored.")
+        self.userName.setToolTip("Name of the user under which the case is stored.")
+        self.userName.editingFinished.connect(self.onUserNameEditFinished)
+        self.imasDbName = QLineEdit(default_machine)
+        self.imasDbName.setStatusTip("Database label under which the case is stored.")
+        self.imasDbName.setToolTip("Database label under which the case is stored.")
+        self.shotNumber = QLineEdit()
+        self.shotNumber.setStatusTip("Shot case identifier.")
+        self.shotNumber.setToolTip("Shot case identifier.")
+        self.runNumber = QLineEdit(default_run)
+        self.runNumber.setStatusTip("Run case identifier.")
+        self.runNumber.setToolTip("Run case identifier.")
+        self.backend = 13
+        self.backendCombo = QComboBox()
+        self.backendCombo.addItems(['HDF5', 'MDS+'])
+        self.backendCombo.activated.connect(self.onActivated)
+        self.IMASdbBrowserWidget = QVizIMASdbBrowserWidget(parent=self)
+        self.IMASdbBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
+
+        self.legacyPanel = self._buildLegacyPanel()
+        self.casePanel = self._buildCasePanel()
+        self.addTab(self.casePanel, "Cas")
+        self.uriPanel.refresh(self.userName.text())
 
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
         self.setWindowTitle(title)
-
-        self.mainMenuController = QVizMainMenuController(self)
 
         if UserInputs.inputs is not None and len(UserInputs.inputs) == 9:
             UserInputs.enable = True
             self.OpenDataSourceFromTab1(None)
 
         self.contextMenu = None
+
+    def _buildCasePanel(self):
+        """The one "Cas" tab: the mode switch, then the two presentations.
+
+        One tab, not two: the selection is one thing to make in every mode, and
+        the mode switch is the only thing that changes what the user chooses
+        with. The panels are children of this tab, so exactly one is in front
+        at a time and the tab never shows an empty half of itself.
+        """
+        panel = QWidget(self)
+        layout = QVBoxLayout(panel)
+
+        header = QHBoxLayout()
+        header.addWidget(QLabel('Mode de sélection'))
+        self.modeCombo = QComboBox()
+        self.modeCombo.addItems(['Cas locaux (liste)', 'Saisie libre (URI)',
+                                 'Legacy (5 champs)'])
+        self.modeCombo.currentIndexChanged.connect(self.onModeChanged)
+        header.addWidget(self.modeCombo)
+        header.addStretch(1)
+        layout.addLayout(header)
+
+        layout.addWidget(self.uriPanel)
+        layout.addWidget(self.legacyPanel)
+
+        self.onModeChanged(self.modeCombo.currentIndex())
+        return panel
+
+    def _buildLegacyPanel(self):
+        """The legacy five-field form, behind its mode.
+
+        The widgets themselves were built on the frame in __init__ (they are
+        what the command line and `updateIDSparam` drive); this only lays them
+        out. The form is one presentation and no more, and its *Ouvrir* keeps
+        the parameter-to-URI build it has always used.
+        """
+        panel = QWidget(self)
+        layout = QVBoxLayout(panel)
+
+        form = QFormLayout()
+        form.addRow('User name', self.userName)
+        form.addRow('Database', self.imasDbName)
+        form.addRow('Shot number', self.shotNumber)
+        form.addRow('Run number', self.runNumber)
+        form.addRow('Backend', self.backendCombo)
+        layout.addLayout(form)
+        layout.addWidget(self.IMASdbBrowserWidget)
+
+        buttonRow = QHBoxLayout()
+        self.openButton = QPushButton('Ouvrir', self)
+        self.openButton.setStatusTip("Open the case for the given parameters.")
+        self.openButton.setToolTip("Open the case for the given parameters.")
+        self.openButton.clicked.connect(self.OpenDataSourceFromTab1)
+        buttonRow.addWidget(self.openButton)
+        buttonRow.addStretch(1)
+        layout.addLayout(buttonRow)
+        return panel
+
+    def onModeChanged(self, index):
+        """Show the presentation the mode switch names, and hide the other two.
+
+        The list, the free URI line, and the legacy form are three ways of
+        making the same selection, and exactly one is in front at a time: the
+        list and the free line both live in the selector (which the legacy mode
+        hides), and the legacy form is the only one it shows.
+        """
+        if index == 2:
+            self.legacyPanel.setVisible(True)
+            self.uriPanel.setVisible(False)
+            return
+        self.legacyPanel.setVisible(False)
+        self.uriPanel.setVisible(True)
+        self.uriPanel.listView.setVisible(index == 0)
+        self.uriPanel.freeText.setVisible(index == 1)
+
+    def openUri(self, uri):
+        """The URI the selector handed over: refused if empty, else opened.
+
+        The one Open every URI-first gesture lands on -- a double click, the
+        free line and *Ouvrir* all reach here -- so a selection made against an
+        empty choice is refused in the log of the session, not spent on a case
+        that was never named.
+        """
+        if uri is None or not str(uri).strip():
+            logging.getLogger('logPanel').error(
+                "No URI to open: choose a case, or type its URI.")
+            return
+        self.mainMenuController.openShotView.Open(None, uri)
 
     # def logPanel(self):
     #     #LOG WIDGET
@@ -91,57 +210,6 @@ class GUIFrame(QTabWidget):
     #     layout = QVBoxLayout()
     #     layout.addWidget(self.logWidget)
     #     return layout
-
-    def tabOne(self):
-        layout = QVBoxLayout()
-        default_user_name, default_machine, default_run = \
-            QVizDefault().getGUIEntries()
-        vboxLayout = QFormLayout()
-        """Set static text for each GUI box (left from the box itself) """
-        self.userName = QLineEdit(default_user_name)
-        self.userName.setStatusTip("Name of the user under which the case is "
-                                   "being stored.")
-        self.userName.setToolTip("Name of the user under which the case is "
-                                 "being stored.")
-        vboxLayout.addRow('User name', self.userName)
-        self.imasDbName = QLineEdit(default_machine)
-        self.imasDbName.setStatusTip("Database label under which the case is "
-                                     "being stored.")
-        self.imasDbName.setToolTip("Database label under which the case is "
-                                   "being stored.")
-        vboxLayout.addRow('Database', self.imasDbName)
-        self.shotNumber = QLineEdit()
-        self.shotNumber.setStatusTip("Shot case identifier.")
-        self.shotNumber.setToolTip("Shot case identifier.")
-        vboxLayout.addRow('Shot number', self.shotNumber)
-        self.runNumber = QLineEdit(default_run)
-        self.runNumber.setStatusTip("Run case identifier.")
-        self.runNumber.setToolTip("Run case identifier.")
-        vboxLayout.addRow('Run number', self.runNumber)
-
-        self.IMASdbBrowserWidget = QVizIMASdbBrowserWidget(parent=self)
-        self.IMASdbBrowserWidget.onItemDoubleClick.connect(self.updateIDSparam)
-        self.userName.editingFinished.connect(self.onUserNameEditFinished)
-
-        self.backend = 13 #first item
-        self.backendCombo = QComboBox()
-        vboxLayout.addRow('Backend', self.backendCombo)
-        self.backendCombo.addItems(['HDF5', 'MDS+'])
-        self.backendCombo.activated.connect(self.onActivated)
-
-        button_open1 = QPushButton('Open', self)
-        button_open1.setStatusTip("Open the case for the given parameters.")
-        button_open1.setToolTip("Open the case for the given parameters.")
-        button_open1.clicked.connect(self.OpenDataSourceFromTab1)
-
-        layout.addLayout(vboxLayout)
-        layout.addWidget(self.IMASdbBrowserWidget)
-
-        vboxLayout2 = QVBoxLayout()
-        vboxLayout2.addWidget(button_open1)
-
-        layout.addLayout(vboxLayout2)
-        self.tab1.setLayout(layout)
 
     def onActivated(self, index):
         if index == 0:
@@ -252,23 +320,6 @@ class GUIFrame(QTabWidget):
 
     def onUserNameEditFinished(self):
         self.IMASdbBrowserWidget.setActiveUsername(self.userName.text())
-
-    def tabTwo(self):
-
-        layout = QVBoxLayout()
-        vboxlayout = QFormLayout()
-        """Set static text for each GUI box (left from the box itself) """
-        self.URI = QLineEdit()
-        vboxlayout.addRow('URI', self.URI)
-
-        button_open2 = QPushButton('Open', self)
-        button_open2.clicked.connect(self.OpenDataSourceFromTab2)
-        layout.addLayout(vboxlayout)
-
-        vboxLayout2 = QVBoxLayout()
-        vboxLayout2.addWidget(button_open2)
-        layout.addLayout(vboxLayout2)
-        self.tab2.setLayout(layout)
 
     def OpenDataSourceFromTab2(self, evt):
         import imas

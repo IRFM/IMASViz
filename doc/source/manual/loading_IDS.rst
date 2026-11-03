@@ -23,11 +23,30 @@ within **IMASViz**
 Loading an IMAS IDS
 -------------------
 
-The procedure to load an IDS is as follows:
+The case is named by its **URI** -- the string the Access Layer takes to open
+it. The start window has a single :guilabel:`Cas` tab, and the
+:guilabel:`Mode de sélection` switch at its top offers three ways of naming
+that case:
 
-- In the main :guilabel:`IMASViz GUI`, select the first
-  tab - :guilabel:`Local data source`.
-- Enter the following parameters, listed below, to the appropriate text fields.
+- :guilabel:`Cas locaux (liste)` (the default): a flat, ordered list of the
+  local cases -- the user's own imasdb and ``public`` -- in which each row is a
+  readable label (backend, database, shot and run) whose tooltip is the URI the
+  case will be opened with. A double click, or :guilabel:`Ouvrir`, opens the
+  selected case; :guilabel:`Copier l'URI` copies it, so the case can be named
+  wherever the Access Layer takes a URI; :guilabel:`Dossier…` turns a chosen
+  folder of ``*.h5`` files into its ``path=`` URI.
+- :guilabel:`Saisie libre (URI)`: a free line for a case the local walk does
+  not reach -- a UDA case, a remote case, or a URI pasted from elsewhere.
+  :guilabel:`Ouvrir` opens it as typed.
+- :guilabel:`Legacy (5 champs)`: the historical form -- user name, IMAS database
+  name, shot number, run number and backend -- filled by hand or by the
+  :guilabel:`IMAS database browser`. :guilabel:`Ouvrir` builds the URI from the
+  five parameters and opens it; the
+  ``viz -u <user> -d <database> -s <shot> -r <run> -b <backend>`` command line
+  fills this form at start-up.
+
+An example, valid on every mode, for the GateWay HPC (where these shots are
+available):
 
 +-------------------------------+
 | **IMAS IDS example**          |
@@ -43,33 +62,15 @@ The procedure to load an IDS is as follows:
 | Run number         | 0        |
 +--------------------+----------+
 
-The data source is a MDS+ pulse file located in
-:file:`$HOME/public/imasdb/<IMAS database name>/3/0/` directory. In this
-case, the :file:`~public/imasdb/viztest/3/0/` directory of user ``g2penkod``.
+In the local list this case is one row -- ``MDS+ · viztest · 52344 · 0`` --
+whose tooltip is the URI it is opened with. In the free URI line it is that same
+URI spelled out; in the legacy form it is the five parameters above. The data
+source is the :file:`~public/imasdb/viztest/3/0/` directory of user ``g2penkod``.
 
-The filled GUI should then look as shown in the next figure:
-
-.. image:: images/startup_window_filled.png
-   :align: center
-   :scale: 80%
-
-Alternatively, the The :guilabel:`IMAS database browser` can be used to navigate
-through available users databases and select it by double clicking. The
-input parameters will then get filled automatically, as shown in figure below.
-
-.. image:: images/startup_window_filled2.png
-   :align: center
-   :scale: 80%
-
-
-By typing a different user name in the :guilabel:`User name` text window and
-selecting 'Add databases from user ...' from the data browser popumenu 
-(obtained by a right click)  will automatically load the available databases
-to the :guilabel:`IMAS database browser`.
-
-.. image:: images/adding_databases.png
-   :align: center
-   :scale: 80%
+To add the databases of another user, switch to :guilabel:`Legacy (5 champs)`,
+type the user name in :guilabel:`User name`, and choose *Add databases from user
+…* from the :guilabel:`IMAS database browser` pop-up (a right click) -- the
+available databases of that user then appear in the local list too.
 
 
 Open an IDS

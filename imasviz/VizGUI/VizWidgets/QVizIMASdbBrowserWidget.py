@@ -215,8 +215,132 @@ then the available <b>IDS cases for that user will be shown too</b>.
     def getActiveRun(self):
         return self.activeRun
 
+
+# The local-case scanner. Pure on the filesystem (no Qt), so the legacy tree
+# and the URI list of the start window are both built from one reading of
+# "which local cases exist" and cannot drift apart on what they show.
+def caseRootForUser(username):
+    """The imasdb root holding this user's local cases, or None when it is unset.
+
+    The same path the legacy browser walked, factored out so the URI list and
+    the tree look at the same place: ``public`` under ``$IMAS_HOME/shared`` and
+    a named user under their home. ``None`` is the refusal -- an unset
+    ``IMAS_HOME`` (for ``public``) or ``HOME`` (for a user) answers an empty
+    list later, not a NameError in the middle of the walk.
+    """
+    separator = os.path.sep
+    if username == 'public':
+        imas_home = os.environ.get('IMAS_HOME')
+        if not imas_home:
+            return None
+        return imas_home + separator + 'shared' + separator + 'imasdb'
+    home = os.environ.get('HOME')
+    if not home:
+        return None
+    base = os.path.abspath(os.path.join(os.path.dirname(__file__), home, '..'))
+    return base + separator + username + separator + 'public' + separator + 'imasdb'
+
+
+def _dirsUnder(folder):
+    """The subdirectories of `folder`, sorted; [] when it is not a directory.
+
+    Swallows the permissions and race errors a local walk can meet instead of
+    propagating them out of a list the user is about to click on.
+    """
+    if not os.path.isdir(folder):
+        return []
+    try:
+        names = [n for n in os.listdir(folder)
+                 if os.path.isdir(os.path.join(folder, n))]
+    except OSError:
+        return []
+    names.sort()
+    return names
+
+
+def hdf5Cases(imasdbPath, database):
+    """The local HDF5 cases of `database`: one dict per run folder holding ``*.h5``.
+
+    `database/<dataVersion>/<shot>/<run>` with the version left generic. The
+    legacy browser hard-coded ``/3/``, so a case stored under another data
+    version lived on disk and was invisible in the browser; the URI list keeps
+    the same rule but does not lose it.
+    """
+    cases = []
+    dbRoot = os.path.join(imasdbPath, database)
+    for version in _dirsUnder(dbRoot):
+        versionRoot = os.path.join(dbRoot, version)
+        for shot in _dirsUnder(versionRoot):
+            shotRoot = os.path.join(versionRoot, shot)
+            for run in _dirsUnder(shotRoot):
+                runFolder = os.path.join(shotRoot, run)
+                try:
+                    if glob.glob1(runFolder, '*.h5'):
+                        cases.append({'shot': shot, 'run': run, 'path': runFolder})
+                except glob.GlobError:
+                    pass
+    return cases
+
+
+def mdsplusCases(imasdbPath, database):
+    """The local MDS+ cases of `database`, read from the ``.datafile`` names.
+
+    `database/3/<digit>/` holds the pulses whose run number is the digit's
+    leading character followed by the last four characters of the name's last
+    word; the rest of that word is the shot. A name that does not spell a case
+    -- the bookkeeping files a database always carries -- is left out, not an
+    exception raised into the list.
+    """
+    cases = []
+    for digit in range(10):
+        digitRoot = os.path.join(imasdbPath, database, '3', str(digit))
+        if not os.path.isdir(digitRoot):
+            continue
+        try:
+            names = sorted(f for f in os.listdir(digitRoot)
+                           if f.endswith('.datafile'))
+        except OSError:
+            continue
+        for name in names:
+            head = name.split('.')[0]
+            if '_' not in head:
+                continue
+            rest = head.split('_')[1]
+            if len(rest) < 4:
+                continue
+            run = rest[-4:] if digit == 0 else str(digit) + rest[-4:]
+            try:
+                int(run)
+            except ValueError:
+                continue
+            cases.append({'shot': rest[:-4], 'run': run})
+    return cases
+
+
+def localCases(root):
+    """The local cases held under one imasdb root, flat and ordered.
+
+    One dict per case, keyed ``backend, database, shot, run`` plus ``path``
+    (HDF5 only), sorted by database with HDF5 ahead of MDS+ for a given
+    database, then shot and run. That is the order the start window's list is
+    drawn in, and it is the same reading the legacy tree applies -- so the two
+    cannot name different cases for the same folder.
+    """
+    cases = []
+    for database in _dirsUnder(root):
+        for c in hdf5Cases(root, database):
+            cases.append({'backend': 'HDF5', 'database': database,
+                          'shot': c['shot'], 'run': c['run'], 'path': c['path']})
+        for c in mdsplusCases(root, database):
+            cases.append({'backend': 'MDS+', 'database': database,
+                          'shot': c['shot'], 'run': c['run'], 'path': None})
+    key = lambda c: (c['database'], 0 if c['backend'] == 'HDF5' else 1,
+                     c['shot'], c['run'])
+    return sorted(cases, key=key)
+
+
 class Worker(QObject):
-    
+
     finished = Signal()
     progress = Signal(int)
     
@@ -233,175 +357,63 @@ class Worker(QObject):
         self.finished.emit()
         
     def found_mdsplus_pulse_files(self, db, imasdbPath):
-       for d in range(10):  # will look in /0 and /1 dirs
-            shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
+       return bool(mdsplusCases(imasdbPath, db))
 
-            if os.path.exists(shotRunPath) is False:
-                continue
-
-            for f in os.listdir(shotRunPath):
-                if f.endswith(".datafile"):
-                    return True
-       return False
-       
     def found_hdf5_pulse_files(self, db, imasdbPath):
-        shotPath = imasdbPath + "/" + db + "/3/"
-    
-        if os.path.exists(shotPath) is False:
-            return False
-    
-        shotList = []
-    
-        # Get shots directories
-        shotList = glob.glob1(shotPath, "*")
-        shotList.sort()
-    
-        for shot in shotList:
-            
-            runList = []
-            runList = glob.glob1(shotPath + "/" + shot, "*")
-            
-            for run in runList:
-                
-                filesList = glob.glob1(shotPath + "/" + shot + "/" + run, "*.h5")
-                
-                if len(filesList) > 0:
-                    return True;
-                    
-        return False
-        
-    
+        return bool(hdf5Cases(imasdbPath, db))
+
+
     def populate_from_mdsplus(self, db, imasdbPath, databaseItem):
-        # /0 contains runs=0...9999
-        # /1 contains runs=10000...19999, first run number is folder number
-        # /2 contains runs=20000...29999
-        # /3 contains runs=30000...39999
-        # /4 contains runs=40000...49999
-        # /5 contains runs=50000...59999
-        # /6 contains runs=60000...69999
-        # /7 contains runs=70000...79999
-        # /8 contains runs=80000...89999
-        # /9 contains runs=90000...99999
+        """The MDS+ shot/run items under a database row, from the shared scanner.
 
-        for d in range(10):  # will look in /0 and /1 dirs
-            shotRunPath = imasdbPath + "/" + db + "/3/" + str(d)
+        The parsing of the ``.datafile`` names lives in `mdsplusCases`; this
+        only lays the rows the tree has always shown -- one shot item, then its
+        runs -- so the tree and the URI list of the start window read the same
+        pulse off the same file.
+        """
+        shots = {}
+        for case in mdsplusCases(imasdbPath, db):
+            shotItem = shots.get(case['shot'])
+            if shotItem is None:
+                shotItem = QTreeWidgetItem(databaseItem)
+                shotItem.setText(0, case['shot'])
+                shots[case['shot']] = shotItem
+            runItem = QTreeWidgetItem(shotItem)
+            runItem.setText(0, case['run'])
 
-            if os.path.exists(shotRunPath) is False:
-                continue
-
-            # Shot list to take care the shot entries do no repeat
-            shotList = []
-            shotItemList = []
-
-            # Get number of *.datafile files (to avoid using list.append())
-            dataFileCounter = len(glob.glob1(shotRunPath, "*.datafile"))
-            dataFileList = [""]*dataFileCounter
-
-            # Set dataFileList
-            i = 0
-            for f in os.listdir(shotRunPath):
-                if f.endswith(".datafile"):
-                    dataFileList[i] = f
-                    i += 1
-
-            # Sort by alphabetical order
-            # Note: This is mandatory, otherwise the further strategy of
-            #       avoiding duplication of shotItems will be broken
-            dataFileList.sort()
-
-            for i in range(len(dataFileList)):
-                # Extract shot and run numbers
-                # Strategy: Last 4 digits are always run number. The rest
-                #           are shot (for /0 folder!)
-                rs = dataFileList[i].split(".")[0]
-                rs = rs.split("_")[1]
-                try:
-                    if d == 0:
-                        run = int(rs[-4:])
-                    else:
-                        run = int(str(d)+rs[-4:])
-                except:
-                    # In case non-valid .datafile name is found
-                    # e.g. 'ids_model.datafile', skip this file
-                    continue
-                run = str(run)
-                shot = rs[:-4]
-
-                if shot not in shotList:
-                    shotItem = QTreeWidgetItem(databaseItem)
-                    shotItem.setText(0, shot)
-
-                    shotList.append(shot)
-                    shotItemList.append(shotItem)
-
-                runItem = QTreeWidgetItem(shotItem)
-                runItem.setText(0, run)
-                
     def populate_from_hdf5(self, db, imasdbPath, databaseItem):
-        
-        shotPath = imasdbPath + "/" + db + "/3/"
+        """The HDF5 shot/run items under a database row, from the shared scanner.
 
-        if os.path.exists(shotPath) is False:
-            return
+        The `*.h5` test lives in `hdf5Cases`; this lays the same shot/run rows
+        the tree has always shown, so a case that is a case in the URI list is a
+        case in the tree and the reverse.
+        """
+        shots = {}
+        for case in hdf5Cases(imasdbPath, db):
+            shotItem = shots.get(case['shot'])
+            if shotItem is None:
+                shotItem = QTreeWidgetItem(databaseItem)
+                shotItem.setText(0, case['shot'])
+                shots[case['shot']] = shotItem
+            runItem = QTreeWidgetItem(shotItem)
+            runItem.setText(0, case['run'])
 
-        # Shot list to take care the shot entries do no repeat
-        shotList = []
-
-        # Get shots directories
-        shotList = glob.glob1(shotPath, "*")
-        shotList.sort()
-
-        for shot in shotList:
-            
-            runList = []
-            runList = glob.glob1(shotPath + "/" + shot, "*")
-        
-            shotItem = None
-            for run in runList:
-
-                filesList = glob.glob1(shotPath + "/" + shot + "/" + run, "*.h5")
-                
-                if len(filesList) > 0:
-                    if shotItem is None:
-                        shotItem = QTreeWidgetItem(databaseItem)
-                        shotItem.setText(0, shot)
-                    runItem = QTreeWidgetItem(shotItem)
-                    runItem.setText(0, run) 
-        
     def addContentsForUsername(self):
         """Set treeWidget items based on imasdb for given user.
         """
         
         try:
-            #self.activeUsername = self.username
+            if self.username in self.presentUserNameList:
+                return
+            imasdbPath = caseRootForUser(self.username)
+            if imasdbPath is None or not os.path.exists(imasdbPath):
+                return
 
-            imasdbPath = None
-            if self.username != "public":
-               userPath = os.path.abspath(os.path.join(
-               os.path.dirname(__file__), os.environ['HOME'], '..'))
-               userPath = userPath + "/" + self.username
-               # If user path does not exist, return
-               if os.path.exists(userPath) is False or \
-                    self.username in self.presentUserNameList:
-                 return
-               if os.path.exists(userPath) is False:
-                 return
-               imasdbPath = userPath + "/public/imasdb"
-            else:
-               imasdbPath = os.environ['IMAS_HOME'] + "/shared/imasdb"
-               if not os.path.exists(imasdbPath) or \
-                    self.username in self.presentUserNameList:
-                 return
-              
             self.rootUserItem = QTreeWidgetItem()
             self.rootUserItem.setText(0, self.username)
 
-            databaseList = [dI for dI in os.listdir(imasdbPath)
-                            if os.path.isdir(os.path.join(imasdbPath, dI))]
+            databaseList = _dirsUnder(imasdbPath)
 
-            # Sort by alphabetical order
-            databaseList.sort()
-            
             mdsplus_backendItem = QTreeWidgetItem(self.rootUserItem)
             mdsplus_backendItem.setText(0, "MDS+")
             

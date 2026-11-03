@@ -90,6 +90,30 @@ def caseUri(backendId, user, database, shot, run, dataVersion, options=''):
     return uri
 
 
+def hdf5PathUri(runFolderPath, options=''):
+    """The URI of a local HDF5 case from the folder that holds its ``*.h5`` files.
+
+    The **new** spelling, and the one the reference case is opened with in the
+    tests: ``imas:hdf5?path=<runFolder>`` where the run folder is
+    ``<imasdb>/<database>/<dataVersion>/<shot>/<run>``. Unlike `caseUri` it
+    carries no derived parameter at all -- the path is the whole description of
+    the case -- so a case moved on disk is a case the reader still finds, and
+    the user is never shown a parameter set they would have to explain back to
+    themselves. `caseUri` stays for the legacy fields and for MDS+, whose local
+    form this stack spells only the parameter way.
+
+    Empty folders are refused rather than opened, mirroring the refusal the
+    legacy spelling gives for a missing version: an empty path is a case the
+    reader finds, that it then refuses for no visible reason.
+    """
+    if not runFolderPath:
+        raise ValueError('No case folder given to build a path URI.')
+    uri = 'imas:hdf5?path=' + runFolderPath
+    if options:
+        uri += ';' + options.lstrip(';')
+    return uri
+
+
 # The node an IDS names the dictionary its data was written with. Asked through
 # `list_all_occurrences`, it answers per occurrence without reading the IDS.
 DD_VERSION_NODE = 'ids_properties/version_put/data_dictionary'
