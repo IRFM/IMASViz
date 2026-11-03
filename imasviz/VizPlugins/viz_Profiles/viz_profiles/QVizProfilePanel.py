@@ -72,6 +72,7 @@ control.
 import logging
 import weakref
 
+import shiboken6
 from PySide6.QtWidgets import (QComboBox, QHBoxLayout, QLabel, QListWidget,
                                QMainWindow, QPushButton, QTabWidget, QVBoxLayout,
                                QWidget)
@@ -321,6 +322,31 @@ class QVizProfilePanel(QVizClosableWindow, QMainWindow):
         whichever of the two the user clicks.
         """
         return self.api
+
+    @staticmethod
+    def findOpen(vizAPI, view, idsName):
+        """A panel already opened for that IDS of this case, or None.
+
+        The entry is offered per IDS root, and the case answers that IDS with one
+        set of quantities: a second window for the same IDS would ask the same
+        questions twice and hold two occurrence choices for one answer. It is
+        looked for in the api's figures -- the panel registers itself there --
+        and matched on the IDS it was built for and the case it belongs to. A
+        frame a Qt ``deleteLater`` has not run yet keeps its Python wrapper, so
+        the one already gone is skipped rather than raised by the hand that
+        closes it.
+        """
+        for frame in list(vizAPI.figureframes.values()):
+            if not isinstance(frame, QVizProfilePanel):
+                continue
+            if frame.idsName != idsName:
+                continue
+            if frame.view is None or frame.view.dataSource.uri != \
+                    view.dataSource.uri:
+                continue
+            if shiboken6.isValid(frame):
+                return frame
+        return None
 
     # ------------------------------------------------------------------ state
     def groups(self):
