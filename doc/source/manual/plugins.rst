@@ -232,7 +232,7 @@ Executing the 'Profiles' plugin
    per array of structures of that IDS and one tab for the quantities outside any of
    them.
 
-Nothing is asked in a dialog: the two choices are combos on the window.
+Nothing is asked in a dialog: the choices are combos on the window.
 
 - :guilabel:`Occurrence`, bounded by the occurrences this case holds. Choosing
   another one loads it and asks the tree again, so the tabs change with it.
@@ -241,6 +241,11 @@ Nothing is asked in a dialog: the two choices are combos on the window.
   :guilabel:`New ('TIME' axis)` and :guilabel:`New (default axis)` in the tree's own
   menu (section :ref:`plotting_a_selection_to_figure`). An IDS with no clock of its
   own answers only the second.
+- :guilabel:`Plots per row`: how many panels a row of the page it opens holds.
+  Left on *auto (from the page size)* -- its default -- the answer is the one a
+  table of that page size has always given; choose a number to keep that width on
+  the windows this panel opens. The window the tree's own gesture opens is not
+  told anything, so that choice stays with the window that owns it.
 
 The line under them states the whole answer: how many tabs, how many quantities, and
 -- named as a refusal rather than hidden -- how many of those quantities are error
@@ -259,9 +264,12 @@ of 2 (100 on this page, 100 per page)``. Three buttons:
 - :guilabel:`Add the next page` puts the page after this one into a window **of its
   own**, because a table asks the width of its grid once for the whole table and
   panels arriving afterwards would be laid out twice;
-- :guilabel:`Draw the selected quantity` runs the tree's own *Plot this node*
-  gesture: a curve figure, or an image window for a quantity with two axes of its
-  own.
+- :guilabel:`Draw the selected quantities` honours the rows the list over it
+  stands on, and the list takes one or several. One chosen alone runs the tree's
+  own *Plot this node* gesture -- a curve figure, or an image window for a
+  quantity with two axes of its own. Several are a :ref:`Table Plot View
+  <TPV>` of exactly those, in the order they stand in the list. A list with no
+  row under the pointer is a refusal in the log panel, and no window.
 
 The window a click opens belongs to the application, not to the plugin. It is a
 line of the :guilabel:`Windows` menu, which is also where it is closed for good, a
@@ -270,11 +278,15 @@ saved session puts it back (section :ref:`save_load_session`), each panel answer
 its formats.
 
 A tab that lists fewer quantities than its array holds names the ones it leaves out
-and why: a quantity with two axes of its own has no panel to sit in, and
-:guilabel:`Draw the selected quantity` opens it as a picture. A page whose
-quantities hold no value along the chosen axis is refused in the log panel of the
-shot view, and no empty window is left on the screen -- ``wall`` occurrence 0 of
-this case answers 22 such quantities.
+and why: a quantity with two axes of its own has no panel to sit in on the page,
+and :guilabel:`Draw the selected quantities`, with that one alone selected, opens
+it as a picture.
+
+A quantity whose read is refused keeps its panel on the page, and the panel says
+why under the name of the quantity -- a page of fifty is not a window of thirty
+seven with an explained hole. A page for which **no** quantity gives a curve is
+refused out loud in the log panel of the shot view and not opened at all --
+``wall`` occurrence 0 of this case answers 22 such quantities.
 
 The time cursors
 ^^^^^^^^^^^^^^^^
@@ -293,7 +305,8 @@ IDS with no time base.
    live in a figure of curves (section
    :ref:`plotting_error_bars_and_confidence_bands`): a panel of a table answers
    :guilabel:`Configure Plot` and no error-bar line. :guilabel:`Draw the selected
-   quantity` opens the curve those bars belong to.
+   quantities`, with one of them alone selected, opens the curve those bars belong
+   to.
 
 .. note::
    With the shot view's :guilabel:`Show only tensors (rank >= 1)` filter on, the tabs

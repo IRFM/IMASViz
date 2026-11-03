@@ -381,7 +381,8 @@ def test_the_panels_of_that_window_answer_their_own_right_click(session):
 
 
 def test_a_single_quantity_goes_through_the_tree_s_own_command(session):
-    """*Draw the selected quantity* is `QVizPlotOneNode`, not a panel of its own.
+    """*Draw the selected quantities*, with one alone chosen, is `QVizPlotOneNode`,
+    not a panel of its own.
 
     Asked for a quantity the page above already drew, so the answer is about the
     frame the gesture opens: a curve figure under a `SlicesPlot:` key, embedded
