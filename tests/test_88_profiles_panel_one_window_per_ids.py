@@ -32,6 +32,7 @@ from PySide6.QtWidgets import QMainWindow, QMdiArea, QListWidget
 
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
+from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizTablePlot import QVizTablePlot
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfilePanel import \
     QVizProfilePanel
@@ -206,6 +207,37 @@ def test_the_list_takes_several_of_its_rows(session):
 
     assert page.quantities.selectionMode() == QListWidget.ExtendedSelection
     assert page.oneButton.text() == 'Draw the selected quantities'
+
+
+def test_selecting_two_rows_opens_a_table_of_those_two(session):
+    """A selection of two is a window of exactly those two, each with its answer.
+
+    Not the page, which is what the other button draws, and not two curve
+    figures -- a curve figure holds curves on one pair of axes, and a window of
+    two panels is the one the panel opens for a set of quantities. Each of the
+    two stands where the click stood, either drawn or saying why the read
+    refused it -- a selection that could come back with one answer and a hole
+    would be a selection the list lied about.
+    """
+    panel, page = pageOf(session)
+    current = page.pages()[page.page]
+    expected = [current[0], current[2]]
+    select(page, [0, 2])
+    before = set(session.api.figureframes)
+
+    frame = page.drawSelected()
+    session.qapp.processEvents()
+
+    assert isinstance(frame, QVizTablePlot), frame
+    assert frame.panelCount() == 2, 'exactly the two selected, not the page'
+    assert set(session.api.figureframes) - before == {frame.figureKey}
+    panels = frame.panels()
+    assert [one.treeNode.getName() for one in panels] == \
+        [leaf.getName() for leaf in expected], \
+        'the panels stand on the rows the clicks stood on, in that order'
+    for one in panels:
+        assert one.curveCount() > 0 or one.refusalText, \
+            'each answer is drawn or refused out loud'
 
 
 def test_selecting_one_row_keeps_the_tree_s_own_gesture(session, monkeypatch):

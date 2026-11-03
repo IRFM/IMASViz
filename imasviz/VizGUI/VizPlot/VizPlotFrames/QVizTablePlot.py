@@ -141,24 +141,32 @@ class QVizTablePlot(QWidget):
             logging.getLogger(self.dataTreeView.uri).error(str(e))
 
     def plot(self, treeNode, as_function_of_time=None, place=None):
-        """Give this quantity its own panel and draw it there.
+        """Give this quantity its panel, and the reason in it when it cannot draw.
 
         `place` is the (row, column) a saved configuration said this panel sat
         at; left out, the panel goes where the next free slot of the table is.
 
-        Returns how many curves the panel holds. A quantity the panel cannot
-        show raises, naming the quantity: the caller keeps going with the rest of
-        the selection, and the panel it was given is taken back with the read
-        that refused it -- a panel drawn before the grid is asked is a child of
-        this window that no layout owns, and it stays on screen over the panels
-        that were accepted.
+        Returns how many curves the panel holds -- zero when the read of this
+        quantity raised, the panel kept with the refusal in it, the reason
+        named in the log of the case, and the rest of the page drawn on:
+        a page is a window of panels, and taking the panel of the quantity
+        that raised used to leave the user one window short with the
+        exception only in the log. The name under the words is the one the
+        window itself would label the panel with, so a refusal under
+        `time_slice/i/point.r` is not mistaken for the same name in another
+        array of structures.
         """
         panel = QVizPanel(self)
+        drawn = 0
         try:
             drawn = panel.plot(treeNode, len(self._panels), as_function_of_time)
-        except Exception:
-            panel.deleteLater()
-            raise
+        except Exception as e:
+            # The read of this quantity raised; the page keeps its cell, with
+            # the reason holding it -- not a hole in the grid and a hole in
+            # the count the user is keeping.
+            panel.showRefusal(self.dataPathOf(treeNode), str(e))
+            if self.dataTreeView is not None:
+                logging.getLogger(self.dataTreeView.uri).error(str(e))
         self._panels.append(panel)
         if place is not None:
             self._places[panel] = (place[0], place[1])

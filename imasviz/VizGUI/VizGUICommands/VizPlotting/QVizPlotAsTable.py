@@ -221,9 +221,10 @@ class QVizPlotAsTable(QVizAbstractCommand):
                                      as_function_of_time=self.alongTime(),
                                      place=place)
         except Exception as e:
-            # One unreadable quantity must not cost the user the rest of the
-            # selection -- and a quantity with two axes to draw is refused by
-            # name here rather than drawn wrong.
+            # The refusal of the read is held in the panel by the frame itself,
+            # where the user is looking. This net is for a failure outside the
+            # read -- a panel that could not be built -- and the page keeps
+            # going with the rest of the selection either way.
             logging.getLogger(dtv.uri).error(str(e))
             return 0
         self.api.AddNodeToFigure(self.figure.figureKey,
