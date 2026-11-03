@@ -225,3 +225,45 @@ def test_the_tensor_view_keeps_the_explore_entry_for_a_curve(view):
         titles
     assert not [t for t in titles if t.startswith('Plot ')\
                and not t.startswith('Explore')], titles
+
+
+# --------------------------------------------------------------------------
+# What the tensor view no longer offers
+# --------------------------------------------------------------------------
+
+AOS_ENTRY = 'Select all nodes from the same AOS'
+
+
+def test_the_tensor_view_does_not_offer_to_select_a_family_it_does_not_show(view):
+    """The family of an AOS is one node here: the per-node entry is the whole of it.
+
+    The view keeps the first element of each structure array and takes the rest
+    out of the tree, so the family a 'Select ... from the same AOS' gestures at
+    is the node itself -- an entry that duplicates 'Select <node>' and promises
+    to select the elements the view took away.
+    """
+    node = attach(_vector(), view)
+    view.showOnlyTensorsRankGe1 = True
+
+    menu = QVizSignalHandling(dataTreeView=view,
+                              treeNode=node).buildContextMenu(node)
+    titles = [a.text() for a in menu.actions()]
+
+    assert AOS_ENTRY not in titles, titles
+    # The per-node entry stays: the leaf is a tensor as far as the tree is
+    # concerned, and it is the only entry that acts on it there.
+    assert [t for t in titles if t.startswith('Select ') and t != AOS_ENTRY], \
+        titles
+    assert [t for t in titles if t.startswith('Explore this tensor along')], \
+        titles
+
+
+def test_the_plain_view_keeps_offering_the_aos_family(view):
+    """The same leaf on the plain tree shows its family on screen: the entry means."""
+    node = attach(_vector(), view)
+    view.showOnlyTensorsRankGe1 = False
+
+    menu = QVizSignalHandling(dataTreeView=view,
+                              treeNode=node).buildContextMenu(node)
+    titles = [a.text() for a in menu.actions()]
+    assert AOS_ENTRY in titles, titles

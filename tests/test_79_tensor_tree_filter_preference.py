@@ -507,3 +507,7 @@ def test_the_pop_up_of_a_tensor_offers_the_tensor_entries(tensorView):
     assert not [title for title in titles
                 if title.startswith('Plot ')
                 and not title.startswith('Explore')], titles
+    # The family entry is not there either: this view shows the tensor once,
+    # so the family a selection gesture walks is the node itself.
+    assert not [title for title in titles
+                if title.startswith('Select all nodes from the same')], titles

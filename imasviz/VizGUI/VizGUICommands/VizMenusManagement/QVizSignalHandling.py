@@ -87,9 +87,13 @@ class QVizSignalHandling(QObject):
         # lines to a view whose checkbox is off.
         if getattr(self.dataTreeView, 'showOnlyTensorsRankGe1', False):
             if signal:
+                # No 'select all nodes from the same AOS' here: this view shows
+                # one node per tensor -- it keeps the first element of each
+                # structure array and takes the rest out of the tree -- so the
+                # family is the node itself. The entry above is the whole of
+                # what it can select, and the family entry would promise to
+                # select the elements the view took away.
                 self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
-                if plotting.inArrayOfStructures():
-                    self.contextMenu.addAction(self.actionSelectAllSignalNodesFromSameAOS())
             if plotting.isPlottable():
                 if plotting.curveAbscissae():
                     # A tensor that can run along a curve goes to its sliders,

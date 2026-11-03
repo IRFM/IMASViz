@@ -207,6 +207,9 @@ class FakeAxesNode:
         self.coordinates = list(coordinates)
         self.parameters_values = dict(indices or {})
         self.parameters_max_values = dict(lengths or {})
+        # The real node carries the dictionary's default per coordinate; the
+        # 'Set coordinate1' entry of a plain tree reads it as a dictionary.
+        self.default_coordinates = {}
 
     def getIDSRef(self):
         return self._idsRef
