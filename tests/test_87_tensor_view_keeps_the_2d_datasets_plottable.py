@@ -20,8 +20,10 @@ nothing to draw it.
 The routing is fixed: a plottable quantity without a curve abscissa goes to the
 same entry the plain view hands it -- 'Plot <node> to -> Image -> New' -- so a
 dataset the view keeps in the tree can still be traced there. A quantity that
-does run along a curve keeps the restricted 'Explore this tensor' entry and no
-plain *Plot* menu, which is the point the tensor view made.
+runs along a curve keeps its abscissa items ('Plot as function of time', and
+the coordinate one beside it) and the tensor entry, and loses the
+'Plot <node> to' menu -- the view shows one node per tensor, and the tensor's
+own entry opens the window it fills.
 
 Nothing opens a case: a two-dimension leaf with values needs enclosing arrays
 the reference case does not fill, so the quantities live in memory, as in the
@@ -204,15 +206,18 @@ def test_the_plain_view_still_offers_the_same_entry(view):
 
 
 # --------------------------------------------------------------------------
-# What the tensor view still refuses a curve
+# What the tensor view offers a curve
 # --------------------------------------------------------------------------
 
 def test_the_tensor_view_keeps_the_explore_entry_for_a_curve(view):
-    """A tensor that runs along a curve keeps the restricted entry.
+    """A tensor that runs along a curve keeps the tensor entry, and its abscissae.
 
-    The same branch that lost the 2D dataset had to keep what it was for: a
-    curve with an array around it gets 'Explore this tensor along ...' and no
-    plain 'Plot <node> to' menu.
+    The same branch that lost the 2D dataset had to keep what it was made for:
+    a curve with an array around it gets 'Explore this tensor along ...'. The
+    abscissa items come back with it -- the view shows one node per tensor, but
+    the tensor still has a clock to run against and a coordinate to run along
+    -- and what stays out is the 'Plot z to' menu, which asks which window the
+    node should go into: the tensor's own entry opens the window it fills.
     """
     node = attach(_vector(), view)
     view.showOnlyTensorsRankGe1 = True
@@ -223,8 +228,12 @@ def test_the_tensor_view_keeps_the_explore_entry_for_a_curve(view):
     titles = [a.text() for a in menu.actions()]
     assert [t for t in titles if t.startswith('Explore this tensor along')], \
         titles
-    assert not [t for t in titles if t.startswith('Plot ')\
-               and not t.startswith('Explore')], titles
+    assert 'Plot as function of time' in titles, titles
+    assert 'Plot as function of rho_tor' in titles, titles
+    # Side by side, before the tensor heading, as in the plain view.
+    assert titles.index('Plot as function of time') == \
+        titles.index('Plot as function of rho_tor') - 1
+    assert 'Plot z to' not in titles, titles
 
 
 # --------------------------------------------------------------------------
