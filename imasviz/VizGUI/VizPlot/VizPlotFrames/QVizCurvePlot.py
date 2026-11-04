@@ -181,11 +181,11 @@ class QVizCurvePlot(QWidget):
         self.sliceControls.changed.connect(self.refresh)
 
         self.keepCurveBox = QCheckBox('Keep this curve', self)
-        self.keepCurveBox.setVisible(False)
-        self.keepCurveBox.setToolTip(
-            'Freeze the curve the sliders are moving at the indices it stands on '
-            'and start a new one there; uncheck to take the frozen curve back out')
         self.keepCurveBox.toggled.connect(self._onKeepCurve)
+        # Where the box is shown, whether it is enabled, and what its tooltip
+        # says all follow from how many live curves the figure holds, answered
+        # together so the three cannot drift apart.
+        self._updateKeepBox()
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -195,6 +195,47 @@ class QVizCurvePlot(QWidget):
 
         if title:
             self.setWindowTitle(title)
+
+    def liveCount(self):
+        """How many curves still follow the sliders (the ones not frozen).
+
+        *Keep this curve* is a question about that one, so the box answers from
+        it rather than from the total, which also counts what was frozen.
+        """
+        return len([trace for trace in self._curves if not trace.isFrozen()])
+
+    def _keepTooltip(self):
+        """Why the box is the way it is, in the words the user reads on hover.
+
+        Enabled: what the click does. Otherwise the reason it is off, said by
+        name rather than left a greyed box nobody could ask.
+        """
+        live = self.liveCount()
+        if live == 1:
+            return ('Freeze the curve the sliders are moving at the indices it '
+                    'stands on and start a new one there; uncheck to take the '
+                    'frozen curve back out.')
+        if live == 0:
+            return ('No curve on this figure follows the sliders, so there is '
+                    'nothing to keep.')
+        return ('This figure holds ' + str(live) + ' curves following the '
+                'sliders; keeping one would be ambiguous about which to freeze, '
+                'so *Keep this curve* is off here.')
+
+    def _updateKeepBox(self):
+        """Show, enable, and explain the *Keep this curve* box, together.
+
+        The box is shown on a tensor figure and enabled only while it holds
+        exactly one live curve: that is the one case the box exists for, and
+        the only one a keep is unambiguous in. One live curve survives a whole
+        family of snapshots -- each keep freezes that one and hands back a live
+        one -- so stacking keeps the box enabled; two curves added by the user
+        are two live ones, and the box is refused in advance, with the tooltip
+        saying why, rather than freezing the wrong one.
+        """
+        self.keepCurveBox.setVisible(self.exploresTensor)
+        self.keepCurveBox.setEnabled(self.exploresTensor and self.liveCount() == 1)
+        self.keepCurveBox.setToolTip(self._keepTooltip())
 
     def plot(self, treeNode, as_function_of_time=None, tensor=False):
         """Add one quantity to the figure, along the abscissa the figure draws.
@@ -254,7 +295,6 @@ class QVizCurvePlot(QWidget):
         # pyqtgraph has no cycle of its own to fall back on: a curve drawn without
         # a pen is `(200, 200, 200)`, measured, twice over on one figure.
         self.exploresTensor = self.exploresTensor or tensor
-        self.keepCurveBox.setVisible(self.exploresTensor)
         label = elementLabel(treeNode, pinned, slices)
         for row in range(y.shape[0]):
             # Several rows of one quantity are several traces, and the path alone
@@ -277,6 +317,10 @@ class QVizCurvePlot(QWidget):
         # happened to be there when they were clicked. `refresh` draws only if
         # something is drawn, so on the ordinary case this changes nothing.
         self.errors.refresh()
+        # The box answers from how many live curves are on screen, so it must be
+        # re-asked after this call's own curves are laid down -- a second curve
+        # added here is exactly the case that must grey it out.
+        self._updateKeepBox()
         return y.shape[0]
 
     def refresh(self):
@@ -322,12 +366,19 @@ class QVizCurvePlot(QWidget):
         The frozen curve keeps those indices and stops answering the sliders; a
         new curve starts at the same place so the figure still shows one that
         moves. That is how a family of elements piles up on one abscissa: check,
-        move, check, move. Returns how many curves are kept.
+        move, check, move. The figure must hold exactly one live curve: with
+        more than one, "keep" would be ambiguous about which to freeze, so it is
+        refused by name and the box is greyed rather than freezing the last.
+        Returns how many curves are kept.
         """
         live = [trace for trace in self._curves if not trace.isFrozen()]
         if not live:
             raise ValueError('Nothing to keep on this figure: no curve follows a '
                              'slider.')
+        if len(live) > 1:
+            raise ValueError('This figure holds ' + str(len(live)) +
+                             ' curves following the sliders, so keeping one would '
+                             'be ambiguous about which curve to freeze.')
         trace = live[-1]
         trace.fixed = self._readSlices(trace.fixed, trace.movable)
         trace.movable = []
@@ -348,6 +399,7 @@ class QVizCurvePlot(QWidget):
         # plot item while the figure forgets it keeps drawing a trace nobody can
         # move or name any more.
         self.pgPlotWidget.removeItem(trace.curve)
+        self._updateKeepBox()
         return len(self._kept)
 
     def keptCount(self):

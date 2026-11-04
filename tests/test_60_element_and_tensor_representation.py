@@ -263,6 +263,32 @@ def test_unkeeping_with_nothing_kept_says_so_rather_than_failing_quietly(figure)
     assert figure.curveCount() == 1
 
 
+@pytest.mark.ui
+def test_two_curves_for_comparison_grey_out_keep_this_curve(figure):
+    """keep is a question about the one curve the sliders drive, not "the last".
+
+    With two curves on the figure a keep would be ambiguous about which to
+    freeze, so the box is refused in advance -- greyed, with the tooltip saying
+    why -- and keepCurve() refuses by name rather than freezing the last and
+    leaving the other to move.
+    """
+    figure.plot(_leaf(ionIndex=0), tensor=True)
+
+    assert figure.liveCount() == 1
+    assert figure.keepCurveBox.isEnabled() is True
+
+    # A second curve added for comparison: two live, so keep is off.
+    figure.plot(_leaf(ionIndex=1), tensor=True)
+
+    assert figure.liveCount() == 2
+    assert figure.keepCurveBox.isEnabled() is False
+    with pytest.raises(ValueError) as raised:
+        figure.keepCurve()
+    assert 'ambiguous' in str(raised.value)
+    # The box says why, where the user reads it.
+    assert 'ambiguous' in figure.keepCurveBox.toolTip()
+
+
 # -- the room a band takes -----------------------------------------------
 
 @pytest.mark.ui
