@@ -43,8 +43,12 @@ Within a case's sub-menu:
 
    * - the name of a window
      - one line per window the case owns -- its view, and each plot window by the
-       key its title carries. A line is **checked** while its window is on the
-       screen, and clicking it hides a shown window or shows a hidden one.
+       key and the case name its title carries, both, separated, when its curves
+       came from more than one case. Hover the line (or the title bar) and the
+       whole URI is what is read, one per line: the title bar carries the short
+       name because it is the one guaranteed to fit, and the URI is the answer
+       to the question behind it. A line is **checked** while its window is on
+       the screen, and clicking it hides a shown window or shows a hidden one.
    * - :guilabel:`Show only this case`
      - show this case and its windows, and hide the other cases' windows. A
        window drawn from this case and another stays shown: isolating a case is

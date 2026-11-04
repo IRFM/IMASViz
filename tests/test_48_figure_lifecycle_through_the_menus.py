@@ -69,7 +69,7 @@ from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsStacked \
 from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable \
     import QVizPlotAsTable
 from imasviz.VizUtils import FigureTypes
-from imasviz.Viz_API import Viz_API
+from imasviz.Viz_API import Viz_API, titleWithCases
 
 from conftest import (CASE_DATA_DICTIONARY_VERSION, CASE_URI,
                       case_uri_or_skip)
@@ -253,11 +253,22 @@ def caseTitle(session):
     return session.view.dataSource.getLongLabel()
 
 
-def allOf(menu, figureKey):
-    """The *All* line of the group that figureKey opens in the *Delete* menu.
+def figLabel(key, session):
+    """The line a figure is named by: the key, plus the case it serves.
 
-    The groups are separated, not nested, and a group opens with the line of its
-    first window -- so the key says which group is meant.
+    The *Windows* menu and the title bar both paint it, and both are asked of
+    the same answer (`titleWithCases`), so the expected line is built the same
+    way a live one is: from the key and the session's one case.
+    """
+    return titleWithCases(key, [session.view.dataSource.uri])
+
+
+def allOf(menu, groupLabel):
+    """The *All* line of the group that opens under `groupLabel`.
+
+    The groups are separated, not nested, and a group opens with the line of
+    its first window -- so the line the caller expects says which group is
+    meant.
     """
     groups, current = {}, None
     for action in subNamed(menu, DELETE).actions():
@@ -268,10 +279,10 @@ def allOf(menu, figureKey):
             groups[current] = []
         if action.text() == ALL:
             groups[current].append(action)
-    if figureKey not in groups or not groups[figureKey]:
+    if groupLabel not in groups or not groups[groupLabel]:
         raise AssertionError('no %r line for the group of %r in %r'
-                             % (ALL, figureKey, titles(subNamed(menu, DELETE))))
-    return groups[figureKey][0]
+                             % (ALL, groupLabel, titles(subNamed(menu, DELETE))))
+    return groups[groupLabel][0]
 
 
 # --------------------------------------------------------------------------
@@ -314,21 +325,27 @@ def test_the_menu_holds_one_line_per_figure_and_delete_groups_them(qapp,
     menu = session.menu()
     delete = subNamed(menu, DELETE)
 
-    # One line per window, at the top level, checked because the window is on the
-    # screen: the state of the window is the state of its line, which is the half
-    # the old ``Show/Hide`` menu never said.
-    assert windowTitles(menu) == [caseTitle(session), TABLE_KEY, STACKED_KEY,
-                              CURVE_KEY]
+    # One line per figure, at the top level, checked because the window is on
+    # the screen -- and the line names the case: the title bar and the menu are
+    # two readings of the same answer, so the line is the key plus the label
+    # the case answers for, not the key alone any more.
+    assert windowTitles(menu) == [caseTitle(session),
+                                  figLabel(TABLE_KEY, session),
+                                  figLabel(STACKED_KEY, session),
+                                  figLabel(CURVE_KEY, session)]
     for action in menu.actions():
-        if action.text() in (TABLE_KEY, STACKED_KEY, CURVE_KEY):
+        if action.text() in (figLabel(TABLE_KEY, session),
+                             figLabel(STACKED_KEY, session),
+                             figLabel(CURVE_KEY, session)):
             assert action.isCheckable() and action.isChecked()
 
     # Deleting is the other question, so it is its own sub-menu: one line per
     # window and one *All* per kind, which is what the old ``Delete`` menu did
     # without listing every window twice.
     assert titles(delete) == [caseTitle(session), ALL, '',
-                              TABLE_KEY, ALL, '', STACKED_KEY, ALL, '',
-                              CURVE_KEY, ALL]
+                              figLabel(TABLE_KEY, session), ALL, '',
+                              figLabel(STACKED_KEY, session), ALL, '',
+                              figLabel(CURVE_KEY, session), ALL]
 
 
 # --------------------------------------------------------------------------
@@ -340,16 +357,16 @@ def test_hiding_takes_the_mdi_window_and_the_figure_with_it(session, qapp):
     window = frame.parent()
     assert window in session.windows() and window.isVisible()
 
-    actNamed(session.menu(), CURVE_KEY).trigger()
+    actNamed(session.menu(), figLabel(CURVE_KEY, session)).trigger()
     qapp.processEvents()
     assert window.isVisible() is False
     assert frame.isVisible() is False
 
     # The line now says what the screen says, because the menu is redrawn on
     # every opening.
-    assert actNamed(session.menu(), CURVE_KEY).isChecked() is False
+    assert actNamed(session.menu(), figLabel(CURVE_KEY, session)).isChecked() is False
 
-    actNamed(session.menu(), CURVE_KEY).trigger()
+    actNamed(session.menu(), figLabel(CURVE_KEY, session)).trigger()
     qapp.processEvents()
     assert window.isVisible() is True
     assert frame.isVisible() is True
@@ -408,7 +425,7 @@ def test_deleting_a_figure_takes_it_out_of_both_registries(session, qapp):
     window = frame.parent()
     other = session.api.figureframes[TABLE_KEY]
 
-    actNamed(subNamed(session.menu(), DELETE), CURVE_KEY).trigger()
+    actNamed(subNamed(session.menu(), DELETE), figLabel(CURVE_KEY, session)).trigger()
     qapp.processEvents()
 
     assert CURVE_KEY not in session.api.figureframes
@@ -423,15 +440,17 @@ def test_deleting_a_figure_takes_it_out_of_both_registries(session, qapp):
 
 
 def test_a_deleted_figure_is_offered_no_more(session, qapp):
-    assert windowTitles(session.menu()) == [caseTitle(session), TABLE_KEY,
-                                            STACKED_KEY]
+    assert windowTitles(session.menu()) == [
+        caseTitle(session),
+        figLabel(TABLE_KEY, session),
+        figLabel(STACKED_KEY, session)]
 
 
 def test_deleting_all_of_a_kind_leaves_the_other_kind(session, qapp):
     stacked = session.api.figureframes[STACKED_KEY]
     ownership.keep(stacked)
 
-    allOf(session.menu(), STACKED_KEY).trigger()
+    allOf(session.menu(), figLabel(STACKED_KEY, session)).trigger()
     qapp.processEvents()
 
     assert session.api.GetFiguresKeys(FigureTypes.STACKEDPLOTTYPE) == []
@@ -452,7 +471,7 @@ def test_the_number_of_a_figure_in_the_middle_is_not_given_back(session, qapp):
 
     middle = keys[0]
     ownership.keep(session.api.figureframes[middle])
-    actNamed(subNamed(session.menu(), DELETE), middle).trigger()
+    actNamed(subNamed(session.menu(), DELETE), figLabel(middle, session)).trigger()
     qapp.processEvents()
 
     # The key is how the menu addresses a figure, so a number already handed to a
@@ -470,18 +489,24 @@ def test_a_kind_emptied_by_a_delete_hands_its_number_to_the_next_figure(session,
     keys = session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE)
     for key in keys:
         ownership.keep(session.api.figureframes[key])
-        actNamed(subNamed(session.menu(), DELETE), key).trigger()
+        actNamed(subNamed(session.menu(), DELETE),
+                 figLabel(key, session)).trigger()
     qapp.processEvents()
     assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == []
 
     drawn = session.draw(QVizPlotAsSlices, IP)
     qapp.processEvents()
+    key = FigureTypes.CURVEPLOTTYPE + '1'
 
     # Nothing of that kind is left, so the numbering starts over: measured, the
-    # new curve is SlicesPlot1 again, and the window title says the same.
-    assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == \
-        [FigureTypes.CURVEPLOTTYPE + '1']
-    assert drawn[0].parent().windowTitle() == FigureTypes.CURVEPLOTTYPE + '1'
+    # new curve is SlicesPlot1 again, and the title bar says the key plus the
+    # case, the whole URI behind the hover. The subwindow's bar is the line the
+    # user reads, and it is the same answer as the frame's.
+    assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == [key]
+    assert drawn[0].windowTitle() == figLabel(key, session)
+    assert drawn[0].parent().windowTitle() == figLabel(key, session)
+    assert drawn[0].toolTip() == session.view.dataSource.uri
+    assert drawn[0].parent().toolTip() == session.view.dataSource.uri
 
 
 def test_the_X_of_a_window_hides_it_and_keeps_its_key(session, qapp):
@@ -502,11 +527,12 @@ def test_the_X_of_a_window_hides_it_and_keeps_its_key(session, qapp):
     assert key in session.api.figureframes
     assert key in session.api.figToNodes
     assert session.api.GetNextKeyForFigure(FigureTypes.TABLEPLOTTYPE) != key
-    # The menu still names the window, and says that it is off the screen.
-    assert key in windowTitles(session.menu())
-    assert actNamed(session.menu(), key).isChecked() is False
+    # The menu still names the window -- the key, plus the case as always --
+    # and says that it is off the screen.
+    assert figLabel(key, session) in windowTitles(session.menu())
+    assert actNamed(session.menu(), figLabel(key, session)).isChecked() is False
 
-    actNamed(session.menu(), key).trigger()
+    actNamed(session.menu(), figLabel(key, session)).trigger()
     qapp.processEvents()
     assert window.isVisible() is True
 
