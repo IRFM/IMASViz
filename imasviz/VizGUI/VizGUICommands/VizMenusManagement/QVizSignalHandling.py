@@ -96,8 +96,24 @@ class QVizSignalHandling(QObject):
                 self.contextMenu.addAction(self.actionSelectOrUnselectSignalNode())
             if plotting.isPlottable():
                 if plotting.curveAbscissae():
-                    # A tensor that can run along a curve goes to its sliders,
-                    # and to the figures that draw along the same abscissa.
+                    # The abscissa items do not leave the pop-up with the
+                    # window menu: a tensor with a time base still draws its
+                    # history, and a profile of the dynamic array still draws
+                    # against the coordinate the dictionary names -- the
+                    # tensor entry asks the other question (the arrays under
+                    # the sliders) and does not replace either. What the view
+                    # keeps taking away is the 'Plot <node> to' menu, which
+                    # asks which window this node should go into -- and the
+                    # node here is the whole tensor, which the tensor's own
+                    # entry opens for it.
+                    action_plotTime = self.actionPlotAsFunctionOfTime()
+                    if action_plotTime is not None:
+                        self.contextMenu.addAction(action_plotTime)
+                    action_plotCoordinate = \
+                        self.actionPlotAsFunctionOfCoordinate()
+                    if action_plotCoordinate is not None:
+                        self.contextMenu.addAction(action_plotCoordinate)
+                    # The tensor entry follows the items it complements.
                     self.menuExploreThisTensor(self.contextMenu)
                 else:
                     # A dataset with two axes of its own has no abscissa a

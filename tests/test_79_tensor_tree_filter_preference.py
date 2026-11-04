@@ -488,12 +488,17 @@ def test_two_views_of_one_occurrence_stay_two_and_the_log_says_which_one_moved(
 # --------------------------------------------------------------------------
 
 def test_the_pop_up_of_a_tensor_offers_the_tensor_entries(tensorView):
-    """Tensor tracing with its sliders, and the figures to superpose it on.
+    """Tensor tracing with its sliders, and the abscissa entries beside it.
 
     ``Explore this tensor along <axis>`` is the entry that puts a slider on every
     axis the curve leaves out, and one line per open figure drawn along that
-    abscissa is what superposes the traces. The plain *Plot* menu of the leaf is
-    what the view takes back out.
+    abscissa is what superposes the traces. The abscissa entries stay beside it:
+    a tensor with a time base still draws its history, and the profile of the
+    dynamic array still draws against the coordinate the dictionary names -- the
+    tensor entry asks the other question (the arrays under the sliders) and does
+    not replace either. What the view keeps taking away is the
+    ``Plot <node> to`` menu, which asks which window: the node of this view is
+    the tensor, and the tensor's own entry opens and fills those windows.
     """
     leaf = [node for node in leavesOf(tensorView)
             if keyOf(node) == 'time_slice/profiles_1d/psi'][-1]
@@ -502,12 +507,64 @@ def test_the_pop_up_of_a_tensor_offers_the_tensor_entries(tensorView):
     menu = handling.buildContextMenu(leaf)
     titles = [action.text() for action in menu.actions()]
 
-    assert [title for title in titles
-            if title.startswith('Explore this tensor along')], titles
+    # The plotting the plain view offers on this leaf, kept in the tensor view:
+    # the clock (49 points on this case) and the grid the dictionary names
+    # (101). Neither is the tensor entry -- each draws one element.
+    assert 'Plot as function of time' in titles, titles
+    assert 'Plot as function of its index' in titles, titles
+    # Side by side, and before the tensor entry: the items come first in the
+    # plain view, and the tensor heading follows them there too.
+    assert titles.index('Plot as function of time') == \
+        titles.index('Plot as function of its index') - 1
+    explore = [title for title in titles
+               if title.startswith('Explore this tensor along')]
+    assert explore, titles
+    assert titles.index(explore[0]) > \
+        titles.index('Plot as function of its index')
+
+    # What the view still takes away: the window menu of the leaf, and the
+    # family entry -- this view shows the tensor once, so the family a
+    # selection gesture walks is the node itself.
     assert not [title for title in titles
-                if title.startswith('Plot ')
-                and not title.startswith('Explore')], titles
-    # The family entry is not there either: this view shows the tensor once,
-    # so the family a selection gesture walks is the node itself.
+                if title.startswith('Plot ') and title.endswith(' to')], titles
     assert not [title for title in titles
                 if title.startswith('Select all nodes from the same')], titles
+
+
+def test_the_time_entry_of_a_tensor_still_draws_the_history(
+        tensorView, qtbot):
+    """The item the view used to withhold, triggered as a click would -- and it draws.
+
+    ``equilibrium.time_slice[i].profiles_1d.f`` answers **49** points against
+    the clock on this case (the number the manual states for this leaf), so the
+    entry the pop-up keeps is not decoration: its read is the history, the
+    coordinate read is the **101**-point profile, and each costs a curve figure,
+    not a table.
+    """
+    leaf = [node for node in leavesOf(tensorView)
+            if keyOf(node) == 'time_slice/profiles_1d/f'][-1]
+    handling = QVizSignalHandling(tensorView, treeNode=leaf)
+
+    entries = {'time': handling.actionPlotAsFunctionOfTime(),
+               'coordinate': handling.actionPlotAsFunctionOfCoordinate()}
+    assert entries['time'] is not None, \
+        [a.text() for a in
+         handling.buildContextMenu(leaf).actions()]
+    assert entries['coordinate'] is not None
+
+    api = tensorView.imas_viz_api
+    for name, action in entries.items():
+        before = set(api.figureframes)
+        action.trigger()
+        added = set(api.figureframes) - before
+        assert len(added) == 1, (before, set(api.figureframes))
+        frame = api.figureframes[next(iter(added))]
+
+        x, y = frame.curves()[0].getData()
+        if name == 'time':
+            assert frame.abscissa == ('time',)
+            assert len(list(x)) == 49
+        else:
+            assert frame.abscissa == (
+                'coordinate', 'time_slice.profiles_1d.psi')
+            assert len(list(x)) == 101
