@@ -176,9 +176,39 @@ class QVizTensorExtractor:
             level += 1
             rest = steps[index + 1:]
             if level in aosIndices:
-                return self._read(rest, holder[aosIndices[level]], level, aosIndices)
+                return self._read(rest, self._elementAt(holder, name,
+                                                        aosIndices[level]),
+                                  level, aosIndices)
             return [self._read(rest, element, level, aosIndices) for element in holder]
         return holder
+
+    def _elementAt(self, array, name, index):
+        """One element of an array of structures, refused by name when out of range.
+
+        Every array of structures the read descends is indexed by a number it
+        computed from the tree or a control a user moved, and the number was
+        never checked against the array: whenever the caller's length for that
+        level is unknown (the dictionary left it unbounded, or a static array the
+        tree stands on carries no extent) `_sliceIndex` validates nothing and the
+        time axis, when it is not the axis a slider moves, is returned through
+        `_effectiveTimeIndex` unchecked. What that reaches is the Access Layer:
+        out of range it raised `IndexError` out of imas/ids_struct_array, naming
+        neither the array, its length, nor the quantity. This is the one place
+        every such index is actually applied to an array, so an out-of-range one
+        is refused here, by name, instead of the bare traceback.
+        """
+        try:
+            return array[index]
+        except (IndexError, TypeError) as error:
+            try:
+                count = len(array)
+            except (TypeError, ValueError):
+                count = None
+            span = ('it holds %d element(s), so its index runs from 0 to %d'
+                    % (count, count - 1)) if count is not None else 'its length ' \
+                'cannot be read'
+            raise ValueError('Index %d for the array of structures %r is out of '
+                             'range: %s.' % (index, name, span)) from error
 
     def _timeValues(self, axesSpec, timePosition):
         """The time base, placed by ids_properties.homogeneous_time."""
@@ -267,7 +297,7 @@ class QVizTensorExtractor:
                 indexAxes[position] = len(holder)
                 return None
             level += 1
-            holder = holder[aosIndices.get(level, 0)]
+            holder = self._elementAt(holder, segment, aosIndices.get(level, 0))
         try:
             values = np.asarray(holder, dtype=float)
         except (TypeError, ValueError):

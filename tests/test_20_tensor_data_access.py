@@ -223,3 +223,49 @@ def test_a_quantity_in_two_arrays_inside_the_time_slices_becomes_a_curve():
     assert r.shape == (1, 2)
     np.testing.assert_allclose(r[0], [10., 40.])
     np.testing.assert_allclose(t[0], [0., 1.])
+
+
+def test_an_out_of_range_index_is_refused_by_name_not_an_ims_error():
+    """An index past the end of the array the read stands on is refused by name.
+
+    The read indexes every array of structures by a number it computed from the
+    tree or a control. A number past the end used to reach the Access Layer and
+    raise `IndexError` out of `imas/ids_struct_array` -- naming neither the
+    array, its length, nor the quantity. Now it is refused by name: at the
+    decision point when the axis carries its length, and at the use point when it
+    does not. The one guarantee is a `ValueError` naming the array, never a bare
+    `IndexError`.
+    """
+    ids = type('Ids', (), {})()
+    ids.ids_properties = type('Props', (), {})()
+    ids.ids_properties.homogeneous_time = 1
+    ids.time = [0., 1.]
+    ids.dyn = []
+    for _ in range(2):           # the dynamic array holds two slices
+        sl = type('Sl', (), {})()
+        sl.stat = [type('St', (), {})()]   # the inner array holds one element
+        sl.stat[0].val = [1., 2., 3.]
+        ids.dyn.append(sl)
+
+    def node(indices, lengths):
+        return FakeAxesNode(ids, 'ids', 'ids.dyn[itime].stat[j]', 'FLT_1D',
+                            name='val', itimeIndex=0, coordinates=('1..N',),
+                            indices=indices, lengths=lengths, alongTime=False)
+
+    # 1. The inner array holds one element; the read is handed index 5 and the
+    #    axis carries that index with its length, so the decision point validates
+    #    and refuses before the array is touched.
+    with pytest.raises(ValueError, match=r'stat'):
+        QVizTensorDataAccess(None).GetSignal(
+            treeNode=node({'i': '0', 'j': '5'}, {'i': '2', 'j': '1'}),
+            plotWidget=None)
+
+    # 2. The same index, but the axis carries no length to validate against: the
+    #    read reaches the array and the guard refuses it by name, the count the
+    #    array actually holds. This is the case a control a user moved, or a node
+    #    standing on an array the tree does not carry an extent for, was handing
+    #    to the Access Layer and coming back from as an `IndexError`.
+    with pytest.raises(ValueError, match=r'stat.*1 element'):
+        QVizTensorDataAccess(None).GetSignal(
+            treeNode=node({'i': '0', 'j': '5'}, {'i': '2'}),
+            plotWidget=None)

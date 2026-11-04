@@ -291,10 +291,18 @@ class QVizCurvePlot(QWidget):
             if trace.isFrozen():
                 continue
             slices = self._readSlices(trace.fixed, trace.movable)
-            x, y = self.accessFor(trace.treeNode).GetSignal(
-                treeNode=trace.treeNode, plotWidget=self,
-                as_function_of_time=trace.asFunctionOfTime, slices=slices,
-                abscissa=trace.abscissa)
+            try:
+                x, y = self.accessFor(trace.treeNode).GetSignal(
+                    treeNode=trace.treeNode, plotWidget=self,
+                    as_function_of_time=trace.asFunctionOfTime, slices=slices,
+                    abscissa=trace.abscissa)
+            except ValueError as e:
+                # A slider moved an index past the end of this trace's array:
+                # the read refuses it by name. Naming it here, instead of letting
+                # the Qt slot dispatcher print the whole traceback, is what the
+                # failure of a slider move costs; the other traces still refresh.
+                logging.getLogger(self.logChannel()).error(str(e))
+                continue
             if y.shape[0] > trace.row and x.shape[0] > 0:
                 trace.curve.setData(x[0], y[trace.row])
             else:
