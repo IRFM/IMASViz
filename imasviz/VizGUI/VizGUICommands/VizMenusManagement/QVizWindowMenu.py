@@ -66,6 +66,7 @@ class QVizWindowMenu:
     """The list of windows, drawn from the api that holds them."""
 
     TITLE = 'Windows'
+    NO_WINDOW = 'No open window'
     SHOW_ALL = 'Show all'
     HIDE_ALL = 'Hide all'
     DELETE = 'Delete'
@@ -129,14 +130,18 @@ class QVizWindowMenu:
         """
         refill(self.menu)
         windows = self.windows()
-        # A bar entry that appears and disappears is a target that moves under
-        # the hand, so on a bar the entry stays and says there is nothing in it:
-        # no window to manage, no gesture to offer -- including the *Disposition
-        # sub-menu, which rearranges windows that are already on the screen, and
-        # which has nothing to rearrange yet. The layout a future case opens into
-        # is set from the preferences file, not from this menu.
-        self.menu.setEnabled(bool(windows))
+        # The menu stays enabled whatever is open, because a disabled menu in a
+        # bar is one that cannot be clicked -- and Qt does not emit
+        # aboutToShow for a disabled menu, so once switched off by an empty run
+        # it never switches back on for the windows a case opens afterwards. A
+        # named line is the answer to the empty state rather than a greyed, dead
+        # entry: clicking it opens a menu that says "No open window", which is
+        # the same answer a menu that disappears would have given, and a line
+        # the user can reach.
         if not windows:
+            action = QAction(self.NO_WINDOW, self.menu)
+            action.setEnabled(False)
+            self.menu.addAction(action)
             return
 
         caseUris = []

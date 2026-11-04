@@ -173,7 +173,8 @@ class Session:
         are left out so the reading is the window's, not the run's.
         """
         base = menu if menu is not None else self.windows()
-        fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL, DELETE,
+        fixed = (QVizWindowMenu.NO_WINDOW, QVizWindowMenu.SHOW_ALL,
+                 QVizWindowMenu.HIDE_ALL, DELETE,
                  QVizWindowMenu.NEXT, QVizWindowMenu.PREVIOUS,
                  QVizWindowMenu.HIDE_OTHERS, QVizWindowMenu.CLOSE_OTHERS,
                  QVizWindowMenu.DISPOSITION, QVizWindowMenu.ISOLATE,
@@ -524,9 +525,10 @@ def test_the_all_line_clears_both_lists_and_leaves_no_window(qapp):
     assert session.frames() == []
     assert session.api.DTVlist == []
     assert session.subWindows() == []
-    # With nothing open the menu is there and empty, not a bar entry that comes
-    # and goes under the hand.
-    assert session.windows().actions() == []
+    # With nothing open the menu is there, enabled, and names itself: one
+    # disabled line, not a bar entry that comes and goes under the hand.
+    assert [a.text() for a in session.windows().actions()] == [
+        QVizWindowMenu.NO_WINDOW]
 
 
 def test_re_opening_after_deleting_everything_costs_one_window_each(session,

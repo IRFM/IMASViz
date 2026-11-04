@@ -66,9 +66,13 @@ in :file:`~/.imasviz/preferences` puts the other answer back for the user who me
 it. Both values are pinned, for the three families of window: a figure, a case view,
 and the top-level window a plugin draws.
 
-**A menu with no windows is a menu that cannot be clicked.** With nothing open the
-*Windows* entry stays on the bar -- an entry that appears and disappears is a
-target that moves under the hand -- disabled, holding **0** action.
+**A menu with no windows is a menu that says so, not one that will not open.**
+With nothing open the *Windows* entry stays on the bar *and enabled* -- an entry
+that switches off and on is a target that moves under the hand, and a disabled
+menu in a bar cannot be clicked (Qt would not emit ``aboutToShow`` for it, so an
+empty run would leave it dead for the windows a case opens afterwards). Open, it
+holds **1** disabled line, :guilabel:`No open window`, which is the answer the
+menu gives and the one the user can reach.
 
 The windows themselves are stand-ins. What is under test is which windows a menu
 lists, what it says about each, and what the close box costs -- none of which
@@ -93,6 +97,7 @@ from imasviz.Viz_API import QVizClosableWindow, QVizMdiSubWindow, Viz_API
 
 from support import ownership
 
+NO_WINDOW = QVizWindowMenu.NO_WINDOW
 SHOW_ALL = QVizWindowMenu.SHOW_ALL
 HIDE_ALL = QVizWindowMenu.HIDE_ALL
 DELETE = QVizWindowMenu.DELETE
@@ -227,7 +232,7 @@ class Session:
         two case gestures -- so a test about the windows does not have to repeat
         them to say what changed.
         """
-        fixed = (SHOW_ALL, HIDE_ALL, DELETE, NEXT, PREVIOUS,
+        fixed = (NO_WINDOW, SHOW_ALL, HIDE_ALL, DELETE, NEXT, PREVIOUS,
                  HIDE_OTHERS, CLOSE_OTHERS, DISPOSITION, ISOLATE, CLOSE_CASE)
         return [(title, checked) for title, checked in self.lines(menu)
                 if title not in fixed]
@@ -396,11 +401,16 @@ def test_the_menu_of_a_shot_view_lists_the_same_windows(session, qapp):
     assert NEXT in [title for title, _ in session.lines()]
 
 
-def test_with_no_window_open_the_entry_stays_and_is_disabled(session, qapp):
-    assert session.entries() == []
-    assert session.menu.isEnabled() is False
-    # A bar entry that appears and disappears moves the target under the hand, so
-    # the entry is there and says there is nothing in it.
+def test_with_no_window_open_the_entry_stays_and_says_so(session, qapp):
+    # The entry is on the bar and enabled, so a case the user opens afterwards
+    # can still be clicked into without the menu having been switched off first;
+    # the empty state is named in the one line it then shows.
+    assert session.menu.isEnabled() is True
+    assert session.entries() == [(NO_WINDOW, False)]
+    # The one line is a disabled line, not a window the menu could act on.
+    [action] = session.menu.actions()
+    assert action.isEnabled() is False
+    # No sub-menu to open before knowing what is on screen.
     assert session.menu.findChildren(QMenu) == []
 
 
@@ -410,14 +420,16 @@ def test_a_view_held_by_no_api_gets_an_empty_menu_and_not_an_error(qapp):
     Measured on the first full run of this file's feature: building a shot view
     that way raised ``TypeError: cannot create weak reference to 'NoneType'
     object`` out of ``addMenuBar``, so the view did not exist at all -- thirteen
-    tests of three other files died on a menu question none of them asked.
+    tests of three other files died on a menu question none of them asked. An
+    api of ``None`` answers no window, so the menu says so with its one line.
     """
     menu = QMenu()
     ownership.keep(menu)
     QVizWindowMenu(menu, None).show()
 
-    assert menu.actions() == []
-    assert menu.isEnabled() is False
+    assert [a.text() for a in menu.actions()] == [NO_WINDOW]
+    assert menu.isEnabled() is True
+    assert menu.actions()[0].isEnabled() is False
 
 
 def test_redrawing_the_menu_leaves_one_delete_sub_menu(session, qapp):
@@ -460,9 +472,11 @@ def test_an_entry_of_a_menu_that_is_no_longer_current_costs_nothing(session,
     staleDelete.trigger()
     qapp.processEvents()
 
+    # The window is out of the run, so the menu is back to its named empty
+    # state: one disabled line, the menu still open and clickable.
     session.redrawn()
-    assert session.entries() == []
-    assert session.menu.isEnabled() is False
+    assert session.entries() == [(NO_WINDOW, False)]
+    assert session.menu.isEnabled() is True
 
 
 # --------------------------------------------------------------------------
@@ -484,7 +498,7 @@ def test_deleting_takes_the_window_off_the_screen_and_out_of_the_run(session,
     # The window is gone from the area, not merely hidden behind it.
     assert window not in session.area.subWindowList()
     session.redrawn()
-    assert session.entries() == []
+    assert session.entries() == [(NO_WINDOW, False)]
 
 
 def test_the_all_line_closes_every_window_of_its_kind_only(session, qapp):
@@ -635,7 +649,7 @@ def test_the_preference_on_makes_the_close_box_close_for_good(session, qapp,
     # line's shape, reached through the box.
     assert [w for w in embedded if w in session.area.subWindowList()] == []
     session.redrawn()
-    assert session.entries() == []
+    assert session.entries() == [(NO_WINDOW, False)]
 
 
 # --------------------------------------------------------------------------

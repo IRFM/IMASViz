@@ -165,7 +165,8 @@ def test_the_legacy_figure_kind_is_not_offered_any_more(qapp, view):
     # gone. Its kind is out of MENU_ORDER, so the menu walks no prefix that a
     # leftover key could match: a frame still registered under 'Figure:' stays
     # in the bookkeeping and is named by no line -- nothing hands that key out
-    # again, and nothing pretends it can close one.
+    # again, and nothing pretends it can close one. The one line the menu does
+    # draw is the named empty state, not the key it was registered under.
     assert 'Figure:' not in [figureType for _label, _icon, figureType
                              in FigureTypes.MENU_ORDER]
     assert not hasattr(FigureTypes, 'FIGURETYPE')
@@ -173,8 +174,9 @@ def test_the_legacy_figure_kind_is_not_offered_any_more(qapp, view):
     assert view.imas_viz_api.GetFiguresCount(figureType='Figure:') == 1
     menu = windowsMenu(view)
 
-    assert menu.actions() == []
-    assert menu.isEnabled() is False
+    assert [a.text() for a in menu.actions()] == [QVizWindowMenu.NO_WINDOW]
+    assert menu.isEnabled() is True
+    assert menu.actions()[0].isEnabled() is False
 
 
 def test_deleting_all_the_stacked_figures_leaves_the_tables_alone(qapp, view):
