@@ -657,7 +657,6 @@ class Viz_API:
                                  QVizPreferences.LAYOUT_MODES)))
         if mode == 'tabbed':
             mdi.setViewMode(QMdiArea.TabbedView)
-            self._tabify(mdi)
         else:
             mdi.setViewMode(QMdiArea.SubWindowView)
             if mode == 'tiled':
@@ -666,23 +665,6 @@ class Viz_API:
                 mdi.cascadeSubWindows()
         QVizPreferences.Mdi_view_mode = mode
         return mode
-
-    @staticmethod
-    def _tabify(mdi):
-        """Tabify the windows the area already holds.
-
-        `setViewMode(TabbedView)` on its own does not turn the subwindows it
-        already holds into tabs -- it would leave them stacked behind a single
-        empty strip. The one in front is the one the user is looking at, so it
-        is the tab every other is chained onto, and it is the strip opens on.
-        """
-        subs = list(mdi.subWindowList())
-        if not subs:
-            return
-        base = subs[-1]
-        for sub in subs:
-            if sub is not base:
-                mdi.tabifySubWindow(sub, base)
 
     def _maybeApplyPreferredLayout(self):
         """Lay the area the way the preference says, once a window is in it.
