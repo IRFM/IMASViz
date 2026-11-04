@@ -8,3 +8,14 @@
 Colour_of_data_nodes_containing_data=1
 Nodes_selection_colour=2
 Allow_data_to_be_plotted_with_different_units=0
+
+# Start window's list of local cases.
+#   Trier par : which field the list is laid out by.
+#               One of : uri | database | backend | shot | run
+#   Sens du tri : asc for montant (12 avant 999), desc for descendant
+#   Protocoles affichés : both on by default. At least one must stay on;
+#               the selector refuses to uncheck the last one.
+Uri_list_sort_key=database
+Uri_list_sort_direction=asc
+Uri_list_filter_HDF5=1
+Uri_list_filter_MDSplus=1
