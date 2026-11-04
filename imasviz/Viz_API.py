@@ -467,14 +467,28 @@ class Viz_API:
         shown", and the two share the one hiding rule: the window is what
         hides and shows (hiding it hides the frame inside), and showing a
         hidden frame whose window is left hidden changes nothing on screen.
+
+        The show path must re-show the *frame* as well as the shell: the shell
+        is the window the user sees, but the frame is its content, and a shell
+        left up over a frame that is still hidden is a title bar over a blank
+        body -- a window the user counts as still on screen, and one the two
+        group gestures that go through here (*isolate* and *hide others*) used
+        to strand across a whole run. :meth:`showHideWindow` already does this;
+        here it is done whatever the shell is already doing, because the frame
+        and the shell can disagree.
         """
         window = self.mdiWindowOf(frame)
-        target = window if window is not None else frame
-        if visible and not target.isVisible():
-            target.show()
-        elif not visible and target.isVisible():
-            target.hide()
-        return target.isVisible()
+        if visible:
+            if window is not None:
+                window.show()
+                frame.show()
+            else:
+                frame.show()
+        elif window is not None:
+            window.hide()
+        else:
+            frame.hide()
+        return (window if window is not None else frame).isVisible()
 
     def windowsFor(self):
         """Every window with its live frame, the records the gestures act on."""

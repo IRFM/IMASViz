@@ -234,6 +234,48 @@ def test_isolateCase_the_other_case_reverses(qapp):
     assert not frames['figAB'].isHidden()
 
 
+def test_the_case_gestures_do_not_leave_a_blank_shell(qapp):
+    """A show that only shows the shell strands a white window.
+
+    The user's report: after *Show only this case*, windows the gesture is
+    meant to put back come back as an empty ``QMdiSubWindow`` -- a title bar
+    over a blank body -- and they never come back whole, *all over the run*.
+    That is the one state a show that forgets its own frame cannot repair.
+
+    ``showHideWindow`` (the *Windows* line) already re-shows the frame after
+    showing its shell; the case gestures go through ``setWindowVisible`` and
+    did not, which is why the gesture built to hide a case and bring it back
+    was the one that stranded the blank shell. This pins that a case gesture
+    that puts a window back restores the *frame*, not only the shell.
+    """
+    from PySide6.QtWidgets import QMdiArea
+    from imasviz.Viz_API import QVizMdiSubWindow
+
+    mdi = QMdiArea()
+    mdi.show()
+    api = Viz_API(parent=mdi)
+    frame = QWidget()
+    sub = QVizMdiSubWindow(api)
+    sub.setWidget(frame)
+    mdi.addSubWindow(sub)
+    sub.show()
+    frame.show()
+    api.figureframes['SlicesPlot1'] = frame
+    api.figToNodes['SlicesPlot1'] = {0: (URI_A, None)}
+    qapp.processEvents()
+
+    # The stranded state a window ends in when a hide reached the frame while
+    # the shell stayed up -- exactly the white window on screen.
+    frame.hide()
+    qapp.processEvents()
+    assert sub.isVisible() and not frame.isVisible()
+
+    api.isolateCase(URI_A)
+    qapp.processEvents()
+    assert sub.isVisible(), 'putting the case back must bring the window back'
+    assert frame.isVisible(), 'a show must restore the frame, not strand its shell'
+
+
 def test_hideOthers_keeps_only_the_one_named(qapp):
     api = makeApi(cases=[URI_A, URI_B], figures={'SlicesPlot1': [URI_A]})
     exceptFrame = api.figureframes['SlicesPlot1']
