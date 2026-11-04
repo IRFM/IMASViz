@@ -9,13 +9,15 @@
 
 import logging
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QApplication, QFileDialog, QHBoxLayout,
-                               QLineEdit, QListWidget, QListWidgetItem,
-                               QPushButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog,
+                               QHBoxLayout, QLabel, QLineEdit,
+                               QListWidget, QListWidgetItem, QPushButton,
+                               QVBoxLayout, QWidget)
 
 from imasviz.VizDataSource.QVizIMASDataSource import caseUri, hdf5PathUri
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import (
     caseRootForUser, localCases)
+from imasviz.VizUtils import QVizPreferences
 
 
 class QVizCaseSelector(QWidget):
@@ -34,14 +36,58 @@ class QVizCaseSelector(QWidget):
 
     uriOpened = Signal(str)
 
+    # What the *Trier par* box offers, in the order the box lays them out.
+    # Each of the four is one of QVizPreferences.SORT_KEYS, spelled by the name
+    # the preferences file takes (lower, identifier-safe); the display is the
+    # French name the UI has settled on, so a user sees "Tir" rather than "shot"
+    # -- but the box, when asked through `currentData`, answers the file name.
+    SORT_ITEMS = (
+        ('uri', 'URI'),
+        ('database', 'Base'),
+        ('backend', 'Backend'),
+        ('shot', 'Tir'),
+        ('run', 'Run'),
+    )
+
     def __init__(self, parent=None):
         super(QVizCaseSelector, self).__init__(parent)
 
         layout = QVBoxLayout(self)
 
+        # The controls of the list: the sort key, its direction, and the two
+        # protocol boxes. The state is read from the preferences file the last
+        # time the user touched any of them, so a session that has not chosen
+        # anything sees the list as it has always been (database, ascending,
+        # both protocols on) -- the defaults the preferences reader gives when
+        # the file is absent, and the state the file writes when the user first
+        # chooses a different one.
+        filters = QHBoxLayout()
+        filters.addWidget(QLabel('Trier par'))
+        self.sortKeyBox = QComboBox(self)
+        for key, label in self.SORT_ITEMS:
+            self.sortKeyBox.addItem(label, key)
+        self.sortDirButton = QPushButton('↓', self)
+        self.sortDirButton.setCheckable(True)
+        self.sortDirButton.setChecked(False)          # False = asc (montant)
+        self.sortDirButton.setToolTip(
+            'Le sens du tri. Non cliqué, montant (12 avant 999); cliqué, '
+            'descendant (999 avant 12).')
+        filters.addWidget(self.sortDirButton)
+        filters.addSpacing(12)
+        filters.addWidget(QLabel('Afficher'))
+        self.filterHDF5 = QCheckBox('HDF5', self)
+        self.filterHDF5.setChecked(True)
+        self.filterMDS = QCheckBox('MDS+', self)
+        self.filterMDS.setChecked(True)
+        filters.addWidget(self.filterHDF5)
+        filters.addWidget(self.filterMDS)
+        filters.addStretch(1)
+        layout.addLayout(filters)
+
         self.listView = QListWidget(self)
         self.listView.setToolTip(
-            'Les cas locaux trouvés. Un double-clic ouvre le cas choisi.')
+            'Les cas locaux trouvés. Un double-clic ouvre le cas choisi. '
+            'Le tri et le filtre s\'appliquent sur cette liste.')
         layout.addWidget(self.listView)
 
         self.freeText = QLineEdit(self)
@@ -63,6 +109,181 @@ class QVizCaseSelector(QWidget):
         self.openButton.clicked.connect(self.openCurrent)
         self.copyButton.clicked.connect(self.copyUri)
         self.folderButton.clicked.connect(self.pickFolder)
+        # The controls: a touched sort key or direction, or a touched protocol
+        # box, answers for itself -- re-shape the rows the list shows, and
+        # remember the choice in the preferences file so the next run does not
+        # ask. During _syncControls, the signals are blocked, so the initial
+        # read of the preferences does not fire a change.
+        self.sortKeyBox.currentIndexChanged.connect(self._onSortTouched)
+        self.sortDirButton.toggled.connect(self._onSortTouched)
+        self.filterHDF5.toggled.connect(self._onFilterHDF5Touched)
+        self.filterMDS.toggled.connect(self._onFilterMDSTouched)
+
+        # The state a refresh starts with: the list is empty until refresh is
+        # called, and the sync of the controls is what sets them from the
+        # preferences -- so a test that only builds the widget and inspects the
+        # controls still sees the state a fresh installation would answer.
+        self.username = None
+        self._allCases = []
+        self._shapedCases = []
+        self._syncControls()
+
+    # The controls: what they say, what they refuse, and what they persist.
+
+    def _syncControls(self):
+        """Read the controls from QVizPreferences, without touching the file.
+
+        The signals are blocked on the way out: a read is not a change, and a
+        test that builds the widget and looks at its controls before any
+        refresh should see the preferences state, not the moment of the first
+        read.
+        """
+        for control in (self.sortKeyBox, self.sortDirButton,
+                        self.filterHDF5, self.filterMDS):
+            control.blockSignals(True)
+        # The box's currentData carries the file name; the currentText carries
+        # the French label -- and the two are in the same place.
+        for i in range(self.sortKeyBox.count()):
+            if self.sortKeyBox.itemData(i) == QVizPreferences.Uri_list_sort_key:
+                self.sortKeyBox.setCurrentIndex(i)
+                break
+        else:
+            self.sortKeyBox.setCurrentIndex(0)
+        self.sortDirButton.setChecked(
+            QVizPreferences.Uri_list_sort_direction == 'desc')
+        self.filterHDF5.setChecked(bool(QVizPreferences.Uri_list_filter_HDF5))
+        self.filterMDS.setChecked(
+            bool(QVizPreferences.Uri_list_filter_MDSplus))
+        for control in (self.sortKeyBox, self.sortDirButton,
+                        self.filterHDF5, self.filterMDS):
+            control.blockSignals(False)
+
+    def _onSortTouched(self, *args):
+        """A sort key or its direction changed: re-order the list and remember
+        both, so the next session does not ask again.
+
+        ``currentIndexChanged`` fires when a *sync* reads the file into the
+        box, so it would have to refuse a signal it has not actually changed
+        (the box is at the state the file spells). It does not, because
+        ``_syncControls`` blocks the box's signals on the way out -- and this
+        handler only runs for a hand.
+        """
+        QVizPreferences.Uri_list_sort_key = self.sortKeyBox.currentData()
+        QVizPreferences.Uri_list_sort_direction = (
+            'desc' if self.sortDirButton.isChecked() else 'asc')
+        self._applyControls()
+        QVizPreferences.persist(
+            Uri_list_sort_key=QVizPreferences.Uri_list_sort_key,
+            Uri_list_sort_direction=QVizPreferences.Uri_list_sort_direction)
+
+    def _onFilterHDF5Touched(self, checked):
+        self._filterTouched(self.filterHDF5, self.filterMDS, 'HDF5')
+
+    def _onFilterMDSTouched(self, checked):
+        self._filterTouched(self.filterMDS, self.filterHDF5, 'MDS+')
+
+    def _filterTouched(self, sender, other, name):
+        """A protocol box was touched: if both would be off, refuse and keep
+        the one the user just tried to turn off.
+
+        The list is *which kind of case to open*, and an empty list is a place
+        to look that shows nothing -- so the two boxes have one rule between
+        them: at least one stays checked, and the one the user just turned off
+        is the one that stays. The user is told by what the box tried to become
+        and what it kept.
+        """
+        if not sender.isChecked() and not other.isChecked():
+            sender.blockSignals(True)
+            sender.setChecked(True)
+            sender.blockSignals(False)
+            logging.getLogger('logPanel').warning(
+                'Le protocole %s restait masqué : au moins un doit rester '
+                'affiché, et c\'est lui qui reste coché.' % name)
+            return
+        self._applyControls()
+        QVizPreferences.Uri_list_filter_HDF5 = int(
+            self.filterHDF5.isChecked())
+        QVizPreferences.Uri_list_filter_MDSplus = int(
+            self.filterMDS.isChecked())
+        QVizPreferences.persist(
+            Uri_list_filter_HDF5=QVizPreferences.Uri_list_filter_HDF5,
+            Uri_list_filter_MDSplus=QVizPreferences.Uri_list_filter_MDSplus)
+
+    def _visibleBackends(self):
+        backends = set()
+        if self.filterHDF5.isChecked():
+            backends.add('HDF5')
+        if self.filterMDS.isChecked():
+            backends.add('MDS+')
+        return backends
+
+    @staticmethod
+    def _numericOrWord(value):
+        """The ordering of a shot or a run: a number when it is one, a word
+        when it is not, in a list that stays comparable either way.
+
+        The tuple ``(0, number)`` comes before ``(1, word)`` in sort order,
+        which is not the order the case folders spell -- a case stored under a
+        name sorts after the ones with numbers, which is what a user would not
+        expect from a *run* number. The number is the number's order, 12
+        before 999, not 999 before 54924, and the word is the word.
+        """
+        s = str(value)
+        if s.isdigit():
+            return (0, int(s))
+        return (1, s)
+
+    def _sortFunction(self, key):
+        """The ordering key for `key`: a function from a case to a comparable.
+
+        ``shot`` and ``run`` are read as numbers where they read as numbers --
+        the number's order, not the word's -- and ``uri`` sorts by the URI
+        string the case opens on, so the two spellings keep their order (HDF5
+        before MDS+, path before parameters within each). ``database`` and
+        ``backend`` sort by their strings, and the fallback is an order the
+        list answers but that nothing else asks for.
+        """
+        username = self.username
+        numWord = QVizCaseSelector._numericOrWord
+        if key == 'uri':
+            return lambda c: QVizCaseSelector.uriOf(username, c)
+        if key == 'database':
+            return lambda c: c['database']
+        if key == 'backend':
+            return lambda c: c['backend']
+        if key == 'shot':
+            return lambda c: numWord(c['shot'])
+        if key == 'run':
+            return lambda c: numWord(c['run'])
+        # A key the box did not offer is a state nothing else can reach; the
+        # fallback is a word in the case's database, which is the same as the
+        # 'database' key and is what the list answers.
+        return lambda c: (c['database'], c['backend'],
+                          numWord(c['shot']), numWord(c['run']))
+
+    def _applyControls(self):
+        """Re-filter and re-sort the rows the list shows; lay them.
+
+        The state a change is read against is the current state of the
+        controls -- the user's hand, not the state a sync laid out at start-up
+        -- so a change that is a hand re-shapes the list, and a test that only
+        builds the widget and looks at its controls sees the state the user
+        last chose (as read into the file, and as laid back in).
+        """
+        visible = self._visibleBackends()
+        filtered = [c for c in self._allCases if c['backend'] in visible]
+        key = QVizPreferences.Uri_list_sort_key
+        reverse = QVizPreferences.Uri_list_sort_direction == 'desc'
+        key_func = self._sortFunction(key)
+        filtered.sort(key=key_func, reverse=reverse)
+        self._shapedCases = filtered
+        self.listView.clear()
+        for case in filtered:
+            uri = QVizCaseSelector.uriOf(self.username, case)
+            item = QListWidgetItem(QVizCaseSelector.labelOf(case), self.listView)
+            item.setData(Qt.UserRole, uri)
+            item.setToolTip(uri)
+        return filtered
 
     # What the list holds, and what a row of it answers.
 
@@ -80,20 +301,25 @@ class QVizCaseSelector(QWidget):
         return localCases(root)
 
     def refresh(self, username):
-        """Fill the list from `casesFor`. Returns the cases it laid in.
+        """Fill the list from `casesFor`, through the user's last chosen sort
+        and protocol filter. Returns the cases it laid in -- the ones the list
+        shows, so a test that reads them through the same entry reads what the
+        user sees.
 
         Each row carries its URI both as data and as its tooltip, so a
-        selection answers the URI without a second walk of the case, and a hover
-        shows the user the very string that will be opened.
+        selection answers the URI without a second walk of the case, and a
+        hover shows the user the very string that will be opened. The state a
+        first read answers is the user's last chosen one (as read into
+        ``QVizPreferences`` from ``~/.imasviz/preferences``, or the defaults
+        the reader gives when the file is absent), and a test that wants a
+        different starting state asks the preferences reader directly rather
+        than the widget.
         """
-        self.listView.clear()
-        cases = self.casesFor(username)
-        for case in cases:
-            uri = self.uriOf(username, case)
-            item = QListWidgetItem(self.labelOf(case), self.listView)
-            item.setData(Qt.UserRole, uri)
-            item.setToolTip(uri)
-        return cases
+        self.username = username
+        self._allCases = self.casesFor(username)
+        self._syncControls()
+        self._applyControls()
+        return self._shapedCases
 
     @staticmethod
     def labelOf(case):

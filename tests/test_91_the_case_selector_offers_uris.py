@@ -29,6 +29,7 @@ from imasviz.VizGUI.VizWidgets.QVizCaseSelector import QVizCaseSelector
 from imasviz.VizGUI.VizWidgets.QVizIMASdbBrowserWidget import (
     caseRootForUser, localCases)
 from imasviz.VizDataSource.QVizIMASDataSource import caseUri, hdf5PathUri
+from imasviz.VizUtils import QVizPreferences
 
 
 USER = 'g2lfleur'
@@ -144,7 +145,15 @@ def test_a_local_case_is_opened_with_the_uri_the_access_layer_takes():
 # The widget itself: the list, and the gestures that open and copy it.
 
 def test_refresh_lays_every_case_as_a_row_with_its_uri(imasdb, qapp, monkeypatch):
-    """The list is the flat read, one row per case, URI on it as data and tip."""
+    """The list is the flat read, one row per case, URI on it as data and tip.
+
+    The defaults of the two protocol boxes are asked of the preferences class,
+    and a test that runs after one that left the state switched (HDF5 off, MDS+
+    on) would see a list that is not the flat read. This test is the flat read
+    -- both protocols on -- so it asks the defaults explicitly, the same way a
+    fresh installation would answer them.
+    """
+    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
     monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
                         lambda username: imasdb)
     sel = QVizCaseSelector()
@@ -265,3 +274,242 @@ def test_the_frame_refuses_an_empty_uri(qapp, caplog):
         GUIFrame.openUri(window, '   ')
         GUIFrame.openUri(window, None)
     assert 'No URI' in caplog.text
+
+
+# The sort: the field the list is laid out by, and its sense.
+# The filter: which of the two protocols the list shows.
+# The refusal: an empty list is not what the two boxes are for.
+# And the round trip: the choice a hand makes is a line in the file.
+
+
+def _setPrefs(monkeypatch, **options):
+    """Set the four Uri_list_* class attributes via monkeypatch (auto-restores).
+
+    The reader (`build`) is a no-op on subsequent calls (it is gated by
+    ``userPreferencesInitialized``); a test that wants a different state asks
+    the class directly, and this is the one place to do that so the state is
+    restored when the test is over.
+    """
+    for name, value in options.items():
+        monkeypatch.setattr(QVizPreferences, name, value)
+
+
+def test_shot_sorts_by_the_number_not_the_word(imasdb, qapp, monkeypatch):
+    """The sort on `shot` reads it as a number.
+
+    The numeric order is 999, 1234, 7777, 54924, 54924. The word order (the
+    old behaviour) is 1234, 54924, 54924, 7777, 999 -- the same set, a
+    different order. This test is what tells the two apart: the first row is
+    a 999 in one order and a 1234 in the other.
+    """
+    monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
+                        lambda username: imasdb)
+    _setPrefs(monkeypatch, Uri_list_sort_key='shot',
+              Uri_list_sort_direction='asc',
+              Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
+    sel = QVizCaseSelector()
+    cases = sel.refresh(USER)
+    assert [c['shot'] for c in cases] == ['999', '1234', '7777', '54924', '54924']
+    assert sel.listView.count() == 5
+    for i, case in enumerate(cases):
+        assert sel.listView.item(i).data(Qt.UserRole) == \
+            QVizCaseSelector.uriOf(USER, case)
+
+
+def test_unchecking_MDSplus_keeps_only_the_HDF5_rows(imasdb, qapp, monkeypatch):
+    """Turning MDS+ off at the box shows the three HDF5 cases and no MDS+.
+
+    The list is *which kind of case to open*, and the box is the kind. A
+    change at the box re-shapes the list, and the list shows the change.
+    """
+    monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
+                        lambda username: imasdb)
+    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
+    sel = QVizCaseSelector()
+    sel.refresh(USER)
+    assert sel.listView.count() == 5
+    sel.filterMDS.setChecked(False)
+    assert sel.listView.count() == 3
+    backends = set()
+    for i in range(sel.listView.count()):
+        backends.add(sel.listView.item(i).text().split(' \u00b7 ')[0])
+    assert backends == {'HDF5'}
+    assert QVizPreferences.Uri_list_filter_HDF5 == 1
+    assert QVizPreferences.Uri_list_filter_MDSplus == 0
+
+
+def test_unchecking_the_last_protocol_is_refused(imasdb, qapp, monkeypatch, caplog):
+    """Refused by name, and the box the user just turned off stays on.
+
+    The list is not a place to look at that shows nothing, so the two boxes
+    have one rule between them: at least one stays checked, and the one the
+    user just turned off is the one that stays. The user is told by the name
+    of the protocol the box tried to hide.
+    """
+    monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
+                        lambda username: imasdb)
+    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
+    sel = QVizCaseSelector()
+    sel.refresh(USER)
+    # The first uncheck is allowed: it leaves the other on.
+    sel.filterHDF5.setChecked(False)
+    assert sel.filterHDF5.isChecked() is False
+    assert sel.filterMDS.isChecked() is True
+    assert sel.listView.count() == 2           # only the two MDS+ remain
+    # The second uncheck is the last one: refused, and the name is logged.
+    with caplog.at_level(logging.WARNING, logger='logPanel'):
+        sel.filterMDS.setChecked(False)
+    assert sel.filterMDS.isChecked() is True   # the refusal re-checked it
+    assert 'MDS+' in caplog.text
+    assert 'restait masqu' in caplog.text      # the refusal names the rule
+    # The list still shows the MDS+ cases, because the box the user tried to
+    # turn off is the one that stays.
+    assert sel.listView.count() == 2
+
+
+def test_the_sort_direction_button_reverses_the_list(imasdb, qapp, monkeypatch):
+    """The arrow beside the *Trier par* box: a click turns the list.
+
+    With the sort on `shot`, the first row is a 999 (ascending) and a 7777
+    (descending). A hand on the button is a hand on the order, and the list
+    answers.
+    """
+    monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
+                        lambda username: imasdb)
+    _setPrefs(monkeypatch, Uri_list_sort_key='shot',
+              Uri_list_sort_direction='asc',
+              Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
+    sel = QVizCaseSelector()
+    sel.refresh(USER)
+    firstAsc = sel.listView.item(0).data(Qt.UserRole)
+    assert '999' in firstAsc
+    sel.sortDirButton.click()
+    firstDesc = sel.listView.item(0).data(Qt.UserRole)
+    assert '54924' in firstDesc
+    assert firstAsc != firstDesc
+    assert QVizPreferences.Uri_list_sort_direction == 'desc'
+
+
+def test_persist_writes_and_the_reader_reads_the_choice(tmp_path, monkeypatch):
+    """The round trip a test that does not open a display still checks.
+
+    A hand at the selector writes a line to the file, and the reader reads it
+    back the next time it is asked. The file is the place the two halves of
+    a session meet, so a test that only builds the widget and toggles a box
+    sees the state in the file, not in a variable that dies with the process.
+    """
+    monkeypatch.setenv('HOME', str(tmp_path))
+    # Save the state, because the test's choice would leak into the others.
+    save_key = QVizPreferences.Uri_list_sort_key
+    save_dir = QVizPreferences.Uri_list_sort_direction
+    save_fh = QVizPreferences.Uri_list_filter_HDF5
+    save_fm = QVizPreferences.Uri_list_filter_MDSplus
+    save_init = QVizPreferences.userPreferencesInitialized
+    try:
+        QVizPreferences.Uri_list_sort_key = 'shot'
+        QVizPreferences.Uri_list_sort_direction = 'desc'
+        QVizPreferences.Uri_list_filter_HDF5 = 0
+        QVizPreferences.Uri_list_filter_MDSplus = 1
+        QVizPreferences.persist(
+            Uri_list_sort_key='shot',
+            Uri_list_sort_direction='desc',
+            Uri_list_filter_HDF5=0,
+            Uri_list_filter_MDSplus=1)
+        path = tmp_path / '.imasviz' / 'preferences'
+        assert path.exists()
+        content = path.read_text()
+        assert 'Uri_list_sort_key=shot' in content
+        assert 'Uri_list_sort_direction=desc' in content
+        assert 'Uri_list_filter_HDF5=0' in content
+        assert 'Uri_list_filter_MDSplus=1' in content
+        # Now reset the in-memory state and ask the reader for the file again.
+        QVizPreferences.Uri_list_sort_key = 'database'
+        QVizPreferences.Uri_list_sort_direction = 'asc'
+        QVizPreferences.Uri_list_filter_HDF5 = 1
+        QVizPreferences.Uri_list_filter_MDSplus = 1
+        QVizPreferences.userPreferencesInitialized = False
+        QVizPreferences().build()
+        assert QVizPreferences.Uri_list_sort_key == 'shot'
+        assert QVizPreferences.Uri_list_sort_direction == 'desc'
+        assert QVizPreferences.Uri_list_filter_HDF5 == 0
+        assert QVizPreferences.Uri_list_filter_MDSplus == 1
+    finally:
+        QVizPreferences.Uri_list_sort_key = save_key
+        QVizPreferences.Uri_list_sort_direction = save_dir
+        QVizPreferences.Uri_list_filter_HDF5 = save_fh
+        QVizPreferences.Uri_list_filter_MDSplus = save_fm
+        QVizPreferences.userPreferencesInitialized = save_init
+
+
+def test_bad_values_in_the_preferences_file_are_refused(tmp_path, monkeypatch):
+    """The reader refuses a word it does not sort on, and a sense it does not
+    turn, and keeps the state the class was holding.
+
+    These are the two new lines the file can hold, and the two that have a
+    refusal to give. The other two of the file (the two protocol boxes) are
+    0 or 1, and a word is refused by the same rule `build` has always applied
+    to the other switches in the file, so one bad line costs its own option
+    and nothing else changes.
+    """
+    monkeypatch.setenv('HOME', str(tmp_path))
+    save_key = QVizPreferences.Uri_list_sort_key
+    save_dir = QVizPreferences.Uri_list_sort_direction
+    save_fh = QVizPreferences.Uri_list_filter_HDF5
+    save_fm = QVizPreferences.Uri_list_filter_MDSplus
+    save_init = QVizPreferences.userPreferencesInitialized
+    try:
+        # A file that names a key the box does not offer, and a sense it does
+        # not turn: both are refused, and the state is left where it was.
+        (tmp_path / '.imasviz').mkdir(parents=True, exist_ok=True)
+        (tmp_path / '.imasviz' / 'preferences').write_text(
+            'Uri_list_sort_key=alphabetical\n'
+            'Uri_list_sort_direction=uphill\n')
+        QVizPreferences.Uri_list_sort_key = 'database'
+        QVizPreferences.Uri_list_sort_direction = 'asc'
+        QVizPreferences.Uri_list_filter_HDF5 = 1
+        QVizPreferences.Uri_list_filter_MDSplus = 1
+        QVizPreferences.userPreferencesInitialized = False
+        QVizPreferences().build()
+        # Both lines refused; the state is left exactly where it was.
+        assert QVizPreferences.Uri_list_sort_key == 'database'
+        assert QVizPreferences.Uri_list_sort_direction == 'asc'
+        assert QVizPreferences.Uri_list_filter_HDF5 == 1
+        assert QVizPreferences.Uri_list_filter_MDSplus == 1
+        # And a file that names a word the box offers is read, because the
+        # refusal is the name of the word that is refused, not the box itself.
+        (tmp_path / '.imasviz' / 'preferences').write_text(
+            'Uri_list_sort_key=shot\n'
+            'Uri_list_sort_direction=desc\n')
+        QVizPreferences.userPreferencesInitialized = False
+        QVizPreferences().build()
+        assert QVizPreferences.Uri_list_sort_key == 'shot'
+        assert QVizPreferences.Uri_list_sort_direction == 'desc'
+    finally:
+        QVizPreferences.Uri_list_sort_key = save_key
+        QVizPreferences.Uri_list_sort_direction = save_dir
+        QVizPreferences.Uri_list_filter_HDF5 = save_fh
+        QVizPreferences.Uri_list_filter_MDSplus = save_fm
+        QVizPreferences.userPreferencesInitialized = save_init
+
+
+def test_the_controls_are_synced_from_the_preferences_at_init(qapp, monkeypatch):
+    """A widget that is built after a choice is made in a previous session
+    sees that choice in its controls, and not the defaults of the class.
+
+    The state a hand left in the file is the state a new session starts in,
+    and the controls are the place the user sees that state: the box is at
+    the key, the arrow is at its sense, the two checkboxes at the two
+    protocols.
+    """
+    # Set the state, and pretend the file was just read with that state.
+    _setPrefs(monkeypatch, Uri_list_sort_key='run',
+              Uri_list_sort_direction='desc',
+              Uri_list_filter_HDF5=0, Uri_list_filter_MDSplus=1)
+    sel = QVizCaseSelector()
+    # The box's currentData is the file name the box carries for its label,
+    # and the label the UI spells.
+    assert sel.sortKeyBox.currentData() == 'run'
+    assert sel.sortKeyBox.currentText() == 'Run'
+    assert sel.sortDirButton.isChecked() is True
+    assert sel.filterHDF5.isChecked() is False
+    assert sel.filterMDS.isChecked() is True

@@ -132,6 +132,94 @@ class QVizPreferences:
     # into, and a line nobody wrote keeps the case where it was.
     Mdi_view_mode = 'windowed'
     LAYOUT_MODES = ('windowed', 'tabbed', 'tiled', 'cascaded')
+    # The start window's list of local cases: which field it is laid out by,
+    # in which sense, and which of the two protocols it shows. The field is one
+    # of SORT_KEYS -- the user picks it with the *Trier par* box, and the arrow
+    # beside it its sense -- and, whatever key is chosen, the cases are already
+    # read in the order database, backend, shot, run, so an unchosen key answers
+    # that order rather than nothing. The defaults are ``database`` and
+    # ``asc`` -- the field the list used to be laid out by and the sense the
+    # scanner spells it in -- so a run that has never chosen a sort sees the
+    # list as it always was, with only shot and run read as numbers where they
+    # used to read as words (12 before 999, not 999 before 54924... the point is
+    # the number, in the number's order).
+    Uri_list_sort_key = 'database'
+    SORT_KEYS = ('uri', 'database', 'backend', 'shot', 'run')
+    Uri_list_sort_direction = 'asc'
+    SORT_DIRECTIONS = ('asc', 'desc')
+    # Both on by default: a case a user holds locally is a case they expect to
+    # see, and hiding half of them is a choice the user makes at the two boxes,
+    # not a state the list starts in. They cannot both be read as off -- the
+    # list is *which kind of case to open*, and an empty one is a place to look
+    # at that shows nothing, so the selector refuses to uncheck the last one.
+    # ``Uri_list_filter_MDSplus`` carries ``MDS+`` by a name Python allows in an
+    # identifier, and the file line spells that same name -- ``MDSplus``, like
+    # the identifiers the rest of this file keys on -- never the ``+``.
+    Uri_list_filter_HDF5 = 1
+    Uri_list_filter_MDSplus = 1
+
+    def persist(**options):
+        """Write `options` (``key`` -> ``value``) into the user preferences file.
+
+        The file is ``$HOME/.imasviz/preferences`` -- the same one `build` reads --
+        and a line that is not in `options` is left exactly where it was, in the
+        order it was in. The file is created, with its folder, when neither
+        exists yet: a fresh installation holds no preferences, and the first
+        choice a user makes at the selector's sort box or protocol checkboxes
+        has to land in one without the user creating it by hand. Each value is
+        written as text; the reader (`build`) is what turns it back into the
+        type it asks for, so a line this writer spells is a line that reader
+        reads -- and the round trip is what the tests check.
+        """
+        home = os.environ.get('HOME', os.getcwd())
+        folder = os.path.join(home, '.imasviz')
+        path = os.path.join(folder, 'preferences')
+        old = []
+        if os.path.exists(path):
+            with open(path) as f:
+                old = list(f)
+        new = []
+        for line in old:
+            if '=' in line and line.split('=', 1)[0].strip() in options:
+                continue          # replaced below, where the option was asked
+            new.append(line)
+        for key, value in options.items():
+            new.append('%s=%s\n' % (key, value))
+        os.makedirs(folder, exist_ok=True)
+        with open(path, 'w') as f:
+            f.writelines(new)
+
+    def sortKey(text):
+        """Which field the list is laid out by, refusing a word it does not sort on.
+
+        What the *Trier par* box offers is ``SORT_KEYS``; a file that names a
+        field it does not offer is refused by the name it wrote, and the list
+        keeps the field it was holding -- the same "the line answers for itself"
+        rule `build` has always applied, so one bad line costs its own option
+        and nothing else changes.
+        """
+        asked = text.strip().lower()
+        if asked not in QVizPreferences.SORT_KEYS:
+            raise ValueError(
+                '%r is not a field the case list sorts by: write %s'
+                % (text.strip(),
+                   ' or '.join(repr(one) for one in QVizPreferences.SORT_KEYS)))
+        return asked
+
+    def sortDirection(text):
+        """Which sense the list is laid out in, refusing a sense it does not turn.
+
+        ``asc`` puts the first before the last, ``desc`` the reverse; anything
+        else is a word the arrow does not spell, refused by it, and the list
+        keeps the sense it was holding.
+        """
+        asked = text.strip().lower()
+        if asked not in QVizPreferences.SORT_DIRECTIONS:
+            raise ValueError(
+                '%r is not a sort sense: write %s'
+                % (text.strip(),
+                   ' or '.join(repr(one) for one in QVizPreferences.SORT_DIRECTIONS)))
+        return asked
 
     def colour(text):
         """One of the two colour options, read as the manual writes it.
@@ -172,6 +260,10 @@ class QVizPreferences:
             option7 = "Show_only_tensors_rank_ge_1="
             option8 = "Close_button_deletes="
             option9 = "Mdi_view_mode="
+            option10 = "Uri_list_sort_key="
+            option11 = "Uri_list_sort_direction="
+            option12 = "Uri_list_filter_HDF5="
+            option13 = "Uri_list_filter_MDSplus="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -209,6 +301,19 @@ class QVizPreferences:
                                 QVizPreferences.Mdi_view_mode = \
                                     QVizPreferences.layoutMode(
                                         line[len(option9):])
+                            elif line.startswith(option10):
+                                QVizPreferences.Uri_list_sort_key = \
+                                    QVizPreferences.sortKey(line[len(option10):])
+                            elif line.startswith(option11):
+                                QVizPreferences.Uri_list_sort_direction = \
+                                    QVizPreferences.sortDirection(
+                                        line[len(option11):])
+                            elif line.startswith(option12):
+                                QVizPreferences.Uri_list_filter_HDF5 = \
+                                    QVizPreferences.yesNo(line[len(option12):])
+                            elif line.startswith(option13):
+                                QVizPreferences.Uri_list_filter_MDSplus = \
+                                    QVizPreferences.yesNo(line[len(option13):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],
