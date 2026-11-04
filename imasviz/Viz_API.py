@@ -25,6 +25,59 @@ def getNodePath(node):
     return node.getParametrizedDataPath()
 
 
+def titleWithCases(title, uris):
+    """The window title of a registered window, with the case or cases it serves.
+
+    `title` — the key today, or the plugin's own heading — is kept verbatim,
+    and one short label follows for every case, separated by `; `. A figure
+    drawn from two cases carries both; a window no case serves (a plugin
+    window that registered no node -- the Equilibrium chart, today) carries
+    its heading alone, so the answer reads exactly `title` again instead of
+    a trailing `— ` nobody could explain.
+
+    The short label, not the URI, is what fits the one line the title bar is:
+    the whole URI is where the user hovers for it, and it is `caseTooltip`.
+
+    A case a node registered without one -- ``None``, the empty string -- is
+    no case at all and drops out before the heading is read, so a list of
+    nothing-that-is-named answers ``title`` again instead of raising inside
+    the label read.
+
+    :param title: (str) what the window was registered under
+    :param uris  : (iterable of str) the case URIs the window serves --
+                   ``casesServedBy`` for a figure, ``[uri]`` for a plugin
+                   window of one case
+    :returns: (str) the title to paint
+    """
+    uris = [uri for uri in (uris or ()) if uri]
+    if not uris:
+        return title
+    # Imported here the way CreateDataTree imports the shot view frame: the
+    # module that owns `caseLabel` is the data source, whose import chain this
+    # one feeds, and the two must not look at each other at import time.
+    from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
+    labels = []
+    for uri in uris:
+        label = caseLabel(uri)
+        if label not in labels:
+            labels.append(label)
+    return title + ' — ' + '; '.join(labels)
+
+
+def caseTooltip(uris):
+    """What the hover over a window's title bar says: the whole URI, one per line.
+
+    The title line carries the short labels — they are the ones guaranteed to
+    fit — and the tooltip carries what a short label leaves out. A window of
+    two cases names both, in the order `casesServedBy` answers them.
+
+    :param uris: (iterable of str)
+    :returns: (str) the tooltip text, or None for a window no case serves
+    """
+    uris = [uri for uri in (uris or ()) if uri]
+    return '\n'.join(uris) if uris else None
+
+
 class QVizMdiSubWindow(QMdiSubWindow):
     """The MDI window a frame is embedded in -- a figure or a case view.
 
@@ -235,6 +288,13 @@ class Viz_API:
     def AddNodeToFigure(self, figureKey, key, tup):
         """Adds an entry to the figToNodes[figureKey] dictionary.
 
+        Every curve that enters a figure goes through this, so it is also the
+        one place that figure's title — the key plus the cases it serves, the
+        whole URI behind the hover — is rewritten: a curve from a second case
+        is another pass, and a restored session replays this very call, which
+        is why a window comes back titled the way it was closed and no extra
+        step owns that.
+
         :param figureKey: (str) figure key
         :param key: (str)    dtv.dataSource.dataKey(vizTreeNode)
         :param tup: (tuple) (dtv.dataSource.uri, vizTreeNode)
@@ -243,6 +303,31 @@ class Viz_API:
             self.figToNodes[figureKey] = {}
         dic = self.figToNodes[figureKey]
         dic[key] = tup
+        self._renameFigure(figureKey)
+
+    def _renameFigure(self, figureKey):
+        """Title, and hover text, of the window registered under `figureKey`.
+
+        A key nobody registered is left alone: the registration may come one
+        line later, as the Profiles panel does it.
+        """
+        frame = self.figureframes.get(figureKey)
+        if frame is None:
+            return
+        uris = self.casesServedBy(frame)
+        title = titleWithCases(figureKey, uris)
+        if frame.windowTitle() != title:
+            frame.setWindowTitle(title)
+        tip = caseTooltip(uris)
+        text = tip or ''
+        if frame.toolTip() != text:
+            frame.setToolTip(tip)
+        # The title bar belongs to the subwindow, which does not inherit the
+        # widget's tooltip: the hover must be answered there for the line the
+        # user actually hovers.
+        sub = self.mdiWindowOf(frame)
+        if sub is not None and sub.toolTip() != text:
+            sub.setToolTip(tip)
 
     def GetPlotConfigurationPath(self, configurationName):
         """Get the path to plot configuration file (.pcfg extension).
@@ -433,11 +518,19 @@ class Viz_API:
         for kindLabel, iconLabel, figureType in FigureTypes.MENU_ORDER:
             for figureKey in self.GetFiguresKeys(figureType):
                 frame = self.figureframes[figureKey]
+                cases = self.casesServedBy(frame)
                 windows.append(QVizWindowRecord(kindLabel, iconLabel,
-                                                figureKey,
+                                                # The same line the title bar
+                                                # paints (`_renameFigure`): the
+                                                # key the window is addressed
+                                                # by, plus the cases it serves,
+                                                # so a line outlives its window
+                                                # and still says whose it was.
+                                                titleWithCases(figureKey,
+                                                               cases),
                                                 frame,
                                                 figureKey, self,
-                                                cases=self.casesServedBy(frame)))
+                                                cases=cases))
         return windows
 
     def casesServedBy(self, frame):
@@ -1194,7 +1287,12 @@ class Viz_API:
         to see it.
         """
         subWindow = QVizMdiSubWindow(self)
+        # `setWidget` copies the widget's title to the subwindow and leaves
+        # everything else to the widget: the hover over the title bar is
+        # answered by the subwindow, which is what the user hovers, so the URI
+        # it carries on has to be handed over here, whatever the frame was told.
         subWindow.setWidget(plotWidget)
+        subWindow.setToolTip(plotWidget.toolTip() or '')
         subWindow.resize(plotWidget.width(), plotWidget.height())
         if self.getMDI() is not None:
             self.getMDI().addSubWindow(subWindow)

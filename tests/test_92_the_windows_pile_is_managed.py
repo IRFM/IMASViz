@@ -30,7 +30,8 @@ plain api (no case, no imas) so the invariants are checked without a case.
 import pytest
 from PySide6.QtWidgets import QMenu, QWidget
 
-from imasviz.Viz_API import Viz_API
+from imasviz.Viz_API import Viz_API, caseTooltip, titleWithCases
+from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
 from imasviz.VizUtils import QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu import \
     QVizWindowMenu
@@ -70,6 +71,11 @@ def makeApi(qapp=None, cases=None, figures=None, shared=None):
     `cases`: list of URIs to be its case-views.
     `figures`: dict figureKey -> list of URIs it serves.
     `shared`: dict figureKey -> (uriA, uriB) -- a figure serving two.
+
+    The figures are registered the way the application registers them: the
+    frame in `figureframes` first, then the node through
+    `AddNodeToFigure` -- which is also what titles the window, so a fixture
+    that bypassed it would test the menu against a window the menu never saw.
     """
     api = Viz_API(parent=None)
     for uri in (cases or ()):
@@ -81,15 +87,15 @@ def makeApi(qapp=None, cases=None, figures=None, shared=None):
         frame.hide()
         frame.show()
         api.figureframes[key] = frame
-        api.figToNodes[key] = {
-            str(i): (uri, None) for i, uri in enumerate(uris)
-        }
+        for i, uri in enumerate(uris):
+            api.AddNodeToFigure(key, str(i), (uri, None))
     for key, (ua, ub) in (shared or {}).items():
         frame = QWidget()
         frame.hide()
         frame.show()
         api.figureframes[key] = frame
-        api.figToNodes[key] = {1: (ua, None), 2: (ub, None)}
+        api.AddNodeToFigure(key, '1', (ua, None))
+        api.AddNodeToFigure(key, '2', (ub, None))
     return api
 
 
@@ -304,10 +310,12 @@ def test_menu_groups_cases_first_and_has_gestures(qapp):
                 if a.menu() is not None}
     assert caseLabel(URI_A) in subMenus
     assert caseLabel(URI_B) in subMenus
-    # One line is the shared figure's: it is drawn once per case that serves.
+    # One line is the shared figure's: it is drawn once per case that serves,
+    # and names both, the same way the title bar does.
+    shared = titleWithCases('SlicesPlotAB', (URI_A, URI_B))
     for uri in (URI_A, URI_B):
         labels = [x.text() for x in subMenus[caseLabel(uri)].actions()]
-        assert 'SlicesPlotAB' in labels
+        assert shared in labels
     # Each case's sub-menu carries the two case gestures.
     for uri in (URI_A, URI_B):
         labels = [x.text() for x in subMenus[caseLabel(uri)].actions()]
@@ -350,3 +358,38 @@ def test_menu_with_no_cases_stays_flat(qapp):
     assert 'SlicesPlot1' in labels
     assert QVizWindowMenu.ISOLATE not in labels
     assert QVizWindowMenu.CLOSE_CASE not in labels
+
+
+# ---- Title and tooltip: whose case a window is
+
+def test_titleWithCases_keeps_the_heading_when_no_case_serves():
+    # The Equilibrium window of today: a window that registered no node
+    # carries its heading alone, not a trailing `— ` nobody could explain.
+    assert titleWithCases('EquiPlotView:1', ()) == 'EquiPlotView:1'
+    assert titleWithCases('EquiPlotView:1', (None, '')) == 'EquiPlotView:1'
+    assert caseTooltip(()) is None
+    assert caseTooltip((None, '')) is None
+
+
+def test_titleWithCases_says_whose_case_and_the_hover_says_the_uri():
+    # The short label is what fits the one line; the whole URI is the hover.
+    assert (titleWithCases('SlicesPlot1', (URI_A,))
+            == 'SlicesPlot1 — %s' % caseLabel(URI_A))
+    assert caseTooltip((URI_A,)) == URI_A
+    # A comparison figure names both, in the order they arrived, and the hover
+    # holds the two URIs, one per line.
+    assert (titleWithCases('SlicesPlotAB', (URI_A, URI_B))
+            == 'SlicesPlotAB — %s; %s' % (caseLabel(URI_A), caseLabel(URI_B)))
+    assert caseTooltip((URI_A, URI_B)) == URI_A + '\n' + URI_B
+
+
+def test_case_view_figure_and_menu_agree_on_the_line(qapp):
+    # The three readings of one window — the record, the title bar, the menu
+    # line — are one answer, so a stub of each agrees.
+    api = makeApi(cases=[], figures={'SlicesPlot1': [URI_A]})
+    [record] = api.openWindows()
+    frame = api.figureframes['SlicesPlot1']
+    expected = titleWithCases('SlicesPlot1', (URI_A,))
+    assert record.label == expected
+    assert frame.windowTitle() == expected
+    assert frame.toolTip() == URI_A

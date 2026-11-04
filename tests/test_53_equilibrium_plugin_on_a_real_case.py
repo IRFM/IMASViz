@@ -81,6 +81,7 @@ import pytest
 from PySide6.QtWidgets import QMainWindow, QMdiArea, QMenu
 
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
+from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu \
@@ -342,8 +343,13 @@ def test_the_window_is_titled_with_the_key_it_is_registered_under(session):
     # The title argument used to be accepted by this signature and used by no
     # statement: measured, the window sat on screen with an empty title bar while
     # the two menus listed it as 'EquiPlotView:1', so nothing tied a line of
-    # those menus to a window -- and two of these windows look identical.
-    assert session.frame.windowTitle() == 'Equilibrium charts [%s]' % FIRST_KEY
+    # those menus to a window -- and two of these windows look identical. The
+    # case follows the heading now, the whole URI behind the hover; this window
+    # is one-to-one with the case its entry ran on.
+    expected = ('Equilibrium charts [%s] — '
+                % FIRST_KEY) + caseLabel(CASE_URI)
+    assert session.frame.windowTitle() == expected
+    assert session.frame.toolTip() == CASE_URI
 
 
 def test_the_arrays_hold_every_slice_and_point_the_case_holds(session):

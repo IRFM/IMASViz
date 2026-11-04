@@ -92,7 +92,8 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizSliceControls import \
 from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfileOffer import \
     OWN_AXIS, PAGE, QVizProfileOffer
 from imasviz.VizUtils import FigureTypes
-from imasviz.Viz_API import QVizClosableWindow
+from imasviz.Viz_API import (QVizClosableWindow, caseTooltip,
+                             titleWithCases)
 
 
 class QVizProfilePage(QWidget):
@@ -339,13 +340,19 @@ class QVizProfilePanel(QVizClosableWindow, QMainWindow):
         layout.addWidget(self.cursors)
 
         self.setCentralWidget(body)
-        self.setWindowTitle('%s IDS: what can be plotted [%s]'
-                            % (idsName, self.figureKey))
+        # The heading names the IDS and the key; the case follows it, the whole
+        # URI behind the hover. Not `_renameFigure`: that line runs before this
+        # window is in `figureframes`, so the one-to-one window says whose it
+        # is here, on itself.
+        uri = dataTreeView.dataSource.uri
+        heading = '%s IDS: what can be plotted [%s]' % (idsName,
+                                                        self.figureKey)
+        self.setWindowTitle(titleWithCases(heading, [uri]))
+        self.setToolTip(caseTooltip([uri]))
         self.resize(820, 620)
 
         key = dataTreeView.dataSource.dataKey2(self.figureKey)
-        vizAPI.AddNodeToFigure(self.figureKey, key,
-                               (dataTreeView.dataSource.uri, None))
+        vizAPI.AddNodeToFigure(self.figureKey, key, (uri, None))
         vizAPI.figureframes[self.figureKey] = self
 
         self.ensureLoaded()

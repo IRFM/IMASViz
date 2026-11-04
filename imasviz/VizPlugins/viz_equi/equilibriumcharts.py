@@ -43,7 +43,8 @@ from PySide6 import QtCore
 
 from imasviz.VizPlugins.VizPlugin import VizPlugin, QVizPluginWindow
 from imasviz.VizUtils import FigureTypes
-from imasviz.Viz_API import QVizClosableWindow
+from imasviz.Viz_API import (QVizClosableWindow, caseTooltip,
+                             titleWithCases)
 
 # Figures options
 nbr_levels         = 30  # For Psi (magnetic flux function)
@@ -468,6 +469,12 @@ class PlotFrame(QVizClosableWindow, QMainWindow):
         # ValueError naming what the case lacks, which the plugin menu logs. The
         # sentinel it used to return left this method before the main widget was
         # built, and `execute` then showed the empty window anyway.
+
+        # The title now names the case this window drew, the whole URI behind
+        # the hover. Done here, not where the heading was first set: the URI is
+        # only known once DataGen has answered with it.
+        self.setWindowTitle(titleWithCases(title, [self.uri]))
+        self.setToolTip(caseTooltip([self.uri]))
 
         # Set main widget
         self.mainWidget = QWidget(self)
