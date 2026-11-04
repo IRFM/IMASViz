@@ -21,6 +21,13 @@ is on the menu bar of the application window -- the bar along the top of
 :guilabel:`IMASViz`, on screen whatever you are looking at -- and on the menu bar
 of every case view, where the same list is closer to the work.
 
+The entry is always open. A disabled menu in a bar cannot be clicked, and the
+list it would show is this run's, which changes as cases come and go -- so the
+entry stays active and is redrawn each time it is opened. With nothing open it
+offers one disabled line, :guilabel:`No open window`; as soon as a window
+exists, including one that opened after the menu was first drawn, its line
+replaces that.
+
 The windows are grouped **by case first**. Each case opens a sub-menu holding its
 view and the plot windows that case drew. A plot window that drew its curves from
 more than one case sits in **each** of those sub-menus (a comparison), and a
