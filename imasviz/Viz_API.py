@@ -100,7 +100,8 @@ class QVizWindowRecord:
     does nothing -- the menu is rebuilt on every opening anyway.
     """
 
-    def __init__(self, kindLabel, iconLabel, label, frame, figureKey, api):
+    def __init__(self, kindLabel, iconLabel, label, frame, figureKey, api,
+                 cases=()):
         """
         Arguments:
             kindLabel (str) : the group the line is drawn in -- a case view, or
@@ -111,11 +112,18 @@ class QVizWindowRecord:
             figureKey (str) : the key the window answers to, or None for a case
                               view -- which is addressed by its frame
             api       (Viz_API) : the bookkeeping the window lives in
+            cases     (tuple) : the case URIs the window serves -- its own for
+                              a case view, every origin a figure drew a curve
+                              from for a figure, and ``()`` for a window a
+                              plugin drew, which has no case to group under.
+                              What the *Windows* menu groups by and what
+                              "isolating a case" and "closing a case" act on.
         """
         self.kindLabel = kindLabel
         self.iconLabel = iconLabel
         self.label = label
         self.figureKey = figureKey
+        self.cases = tuple(cases)
         self._frame = weakref.ref(frame)
         self._api = weakref.ref(api)
 
@@ -164,6 +172,11 @@ class Viz_API:
         # example: FigureType="Figure:", FigureKey="1"
         self.DTVframeList = []
         self.DTVlist = []
+        # The MDI area opens in windowed mode. If the preference says otherwise,
+        # the first window a case opens into is the moment it is applied:
+        # `mdiLayout` writes it back, the flag keeps the apply one-shot, and the
+        # reset it does when no MDI answers means the next embed is another chance.
+        self._layoutApplied = False
 
         QVizPreferences().build()
 
@@ -284,6 +297,9 @@ class Viz_API:
                 # of the application whenever a case is opened. Same fix as
                 # `addPlotWidgetToMDI` for figures.
                 subWindow.show()
+                # A window is now in the area: the moment the preferred layout
+                # (a preference, one-shot) is applied to it.
+                self._maybeApplyPreferredLayout()
             dataTreeView.show()
         elif isinstance(dataTreeView, QVizDataTreeView):
             frame = dataTreeView.parent
@@ -410,15 +426,194 @@ class Viz_API:
         kindLabel, iconLabel = self.SHOTVIEW_KIND
         for frame in list(self.DTVframeList):
             label = frame.dataTreeView.dataSource.getLongLabel()
+            uri = getattr(frame.dataTreeView.dataSource, 'uri', None)
             windows.append(QVizWindowRecord(kindLabel, iconLabel, label,
-                                            frame, None, self))
+                                            frame, None, self,
+                                            cases=(uri,) if uri else ()))
         for kindLabel, iconLabel, figureType in FigureTypes.MENU_ORDER:
             for figureKey in self.GetFiguresKeys(figureType):
+                frame = self.figureframes[figureKey]
                 windows.append(QVizWindowRecord(kindLabel, iconLabel,
                                                 figureKey,
-                                                self.figureframes[figureKey],
-                                                figureKey, self))
+                                                frame,
+                                                figureKey, self,
+                                                cases=self.casesServedBy(frame)))
         return windows
+
+    def casesServedBy(self, frame):
+        """The case URIs a figure serves, read off `figToNodes`.
+
+        A figure drawn from one case serves that one; a comparison figure serves
+        every case that put a curve in it -- so "isolating" or "closing" one
+        case shows the comparison while the other case it serves is still
+        open. A window a plugin drew -- which registers no node in `figToNodes`
+        -- serves none, and is left to its own gestures, since there is no case
+        to group it under.
+        """
+        figureKey = self.GetFigureKeyOf(frame)
+        if figureKey is None:
+            return ()
+        uris = []
+        for uri, _node in self.figToNodes.get(figureKey, {}).values():
+            if uri and uri not in uris:
+                uris.append(uri)
+        return tuple(uris)
+
+    def setWindowVisible(self, frame, visible):
+        """Put a window on or off the screen, whichever state it is in now.
+
+        :meth:`showHideWindow` bounces, which is the answer to "toggle this
+        one"; a group gesture needs a state, "these all hidden, these all
+        shown", and the two share the one hiding rule: the window is what
+        hides and shows (hiding it hides the frame inside), and showing a
+        hidden frame whose window is left hidden changes nothing on screen.
+        """
+        window = self.mdiWindowOf(frame)
+        target = window if window is not None else frame
+        if visible and not target.isVisible():
+            target.show()
+        elif not visible and target.isVisible():
+            target.hide()
+        return target.isVisible()
+
+    def windowsFor(self):
+        """Every window with its live frame, the records the gestures act on."""
+        for record in self.openWindows():
+            frame = record.frame()
+            if frame is not None:
+                yield record, frame
+
+    def isolateCase(self, uri):
+        """Show one case's windows and hide the rest, shared ones shown.
+
+        A case's window set is its own case view and every figure
+        :meth:`casesServedBy` answers its URI. A figure that serves this case
+        *and* another is shown, not hidden: isolating a case is about getting
+        the other cases off the screen, not about the figures this case still
+        reads. A window that serves no case at all -- one a plugin drew -- is
+        left exactly where it is, since "this case" has nothing to say about it.
+        """
+        for record, frame in self.windowsFor():
+            if not record.cases:
+                continue
+            self.setWindowVisible(frame, uri in record.cases)
+
+    def hideOthers(self, exceptFrame):
+        """Every window off the screen except the one named.
+
+        The gesture for finding one figure in a tiled or cascaded pile: leave
+        the one the menu line was drawn for, take the rest off the screen. A
+        window already off the screen is left off it.
+        """
+        for record, frame in self.windowsFor():
+            if frame is exceptFrame:
+                continue
+            self.setWindowVisible(frame, False)
+
+    def closeOthers(self, exceptFrame):
+        """Every window closed for good except the one named.
+
+        The same question as :meth:`hideOthers`, and the answer :meth:`closeWindow`
+        gives instead of showing nothing: out of the bookkeeping, out of the
+        session, out of the *Windows* menu. Kept to a different verb because
+        what a close costs -- a figure it was redrawing is read a second time
+        to come back -- is not what a hide costs.
+        """
+        for record, frame in self.windowsFor():
+            if frame is exceptFrame:
+                continue
+            self.closeWindow(frame)
+
+    def closeCase(self, uri):
+        """Close the windows of one case for good; shared ones hidden, not closed.
+
+        A case view and a figure that serves this case alone leave the book-
+        keeping. A figure that serves this case *and* another is hidden, not
+        closed: its other case still reads a live curve out of it, and closing
+        it would take that curve out of a window somebody is still looking at.
+        Hiding keeps the key, so the other case's *Windows* line still reaches it.
+        """
+        for record, frame in self.windowsFor():
+            cases = record.cases
+            if not cases or uri not in cases:
+                continue
+            if set(cases) == {uri}:
+                self.closeWindow(frame)
+            else:
+                self.setWindowVisible(frame, False)
+
+    def mdiLayout(self, mode):
+        """Lay the MDI area's windows out in `mode` and remember the choice.
+
+        One of `QVizPreferences.LAYOUT_MODES`. *tabbed* puts every window in a
+        single strip -- the big declutter when several cases are open -- and
+        *tiled* / *cascaded* are the classic tidy-ups; *windowed* is the
+        default pile the first case is opened into. The choice is written to
+        the preference so the next start-up lays the area the way the user last
+        left it.
+        """
+        from PySide6.QtWidgets import QMdiArea
+
+        mdi = self.getMDI()
+        if mdi is None:
+            raise ValueError('No MDI area to lay out: no window is open.')
+        if mode not in QVizPreferences.LAYOUT_MODES:
+            raise ValueError('%r is not a view the MDI area wears: write %s'
+                             % (mode, ' or '.join(
+                                 repr(one) for one in
+                                 QVizPreferences.LAYOUT_MODES)))
+        if mode == 'tabbed':
+            mdi.setViewMode(QMdiArea.TabbedView)
+            self._tabify(mdi)
+        else:
+            mdi.setViewMode(QMdiArea.SubWindowView)
+            if mode == 'tiled':
+                mdi.tileSubWindows()
+            elif mode == 'cascaded':
+                mdi.cascadeSubWindows()
+        QVizPreferences.Mdi_view_mode = mode
+        return mode
+
+    @staticmethod
+    def _tabify(mdi):
+        """Tabify the windows the area already holds.
+
+        `setViewMode(TabbedView)` on its own does not turn the subwindows it
+        already holds into tabs -- it would leave them stacked behind a single
+        empty strip. The one in front is the one the user is looking at, so it
+        is the tab every other is chained onto, and it is the strip opens on.
+        """
+        subs = list(mdi.subWindowList())
+        if not subs:
+            return
+        base = subs[-1]
+        for sub in subs:
+            if sub is not base:
+                mdi.tabifySubWindow(sub, base)
+
+    def _maybeApplyPreferredLayout(self):
+        """Lay the area the way the preference says, once a window is in it.
+
+        The area opens in windowed mode and the preference may not. This is
+        called from both embed points, after a sub-window is added: the one-shot
+        flag means the apply happens only when the area goes from empty to not,
+        and a refusal (no MDI to lay out) resets the flag so a later embed --
+        the one that actually has a window to lay out -- can still answer it.
+        Windowed is the mode the area already answers, so it costs nothing.
+        """
+        if self._layoutApplied:
+            return
+        self._layoutApplied = True
+        if QVizPreferences.Mdi_view_mode == 'windowed':
+            return
+        mdi = self.getMDI()
+        if mdi is None:
+            self._layoutApplied = False
+            return
+        try:
+            self.mdiLayout(QVizPreferences.Mdi_view_mode)
+        except ValueError:
+            self._layoutApplied = False
 
     def forgetWindow(self, frame):
         """Take a frame out of the bookkeeping: its key, or its case.
@@ -1006,6 +1201,9 @@ class Viz_API:
         else:
             self.subWindow = subWindow
         subWindow.show()
+        # A window is now in the area: the moment the preferred layout (a
+        # preference, one-shot) is applied to it.
+        self._maybeApplyPreferredLayout()
 
     def LoadListOfIDSs(self, dataTreeView, namesOfIDSs, occurrence=0):
         """Load given IDSs for given occurrence.

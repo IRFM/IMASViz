@@ -21,16 +21,47 @@ is on the menu bar of the application window -- the bar along the top of
 :guilabel:`IMASViz`, on screen whatever you are looking at -- and on the menu bar
 of every case view, where the same list is closer to the work.
 
+The windows are grouped **by case first**. Each case opens a sub-menu holding its
+view and the plot windows that case drew. A plot window that drew its curves from
+more than one case sits in **each** of those sub-menus (a comparison), and a
+window a plugin drew, which belongs to no case, sits at the top level. That is
+what the menu is for when several cases are open: a window can be found by the
+case it came from, and the whole case can be gathered or dismissed in one
+gesture.
+
+Within a case's sub-menu:
+
 .. list-table::
    :header-rows: 0
 
    * - the name of a window
-     - one line per window: a case view by the case it shows, a plot window by the
-       key its title carries. The line is **checked** while the window is on the
-       screen, and clicking it hides a shown window or shows a hidden one. The
-       windows of one kind are grouped together, case views first.
+     - one line per window the case owns -- its view, and each plot window by the
+       key its title carries. A line is **checked** while its window is on the
+       screen, and clicking it hides a shown window or shows a hidden one.
+   * - :guilabel:`Show only this case`
+     - show this case and its windows, and hide the other cases' windows. A
+       window drawn from this case and another stays shown: isolating a case is
+       about the other cases, not the windows this case still reads.
+   * - :guilabel:`Close this case`
+     - close this case's windows for good. A window drawn from this case and
+       another is **hidden, not closed** -- its other case still reads a live
+       curve out of it, so the key is kept and that case brings it back.
+
+At the top level:
+
+.. list-table::
+   :header-rows: 0
+
    * - :guilabel:`Show all` / :guilabel:`Hide all`
      - the same for every window at once.
+   * - :guilabel:`Hide others` / :guilabel:`Close others`
+     - every window **except the one you are in** (the one on top, or the one on
+       the tab that has focus). :guilabel:`Close others` closes for good;
+       :guilabel:`Hide others` only gets them off the screen.
+   * - :guilabel:`Disposition`
+     - how the :ref:`MDI area <layout_modes>` lays the windows out --
+       :guilabel:`Windows`, :guilabel:`Tabs`, :guilabel:`Tiled`,
+       :guilabel:`Cascaded`. On the application bar only.
    * - :guilabel:`Delete`
      - one line per window, again grouped by kind, and one :guilabel:`All` per
        group.
@@ -52,6 +83,33 @@ same unchecked line.
    closes the case: the IDSs that were loaded for it go with the last view that
    was showing it, so drawing one of its quantities again means reading the case
    again.
+
+.. _layout_modes:
+
+Laying the windows out
+----------------------
+
+A pile of titled windows is the state a case opens into, and it is the state
+the MDI area is in until you ask for another. The :guilabel:`Disposition`
+sub-menu lays **every** window in the area out in one of four ways:
+
+.. list-table::
+   :header-rows: 0
+
+   * - :guilabel:`Windows` (the default)
+     - the titled pile: windows floating over one another, rearranged by hand.
+   * - :guilabel:`Tabs`
+     - every window as one tab in a single strip. The big declutter when several
+       cases are open: a strip, not a pile.
+   * - :guilabel:`Tiled`
+     - the windows split into a grid, all of them visible at once.
+   * - :guilabel:`Cascaded`
+     - the windows stacked diagonally, every title bar reachable.
+
+The choice is written to the preferences file as :code:`Mdi_view_mode` (see
+:ref:`user_preferences`), so a case opened in the next run is laid out the way
+you last left it. It is refused, by name in the log, when the value is not one
+of the four, as every other preference line is.
 
 Closing a window with its own box
 ---------------------------------

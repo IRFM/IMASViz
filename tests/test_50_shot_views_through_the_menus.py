@@ -164,12 +164,37 @@ class Session:
         return menu
 
     def lines(self, menu=None):
-        """The lines that name a window, the fixed entries left out."""
+        """The window lines the run holds, walking any sub-menu they sit in.
+
+        Since the *Windows* menu groups its cases and their figures into
+        sub-menus, a window's line is no longer necessarily at the top level.
+        These helpers walk in; the fixed entries (the *All* / *Delete* /
+        *Disposition* families and the *Hide/Close others* top-level gestures)
+        are left out so the reading is the window's, not the run's.
+        """
+        base = menu if menu is not None else self.windows()
         fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL, DELETE,
-                 QVizWindowMenu.NEXT, QVizWindowMenu.PREVIOUS)
-        return [(action.text(), action.isChecked())
-                for action in (menu if menu is not None else self.windows()).actions()
-                if not action.isSeparator() and action.text() not in fixed]
+                 QVizWindowMenu.NEXT, QVizWindowMenu.PREVIOUS,
+                 QVizWindowMenu.HIDE_OTHERS, QVizWindowMenu.CLOSE_OTHERS,
+                 QVizWindowMenu.DISPOSITION, QVizWindowMenu.ISOLATE,
+                 QVizWindowMenu.CLOSE_CASE)
+        # Sub-menus that hold gestures, not the state of a window -- the
+        # *Delete* and *Disposition* families. A window's line lives in its
+        # case's sub-menu (or at the top for a case-less one), so walk those,
+        # and leave the gesture sub-menus, and their *All*, alone.
+        gestureSub = (DELETE, QVizWindowMenu.DISPOSITION)
+        out = []
+        def walk(m):
+            for action in m.actions():
+                if action.isSeparator():
+                    continue
+                if action.menu() is not None:
+                    if action.text() not in gestureSub:
+                        walk(action.menu())
+                elif action.text() not in fixed:
+                    out.append((action.text(), action.isChecked()))
+        walk(base)
+        return out
 
     def delete(self, menu=None):
         for action in (menu if menu is not None else self.windows()).actions():
@@ -191,18 +216,34 @@ class Session:
     def actOn(self, qapp, label, menu=None):
         """Trigger one window's line of the *Windows* menu, as the click does.
 
-        The deferred deletions are delivered here, not left for a later test: a
-        window Qt was asked to delete stays in `subWindowList()` until it is, so a
-        count taken before that answers what the *previous* test left behind.
+        The line may sit inside a case's sub-menu (the menu groups its windows
+        by case now), so the search walks down; a separator or a sub-menu header
+        is skipped. The deferred deletions are delivered here, not left for a
+        later test: a window Qt was asked to delete stays in `subWindowList()`
+        until it is, so a count taken before that answers what the *previous*
+        test left behind.
         """
         target = menu if menu is not None else self.windows()
-        for action in target.actions():
-            if action.text() == label:
-                action.trigger()
-                self.released(qapp)
-                return
-        raise AssertionError('%r is not a line of %r'
-                             % (label, [a.text() for a in target.actions()]))
+
+        def find(m):
+            for action in m.actions():
+                if action.isSeparator():
+                    continue
+                if action.menu() is not None:
+                    found = find(action.menu())
+                    if found is not None:
+                        return found
+                elif action.text() == label:
+                    return action
+            return None
+
+        action = find(target)
+        if action is None:
+            raise AssertionError('%r is not a line of %r'
+                                 % (label, [a.text() for a in target.actions()]))
+        action.trigger()
+        self.released(qapp)
+        return action
 
     def labels(self):
         return [frame.dataTreeView.dataSource.getLongLabel()

@@ -148,10 +148,19 @@ def subMenuNamed(menu, title):
 
 
 def actionNamed(menu, title):
-    for action in menu.actions():
-        if action.text() == title:
-            return action
-    return None
+    """The line named, walking any sub-menu the menu groups a window into."""
+    def find(m):
+        for action in m.actions():
+            if action.isSeparator():
+                continue
+            if action.menu() is not None:
+                found = find(action.menu())
+                if found is not None:
+                    return found
+            elif action.text() == title:
+                return action
+        return None
+    return find(menu)
 
 
 def windowsMenu(api):
@@ -163,12 +172,30 @@ def windowsMenu(api):
 
 
 def windowTitles(menu):
-    """The lines that name a window, the fixed entries of the menu left out."""
+    """The lines that name a window, walking the sub-menus they sit in.
+
+    The *Windows* menu groups each case and its figures in a sub-menu, and a
+    case-less window (this plugin) sits at the top. Walk those to read the
+    state, and leave the gesture sub-menus (*Delete*) and *run* entries out.
+    """
     fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL,
              QVizWindowMenu.DELETE, QVizWindowMenu.NEXT,
-             QVizWindowMenu.PREVIOUS)
-    return [action.text() for action in menu.actions()
-            if not action.isSeparator() and action.text() not in fixed]
+             QVizWindowMenu.PREVIOUS, QVizWindowMenu.HIDE_OTHERS,
+             QVizWindowMenu.CLOSE_OTHERS, QVizWindowMenu.DISPOSITION,
+             QVizWindowMenu.ISOLATE, QVizWindowMenu.CLOSE_CASE)
+    gestureSub = (QVizWindowMenu.DELETE, QVizWindowMenu.DISPOSITION)
+    out = []
+    def walk(m):
+        for action in m.actions():
+            if action.isSeparator():
+                continue
+            if action.menu() is not None:
+                if action.text() not in gestureSub:
+                    walk(action.menu())
+            elif action.text() not in fixed:
+                out.append(action.text())
+    walk(menu)
+    return out
 
 
 def elapsed(action, *args):

@@ -97,6 +97,11 @@ SHOW_ALL = QVizWindowMenu.SHOW_ALL
 HIDE_ALL = QVizWindowMenu.HIDE_ALL
 DELETE = QVizWindowMenu.DELETE
 ALL = QVizWindowMenu.ALL
+DISPOSITION = QVizWindowMenu.DISPOSITION
+ISOLATE = QVizWindowMenu.ISOLATE
+CLOSE_CASE = QVizWindowMenu.CLOSE_CASE
+HIDE_OTHERS = QVizWindowMenu.HIDE_OTHERS
+CLOSE_OTHERS = QVizWindowMenu.CLOSE_OTHERS
 NEXT = QVizWindowMenu.NEXT
 PREVIOUS = QVizWindowMenu.PREVIOUS
 SHOT_VIEW = 'Shot view'
@@ -216,10 +221,14 @@ class Session:
     def windowLines(self, menu=None):
         """The lines that name a window, the fixed entries left out.
 
-        The fixed entries are the same five titles every run draws, so a test
-        about the windows does not have to repeat them to say what changed.
+        The fixed entries are the same titles every run draws alongside the
+        window lines -- the *All* / *Hide/Close others* gestures, the *Delete*
+        and *Disposition* sub-menus, and (only inside a case's sub-menu) the
+        two case gestures -- so a test about the windows does not have to repeat
+        them to say what changed.
         """
-        fixed = (SHOW_ALL, HIDE_ALL, DELETE, NEXT, PREVIOUS)
+        fixed = (SHOW_ALL, HIDE_ALL, DELETE, NEXT, PREVIOUS,
+                 HIDE_OTHERS, CLOSE_OTHERS, DISPOSITION, ISOLATE, CLOSE_CASE)
         return [(title, checked) for title, checked in self.lines(menu)
                 if title not in fixed]
 
@@ -319,7 +328,9 @@ def test_a_hidden_window_is_the_same_line_unchecked_and_a_click_brings_it_back(
     session.redrawn()
     assert session.windowLines() == [(CURVE, False)]
     assert [title for title, _ in session.lines()] == [CURVE, SHOW_ALL, HIDE_ALL,
-                                                       DELETE, NEXT, PREVIOUS]
+                                                       HIDE_OTHERS, CLOSE_OTHERS,
+                                                       DELETE, DISPOSITION, NEXT,
+                                                       PREVIOUS]
     # Hiding is not closing: the window is still registered, still listed, and
     # its key is still its own.
     assert session.api.figureframes == {CURVE: frame}
@@ -420,7 +431,11 @@ def test_redrawing_the_menu_leaves_one_delete_sub_menu(session, qapp):
     for _ in range(4):
         session.redrawn()
         session.released(qapp)
-    assert [m.title() for m in session.menu.findChildren(QMenu)] == [DELETE]
+    # Two sub-menus live here on a bar: *Delete* (both bars) and *Disposition*
+    # (the bar only). The number is what is pinned -- it does not grow with
+    # redraw -- not which one it is.
+    assert [m.title() for m in session.menu.findChildren(QMenu)] == \
+        [DELETE, DISPOSITION]
     assert len(session.line(DELETE).menu().actions()) == 2
 
 
@@ -530,7 +545,9 @@ def test_the_close_box_hides_a_figure_and_keeps_it(session, qapp):
     session.redrawn()
     assert session.windowLines() == [(CURVE, False)]
     assert [title for title, _ in session.lines()] == [CURVE, SHOW_ALL, HIDE_ALL,
-                                                       DELETE, NEXT, PREVIOUS]
+                                                       HIDE_OTHERS, CLOSE_OTHERS,
+                                                       DELETE, DISPOSITION, NEXT,
+                                                       PREVIOUS]
 
     session.line(CURVE).trigger()
     qapp.processEvents()
@@ -758,7 +775,8 @@ def test_a_shot_view_hangs_the_menu_on_its_own_bar(session, qapp):
     session.figure(CURVE)
     menu.refresh()
     assert [t for t, _ in session.lines(view)] == [CASE, CURVE, SHOW_ALL,
-                                                   HIDE_ALL, DELETE]
+                                                   HIDE_ALL, HIDE_OTHERS,
+                                                   CLOSE_OTHERS, DELETE]
 
 
 def test_the_menu_holds_the_api_weakly(session, qapp):
