@@ -145,20 +145,47 @@ def test_a_local_case_is_opened_with_the_uri_the_access_layer_takes():
 # The widget itself: the list, and the gestures that open and copy it.
 
 def test_refresh_lays_every_case_as_a_row_with_its_uri(imasdb, qapp, monkeypatch):
-    """The list is the flat read, one row per case, URI on it as data and tip.
+    """The list is the flat read, one row per case, in the default shape (URI).
 
-    The defaults of the two protocol boxes are asked of the preferences class,
-    and a test that runs after one that left the state switched (HDF5 off, MDS+
-    on) would see a list that is not the flat read. This test is the flat read
-    -- both protocols on -- so it asks the defaults explicitly, the same way a
-    fresh installation would answer them.
+    The defaults of the two protocol boxes and of the shape are asked of the
+    preferences class, and a test that runs after one that left the state
+    switched (HDF5 off, MDS+ on, or the parsed shape) would see a list that is
+    not the flat read in the URI. This test is the flat read in the default
+    shape -- both protocols on, the URI as the row's text -- so it asks the
+    defaults explicitly, the same way a fresh installation would answer them.
+    In the default shape the row's text, its data and its tooltip are the URI.
     """
-    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
+    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1,
+              Uri_list_view='uri')
     monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
                         lambda username: imasdb)
     sel = QVizCaseSelector()
     cases = sel.refresh(USER)
     assert len(cases) == 5
+    assert sel.listView.count() == 5
+    for i in range(sel.listView.count()):
+        item = sel.listView.item(i)
+        case = cases[i]
+        uri = QVizCaseSelector.uriOf(USER, case)
+        assert item.text() == uri
+        assert item.data(Qt.UserRole) == uri
+        assert item.toolTip() == uri
+
+
+def test_the_parsed_view_shows_the_fields_not_the_uri(imasdb, qapp, monkeypatch):
+    """The *Affichage* box's other shape: the fields as the row's text.
+
+    Switching the shape re-lays the same rows in the other shape, and the data
+    and the tooltip are the URI whichever shape the box is at, because that is
+    the identity the case is opened with and a shape switch must not lose it --
+    so the two shapes are the text, and nothing they hide.
+    """
+    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1,
+              Uri_list_view='parsed')
+    monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
+                        lambda username: imasdb)
+    sel = QVizCaseSelector()
+    cases = sel.refresh(USER)
     assert sel.listView.count() == 5
     for i in range(sel.listView.count()):
         item = sel.listView.item(i)
@@ -320,11 +347,15 @@ def test_unchecking_MDSplus_keeps_only_the_HDF5_rows(imasdb, qapp, monkeypatch):
     """Turning MDS+ off at the box shows the three HDF5 cases and no MDS+.
 
     The list is *which kind of case to open*, and the box is the kind. A
-    change at the box re-shapes the list, and the list shows the change.
+    change at the box re-shapes the list, and the list shows the change. The
+    rows are read as their parsed fields here (the backend is the first word),
+    so the shape is fixed to ``parsed`` -- this test is about the filter, not
+    about the shape.
     """
     monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
                         lambda username: imasdb)
-    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1)
+    _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1,
+              Uri_list_view='parsed')
     sel = QVizCaseSelector()
     sel.refresh(USER)
     assert sel.listView.count() == 5
@@ -513,3 +544,87 @@ def test_the_controls_are_synced_from_the_preferences_at_init(qapp, monkeypatch)
     assert sel.sortDirButton.isChecked() is True
     assert sel.filterHDF5.isChecked() is False
     assert sel.filterMDS.isChecked() is True
+
+
+def test_the_default_shape_is_the_uri(qapp, monkeypatch):
+    """A selector a fresh session builds shows the URI before the user chose.
+
+    The class answers ``uri`` when no line for it is read, and the box is laid
+    at the URI -- which is the point of the default: a run that has never
+    chosen a shape opens on the string the case is opened with, with the other
+    shape a box apart.
+    """
+    assert QVizPreferences.Uri_list_view == 'uri'
+    assert QVizPreferences.URI_LIST_VIEWS == ('uri', 'parsed')
+    sel = QVizCaseSelector()
+    assert sel.viewBox.currentData() == 'uri'
+    assert sel.viewBox.currentText() == 'URI'
+
+
+def test_switching_the_shape_relays_and_persists(imasdb, qapp, monkeypatch,
+                                                 tmp_path):
+    """A hand on the *Affichage* box re-lays the rows and writes the shape.
+
+    The list shows the parsed fields at the box, and the shape lands in the
+    preferences file -- so the next session opens on the shape the user last
+    wanted, which is the point of the preference over a hard default. The data
+    is the URI whichever shape the box is at.
+    """
+    monkeypatch.setenv('HOME', str(tmp_path))
+    monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
+                        lambda username: imasdb)
+    save_view = QVizPreferences.Uri_list_view
+    try:
+        sel = QVizCaseSelector()
+        cases = sel.refresh(USER)
+        case = cases[0]
+        uri = QVizCaseSelector.uriOf(USER, case)
+        assert sel.listView.item(0).text() == uri        # default: the URI
+        sel.viewBox.setCurrentIndex(1)                   # the *Cas* entry
+        assert sel.listView.item(0).text() == QVizCaseSelector.labelOf(case)
+        assert sel.listView.item(0).data(Qt.UserRole) == uri
+        assert QVizPreferences.Uri_list_view == 'parsed'
+        content = (tmp_path / '.imasviz' / 'preferences').read_text()
+        assert 'Uri_list_view=parsed' in content
+    finally:
+        QVizPreferences.Uri_list_view = save_view
+
+
+def test_the_reader_refuses_a_shape_the_box_does_not_offer(tmp_path, monkeypatch):
+    """A file that names a shape the box never offers is refused, by name.
+
+    The refusal is the word the file wrote, and the list keeps the shape it was
+    holding -- the "a line answers for itself" rule the reader applies to every
+    option of the file, so one bad line costs its own option and nothing else.
+    A file that names ``parsed`` is read, because that is a shape the box offers.
+    """
+    monkeypatch.setenv('HOME', str(tmp_path))
+    save_view = QVizPreferences.Uri_list_view
+    save_init = QVizPreferences.userPreferencesInitialized
+    try:
+        (tmp_path / '.imasviz').mkdir(parents=True, exist_ok=True)
+        (tmp_path / '.imasviz' / 'preferences').write_text('Uri_list_view=magic\n')
+        QVizPreferences.Uri_list_view = 'uri'
+        QVizPreferences.userPreferencesInitialized = False
+        QVizPreferences().build()
+        assert QVizPreferences.Uri_list_view == 'uri'        # refused, kept
+        (tmp_path / '.imasviz' / 'preferences').write_text('Uri_list_view=parsed\n')
+        QVizPreferences.userPreferencesInitialized = False
+        QVizPreferences().build()
+        assert QVizPreferences.Uri_list_view == 'parsed'     # read
+    finally:
+        QVizPreferences.Uri_list_view = save_view
+        QVizPreferences.userPreferencesInitialized = save_init
+
+
+def test_the_box_is_synced_to_the_stored_shape(qapp, monkeypatch):
+    """A session that stored the parsed shape starts on it at the box.
+
+    The state a hand left in the preferences is the state a new session's box
+    starts at, and the box's data answers the file name -- the same way the
+    *Trier par* box is synced for the key it holds.
+    """
+    _setPrefs(monkeypatch, Uri_list_view='parsed')
+    sel = QVizCaseSelector()
+    assert sel.viewBox.currentData() == 'parsed'
+    assert sel.viewBox.currentText() == 'Cas'

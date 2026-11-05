@@ -157,6 +157,14 @@ class QVizPreferences:
     # the identifiers the rest of this file keys on -- never the ``+``.
     Uri_list_filter_HDF5 = 1
     Uri_list_filter_MDSplus = 1
+    # How the start window's list rows are shown. ``uri`` (the default) shows
+    # each case as the URI it is opened with; ``parsed`` shows the backend,
+    # database, shot and run the scanner read out of it. The box that offers
+    # the two is what a user reaches for to switch them, and the choice is
+    # remembered so the next session opens on the shape the user last wanted --
+    # which is the point of a separate preference rather than a hard default.
+    Uri_list_view = 'uri'
+    URI_LIST_VIEWS = ('uri', 'parsed')
 
     def persist(**options):
         """Write `options` (``key`` -> ``value``) into the user preferences file.
@@ -264,6 +272,7 @@ class QVizPreferences:
             option11 = "Uri_list_sort_direction="
             option12 = "Uri_list_filter_HDF5="
             option13 = "Uri_list_filter_MDSplus="
+            option14 = "Uri_list_view="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -314,6 +323,9 @@ class QVizPreferences:
                             elif line.startswith(option13):
                                 QVizPreferences.Uri_list_filter_MDSplus = \
                                     QVizPreferences.yesNo(line[len(option13):])
+                            elif line.startswith(option14):
+                                QVizPreferences.Uri_list_view = \
+                                    QVizPreferences.listView(line[len(option14):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],
@@ -375,6 +387,26 @@ class QVizPreferences:
                 % (text.strip(),
                    ' or '.join(repr(one) for one in
                                QVizPreferences.LAYOUT_MODES)))
+        return asked
+
+    def listView(text):
+        """Which shape the start window's list rows are shown in, refusing a
+        form the box does not offer.
+
+        What the *Affichage* box offers is ``URI_LIST_VIEWS`` -- ``uri`` shows
+        the URI a case is opened with, ``parsed`` the backend, database, shot
+        and run behind it -- so a file that names a word the box never offers
+        is refused by the word it wrote, and the list keeps the shape it was
+        holding: the same "a line answers for itself" rule `build` has always
+        applied to the other options of the file.
+        """
+        asked = text.strip().lower()
+        if asked not in QVizPreferences.URI_LIST_VIEWS:
+            raise ValueError(
+                '%r is not a shape for the case list: write %s'
+                % (text.strip(),
+                   ' or '.join(repr(one) for one in
+                               QVizPreferences.URI_LIST_VIEWS)))
         return asked
 
 

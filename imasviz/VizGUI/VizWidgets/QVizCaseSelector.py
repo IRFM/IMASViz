@@ -23,10 +23,12 @@ from imasviz.VizUtils import QVizPreferences
 class QVizCaseSelector(QWidget):
     """The URI-first selection of the start window.
 
-    A flat list of the local cases, each row a readable label (backend,
-    database, shot and run) whose data and tooltip are the URI the Access Layer
-    opens the case with; the selection -- by double click or *Ouvrir* -- is
-    handed to the caller through `uriOpened` **as a URI**. A free line takes
+    A flat list of the local cases, each row a shape the user chose at the
+    *Affichage* box -- the URI the Access Layer opens the case with (the
+    default), or the backend, database, shot and run behind it -- whose data
+    and tooltip are always that URI; the selection -- by double click or
+    *Ouvrir* -- is handed to the caller through `uriOpened` **as a URI**. A free
+    line takes
     any other URI (a UDA case, a remote case, or one the local walk does not
     reach), and *Dossier…* turns a chosen folder of ``*.h5`` into the ``path=``
     URI. The whole thing emits URIs and never the five derived parameters --
@@ -49,19 +51,38 @@ class QVizCaseSelector(QWidget):
         ('run', 'Run'),
     )
 
+    # What the *Affichage* box offers: the two shapes a row may wear. ``uri``
+    # (the default) is the URI the case is opened with; ``parsed`` is the
+    # backend, database, shot and run the scanner read out of it. The box is at
+    # the shape the preferences hold, and a hand on it re-lays the list and
+    # remembers the shape for the next session.
+    VIEW_ITEMS = (
+        ('uri', 'URI'),
+        ('parsed', 'Cas'),
+    )
+
     def __init__(self, parent=None):
         super(QVizCaseSelector, self).__init__(parent)
 
         layout = QVBoxLayout(self)
 
-        # The controls of the list: the sort key, its direction, and the two
-        # protocol boxes. The state is read from the preferences file the last
-        # time the user touched any of them, so a session that has not chosen
-        # anything sees the list as it has always been (database, ascending,
-        # both protocols on) -- the defaults the preferences reader gives when
-        # the file is absent, and the state the file writes when the user first
-        # chooses a different one.
+        # The controls of the list: the shape of the rows, the sort key, its
+        # direction, and the two protocol boxes. The state is read from the
+        # preferences file the last time the user touched any of them, so a
+        # session that has not chosen anything sees the list as it has always
+        # been (the URI, database, ascending, both protocols on) -- the
+        # defaults the preferences reader gives when the file is absent, and the
+        # state the file writes when the user first chooses a different one.
         filters = QHBoxLayout()
+        filters.addWidget(QLabel('Affichage'))
+        self.viewBox = QComboBox(self)
+        for key, label in self.VIEW_ITEMS:
+            self.viewBox.addItem(label, key)
+        self.viewBox.setToolTip(
+            'La forme des lignes : la URI d\'ouverture, ou le backend, la base, '
+            'le tir et le run. La donnée et l\'infobulle restent toujours la URI.')
+        filters.addWidget(self.viewBox)
+        filters.addSpacing(12)
         filters.addWidget(QLabel('Trier par'))
         self.sortKeyBox = QComboBox(self)
         for key, label in self.SORT_ITEMS:
@@ -109,11 +130,12 @@ class QVizCaseSelector(QWidget):
         self.openButton.clicked.connect(self.openCurrent)
         self.copyButton.clicked.connect(self.copyUri)
         self.folderButton.clicked.connect(self.pickFolder)
-        # The controls: a touched sort key or direction, or a touched protocol
-        # box, answers for itself -- re-shape the rows the list shows, and
-        # remember the choice in the preferences file so the next run does not
-        # ask. During _syncControls, the signals are blocked, so the initial
-        # read of the preferences does not fire a change.
+        # The controls: a touched shape, sort key or direction, or a touched
+        # protocol box, answers for itself -- re-shape the rows the list shows,
+        # and remember the choice in the preferences file so the next run does
+        # not ask. During _syncControls, the signals are blocked, so the
+        # initial read of the preferences does not fire a change.
+        self.viewBox.currentIndexChanged.connect(self._onViewTouched)
         self.sortKeyBox.currentIndexChanged.connect(self._onSortTouched)
         self.sortDirButton.toggled.connect(self._onSortTouched)
         self.filterHDF5.toggled.connect(self._onFilterHDF5Touched)
@@ -138,25 +160,49 @@ class QVizCaseSelector(QWidget):
         refresh should see the preferences state, not the moment of the first
         read.
         """
-        for control in (self.sortKeyBox, self.sortDirButton,
+        for control in (self.viewBox, self.sortKeyBox, self.sortDirButton,
                         self.filterHDF5, self.filterMDS):
             control.blockSignals(True)
-        # The box's currentData carries the file name; the currentText carries
-        # the French label -- and the two are in the same place.
-        for i in range(self.sortKeyBox.count()):
-            if self.sortKeyBox.itemData(i) == QVizPreferences.Uri_list_sort_key:
-                self.sortKeyBox.setCurrentIndex(i)
-                break
-        else:
-            self.sortKeyBox.setCurrentIndex(0)
+        self._setBoxTo(self.viewBox, QVizPreferences.Uri_list_view)
+        self._setBoxTo(self.sortKeyBox, QVizPreferences.Uri_list_sort_key)
         self.sortDirButton.setChecked(
             QVizPreferences.Uri_list_sort_direction == 'desc')
         self.filterHDF5.setChecked(bool(QVizPreferences.Uri_list_filter_HDF5))
         self.filterMDS.setChecked(
             bool(QVizPreferences.Uri_list_filter_MDSplus))
-        for control in (self.sortKeyBox, self.sortDirButton,
+        for control in (self.viewBox, self.sortKeyBox, self.sortDirButton,
                         self.filterHDF5, self.filterMDS):
             control.blockSignals(False)
+
+    @staticmethod
+    def _setBoxTo(box, value):
+        """Put `box` on the item whose data is `value`, or on 0 if none is.
+
+        The box's currentData carries the file name, its currentText the French
+        label, and the two are in the same place. A value the box does not carry
+        -- a preference the class answers but the box never offers -- falls
+        through to the first entry, so a sync that reads a word the box refused
+        never throws and never points at nothing.
+        """
+        for i in range(box.count()):
+            if box.itemData(i) == value:
+                box.setCurrentIndex(i)
+                return
+        box.setCurrentIndex(0)
+
+    def _onViewTouched(self, *args):
+        """A shape was chosen at the *Affichage* box: re-lay the rows and
+        remember the shape for the next session.
+
+        ``currentIndexChanged`` fires when a *sync* reads the file into the box
+        too, but ``_syncControls`` blocks the box's signals on the way out, so
+        this handler only runs for a hand -- the same way `_onSortTouched` and
+        the two filter handlers run. Nothing is opened here: the rows keep the
+        case in their data and are only re-shown in the shape asked.
+        """
+        QVizPreferences.Uri_list_view = self.viewBox.currentData()
+        self._applyControls()
+        QVizPreferences.persist(Uri_list_view=QVizPreferences.Uri_list_view)
 
     def _onSortTouched(self, *args):
         """A sort key or its direction changed: re-order the list and remember
@@ -277,10 +323,16 @@ class QVizCaseSelector(QWidget):
         key_func = self._sortFunction(key)
         filtered.sort(key=key_func, reverse=reverse)
         self._shapedCases = filtered
+        # The shape the rows wear is read here, not at the box, so any handler
+        # that re-lays the list -- a sort, a filter, a shape -- lays the same
+        # shape the user last chose at the box, and the box never drifts from
+        # what it shows.
+        view = QVizPreferences.Uri_list_view
         self.listView.clear()
         for case in filtered:
             uri = QVizCaseSelector.uriOf(self.username, case)
-            item = QListWidgetItem(QVizCaseSelector.labelOf(case), self.listView)
+            label = uri if view == 'uri' else QVizCaseSelector.labelOf(case)
+            item = QListWidgetItem(label, self.listView)
             item.setData(Qt.UserRole, uri)
             item.setToolTip(uri)
         return filtered

@@ -29,12 +29,14 @@ it. The start window has a single :guilabel:`Cas` tab, and the
 that case:
 
 - :guilabel:`Cas locaux (liste)` (the default): a flat, ordered list of the
-  local cases -- the user's own imasdb and ``public`` -- in which each row is a
-  readable label (backend, database, shot and run) whose tooltip is the URI the
-  case will be opened with. A double click, or :guilabel:`Ouvrir`, opens the
-  selected case; :guilabel:`Copier l'URI` copies it, so the case can be named
-  wherever the Access Layer takes a URI; :guilabel:`Dossier…` turns a chosen
-  folder of ``*.h5`` files into its ``path=`` URI.
+  local cases -- the user's own imasdb and ``public`` -- in which each row, by
+  default, is the URI the case will be opened with; the :guilabel:`Affichage`
+  box turns each row instead into the readable fields behind it (backend,
+  database, shot and run), and remembers the shape for the next session. A
+  double click, or :guilabel:`Ouvrir`, opens the selected case;
+  :guilabel:`Copier l'URI` copies it, so the case can be named wherever the
+  Access Layer takes a URI; :guilabel:`Dossier…` turns a chosen folder of
+  ``*.h5`` files into its ``path=`` URI.
 - :guilabel:`Saisie libre (URI)`: a free line for a case the local walk does
   not reach -- a UDA case, a remote case, or a URI pasted from elsewhere.
   :guilabel:`Ouvrir` opens it as typed.
@@ -62,10 +64,11 @@ available):
 | Run number         | 0        |
 +--------------------+----------+
 
-In the local list this case is one row -- ``MDS+ · viztest · 52344 · 0`` --
-whose tooltip is the URI it is opened with. In the free URI line it is that same
-URI spelled out; in the legacy form it is the five parameters above. The data
-source is the :file:`~public/imasdb/viztest/3/0/` directory of user ``g2penkod``.
+In the local list this case is one row -- its URI by default, and the fields
+``MDS+ · viztest · 52344 · 0`` when the :guilabel:`Affichage` box is on the
+parsed shape. In the free URI line it is that same URI spelled out; in the
+legacy form it is the five parameters above. The data source is the
+:file:`~public/imasdb/viztest/3/0/` directory of user ``g2penkod``.
 
 To add the databases of another user, switch to :guilabel:`Legacy (5 champs)`,
 type the user name in :guilabel:`User name`, and choose *Add databases from user
