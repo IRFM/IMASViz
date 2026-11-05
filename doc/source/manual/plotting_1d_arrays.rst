@@ -465,18 +465,19 @@ same picture:
   :guilabel:`along psi` cannot open a window running along the clock.
 
   The entry is a sub-menu, because a tensor is not tied to a new window.
-  :guilabel:`New` opens a figure of its own; every open figure whose sliders
-  already walk those very arrays is offered under its key, and the tensor is
-  drawn there instead — one band of sliders, driving every curve of the figure.
-  A figure whose sliders would be other arrays is not offered, and asked for by
-  another route it refuses in the log panel, naming both sets.
+  :guilabel:`New` opens a figure of its own; every open figure drawn along that
+  abscissa is offered under its key, and the tensor is drawn there instead. No
+  figure is refused for the arrays it already walks: a slider drives the curves
+  of the array it names only, so a tensor of another array takes its own slider
+  beside the ones the figure holds.
 
 Superposing tensors, and adding an element to one
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A figure of curves holds **one** band of sliders, so besides its abscissa it is
-defined by the arrays those sliders walk. What may be added to it follows from
-that:
+A figure of curves grows a band of sliders for every array of structures its
+tensors walk, and a slider moves only the curves of the array it names. What
+may be added to a figure follows from that -- the gate the menu asks is what
+the figure *draws*, and that is its abscissa:
 
 +-------------------------+-------------------------------------------------------------+
 | added to the figure     | asked                                                       |
@@ -485,17 +486,17 @@ that:
 | plot entry) to an       | stands on and writes them in its legend, so two elements of |
 | ordinary figure         | different arrays can be compared on one abscissa            |
 +-------------------------+-------------------------------------------------------------+
-| a **tensor** to an      | its abscissa, and the arrays of the node must be the arrays |
-| ordinary figure         | of the figure — a figure with no sliders yet adopts the ones|
-|                         | the tensor brings, which is what settles its band           |
+| a **tensor** to an      | its abscissa — a figure with no sliders yet adopts the      |
+| ordinary figure         | arrays the tensor brings, which is what opens its band      |
 +-------------------------+-------------------------------------------------------------+
-| a **tensor** to a       | its abscissa, and **equal** array sets. Otherwise the       |
-| tensor figure           | figure refuses by name, writing both sets in the log panel  |
-|                         | of that shot, and no window is opened                       |
+| a **tensor** to a       | its abscissa — and it keeps the arrays it walks with its    |
+| tensor figure           | **own slider** beside the ones the figure already holds,    |
+|                         | so each family of elements keeps walking on its own         |
 +-------------------------+-------------------------------------------------------------+
-| an **element** to a     | the same arrays — and the element is then frozen on **all** |
-| tensor figure           | of them: neither the array sliders nor its own coordinate   |
-|                         | moves it, and its legend spells the whole index set         |
+| an **element** to a     | the figure's abscissa — and the element is then frozen on   |
+| tensor figure           | **all** the arrays it stands on: neither the array sliders  |
+|                         | nor its own coordinate moves it, and its legend spells the  |
+|                         | whole index set                                             |
 +-------------------------+-------------------------------------------------------------+
 
 That last row is what makes the two representations comparable in one window: the

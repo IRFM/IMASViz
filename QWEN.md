@@ -839,8 +839,11 @@ artifacts of this codebase, and several are load-bearing:
   **pop-up's top level**, right after the two single-curve entries (T37) — not inside
   `Plot <node> to → Figure`, where it sat below the list of figures it may join
   while it answers a different question than "which window". Since T38 each is a
-  **sub-menu**: `New`, then one line per open figure drawn along that abscissa whose
-  sliders are those very arrays (`exploreTensorCommand(intoFigureKey=)`). Since T41
+  **sub-menu**: `New`, then one line per open figure drawn along that abscissa
+  (`exploreTensorCommand(intoFigureKey=)`); since T57 the line is offered for a
+  figure whatever arrays the figure already walks — the slider of one array moves
+  only the curves of that array, so the tensor simply adds its own slider. Since
+  T41
   there are several, held in `self.exploreTensorMenus` — the single `exploreTensorMenu`
   of T38 could only ever name one abscissa.
   A Qt fact came with it: `QMenu(title, parent)`
@@ -848,17 +851,27 @@ artifacts of this codebase, and several are load-bearing:
   reference holds dies with the wrapper that made it (the dangling submenu T0 removed);
   `parentMenu.addMenu(menu)` is what makes it appear.
   Beside its abscissa a curve figure now keeps **the arrays its band walks**
-  (`QVizCurvePlot.walkingArrays`, settled by the first tensor asked into it), and one
-  pure function — `QVizCurveAbscissa.axesLeftOut` / `arraysLeftOut` — is the **mirror of
+  (`QVizCurvePlot.walkingArrays`, and since T57 it is the **union** of the arrays of
+  every tensor it received — `_settleArrays` grows it, one array one slider, and the
+  slider of one array moves **only the curves of that array**, which is what
+  `_pinning` already decided per trace and `refresh` per curve, so two tensors of two
+  different arrays live in one window, each on its own slider). And one pure
+  function — `QVizCurveAbscissa.axesLeftOut` / `arraysLeftOut` — is the **mirror of
   the read** for that: `QVizTensorDataAccess._plottedPositions` / `_timeAxis` delegate to
-  it, `QVizNodePlotting.tensorAxes(abscissa)` asks it, `QVizCurvePlot.accepts(treeNode,
-  tensor)` answers it, and `Viz_API.figureDrawsSameCurveAxis(figureKey, treeNode,
-  tensor=)` relays it. The rule is **narrower than it looks**: it applies to a tensor
-  entering a figure and to a figure that already has a band, **not** to two plain
-  elements — those still share only the abscissa (T36), which is what lets a flux loop
-  and its neighbour probe be compared; the first cut asked the arrays of every trace and
-  turned 4 tests red. An element added to a tensor figure is **frozen on all its axes**
-  (no control, `isFrozen()`, its legend spelling the whole index set). Do not "restore" a
+  it, and `QVizNodePlotting.tensorAxes(abscissa)` asks it. The **gate** the menus ask
+  of an open figure is the **abscissa only** (T57): `QVizCurvePlot.accepts(treeNode,
+  tensor)` ignores `tensor` and `Viz_API.figureDrawsSameCurveAxis(figureKey, treeNode,
+  tensor=)` relays the same answer. What T38 kept and T57 did not touch: two plain
+  elements still share only the abscissa (T36), which is what lets a flux loop
+  and its neighbour probe be compared; and an element added to a banded figure is
+  **frozen on all its axes** (no control, its legend spelling the whole index set) and
+  does **not** grow the band — `frozen = bool(walkingArrays) and not tensor` is still
+  the whole of `_pinning`. The "equal sets" refusal is gone (`_arraysAgree`,
+  `spellArrays` and the `its sliders would walk one curve and leave the other where
+  it is` sentence all removed, T57); and the tensor view's pop-up offers the open
+  figures of an abscissa a node can run along (`menuPlotCurrentSignalNode(
+  standalone=False)` in the `showOnlyTensorsRankGe1` branch — `test_96` pins it,
+  `test_87` what that view still keeps and stops offering). Do not "restore" a
   control for a pinned AOS on a plain plot entry: measured before the change, that
   shared dict made
   two elements of one array answer **identical samples** (`flux_loop`, 17 filled
