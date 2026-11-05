@@ -270,3 +270,24 @@ Stylage and cursors are kept in the hands of the user; they are not offered
 as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`
 (without the SDK) and `tests/test_101_mcp_tools_http.py` (over a real
 transport).
+
+## The in-app agent
+
+IMASViz can run the agent itself: the application talks to a local LLM
+(`llama-server` by default, `127.0.0.1:8080`) and drives its own gestures
+through the same `McpGuiCore` the MCP surface uses. No external agent or
+MCP client is needed in production.
+
+The agent is visible in the *Windows* menu as `Agent:1`. Type a prompt,
+click *Tourner*, and the LLM chooses the gestures — the transcript shows
+each step, and refusals are named the same way they appear in the log panel.
+
+Configuration (in `$HOME/.imasviz/preferences`):
+
+    AgentLLMEndpoint=http://127.0.0.1:8080/v1
+    AgentLLMModel=                          # empty = read from /v1/models
+    AgentLLMApiKey=                         # empty = no auth header
+
+The suite drives the agent loop and panel in `tests/test_110_agent_loop.py`
+(scripted LLM, no network) and `tests/test_111_agent_panel.py` (widget,
+registered in `figureframes`).

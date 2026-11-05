@@ -49,6 +49,7 @@ class QVizFileMenu:
     QUIT = 'Quit'
     NEW_PLUGIN = 'New plugin...'
     MANAGE = 'Plugins...'
+    AGENT = 'Agent'
 
     def __init__(self, menu, window, sessionMenu=None):
         """
@@ -99,8 +100,12 @@ class QVizFileMenu:
         # and what this user wrote -- and edit their own. They belong on this bar
         # because a plugin is not a gesture on one node: it is part of the session,
         # and the folder it lives in is reached whether or not a case is open.
+        # And the agent, one window for the session: the LLM that drives this
+        # run's gestures, opened whether or not a case is on screen -- the same
+        # reason the plugin lines stay, and reached the same way.
         for title, slot in ((self.NEW_PLUGIN, self.openPluginCreator),
-                            (self.MANAGE, self.openPluginManager)):
+                            (self.MANAGE, self.openPluginManager),
+                            (self.AGENT, self.openAgent)):
             action = QAction(title, self.menu)
             action.triggered.connect(slot)
             self.menu.addAction(action)
@@ -177,3 +182,57 @@ class QVizFileMenu:
             watcher=getattr(window, 'pluginWatcher', None))
         manager.show()
         return manager
+
+    def openAgent(self):
+        """Open the agent: the LLM that drives this session's own gestures.
+
+        One window for the session, reached the way the *Windows* menu reaches
+        its windows -- through the session's api -- so it sits on that menu
+        alongside the figures the user drew. It is **reused**, not rebuilt: a
+        second panel would be a second loop on the same api, and a second line
+        on a menu that already named it. The first click builds it; the next
+        click brings the one that is there back to the front.
+
+        The stack it is built on is the session's own parts -- the gestures
+        (`McpGuiCore`) drive the api the *Open* gesture owns, and the loop runs
+        off a worker thread through the same `GuiDispatcher` the MCP surface
+        uses. The LLM is **not** reached at construction: the endpoint, the
+        model and the key come from `QVizPreferences` (the local llama-server by
+        default), and the first turn is what connects.
+        """
+        window = self._window()
+        if window is None:
+            return None
+
+        from imasviz.VizUtils import FigureTypes
+        from imasviz.VizAgent.core import McpGuiCore
+        from imasviz.VizAgent.dispatcher import GuiDispatcher
+        from imasviz.VizAgent.llm_client import LLMClient
+        from imasviz.VizAgent.agent import AgentLoop
+        from imasviz.VizAgent.panel import QVizAgentPanel
+
+        # The session's api, reached and not moved: the one the *Windows* menu
+        # reads, so the panel lands on that menu like every other window.
+        apiOf = getattr(window, 'sessionApi', None)
+        api = apiOf() if callable(apiOf) else None
+
+        if api is not None and isinstance(getattr(api, 'figureframes', None), dict):
+            prefix = FigureTypes.AGENTTYPE
+            for key, frame in list(api.figureframes.items()):
+                if key.startswith(prefix) and isinstance(frame, QVizAgentPanel):
+                    frame.show()
+                    frame.raise_()
+                    return frame
+
+        core = McpGuiCore(main_window=window, api=api)
+        # Built on this (GUI) thread: its signal hand-off only means something
+        # where the events that drain it are pumped -- the worker that runs the
+        # loop is not the one that answers. No Qt parent: the panel it serves is
+        # registered in the session's figureframes, and that is the anchor that
+        # keeps the panel, and then the agent and this dispatcher, together.
+        dispatcher = GuiDispatcher()
+        agent = AgentLoop(core, LLMClient(), dispatcher,
+                          main_window=window, api=api)
+        panel = QVizAgentPanel(main_window=window, api=api, agent=agent)
+        panel.show()
+        return panel

@@ -36,6 +36,10 @@ class FigureTypes:
     # Profiles panel it serves the case of the shot view it was opened from,
     # with a `None` node in `figToNodes` -- neither draws a curve of its own.
     EQUILIBRIUMPLOTTYPE = "EquiPlotView:"
+    # The agent panel is a window like the others: it is registered in
+    # `figureframes`, so the *Windows* menu and its *Delete* sub-menu reach it.
+    # It is not a figure (it draws no curves), so it keeps its own prefix.
+    AGENTTYPE = "Agent:"
 
     # Every kind of figure the commands can draw, in menu order: the label the
     # user reads (it is the prefix the window title shows), the icon named in
@@ -48,7 +52,8 @@ class FigureTypes:
                   ('Profiles', 'Profiles', PROFILESPLOTTYPE),
                   ('SlicesPlot', 'Figure', CURVEPLOTTYPE),
                   ('SlicesImage', 'Image', IMAGEPLOTTYPE),
-                  ('Equilibrium', 'Figure', EQUILIBRIUMPLOTTYPE))
+                  ('Equilibrium', 'Figure', EQUILIBRIUMPLOTTYPE),
+                  ('Agent', 'Agent', AGENTTYPE))
 
 class UserInputs:
     inputs = None
@@ -167,6 +172,15 @@ class QVizPreferences:
     # which is the point of a separate preference rather than a hard default.
     Uri_list_view = 'uri'
     URI_LIST_VIEWS = ('uri', 'parsed')
+    # The in-app agent: the LLM endpoint, the model, and the (optional) key.
+    # The local LLM server is the default: it is the stack the node already
+    # runs, and it needs no key. The model is named so a fresh install drives
+    # gestures without a preferences file; a model left empty is read from
+    # `/v1/models` at first use (its first entry). A key named is sent as
+    # `Authorization: Bearer`; an empty one is not.
+    AgentLLMEndpoint = 'http://127.0.0.1:11434/v1'
+    AgentLLMModel = 'qwen3.8:27b'
+    AgentLLMApiKey = ''
 
     def persist(**options):
         """Write `options` (``key`` -> ``value``) into the user preferences file.
@@ -275,6 +289,9 @@ class QVizPreferences:
             option12 = "Uri_list_filter_HDF5="
             option13 = "Uri_list_filter_MDSplus="
             option14 = "Uri_list_view="
+            option15 = "AgentLLMEndpoint="
+            option16 = "AgentLLMModel="
+            option17 = "AgentLLMApiKey="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -328,6 +345,15 @@ class QVizPreferences:
                             elif line.startswith(option14):
                                 QVizPreferences.Uri_list_view = \
                                     QVizPreferences.listView(line[len(option14):])
+                            elif line.startswith(option15):
+                                QVizPreferences.AgentLLMEndpoint = \
+                                    line[len(option15):].strip()
+                            elif line.startswith(option16):
+                                QVizPreferences.AgentLLMModel = \
+                                    line[len(option16):].strip()
+                            elif line.startswith(option17):
+                                QVizPreferences.AgentLLMApiKey = \
+                                    line[len(option17):].strip()
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],

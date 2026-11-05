@@ -67,6 +67,7 @@ SAVE = 'Save session'
 LOAD = 'Load session'
 NEW_PLUGIN = QVizFileMenu.NEW_PLUGIN
 MANAGE_PLUGINS = QVizFileMenu.MANAGE
+AGENT = QVizFileMenu.AGENT
 QUIT = 'Quit'
 GUI = __import__(QVizMainWindow.__module__, fromlist=['autoSavesSession'])
 CONTROLLER_MODULE = __import__(QVizMainMenuController.__module__,
@@ -251,10 +252,12 @@ def test_a_window_that_holds_no_session_yet_offers_no_load_menu(qapp):
 
     The two plugin lines are on the menu whatever the session holds: a plugin is
     not part of a case, and the folder it lives in is reached with no case open.
+    The agent line is the same: one window for the session, reached with no case.
     """
     window, fileMenu = aFileMenu(aRealController())
 
-    assert labels(fileMenu.menu) == [SAVE, NEW_PLUGIN, MANAGE_PLUGINS, QUIT]
+    assert labels(fileMenu.menu) == \
+        [SAVE, NEW_PLUGIN, MANAGE_PLUGINS, AGENT, QUIT]
     assert subMenuOf(fileMenu.menu, LOAD) is None
 
 
@@ -299,7 +302,7 @@ def test_refilling_the_menu_leaves_no_duplicate_line_on_it(qapp):
         openMenu(fileMenu.menu)
 
     assert labels(fileMenu.menu) == [SAVE, LOAD, NEW_PLUGIN, MANAGE_PLUGINS,
-                                     QUIT]
+                                     AGENT, QUIT]
     assert len(subMenuOf(fileMenu.menu, LOAD).actions()) == 1
 
 
@@ -341,7 +344,41 @@ def test_a_window_holding_no_controller_still_offers_a_way_out(qapp):
     window.addFileMenu()
 
     assert window.sessionMenuEntries() is None
-    assert labels(window.fileMenu.menu) == [NEW_PLUGIN, MANAGE_PLUGINS, QUIT]
+    assert labels(window.fileMenu.menu) == \
+        [NEW_PLUGIN, MANAGE_PLUGINS, AGENT, QUIT]
+
+
+@pytest.mark.ui
+def test_opening_the_agent_builds_one_panel_and_reuses_it(qapp):
+    """*Agent* reaches the session the way the *Windows* menu does -- through the
+    api -- so the panel it opens lands in `figureframes`, on that menu, like any
+    other window. And it is reused, not rebuilt: a second click is the same
+    window, not a second loop on the same api."""
+    from imasviz.VizAgent.panel import QVizAgentPanel
+    from imasviz.VizUtils import FigureTypes
+
+    window, fileMenu = aFileMenu(aRealController())
+    api = window.sessionApi()
+    assert api is not None and isinstance(getattr(api, 'figureframes',
+                                                   None), dict)
+
+    agent_line = [a for a in fileMenu.menu.actions()
+                  if a.text() == AGENT][0]
+
+    agent_line.trigger()
+    keys = [k for k in api.figureframes
+            if k.startswith(FigureTypes.AGENTTYPE)]
+    assert len(keys) == 1, api.figureframes
+    first = api.figureframes[keys[0]]
+    assert isinstance(first, QVizAgentPanel)
+    # The panel drives the session's own api -- the one the *Windows* menu reads.
+    assert first.api is api
+
+    agent_line.trigger()
+    keys = [k for k in api.figureframes
+            if k.startswith(FigureTypes.AGENTTYPE)]
+    assert len(keys) == 1, 'a second click opened a second panel'
+    assert api.figureframes[keys[0]] is first
 
 
 # ---------------------------------------------------------------------------
