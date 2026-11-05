@@ -39,7 +39,12 @@ that case:
   ``*.h5`` files into its ``path=`` URI.
 - :guilabel:`Saisie libre (URI)`: a free line for a case the local walk does
   not reach -- a UDA case, a remote case, or a URI pasted from elsewhere.
-  :guilabel:`Ouvrir` opens it as typed.
+  :guilabel:`Ouvrir` opens it as typed, :guilabel:`Copier l'URI` and
+  :guilabel:`Dossier…` stay at hand. The list's controls --
+  :guilabel:`Affichage`, :guilabel:`Trier par` and :guilabel:`Afficher` --
+  are not shown in this mode, because a free URI is subject to none of them;
+  choosing :guilabel:`Cas locaux (liste)` again puts the list and its
+  controls back.
 - :guilabel:`Legacy (5 champs)`: the historical form -- user name, IMAS database
   name, shot number, run number and backend -- filled by hand or by the
   :guilabel:`IMAS database browser`. :guilabel:`Ouvrir` builds the URI from the

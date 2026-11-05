@@ -74,7 +74,8 @@ class QVizCaseSelector(QWidget):
         # defaults the preferences reader gives when the file is absent, and the
         # state the file writes when the user first chooses a different one.
         filters = QHBoxLayout()
-        filters.addWidget(QLabel('Affichage'))
+        self.viewShapeLabel = QLabel('Affichage', self)
+        filters.addWidget(self.viewShapeLabel)
         self.viewBox = QComboBox(self)
         for key, label in self.VIEW_ITEMS:
             self.viewBox.addItem(label, key)
@@ -83,7 +84,8 @@ class QVizCaseSelector(QWidget):
             'le tir et le run. La donnée et l\'infobulle restent toujours la URI.')
         filters.addWidget(self.viewBox)
         filters.addSpacing(12)
-        filters.addWidget(QLabel('Trier par'))
+        self.sortKeyLabel = QLabel('Trier par', self)
+        filters.addWidget(self.sortKeyLabel)
         self.sortKeyBox = QComboBox(self)
         for key, label in self.SORT_ITEMS:
             self.sortKeyBox.addItem(label, key)
@@ -95,7 +97,8 @@ class QVizCaseSelector(QWidget):
             'descendant (999 avant 12).')
         filters.addWidget(self.sortDirButton)
         filters.addSpacing(12)
-        filters.addWidget(QLabel('Afficher'))
+        self.filterLabel = QLabel('Afficher', self)
+        filters.addWidget(self.filterLabel)
         self.filterHDF5 = QCheckBox('HDF5', self)
         self.filterHDF5.setChecked(True)
         self.filterMDS = QCheckBox('MDS+', self)
@@ -104,6 +107,15 @@ class QVizCaseSelector(QWidget):
         filters.addWidget(self.filterMDS)
         filters.addStretch(1)
         layout.addLayout(filters)
+        # The controls of the list, all of them: the labels and the boxes they
+        # name. `presentAs` hides this whole row at once when the panel is not
+        # showing the list it acts on -- a free URI line needs none of sort,
+        # shape or protocol -- and the row is kept whole so the list mode can
+        # put it back in one answer.
+        self._listControls = (
+            self.viewShapeLabel, self.viewBox,
+            self.sortKeyLabel, self.sortKeyBox, self.sortDirButton,
+            self.filterLabel, self.filterHDF5, self.filterMDS)
 
         self.listView = QListWidget(self)
         self.listView.setToolTip(
@@ -149,6 +161,34 @@ class QVizCaseSelector(QWidget):
         self._allCases = []
         self._shapedCases = []
         self._syncControls()
+
+    def presentAs(self, mode):
+        """Show the list or the free line, never the two at the same time.
+
+        The list mode shows the list and its whole controls row, and hides
+        the free line. The free mode shows the free line -- and keeps the
+        buttons, since a URI can still be opened, copied or turned in from a
+        folder -- and hides the list and every control of it: a free URI is
+        subject to none of the shape, the sort or the protocol, so the row
+        would sit there doing nothing, and hiding it is the mode's answer to
+        that, not a state the user left behind. A word that names neither is
+        refused by the word, so a caller that misspells its mode does not
+        quietly get a half-present panel.
+        """
+        if mode not in ('list', 'free'):
+            raise ValueError(
+                '%r is not a presentation of the case panel: name "list", '
+                'or "free"' % (mode,))
+        listMode = (mode == 'list')
+        self.listView.setVisible(listMode)
+        self.freeText.setVisible(not listMode)
+        for control in self._listControls:
+            control.setVisible(listMode)
+        # The buttons act on whichever of the two is visible, so they stay
+        # with the panel in both presentations.
+        self.openButton.setVisible(True)
+        self.copyButton.setVisible(True)
+        self.folderButton.setVisible(True)
 
     # The controls: what they say, what they refuse, and what they persist.
 

@@ -173,7 +173,10 @@ class GUIFrame(QTabWidget):
         The list, the free URI line, and the legacy form are three ways of
         making the same selection, and exactly one is in front at a time: the
         list and the free line both live in the selector (which the legacy mode
-        hides), and the legacy form is the only one it shows.
+        hides), and the legacy form is the only one it shows. The selector is
+        asked through `presentAs` rather than toggled by hand from here, so
+        what the free line hides -- its list, its controls row -- and what the
+        list mode puts back are answered by one owner at a time.
         """
         if index == 2:
             self.legacyPanel.setVisible(True)
@@ -181,8 +184,7 @@ class GUIFrame(QTabWidget):
             return
         self.legacyPanel.setVisible(False)
         self.uriPanel.setVisible(True)
-        self.uriPanel.listView.setVisible(index == 0)
-        self.uriPanel.freeText.setVisible(index == 1)
+        self.uriPanel.presentAs('list' if index == 0 else 'free')
 
     def openUri(self, uri):
         """The URI the selector handed over: refused if empty, else opened.
