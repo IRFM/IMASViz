@@ -905,6 +905,27 @@ class Viz_API:
             frame.deleteLater()
         return self.forgetWindow(frame)
 
+    def closeAll(self):
+        """Take every window of the run off the screen and out of the bookkeeping.
+
+        What a *New session* costs the run: the case views and every figure,
+        whatever window held them. The case views go first on purpose: a plugin
+        window parented on a view dies with the view, and
+        :meth:`RemoveDTVFrame` forgets its key at the same time, so the second
+        pass leaves it to Qt rather than closing it twice -- its key is already
+        out of ``figureframes`` when the loop gets to it.
+
+        :returns: (list) the frames it took away, the case views first
+        """
+        closed = []
+        for frame in list(self.DTVframeList):
+            if self.closeWindow(frame):
+                closed.append(frame)
+        for figureKey, frame in list(self.figureframes.items()):
+            if self.closeWindow(frame):
+                closed.append(frame)
+        return closed
+
     def mdiWindowOf(self, frame):
         """The MDI window a frame is embedded in, or None if it stands alone.
 

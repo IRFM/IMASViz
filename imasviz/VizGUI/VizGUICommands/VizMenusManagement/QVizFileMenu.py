@@ -61,8 +61,9 @@ class QVizFileMenu:
                 for one thing -- to close itself, so the confirmation and whatever
                 the close does still run.
 
-            sessionMenu (callable) : `menuSession(menu, listenerWidget)`, the two
-                session entries as the menu controller that owns the api of the
+            sessionMenu (callable) : `menuSession(menu, listenerWidget)`, the
+                session entries -- *New session*, *Save session* and *Load
+                session* -- as the menu controller that owns the api of the
                 session draws them. None while the start window holds no
                 controller -- the menu then says *Quit* and nothing else, rather
                 than dying in a menu bar.
