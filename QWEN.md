@@ -541,13 +541,18 @@ The Equilibrium one (`viz_equi/equilibriumcharts.py`, **1 253 l.**, author J. Mo
 the only matplotlib window in the application: it does not draw through the axes model, so
 it is registered under its own `FigureTypes.EQUILIBRIUMPLOTTYPE` (`EquiPlotView:`) — a
 **6th** `MENU_ORDER` kind, so a line of the *Windows* menu and one of its *Delete*
-sub-menu reach it — and it registers **no**
-node in `figToNodes`, which is why the "add this quantity to that figure" entries do not
-offer it. Measured facts worth keeping: it reads **occurrence 0** and does not ask (the
-Profiles panel, which offers every occurrence the case holds, carries that choice as a
-combo on its own window); its window is parented to the shot view and is **not** an MDI
+sub-menu reach it. Like the Profiles panel it serves the case of the shot view that
+opened it — a `None` node in `figToNodes`, registered **before** the frame is, so the
+*Windows* menu lists it in the case's group and the case's gestures (*Close this case*,
+*Show only this case*) reach it — while the "add this quantity to that figure" entries
+still do not offer it, because they offer figures kind by kind and none of them fills a
+matplotlib window. Its window is parented to the shot view and is **not** an MDI
 subwindow (`mdiWindowOf` answers `None`), so it goes
-with the view it came from; **6,73 s** cold for the first run of a process, **0,98–1,45 s**
+with the view it came from — and since the parent closes it down, `RemoveDTVFrame`
+releases its bookkeeping on the same pass (`Viz_API.windowsTakenDownWith`), which is
+what stops a closed case from leaving a dead line in the *Windows* menu and a figure
+number no window is ever entitled to again; **6,73 s** cold for the first run of a
+process, **0,98–1,45 s**
 once the IDS is in memory. And `QVizPreferences.Ignore_GGD` does **not** cover the plugin's
 own `get`: with the GGD walk of the tree reactivated, the same case cost **287 s** in a
 probe, which is why `test_53` pins that preference at **1**. Because that window is shown

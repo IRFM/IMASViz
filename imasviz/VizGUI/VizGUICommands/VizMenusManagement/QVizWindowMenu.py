@@ -122,11 +122,13 @@ class QVizWindowMenu:
         how do I get a handle on them?" is asked, and it is asked about a run
         that holds several cases at once -- so the windows are grouped by the
         case (URI) that owns them, not by the figure kind the flat list used to
-        show. A case and its figures sit together in one sub-menu; a figure that
-        serves several cases sits in each of them (the shared figure case); a
-        window a plugin drew, which serves no case, stays at the top level. The
-        *All* gestures act on the run, the *Disposition* sub-menu acts on the
-        MDI area, and the *Delete* sub-menu still closes by kind.
+        show. A case and its figures sit together in one sub-menu, and so do
+        the windows a plugin drew on it -- the Profiles panel and the
+        Equilibrium chart both serve that one case. A figure that serves
+        several cases sits in each of them (the shared figure case); a window
+        no case serves stays at the top level. The *All* gestures act on the
+        run, the *Disposition* sub-menu acts on the MDI area, and the *Delete*
+        sub-menu still closes by kind.
         """
         refill(self.menu)
         windows = self.windows()

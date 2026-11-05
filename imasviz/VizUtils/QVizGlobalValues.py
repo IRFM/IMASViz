@@ -30,9 +30,11 @@ class FigureTypes:
     IMAGEPLOTTYPE = "SlicesImage"
     # The window the Equilibrium plugin builds is a figure like the others: it is
     # registered in `figureframes`, so the *Windows* menu and its *Delete*
-    # sub-menu reach it. It is not drawn through the axes model, so it keeps its own prefix and registers no
-    # node in `figToNodes` -- the "add this quantity to that figure" entries walk
-    # that record and could not fill a matplotlib window.
+    # sub-menu reach it. It is not drawn through the axes model, so it keeps its
+    # own prefix: the "add this quantity to that figure" entries offer figures
+    # kind by kind, and none of them fills a matplotlib window. Like the
+    # Profiles panel it serves the case of the shot view it was opened from,
+    # with a `None` node in `figToNodes` -- neither draws a curve of its own.
     EQUILIBRIUMPLOTTYPE = "EquiPlotView:"
 
     # Every kind of figure the commands can draw, in menu order: the label the

@@ -13,9 +13,12 @@ The user's complaint was a pile of windows when several cases are open, and the
 professional answer for that pile is a management of them that speaks in the
 language the case is already spoken in -- the URI. A case and the figures it
 serves are grouped together in the menu, a figure that serves several cases is
-in each case's group (the shared-figure case), a case-less plugin window stays
-where it is, and a whole case can be isolated, closed, or moved out of the
-way in one gesture.
+in each case's group (the shared-figure case), the windows a plugin drew on a
+case sit in that case's group (they serve its one URI, node ``None``), and a
+whole case -- view, figures, plugin windows -- can be isolated, closed, or
+moved out of the way in one gesture. Closing a case view also releases the
+bookkeeping of a window the view takes down with it, because that is the path
+a ghost line used to leave behind.
 
 The layout modes (windowed/tabbed/tiled/cascaded) are applied by the MDI area
 and persisted through the same preferences file that already holds the theme
@@ -32,7 +35,7 @@ from PySide6.QtWidgets import QMenu, QWidget
 
 from imasviz.Viz_API import Viz_API, caseTooltip, titleWithCases
 from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
-from imasviz.VizUtils import QVizPreferences
+from imasviz.VizUtils import FigureTypes, QVizPreferences
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu import \
     QVizWindowMenu
 
@@ -317,6 +320,39 @@ def test_closeCase_closes_its_view_and_its_own_figures(qapp):
     assert 'SlicesPlotAB' in api.figureframes
     assert figAB is not None
     assert api.figureframes['SlicesPlotAB'] is figAB
+
+
+def test_closing_a_case_view_releases_a_window_it_takes_down(qapp):
+    """A plugin window on the shot view dies with the view -- and so must its key.
+
+    Before the rule, the only path a case view left this behind: the window's
+    C++ object went down with the view's parent, the registry kept its entry,
+    the *Windows* menu kept a line no gesture could act on, and the number of
+    the next window of the kind skipped the dead key. A window that stands on
+    its own (the Profiles panel) keeps its registration.
+    """
+    api = makeApi(cases=[URI_A])
+    view = api.DTVframeList[0]
+    chart = QWidget()  # parented on the view: taken down with it
+    chart.setParent(view)
+    chart.hide()
+    chart.show()
+    panel = QWidget()  # top level: stands on its own
+    panel.hide()
+    panel.show()
+    api.AddNodeToFigure('EquiPlotView:1', 'chart', (URI_A, None))
+    api.figureframes['EquiPlotView:1'] = chart
+    api.AddNodeToFigure('PlotView:1', 'panel', (URI_A, None))
+    api.figureframes['PlotView:1'] = panel
+
+    api.forgetWindow(view)
+    qapp.processEvents()
+
+    assert 'EquiPlotView:1' not in api.figureframes
+    assert api.GetNextKeyForFigure(FigureTypes.EQUILIBRIUMPLOTTYPE) == \
+        'EquiPlotView:1'
+    # The panel, a window the view does not take down, keeps its place.
+    assert api.figureframes['PlotView:1'] is panel
 
 
 def onlyVisible(frames, except_):
