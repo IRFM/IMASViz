@@ -26,7 +26,9 @@ Loading an IMAS IDS
 The case is named by its **URI** -- the string the Access Layer takes to open
 it. The start window has a single :guilabel:`Cas` tab, and the
 :guilabel:`Mode de sélection` switch at its top offers three ways of naming
-that case:
+that case. The panel sits to the left of the figure area, on a splitter:
+its border is dragged to settle the width of the panel, since the thing the
+width serves is the URI of its list.
 
 - :guilabel:`Cas locaux (liste)` (the default): a flat, ordered list of the
   local cases -- the user's own imasdb and ``public`` -- in which each row, by

@@ -14,8 +14,8 @@ from functools import partial
 from PySide6.QtWidgets import (QTabWidget, QWidget, QFormLayout, QApplication,
                              QMenu, QMainWindow, QDockWidget,
                              QLineEdit, QPushButton, QVBoxLayout, QComboBox,
-                             QPlainTextEdit, QGridLayout, QMdiArea, QTableView,
-                             QLabel, QHBoxLayout)
+                             QPlainTextEdit, QGridLayout, QSplitter, QMdiArea,
+                             QTableView, QLabel, QHBoxLayout)
 from PySide6.QtCore import Qt
 from pathlib import Path
 
@@ -50,6 +50,27 @@ def autoSavesSession():
     them.
     """
     return QVizPreferences.Auto_save_session == 1
+
+
+def startAndMdiSplitter(parent, startWindow, mdi):
+    """The left-right layout of the main window: the case panel beside the MDI.
+
+    A horizontal splitter, and not the fixed 1:7 grid it used to be, because
+    the thing the user widens is the case panel: its rows are URIs, and a URI
+    is a path, and a wide path is what the list exists to show. The drag of
+    the handle is the only width the panel knows, and it starts at the old
+    1:7 so a run that never touches the border sees the layout it had.
+
+    A function of the module and not a method of the window, for the same
+    reason `autoSavesSession` is: the call is two widgets and a parent, and a
+    test that builds the whole window to reach it would be building the
+    session of a machine that is not the one under test.
+    """
+    splitter = QSplitter(Qt.Horizontal, parent)
+    splitter.addWidget(startWindow)
+    splitter.addWidget(mdi)
+    splitter.setSizes([100, 700])
+    return splitter
 
 
 class GUIFrame(QTabWidget):
@@ -445,20 +466,15 @@ class QVizMainWindow(QMainWindow):
 
         # Set MDI (Multiple Document Interface)
         self.MDI = QVizMDI(self)
-        # Set central widget
-        centralWidget = QWidget(self)
         # Set start window
         self.startWindow = QVizStartWindow(self)
 
-        # Set layout and add start window and MDI to it
-        layout = QGridLayout(centralWidget)
-        layout.setColumnStretch(0, 1)
-        layout.setColumnStretch(1, 7)
-
-        layout.addWidget(self.startWindow, 0, 0, 1, 1)
-        layout.addWidget(self.MDI, 0, 1, 1, 1)
+        # Set layout: the case panel beside the MDI area, in a splitter the
+        # user can drag, so the width of the panel (whose rows are URIs) is
+        # settled by the hand rather than by a fixed ratio.
+        self.splitter = startAndMdiSplitter(self, self.startWindow, self.MDI)
         # Set central widget of the main window
-        self.setCentralWidget(centralWidget)
+        self.setCentralWidget(self.splitter)
         # The File menu, once the start window exists: its session entries are
         # asked of the menu controller that window was built with.
         self.addFileMenu()
