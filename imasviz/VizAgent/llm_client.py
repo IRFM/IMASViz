@@ -11,8 +11,9 @@
 Standard library only: ``urllib.request`` and ``json``. No new dependency.
 
 The configuration is read from ``QVizPreferences``:
-``AgentLLMEndpoint`` (default ``http://127.0.0.1:8080/v1``),
-``AgentLLMModel`` (default: first entry from ``/v1/models``),
+``AgentLLMEndpoint`` (default ``http://127.0.0.1:11434/v1``),
+``AgentLLMModel`` (default ``qwen3.8:27b``; an empty model is read from the
+first entry of ``/v1/models``),
 ``AgentLLMApiKey`` (default: empty, no ``Authorization`` header).
 
 Refusals are named (the style of this repository):

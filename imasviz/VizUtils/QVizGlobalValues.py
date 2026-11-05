@@ -171,12 +171,13 @@ class QVizPreferences:
     Uri_list_view = 'uri'
     URI_LIST_VIEWS = ('uri', 'parsed')
     # The in-app agent: the LLM endpoint, the model, and the (optional) key.
-    # The local llama-server is the default: it is the stack the node already
-    # runs, and it needs no key. A model name left empty is read from
-    # `/v1/models` at first use. A key named is sent as `Authorization: Bearer`;
-    # an empty one is not.
-    AgentLLMEndpoint = 'http://127.0.0.1:8080/v1'
-    AgentLLMModel = ''
+    # The local LLM server is the default: it is the stack the node already
+    # runs, and it needs no key. The model is named so a fresh install drives
+    # gestures without a preferences file; a model left empty is read from
+    # `/v1/models` at first use (its first entry). A key named is sent as
+    # `Authorization: Bearer`; an empty one is not.
+    AgentLLMEndpoint = 'http://127.0.0.1:11434/v1'
+    AgentLLMModel = 'qwen3.8:27b'
     AgentLLMApiKey = ''
 
     def persist(**options):
