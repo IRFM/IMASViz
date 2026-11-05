@@ -51,8 +51,11 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
 
     def __init__(self, main_window=None, api=None, agent=None):
         QVizClosableWindow.__init__(self)
-        super(QVizClosableWindow, self).__init__(
-            main_window)
+        # Top-level, like the Profiles panel (a `QMainWindow` with no parent):
+        # it is a window of the session -- in the *Windows* menu -- and not a
+        # child widget of the main window, so `main_window` is a reference for
+        # context, not a Qt parent (a parent would change what a `show` here is).
+        super(QVizClosableWindow, self).__init__()
 
         self.main_window = main_window
         self.api = api
