@@ -82,6 +82,7 @@ from PySide6.QtWidgets import QMainWindow, QMdiArea, QMenu
 
 from imasviz.VizDataSource.QVizDataSourceFactory import QVizDataSourceFactory
 from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
+from imasviz.Viz_API import titleWithCases
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizMainMenuController \
     import QVizMainMenuController
 from imasviz.VizGUI.VizGUICommands.VizMenusManagement.QVizWindowMenu \
@@ -175,9 +176,9 @@ def windowsMenu(api):
 def windowTitles(menu):
     """The lines that name a window, walking the sub-menus they sit in.
 
-    The *Windows* menu groups each case and its figures in a sub-menu, and a
-    case-less window (this plugin) sits at the top. Walk those to read the
-    state, and leave the gesture sub-menus (*Delete*) and *run* entries out.
+    The *Windows* menu groups each case and its figures in a sub-menu, and the
+    windows a plugin drew on it sit there too. Walk those to read the state,
+    and leave the gesture sub-menus (*Delete*) and *run* entries out.
     """
     fixed = (QVizWindowMenu.SHOW_ALL, QVizWindowMenu.HIDE_ALL,
              QVizWindowMenu.DELETE, QVizWindowMenu.NEXT,
@@ -352,6 +353,29 @@ def test_the_window_is_titled_with_the_key_it_is_registered_under(session):
     assert session.frame.toolTip() == CASE_URI
 
 
+def test_the_window_serves_the_case_that_opened_it(session):
+    # The menu used to draw this window at the top level, and *Close this case*
+    # skipped it: the line outlived the window and no gesture could act on it.
+    # The panel beside it carries the case with a `None` node, because it draws
+    # no curve of its own; this window does now, so both plugin windows of a
+    # case are managed by the same gestures and sit in the case's group.
+    assert session.api.casesServedBy(session.frame) == (CASE_URI,)
+    [served] = session.api.figToNodes[FIRST_KEY].values()
+    assert served == (CASE_URI, None)
+
+    # The line of the *Windows* menu is the key with its case, in the case's
+    # sub-menu -- not at the top level, where a window the case does not serve
+    # sits, and where a user cannot tell which of the two this is. The label is
+    # what `openWindows` answers for a line: the key, then the case.
+    menu = windowsMenu(session.api)
+    submenu = subMenuNamed(menu, caseLabel(CASE_URI))
+    assert submenu is not None, [a.text() for a in menu.actions()]
+    line = titleWithCases(FIRST_KEY, (CASE_URI,))
+    assert actionNamed(submenu, line) is not None
+    top_level = [a.text() for a in menu.actions() if a.menu() is None]
+    assert not [t for t in top_level if t.startswith(FIRST_KEY)]
+
+
 def test_the_arrays_hold_every_slice_and_point_the_case_holds(session):
     frame = session.frame
     assert frame.lenArrTimes == SLICES
@@ -495,22 +519,25 @@ def test_the_menu_lists_the_plugin_windows_and_delete_takes_one_away(session):
     delete = subMenuNamed(menu, QVizWindowMenu.DELETE)
 
     # The plugin's matplotlib window is a figure like the others: its kind is in
-    # ``MENU_ORDER``, so it is a line of the one list -- next to the case view of
-    # the session, which the same menu names.
+    # ``MENU_ORDER``, so it is a line of the one list -- beside the case view of
+    # the session, in the case's group (the line names the case it serves), and
+    # that is what *Close this case* and the case's other gestures reach with it.
+    first = titleWithCases(FIRST_KEY, (CASE_URI,))
+    second = titleWithCases(SECOND_KEY, (CASE_URI,))
     assert windowTitles(menu) == [session.view.dataSource.getLongLabel(),
-                                  FIRST_KEY, SECOND_KEY]
+                                  first, second]
     assert [a.text() for a in delete.actions() if not a.isSeparator()] == \
-        [session.view.dataSource.getLongLabel(), 'All', FIRST_KEY, SECOND_KEY,
+        [session.view.dataSource.getLongLabel(), 'All', first, second,
          'All']
 
     # The line addresses the window it names: this one is not embedded in the MDI
     # area, so the entry acts on the frame itself.
-    actionNamed(menu, FIRST_KEY).trigger()
+    actionNamed(menu, first).trigger()
     session.qapp.processEvents()
     assert not session.api.figureframes[FIRST_KEY].isVisible()
     redrawn = windowsMenu(session.api)
-    assert actionNamed(redrawn, FIRST_KEY).isChecked() is False
-    actionNamed(redrawn, FIRST_KEY).trigger()
+    assert actionNamed(redrawn, first).isChecked() is False
+    actionNamed(redrawn, first).trigger()
     session.qapp.processEvents()
     assert session.api.figureframes[FIRST_KEY].isVisible()
 
@@ -519,7 +546,7 @@ def test_the_menu_lists_the_plugin_windows_and_delete_takes_one_away(session):
     # window itself -- and asking it is the point, a key silently replaced by
     # another frame would pass the assertion above and leave a window on screen.
     frame = session.api.figureframes[FIRST_KEY]
-    actionNamed(delete, FIRST_KEY).trigger()
+    actionNamed(delete, first).trigger()
     session.qapp.processEvents()
     assert session.api.GetFiguresKeys(figureType=KIND) == [SECOND_KEY]
     assert not frame.isVisible()
@@ -549,8 +576,9 @@ def test_the_close_box_of_the_plugin_window_hides_it_and_keeps_its_key(session,
     # menu still names the window, unchecked, and its line puts it back.
     assert session.api.GetFiguresKeys(figureType=KIND) == [SECOND_KEY]
     menu = windowsMenu(session.api)
-    assert actionNamed(menu, SECOND_KEY).isChecked() is False
-    actionNamed(menu, SECOND_KEY).trigger()
+    second = titleWithCases(SECOND_KEY, (CASE_URI,))
+    assert actionNamed(menu, second).isChecked() is False
+    actionNamed(menu, second).trigger()
     session.qapp.processEvents()
     assert session.api.figureframes[SECOND_KEY].isVisible()
 

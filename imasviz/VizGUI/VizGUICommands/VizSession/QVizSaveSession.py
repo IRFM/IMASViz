@@ -27,8 +27,9 @@ open" is only recorded there.
 Two kinds of window used to be left out and said in the log: the Profiles
 plugin's window and the Equilibrium chart. Neither is drawn from a selection of
 this session -- the first asks which occurrence to plot through a dialog of its
-own, the second is a matplotlib window that registers no node in `figToNodes` at
-all. Since version 3 of the format they are saved, as a `<PluginWindow>` under
+own, the second is a matplotlib window of one case, carrying a ``None`` node in
+`figToNodes` like the panel beside it. Since version 3 of the format they are
+saved, as a `<PluginWindow>` under
 the case whose gesture opened them: the gesture belongs to a shot view -- its
 catalog is what offers the entry -- and the two answers that entry would have
 asked are written with it, because a restore has no one to answer a modal

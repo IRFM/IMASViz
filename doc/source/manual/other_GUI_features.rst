@@ -30,11 +30,13 @@ replaces that.
 
 The windows are grouped **by case first**. Each case opens a sub-menu holding its
 view and the plot windows that case drew. A plot window that drew its curves from
-more than one case sits in **each** of those sub-menus (a comparison), and a
-window a plugin drew, which belongs to no case, sits at the top level. That is
-what the menu is for when several cases are open: a window can be found by the
-case it came from, and the whole case can be gathered or dismissed in one
-gesture.
+more than one case sits in **each** of those sub-menus (a comparison). A window a
+plugin drew belongs to the case whose shot view offered its entry -- the
+:guilabel:`Profiles` panel and the :guilabel:`Equilibrium` chart both serve that
+one case -- so it sits in that case's sub-menu like the rest of its windows, and
+:guilabel:`Close this case` reaches it. That is what the menu is for when several
+cases are open: a window can be found by the case it came from, and the whole
+case can be gathered or dismissed in one gesture.
 
 Within a case's sub-menu:
 

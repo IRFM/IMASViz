@@ -30,10 +30,12 @@ def titleWithCases(title, uris):
 
     `title` — the key today, or the plugin's own heading — is kept verbatim,
     and one short label follows for every case, separated by `; `. A figure
-    drawn from two cases carries both; a window no case serves (a plugin
-    window that registered no node -- the Equilibrium chart, today) carries
-    its heading alone, so the answer reads exactly `title` again instead of
-    a trailing `— ` nobody could explain.
+    drawn from two cases carries both; a window no case serves -- a frame
+    registered without any node -- carries its heading alone, so the answer
+    reads exactly `title` again instead of a trailing `— ` nobody could
+    explain. The plugin windows name their one case: the Profiles panel and
+    the Equilibrium chart both serve the case of the shot view they were
+    opened from.
 
     The short label, not the URI, is what fits the one line the title bar is:
     the whole URI is where the user hovers for it, and it is `caseTooltip`.
@@ -167,10 +169,15 @@ class QVizWindowRecord:
             api       (Viz_API) : the bookkeeping the window lives in
             cases     (tuple) : the case URIs the window serves -- its own for
                               a case view, every origin a figure drew a curve
-                              from for a figure, and ``()`` for a window a
-                              plugin drew, which has no case to group under.
-                              What the *Windows* menu groups by and what
-                              "isolating a case" and "closing a case" act on.
+                              from for a figure. A window a plugin drew
+                              serves the case of the shot view it was opened
+                              from -- what both registered plugins carry, the
+                              node of one being ``None`` because neither draws
+                              a curve of its own -- and a window no case
+                              serves (a frame registered without any node)
+                              answers ``()``. What the *Windows* menu groups
+                              by and what "isolating a case" and "closing a
+                              case" act on.
         """
         self.kindLabel = kindLabel
         self.iconLabel = iconLabel
@@ -276,14 +283,44 @@ class Viz_API:
 
     def RemoveDTVFrame(self, frame):
         """Removes the shot view frame from the list of opened frames
+
+        and out of the bookkeeping of every window the view takes down with
+        it: a plugin window parented on the view dies with it, so its key has
+        to leave the registry at the same time, or the *Windows* menu keeps a
+        line no gesture can act on, and the number of the next window of that
+        kind skips it for ever.
+
         :param frame: a QVizDataTreeViewFrame object
         """
         self.DTVframeList.remove(frame)
         self.DTVlist.remove(frame.dataTreeView)
+        for figureKey in self.windowsTakenDownWith(frame):
+            self.ForgetFigure(figureKey)
         # The frame was the last one displaying this case: let go of the IDSs
         # that were loaded for it, as the per-source cache used to go away with
         # the source it owned.
         frame.dataTreeView.dataSource.forget_case()
+
+    def windowsTakenDownWith(self, frame):
+        """The registered windows inside this view's widget tree.
+
+        A window a plugin draws on the shot view is a child of it (the Equi-
+        librium chart parents on the tree), so closing the view takes its C++
+        object down with the rest of the view -- the only windows with that
+        fate, since a figure sits in the MDI area and a panel like the Profiles
+        one stands on its own. Their parent chain is the answer, guarded by
+        ``shiboken6.isValid`` the way :meth:`QVizWindowRecord.frame` guards
+        it, because a wrapper kept alive by the registry outlives its object.
+        """
+        taken = []
+        for figureKey, window in list(self.figureframes.items()):
+            node = window
+            while node is not None and shiboken6.isValid(node):
+                if node is frame:
+                    taken.append(figureKey)
+                    break
+                node = node.parent()
+        return taken
 
     def AddNodeToFigure(self, figureKey, key, tup):
         """Adds an entry to the figToNodes[figureKey] dictionary.
@@ -539,9 +576,12 @@ class Viz_API:
         A figure drawn from one case serves that one; a comparison figure serves
         every case that put a curve in it -- so "isolating" or "closing" one
         case shows the comparison while the other case it serves is still
-        open. A window a plugin drew -- which registers no node in `figToNodes`
-        -- serves none, and is left to its own gestures, since there is no case
-        to group it under.
+        open. The windows a plugin drew serve the case of the shot view their
+        entry ran on -- the Profiles panel and the Equilibrium chart both
+        register it here, with a ``None`` node, because neither draws a curve
+        of its own, and the *Windows* menu and the case gestures read this
+        instead of a second record. A frame registered without any node serves
+        none.
         """
         figureKey = self.GetFigureKeyOf(frame)
         if figureKey is None:
@@ -593,12 +633,14 @@ class Viz_API:
     def isolateCase(self, uri):
         """Show one case's windows and hide the rest, shared ones shown.
 
-        A case's window set is its own case view and every figure
-        :meth:`casesServedBy` answers its URI. A figure that serves this case
-        *and* another is shown, not hidden: isolating a case is about getting
-        the other cases off the screen, not about the figures this case still
-        reads. A window that serves no case at all -- one a plugin drew -- is
-        left exactly where it is, since "this case" has nothing to say about it.
+        A case's window set is its own case view, every figure
+        :meth:`casesServedBy` answers its URI, and the windows a plugin drew
+        on it -- the Profiles panel, the Equilibrium chart -- which serve that
+        one case and no other. A figure that serves this case *and* another
+        is shown, not hidden: isolating a case is about getting the other
+        cases off the screen, not about the figures this case still reads. A
+        window that serves no case at all is left exactly where it is, since
+        "this case" has nothing to say about it.
         """
         for record, frame in self.windowsFor():
             if not record.cases:

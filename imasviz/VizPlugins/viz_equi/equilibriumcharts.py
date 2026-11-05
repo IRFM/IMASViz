@@ -1253,9 +1253,22 @@ class equilibriumcharts(VizPlugin):
                              'equilibrium and wall IDSs, so it cannot be opened '
                              'on occurrence %d as "%s" asks.'
                              % (answers.occurrence, answers.figureKey))
+        # The case this window serves is registered before the frame is, the
+        # way the Profiles panel does it: `AddNodeToFigure` rewrites the title
+        # of a registered frame, so the order keeps the heading this window sets
+        # itself, and the node of a window that draws no curve of its own is
+        # `None` -- what the panel already carries. With it, the *Windows*
+        # menu lists the window in the case's group, and the case's gestures
+        # -- *Close this case*, *Show only this case* -- reach it instead of
+        # leaving it at the top level of the menu, alive after the case is
+        # closed and uncloseable by any line of it.
         self.frame = PlotFrame(self.selectedTreeNode, vizAPI,
                                parent=self.dataTreeView,
                                title=PlotFrame.title + ' [' + figureKey + ']')
+        uri = self.dataTreeView.dataSource.uri
+        vizAPI.AddNodeToFigure(figureKey,
+                               self.dataTreeView.dataSource.dataKey2(figureKey),
+                               (uri, None))
         vizAPI.figureframes[figureKey] = self.frame
         # What a session needs to put this window back. Measured, the frame answers
         # neither its key nor its entry, and `mdiWindowOf` answers None: it is a
