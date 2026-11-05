@@ -38,7 +38,10 @@ width serves is the URI of its list.
   double click, or :guilabel:`Ouvrir`, opens the selected case;
   :guilabel:`Copier l'URI` copies it, so the case can be named wherever the
   Access Layer takes a URI; :guilabel:`Dossier…` turns a chosen folder of
-  ``*.h5`` files into its ``path=`` URI.
+  ``*.h5`` files into its ``path=`` URI. The panel is narrow, so the controls
+  are laid on two lines -- :guilabel:`Affichage` and :guilabel:`Trier par` on
+  the first, :guilabel:`Afficher` on the second -- which is what keeps them
+  inside the width of the panel.
 - :guilabel:`Saisie libre (URI)`: a free line for a case the local walk does
   not reach -- a UDA case, a remote case, or a URI pasted from elsewhere.
   :guilabel:`Ouvrir` opens it as typed, :guilabel:`Copier l'URI` and

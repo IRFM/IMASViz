@@ -73,44 +73,58 @@ class QVizCaseSelector(QWidget):
         # been (the URI, database, ascending, both protocols on) -- the
         # defaults the preferences reader gives when the file is absent, and the
         # state the file writes when the user first chooses a different one.
-        filters = QHBoxLayout()
+        # They are laid on **two lines**: the panel is the eighth of the
+        # window, and a single row of all eight controls does not fit in
+        # that width -- the boxes squeezed until they overlapped, which is
+        # what a row that asks for more width than the panel has does. A row
+        # per question group stays inside the width, and each group keeps its
+        # label with its controls.
+        shapeRow = QHBoxLayout()
         self.viewShapeLabel = QLabel('Affichage', self)
-        filters.addWidget(self.viewShapeLabel)
+        shapeRow.addWidget(self.viewShapeLabel)
         self.viewBox = QComboBox(self)
         for key, label in self.VIEW_ITEMS:
             self.viewBox.addItem(label, key)
         self.viewBox.setToolTip(
             'La forme des lignes : la URI d\'ouverture, ou le backend, la base, '
             'le tir et le run. La donnée et l\'infobulle restent toujours la URI.')
-        filters.addWidget(self.viewBox)
-        filters.addSpacing(12)
+        shapeRow.addWidget(self.viewBox)
+        shapeRow.addSpacing(12)
         self.sortKeyLabel = QLabel('Trier par', self)
-        filters.addWidget(self.sortKeyLabel)
+        shapeRow.addWidget(self.sortKeyLabel)
         self.sortKeyBox = QComboBox(self)
         for key, label in self.SORT_ITEMS:
             self.sortKeyBox.addItem(label, key)
+        # The box must be put in the row: before this, its addWidget had gone
+        # missing, and the box floated at (0,0) over the controls to its left
+        # -- the overlap a user saw as "one list spilling over another". A
+        # box with a parent and no layout is never laid out, and the geometry
+        # test at the panel width is what pins it back in the row.
+        shapeRow.addWidget(self.sortKeyBox)
         self.sortDirButton = QPushButton('↓', self)
         self.sortDirButton.setCheckable(True)
         self.sortDirButton.setChecked(False)          # False = asc (montant)
         self.sortDirButton.setToolTip(
             'Le sens du tri. Non cliqué, montant (12 avant 999); cliqué, '
             'descendant (999 avant 12).')
-        filters.addWidget(self.sortDirButton)
-        filters.addSpacing(12)
+        shapeRow.addWidget(self.sortDirButton)
+        shapeRow.addStretch(1)
+        layout.addLayout(shapeRow)
+        protocolRow = QHBoxLayout()
         self.filterLabel = QLabel('Afficher', self)
-        filters.addWidget(self.filterLabel)
+        protocolRow.addWidget(self.filterLabel)
         self.filterHDF5 = QCheckBox('HDF5', self)
         self.filterHDF5.setChecked(True)
         self.filterMDS = QCheckBox('MDS+', self)
         self.filterMDS.setChecked(True)
-        filters.addWidget(self.filterHDF5)
-        filters.addWidget(self.filterMDS)
-        filters.addStretch(1)
-        layout.addLayout(filters)
+        protocolRow.addWidget(self.filterHDF5)
+        protocolRow.addWidget(self.filterMDS)
+        protocolRow.addStretch(1)
+        layout.addLayout(protocolRow)
         # The controls of the list, all of them: the labels and the boxes they
-        # name. `presentAs` hides this whole row at once when the panel is not
+        # name. `presentAs` hides the whole group at once when the panel is not
         # showing the list it acts on -- a free URI line needs none of sort,
-        # shape or protocol -- and the row is kept whole so the list mode can
+        # shape or protocol -- and the group is kept whole so the list mode can
         # put it back in one answer.
         self._listControls = (
             self.viewShapeLabel, self.viewBox,

@@ -102,6 +102,40 @@ class AFrame:
         self.legacyPanel = QWidget()
 
 
+def test_the_controls_fit_the_panel_width_without_squeezing(qapp):
+    """The panel is the eighth of the window, and its controls must fit it.
+
+    A single row of all the controls does not fit in that width -- the boxes
+    are squeezed until they overlap, which is the complaint this was written
+    to answer. Laid the way they are, each control holds its own ground at
+    the panel width: no two of them occupy the same place. The assertion is
+    on the named controls, and not on every child of the selector, because a
+    checkbox holds its own label inside it, which is what it is for.
+    """
+    sel = QVizCaseSelector()
+    sel.resize(160, 300)
+    sel.show()
+    qapp.processEvents()
+    try:
+        controls = [w for w in sel._listControls if not w.isHidden()]
+        rects = []
+        for w in controls:
+            rect = w.geometry()
+            if rect.width() > 0 and rect.height() > 0:
+                rects.append((w, rect))
+        assert len(rects) >= 2, 'no control to check: nothing laid out'
+        for i, (first, a) in enumerate(rects):
+            for other, b in rects[i + 1:]:
+                overlap = a.intersected(b)
+                assert overlap.width() == 0 or overlap.height() == 0, \
+                    '%s and %s share %dx%d px' % (
+                        type(first).__name__,
+                        type(other).__name__,
+                        overlap.width(), overlap.height())
+    finally:
+        sel.close()
+
+
 def test_the_mode_switch_presents_one_mode_at_a_time(qapp):
     """What the mode switch names is what the panel shows, at that index.
 
