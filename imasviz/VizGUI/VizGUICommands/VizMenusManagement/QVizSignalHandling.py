@@ -101,11 +101,7 @@ class QVizSignalHandling(QObject):
                     # history, and a profile of the dynamic array still draws
                     # against the coordinate the dictionary names -- the
                     # tensor entry asks the other question (the arrays under
-                    # the sliders) and does not replace either. What the view
-                    # keeps taking away is the 'Plot <node> to' menu, which
-                    # asks which window this node should go into -- and the
-                    # node here is the whole tensor, which the tensor's own
-                    # entry opens for it.
+                    # the sliders) and does not replace either.
                     action_plotTime = self.actionPlotAsFunctionOfTime()
                     if action_plotTime is not None:
                         self.contextMenu.addAction(action_plotTime)
@@ -115,6 +111,18 @@ class QVizSignalHandling(QObject):
                         self.contextMenu.addAction(action_plotCoordinate)
                     # The tensor entry follows the items it complements.
                     self.menuExploreThisTensor(self.contextMenu)
+                    # The window menu stays as well: one tensor is one node in
+                    # this view, and the tensor entry opens the window it fills
+                    # for it -- but a figure that already draws a curve of this
+                    # quantity, or one the node can run along, is a window the
+                    # node can *join*, and "which window" still has to have an
+                    # answer. Asked with no stand-alone entries, because those
+                    # are in the pop-up above: the view used to take the menu
+                    # away with the entry it duplicates, and that is how a node
+                    # that shares an abscissa with an open curve had no menu
+                    # line pointing at the figure.
+                    self.contextMenu.addMenu(
+                        self.menuPlotCurrentSignalNode(standalone=False))
                 else:
                     # A dataset with two axes of its own has no abscissa a
                     # curve figure can run along: it is an image, and the
@@ -262,13 +270,13 @@ class QVizSignalHandling(QObject):
         psi, which puts a slider on time_slice") appeared only once such a figure
         happened to be open, and there was no entry left to open it with.
 
-        A tensor is not tied to a new window either: the sliders of a figure drive
-        every curve it holds, so a second tensor belongs there when it would put
-        the **same arrays** under them. Under each heading, then: *New*, and one
-        line per open figure drawn along that abscissa whose sliders are those very
-        arrays. A figure whose sliders are other arrays is not offered -- and the
-        command behind it refuses it by name if it is asked, because a slider would
-        then walk one curve and leave the other where the tree stood.
+        A tensor is not tied to a new window either: a slider drives the curves of
+        the array it names only, so a tensor of another array joins the figure
+        with its own slider beside the ones already there -- and one line under
+        the heading reaches it. Under each heading, then: *New*, and one line per
+        open figure drawn along that abscissa. The gate the menu asks is what the
+        figure draws -- the abscissa only -- because the arrays are not a refusal
+        anymore, they are a band the figure grows.
         """
         plotting = QVizNodePlotting(self.treeNode)
         if not (plotting.isPlottable() and plotting.curveAbscissae()):
@@ -404,7 +412,7 @@ class QVizSignalHandling(QObject):
         self.treeNode.setCoordinate(1, alternative_coordinate)
         self.plotPreviewSignalCommand()
 
-    def menuPlotCurrentSignalNode(self, parentMenu=None):
+    def menuPlotCurrentSignalNode(self, parentMenu=None, standalone=True):
         """The menu that plots the node the right click was built on.
 
         One menu for every shape. The command behind 'New' picks the frame from
@@ -420,6 +428,13 @@ class QVizSignalHandling(QObject):
                                  this submenu -- but they are handed by the
                                  caller, because reading self.contextMenu made this
                                  method work only after buildContextMenu had run.
+            standalone (bool)  : whether the node's stand-alone entries -- the
+                                 abscissa items and the tensor heading -- are
+                                 added from this call. The tensor view adds them
+                                 itself, in the order it wants, and then asks for
+                                 the window menu alone: a call that both added
+                                 them and asked for the menu would show each one
+                                 twice in the same pop-up.
         """
         # The questions the node answers before any window is picked: run along
         # time, run along its own coordinate, or explore the arrays that hold it.
@@ -428,12 +443,14 @@ class QVizSignalHandling(QObject):
         # entry is a submenu of its own for the same reason: it asks *which
         # figure*, and a tensor is not tied to a new window.
         action_plotTime = self.actionPlotAsFunctionOfTime()
-        if action_plotTime is not None and parentMenu is not None:
+        if standalone and action_plotTime is not None \
+                and parentMenu is not None:
             parentMenu.addAction(action_plotTime)
         action_plotCoordinate = self.actionPlotAsFunctionOfCoordinate()
-        if action_plotCoordinate is not None and parentMenu is not None:
+        if standalone and action_plotCoordinate is not None \
+                and parentMenu is not None:
             parentMenu.addAction(action_plotCoordinate)
-        if parentMenu is not None:
+        if standalone and parentMenu is not None:
             self.menuExploreThisTensor(parentMenu)
 
         menu = QMenu('Plot ' + self.signalNodeName + ' to', parentMenu)
@@ -724,9 +741,11 @@ class QVizSignalHandling(QObject):
         The element entries above draw one element and fix the arrays around it;
         this asks the other question, so the figure opens at the element the tree
         is standing on and the user walks the arrays from there. `intoFigureKey`
-        is the open figure the menu offered because its sliders are the very
-        arrays this tensor would walk; asked for a figure whose sliders are other
-        arrays, the frame refuses it by name and no window is opened.
+        is the open figure the menu offered: a slider drives the curves of the
+        array it names only, so a figure whose arrays differ from this tensor's
+        takes it in with its own slider beside the ones it already holds, and
+        only an abscissa the quantity cannot run along keeps it out -- the frame
+        still saying so by name before a window is opened.
 
         `alongTime` carries the abscissa the heading of the entry names. Which
         arrays a figure leaves out is that abscissa's doing, so an entry titled

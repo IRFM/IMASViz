@@ -10,28 +10,32 @@
 """Superposing tensors, and adding an element to a figure that walks one.
 
 A curve figure has one abscissa, and since T36 the figure answers whether a
-quantity can be read along it. That answer is not enough for a tensor: a figure
-that explores a tensor holds a band of sliders, one per array of structures it
-leaves out of the curve, and those sliders drive **every** curve on the figure.
-So a second tensor whose sliders would be *other* arrays is not the same picture
--- moving one slider would walk one curve and leave the other at the element the
-tree stood on. Before this file, nothing even asked the question: the tensor
-entry had no way to name an open figure, so exploring a tensor **always** opened
-a new window, and an element added to a tensor figure kept a coordinate slider of
-its own, so it moved under sliders the user was moving for another curve.
+quantity can be read along it. Beside it the figure holds a band of sliders, one
+per array of structures its curves leave out: a curve follows the sliders of
+**those** arrays it leaves out, and not the slider of an array it belongs to.
+That is the rule this file pins, in both directions: two tensors of one array
+share one slider and move under it together, and a tensor of another array
+joins the same figure with its **own** slider, which walks only its own curves
+-- the element between them is frozen on its array, its legend spelling where
+it stands. Before this file, nothing even asked of an open figure:
+the tensor entry had no way to name one, so exploring a tensor **always** opened
+a new window, and an element added to a tensor figure kept a coordinate slider
+of its own, so it moved under sliders the user was moving for another curve.
 
 Four destinations, four rules -- all of them the figure's answer, all of them
 asked of the same function the read uses to decide which axes it leaves out
 (`QVizCurveAbscissa.axesLeftOut`), so the gate and the reading cannot drift:
 
     element -> figure        the abscissa (T36, unchanged)
-    tensor -> figure         the abscissa **and** the arrays the figure holds; a
-                             figure that holds none adopts the ones asked
-    tensor -> tensor figure  the abscissa and **equal** array sets, else a refusal
-                             that names both sets
-    element -> tensor figure the abscissa and the same arrays -- and the element
-                             is frozen on **all** of them: no slider, tensor or
-                             coordinate, moves a curve asked for as one element
+    tensor -> figure         the abscissa; a figure that holds no array yet takes
+                             the ones the tensor asks -- from then on it holds the
+                             union of the arrays its tensors walk
+    tensor -> tensor figure  the abscissa, and **not the arrays**: every array the
+                             tensor leaves out carries a slider of its own, and a
+                             slider walks only the curves of the array it names
+    element -> tensor figure the abscissa -- and the element is frozen on
+                             **all** the arrays it stands on: no slider, of
+                             whatever array, moves a curve asked for as one element
 
 The entry says along *what* it explores (`Explore this tensor along time axis`),
 because which arrays are left out depends on the abscissa the figure runs along:
@@ -257,56 +261,71 @@ def test_two_tensors_of_one_array_share_the_sliders_that_move_both(figure):
 
 
 @pytest.mark.ui
-def test_a_tensor_of_another_array_is_refused_by_name(figure):
-    """The arrays are the figure's identity beside its abscissa.
+def test_a_tensor_of_another_array_joins_with_its_own_slider(figure):
+    """The sliders are per array: another array carries its own slider.
 
-    A curve of `coil` in a figure whose sliders walk `ion` would answer a
-    different question: moving the slider would walk one curve and leave the
-    other where the tree stood, which is exactly what "les axes soient les memes"
-    refuses. The refusal names both sets, because "different axes" says nothing
-    about which to change.
+    The band is per array, not per figure: a curve follows the sliders of the
+    arrays it leaves out, and the slider of one array does not claim the curves
+    of another. That is what the one-band rule used to refuse -- its slider
+    would walk one curve and leave the other where the tree stood -- and what a
+    second slider for the second array answers instead: both curves compare
+    from the elements the tree stood on, each walking its own array.
     """
     figure.plot(_leaf(), tensor=True)
+    figure.plot(_coil(), tensor=True)
 
-    with pytest.raises(ValueError) as refused:
-        figure.plot(_coil(), tensor=True)
+    # One control per array the figure now walks, in the order they first
+    # appeared -- the array of the first tensor, the coordinate both share,
+    # the array the second one brought with it.
+    assert figure.sliceControls.keys() == [ION, RADIAL, COIL]
+    assert figure.curveCount() == 2
+    assert plotted(figure, 0)[1] == [10., 40.]
+    assert plotted(figure, 1)[1] == [1000., 4000.]
 
-    message = str(refused.value)
-    assert 'coil' in message and 'ion' in message
-    assert 'foo.profiles_1d[itime].coil[j].voltage' in message
-    # And the refused quantity is not half drawn: the figure is what it was.
-    assert figure.curveCount() == 1
+    # The new slider moves its own curve only.
+    figure.sliceControls.setIndex(COIL, 0)
+    assert plotted(figure, 0)[1] == [10., 40.]
+    assert plotted(figure, 1)[1] == [100., 400.]
+    assert legendOf(figure) == ['foo.profiles_1d[itime].ion[1].z_ion',
+                                'foo.profiles_1d[itime].coil[0].voltage']
+    # And the first slider keeps moving its own curve only.
+    figure.sliceControls.setIndex(ION, 0)
+    assert plotted(figure, 0)[1] == [1., 4.]
+    assert plotted(figure, 1)[1] == [100., 400.]
 
 
 @pytest.mark.ui
-def test_a_tensor_of_other_arrays_costs_no_window(view, caplog):
-    """Through the gesture: the reason is in the log, no empty window is left."""
-    caplog.clear()
+def test_a_tensor_of_other_arrays_joins_the_figure_it_is_asked_into(view):
+    """Through the gesture: the same figure, one window, two arrays under sliders."""
     first = QVizPlotOneNode(dataTreeView=view, treeNode=_leaf(),
                             tensor=True).execute()
     first.figureKey = 'SlicesPlot1'
     ownership.keep(first)
 
-    refused = QVizPlotOneNode(dataTreeView=view, treeNode=_coil(),
-                              intoFigureKey=first.figureKey,
-                              tensor=True).execute()
+    joined = QVizPlotOneNode(dataTreeView=view, treeNode=_coil(),
+                             intoFigureKey=first.figureKey,
+                             tensor=True).execute()
 
-    assert refused is None
+    assert joined is first
     assert list(view.imas_viz_api.figureframes) == ['SlicesPlot1']
-    assert first.curveCount() == 1
-    assert any('coil' in record.getMessage() for record in caplog.records)
+    assert first.curveCount() == 2
+    assert first.sliceControls.keys() == [ION, RADIAL, COIL]
 
 
 @pytest.mark.ui
 def test_the_figure_keeps_which_arrays_it_holds(figure):
-    """Both halves of the identity, settled by the first trace."""
+    """Which arrays the band holds, settled by the tensors asked into it."""
     figure.plot(_leaf(), tensor=True)
 
     assert figure.walkingArrays == frozenset({ION})
+    # The gate asks the abscissa, not the arrays: every array of structures
+    # walks its own slider, whatever the figure already holds, so all four
+    # representations answer yes from a figure that runs along the same
+    # abscissa.
     assert figure.accepts(_leaf('z_second'), tensor=True) is True
     assert figure.accepts(_leaf('z_second'), tensor=False) is True
-    assert figure.accepts(_coil(), tensor=True) is False
-    assert figure.accepts(_coil(), tensor=False) is False
+    assert figure.accepts(_coil(), tensor=True) is True
+    assert figure.accepts(_coil(), tensor=False) is True
 
 
 # -- an element added to a figure that walks a tensor --------------------
@@ -335,14 +354,28 @@ def test_an_element_added_to_a_tensor_figure_is_frozen_on_every_axis(figure):
 
 
 @pytest.mark.ui
-def test_an_element_of_other_arrays_is_refused_from_a_tensor_figure(figure):
+def test_an_element_of_other_arrays_joins_frozen_on_its_own_arrays(figure):
+    """An element asks for one element: it gets one, of whatever array.
+
+    The figure's sliders walk the tensors, not the elements: an element is
+    frozen on every axis it leaves out, its own array included -- the legend
+    spells the element the tree stood on, and no slider of the figure moves the
+    curve the user asked for as one element.
+    """
     figure.plot(_leaf(), tensor=True)
+    figure.plot(_coil(), tensor=False)
 
-    with pytest.raises(ValueError) as refused:
-        figure.plot(_coil(), tensor=False)
+    # The element brings no slider of its own: its arrays are frozen.
+    assert figure.sliceControls.keys() == [ION, RADIAL]
+    assert [trace.isFrozen() for trace in figure.traces()] == [False, True]
+    assert plotted(figure, 1)[1] == [1000., 4000.]
+    assert legendOf(figure)[1] == 'foo.profiles_1d[itime].coil[1].voltage'
 
-    assert 'coil' in str(refused.value)
-    assert figure.curveCount() == 1
+    # The tensor walks, the element stays.
+    figure.sliceControls.setIndex(ION, 0)
+    assert plotted(figure, 0)[1] == [1., 4.]
+    assert plotted(figure, 1)[1] == [1000., 4000.]
+    assert legendOf(figure)[1] == 'foo.profiles_1d[itime].coil[1].voltage'
 
 
 # -- a tensor joining a figure of elements -----------------------------
@@ -369,8 +402,13 @@ def test_a_tensor_joins_a_figure_that_pins_the_same_arrays(figure):
 
 
 @pytest.mark.ui
-def test_the_gate_asks_the_figure_which_arrays_it_holds(figure, view):
-    """`figureDrawsSameCurveAxis` answers the arrays as well as the abscissa."""
+def test_the_gate_asks_the_figure_its_abscissa(figure, view):
+    """`figureDrawsSameCurveAxis` answers the abscissa, whatever the arrays.
+
+    The arrays are not the gate any more: the slider a curve follows is the
+    one of the arrays it leaves out, an element is frozen on its own -- so the
+    only question a figure refuses is an abscissa it cannot read along.
+    """
     from imasviz.Viz_API import Viz_API
 
     figure.figureKey = 'SlicesPlot1'
@@ -380,26 +418,24 @@ def test_the_gate_asks_the_figure_which_arrays_it_holds(figure, view):
 
     assert api.figureDrawsSameCurveAxis('SlicesPlot1', _leaf('z_second'),
                                        tensor=True)
-    assert not api.figureDrawsSameCurveAxis('SlicesPlot1', _coil(), tensor=True)
-    # The element representation asks the same arrays: the figure's sliders would
-    # otherwise walk an array that element does not belong to.
-    assert not api.figureDrawsSameCurveAxis('SlicesPlot1', _coil(), tensor=False)
+    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _leaf('z_second'),
+                                       tensor=False)
+    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _coil(), tensor=True)
+    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _coil(), tensor=False)
 
     plain = QVizCurvePlot(title='SlicesPlot2')
     plain.figureKey = 'SlicesPlot2'
     plain.plot(_leaf(ionIndex=0))
     api.figureframes['SlicesPlot2'] = plain
-    # A figure whose band is empty has no arrays of its own yet: it accepts the
-    # tensor and adopts its arrays, while the element keeps its own element. The
-    # first tensor asked is what settles the band, and from then on the arrays
-    # are asked of every trace.
+    # A figure that holds no band takes the arrays the first tensor asks, and
+    # from then on the figure holds the union of the arrays its tensors walk.
     assert api.figureDrawsSameCurveAxis('SlicesPlot2', _leaf('z_second'),
                                         tensor=True)
     assert api.figureDrawsSameCurveAxis('SlicesPlot2', _coil(), tensor=True)
     plain.plot(_leaf('z_second'), tensor=True)
     assert plain.walkingArrays == frozenset({ION})
-    assert not api.figureDrawsSameCurveAxis('SlicesPlot2', _coil(), tensor=True)
-    assert not api.figureDrawsSameCurveAxis('SlicesPlot2', _coil(), tensor=False)
+    plain.plot(_coil(), tensor=True)
+    assert plain.walkingArrays == frozenset({ION, COIL})
 
 
 # -- what the entry offers ---------------------------------------------
@@ -427,7 +463,13 @@ def test_the_entry_offers_the_open_figures_whose_sliders_are_those_arrays(view):
 
 
 @pytest.mark.ui
-def test_the_entry_hides_a_figure_whose_sliders_are_other_arrays(view):
+def test_the_entry_offers_a_figure_whose_sliders_are_other_arrays(view):
+    """Whose sliders the figure holds is not a gate: the tensor walks its own.
+
+    The figure's band is `ion`; asking it for a tensor of `coil` adds that
+    array's slider beside it, and the line the heading offers is the one that
+    asks it.
+    """
     opened = QVizPlotOneNode(dataTreeView=view, treeNode=_leaf(),
                              tensor=True).execute()
     ownership.keep(opened)
@@ -435,7 +477,7 @@ def test_the_entry_hides_a_figure_whose_sliders_are_other_arrays(view):
     heading, lines = tensorEntries(view, _coil())
 
     assert heading == EXPLORE
-    assert lines == ['New']
+    assert lines == ['New', opened.figureKey]
 
 
 @pytest.mark.ui
@@ -454,7 +496,13 @@ def test_the_line_of_an_open_figure_draws_into_that_figure(view):
 
 @pytest.mark.ui
 def test_an_element_is_offered_in_a_tensor_figure_by_the_figure_submenu(view):
-    """The element representation keeps its menu; the arrays gate still applies."""
+    """The element representation keeps its menu, whatever arrays the figure holds.
+
+    An element asked into such a figure is frozen on its own arrays -- its
+    sliders are the question the tensors asked, not the ones it belongs to --
+    so the figure is offered to it as to the tensor, and the freezing is what
+    the figure does with it once it is in.
+    """
     opened = QVizPlotOneNode(dataTreeView=view, treeNode=_leaf(),
                              tensor=True).execute()
     ownership.keep(opened)
@@ -472,7 +520,7 @@ def test_an_element_is_offered_in_a_tensor_figure_by_the_figure_submenu(view):
                               treeNode=other).menuPlotCurrentSignalNode()
 
     assert [action.text() for action in subMenu(menu, 'Figure').actions()] == \
-        ['New']
+        ['New', opened.figureKey]
 
 
 @pytest.mark.ui
@@ -613,8 +661,10 @@ def _leaves(view, path):
 # samples on this shot -- a tensor of those is refused by the read ("no values
 # along the plotted axis"), so they cannot stand for a superposition.
 SECOND = 'magnetics.flux_loop[i].flux.data_error_upper'
-# Another array of the same IDS, 130 elements: the refusal.
+# Another array of the same IDS, 130 elements: element 0 is the one `test_59`
+# draws -- its `field.data` holds 17 344 samples on this shot.
 OTHER_ARRAY = 'magnetics.bpol_probe[i].field.data'
+BPOL_PROBE = (AOS, IDS_NAME, 'bpol_probe')
 
 # Measured on the case, element 2 of `flux_loop`, the three first samples of the
 # curve -- and the three of element 5, which is what one slider step of 3 answers.
@@ -697,15 +747,15 @@ def test_an_element_of_the_case_added_to_a_tensor_figure_does_not_move(session):
 @pytest.mark.ui
 @pytest.mark.case
 @pytest.mark.dd
-def test_a_tensor_of_another_array_of_the_case_is_refused_by_name(session,
-                                                                  caplog):
-    """The refusal, the gate and the menu, on the case the rules were measured on.
+def test_a_tensor_of_another_array_of_the_case_joins_with_its_own_slider(session):
+    """Two arrays of one IDS, on the figure of the case, one slider each.
 
-    `flux_loop` and `bpol_probe` are two arrays of one IDS: their curves share
-    the clock, so the abscissa alone would let them pile up -- and the one slider
-    of the figure would then walk one curve and leave the other at its element.
+    `flux_loop` and `bpol_probe` share the clock, which is the abscissa the
+    figure runs along -- and whose sliders the figure holds is no longer the
+    gate: the figure holds a slider per array, and each slider walks only the
+    curves of the array it names, so the two compare from the elements the tree
+    stood on each.
     """
-    caplog.clear()
     view = session['view']
     figure = QVizPlotOneNode(dataTreeView=view,
                              treeNode=_leaves(view, ELEMENTS)[2],
@@ -714,27 +764,40 @@ def test_a_tensor_of_another_array_of_the_case_is_refused_by_name(session,
     other = _leaves(view, OTHER_ARRAY)
     assert len(other) == 130, 'the case holds 130 elements of that array'
 
+    # The gate asks the abscissa, which the two quantities run along alike.
     assert view.imas_viz_api.figureDrawsSameCurveAxis(figure.figureKey,
-                                                      other[0], tensor=True) \
-        is False
-    assert view.imas_viz_api.figureDrawsSameCurveAxis(figure.figureKey,
-                                                      other[0]) is False
+                                                      other[0], tensor=True)
 
-    refused = QVizPlotOneNode(dataTreeView=view, treeNode=other[3],
-                              intoFigureKey=figure.figureKey,
-                              tensor=True).execute()
+    # Element 0, the one `test_59` draws: `field.data` holds 17 344 samples on
+    # this shot, so the read answers it.
+    joined = QVizPlotOneNode(dataTreeView=view, treeNode=other[0],
+                             intoFigureKey=figure.figureKey,
+                             tensor=True).execute()
+    assert joined is figure
+    assert figure.curveCount() == 2
+    assert figure.sliceControls.keys() == [FLUX_LOOP, BPOL_PROBE]
+    assert figure.sliceControls.indices() == {FLUX_LOOP: 2, BPOL_PROBE: 0}
+    assert legendOf(figure) == ['magnetics.flux_loop[2].flux.data',
+                                'magnetics.bpol_probe[0].field.data']
 
-    assert refused is None
-    assert figure.curveCount() == 1
-    assert any('bpol_probe' in record.getMessage() and 'flux_loop' in
-               record.getMessage() for record in caplog.records)
+    flux_at_two = plotted(figure, 0)
+    bpol_at_zero = plotted(figure, 1)
+    assert flux_at_two[1][:3] == FLUX2
 
-    # And the menu does not offer what the frame would refuse. The session of
-    # this module holds the three figures its case tests opened, all three walking
-    # `flux_loop`, so all three are offered -- and the node of another array is
-    # offered none, which is the half that carries the rule.
+    # The slider of one array walks only the curves of that array.
+    figure.sliceControls.setIndex(FLUX_LOOP, 5)
+    assert plotted(figure, 0)[1][:3] == FLUX5
+    assert plotted(figure, 1) == bpol_at_zero
+    figure.sliceControls.setIndex(BPOL_PROBE, 1)
+    assert plotted(figure, 1) != bpol_at_zero
+    assert plotted(figure, 0)[1][:3] == FLUX5
+
+    # The menu offers the same figures to the node of the other array: the
+    # session of this module holds the figures its case tests opened, all of
+    # them running along the clock, so the lines are all of them.
     heading, lines = tensorEntries(view, _leaves(view, SECOND)[3])
     assert heading == EXPLORE
     assert lines == ['New', 'SlicesPlot1', 'SlicesPlot2', 'SlicesPlot3']
     heading, lines = tensorEntries(view, other[0])
-    assert lines == ['New']
+    assert heading == EXPLORE
+    assert lines == ['New', 'SlicesPlot1', 'SlicesPlot2', 'SlicesPlot3']

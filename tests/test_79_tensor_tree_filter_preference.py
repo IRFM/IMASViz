@@ -496,9 +496,12 @@ def test_the_pop_up_of_a_tensor_offers_the_tensor_entries(tensorView):
     a tensor with a time base still draws its history, and the profile of the
     dynamic array still draws against the coordinate the dictionary names -- the
     tensor entry asks the other question (the arrays under the sliders) and does
-    not replace either. What the view keeps taking away is the
-    ``Plot <node> to`` menu, which asks which window: the node of this view is
-    the tensor, and the tensor's own entry opens and fills those windows.
+    not replace either. The ``Plot <node> to`` window menu stays as well, since
+    T57: it asks which window a quantity should go into, and a figure the node
+    can run along is a line it may take -- which is what test_96 pins on stubs,
+    the open-figure line in both views and what clicking it costs here. The view
+    still takes away the family entry: it shows the tensor once, so the family a
+    selection gesture would walk is the node itself.
     """
     leaf = [node for node in leavesOf(tensorView)
             if keyOf(node) == 'time_slice/profiles_1d/psi'][-1]
@@ -522,11 +525,25 @@ def test_the_pop_up_of_a_tensor_offers_the_tensor_entries(tensorView):
     assert titles.index(explore[0]) > \
         titles.index('Plot as function of its index')
 
-    # What the view still takes away: the window menu of the leaf, and the
-    # family entry -- this view shows the tensor once, so the family a
-    # selection gesture walks is the node itself.
-    assert not [title for title in titles
-                if title.startswith('Plot ') and title.endswith(' to')], titles
+    # The window menu is here too, as in the plain view: it asks which window
+    # a quantity should go into -- a figure an earlier test of this file opened
+    # (it is still open for this view's api) is a line this node may take,
+    # which is the line test_96 pins on stubs.
+    window = [action for action in menu.actions()
+              if action.text().startswith('Plot ')
+              and action.text().endswith(' to')
+              and action.menu() is not None]
+    assert window, titles
+    figures = [action for action in window[0].menu().actions()
+               if action.text() == 'Figure' and action.menu() is not None]
+    lines = [a.text() for a in figures[0].menu().actions()]
+    assert lines[0] == 'New', lines
+    openFigures = set(tensorView.imas_viz_api.GetFiguresKeys(
+        figureType='SlicesPlot'))
+    assert set(lines[1:]) <= openFigures, (lines, openFigures)
+
+    # What the view still takes away: the family entry -- this view shows the
+    # tensor once, so the family a selection gesture walks is the node itself.
     assert not [title for title in titles
                 if title.startswith('Select all nodes from the same')], titles
 

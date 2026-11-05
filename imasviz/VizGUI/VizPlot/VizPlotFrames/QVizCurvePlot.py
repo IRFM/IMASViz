@@ -60,7 +60,6 @@ from imasviz.VizDataAccess.QVizCurveAbscissa import arraysLeftOut
 from imasviz.VizDataAccess.QVizCurveAbscissa import choose as chooseAbscissa
 from imasviz.VizDataAccess.QVizCurveAbscissa import describe as describeAbscissa
 from imasviz.VizDataAccess.QVizCurveAbscissa import labelFor as abscissaLabel
-from imasviz.VizDataAccess.QVizCurveAbscissa import spellArrays
 from imasviz.VizDataAccess.QVizSlices import elementLabel
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
@@ -142,10 +141,10 @@ class QVizCurvePlot(QWidget):
         # Beside its abscissa, the other half of what a figure of curves *is*:
         # the arrays of structures it puts under a slider. Only a tensor puts an
         # array there, so this is empty until the figure is asked to explore one
-        # -- and from then on it is what every later trace has to come from,
-        # because the band of controls is one for the whole figure: a slider
-        # would otherwise move one curve and leave the other at the element the
-        # tree stood on.
+        # -- and it grows with every tensor that joins: one array per slider,
+        # and a slider moves only the curves of the array it names, so a tensor
+        # of another array adds its own band beside the ones already there
+        # instead of being refused (`_settleArrays`, `_pinning`).
         self.walkingArrays = frozenset()
         # Curves frozen by *Keep this curve*, in the order they were frozen.
         self._kept = []
@@ -269,7 +268,7 @@ class QVizCurvePlot(QWidget):
                               if options else 'nothing of its own') + '.')
         if self.abscissa is None:
             self.abscissa = abscissa
-        self._checkArrays(axesSpec, abscissa, tensor)
+        self._settleArrays(axesSpec, abscissa, tensor)
 
         axesSpec, timeAxis, alongTime, plotted = access.plan(treeNode, self,
                                                              as_function_of_time,
@@ -495,60 +494,39 @@ class QVizCurvePlot(QWidget):
     def accepts(self, treeNode, tensor=False):
         """Whether this quantity may be drawn here -- the gate the menus ask.
 
-        The abscissa first: a curve figure has one bottom label, and
+        The abscissa: a curve figure has one bottom label, and
         `QVizCurveAbscissa.choose` answers whether the quantity can be read along
-        it. Then, for the two questions that involve a tensor, the arrays: a
-        figure of curves has one band of sliders, so a tensor whose sliders would
-        be *other* arrays is another picture -- moving one slider would move one
-        curve and leave the other at the element the tree stood on -- and an
-        element asked into such a figure is frozen at one element of those very
-        arrays, so it has to be an element of them.
+        it. The arrays are not asked here any more, for either representation:
+        the sliders are per array, so a tensor carries the slider of the arrays
+        it leaves out beside whatever the figure already holds, and an element
+        is frozen on the arrays it stands on -- the rule `plot` applies, and the
+        only refusal left is an abscissa this quantity cannot run along.
 
-        Two elements asked of an ordinary figure are not that question: each pins
-        its own arrays and spells them in its legend, which is what lets two
-        elements of two different arrays sit on one abscissa and be compared.
-
-        `plot` enforces the same rule and says it in the log; this answers it
-        without reading anything, so a right click can ask it of every open
-        figure.
+        This answers without reading anything, so a right click can ask it of
+        every open figure.
         """
         axesSpec = QVizAxesSpec.fromTreeNode(treeNode)
-        abscissa = chooseAbscissa(axesSpec, self.abscissa)
-        if abscissa is None:
-            return False
-        return self._arraysAgree(arraysLeftOut(axesSpec, abscissa))
+        return chooseAbscissa(axesSpec, self.abscissa) is not None
 
-    def _arraysAgree(self, asked):
-        """Does this trace come from the arrays the figure puts under a slider?
+    def _settleArrays(self, axesSpec, abscissa, tensor):
+        """Which arrays this figure walks, with this trace added to it.
 
-        Only a tensor puts arrays under a slider, so a figure that has never
-        explored one has none to agree with: its band is empty, and an element
-        asked into it pins its own arrays and moves nothing -- the representation
-        the plot entries have always had, and what lets two elements of two
-        different arrays sit on one abscissa and be compared (`test_59`'s
-        flux loop and its neighbour probe, measured on the case). Once the figure
-        explores a tensor, both representations are asked: the tensor's sliders
-        would walk one curve and not the other, and the element would be frozen
-        at an element of arrays the sliders do not walk.
+        A tensor puts every array it leaves out under a slider, and the figure
+        holds the union of the arrays its tensors walk: a second tensor of
+        another array adds that array's slider beside the first, and a slider
+        walks only the curves of the array it names -- which is what `_pinning`
+        decides per trace, and what `refresh` re-reads per curve. The one that
+        settles it first is only the one whose arrays the figure holds before
+        any other: a figure that holds none takes the arrays the first tensor
+        asks, exactly as it did when the band was one for the whole figure.
+        An element adds no array: it is asked as one element, and it stays
+        where the tree stands on it -- `_pinning` freezes it on the figure's
+        band when there is one, and leaves it pinned on its own when there is
+        not yet.
         """
-        return not self.walkingArrays or asked == self.walkingArrays
-
-    def _checkArrays(self, axesSpec, abscissa, tensor):
-        """The same question, refused by name -- and the first tensor settles it.
-
-        The first tensor asked into a figure settles which arrays its band of
-        sliders walks; every later trace has to come from those same arrays,
-        because the band is one for the whole figure.
-        """
-        asked = arraysLeftOut(axesSpec, abscissa)
-        if not self._arraysAgree(asked):
-            raise ValueError('"' + (axesSpec.dataPath or '') + '" leaves out '
-                             + spellArrays(asked) + ', while this figure holds '
-                             + spellArrays(self.walkingArrays) + ': its sliders '
-                             'would walk one curve and leave the other where '
-                             'it is.')
         if tensor:
-            self.walkingArrays = asked or self.walkingArrays
+            self.walkingArrays = self.walkingArrays \
+                | arraysLeftOut(axesSpec, abscissa)
 
     @staticmethod
     def _pinning(pinned, tensor, walkingArrays):

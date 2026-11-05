@@ -21,9 +21,11 @@ The routing is fixed: a plottable quantity without a curve abscissa goes to the
 same entry the plain view hands it -- 'Plot <node> to -> Image -> New' -- so a
 dataset the view keeps in the tree can still be traced there. A quantity that
 runs along a curve keeps its abscissa items ('Plot as function of time', and
-the coordinate one beside it) and the tensor entry, and loses the
-'Plot <node> to' menu -- the view shows one node per tensor, and the tensor's
-own entry opens the window it fills.
+the coordinate one beside it) and the tensor entry, and the window menu comes
+with them -- 'Plot <node> to -> Figure -> New', and the open figures the
+quantity can run along, which is what test_96 pins: a tensor added to a figure
+that already draws one of its elements is the same figure, not a second
+window.
 
 Nothing opens a case: a two-dimension leaf with values needs enclosing arrays
 the reference case does not fill, so the quantities live in memory, as in the
@@ -216,8 +218,9 @@ def test_the_tensor_view_keeps_the_explore_entry_for_a_curve(view):
     a curve with an array around it gets 'Explore this tensor along ...'. The
     abscissa items come back with it -- the view shows one node per tensor, but
     the tensor still has a clock to run against and a coordinate to run along
-    -- and what stays out is the 'Plot z to' menu, which asks which window the
-    node should go into: the tensor's own entry opens the window it fills.
+    -- and the 'Plot z to' window menu comes back with them too, since T57:
+    it asks which window the node should go into, and a figure the node can run
+    along is a line it may take.
     """
     node = attach(_vector(), view)
     view.showOnlyTensorsRankGe1 = True
@@ -233,7 +236,13 @@ def test_the_tensor_view_keeps_the_explore_entry_for_a_curve(view):
     # Side by side, before the tensor heading, as in the plain view.
     assert titles.index('Plot as function of time') == \
         titles.index('Plot as function of rho_tor') - 1
-    assert 'Plot z to' not in titles, titles
+    # The window menu is back: one tensor is one node here, but a node a
+    # figure already draws is still a line that node can take -- the overlap
+    # the plain view offers, which test_96 pins with an open figure.
+    assert 'Plot z to' in titles, titles
+    for action in menu.actions():
+        if action.text() == 'Plot z to' and action.menu() is not None:
+            assert [a.text() for a in action.menu().actions()] == ['Figure']
 
 
 # --------------------------------------------------------------------------

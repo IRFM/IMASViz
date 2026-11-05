@@ -1108,18 +1108,20 @@ class Viz_API:
         'dimension 1')`, and the gate answered **False** for both: neither was
         offered in the other's figure, and no gesture could put them side by side.
 
-        `tensor` adds the second half of the question, which the abscissa cannot
-        answer: a figure that explores a tensor holds a band of sliders, one per
-        array of structures it leaves out, and those sliders drive **every** curve
-        of the figure. A second quantity whose sliders would be other arrays is
-        therefore not the same picture -- one slider would walk one curve and
-        leave the other at the element the tree stood on. So the arrays asked
-        must be the arrays the figure holds, and the figure says which.
+        `tensor` does not add to the question any more: the sliders are per
+        array, one per array of structures, and a slider moves only the curves of
+        the array it names. A tensor of another array therefore joins the figure
+        with its own band beside the ones already there, and an element asked of
+        a such a figure is frozen on the arrays it stands on -- the rule
+        `QVizCurvePlot` applies per trace, and the only refusal the figure
+        answers is an abscissa the quantity cannot run along. The parameter
+        stays in the signature because the callers name the representation; the
+        figure does not need it to answer.
 
         :param figureKey: A figure key (e.g. 'SlicesPlot1')
         :param treeNode: The node a menu is offering to draw there
-        :param tensor: Drawn as a tensor, under the figure's sliders (False: as
-                       one element, frozen on the arrays the tree stands on)
+        :param tensor: Drawn as a tensor (or as one element): kept for the
+                       callers that name it, the figure answers either way
         :returns: (bool)
         """
         from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
