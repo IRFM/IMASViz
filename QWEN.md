@@ -162,6 +162,7 @@ imasviz/
 │   ├── VizGuiCustomization/   # QVizDefault defaults
 │   └── VizConfigurations/
 ├── VizPlugins/                # plugin framework + plugins (see below)
+├── VizAgent/                  # in-app agent: gestures, LLM client, loop, panel
 └── VizExamples/               # example_*.py and test_*.py standalone scripts
 ```
 
@@ -972,6 +973,10 @@ Checked on this machine with `module load ach-modules` + `PySide6/6.6.2-GCCcore-
   `viz_equi/test_equilibriumcharts_plugin.py` (59 l.) was never in that count and its
   removal costs no test. It collects the modules and parametrizes on them, so a new
   module costs four more ids and no counter anywhere.
+  The in-app agent of this pass adds **7** — `VizAgent/` (`__init__`,
+  `core.py`, `dispatcher.py`, `llm_client.py`, `agent.py`, `tools.py`,
+  `panel.py`) — so the sweep answers ~**132** passed, **1** xfail
+  (measured with `python3 -m pytest tests/test_99_import_sweep.py -q`).
 - **The application wears a theme, and it is the manual's palette** (T48).
   `VizGUI/VizGuiCustomization/QVizStyle.py` holds both of them (`light`, `dark`),
   **19** colour names each, byte for byte the `tokens:begin` block of
