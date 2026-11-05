@@ -90,6 +90,12 @@ class QVizRestoreSession:
         """
         if self.path is None:
             raise ValueError('No session file was named to restore.')
+        # A window that is on the file and dead in this run holds its key: the
+        # replay that is about to name it is refused with "already open" for a
+        # window that is not there. The same release the save asks of the api
+        # runs first, so the key the file names is free before anything is
+        # replayed against it.
+        self.api.releaseLeftBehind()
         session = QVizSessionFile.read(self.path)
 
         views = {}

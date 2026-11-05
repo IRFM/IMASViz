@@ -97,6 +97,17 @@ same unchecked line.
    was showing it, so drawing one of its quantities again means reading the case
    again.
 
+.. note::
+   The menu lists only windows that still exist. The one exception is a window
+   whose object was lost from under a live registration -- an interrupted close
+   can leave it -- in which case the first thing to ask what is open, the menu
+   as well as any of its gestures and a saved session, releases that
+   registration and says in the log panel which window it was, its key and the
+   case it served. Afterwards the group that held nothing but that window is
+   gone from the menu, and the number of the next window of that kind is
+   available again. Nothing you need to do: repeated :guilabel:`Close this
+   case` on that case is a no-op that changes nothing else.
+
 .. _layout_modes:
 
 Laying the windows out

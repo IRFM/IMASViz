@@ -104,6 +104,12 @@ class QVizSaveSession:
         """Write the session, and answer with the file that holds it."""
         if self.path is None:
             raise ValueError('No file was named to save the session to.')
+        # The windows Qt has already taken away leave the bookkeeping before
+        # the file is walked: their line is no longer on the screen, and a
+        # session that carried it would meet them at the restore as "already
+        # open". The api owns the release and the line that names what it let
+        # go; the save only asks for the bookkeeping to be true.
+        self.api.releaseLeftBehind()
         windows = self.pluginWindowsByCase()
         cases = []
         for view in self.api.DTVlist:
