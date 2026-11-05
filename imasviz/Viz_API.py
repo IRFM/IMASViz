@@ -541,9 +541,17 @@ class Viz_API:
         that should not be drawn -- and a window no key holds is not on the
         list, which is exactly what the close box used to leave behind.
 
+        Dead registrations leave first: a record whose frame is gone is a line
+        the menu would draw for ever and no gesture could act on, so asking
+        "what is open" releases them and says where they went -- :meth:`
+        releaseLeftBehind` -- and then lists the windows with something behind
+        them. Whatever reads the windows of a run -- the menu, a gesture, the
+        session save -- therefore goes through this one answer.
+
         :returns: (list) :class:`QVizWindowRecord` for each window, case views
                           first, then the figures in ``MENU_ORDER`` order
         """
+        self.releaseLeftBehind()
         windows = []
         kindLabel, iconLabel = self.SHOTVIEW_KIND
         for frame in list(self.DTVframeList):
@@ -623,8 +631,64 @@ class Viz_API:
             frame.hide()
         return (window if window is not None else frame).isVisible()
 
+    def releaseLeftBehind(self):
+        """Release the registrations whose window Qt has already taken away.
+
+        A window killed under a live registration -- a close interrupted
+        between its windows, a frame released anywhere while ``figureframes``
+        or ``DTVframeList`` kept its entry -- would otherwise be a line the
+        *Windows* menu draws for ever, that no gesture can act on: every one
+        asks :meth:`QVizWindowRecord.frame`, which answers ``None`` for an
+        object that is gone, and the number of the next window of the kind
+        skips the dead key for the whole session. This is the single place
+        the release happens, so the menu, the gestures and the session save
+        all read the same truth: the dead entry is out of the bookkeeping,
+        and the line that goes with it names the window, its key and its case.
+
+        :returns: (int) how many registrations were released
+        """
+        released = 0
+        for frame in list(self.DTVframeList):
+            if not shiboken6.isValid(frame):
+                label = frame.dataTreeView.dataSource.getLongLabel()
+                uri = getattr(frame.dataTreeView.dataSource, 'uri', None)
+                try:
+                    self.DTVframeList.remove(frame)
+                except ValueError:
+                    pass
+                for view in list(self.DTVlist):
+                    if view is frame.dataTreeView:
+                        self.DTVlist.remove(view)
+                        break
+                logging.getLogger('logPanel').warning(
+                    'The shot view "%s" (case "%s") is no longer on the Qt '
+                    'side: its entry is released from the bookkeeping.'
+                    % (label, uri))
+                released += 1
+        for figureKey in list(self.figureframes.keys()):
+            if not shiboken6.isValid(self.figureframes[figureKey]):
+                cases = self.casesServedBy(self.figureframes[figureKey])
+                self.ForgetFigure(figureKey)
+                where = ' of case "%s"' % cases[0] if cases else ''
+                logging.getLogger('logPanel').warning(
+                    'The window "%s"%s is no longer on the Qt side: its '
+                    'entry is released from the bookkeeping -- the line of the '
+                    '*Windows* menu that held it is gone, and the number of '
+                    'the next window of its kind is back.'
+                    % (figureKey, where))
+                released += 1
+        return released
+
     def windowsFor(self):
-        """Every window with its live frame, the records the gestures act on."""
+        """Every window with its live frame, the records the gestures act on.
+
+        The dead registrations are released before the list is built, because
+        a gesture that skips a dead record silently would leave it on the
+        screen's bookkeeping for ever -- the stuck entry of the *Windows*
+        menu -- while the one that acts on it dies in the middle of its own
+        list. :meth:`releaseLeftBehind` is that release and the named line.
+        """
+        self.releaseLeftBehind()
         for record in self.openWindows():
             frame = record.frame()
             if frame is not None:
@@ -642,10 +706,15 @@ class Viz_API:
         window that serves no case at all is left exactly where it is, since
         "this case" has nothing to say about it.
         """
-        for record, frame in self.windowsFor():
+        windows = list(self.windowsFor())
+        for record, frame in windows:
             if not record.cases:
                 continue
-            self.setWindowVisible(frame, uri in record.cases)
+            action = 'shown' if uri in record.cases else 'hidden'
+            try:
+                self.setWindowVisible(frame, uri in record.cases)
+            except Exception as error:
+                self._gestureFailed(record, action, str(error))
 
     def hideOthers(self, exceptFrame):
         """Every window off the screen except the one named.
@@ -654,10 +723,13 @@ class Viz_API:
         the one the menu line was drawn for, take the rest off the screen. A
         window already off the screen is left off it.
         """
-        for record, frame in self.windowsFor():
+        for record, frame in list(self.windowsFor()):
             if frame is exceptFrame:
                 continue
-            self.setWindowVisible(frame, False)
+            try:
+                self.setWindowVisible(frame, False)
+            except Exception as error:
+                self._gestureFailed(record, 'hidden', str(error))
 
     def closeOthers(self, exceptFrame):
         """Every window closed for good except the one named.
@@ -668,10 +740,13 @@ class Viz_API:
         what a close costs -- a figure it was redrawing is read a second time
         to come back -- is not what a hide costs.
         """
-        for record, frame in self.windowsFor():
+        for record, frame in list(self.windowsFor()):
             if frame is exceptFrame:
                 continue
-            self.closeWindow(frame)
+            try:
+                self.closeWindow(frame)
+            except Exception as error:
+                self._gestureFailed(record, 'closed', str(error))
 
     def closeCase(self, uri):
         """Close the windows of one case for good; shared ones hidden, not closed.
@@ -681,15 +756,43 @@ class Viz_API:
         closed: its other case still reads a live curve out of it, and closing
         it would take that curve out of a window somebody is still looking at.
         Hiding keeps the key, so the other case's *Windows* line still reaches it.
+        One window that refuses in the middle of the list is named and left
+        for the next pass, and the rest of the case's windows are still taken
+        care of -- a gesture that raised here used to abandon the rest of the
+        list with the failure, which is how the same entry kept meeting the
+        same dead state on every repeated *Close this case*.
         """
-        for record, frame in self.windowsFor():
+        windows = list(self.windowsFor())
+        for record, frame in windows:
             cases = record.cases
             if not cases or uri not in cases:
                 continue
             if set(cases) == {uri}:
-                self.closeWindow(frame)
-            else:
+                try:
+                    self.closeWindow(frame)
+                except Exception as error:
+                    self._gestureFailed(record, 'closed', str(error))
+                    continue
+            try:
                 self.setWindowVisible(frame, False)
+            except Exception as error:
+                self._gestureFailed(record, 'hidden', str(error))
+
+    def _gestureFailed(self, record, action, reason):
+        """One window of a group gesture refused: name it, and go on.
+
+        The *Windows* lines the gestures answer go over every window of the
+        run, so one refusal must not cost the rest of the list -- the report
+        behind :meth:`releaseLeftBehind` is a gesture dying on window two and
+        leaving the windows three and on unprocessed, the same entry meeting
+        the same dead state on every repeated click. The line says which
+        window of which case it was, and what it refused.
+        """
+        where = ' of case "%s"' % record.cases[0] if record.cases else ''
+        logging.getLogger('logPanel').warning(
+            'The window "%s"%s could not be %s: %s. The other windows of '
+            'the gesture were still taken care of.'
+            % (record.label, where, action, reason))
 
     def mdiLayout(self, mode):
         """Lay the MDI area's windows out in `mode` and remember the choice.

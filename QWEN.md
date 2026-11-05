@@ -201,7 +201,15 @@ Core concepts, in the vocabulary used by the code and docs:
   right-click pop-up lists no window any more — it is about the node under the mouse — and the
   shot view's old *Plot windows* menu is gone. Why `refill` exists: `QMenu.clear()` removes
   actions and **keeps the child QMenus** (measured: **7** children and **0** actions after three
-  refills), while `refill()` leaves **1** once the deferred deletes are flushed.
+  refills), while `refill()` leaves **1** once the deferred deletes are flushed. A record whose
+  window Qt has already taken away is not a state but a leak: `openWindows` runs `Viz_API.
+  releaseLeftBehind()` first — the dead registration (figure or case view) leaves the
+  bookkeeping, its key goes back to the next window of the kind, and a line in the log of the
+  panel names the window, its key and its case — and because the gestures (`windowsFor`) and
+  `QVizSaveSession.execute` go through the same release, none of them meets the ghost: this is
+  the named-repair for the state a close interrupted between its windows left behind (the T55
+  line takes the window down when the case closes it; this one covers the pass that never got
+  to it).
 - **what the close box of a window costs** — **hide, and keep the key**.
   `QVizMdiSubWindow.closeEvent` and the `QVizClosableWindow` mixin (which answers `windowApi()`)
   ask `Viz_API.closeFromTitleBar`: the window leaves the screen, `figureframes` is left alone, so
