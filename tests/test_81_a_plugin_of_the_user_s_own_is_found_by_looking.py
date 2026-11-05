@@ -50,10 +50,12 @@ import types
 
 import pytest
 
-from PySide6.QtWidgets import QTreeWidget
+from PySide6.QtWidgets import QMdiArea, QTreeWidget, QWidget
 
+from imasviz.Viz_API import Viz_API
 from imasviz.VizPlugins.QVizPluginCatalog import QVizPluginCatalog
-from imasviz.VizPlugins.QVizPluginSource import (USER, checkPluginName,
+from imasviz.VizPlugins.QVizPluginSource import (USER, attachUserPackage,
+                                                 checkPluginName,
                                                  declaresClass,
                                                  forgetUserModules,
                                                  pluginNameFor,
@@ -391,3 +393,97 @@ def test_a_user_plugin_never_lands_in_the_table_imasviz_ships():
 
     assert getRegisteredPlugins() == before
     assert 'MyAnalysisPlugin' not in getRegisteredPlugins()
+
+
+# ---------------------------------------------------------------------------
+# What a freshly created plugin has to do with the figure it opens
+# ---------------------------------------------------------------------------
+
+def test_addPlotWidgetToMDI_answers_the_subwindow_it_embeds(qtbot):
+    """Embedding a figure in the area also hands back the subwindow it made.
+
+    The one gesture that opens a figure on the user's behalf -- a plugin -- runs
+    with the shot view still the active window, so whoever embeds a figure has
+    to be able to bring it to the front: `QMdiSubWindow.raise_` and
+    `activateWindow` are answered by the subwindow, not by the frame it carries.
+    Before, this answered nothing, so that handle could not exist.
+    """
+    mdi = QMdiArea()
+    qtbot.addWidget(mdi)
+    # Registered only on the area, not on the frame: `addPlotWidgetToMDI`
+    # re-parents the frame into the subwindow it makes, and a widget the test
+    # has told pytest to close is closed into a C++ object that is already gone.
+    frame = QWidget()
+
+    subWindow = Viz_API(parent=mdi).addPlotWidgetToMDI(frame)
+
+    assert subWindow is not None
+    assert subWindow in mdi.subWindowList()
+    assert subWindow.widget() is frame
+    # `addPlotWidgetToMDI` is the one place the subwindow is made and shown,
+    # and what a caller needs to do with the result -- raise it, and give it
+    # the input focus -- is answered by the subwindow, not by the frame.
+
+
+def test_the_default_plugin_brings_its_figure_to_screen(
+        privatePlugins, qtbot, monkeypatch):
+    """A freshly created plugin puts its figure in the area -- it does not
+    discard the one `QVizPlotOneNode` answers.
+
+    The template used to end in `QVizPlotOneNode(...).execute()` and throw away
+    the frame that call returns, which is the figure: unembedded, off-screen,
+    and behind the shot view that opened it -- so the first click on a new
+    plugin read as "nothing happened". It is driven here for real, with the
+    application's own `addPlotWidgetToMDI` and a `QVizPlotOneNode` that answers
+    a frame without needing a case, so the only thing on screen is what the
+    plugin asked for.
+    """
+    source = createPlugin('my focus probe', targetIds='equilibrium')
+    with open(source.fileName, encoding='utf-8') as handle:
+        text = handle.read()
+    compile(text, source.fileName, 'exec')
+    # The figure is embedded like the application's own *Plot* gesture does it,
+    # and the focus step is in the source: the shot view is still the active
+    # window when a plugin runs, so a figure that does not raise itself and take
+    # the input focus sits behind the place the user clicked.
+    assert 'addPlotWidgetToMDI' in text
+    assert 'raise_' in text and 'activateWindow' in text
+
+    # --- Drive the generated plugin, with the real embed and a stub command ---
+    attachUserPackage()
+    plugin = getattr(importlib.import_module(source.importName), source.name)()
+    plugin.setSelectedTreeNode(types.SimpleNamespace(
+        isIDSRoot=lambda: True,
+        getIDSName=lambda: 'equilibrium',
+        getParametrizedDataPath=lambda: 'equilibrium.time'))
+    plugin.setDataTreeView(types.SimpleNamespace(uri='stub?case'))
+
+    # Registered only on the area, not on the frame: `addPlotWidgetToMDI`
+    # re-parents the frame into the subwindow it makes, and the one pytest then
+    # tries to close into a C++ object that is already gone.
+    frame = QWidget()
+
+    class PlotOneNode:
+        def __init__(self, dataTreeView, treeNode, **kwargs):
+            self.builtFigure = True
+
+        def execute(self):
+            return frame
+
+    plotModule = importlib.import_module(
+        'imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode')
+    monkeypatch.setattr(plotModule, 'QVizPlotOneNode', PlotOneNode)
+
+    mdi = QMdiArea()
+    qtbot.addWidget(mdi)
+    vizAPI = Viz_API(parent=mdi)
+    vizAPI.IDSDataAlreadyFetched = lambda *args, **kwargs: True
+    vizAPI.getAll_0D_1D_Nodes = lambda node, *args, **kwargs: (set(), [node])
+
+    plugin.execute(vizAPI, 0)
+
+    subs = mdi.subWindowList()
+    # The figure is in the area, not a parentless window floating behind the
+    # shot view: the half of the bug the old template left behind.
+    assert len(subs) == 1
+    assert subs[0].widget() is frame

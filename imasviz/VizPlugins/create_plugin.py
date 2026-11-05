@@ -135,8 +135,31 @@ class {className}(VizPlugin):
                      self.__class__.__name__,
                      node.getParametrizedDataPath(), self.IDS)
 
-        QVizPlotOneNode(dataTreeView=self.dataTreeView,
-                        treeNode=node).execute()
+        # `QVizPlotOneNode` reads the leaf and answers the figure it filled --
+        # without putting it on screen, which is what the application's own *Plot*
+        # gesture then does. A plugin that opened a figure and left it where that
+        # call leaves it would sit behind the shot view, and read as "did nothing".
+        subWindow = None
+        command = QVizPlotOneNode(dataTreeView=self.dataTreeView, treeNode=node)
+        frame = command.execute()
+        if frame is None:
+            # The reason the leaf could not be read is already in the log of this
+            # case, under the plugin's name; nothing was opened, so there is no
+            # window to bring to the front.
+            raise ValueError('the figure for this node could not be opened: '
+                             'see the log of this case for the reason')
+        if command.builtFigure:
+            # The figure is the command's own: embed it in the area like every
+            # other figure on screen, instead of leaving it floating behind the
+            # view that opened it.
+            subWindow = vizAPI.addPlotWidgetToMDI(frame)
+        frame.show()
+        # The shot view is still the active window at this point, so a figure
+        # that is not raised and not given the input focus sits just behind the
+        # place the user clicked. This is the half that says "the plugin ran".
+        if subWindow is not None:
+            subWindow.raise_()
+            subWindow.activateWindow()
 '''
 
 INIT_TEMPLATE = LICENSE + '''

@@ -1428,6 +1428,13 @@ class Viz_API:
         the screen. The one entry that worked did it by calling `show()` itself,
         which is why the fix lives here: whoever embeds a figure means the user
         to see it.
+
+        It answers the subwindow it made: whoever opened the figure on the
+        user's behalf can bring it to the front on top of every other window of
+        the session -- the shot view is still the active window when a gesture
+        opens a figure behind it, and raising it and giving it the input focus
+        is what makes the click read as something. A caller that did not ask
+        for the window ignores the result and works as it did.
         """
         subWindow = QVizMdiSubWindow(self)
         # `setWidget` copies the widget's title to the subwindow and leaves
@@ -1445,6 +1452,7 @@ class Viz_API:
         # A window is now in the area: the moment the preferred layout (a
         # preference, one-shot) is applied to it.
         self._maybeApplyPreferredLayout()
+        return subWindow
 
     def LoadListOfIDSs(self, dataTreeView, namesOfIDSs, occurrence=0):
         """Load given IDSs for given occurrence.
