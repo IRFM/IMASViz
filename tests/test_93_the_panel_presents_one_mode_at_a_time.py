@@ -7,11 +7,11 @@
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
 
-"""The case panel presents one mode at a time, and the free mode hides the controls of the list it is not showing.
+"""The shot panel presents one mode at a time, and the free mode hides the controls of the list it is not showing.
 
-Choosing "Saisie libre (URI)" left the controls of the *Cas locaux* list
-sitting there doing nothing -- the Affichage box, the Trier par box with its
-direction, the Afficher HDF5/MDS+ boxes -- because they act on a list that had
+Choosing "Free entry (URI)" left the controls of the *Local shots* list
+sitting there doing nothing -- the Display box, the Sort by box with its
+direction, the Show HDF5/MDS+ boxes -- because they act on a list that had
 not been shown. What a mode change hides is now answered by the selector itself
 (``presentAs``), so the frame only says which mode it is in, and the selector
 says what that mode shows and what it takes away. The buttons stay in both:

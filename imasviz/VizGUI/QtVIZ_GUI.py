@@ -79,8 +79,8 @@ class GUIFrame(QTabWidget):
 
         # Every widget the frame's methods and the command line drive is
         # built here, as an attribute, before any of them runs; they are then
-        # laid out under one "Cas" tab behind a mode switch. The three
-        # presentations are the local case list (URI-first), the free URI line,
+        # laid out under one "Shot" tab behind a mode switch. The three
+        # presentations are the local shot list (URI-first), the free URI line,
         # and the legacy five-field form the -u -d -s -r -b command line fills.
         # The start window used to be two tabs -- the five fields, and a bare
         # URI line -- where the selection a user made was the five parameters
@@ -98,18 +98,18 @@ class GUIFrame(QTabWidget):
         default_user_name, default_machine, default_run = \
             QVizDefault().getGUIEntries()
         self.userName = QLineEdit(default_user_name)
-        self.userName.setStatusTip("Name of the user under which the case is stored.")
-        self.userName.setToolTip("Name of the user under which the case is stored.")
+        self.userName.setStatusTip("Name of the user under which the shot is stored.")
+        self.userName.setToolTip("Name of the user under which the shot is stored.")
         self.userName.editingFinished.connect(self.onUserNameEditFinished)
         self.imasDbName = QLineEdit(default_machine)
-        self.imasDbName.setStatusTip("Database label under which the case is stored.")
-        self.imasDbName.setToolTip("Database label under which the case is stored.")
+        self.imasDbName.setStatusTip("Database label under which the shot is stored.")
+        self.imasDbName.setToolTip("Database label under which the shot is stored.")
         self.shotNumber = QLineEdit()
-        self.shotNumber.setStatusTip("Shot case identifier.")
-        self.shotNumber.setToolTip("Shot case identifier.")
+        self.shotNumber.setStatusTip("Shot number.")
+        self.shotNumber.setToolTip("Shot number.")
         self.runNumber = QLineEdit(default_run)
-        self.runNumber.setStatusTip("Run case identifier.")
-        self.runNumber.setToolTip("Run case identifier.")
+        self.runNumber.setStatusTip("Run number.")
+        self.runNumber.setToolTip("Run number.")
         self.backend = 13
         self.backendCombo = QComboBox()
         self.backendCombo.addItems(['HDF5', 'MDS+'])
@@ -119,7 +119,7 @@ class GUIFrame(QTabWidget):
 
         self.legacyPanel = self._buildLegacyPanel()
         self.casePanel = self._buildCasePanel()
-        self.addTab(self.casePanel, "Cas")
+        self.addTab(self.casePanel, "Shot")
         self.uriPanel.refresh(self.userName.text())
 
         title = "IMAS_VIZ (version " + str(QVizGlobalValues.IMAS_VIZ_VERSION) + ")"
@@ -132,7 +132,7 @@ class GUIFrame(QTabWidget):
         self.contextMenu = None
 
     def _buildCasePanel(self):
-        """The one "Cas" tab: the mode switch, then the two presentations.
+        """The one "Shot" tab: the mode switch, then the two presentations.
 
         One tab, not two: the selection is one thing to make in every mode, and
         the mode switch is the only thing that changes what the user chooses
@@ -143,10 +143,10 @@ class GUIFrame(QTabWidget):
         layout = QVBoxLayout(panel)
 
         header = QHBoxLayout()
-        header.addWidget(QLabel('Mode de sélection'))
+        header.addWidget(QLabel('Selection mode'))
         self.modeCombo = QComboBox()
-        self.modeCombo.addItems(['Cas locaux (liste)', 'Saisie libre (URI)',
-                                 'Legacy (5 champs)'])
+        self.modeCombo.addItems(['Local shots (list)', 'Free entry (URI)',
+                                 'Legacy (5 fields)'])
         self.modeCombo.currentIndexChanged.connect(self.onModeChanged)
         header.addWidget(self.modeCombo)
         header.addStretch(1)
@@ -163,7 +163,7 @@ class GUIFrame(QTabWidget):
 
         The widgets themselves were built on the frame in __init__ (they are
         what the command line and `updateIDSparam` drive); this only lays them
-        out. The form is one presentation and no more, and its *Ouvrir* keeps
+        out. The form is one presentation and no more, and its *Open* keeps
         the parameter-to-URI build it has always used.
         """
         panel = QWidget(self)
@@ -179,9 +179,9 @@ class GUIFrame(QTabWidget):
         layout.addWidget(self.IMASdbBrowserWidget)
 
         buttonRow = QHBoxLayout()
-        self.openButton = QPushButton('Ouvrir', self)
-        self.openButton.setStatusTip("Open the case for the given parameters.")
-        self.openButton.setToolTip("Open the case for the given parameters.")
+        self.openButton = QPushButton('Open', self)
+        self.openButton.setStatusTip("Open the shot for the given parameters.")
+        self.openButton.setToolTip("Open the shot for the given parameters.")
         self.openButton.clicked.connect(self.OpenDataSourceFromTab1)
         buttonRow.addWidget(self.openButton)
         buttonRow.addStretch(1)
@@ -211,13 +211,13 @@ class GUIFrame(QTabWidget):
         """The URI the selector handed over: refused if empty, else opened.
 
         The one Open every URI-first gesture lands on -- a double click, the
-        free line and *Ouvrir* all reach here -- so a selection made against an
-        empty choice is refused in the log of the session, not spent on a case
+        free line and *Open* all reach here -- so a selection made against an
+        empty choice is refused in the log of the session, not spent on a shot
         that was never named.
         """
         if uri is None or not str(uri).strip():
             logging.getLogger('logPanel').error(
-                "No URI to open: choose a case, or type its URI.")
+                "No URI to open: choose a shot, or type its URI.")
             return
         self.mainMenuController.openShotView.Open(None, uri)
 
@@ -309,7 +309,7 @@ class GUIFrame(QTabWidget):
 
         The five values are read and checked before any field is written. They
         used to be written as they were read, so a click that did not spell a
-        case put None in the four text fields -- PySide6 6.6.3 takes None for a
+        shot put None in the four text fields -- PySide6 6.6.3 takes None for a
         string and writes an empty line, so what the user had typed disappeared
         -- and then died on the fifth, outside the gesture, on an AttributeError
         nobody was told about.
@@ -469,7 +469,7 @@ class QVizMainWindow(QMainWindow):
         # Set start window
         self.startWindow = QVizStartWindow(self)
 
-        # Set layout: the case panel beside the MDI area, in a splitter the
+        # Set layout: the shot panel beside the MDI area, in a splitter the
         # user can drag, so the width of the panel (whose rows are URIs) is
         # settled by the hand rather than by a fixed ratio.
         self.splitter = startAndMdiSplitter(self, self.startWindow, self.MDI)

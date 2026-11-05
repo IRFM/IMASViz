@@ -23,42 +23,43 @@ from imasviz.VizUtils import QVizPreferences
 class QVizCaseSelector(QWidget):
     """The URI-first selection of the start window.
 
-    A flat list of the local cases, each row a shape the user chose at the
-    *Affichage* box -- the URI the Access Layer opens the case with (the
+    A flat list of the local shots, each row a shape the user chose at the
+    *Display* box -- the URI the Access Layer opens the shot with (the
     default), or the backend, database, shot and run behind it -- whose data
     and tooltip are always that URI; the selection -- by double click or
-    *Ouvrir* -- is handed to the caller through `uriOpened` **as a URI**. A free
+    *Open* -- is handed to the caller through `uriOpened` **as a URI**. A free
     line takes
-    any other URI (a UDA case, a remote case, or one the local walk does not
-    reach), and *Dossier…* turns a chosen folder of ``*.h5`` into the ``path=``
+    any other URI (a UDA shot, a remote shot, or one the local walk does not
+    reach), and *Folder…* turns a chosen folder of ``*.h5`` into the ``path=``
     URI. The whole thing emits URIs and never the five derived parameters --
     that is the point of a URI-first selection: what the user chose is the
-    string the case is opened with.
+    string the shot is opened with.
     """
 
     uriOpened = Signal(str)
 
-    # What the *Trier par* box offers, in the order the box lays them out.
+    # What the *Sort by* box offers, in the order the box lays them out.
     # Each of the four is one of QVizPreferences.SORT_KEYS, spelled by the name
     # the preferences file takes (lower, identifier-safe); the display is the
-    # French name the UI has settled on, so a user sees "Tir" rather than "shot"
-    # -- but the box, when asked through `currentData`, answers the file name.
+    # label the UI settled on for that field -- "Shot" for the shot, "Run" for
+    # the run -- but the box, when asked through `currentData`, answers the
+    # file name.
     SORT_ITEMS = (
         ('uri', 'URI'),
-        ('database', 'Base'),
+        ('database', 'Database'),
         ('backend', 'Backend'),
-        ('shot', 'Tir'),
+        ('shot', 'Shot'),
         ('run', 'Run'),
     )
 
-    # What the *Affichage* box offers: the two shapes a row may wear. ``uri``
-    # (the default) is the URI the case is opened with; ``parsed`` is the
+    # What the *Display* box offers: the two shapes a row may wear. ``uri``
+    # (the default) is the URI the shot is opened with; ``parsed`` is the
     # backend, database, shot and run the scanner read out of it. The box is at
     # the shape the preferences hold, and a hand on it re-lays the list and
     # remembers the shape for the next session.
     VIEW_ITEMS = (
         ('uri', 'URI'),
-        ('parsed', 'Cas'),
+        ('parsed', 'Shot'),
     )
 
     def __init__(self, parent=None):
@@ -80,17 +81,18 @@ class QVizCaseSelector(QWidget):
         # per question group stays inside the width, and each group keeps its
         # label with its controls.
         shapeRow = QHBoxLayout()
-        self.viewShapeLabel = QLabel('Affichage', self)
+        self.viewShapeLabel = QLabel('Display', self)
         shapeRow.addWidget(self.viewShapeLabel)
         self.viewBox = QComboBox(self)
         for key, label in self.VIEW_ITEMS:
             self.viewBox.addItem(label, key)
         self.viewBox.setToolTip(
-            'La forme des lignes : la URI d\'ouverture, ou le backend, la base, '
-            'le tir et le run. La donnée et l\'infobulle restent toujours la URI.')
+            'The shape of the rows: the URI the shot is opened with, or the '
+            'backend, database, shot and run. The data and the tooltip are '
+            'always that URI.')
         shapeRow.addWidget(self.viewBox)
         shapeRow.addSpacing(12)
-        self.sortKeyLabel = QLabel('Trier par', self)
+        self.sortKeyLabel = QLabel('Sort by', self)
         shapeRow.addWidget(self.sortKeyLabel)
         self.sortKeyBox = QComboBox(self)
         for key, label in self.SORT_ITEMS:
@@ -103,15 +105,15 @@ class QVizCaseSelector(QWidget):
         shapeRow.addWidget(self.sortKeyBox)
         self.sortDirButton = QPushButton('↓', self)
         self.sortDirButton.setCheckable(True)
-        self.sortDirButton.setChecked(False)          # False = asc (montant)
+        self.sortDirButton.setChecked(False)            # False = ascending
         self.sortDirButton.setToolTip(
-            'Le sens du tri. Non cliqué, montant (12 avant 999); cliqué, '
-            'descendant (999 avant 12).')
+            'The sense of the sort. Unchecked, ascending (12 before 999); '
+            'checked, descending (999 before 12).')
         shapeRow.addWidget(self.sortDirButton)
         shapeRow.addStretch(1)
         layout.addLayout(shapeRow)
         protocolRow = QHBoxLayout()
-        self.filterLabel = QLabel('Afficher', self)
+        self.filterLabel = QLabel('Show', self)
         protocolRow.addWidget(self.filterLabel)
         self.filterHDF5 = QCheckBox('HDF5', self)
         self.filterHDF5.setChecked(True)
@@ -133,19 +135,19 @@ class QVizCaseSelector(QWidget):
 
         self.listView = QListWidget(self)
         self.listView.setToolTip(
-            'Les cas locaux trouvés. Un double-clic ouvre le cas choisi. '
-            'Le tri et le filtre s\'appliquent sur cette liste.')
+            'The local shots found. A double click opens the chosen shot. '
+            'The sort and the filter apply to this list.')
         layout.addWidget(self.listView)
 
         self.freeText = QLineEdit(self)
         self.freeText.setPlaceholderText(
-            'imas:hdf5?path=…   ou   imas:uda?user=…;database=…;shot=…;run=…')
+            'imas:hdf5?path=…   or   imas:uda?user=…;database=…;shot=…;run=…')
         layout.addWidget(self.freeText)
 
         buttons = QHBoxLayout()
-        self.openButton = QPushButton('Ouvrir', self)
-        self.copyButton = QPushButton('Copier l\'URI', self)
-        self.folderButton = QPushButton('Dossier…', self)
+        self.openButton = QPushButton('Open', self)
+        self.copyButton = QPushButton('Copy URI', self)
+        self.folderButton = QPushButton('Folder…', self)
         for button in (self.openButton, self.copyButton, self.folderButton):
             buttons.addWidget(button)
         buttons.addStretch(1)
@@ -191,7 +193,7 @@ class QVizCaseSelector(QWidget):
         """
         if mode not in ('list', 'free'):
             raise ValueError(
-                '%r is not a presentation of the case panel: name "list", '
+                '%r is not a presentation of the shot panel: name "list", '
                 'or "free"' % (mode,))
         listMode = (mode == 'list')
         self.listView.setVisible(listMode)
@@ -232,11 +234,11 @@ class QVizCaseSelector(QWidget):
     def _setBoxTo(box, value):
         """Put `box` on the item whose data is `value`, or on 0 if none is.
 
-        The box's currentData carries the file name, its currentText the French
-        label, and the two are in the same place. A value the box does not carry
-        -- a preference the class answers but the box never offers -- falls
-        through to the first entry, so a sync that reads a word the box refused
-        never throws and never points at nothing.
+        The box's currentData carries the file name, its currentText the label
+        the UI settled on for it, and the two are in the same place. A value
+        the box does not carry -- a preference the class answers but the box
+        never offers -- falls through to the first entry, so a sync that reads
+        a word the box refused never throws and never points at nothing.
         """
         for i in range(box.count()):
             if box.itemData(i) == value:
@@ -245,14 +247,14 @@ class QVizCaseSelector(QWidget):
         box.setCurrentIndex(0)
 
     def _onViewTouched(self, *args):
-        """A shape was chosen at the *Affichage* box: re-lay the rows and
+        """A shape was chosen at the *Display* box: re-lay the rows and
         remember the shape for the next session.
 
         ``currentIndexChanged`` fires when a *sync* reads the file into the box
         too, but ``_syncControls`` blocks the box's signals on the way out, so
         this handler only runs for a hand -- the same way `_onSortTouched` and
         the two filter handlers run. Nothing is opened here: the rows keep the
-        case in their data and are only re-shown in the shape asked.
+        shot in their data and are only re-shown in the shape asked.
         """
         QVizPreferences.Uri_list_view = self.viewBox.currentData()
         self._applyControls()
@@ -286,7 +288,7 @@ class QVizCaseSelector(QWidget):
         """A protocol box was touched: if both would be off, refuse and keep
         the one the user just tried to turn off.
 
-        The list is *which kind of case to open*, and an empty list is a place
+        The list is *which kind of shot to open*, and an empty list is a place
         to look that shows nothing -- so the two boxes have one rule between
         them: at least one stays checked, and the one the user just turned off
         is the one that stays. The user is told by what the box tried to become
@@ -297,8 +299,8 @@ class QVizCaseSelector(QWidget):
             sender.setChecked(True)
             sender.blockSignals(False)
             logging.getLogger('logPanel').warning(
-                'Le protocole %s restait masqué : au moins un doit rester '
-                'affiché, et c\'est lui qui reste coché.' % name)
+                'The %s protocol would have been hidden: at least one must '
+                'stay shown, so it stays checked.' % name)
             return
         self._applyControls()
         QVizPreferences.Uri_list_filter_HDF5 = int(
@@ -323,7 +325,7 @@ class QVizCaseSelector(QWidget):
         when it is not, in a list that stays comparable either way.
 
         The tuple ``(0, number)`` comes before ``(1, word)`` in sort order,
-        which is not the order the case folders spell -- a case stored under a
+        which is not the order the shot folders spell -- a shot stored under a
         name sorts after the ones with numbers, which is what a user would not
         expect from a *run* number. The number is the number's order, 12
         before 999, not 999 before 54924, and the word is the word.
@@ -334,11 +336,11 @@ class QVizCaseSelector(QWidget):
         return (1, s)
 
     def _sortFunction(self, key):
-        """The ordering key for `key`: a function from a case to a comparable.
+        """The ordering key for `key`: a function from a shot to a comparable.
 
         ``shot`` and ``run`` are read as numbers where they read as numbers --
         the number's order, not the word's -- and ``uri`` sorts by the URI
-        string the case opens on, so the two spellings keep their order (HDF5
+        string the shot opens on, so the two spellings keep their order (HDF5
         before MDS+, path before parameters within each). ``database`` and
         ``backend`` sort by their strings, and the fallback is an order the
         list answers but that nothing else asks for.
@@ -356,7 +358,7 @@ class QVizCaseSelector(QWidget):
         if key == 'run':
             return lambda c: numWord(c['run'])
         # A key the box did not offer is a state nothing else can reach; the
-        # fallback is a word in the case's database, which is the same as the
+        # fallback is a word in the shot's database, which is the same as the
         # 'database' key and is what the list answers.
         return lambda c: (c['database'], c['backend'],
                           numWord(c['shot']), numWord(c['run']))
@@ -394,12 +396,12 @@ class QVizCaseSelector(QWidget):
     # What the list holds, and what a row of it answers.
 
     def casesFor(self, username):
-        """The local cases of `username`, flat and ordered; [] when none exists.
+        """The local shots of `username`, flat and ordered; [] when none exists.
 
-        A case that is a case on disk is a case here -- nothing is dropped -- and
-        the order is the one `localCases` spells, which is the order the list is
-        drawn in, so the row a user sees is the case the scanner found and not a
-        copy of it.
+        A shot that is a shot on disk is a shot here -- nothing is dropped --
+        and the order is the one `localCases` spells, which is the order the
+        list is drawn in, so the row a user sees is the shot the scanner found
+        and not a copy of it.
         """
         root = caseRootForUser(username)
         if root is None:
@@ -408,12 +410,12 @@ class QVizCaseSelector(QWidget):
 
     def refresh(self, username):
         """Fill the list from `casesFor`, through the user's last chosen sort
-        and protocol filter. Returns the cases it laid in -- the ones the list
+        and protocol filter. Returns the shots it laid in -- the ones the list
         shows, so a test that reads them through the same entry reads what the
         user sees.
 
         Each row carries its URI both as data and as its tooltip, so a
-        selection answers the URI without a second walk of the case, and a
+        selection answers the URI without a second walk of the shot, and a
         hover shows the user the very string that will be opened. The state a
         first read answers is the user's last chosen one (as read into
         ``QVizPreferences`` from ``~/.imasviz/preferences``, or the defaults
@@ -451,7 +453,7 @@ class QVizCaseSelector(QWidget):
         return item.data(Qt.UserRole)
 
     def openRow(self, item):
-        """The row a double click landed on -- the gesture that opens a case."""
+        """The row a double click landed on -- the gesture that opens a shot."""
         uri = item.data(Qt.UserRole)
         if uri:
             self.uriOpened.emit(uri)
@@ -460,18 +462,18 @@ class QVizCaseSelector(QWidget):
         """The free line's text -- the gesture for a URI the local walk lacks.
 
         Refused, not sent empty: an empty line is an answer the user did not
-        give, and opening one would spend a gesture on a case that was never
+        give, and opening one would spend a gesture on a shot that was never
         named.
         """
         text = self.freeText.text().strip()
         if not text:
             logging.getLogger('logPanel').error(
-                'Aucune URI à ouvrir : saisir une URI dans le champ libre.')
+                'No URI to open: type a URI in the free line.')
             return
         self.uriOpened.emit(text)
 
     def openCurrent(self):
-        """*Ouvrir*: the selected row if there is one, else the free line.
+        """*Open*: the selected row if there is one, else the free line.
 
         One button for the two presentations the start window shows it in --
         the list and the free line -- so the user never has to know which is
@@ -484,9 +486,9 @@ class QVizCaseSelector(QWidget):
         self.openFree()
 
     def copyUri(self):
-        """*Copier l'URI*: the selected row's URI, else the free line's text.
+        """*Copy URI*: the selected row's URI, else the free line's text.
 
-        The one affordance that makes a case portable -- copy it, paste it
+        The one affordance that makes a shot portable -- copy it, paste it
         anywhere the Access Layer takes a URI. Nothing is copied when there is
         nothing to copy.
         """
@@ -495,21 +497,21 @@ class QVizCaseSelector(QWidget):
             uri = self.freeText.text().strip()
         if not uri:
             logging.getLogger('logPanel').error(
-                'Aucune URI à copier : choisir un cas, ou saisir une URI.')
+                'No URI to copy: choose a shot, or type a URI.')
             return
         clipboard = QApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(uri)
 
     def pickFolder(self):
-        """*Dossier…*: choose a case folder, and open it as its ``path=`` URI.
+        """*Folder…*: choose a shot folder, and open it as its ``path=`` URI.
 
-        The HDF5 quick path: the user picks the directory that holds the case's
+        The HDF5 quick path: the user picks the directory that holds the shot's
         ``*.h5`` files and the selector spells the URI instead of asking for the
         five parameters behind it. A cancelled choice leaves the free line alone.
         """
         folder = QFileDialog.getExistingDirectory(
-            self, 'Dossier contenant les fichiers *.h5 du cas')
+            self, "Folder holding the shot's *.h5 files")
         if not folder:
             return
         self.freeText.setText(hdf5PathUri(folder))

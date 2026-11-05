@@ -173,11 +173,11 @@ def test_refresh_lays_every_case_as_a_row_with_its_uri(imasdb, qapp, monkeypatch
 
 
 def test_the_parsed_view_shows_the_fields_not_the_uri(imasdb, qapp, monkeypatch):
-    """The *Affichage* box's other shape: the fields as the row's text.
+    """The *Display* box's other shape: the fields as the row's text.
 
     Switching the shape re-lays the same rows in the other shape, and the data
     and the tooltip are the URI whichever shape the box is at, because that is
-    the identity the case is opened with and a shape switch must not lose it --
+    the identity the shot is opened with and a shape switch must not lose it --
     so the two shapes are the text, and nothing they hide.
     """
     _setPrefs(monkeypatch, Uri_list_filter_HDF5=1, Uri_list_filter_MDSplus=1,
@@ -197,7 +197,7 @@ def test_the_parsed_view_shows_the_fields_not_the_uri(imasdb, qapp, monkeypatch)
 
 
 def test_the_selected_row_opens_its_uri(imasdb, qapp, monkeypatch, qtbot):
-    """The *Ouvrir* button -- and a double click -- open the selected row's URI."""
+    """The *Open* button -- and a double click -- open the selected row's URI."""
     monkeypatch.setattr('imasviz.VizGUI.VizWidgets.QVizCaseSelector.caseRootForUser',
                         lambda username: imasdb)
     sel = QVizCaseSelector()
@@ -232,7 +232,7 @@ def test_nothing_selected_is_refused_and_costs_no_open(qapp, qtbot, caplog):
     with caplog.at_level(logging.ERROR, logger='logPanel'):
         sel.openCurrent()
     assert emitted == []
-    assert 'Aucune' in caplog.text
+    assert 'No URI to open' in caplog.text     # the refusal names the line
 
 
 def test_copy_puts_the_selected_uri_on_the_clipboard(imasdb, qapp, monkeypatch):
@@ -392,14 +392,14 @@ def test_unchecking_the_last_protocol_is_refused(imasdb, qapp, monkeypatch, capl
         sel.filterMDS.setChecked(False)
     assert sel.filterMDS.isChecked() is True   # the refusal re-checked it
     assert 'MDS+' in caplog.text
-    assert 'restait masqu' in caplog.text      # the refusal names the rule
+    assert 'would have been hidden' in caplog.text   # the refusal names the rule
     # The list still shows the MDS+ cases, because the box the user tried to
     # turn off is the one that stays.
     assert sel.listView.count() == 2
 
 
 def test_the_sort_direction_button_reverses_the_list(imasdb, qapp, monkeypatch):
-    """The arrow beside the *Trier par* box: a click turns the list.
+    """The arrow beside the *Sort by* box: a click turns the list.
 
     With the sort on `shot`, the first row is a 999 (ascending) and a 7777
     (descending). A hand on the button is a hand on the order, and the list
@@ -563,7 +563,7 @@ def test_the_default_shape_is_the_uri(qapp, monkeypatch):
 
 def test_switching_the_shape_relays_and_persists(imasdb, qapp, monkeypatch,
                                                  tmp_path):
-    """A hand on the *Affichage* box re-lays the rows and writes the shape.
+    """A hand on the *Display* box re-lays the rows and writes the shape.
 
     The list shows the parsed fields at the box, and the shape lands in the
     preferences file -- so the next session opens on the shape the user last
@@ -622,9 +622,9 @@ def test_the_box_is_synced_to_the_stored_shape(qapp, monkeypatch):
 
     The state a hand left in the preferences is the state a new session's box
     starts at, and the box's data answers the file name -- the same way the
-    *Trier par* box is synced for the key it holds.
+    *Sort by* box is synced for the key it holds.
     """
     _setPrefs(monkeypatch, Uri_list_view='parsed')
     sel = QVizCaseSelector()
     assert sel.viewBox.currentData() == 'parsed'
-    assert sel.viewBox.currentText() == 'Cas'
+    assert sel.viewBox.currentText() == 'Shot'

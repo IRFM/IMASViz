@@ -134,10 +134,10 @@ class QVizPreferences:
     # into, and a line nobody wrote keeps the case where it was.
     Mdi_view_mode = 'windowed'
     LAYOUT_MODES = ('windowed', 'tabbed', 'tiled', 'cascaded')
-    # The start window's list of local cases: which field it is laid out by,
+    # The start window's list of local shots: which field it is laid out by,
     # in which sense, and which of the two protocols it shows. The field is one
-    # of SORT_KEYS -- the user picks it with the *Trier par* box, and the arrow
-    # beside it its sense -- and, whatever key is chosen, the cases are already
+    # of SORT_KEYS -- the user picks it with the *Sort by* box, and the arrow
+    # beside it its sense -- and, whatever key is chosen, the shots are already
     # read in the order database, backend, shot, run, so an unchosen key answers
     # that order rather than nothing. The defaults are ``database`` and
     # ``asc`` -- the field the list used to be laid out by and the sense the
@@ -202,7 +202,7 @@ class QVizPreferences:
     def sortKey(text):
         """Which field the list is laid out by, refusing a word it does not sort on.
 
-        What the *Trier par* box offers is ``SORT_KEYS``; a file that names a
+        What the *Sort by* box offers is ``SORT_KEYS``; a file that names a
         field it does not offer is refused by the name it wrote, and the list
         keeps the field it was holding -- the same "the line answers for itself"
         rule `build` has always applied, so one bad line costs its own option
@@ -211,7 +211,7 @@ class QVizPreferences:
         asked = text.strip().lower()
         if asked not in QVizPreferences.SORT_KEYS:
             raise ValueError(
-                '%r is not a field the case list sorts by: write %s'
+                '%r is not a field the shot list sorts by: write %s'
                 % (text.strip(),
                    ' or '.join(repr(one) for one in QVizPreferences.SORT_KEYS)))
         return asked
@@ -395,8 +395,8 @@ class QVizPreferences:
         """Which shape the start window's list rows are shown in, refusing a
         form the box does not offer.
 
-        What the *Affichage* box offers is ``URI_LIST_VIEWS`` -- ``uri`` shows
-        the URI a case is opened with, ``parsed`` the backend, database, shot
+        What the *Display* box offers is ``URI_LIST_VIEWS`` -- ``uri`` shows
+        the URI a shot is opened with, ``parsed`` the backend, database, shot
         and run behind it -- so a file that names a word the box never offers
         is refused by the word it wrote, and the list keeps the shape it was
         holding: the same "a line answers for itself" rule `build` has always
@@ -405,7 +405,7 @@ class QVizPreferences:
         asked = text.strip().lower()
         if asked not in QVizPreferences.URI_LIST_VIEWS:
             raise ValueError(
-                '%r is not a shape for the case list: write %s'
+                '%r is not a shape for the shot list: write %s'
                 % (text.strip(),
                    ' or '.join(repr(one) for one in
                                QVizPreferences.URI_LIST_VIEWS)))
