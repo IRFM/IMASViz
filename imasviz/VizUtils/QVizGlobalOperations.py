@@ -148,8 +148,17 @@ class QVizGlobalOperations:
                 sys.exit()
 
             if 'IMAS_VERSION' not in os.environ:
-                print("Environment variable IMAS_VERSION not defined. Exiting.")
-                sys.exit()
+                # The read path answers the absence: a case without its own
+                # data dictionary in the URI opens at the newest one the
+                # distribution bundles (QVizIMASDataSource.pinToCaseDictionary),
+                # so nothing inside imasviz needs the variable set. Node
+                # profiles export AL_VERSION -- an Access Layer number, never
+                # the data dictionary's -- and never this one, so a gate here
+                # refused on them exactly the shells the launch recipe hands
+                # out. It is named, not fatal.
+                print("WARNING: environment variable IMAS_VERSION not defined; "
+                      "a case opens at the newest data dictionary the "
+                      "distribution bundles unless its URI pins one.")
 
             if 'USER' not in os.environ:
                 print("Environment variable USER not defined. Exiting.")

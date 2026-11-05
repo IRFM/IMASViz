@@ -15,6 +15,8 @@ fail here rather than somewhere inside an unrelated component test.
 """
 
 import os
+import subprocess
+import sys
 
 import pytest
 
@@ -27,6 +29,45 @@ def test_mandatory_variables_are_present():
     # checkEnvSettings() calls sys.exit() when one is missing, which would show
     # up as a crashed test rather than a clean failure.
     QVizGlobalOperations.checkEnvSettings()
+
+
+@pytest.mark.timeout(60)
+def test_production_accepts_a_shell_with_no_imas_version():
+    # The node profiles measured on this stack export AL_VERSION (an Access
+    # Layer number) and never IMAS_VERSION, and no shell file defines it, so
+    # `python -m mcp_server` in a fresh shell died with nothing but
+    # `Environment variable IMAS_VERSION not defined. Exiting.` -- a refusal
+    # the user met without ever being told it was an environment question,
+    # while the read path supports the absence all along:
+    # QVizIMASDataSource.pinToCaseDictionary pins a case without its own data
+    # dictionary to the newest one the distribution bundles. It is named as a
+    # warning instead, and the process goes on. Measured in a **child
+    # process** because the old code answers sys.exit(), which in this suite
+    # would end the run rather than the test (the same reason test_52 runs its
+    # refusals in children).
+    environment = dict(os.environ)
+    environment.pop('IMAS_VERSION', None)
+    child = subprocess.run(
+        [sys.executable, '-c',
+         'import os;'
+         ' from imasviz.VizUtils import QVizGlobalOperations;'
+         ' QVizGlobalOperations.checkEnvSettings();'
+         ' print("CHECK SURVIVED", "IMAS_VERSION=%r" % os.environ.get('
+         ' "IMAS_VERSION"))'],
+        cwd=REPO_ROOT, env=environment,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True)
+    printed = child.stdout + child.stderr
+    # `sys.exit()` without an argument answers 0, so the return code cannot
+    # tell the run apart from the one that went on: the check itself must
+    # have been passed, and the child is the only one who knows it.
+    assert 'CHECK SURVIVED' in printed, (
+        'production still exits without IMAS_VERSION:\n' + printed)
+    assert 'Exiting' not in printed, printed
+    # The absence is named, and nothing is invented to fill it: the child
+    # tells what the variable holds after the check, and it is still absent.
+    assert 'IMAS_VERSION' in printed
+    assert 'IMAS_VERSION=None' in printed
 
 
 def test_repository_root_is_used_as_viz_home():
