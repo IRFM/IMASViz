@@ -223,11 +223,13 @@ came from.
 ### Requirements
 
 The same stack as the application, plus the SDK (v1 — the 2.x line renamed the
-surface):
+surface). On the ACH nodes whose default profile pins
+`SciPy-bundle/2023.12-iimkl`, the HLI is the **intel** variant (the foss one
+fails to load its SciPy-bundle requirement there; verified 2026-11-05):
 
     module load PySide6/6.6.2-GCCcore-13.2.0
-    module load IMAS-Python/2.3.0-foss-2023b
-    module load PyQtGraph/0.13.7-foss-2023b
+    module load IMAS-Python/2.3.0-intel-2023b
+    module load PyQtGraph/0.13.7-intel-2023b
     pip install --user "mcp[http]<2"     # FastMCP + starlette + uvicorn
 
 ### Starting the session with its tools
@@ -237,9 +239,15 @@ From the repository root, with `VIZ_HOME` and the environment as above:
     python -m mcp_server --port 8765          # the GUI comes up and is visible
     python -m mcp_server --offscreen          # a node without a display
 
-and any MCP client pointed at the endpoint:
+and any MCP client pointed at the endpoint. In Qwen Code, the entry goes in
+the `mcpServers` of `settings.json`, on the `httpUrl` field (the streamable
+transport; `url` is the SSE one), and the server must be running before the
+session starts — Qwen Code loads its MCP servers at startup:
 
-    { "mcpServers": { "imasviz": { "url": "http://127.0.0.1:8765/mcp" } } }
+    { "mcpServers": { "imasviz": {
+          "httpUrl": "http://127.0.0.1:8765/mcp",
+          "timeout": 600000,
+          "discoveryTimeoutMs": 15000 } } }
 
 What a tool answers is the answer of the application: a refused gesture
 returns the named `ValueError` the command raises (as an error of the
