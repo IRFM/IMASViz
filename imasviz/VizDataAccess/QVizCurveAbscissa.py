@@ -205,27 +205,14 @@ def axesLeftOut(axesSpec, abscissa):
 def arraysLeftOut(axesSpec, abscissa):
     """The arrays of structures a figure running along this abscissa leaves out.
 
-    A figure's identity beside its abscissa: the arrays it puts under a slider
-    are the arrays its traces leave out, and a second tensor whose sliders would
-    be different arrays is not the same picture -- its sliders would move some of
-    the curves and not the others, which is what "les axes soient les memes"
-    refuses.
+    What joins the figure's band of sliders when it is asked to explore this
+    quantity: one array, one slider, and the slider moves only the curves of the
+    array it names -- which is how a second tensor of another array joins the
+    figure with its own band beside the first, and how `_pinning` splits a trace
+    into its fixed and its movable axes.
     """
     return frozenset(axis.key() for axis in axesLeftOut(axesSpec, abscissa)
                      if axis.origin == QVizAxis.AOS)
-
-
-def spellArrays(keys):
-    """The arrays of a key set, named as a control names them, for a refusal.
-
-    A refusal that says "different axes" is useless; one that says *which* axes
-    are the two figures' says what to change. The last part of an axis key is the
-    array name for an array of structures and the coordinate for a leaf axis,
-    which is what `sliceLabel` puts on the control for the same axis.
-    """
-    if not keys:
-        return 'nothing'
-    return ' and '.join(sorted(str(key[-1]) for key in keys))
 
 
 def axisPhrase(abscissa):
