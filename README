@@ -209,3 +209,56 @@ The IDSs of a session are read lazily through IMAS-Python, which is what makes
 putting a session back affordable: on the reference case, building the tree of
 one *equilibrium* occurrence costs 0,10 s and 7,7 Mo this way against 3,99 s and
 122,8 Mo read whole, with the same tree either way.
+
+## Driving IMASViz from an agent (MCP tools)
+
+IMASViz can be driven by an MCP agent the way it is driven by its menus:
+`mcp_server/` exposes the gestures of one application session as tools of the
+official `mcp` SDK (v1 `FastMCP`), over `streamable_http` on a local socket.
+The application stays the main program — the GUI runs its event loop and is
+visible; the transport is one daemon thread, and every tool is executed on the
+GUI thread through `mcp_server/dispatcher.py`, whatever thread the request
+came from.
+
+### Requirements
+
+The same stack as the application, plus the SDK (v1 — the 2.x line renamed the
+surface):
+
+    module load PySide6/6.6.2-GCCcore-13.2.0
+    module load IMAS-Python/2.3.0-foss-2023b
+    module load PyQtGraph/0.13.7-foss-2023b
+    pip install --user "mcp[http]<2"     # FastMCP + starlette + uvicorn
+
+### Starting the session with its tools
+
+From the repository root, with `VIZ_HOME` and the environment as above:
+
+    python -m mcp_server --port 8765          # the GUI comes up and is visible
+    python -m mcp_server --offscreen          # a node without a display
+
+and any MCP client pointed at the endpoint:
+
+    { "mcpServers": { "imasviz": { "url": "http://127.0.0.1:8765/mcp" } } }
+
+What a tool answers is the answer of the application: a refused gesture
+returns the named `ValueError` the command raises (as an error of the
+call), and `get_logs(uri)` holds those refusals the way the log panel holds
+them for the user.
+
+### The tools
+
+| Group | Tools |
+| --- | --- |
+| cases | `open_case`, `list_cases`, `close_case` |
+| tree | `list_idss`, `load_ids`, `search_nodes`, `select_signals`, `unselect_all` |
+| plotting | `plot_one`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal` |
+| windows | `list_windows`, `show_window`, `hide_window`, `close_window` |
+| plugins | `list_plugins`, `run_plugin` |
+| session | `save_session`, `restore_session`, `export_to_ids` |
+| inspection | `get_screenshot` (PNG of a window), `get_logs` (the case log panel) |
+
+Stylage and cursors are kept in the hands of the user; they are not offered
+as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`
+(without the SDK) and `tests/test_101_mcp_tools_http.py` (over a real
+transport).
