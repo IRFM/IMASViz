@@ -46,7 +46,9 @@ Within a case's sub-menu:
    * - the name of a window
      - one line per window the case owns -- its view, and each plot window by the
        name its title carries: the name of the window and the case name, both,
-       separated, when its curves came from more than one case. Hover the
+       separated, when its curves came from more than one case -- and, for a
+       window a plugin drew, the IDS its entry ran on, in parentheses
+       (:guilabel:`PlotView:1 — west-54924.0 (from interferometer)`). Hover the
        line (or the title bar) and the whole URI is what is read, one per line:
        the title bar carries the short name because it is the one guaranteed to
        fit, and the URI is the answer to the question behind it. A line is
@@ -377,11 +379,12 @@ numbers of the figures back at 1.
 The key of a window is not a label: it is the name a saved session carries, and
 the name the *Plot X to -> Figure* menu offers when a quantity is added to a
 window that is already open. What the title bar and the :guilabel:`Windows`
-menu show is the name the user asks for, and the case the window serves:
-a window whose key is :guilabel:`SlicesPlot1` is what those list as
-:guilabel:`Plot 1 — west-54924.0`. A saved session keeps the key, so the
-window that was :guilabel:`Plot 1 — west-54924.0` comes back under the very
-same title, and the menus still name one line for it.
+menu show is the name the user asks for, the case the window serves, and -- for
+a window a plugin drew -- the IDS its entry ran on: a window whose key is
+:guilabel:`SlicesPlot1` is what those list as :guilabel:`Plot 1 — west-54924.0`.
+A saved session keeps the key, so the window that was
+:guilabel:`Plot 1 — west-54924.0` comes back under the very same title, and the
+menus still name one line for it.
 
 .. note::
    A restored window is drawn from the data again, not taken out of the file. So

@@ -345,10 +345,9 @@ def test_the_window_is_titled_with_the_key_it_is_registered_under(session):
     # statement: measured, the window sat on screen with an empty title bar while
     # the two menus listed it as 'EquiPlotView:1', so nothing tied a line of
     # those menus to a window -- and two of these windows look identical. The
-    # case follows the heading now, the whole URI behind the hover; this window
-    # is one-to-one with the case its entry ran on.
-    expected = ('Equilibrium charts [%s] — '
-                % FIRST_KEY) + caseLabel(CASE_URI)
+    # key is the heading, the case follows it, and the IDS the entry ran on
+    # names itself in parentheses -- the whole URI stays behind the hover.
+    expected = titleWithCases(FIRST_KEY, (CASE_URI,), fromIds='equilibrium')
     assert session.frame.windowTitle() == expected
     assert session.frame.toolTip() == CASE_URI
 
@@ -363,14 +362,15 @@ def test_the_window_serves_the_case_that_opened_it(session):
     [served] = session.api.figToNodes[FIRST_KEY].values()
     assert served == (CASE_URI, None)
 
-    # The line of the *Windows* menu is the key with its case, in the case's
-    # sub-menu -- not at the top level, where a window the case does not serve
-    # sits, and where a user cannot tell which of the two this is. The label is
-    # what `openWindows` answers for a line: the key, then the case.
+    # The line of the *Windows* menu is the key with its case and the IDS the
+    # entry ran on, in the case's sub-menu -- not at the top level, where a
+    # window the case does not serve sits, and where a user cannot tell which
+    # of the two this is. The label is what `openWindows` answers for a line:
+    # the key, then the case, then the IDS read off the plugin stamp.
     menu = windowsMenu(session.api)
     submenu = subMenuNamed(menu, caseLabel(CASE_URI))
     assert submenu is not None, [a.text() for a in menu.actions()]
-    line = titleWithCases(FIRST_KEY, (CASE_URI,))
+    line = titleWithCases(FIRST_KEY, (CASE_URI,), fromIds='equilibrium')
     assert actionNamed(submenu, line) is not None
     top_level = [a.text() for a in menu.actions() if a.menu() is None]
     assert not [t for t in top_level if t.startswith(FIRST_KEY)]
@@ -520,10 +520,11 @@ def test_the_menu_lists_the_plugin_windows_and_delete_takes_one_away(session):
 
     # The plugin's matplotlib window is a figure like the others: its kind is in
     # ``MENU_ORDER``, so it is a line of the one list -- beside the case view of
-    # the session, in the case's group (the line names the case it serves), and
-    # that is what *Close this case* and the case's other gestures reach with it.
-    first = titleWithCases(FIRST_KEY, (CASE_URI,))
-    second = titleWithCases(SECOND_KEY, (CASE_URI,))
+    # the session, in the case's group (the line names the case it serves and the
+    # IDS its entry ran on), and that is what *Close this case* and the
+    # case's other gestures reach with it.
+    first = titleWithCases(FIRST_KEY, (CASE_URI,), fromIds='equilibrium')
+    second = titleWithCases(SECOND_KEY, (CASE_URI,), fromIds='equilibrium')
     assert windowTitles(menu) == [session.view.dataSource.getLongLabel(),
                                   first, second]
     assert [a.text() for a in delete.actions() if not a.isSeparator()] == \
@@ -576,7 +577,7 @@ def test_the_close_box_of_the_plugin_window_hides_it_and_keeps_its_key(session,
     # menu still names the window, unchecked, and its line puts it back.
     assert session.api.GetFiguresKeys(figureType=KIND) == [SECOND_KEY]
     menu = windowsMenu(session.api)
-    second = titleWithCases(SECOND_KEY, (CASE_URI,))
+    second = titleWithCases(SECOND_KEY, (CASE_URI,), fromIds='equilibrium')
     assert actionNamed(menu, second).isChecked() is False
     actionNamed(menu, second).trigger()
     session.qapp.processEvents()

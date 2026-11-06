@@ -44,7 +44,7 @@ def figureDisplayHeading(heading):
     return heading
 
 
-def titleWithCases(title, uris):
+def titleWithCases(title, uris, fromIds=None):
     """The window title of a registered window, with the case or cases it serves.
 
     `title` — the key today, or the plugin's own heading — is read as
@@ -55,7 +55,10 @@ def titleWithCases(title, uris):
     reads exactly `title` again instead of a trailing `— ` nobody could
     explain. The plugin windows name their one case: the Profiles panel and
     the Equilibrium chart both serve the case of the shot view they were
-    opened from.
+    opened from, and both name the IDS their entry ran on, through `fromIds`
+    -- ``PlotView:1 — west-54924.0 (from interferometer)`` — because a case
+    holds several IDS and the key alone says nothing about which of them drew
+    the window.
 
     The short label, not the URI, is what fits the one line the title bar is:
     the whole URI is where the user hovers for it, and it is `caseTooltip`.
@@ -65,10 +68,13 @@ def titleWithCases(title, uris):
     nothing-that-is-named answers ``title`` again instead of raising inside
     the label read.
 
-    :param title: (str) what the window was registered under
-    :param uris  : (iterable of str) the case URIs the window serves --
-                   ``casesServedBy`` for a figure, ``[uri]`` for a plugin
-                   window of one case
+    :param title:   (str) what the window was registered under
+    :param uris    : (iterable of str) the case URIs the window serves --
+                     ``casesServedBy`` for a figure, ``[uri]`` for a plugin
+                     window of one case
+    :param fromIds : (str, optional) the name of the IDS the window's entry
+                     ran on, for a plugin window of one case -- the ``ids``
+                     of its ``QVizPluginWindow`` stamp
     :returns: (str) the title to paint
     """
     title = figureDisplayHeading(title)
@@ -85,6 +91,8 @@ def titleWithCases(title, uris):
             if label not in labels:
                 labels.append(label)
         result = title + ' — ' + '; '.join(labels)
+    if fromIds:
+        result = result + ' (from %s)' % fromIds
     return result
 
 
@@ -586,6 +594,11 @@ class Viz_API:
             for figureKey in self.GetFiguresKeys(figureType):
                 frame = self.figureframes[figureKey]
                 cases = self.casesServedBy(frame)
+                # A plugin window carries the name of the IDS its entry ran on
+                # in its `QVizPluginWindow` stamp, and nothing else does: the
+                # line says `(from <ids>)` there, and nowhere the case alone
+                # does not already say whose window it is.
+                stamp = getattr(frame, 'pluginWindow', None)
                 windows.append(QVizWindowRecord(kindLabel, iconLabel,
                                                 # The same line the title bar
                                                 # paints (`_renameFigure`): the
@@ -594,7 +607,11 @@ class Viz_API:
                                                 # so a line outlives its window
                                                 # and still says whose it was.
                                                 titleWithCases(figureKey,
-                                                               cases),
+                                                               cases,
+                                                               fromIds=(stamp.ids
+                                                                         if stamp
+                                                                         is not None
+                                                                         else None)),
                                                 frame,
                                                 figureKey, self,
                                                 cases=cases))

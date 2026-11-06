@@ -439,7 +439,8 @@ class PlotFrame(QVizClosableWindow, QMainWindow):
 
     title = 'Equilibrium charts'
 
-    def __init__(self, vizTreeNode, vizAPI, parent=None, title=title):
+    def __init__(self, vizTreeNode, vizAPI, parent=None, title=title,
+                 fromIds=None):
 
         super(PlotFrame, self).__init__(parent)
         # The entry that opened this window registered it in that api, and the
@@ -470,10 +471,12 @@ class PlotFrame(QVizClosableWindow, QMainWindow):
         # sentinel it used to return left this method before the main widget was
         # built, and `execute` then showed the empty window anyway.
 
-        # The title now names the case this window drew, the whole URI behind
-        # the hover. Done here, not where the heading was first set: the URI is
-        # only known once DataGen has answered with it.
-        self.setWindowTitle(titleWithCases(title, [self.uri]))
+        # The title now names the case this window drew, the IDS its entry ran
+        # on, and the whole URI stays behind the hover. Done here, not where
+        # the heading was first set: the URI is only known once DataGen has
+        # answered with it.
+        self.setWindowTitle(titleWithCases(title, [self.uri],
+                                           fromIds=fromIds))
         self.setToolTip(caseTooltip([self.uri]))
 
         # Set main widget
@@ -1261,10 +1264,14 @@ class equilibriumcharts(VizPlugin):
         # menu lists the window in the case's group, and the case's gestures
         # -- *Close this case*, *Show only this case* -- reach it instead of
         # leaving it at the top level of the menu, alive after the case is
-        # closed and uncloseable by any line of it.
+        # closed and uncloseable by any line of it. The key as the heading,
+        # the case and the IDS it ran on after it -- the same answer as the
+        # *Windows* menu line, which reads that IDS from the stamp put on the
+        # frame a few lines below.
+        idsName = self.selectedTreeNode.getIDSName()
         self.frame = PlotFrame(self.selectedTreeNode, vizAPI,
                                parent=self.dataTreeView,
-                               title=PlotFrame.title + ' [' + figureKey + ']')
+                               title=figureKey, fromIds=idsName)
         uri = self.dataTreeView.dataSource.uri
         vizAPI.AddNodeToFigure(figureKey,
                                self.dataTreeView.dataSource.dataKey2(figureKey),
@@ -1276,8 +1283,7 @@ class equilibriumcharts(VizPlugin):
         # the case of that view, not an MDI geometry.
         self.frame.pluginWindow = QVizPluginWindow(
             uri=self.frame.uri, plugin='equilibriumcharts',
-            entry=pluginEntry, ids=self.selectedTreeNode.getIDSName(),
-            occurrence=0)
+            entry=pluginEntry, ids=idsName, occurrence=0)
         self.frame.show()
 
     def getEntries(self):

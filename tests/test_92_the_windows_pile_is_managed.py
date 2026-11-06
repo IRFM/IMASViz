@@ -479,6 +479,40 @@ def test_titleWithCases_says_whose_case_and_the_hover_says_the_uri():
     assert caseTooltip((URI_A, URI_B)) == URI_A + '\n' + URI_B
 
 
+def test_the_plugin_window_name_the_ids_its_entry_ran_on():
+    # A case holds several IDS, and the key alone says nothing about which of
+    # them drew the window: the suffix names it, the case label before it.
+    # The same answer with and without a case, because a window no case
+    # serves still came from one IDS.
+    assert (titleWithCases('PlotView:1', (URI_A,), fromIds='interferometer')
+            == 'PlotView:1 — %s (from interferometer)' % caseLabel(URI_A))
+    assert (titleWithCases('EquiPlotView:1', (URI_A,), fromIds='equilibrium')
+            == 'EquiPlotView:1 — %s (from equilibrium)' % caseLabel(URI_A))
+    assert (titleWithCases('PlotView:1', (), fromIds='interferometer')
+            == 'PlotView:1 (from interferometer)')
+
+
+def test_the_windows_menu_line_carries_the_ids_of_a_plugin_stamp(qapp):
+    # The line is one answer: what the title bar paints is what the menu
+    # names, and the IDS behind a plugin window is read off the stamp the
+    # entry put on the frame -- not a second record.
+    import types
+    api = makeApi(cases=[], figures={'PlotView:1': [URI_A]})
+    frame = api.figureframes['PlotView:1']
+    frame.pluginWindow = types.SimpleNamespace(
+        uri=URI_A, plugin='VizProfiles_plugin', entry=0,
+        ids='interferometer', occurrence=0)
+    [record] = api.openWindows()
+    expected = ('PlotView:1 — %s (from interferometer)'
+                % caseLabel(URI_A))
+    assert record.label == expected
+    # A figure with no stamp carries no suffix: the case label is the whole
+    # answer there.
+    api2 = makeApi(cases=[], figures={'SlicesPlot1': [URI_A]})
+    [record2] = api2.openWindows()
+    assert record2.label == 'Plot 1 — %s' % caseLabel(URI_A)
+
+
 def test_case_view_figure_and_menu_agree_on_the_line(qapp):
     # The three readings of one window — the record, the title bar, the menu
     # line — are one answer, so a stub of each agrees.

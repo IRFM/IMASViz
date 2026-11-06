@@ -340,14 +340,17 @@ class QVizProfilePanel(QVizClosableWindow, QMainWindow):
         layout.addWidget(self.cursors)
 
         self.setCentralWidget(body)
-        # The heading names the IDS and the key; the case follows it, the whole
-        # URI behind the hover. Not `_renameFigure`: that line runs before this
-        # window is in `figureframes`, so the one-to-one window says whose it
-        # is here, on itself.
+        # The key as the heading, the case after it, and the IDS the entry ran
+        # on in parentheses -- the case holds several IDS and the one it drew
+        # them from is what distinguishes two such windows of it. The same
+        # answer as the *Windows* menu line, which reads the same `ids` from
+        # the stamp the entry puts on this window. The whole URI stays behind
+        # the hover. Not `_renameFigure`: that line runs before this window is
+        # in `figureframes`, so the one-to-one window says whose it is here,
+        # on itself.
         uri = dataTreeView.dataSource.uri
-        heading = '%s IDS: what can be plotted [%s]' % (idsName,
-                                                        self.figureKey)
-        self.setWindowTitle(titleWithCases(heading, [uri]))
+        self.setWindowTitle(titleWithCases(self.figureKey, [uri],
+                                           fromIds=idsName))
         self.setToolTip(caseTooltip([uri]))
         self.resize(820, 620)
 
