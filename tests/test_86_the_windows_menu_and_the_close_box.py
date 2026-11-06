@@ -113,6 +113,9 @@ SHOT_VIEW = 'Shot view'
 
 CURVE = FigureTypes.CURVEPLOTTYPE + '1'
 TABLE = FigureTypes.TABLEPLOTTYPE + '1'
+# The key stays what the registry addresses; the word the menu line and the
+# title bar paint is what the user asked for where the key carries "Slices".
+CURVE_LINE = 'Plot 1'
 CASE = 'west 54924 run 0'
 
 pytestmark = [pytest.mark.ui]
@@ -307,13 +310,18 @@ def test_one_line_per_window_grouped_by_kind(session, qapp):
     # A case view first -- it is what the screen is standing on -- then the
     # figures in ``FigureTypes.MENU_ORDER`` order, a separator marking each
     # change of kind. No sub-menu to open before knowing what is on screen.
+    # The curve figure's line says the word the bar shows.
     assert session.windowLines() == [(CASE, True), (TABLE, True),
-                              (CURVE, True)]
+                              (CURVE_LINE, True)]
+    # The kind label the user reads -- `SlicesPlot` answered `Plot` since the
+    # titles dropped the word `Slices` -- and the key behind it stays
+    # ``SlicesPlot1``.
     assert [kind.kindLabel for kind in session.api.openWindows()] == \
-        [SHOT_VIEW, 'TablePlotView', 'SlicesPlot']
+        [SHOT_VIEW, 'TablePlotView', 'Plot']
     delete = session.subMenu(DELETE)
     assert [title for title, _ in session.lines(delete)] == [CASE, ALL, TABLE,
-                                                             ALL, CURVE, ALL]
+                                                             ALL, CURVE_LINE,
+                                                             ALL]
     # The state is the line: every window on the screen is checked.
     assert all(checked for _, checked in session.windowLines())
 
@@ -323,16 +331,17 @@ def test_a_hidden_window_is_the_same_line_unchecked_and_a_click_brings_it_back(
     frame = session.figure(CURVE)
     session.redrawn()
     window = session.windowOf(frame)
-    assert window.isVisible() and session.line(CURVE).isChecked()
+    assert window.isVisible() and session.line(CURVE_LINE).isChecked()
 
-    session.line(CURVE).trigger()
+    session.line(CURVE_LINE).trigger()
     qapp.processEvents()
     assert window.isVisible() is False
     assert frame.isVisible() is False
 
     session.redrawn()
-    assert session.windowLines() == [(CURVE, False)]
-    assert [title for title, _ in session.lines()] == [CURVE, SHOW_ALL, HIDE_ALL,
+    assert session.windowLines() == [(CURVE_LINE, False)]
+    assert [title for title, _ in session.lines()] == [CURVE_LINE,
+                                                       SHOW_ALL, HIDE_ALL,
                                                        HIDE_OTHERS, CLOSE_OTHERS,
                                                        DELETE, DISPOSITION, NEXT,
                                                        PREVIOUS]
@@ -341,7 +350,7 @@ def test_a_hidden_window_is_the_same_line_unchecked_and_a_click_brings_it_back(
     assert session.api.figureframes == {CURVE: frame}
     assert session.api.GetFigureKeyOf(frame) == CURVE
 
-    session.line(CURVE).trigger()
+    session.line(CURVE_LINE).trigger()
     qapp.processEvents()
     assert window.isVisible() is True and frame.isVisible() is True
 
@@ -357,7 +366,7 @@ def test_the_check_mark_follows_the_window_and_not_the_other_way_round(session,
     frame = session.figure(CURVE)
     session.windowOf(frame).hide()
     session.redrawn()
-    assert session.line(CURVE).isChecked() is False
+    assert session.line(CURVE_LINE).isChecked() is False
     assert session.api.figureframes == {CURVE: frame}
 
 
@@ -379,7 +388,7 @@ def test_show_all_and_hide_all_move_every_window_at_once(session, qapp):
     assert all(session.windowOf(f).isVisible() for f in frames)
     session.redrawn()
     assert [checked for title, checked in session.lines()
-            if title in (CASE, CURVE, TABLE)] == [True, True, True]
+            if title in (CASE, CURVE_LINE, TABLE)] == [True, True, True]
 
 
 def test_the_menu_of_a_shot_view_lists_the_same_windows(session, qapp):
@@ -463,8 +472,8 @@ def test_an_entry_of_a_menu_that_is_no_longer_current_costs_nothing(session,
     """
     frame = session.figure(CURVE)
     session.redrawn()
-    stale = session.line(CURVE)
-    staleDelete = session.line(CURVE, session.subMenu(DELETE))
+    stale = session.line(CURVE_LINE)
+    staleDelete = session.line(CURVE_LINE, session.subMenu(DELETE))
     session.api.closeWindow(frame)
     session.released(qapp)
 
@@ -489,7 +498,7 @@ def test_deleting_takes_the_window_off_the_screen_and_out_of_the_run(session,
     window = session.windowOf(frame)
     session.redrawn()
 
-    session.line(CURVE, session.subMenu(DELETE)).trigger()
+    session.line(CURVE_LINE, session.subMenu(DELETE)).trigger()
     session.released(qapp)
 
     assert session.api.figureframes == {}
@@ -511,7 +520,8 @@ def test_the_all_line_closes_every_window_of_its_kind_only(session, qapp):
     # third of the three, and it closes only the curves.
     alls = [a for a in session.subMenu(DELETE).actions() if a.text() == ALL]
     assert [a.text() for a in session.subMenu(DELETE).actions()
-            if not a.isSeparator()] == [CASE, ALL, TABLE, ALL, CURVE, ALL]
+            if not a.isSeparator()] == [CASE, ALL, TABLE, ALL, CURVE_LINE,
+                                                            ALL]
     alls[2].trigger()
     session.released(qapp)
 
@@ -557,13 +567,14 @@ def test_the_close_box_hides_a_figure_and_keeps_it(session, qapp):
     assert window in session.area.subWindowList()
     assert session.api.figureframes == {CURVE: frame}
     session.redrawn()
-    assert session.windowLines() == [(CURVE, False)]
-    assert [title for title, _ in session.lines()] == [CURVE, SHOW_ALL, HIDE_ALL,
+    assert session.windowLines() == [(CURVE_LINE, False)]
+    assert [title for title, _ in session.lines()] == [CURVE_LINE,
+                                                       SHOW_ALL, HIDE_ALL,
                                                        HIDE_OTHERS, CLOSE_OTHERS,
                                                        DELETE, DISPOSITION, NEXT,
                                                        PREVIOUS]
 
-    session.line(CURVE).trigger()
+    session.line(CURVE_LINE).trigger()
     qapp.processEvents()
     assert window.isVisible() is True
 
@@ -772,7 +783,7 @@ def test_the_application_window_hangs_the_menu_on_its_own_bar(qapp):
     window.windowMenu.refresh()
     lines = [(a.text(), a.isChecked())
              for a in window.windowMenu.menu.actions() if not a.isSeparator()]
-    assert lines[0] == (CURVE, True)
+    assert lines[0] == (CURVE_LINE, True)
 
 
 def test_a_shot_view_hangs_the_menu_on_its_own_bar(session, qapp):
@@ -788,7 +799,8 @@ def test_a_shot_view_hangs_the_menu_on_its_own_bar(session, qapp):
     session.caseView(CASE)
     session.figure(CURVE)
     menu.refresh()
-    assert [t for t, _ in session.lines(view)] == [CASE, CURVE, SHOW_ALL,
+    assert [t for t, _ in session.lines(view)] == [CASE, CURVE_LINE,
+                                                   SHOW_ALL,
                                                    HIDE_ALL, HIDE_OTHERS,
                                                    CLOSE_OTHERS, DELETE]
 

@@ -42,7 +42,8 @@ class FigureTypes:
     AGENTTYPE = "Agent:"
 
     # Every kind of figure the commands can draw, in menu order: the label the
-    # user reads (it is the prefix the window title shows), the icon named in
+    # user reads (it is what the window title shows -- `figureDisplayHeading`
+    # answers the same word for a key of the same kind), the icon named in
     # GlobalIcons, and the prefix its key carries. The *Windows* menu and its
     # *Delete* sub-menu iterate this, because a kind missing here is a window the user has
     # no way left to close -- and a kind listed here that no command draws any
@@ -50,8 +51,8 @@ class FigureTypes:
     MENU_ORDER = (('TablePlotView', 'TPV', TABLEPLOTTYPE),
                   ('StackedPlotView', 'SPV', STACKEDPLOTTYPE),
                   ('Profiles', 'Profiles', PROFILESPLOTTYPE),
-                  ('SlicesPlot', 'Figure', CURVEPLOTTYPE),
-                  ('SlicesImage', 'Image', IMAGEPLOTTYPE),
+                  ('Plot', 'Figure', CURVEPLOTTYPE),
+                  ('Image', 'Image', IMAGEPLOTTYPE),
                   ('Equilibrium', 'Figure', EQUILIBRIUMPLOTTYPE),
                   ('Agent', 'Agent', AGENTTYPE))
 

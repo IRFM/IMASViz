@@ -25,11 +25,31 @@ def getNodePath(node):
     return node.getParametrizedDataPath()
 
 
+def figureDisplayHeading(heading):
+    """The word the title bar paints where a figure key carries 'Slices'.
+
+    ``SlicesPlot1`` reads `Plot 1` and ``SlicesImage2`` reads ``Image 2``: a
+    user who sees 'Slice' in a title wanted 'Plot' there, and a curve window
+    and a picture window keep two distinct names. Whatever does not carry one
+    of the two prefixes -- ``PlotView:1``, ``TablePlotView:0``,
+    ``EquiPlotView:1``, ``Agent:0`` -- passes through untouched. What changes
+    is the word on the bar only: the registry key behind it -- the identity a
+    session file, a ``GetFiguresKeys`` call and a menu slot address -- is left
+    exactly where it is.
+    """
+    if heading.startswith('SlicesPlot'):
+        return 'Plot ' + heading[len('SlicesPlot'):]
+    if heading.startswith('SlicesImage'):
+        return 'Image ' + heading[len('SlicesImage'):]
+    return heading
+
+
 def titleWithCases(title, uris):
     """The window title of a registered window, with the case or cases it serves.
 
-    `title` — the key today, or the plugin's own heading — is kept verbatim,
-    and one short label follows for every case, separated by `; `. A figure
+    `title` — the key today, or the plugin's own heading — is read as
+    `figureDisplayHeading` answers it, and one short label follows for every
+    case, separated by `; `. A figure
     drawn from two cases carries both; a window no case serves -- a frame
     registered without any node -- carries its heading alone, so the answer
     reads exactly `title` again instead of a trailing `— ` nobody could
@@ -51,19 +71,21 @@ def titleWithCases(title, uris):
                    window of one case
     :returns: (str) the title to paint
     """
+    title = figureDisplayHeading(title)
     uris = [uri for uri in (uris or ()) if uri]
-    if not uris:
-        return title
-    # Imported here the way CreateDataTree imports the shot view frame: the
-    # module that owns `caseLabel` is the data source, whose import chain this
-    # one feeds, and the two must not look at each other at import time.
-    from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
-    labels = []
-    for uri in uris:
-        label = caseLabel(uri)
-        if label not in labels:
-            labels.append(label)
-    return title + ' — ' + '; '.join(labels)
+    result = title
+    if uris:
+        # Imported here the way CreateDataTree imports the shot view frame: the
+        # module that owns `caseLabel` is the data source, whose import chain
+        # this one feeds, and the two must not look at each other at import time.
+        from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
+        labels = []
+        for uri in uris:
+            label = caseLabel(uri)
+            if label not in labels:
+                labels.append(label)
+        result = title + ' — ' + '; '.join(labels)
+    return result
 
 
 def caseTooltip(uris):

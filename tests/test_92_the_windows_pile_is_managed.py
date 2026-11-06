@@ -188,10 +188,11 @@ def test_figure_record_carrys_every_uri_it_serves(qapp):
 def test_plugin_window_record_serves_no_case(qapp):
     # A case view and a figure that draws no node: the figure is real, has a
     # key, but serves no URI because nothing in figToNodes references one.
-    # The record still carries an empty case set.
+    # The record still carries an empty case set. The record is addressed by
+    # the word the bar shows -- the key `SlicesPlotX` stays in the registry.
     api = makeApi(cases=[URI_A], figures={'SlicesPlotX': []})
     records = api.openWindows()
-    [record] = [r for r in records if r.label == 'SlicesPlotX']
+    [record] = [r for r in records if r.label == 'Plot X']
     assert record.cases == ()
 
 
@@ -428,12 +429,14 @@ def test_menu_disposition_not_on_a_shotview_bar(qapp):
 def test_menu_with_no_cases_stays_flat(qapp):
     # A plugin-style window with no case: the menu has no case sub-menus and no
     # case gestures, just the top-level window line and the *All* gestures.
+    # The line shows the word the title bar shows -- `Plot 1` -- while the
+    # key the registry and the session file address stays `SlicesPlot1`.
     api = makeApi(cases=[], figures={'SlicesPlot1': []})
     win_menu = QMenu()
     ctrl = QVizWindowMenu(win_menu, api, applicationBar=True)
     ctrl.refresh()
     labels = [a.text() for a in win_menu.actions()]
-    assert 'SlicesPlot1' in labels
+    assert 'Plot 1' in labels
     assert QVizWindowMenu.ISOLATE not in labels
     assert QVizWindowMenu.CLOSE_CASE not in labels
 
@@ -449,15 +452,30 @@ def test_titleWithCases_keeps_the_heading_when_no_case_serves():
     assert caseTooltip((None, '')) is None
 
 
+def test_the_title_reads_plot_and_image_where_the_key_carries_slices():
+    # The word on the bar changed, the key behind it did not: the session
+    # files and `GetFiguresKeys` of the run still address `SlicesPlot1`.
+    from imasviz.Viz_API import figureDisplayHeading
+    assert figureDisplayHeading('SlicesPlot1') == 'Plot 1'
+    assert figureDisplayHeading('SlicesImage2') == 'Image 2'
+    # Whatever is already its own word passes through untouched.
+    assert figureDisplayHeading('PlotView:1') == 'PlotView:1'
+    assert figureDisplayHeading('EquiPlotView:3') == 'EquiPlotView:3'
+    assert figureDisplayHeading('TablePlotView:0') == 'TablePlotView:0'
+
+
 def test_titleWithCases_says_whose_case_and_the_hover_says_the_uri():
     # The short label is what fits the one line; the whole URI is the hover.
+    # A key of the `SlicesPlot` family reads as the word the user asked for.
     assert (titleWithCases('SlicesPlot1', (URI_A,))
-            == 'SlicesPlot1 — %s' % caseLabel(URI_A))
+            == 'Plot 1 — %s' % caseLabel(URI_A))
+    assert (titleWithCases('SlicesImage1', (URI_A,))
+            == 'Image 1 — %s' % caseLabel(URI_A))
     assert caseTooltip((URI_A,)) == URI_A
     # A comparison figure names both, in the order they arrived, and the hover
     # holds the two URIs, one per line.
     assert (titleWithCases('SlicesPlotAB', (URI_A, URI_B))
-            == 'SlicesPlotAB — %s; %s' % (caseLabel(URI_A), caseLabel(URI_B)))
+            == 'Plot AB — %s; %s' % (caseLabel(URI_A), caseLabel(URI_B)))
     assert caseTooltip((URI_A, URI_B)) == URI_A + '\n' + URI_B
 
 

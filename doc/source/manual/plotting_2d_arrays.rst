@@ -20,7 +20,7 @@ describes what the image window shows and how to read it.
 .. note::
 
    The screenshots below were taken with the previous image window. Its layout has
-   changed since: the window is now titled :guilabel:`SlicesImage1`, the axis the
+   changed since: the window is now titled :guilabel:`Image 1`, the axis the
    pictures leave out is spread over them instead of pinned, and the slice commands
    are buttons under the pictures instead of entries in a right-click menu. They
    have not been regenerated in this branch.
@@ -68,7 +68,7 @@ Plotting a single 2D array
      :align: center
      :width: 550px
 
-4. The image window opens, titled :guilabel:`SlicesImage1`, and is a line of the
+4. The image window opens, titled :guilabel:`Image 1`, and is a line of the
    :guilabel:`Windows` menu under that name. Clicking the line hides the window
    and keeps it; the :guilabel:`Delete` lines under the same menu close it for
    good.

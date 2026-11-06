@@ -127,7 +127,10 @@ def test_a_figure_drawn_through_the_tensor_read_can_be_deleted(qapp, view):
     delete = subMenuNamed(windowsMenu(view), QVizWindowMenu.DELETE)
 
     assert delete is not None and delete.isEnabled()
-    assert titles(delete) == ['SlicesPlot1', QVizWindowMenu.ALL]
+    # The line says the word the title bar shows, not the key the registry
+    # addresses -- `SlicesPlot1` is still the key, `Plot 1` the name on the
+    # line.
+    assert titles(delete) == ['Plot 1', QVizWindowMenu.ALL]
 
 
 @pytest.mark.parametrize('figureType,label', [
@@ -218,9 +221,10 @@ def test_closing_a_figure_with_its_box_keeps_the_key_that_deletes_it_gives_back(
     assert view.imas_viz_api.GetFiguresKeys('SlicesPlot') == ['SlicesPlot1']
     assert window.isHidden()
 
-    # The *Delete* line is the one that ends a window.
+    # The *Delete* line is the one that ends a window: it names the word the
+    # bar shows, and the key it addresses stays out on the registry.
     delete = subMenuNamed(windowsMenu(view), QVizWindowMenu.DELETE)
-    actionNamed(delete, 'SlicesPlot1').trigger()
+    actionNamed(delete, 'Plot 1').trigger()
     assert view.imas_viz_api.GetFiguresKeys('SlicesPlot') == []
 
     # And the box does the same when the user asked for that behaviour.

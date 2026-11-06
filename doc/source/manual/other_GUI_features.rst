@@ -45,12 +45,13 @@ Within a case's sub-menu:
 
    * - the name of a window
      - one line per window the case owns -- its view, and each plot window by the
-       key and the case name its title carries, both, separated, when its curves
-       came from more than one case. Hover the line (or the title bar) and the
-       whole URI is what is read, one per line: the title bar carries the short
-       name because it is the one guaranteed to fit, and the URI is the answer
-       to the question behind it. A line is **checked** while its window is on
-       the screen, and clicking it hides a shown window or shows a hidden one.
+       name its title carries: the name of the window and the case name, both,
+       separated, when its curves came from more than one case. Hover the
+       line (or the title bar) and the whole URI is what is read, one per line:
+       the title bar carries the short name because it is the one guaranteed to
+       fit, and the URI is the answer to the question behind it. A line is
+       **checked** while its window is on the screen, and clicking it hides a
+       shown window or shows a hidden one.
    * - :guilabel:`Show only this case`
      - show this case and its windows, and hide the other cases' windows. A
        window drawn from this case and another stays shown: isolating a case is
@@ -373,11 +374,14 @@ numbers of the figures back at 1.
 | that entry was given                | so nothing is asked of the user again   |
 +-------------------------------------+-----------------------------------------+
 
-The key of a window is not a label: it is the name the :guilabel:`Windows` menu
-and its :guilabel:`Delete` lines address it by, and the name the *Plot X to ->
-Figure* menu offers when a quantity is added to a window that is already open. A saved
-session keeps it, so a window that was :guilabel:`SlicesPlot1` comes back as
-:guilabel:`SlicesPlot1`, and the menus still name one line for it.
+The key of a window is not a label: it is the name a saved session carries, and
+the name the *Plot X to -> Figure* menu offers when a quantity is added to a
+window that is already open. What the title bar and the :guilabel:`Windows`
+menu show is the name the user asks for, and the case the window serves:
+a window whose key is :guilabel:`SlicesPlot1` is what those list as
+:guilabel:`Plot 1 — west-54924.0`. A saved session keeps the key, so the
+window that was :guilabel:`Plot 1 — west-54924.0` comes back under the very
+same title, and the menus still name one line for it.
 
 .. note::
    A restored window is drawn from the data again, not taken out of the file. So
