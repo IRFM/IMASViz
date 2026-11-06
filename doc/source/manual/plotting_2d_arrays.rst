@@ -256,7 +256,7 @@ log panel and costs no window; the other quantities of the same selection are dr
 all the same.
 
 The menu lists the curve figures already open under the key they carry
-(:guilabel:`SlicesPlot1`) to add the selection to one of them instead of opening a
+(:guilabel:`Plot1`) to add the selection to one of them instead of opening a
 new one. An image window is not listed: it holds one quantity, with its colour scale
 and its controls, so a second quantity would need a window of its own.
 

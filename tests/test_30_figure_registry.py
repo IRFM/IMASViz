@@ -123,12 +123,12 @@ def test_a_figure_drawn_through_the_tensor_read_can_be_deleted(qapp, view):
     # purpose -- the legacy "add to this figure" entries cannot fill it. Being
     # invisible to the plotting menu is one thing; being unreachable to Delete is
     # another: the user has no way left to close the window.
-    openFigures(view, **{'SlicesPlot1': QWidget})
+    openFigures(view, **{'Plot1': QWidget})
     delete = subMenuNamed(windowsMenu(view), QVizWindowMenu.DELETE)
 
     assert delete is not None and delete.isEnabled()
     # The line says the word the title bar shows, not the key the registry
-    # addresses -- `SlicesPlot1` is still the key, `Plot 1` the name on the
+    # addresses -- `Plot1` is still the key, `Plot 1` the name on the
     # line.
     assert titles(delete) == ['Plot 1', QVizWindowMenu.ALL]
 
@@ -206,31 +206,31 @@ def test_closing_a_figure_with_its_box_keeps_the_key_that_deletes_it_gives_back(
     run; and a frame taken out of the bookkeeping while its window is still on
     screen costs a window nobody can reach. Measured before the rule: a closed
     figure left ``figureframes`` empty, its subwindow hidden in the area, and the
-    next curve was handed ``SlicesPlot1`` again.
+    next curve was handed ``Plot1`` again.
 
     So the box hides -- the window keeps its key and the menu keeps naming it,
     unchecked -- and the key comes back with the *Delete* line, or with the box
     when ``Close_button_deletes`` says the box means it.
     """
     frame = QWidget()
-    view.imas_viz_api.figureframes['SlicesPlot1'] = frame
+    view.imas_viz_api.figureframes['Plot1'] = frame
     view.imas_viz_api.addPlotWidgetToMDI(frame)
     window = frame.parent()
 
     window.close()
-    assert view.imas_viz_api.GetFiguresKeys('SlicesPlot') == ['SlicesPlot1']
+    assert view.imas_viz_api.GetFiguresKeys('Plot') == ['Plot1']
     assert window.isHidden()
 
     # The *Delete* line is the one that ends a window: it names the word the
     # bar shows, and the key it addresses stays out on the registry.
     delete = subMenuNamed(windowsMenu(view), QVizWindowMenu.DELETE)
     actionNamed(delete, 'Plot 1').trigger()
-    assert view.imas_viz_api.GetFiguresKeys('SlicesPlot') == []
+    assert view.imas_viz_api.GetFiguresKeys('Plot') == []
 
     # And the box does the same when the user asked for that behaviour.
     QVizPreferences.Close_button_deletes = 1
     other = QWidget()
-    view.imas_viz_api.figureframes['SlicesPlot2'] = other
+    view.imas_viz_api.figureframes['Plot2'] = other
     view.imas_viz_api.addPlotWidgetToMDI(other)
     other.parent().close()
-    assert view.imas_viz_api.GetFiguresKeys('SlicesPlot') == []
+    assert view.imas_viz_api.GetFiguresKeys('Plot') == []

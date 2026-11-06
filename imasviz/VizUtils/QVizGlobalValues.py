@@ -26,8 +26,8 @@ class FigureTypes:
     # handed out. A second namespace for one kind of window is two *Windows* menu
     # entries and one window the "add to" entries cannot fill; a namespace with
     # no frame left behind it is a *Windows* menu group that can never be filled.
-    CURVEPLOTTYPE = "SlicesPlot"
-    IMAGEPLOTTYPE = "SlicesImage"
+    CURVEPLOTTYPE = "Plot"
+    IMAGEPLOTTYPE = "Image"
     # The window the Equilibrium plugin builds is a figure like the others: it is
     # registered in `figureframes`, so the *Windows* menu and its *Delete*
     # sub-menu reach it. It is not drawn through the axes model, so it keeps its

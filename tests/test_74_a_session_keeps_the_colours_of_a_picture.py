@@ -71,7 +71,7 @@ SLICES = 3
 TREE_SLICE = 2
 
 URI = 'imas:hdf5?case=1'
-FIGURE_KEY = 'SlicesImage1'
+FIGURE_KEY = 'Image1'
 ANOTHER_MAP = 'CET-L9'
 # A map name this node cannot resolve: what a session written on an install that
 # reads matplotlib's extra maps looks like on one that does not.
@@ -191,7 +191,7 @@ def test_a_chosen_map_is_written_and_the_range_is_not(qtbot):
 def test_a_curve_figure_answers_no_colour_scale(qtbot):
     """A figure of curves dresses its traces one by one -- `QVizPlotStyling`'s
     question. It has no picture to colour, so the session is told nothing."""
-    frame = QVizCurvePlot(title='SlicesPlot1')
+    frame = QVizCurvePlot(title='Plot1')
     qtbot.addWidget(frame)
 
     assert QVizSaveSession.scaleOf(frame) is None
@@ -230,7 +230,7 @@ def test_the_colours_and_the_range_come_back_on_a_window_that_never_saw_them(qtb
     moved = dragBar(window)
     window.colourScale.setColourMap(ANOTHER_MAP)
     scale = QVizSaveSession.scaleOf(window)
-    other = aPictureWindow(qtbot, key='SlicesImage2')
+    other = aPictureWindow(qtbot, key='Image2')
 
     QVizRestoreSession(aRun()).applyColourScale(aFigure(scale), other, StubView())
 
@@ -246,7 +246,7 @@ def test_a_replayed_scale_is_written_again_as_the_hand_it_stands_for(qtbot):
     window = aPictureWindow(qtbot)
     moved = dragBar(window)
     scale = QVizSaveSession.scaleOf(window)
-    other = aPictureWindow(qtbot, key='SlicesImage2')
+    other = aPictureWindow(qtbot, key='Image2')
 
     QVizRestoreSession(aRun()).applyColourScale(aFigure(scale), other, StubView())
 
@@ -266,7 +266,7 @@ def test_a_map_this_node_cannot_draw_is_named_and_the_range_still_goes_on(qtbot,
     """
     window = aPictureWindow(qtbot)
     moved = dragBar(window)
-    other = aPictureWindow(qtbot, key='SlicesImage2')
+    other = aPictureWindow(qtbot, key='Image2')
     caplog.set_level(logging.WARNING, logger=URI)
 
     QVizRestoreSession(aRun()).applyColourScale(

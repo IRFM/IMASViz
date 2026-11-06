@@ -347,30 +347,30 @@ def test_the_gate_asks_the_figure_and_not_a_spelling(qtbot):
     """One open figure, one answer per quantity -- asked of what the figure draws."""
     from imasviz.Viz_API import Viz_API
 
-    history = keep(QVizCurvePlot(title='SlicesPlot1'))
-    history.figureKey = 'SlicesPlot1'
+    history = keep(QVizCurvePlot(title='Plot1'))
+    history.figureKey = 'Plot1'
     history.plot(_leaf('density'), as_function_of_time=True)
     api = Viz_API()
     api.figureframes[history.figureKey] = history
 
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _leaf('temperature'))
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _leafOnAnUnnamedAxis())
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1',
+    assert api.figureDrawsSameCurveAxis('Plot1', _leaf('temperature'))
+    assert api.figureDrawsSameCurveAxis('Plot1', _leafOnAnUnnamedAxis())
+    assert api.figureDrawsSameCurveAxis('Plot1',
                                         _leafTimedByItsOwnCoordinate())
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _scalarInTime())
+    assert api.figureDrawsSameCurveAxis('Plot1', _scalarInTime())
 
-    profile = keep(QVizCurvePlot(title='SlicesPlot2'))
-    profile.figureKey = 'SlicesPlot2'
+    profile = keep(QVizCurvePlot(title='Plot2'))
+    profile.figureKey = 'Plot2'
     profile.plot(_leaf('density'), as_function_of_time=False)
     api.figureframes[profile.figureKey] = profile
-    assert api.figureDrawsSameCurveAxis('SlicesPlot2', _leaf('temperature'))
-    assert not api.figureDrawsSameCurveAxis('SlicesPlot2',
+    assert api.figureDrawsSameCurveAxis('Plot2', _leaf('temperature'))
+    assert not api.figureDrawsSameCurveAxis('Plot2',
                                             _leafTimedByItsOwnCoordinate())
-    assert not api.figureDrawsSameCurveAxis('SlicesPlot2',
+    assert not api.figureDrawsSameCurveAxis('Plot2',
                                             _leafOnAnUnnamedAxis())
     # A quantity with no axis of its own is the one thing that always fits: it has
     # no abscissa to disagree with, so it is spread over the one the figure draws.
-    assert api.figureDrawsSameCurveAxis('SlicesPlot2', _scalarInTime())
+    assert api.figureDrawsSameCurveAxis('Plot2', _scalarInTime())
 
 
 def test_the_curve_frame_carries_no_axis_spelling_any_more(qtbot):
@@ -543,22 +543,22 @@ def test_the_case_offers_the_grid_leaf_to_a_history_and_not_to_a_profile(caseBun
     from imasviz.Viz_API import Viz_API
 
     api = Viz_API()
-    history = keep(QVizCurvePlot(title='SlicesPlot1'))
-    history.figureKey = 'SlicesPlot1'
+    history = keep(QVizCurvePlot(title='Plot1'))
+    history.figureKey = 'Plot1'
     history.plot(caseNode(caseBundle, 'equilibrium', SCALAR), as_function_of_time=True)
     api.figureframes[history.figureKey] = history
     for text in (PROFILE, GRID_LEAF, FLUX, SCALAR):
         assert api.figureDrawsSameCurveAxis(
-            'SlicesPlot1', caseNode(caseBundle, idsOf(text), text)), text
+            'Plot1', caseNode(caseBundle, idsOf(text), text)), text
 
-    profile = keep(QVizCurvePlot(title='SlicesPlot2'))
-    profile.figureKey = 'SlicesPlot2'
+    profile = keep(QVizCurvePlot(title='Plot2'))
+    profile.figureKey = 'Plot2'
     profile.plot(caseNode(caseBundle, 'equilibrium', PROFILE),
                  as_function_of_time=False)
     api.figureframes[profile.figureKey] = profile
     for text in (PROFILE, SCALAR):
         assert api.figureDrawsSameCurveAxis(
-            'SlicesPlot2', caseNode(caseBundle, 'equilibrium', text)), text
+            'Plot2', caseNode(caseBundle, 'equilibrium', text)), text
     for text in (GRID_LEAF, FLUX):
         assert not api.figureDrawsSameCurveAxis(
-            'SlicesPlot2', caseNode(caseBundle, idsOf(text), text)), text
+            'Plot2', caseNode(caseBundle, idsOf(text), text)), text

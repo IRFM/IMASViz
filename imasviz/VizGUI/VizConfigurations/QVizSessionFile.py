@@ -716,6 +716,18 @@ def _pluginWindowOf(element, path):
         occurrence=_integer(element, 'occurrence', 0, path))
 
 
+def _normalizeKey(key):
+    """Old session files carry the former ``Slices*`` prefixes: map them to
+    the current key so the rest of the application sees one spelling.
+    ``SlicesPlot3`` → ``Plot3``, ``SlicesImage1`` → ``Image1``.
+    """
+    if key.startswith('SlicesPlot'):
+        return 'Plot' + key[len('SlicesPlot'):]
+    if key.startswith('SlicesImage'):
+        return 'Image' + key[len('SlicesImage'):]
+    return key
+
+
 def _figureOf(element, path):
     kind = _attribute(element, 'kind', path, 'Figure')
     if kind not in KINDS:
@@ -725,7 +737,7 @@ def _figureOf(element, path):
                    ('Quantity', 'TextStyle', 'ColourScale', 'Cursors', 'View',
                     'Errors', 'Window'), path)
     return QVizSessionFigure(
-        key=_attribute(element, 'key', path, 'Figure'),
+        key=_normalizeKey(_attribute(element, 'key', path, 'Figure')),
         kind=kind,
         quantities=[_quantityOf(child, path)
                     for child in element.findall('Quantity')],

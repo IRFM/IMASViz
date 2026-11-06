@@ -26,21 +26,27 @@ def getNodePath(node):
 
 
 def figureDisplayHeading(heading):
-    """The word the title bar paints where a figure key carries 'Slices'.
+    """The word the title bar paints for a figure key.
 
-    ``SlicesPlot1`` reads `Plot 1` and ``SlicesImage2`` reads ``Image 2``: a
-    user who sees 'Slice' in a title wanted 'Plot' there, and a curve window
-    and a picture window keep two distinct names. Whatever does not carry one
-    of the two prefixes -- ``PlotView:1``, ``TablePlotView:0``,
-    ``EquiPlotView:1``, ``Agent:0`` -- passes through untouched. What changes
-    is the word on the bar only: the registry key behind it -- the identity a
-    session file, a ``GetFiguresKeys`` call and a menu slot address -- is left
-    exactly where it is.
+    New keys — ``Plot1``, ``Image2`` — read with a space between
+    the word and the number: ``Plot 1``, ``Image 2``. Old keys
+    from saved sessions — ``SlicesPlot1``, ``SlicesImage1`` — read
+    the same, so a session saved before the rename still shows the
+    word the user expects. Whatever carries its own name
+    (``PlotView:1``, ``TablePlotView:0``, ``EquiPlotView:1``,
+    ``Agent:0``) passes through untouched — the digit after the
+    prefix is what tells a key from a name.
     """
     if heading.startswith('SlicesPlot'):
         return 'Plot ' + heading[len('SlicesPlot'):]
     if heading.startswith('SlicesImage'):
         return 'Image ' + heading[len('SlicesImage'):]
+    if (heading.startswith('Plot') and len(heading) > 4
+            and heading[4].isdigit()):
+        return 'Plot ' + heading[4:]
+    if (heading.startswith('Image') and len(heading) > 5
+            and heading[5].isdigit()):
+        return 'Image ' + heading[5:]
     return heading
 
 
@@ -533,7 +539,7 @@ class Viz_API:
         window a plugin drew differ in where they live, not in what hiding one
         costs.
 
-        :param figureKey: (str) A figure key (e.g. 'SlicesPlot1')
+        :param figureKey: (str) A figure key (e.g. 'Plot1')
         """
         return self.showHideWindow(self.figureframes[figureKey])
 
@@ -915,7 +921,7 @@ class Viz_API:
         saved session writes it hidden. Measured before the rule existed, a
         curve figure closed with its own box left ``figureframes`` empty, its
         window hidden inside the MDI area, its frame alive with no key reaching
-        it, and the next curve figure of that kind took ``SlicesPlot1`` again:
+        it, and the next curve figure of that kind took ``Plot1`` again:
         two windows under one name, one of them unreachable by any gesture.
 
         With it on, the frame leaves the bookkeeping and the caller releases the
@@ -1080,13 +1086,18 @@ class Viz_API:
         return self.GetNextKeyForFigure(FigureTypes.PROFILESPLOTTYPE)
 
     def GetFiguresKeys(self, figureType):
-        """Returns the list of all figure keys.
+        """Returns the list of all figure keys of the given type.
+
+        A key is ``<type><number>`` and the number is all digits, so a
+        key of one type does not sneak into another's list: ``Plot1``
+        is the ``Plot`` group, not ``PlotView:1``'s.
 
         :returns: (list) A list of figure keys
         """
         figureKeys = []
         for key in self.figureframes.keys():
-            if key.startswith(figureType):
+            if (key.startswith(figureType)
+                    and key[len(figureType):].isdigit()):
                 figureKeys.append(key)
         return sorted(figureKeys)
 

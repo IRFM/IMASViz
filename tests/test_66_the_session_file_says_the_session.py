@@ -206,7 +206,7 @@ def aSessionFile():
                                             0)]),
             QVizSessionCase(uri='imas:hdf5?case=2', dd_version=None,
                             label=None, loads=[], expanded=[], selection=[])],
-        figures=[QVizSessionFigure('SlicesPlot1', CURVE,
+        figures=[QVizSessionFigure('Plot1', CURVE,
                                    [QVizSessionQuantity(
                                        'magnetics/flux_loop(3)/flux/data', 0,
                                        URI, None, None),
@@ -218,7 +218,7 @@ def aSessionFile():
                                    [QVizSessionQuantity('a/b', 0, URI, 0, 1),
                                     QVizSessionQuantity('c/d', 0, URI, 1, 1)],
                                    axis='TIME', tensor=False),
-                 QVizSessionFigure('SlicesImage1', IMAGE,
+                 QVizSessionFigure('Image1', IMAGE,
                                    [QVizSessionQuantity('e/f', 0, URI, None,
                                                         None)],
                                    axis=None, tensor=True)])
@@ -240,7 +240,7 @@ def test_a_session_comes_back_as_the_session_it_was_written():
     assert read.cases[0].selection == [
         QVizSessionSelection('magnetics/flux_loop(3)/flux/data', 0)]
     assert [figure.key for figure in read.figures] \
-        == ['SlicesPlot1', 'TablePlotView:1', 'SlicesImage1']
+        == ['Plot1', 'TablePlotView:1', 'Image1']
     assert [figure.kind for figure in read.figures] == [CURVE, TABLE, IMAGE]
     assert read.figures[1].axis == 'TIME'
     assert read.figures[2].tensor is True
@@ -436,7 +436,7 @@ def test_a_element_missing_what_it_cannot_be_replayed_without_is_named():
 def aStatefulFigure():
     """One curve figure as the user left it: band moved, view set, lines on."""
     return QVizSessionFigure(
-        key='SlicesPlot1', kind=CURVE,
+        key='Plot1', kind=CURVE,
         quantities=[QVizSessionQuantity('magnetics/flux_loop(0)/flux/data', 0,
                                         URI, None, None)],
         axis=None, tensor=True,
@@ -493,7 +493,7 @@ def test_a_version_1_file_is_read_and_its_windows_carry_no_state():
     user who set nothing -- the windows come back as the drawing leaves them."""
     path = _write('v1.vsess', """
     <IMASVizSession version="1">
-      <Figure key="SlicesPlot1" kind="curve">
+      <Figure key="Plot1" kind="curve">
         <Quantity path="a/b" occurrence="0"/>
       </Figure>
     </IMASVizSession>""")
@@ -510,7 +510,7 @@ def test_the_two_error_bar_entries_are_told_apart_by_the_words_they_ask_with():
     user answer their own click, so the file says which of the two it holds."""
     for step, word in ((1, 'all'), (10, 'step=10')):
         where = _path('bars.vsess')
-        figure = QVizSessionFigure(key='SlicesPlot1', kind=CURVE, quantities=[],
+        figure = QVizSessionFigure(key='Plot1', kind=CURVE, quantities=[],
                                    axis=None, tensor=False,
                                    errors=QVizSessionErrors(bars=step,
                                                             bands=False))
@@ -750,7 +750,7 @@ def test_a_saved_figure_keeps_the_key_the_api_handed_it(qapp):
     session = QVizSessionFile.read(
         QVizSaveSession(api, path=_path('keys.vsess')).execute())
 
-    assert [figure.key for figure in session.figures] == ['SlicesPlot1']
+    assert [figure.key for figure in session.figures] == ['Plot1']
     assert [quantity.path for quantity in session.figures[0].quantities] \
         == ['foo/time_slice(i)/vector']
     assert session.figures[0].kind == CURVE
@@ -966,10 +966,10 @@ def test_a_figure_key_already_held_by_a_live_window_is_refused_in_the_log(qapp,
     QVizPlotOneNode(view, view.signalsList[0]).execute()
 
     assert QVizPlotOneNode(view, view.signalsList[0],
-                           figureKey='SlicesPlot1').execute() is None
+                           figureKey='Plot1').execute() is None
 
-    assert 'SlicesPlot1' in caplog.text
-    assert list(api.figureframes) == ['SlicesPlot1']
+    assert 'Plot1' in caplog.text
+    assert list(api.figureframes) == ['Plot1']
 
 
 @pytest.mark.ui
@@ -979,10 +979,10 @@ def test_a_figure_key_the_api_hands_out_is_the_one_the_command_asks_for(qapp):
     view.signalsList = [leaf()]
 
     frame = QVizPlotOneNode(view, view.signalsList[0],
-                            figureKey='SlicesPlot7').execute()
+                            figureKey='Plot7').execute()
 
-    assert frame.figureKey == 'SlicesPlot7'
-    assert list(api.figureframes) == ['SlicesPlot7']
+    assert frame.figureKey == 'Plot7'
+    assert list(api.figureframes) == ['Plot7']
 
 
 @pytest.mark.ui
@@ -1125,8 +1125,8 @@ def test_a_figure_with_no_window_of_its_own_says_so_and_keeps_the_rest(qapp,
     ).figures[0]
 
     assert figure.window is None
-    assert figure.key == 'SlicesPlot1'
-    assert 'SlicesPlot1' in caplog.text and 'MDI area' in caplog.text
+    assert figure.key == 'Plot1'
+    assert 'Plot1' in caplog.text and 'MDI area' in caplog.text
 
 
 @pytest.mark.ui
@@ -1212,7 +1212,7 @@ def aStyledFigure():
                                       attributes={'color': '#00ff00'}),),
         text=(QVizSessionTextStyle(side='left', attributes={'bold': '1'}),))
     return QVizSessionFigure(
-        key='SlicesPlot1', kind=CURVE,
+        key='Plot1', kind=CURVE,
         quantities=[QVizSessionQuantity('magnetics/flux_loop(3)/flux/data', 0,
                                         URI, None, None),
                     coloured, panel],
@@ -1249,7 +1249,7 @@ def test_what_a_hand_left_on_a_trace_and_a_label_comes_back_through_the_file():
 def test_a_cleared_title_is_written_as_cleared_and_not_as_no_title():
     """`text=""` is a style: a file holding only the font would write the default back."""
     figure = QVizSessionFigure(
-        key='SlicesPlot1', kind=CURVE, quantities=[], axis=None, tensor=False,
+        key='Plot1', kind=CURVE, quantities=[], axis=None, tensor=False,
         text=(QVizSessionTextStyle(side='title',
                                    attributes={'text': '', 'size': '18px'}),))
 
@@ -1271,7 +1271,7 @@ def test_a_window_nobody_styled_writes_neither_element():
     the palette colours it again for the case it is read against.
     """
     written = QVizSessionFile(cases=[], figures=[QVizSessionFigure(
-        'SlicesPlot1', CURVE,
+        'Plot1', CURVE,
         [QVizSessionQuantity('a/b', 0, URI, None, None)], axis=None,
         tensor=False)]).write(QVizSessionFile.named('plain'))
     with open(written) as handle:
@@ -1287,7 +1287,7 @@ def test_a_file_of_an_older_version_names_no_style(version):
     """A version 3 file holds no `<Style>`, which is a figure nobody coloured."""
     path = _write('v%s_style.vsess' % version, """
     <IMASVizSession version="%s">
-      <Figure key="SlicesPlot1" kind="curve">
+      <Figure key="Plot1" kind="curve">
         <Quantity path="a/b" occurrence="0"/>
       </Figure>
     </IMASVizSession>""" % version)
@@ -1360,7 +1360,7 @@ def test_the_words_of_the_file_are_the_words_the_frame_answers():
 def aPictureFigure(map=None, low=None, high=None):
     """A picture window, and whatever of its colour scale a hand was on."""
     return QVizSessionFigure(
-        key='SlicesImage1', kind=IMAGE,
+        key='Image1', kind=IMAGE,
         quantities=[QVizSessionQuantity('e/f', 0, URI, None, None)],
         axis=None, tensor=True,
         scale=QVizSessionColourScale(map=map, low=low, high=high))
@@ -1484,7 +1484,7 @@ def test_a_file_of_an_older_version_names_no_colour_scale(version):
     the colours it opens with -- not the colours of the run that saved it."""
     path = _write('v%s_colour.vsess' % version, """
     <IMASVizSession version="%s">
-      <Figure key="SlicesImage1" kind="image">
+      <Figure key="Image1" kind="image">
         <Quantity path="e/f" occurrence="0"/>
       </Figure>
     </IMASVizSession>""" % version)

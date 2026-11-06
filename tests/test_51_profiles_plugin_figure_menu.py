@@ -385,7 +385,7 @@ def test_a_single_quantity_goes_through_the_tree_s_own_command(session):
     not a panel of its own.
 
     Asked for a quantity the page above already drew, so the answer is about the
-    frame the gesture opens: a curve figure under a `SlicesPlot:` key, embedded
+    frame the gesture opens: a curve figure under a `Plot:` key, embedded
     like any other, and not a widget of the plugin's making. A quantity of two
     axes of its own answers an image window instead -- which is what the tab's
     sentence about the left-out quantities promises.

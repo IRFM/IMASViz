@@ -119,7 +119,7 @@ def _small():
 
 @pytest.fixture
 def figure(qtbot):
-    widget = QVizImagePlot(title='SlicesImage1')
+    widget = QVizImagePlot(title='Image1')
     qtbot.addWidget(widget)
     widget.plot(_psi())
     return widget
@@ -250,7 +250,7 @@ def test_the_handles_move_a_small_quantity_in_steps_of_that_quantity(figure):
     unit nobody asked for, and the pictures go blank. A thousandth of the span
     answers a range of the same order as the data.
     """
-    small = QVizImagePlot(title='SlicesImage2')
+    small = QVizImagePlot(title='Image2')
     small.plot(_small())
     span = small.colourLevels()[1] - small.colourLevels()[0]
 

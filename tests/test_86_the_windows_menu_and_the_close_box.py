@@ -55,7 +55,7 @@ is redrawn, once the deferred deletes Qt was asked for have been delivered.
 a curve figure before the rule existed: the close box left ``figureframes``
 **empty**, the subwindow **hidden inside the MDI area**, and
 ``GetFigureKeyOf(frame)`` answering ``None`` for a frame that was still alive --
-and the next curve figure of that kind was handed ``SlicesPlot1`` again. Two
+and the next curve figure of that kind was handed ``Plot1`` again. Two
 windows under one name, one of them unreachable by any gesture and still holding
 the case data it read. The close box hides now, and the menu says so.
 
@@ -313,9 +313,9 @@ def test_one_line_per_window_grouped_by_kind(session, qapp):
     # The curve figure's line says the word the bar shows.
     assert session.windowLines() == [(CASE, True), (TABLE, True),
                               (CURVE_LINE, True)]
-    # The kind label the user reads -- `SlicesPlot` answered `Plot` since the
+    # The kind label the user reads -- `Plot` answered `Plot` since the
     # titles dropped the word `Slices` -- and the key behind it stays
-    # ``SlicesPlot1``.
+    # ``Plot1``.
     assert [kind.kindLabel for kind in session.api.openWindows()] == \
         [SHOT_VIEW, 'TablePlotView', 'Plot']
     delete = session.subMenu(DELETE)
@@ -554,7 +554,7 @@ def test_the_close_box_hides_a_figure_and_keeps_it(session, qapp):
 
     ``figureframes`` came back empty, the subwindow stayed hidden inside the
     area, ``GetFigureKeyOf`` answered ``None`` for a live frame, and the next
-    curve figure of the kind was handed ``SlicesPlot1``.
+    curve figure of the kind was handed ``Plot1``.
     """
     frame = session.figure(CURVE)
     window = session.windowOf(frame)

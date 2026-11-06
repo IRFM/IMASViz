@@ -138,7 +138,7 @@ def _coil(ionIndex='1'):
 
 @pytest.fixture
 def figure(qtbot):
-    widget = QVizCurvePlot(title='SlicesPlot1')
+    widget = QVizCurvePlot(title='Plot1')
     qtbot.addWidget(widget)
     return widget
 
@@ -299,7 +299,7 @@ def test_a_tensor_of_other_arrays_joins_the_figure_it_is_asked_into(view):
     """Through the gesture: the same figure, one window, two arrays under sliders."""
     first = QVizPlotOneNode(dataTreeView=view, treeNode=_leaf(),
                             tensor=True).execute()
-    first.figureKey = 'SlicesPlot1'
+    first.figureKey = 'Plot1'
     ownership.keep(first)
 
     joined = QVizPlotOneNode(dataTreeView=view, treeNode=_coil(),
@@ -307,7 +307,7 @@ def test_a_tensor_of_other_arrays_joins_the_figure_it_is_asked_into(view):
                              tensor=True).execute()
 
     assert joined is first
-    assert list(view.imas_viz_api.figureframes) == ['SlicesPlot1']
+    assert list(view.imas_viz_api.figureframes) == ['Plot1']
     assert first.curveCount() == 2
     assert first.sliceControls.keys() == [ION, RADIAL, COIL]
 
@@ -411,27 +411,27 @@ def test_the_gate_asks_the_figure_its_abscissa(figure, view):
     """
     from imasviz.Viz_API import Viz_API
 
-    figure.figureKey = 'SlicesPlot1'
+    figure.figureKey = 'Plot1'
     figure.plot(_leaf(), tensor=True)
     api = Viz_API()
-    api.figureframes['SlicesPlot1'] = figure
+    api.figureframes['Plot1'] = figure
 
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _leaf('z_second'),
+    assert api.figureDrawsSameCurveAxis('Plot1', _leaf('z_second'),
                                        tensor=True)
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _leaf('z_second'),
+    assert api.figureDrawsSameCurveAxis('Plot1', _leaf('z_second'),
                                        tensor=False)
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _coil(), tensor=True)
-    assert api.figureDrawsSameCurveAxis('SlicesPlot1', _coil(), tensor=False)
+    assert api.figureDrawsSameCurveAxis('Plot1', _coil(), tensor=True)
+    assert api.figureDrawsSameCurveAxis('Plot1', _coil(), tensor=False)
 
-    plain = QVizCurvePlot(title='SlicesPlot2')
-    plain.figureKey = 'SlicesPlot2'
+    plain = QVizCurvePlot(title='Plot2')
+    plain.figureKey = 'Plot2'
     plain.plot(_leaf(ionIndex=0))
-    api.figureframes['SlicesPlot2'] = plain
+    api.figureframes['Plot2'] = plain
     # A figure that holds no band takes the arrays the first tensor asks, and
     # from then on the figure holds the union of the arrays its tensors walk.
-    assert api.figureDrawsSameCurveAxis('SlicesPlot2', _leaf('z_second'),
+    assert api.figureDrawsSameCurveAxis('Plot2', _leaf('z_second'),
                                         tensor=True)
-    assert api.figureDrawsSameCurveAxis('SlicesPlot2', _coil(), tensor=True)
+    assert api.figureDrawsSameCurveAxis('Plot2', _coil(), tensor=True)
     plain.plot(_leaf('z_second'), tensor=True)
     assert plain.walkingArrays == frozenset({ION})
     plain.plot(_coil(), tensor=True)
@@ -581,7 +581,7 @@ def test_a_figure_along_a_coordinate_walks_the_dynamic_array_it_left_out(view):
     # was one click away from a window no entry could open.
     heading, lines = tensorEntries(view, _leaf('z_second'), ALONG_INDEX)
     assert heading == ALONG_INDEX
-    assert lines == ['New', 'SlicesPlot1']
+    assert lines == ['New', 'Plot1']
 
 
 @pytest.mark.ui
@@ -797,7 +797,7 @@ def test_a_tensor_of_another_array_of_the_case_joins_with_its_own_slider(session
     # them running along the clock, so the lines are all of them.
     heading, lines = tensorEntries(view, _leaves(view, SECOND)[3])
     assert heading == EXPLORE
-    assert lines == ['New', 'SlicesPlot1', 'SlicesPlot2', 'SlicesPlot3']
+    assert lines == ['New', 'Plot1', 'Plot2', 'Plot3']
     heading, lines = tensorEntries(view, other[0])
     assert heading == EXPLORE
-    assert lines == ['New', 'SlicesPlot1', 'SlicesPlot2', 'SlicesPlot3']
+    assert lines == ['New', 'Plot1', 'Plot2', 'Plot3']

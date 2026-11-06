@@ -15,7 +15,7 @@ open themselves, so what is pinned here is the whole span: the menu when nothing
 is open, the lines it offers once three kinds are drawn, what one line changes on
 screen, and what a deletion leaves in the two registries the menu is built from.
 Measured on the reference case (``west`` 54924, ``equilibrium`` occurrence 0,
-**3 368** signals), the commands handed out ``SlicesPlot1``, ``TablePlotView:1``
+**3 368** signals), the commands handed out ``Plot1``, ``TablePlotView:1``
 and ``StackedPlotView:1``, and with no figure open the *Windows* menu came back
 disabled with **0** line.
 
@@ -34,8 +34,8 @@ Deleting takes the figure out of *both* registries (``figureframes`` and
 ``figToNodes``), but the ``QMdiSubWindow`` it hides stays a child of the area
 until ``deleteLater`` runs, so a window count right after a delete still lists it
 -- hidden. And the number of a deleted figure is only given back when its kind is
-empty: deleting the middle of ``SlicesPlot1..3`` left the next curve at
-``SlicesPlot4``, while deleting the only table view put the next one back at
+empty: deleting the middle of ``Plot1..3`` left the next curve at
+``Plot4``, while deleting the only table view put the next one back at
 ``TablePlotView:1``.
 
 Closing a window with its own box is a third gesture, and since T52 it is not the
@@ -391,7 +391,7 @@ def test_showHide_and_delete_act_on_the_window_under_any_MDI_area(qapp):
     api = Viz_API(parent=area)
     ownership.keep(api)
     frame = QWidget()
-    api.figureframes['SlicesPlot1'] = frame
+    api.figureframes['Plot1'] = frame
     api.addPlotWidgetToMDI(frame)
     area.show()
     qapp.processEvents()
@@ -400,16 +400,16 @@ def test_showHide_and_delete_act_on_the_window_under_any_MDI_area(qapp):
     # The name that used to decide all of this says the area is not the root.
     assert frame.window().objectName() != ROOT_WINDOW
 
-    api.ShowHideFigure('SlicesPlot1')
+    api.ShowHideFigure('Plot1')
     qapp.processEvents()
     assert window.isVisible() is False
     assert frame.isVisible() is False
 
-    api.ShowHideFigure('SlicesPlot1')
+    api.ShowHideFigure('Plot1')
     qapp.processEvents()
     assert window.isVisible() is True and frame.isVisible() is True
 
-    api.DeleteFigure('SlicesPlot1')
+    api.DeleteFigure('Plot1')
     qapp.processEvents()
     assert api.figureframes == {}
     assert window.isVisible() is False
@@ -465,9 +465,9 @@ def test_the_number_of_a_figure_in_the_middle_is_not_given_back(session, qapp):
     session.draw(QVizPlotAsSlices, IP)
     session.draw(QVizPlotAsSlices, IP)
     keys = session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE)
-    assert keys == ['SlicesPlot1', 'SlicesPlot2'], keys
+    assert keys == ['Plot1', 'Plot2'], keys
     assert session.api.GetNextKeyForFigure(FigureTypes.CURVEPLOTTYPE) == \
-        'SlicesPlot3'
+        'Plot3'
 
     middle = keys[0]
     ownership.keep(session.api.figureframes[middle])
@@ -478,9 +478,9 @@ def test_the_number_of_a_figure_in_the_middle_is_not_given_back(session, qapp):
     # live figure cannot be handed twice: the next curve is one past the highest
     # still open, not the first hole.
     assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == \
-        ['SlicesPlot2']
+        ['Plot2']
     assert session.api.GetNextKeyForFigure(FigureTypes.CURVEPLOTTYPE) == \
-        'SlicesPlot3'
+        'Plot3'
 
 
 def test_a_kind_emptied_by_a_delete_hands_its_number_to_the_next_figure(session,
@@ -499,7 +499,7 @@ def test_a_kind_emptied_by_a_delete_hands_its_number_to_the_next_figure(session,
     key = FigureTypes.CURVEPLOTTYPE + '1'
 
     # Nothing of that kind is left, so the numbering starts over: measured, the
-    # new curve is SlicesPlot1 again, and the title bar says the key plus the
+    # new curve is Plot1 again, and the title bar says the key plus the
     # case, the whole URI behind the hover. The subwindow's bar is the line the
     # user reads, and it is the same answer as the frame's.
     assert session.api.GetFiguresKeys(FigureTypes.CURVEPLOTTYPE) == [key]

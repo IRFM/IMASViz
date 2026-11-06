@@ -217,7 +217,7 @@ def test_the_figure_keys_do_not_collide_with_the_legacy_figures(qtbot):
     second = QVizPlotAsSlices(dataTreeView=view)
     second.execute()
 
-    assert first.curveFigure.figureKey == 'SlicesPlot1'
-    assert second.curveFigure.figureKey == 'SlicesPlot2'
+    assert first.curveFigure.figureKey == 'Plot1'
+    assert second.curveFigure.figureKey == 'Plot2'
     assert api.GetFiguresKeys('Figure:') == ['Figure:1', 'Figure:2']
-    assert api.GetFiguresKeys('SlicesPlot') == ['SlicesPlot1', 'SlicesPlot2']
+    assert api.GetFiguresKeys('Plot') == ['Plot1', 'Plot2']

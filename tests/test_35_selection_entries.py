@@ -273,12 +273,12 @@ def test_the_windows_are_recorded_under_the_keys_their_titles_carry(view):
     entry(view).plotSelectedSignals(all_DTV=False)
 
     assert view.imas_viz_api.GetFiguresKeys(
-        figureType=FigureTypes.CURVEPLOTTYPE) == ['SlicesPlot1']
+        figureType=FigureTypes.CURVEPLOTTYPE) == ['Plot1']
     assert view.imas_viz_api.GetFiguresKeys(
-        figureType=FigureTypes.IMAGEPLOTTYPE) == ['SlicesImage1']
-    assert sorted(view.imas_viz_api.figToNodes['SlicesPlot1']) == \
+        figureType=FigureTypes.IMAGEPLOTTYPE) == ['Image1']
+    assert sorted(view.imas_viz_api.figToNodes['Plot1']) == \
            ['foo.time_slice[itime].vector']
-    assert sorted(view.imas_viz_api.figToNodes['SlicesImage1']) == \
+    assert sorted(view.imas_viz_api.figToNodes['Image1']) == \
            ['foo.time_slice[itime].matrix']
 
 
@@ -326,10 +326,10 @@ def test_the_selection_lands_in_the_figure_that_is_already_open(view):
     entry(view).addSelectedSignalsPlotToFig(1, all_DTV=False)
 
     assert view.imas_viz_api.GetFiguresKeys(
-        figureType=FigureTypes.CURVEPLOTTYPE) == ['SlicesPlot1']
+        figureType=FigureTypes.CURVEPLOTTYPE) == ['Plot1']
     frame = frames(view, QVizCurvePlot)[0]
     assert frame.curveCount() == 2
-    assert sorted(view.imas_viz_api.figToNodes['SlicesPlot1']) == \
+    assert sorted(view.imas_viz_api.figToNodes['Plot1']) == \
            ['foo.time_slice[itime].other_vector',
             'foo.time_slice[itime].vector']
 
@@ -375,8 +375,8 @@ def test_the_menu_lists_the_figures_the_entry_can_fill(view, bar):
     menu = entry(view).menuPlotSelectedSignalNodes(parentMenu=bar)
     figureMenu = subMenu(menu, 'Figure')
 
-    assert titles(figureMenu) == ['New', 'SlicesPlot1']
-    assert titles(subMenu(figureMenu, 'SlicesPlot1')) == \
+    assert titles(figureMenu) == ['New', 'Plot1']
+    assert titles(subMenu(figureMenu, 'Plot1')) == \
            ['This IMAS Database', 'All IMAS Databases']
 
 
