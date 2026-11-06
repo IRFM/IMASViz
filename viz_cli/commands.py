@@ -8,11 +8,12 @@
 # ****************************************************
 """The `/` commands of the viz_cli REPL, parsed and answered by name.
 
-What a command answers is named when it cannot: an unknown command, an
-unknown `/llm` field, a missing name on `/session` -- each refusal is a
-`ValueError` carrying the name the caller typed, which is the style the
-rest of the repository applies (`refused by name, the reason named
-where the user reads it`).
+What a command answers is named when it cannot answer: an unknown
+command, an unknown `/llm` field, an unknown gesture after `/mcp`, a
+non-http endpoint -- each refusal is a `ValueError` carrying the name
+the caller typed and the names this client does hold, which is the
+style the rest of the repository applies (`refused by name, the reason
+named where the user reads it`).
 
 Three of the fields `/llm` sets are the ones the GUI reads too --
 `endpoint`, `model`, `key`: they are written in the **same**
@@ -24,6 +25,12 @@ they have no line in that file, and inventing one would cost the GUI a
 line it does not read.
 """
 
+import json
+import urllib.error
+import urllib.request
+
+COMMANDS = ('llm', 'mcp', 'shots', 'session', 'history', 'help', 'quit')
+
 LLM_FIELDS = ('endpoint', 'model', 'key', 'max_turns', 'temperature',
               'max_tokens')
 LLM_FILE_FIELDS = {
@@ -34,8 +41,8 @@ LLM_FILE_FIELDS = {
 
 HELP = """viz_cli — IMASViz driven without its window: the agent, offscreen.
 
-A line runs the agent (the LLM and the tools of this session); the
-images it drew and its transcript are left in the turns directory,
+A line runs the agent (the LLM and the {ntools} tools of this session);
+the images it drew and its transcript are left in the turns directory,
 named after the turn. Commands:
 
   /llm                       the parameters in force
@@ -49,6 +56,9 @@ named after the turn. Commands:
                              endpoint, model and key are persisted in the
                              preferences file the GUI reads; the others are not
 
+  /mcp                       the services this session answers today:
+                             the endpoint, its models, its tools
+  /mcp NAME                  one tool: its words and its parameters
   /shots [DIR]               where the turns save their images
   /session                   the cases open in this session
   /session save NAME         the session the application writes
@@ -60,7 +70,7 @@ named after the turn. Commands:
 
 Ctrl+C during a turn stops it at the next turn boundary and still saves
 what it drew.
-"""
+""".format(ntools='<n>')
 
 
 class Command:
@@ -70,13 +80,10 @@ class Command:
         self.words = words
 
 
-COMMANDS = ('llm', 'shots', 'session', 'history', 'help', 'quit')
-
-
 def parse(line):
-    """`/shots dir` -> a `Command`; everything it cannot answer is
-    refused by name, so a `/` line is never mistaken for a prompt and
-    a prompt never mistaken for a `/banana`."""
+    """`/llm endpoint http://…` -> a `Command`; everything it cannot
+    answer is refused by name, so a `/` line is never mistaken for a
+    prompt and a prompt never mistaken for a `/banana`."""
     words = (line or '').split()
     if not words:
         raise ValueError(
@@ -92,8 +99,15 @@ def parse(line):
 
 
 def help_text():
-    """The `/help` answer."""
-    return HELP
+    """The `/help` answer, with the real count of the session's tools."""
+    tools = _tools()
+    return HELP.replace('<n>', str(len(tools)))
+
+
+def _tools():
+    """The tools the agent holds, by their schema -- the one source."""
+    from imasviz.VizAgent.tools import TOOLS
+    return TOOLS
 
 
 def execute(cmd, session):
@@ -105,6 +119,8 @@ def execute(cmd, session):
         return False
     elif cmd.name == 'llm':
         _llm(cmd, session)
+    elif cmd.name == 'mcp':
+        _mcp(cmd, session)
     elif cmd.name == 'shots':
         _shots(cmd, session)
     elif cmd.name == 'session':
@@ -114,7 +130,7 @@ def execute(cmd, session):
     return True
 
 
-# ---------------------------------------------------------------------- /llm
+# --------------------------------------------------------------------- /llm
 
 def _llm(cmd, session):
     if not cmd.words:
@@ -212,6 +228,97 @@ def _llmShow(session):
     print('  max_tokens : %d   (this client run)' % session.llm.max_tokens)
 
 
+# ---------------------------------------------------------------------- /mcp
+
+def _mcp(cmd, session):
+    if not cmd.words:
+        _mcpOverview(session)
+    elif len(cmd.words) == 1:
+        _mcpOne(session, cmd.words[0])
+    else:
+        raise ValueError(
+            '/mcp takes at most one name: /mcp prints the list, and /mcp '
+            'open_case one of it.')
+
+
+def _mcpOverview(session):
+    print('Services this session answers today:')
+    print('  endpoint : %s' % session.llm.endpoint)
+    try:
+        names = _modelsList(session.llm.endpoint, session.llm.key,
+                            timeout=5.0)
+        print('  models   : %s' % ', '.join(names))
+    except Exception as e:
+        print('  models   : unanswered — %s' % e)
+    tools = _tools()
+    print('')
+    print('  tools    : %d gestures of this session (run it with /mcp <name>).'
+          % len(tools))
+    for tool in tools:
+        name = tool['function']['name']
+        words = tool['function']['description'].strip()
+        first = words.split('.')[0].rstrip()
+        if len(first) > 72:
+            first = first[:72] + '…'
+        print('    %-16s %s' % (name, first))
+
+
+def _mcpOne(session, name):
+    tools = _tools()
+    for tool in tools:
+        if tool['function']['name'] == name:
+            function = tool['function']
+            print('%s' % name)
+            print(function['description'].strip())
+            parameters = function.get('parameters') or {}
+            if parameters.get('properties'):
+                print('  parameters:')
+                for prop, spec in parameters['properties'].items():
+                    kind = spec.get('type')
+                    if isinstance(kind, list):
+                        kind = ' | '.join(str(one) for one in kind)
+                    required = prop in (parameters.get('required') or [])
+                    print('    %-16s %s%s'
+                          % (prop, kind, '   (required)' if required else ''))
+            return
+    raise ValueError(
+        'no such tool /mcp %s — this session holds: %s.'
+        % (name, ', '.join(t['function']['name'] for t in tools)))
+
+
+def _modelsList(endpoint, key=None, timeout=5.0):
+    """The endpoint's models, listed by name -- the `/v1/models` read the
+    `LLMClient` uses for its `auto` model, asked for every entry instead
+    of the first one. The refusal is named, as the `LLMClient` names it."""
+    url = endpoint.rstrip('/') + '/models'
+    request = urllib.request.Request(url, method='GET')
+    if key:
+        request.add_header('Authorization', 'Bearer ' + key)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            data = json.loads(response.read().decode())
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(
+            'the endpoint answered HTTP %d on /v1/models; the server '
+            'may hold no model yet.' % e.code)
+    except urllib.error.URLError as e:
+        raise ConnectionError(
+            'the endpoint %s does not answer within %.0f s (%s) — start '
+            'it, or point the client at it with /llm endpoint.'
+            % (endpoint, timeout, e.reason))
+    except (TimeoutError, OSError) as e:
+        raise ConnectionError(
+            'the endpoint %s did not answer (%s) — start it, or point '
+            'the client at it with /llm endpoint.' % (endpoint, e))
+    names = [entry.get('id', '') for entry in data.get('data', [])
+             if entry.get('id')]
+    if not names:
+        raise ValueError(
+            'the endpoint %s holds no model at /v1/models — start the '
+            'server with one (llama-server --model …).' % endpoint)
+    return names
+
+
 # --------------------------------------------------------------------- /shots
 
 def _shots(cmd, session):
@@ -227,7 +334,7 @@ def _shots(cmd, session):
           flush=True)
 
 
-# ------------------------------------------------------------------ /session
+# ------------------------------------------------------------------- /session
 
 def _session(cmd, session):
     words = cmd.words
@@ -235,7 +342,7 @@ def _session(cmd, session):
         cases = session.core.list_cases()
         if not cases:
             print('No case is open yet: a prompt that names a URI opens '
-                  'one.')
+                  'one, and /mcp lists what it can ask of it.')
             return
         for case in cases:
             loaded = ', '.join(
@@ -265,7 +372,7 @@ def _session(cmd, session):
               flush=True)
 
 
-# ------------------------------------------------------------------ /history
+# ------------------------------------------------------------------- /history
 
 def _history(cmd, session):
     if not session.prompts:

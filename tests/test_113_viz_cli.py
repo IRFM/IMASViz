@@ -15,6 +15,9 @@ What it pins, in the order the client must answer them:
   pointed at a test directory, the `test_39` pattern), so the two
   interfaces stay on the same endpoint; an unknown field and a non-http
   endpoint are refused by name;
+* `/mcp` answers the endpoint, names the models when they answer -- the
+  named refusal when they do not -- and lists every tool of the agent,
+  one by one on `/mcp <name>`, refusing a name it does not hold;
 * a prompt runs the loop through the **real** dispatcher and event pump
   of `test_112`, and the turn that answers (or refuses) still leaves its
   images and its transcript on disk;
@@ -23,11 +26,11 @@ What it pins, in the order the client must answer them:
 * `/history`, `/shots`, `/session` and the unknown-command refusal
   answer the way the client's own commands do;
 * `main()` with a prompt delegates to the one-shot `runAgentMode`, and
-  an empty prompt is refused before anything is built;
-* the arrows walk the history the client keeps in its file.
+  an empty prompt is refused before anything is built.
 
 Nothing here touches the network: the LLM is scripted (`test_112`'s
-stand-in, recording what it is asked).
+stand-in, recording what it is asked), and the endpoint it reports
+points at a port nothing listens on.
 """
 
 import base64
@@ -45,7 +48,8 @@ PNG_1x1 = base64.b64decode(
 CASE_URI = ('imas:hdf5?path='
             '/afs/eufus.eu/g2itmdev/user/g2lfleur/public/imasdb/west/3/54924/0')
 
-# An endpoint no model answers today: the scripted stand-in only.
+# A port nothing on this node listens on: the `/mcp` models probe reads
+# its refusal by that name, and no round-trip costs the run.
 DEAD_ENDPOINT = 'http://127.0.0.1:65531/v1'
 
 
@@ -189,6 +193,33 @@ def test_llm_max_turns_and_sampling_are_session_only(qapp, tmp_path):
     assert session.max_turns == 4
 
 
+def test_mcp_answers_endpoint_models_and_every_tool(qapp, tmp_path, capsys):
+    """`/mcp` is the answer to 'what can this session give today': the
+    endpoint, the models when they answer -- the named refusal when they
+    do not -- and every tool of the agent, by its schema's name."""
+    from imasviz.VizAgent.tools import TOOLS
+    session, _ = buildSession(qapp, tmp_path)
+    execute(parse('/mcp'), session)
+    out = capsys.readouterr().out
+    assert DEAD_ENDPOINT in out
+    assert 'unanswered' in out          # the models probe, named
+    for tool in TOOLS:
+        assert tool['function']['name'] in out
+    assert '(run it with /mcp <name>)' in out
+
+
+def test_mcp_one_gesture_and_the_refusal_of_another(qapp, tmp_path):
+    session, _ = buildSession(qapp, tmp_path)
+    execute(parse('/mcp open_case'), session)
+    try:
+        execute(parse('/mcp banana'), session)
+    except ValueError as e:
+        assert 'banana' in str(e)
+        assert 'open_case' in str(e)     # the answer names what it does hold
+    else:
+        raise AssertionError('an unknown gesture must be refused by name')
+
+
 def test_a_prompt_is_answered_and_its_turn_is_left_on_disk(qapp, tmp_path):
     llm = FakeLLMClient([toolCall(),
                          LLMResponse(content='Le cas est ouvert.',
@@ -298,16 +329,15 @@ def test_unknown_command_is_refused_named(qapp, tmp_path):
     except ValueError as e:
         text = str(e)
         assert 'banana' in text
-        for command in ('/llm', '/shots', '/session', '/history', '/help',
-                        '/quit'):
+        for command in ('/llm', '/mcp', '/history', '/help', '/quit'):
             assert command in text
     else:
         raise AssertionError('an unknown command must be refused by name')
 
 
 def test_help_names_the_commands():
-    for command in ('/llm', '/shots', '/session', '/history', '/help',
-                    '/quit'):
+    for command in ('/llm', '/mcp', '/shots', '/session', '/history',
+                    '/help', '/quit'):
         assert command in help_text()
 
 

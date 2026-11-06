@@ -78,12 +78,19 @@ def parseArguments(argv=None):
 
 
 def _candidates():
-    """Tab completion: the commands and the fields they steer, so a
-    completed tab leaves a word the line can still take an argument on."""
+    """Tab completion: the commands, the fields they steer, the gestures.
+
+    One list, sorted, with a space after the word, so a completed tab
+    leaves a word the line can still take an argument on."""
     from viz_cli.commands import COMMANDS, LLM_FIELDS
     candidates = ['/' + c + ' ' for c in COMMANDS]
     candidates += ['/llm ' + f + ' ' for f in LLM_FIELDS]
     candidates += ['/session save ', '/session restore ']
+    try:
+        from imasviz.VizAgent.tools import TOOLS
+        candidates += ['/mcp ' + t['function']['name'] + ' ' for t in TOOLS]
+    except Exception:
+        pass
     return sorted(set(candidates))
 
 
