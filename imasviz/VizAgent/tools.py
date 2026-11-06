@@ -33,7 +33,13 @@ How to work with it:
 6. state is read with list_selection (what the case holds selected) and
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
-   preview) -- answers, not guesses, and empty is an answer too.
+   preview) -- answers, not guesses, and empty is an answer too;
+7. the reusable work of the application is what the tools named after
+   it answer: list_sessions and list_configurations name the .vsess,
+   .lsp and .pcfg files the folder holds, select_from_configuration
+   applies one (loading the IDSs the case would need), and
+   save_selection / save_plot_configuration write the current
+   selection / one Table Plot View out to a name.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -277,6 +283,59 @@ TOOLS = [
             'name': {'type': ['string', 'null']},
             'path': {'type': ['string', 'null']},
         }, 'additionalProperties': False},
+    ),
+    _tool(
+        'list_sessions',
+        'The sessions the configuration folder holds (the .vsess files '
+        'next to the plot and selection configurations), as the '
+        'application lists them.',
+        {'type': 'object', 'properties': {}, 'additionalProperties': False},
+    ),
+    _tool(
+        'list_configurations',
+        'The plot configurations (.pcfg) and the selection configurations '
+        '(.lsp) the configuration folder holds. `kind` narrows to one of '
+        'the two kinds; a kind the application does not answer is '
+        'refused by name.',
+        {'type': 'object', 'properties': {
+            'kind': {'type': ['string', 'null'],
+                     'enum': ['plot', 'selection']},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'select_from_configuration',
+        'Apply one saved configuration: select in the case the '
+        'quantities it names (.lsp as .pcfg), loading first the IDSs the '
+        'case would need and does not hold. Answers how many were '
+        'selected; a name the folder does not hold is refused by name, '
+        'naming the ones it does.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': 'string'},
+        }, 'required': ['uri', 'name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'save_selection',
+        'Write the current selection of the case out as a .lsp, one '
+        'quantity per selected node. Nothing selected is refused by '
+        'name; the name goes through the guard the application applies '
+        'in its own dialog.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': 'string'},
+        }, 'required': ['uri', 'name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'save_plot_configuration',
+        'Write one Table Plot View out as a .pcfg: the quantities of its '
+        'panels, and the place each panel held. A window that is not a '
+        'Table Plot View is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'figure_key': {'type': 'string'},
+            'name': {'type': 'string'},
+        }, 'required': ['uri', 'figure_key', 'name'],
+         'additionalProperties': False},
     ),
     _tool(
         'export_to_ids',

@@ -363,6 +363,88 @@ def test_saving_writes_the_file_and_restore_puts_it_back(core):
     assert session.api.figureframes, 'the restore put back no window'
 
 
+# --------------------------------------------------------- configurations
+
+
+def test_listings_name_the_files_the_folder_holds(core):
+    """The listings read the folder the way the application's dialogs
+    name it, and a kind the application does not answer is refused by
+    name -- 'session' among them, by the tool that lists the sessions."""
+    session, home = core
+    assert 'mcp_core.vsess' in session.list_sessions()['sessions']
+
+    both = session.list_configurations()
+    assert 'plot' in both and 'selection' in both
+    assert session.list_configurations(kind='plot').keys() == {'plot'}
+    assert session.list_configurations(kind='selection').keys() == {'selection'}
+
+    with pytest.raises(ValueError, match='not a configuration kind'):
+        session.list_configurations(kind='banana')
+    with pytest.raises(ValueError, match='list_sessions'):
+        session.list_configurations(kind='session')
+
+
+def test_a_selection_is_saved_applied_and_listed_again(core):
+    """`save_selection` writes the .lsp the application writes,
+    `select_from_configuration` applies it the way the menu does (loading
+    what the case lacks first), and the listing sees the file under its
+    name."""
+    session, home = core
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH])
+    saved = session.save_selection(CASE_URI, 'mcp_sel')
+    assert saved['count'] == 2
+    assert saved['saved_to'].endswith('.lsp')
+    assert os.path.exists(saved['saved_to'])
+    assert 'mcp_sel.lsp' in session.list_configurations('selection')['selection']
+
+    assert session.unselect_all(CASE_URI) == {'dropped': 2}
+    answer = session.select_from_configuration(CASE_URI, 'mcp_sel')
+    assert answer['selected'] == 2
+    assert answer['from'] == saved['saved_to']
+    assert session.list_selection(CASE_URI)['count'] == 2
+
+    # A name the folder does not hold is refused by name, and names the
+    # ones the folder does hold.
+    with pytest.raises(ValueError, match='No configuration \"banana\"'):
+        session.select_from_configuration(CASE_URI, 'banana')
+
+
+def test_saving_a_selection_with_nothing_selected_is_refused_by_name(core):
+    session, _home = core
+    session.unselect_all(CASE_URI)
+    with pytest.raises(ValueError, match='Nothing to save'):
+        session.save_selection(CASE_URI, 'nothing_selected')
+
+
+def test_a_table_window_is_saved_as_a_plot_configuration(core):
+    """`save_plot_configuration` writes one Table Plot View as
+    `QVizSavePlotConfiguration` writes it: the .pcfg holding the panels
+    and their places, in the listing of its kind -- and refused by name
+    on a window that is not a Table Plot View."""
+    session, home = core
+    # The table window fills its panels from the case's selection, the
+    # way its entry fills them: the two quantities are in the selection
+    # when the window is asked for.
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH], additive=False)
+    table = session.plot_table(CASE_URI, [TIME_PATH, IP_PATH])
+    assert table['panels'] == 2
+
+    saved = session.save_plot_configuration(CASE_URI, table['figure'],
+                                            'mcp_table')
+    assert saved['panels'] == 2
+    assert saved['saved_to'].endswith('.pcfg')
+    assert os.path.exists(saved['saved_to'])
+    assert 'mcp_table.pcfg' in session.list_configurations('plot')['plot']
+
+    # A window that is not a Table Plot View is refused by name: a curve
+    # figure this test drew itself, so the window is alive when the
+    # refusal is asked.
+    curveFigure = session.plot_selection(CASE_URI)['figures'][0]
+    with pytest.raises(ValueError, match='not a Table Plot View'):
+        session.save_plot_configuration(CASE_URI, curveFigure,
+                                        'not_a_table')
+
+
 # -------------------------------------------------------------------- export
 
 

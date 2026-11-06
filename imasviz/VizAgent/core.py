@@ -349,8 +349,16 @@ class McpGuiCore:
         return {'figures': [frame.figureKey for frame in frames]}
 
     def plot_table(self, uri, paths, columns=None, plot_axis=None):
-        """The named paths, one panel per quantity, in a Table Plot View."""
+        """The named paths, one panel per quantity, in a Table Plot View.
+
+        The window fills its panels from the case's selection, the way the
+        manual's entry fills them -- so the named paths are selected first
+        and left selected, `plot_stacked`'s reading of its own paths; a
+        path the tree does not hold is refused by the selection with its
+        name, before the window is opened.
+        """
         view = self._viewForUri(uri)
+        self.select_signals(uri, paths)
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotAsTable \
             import QVizPlotAsTable
         command = QVizPlotAsTable(view, all_DTV=False,
@@ -563,6 +571,118 @@ class McpGuiCore:
         return {'cases': [{'uri': uri, 'opened': view is not None}
                           for uri, view in views.items()],
                 'windows': self.list_windows()}
+
+    def list_sessions(self):
+        """The sessions the configuration folder holds, as the dialog lists them."""
+        from imasviz.VizGUI.VizConfigurations.QVizSessionFile import \
+            QVizSessionFile
+        return {'sessions': QVizSessionFile.listing()}
+
+    def list_configurations(self, kind=None):
+        """The plot and selection configurations the folder holds.
+
+        `kind` narrows to one of the two kinds a configuration has
+        ('plot' for a .pcfg, 'selection' for a .lsp); a kind the
+        application does not answer is refused by name, 'session'
+        among them -- the sessions sit beside the configurations in
+        that folder, and not in them.
+        """
+        from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
+            QVizConfigurationFile
+        if kind not in (None, 'plot', 'selection'):
+            raise ValueError(
+                '"%s" is not a configuration kind: the kinds this '
+                'application holds are plot and selection (the sessions '
+                'in the same folder are listed by list_sessions).'
+                % kind)
+        if kind is None:
+            return {'plot': QVizConfigurationFile.listing('plot'),
+                    'selection': QVizConfigurationFile.listing('selection')}
+        return {kind: QVizConfigurationFile.listing(kind)}
+
+    def select_from_configuration(self, uri, name):
+        """Apply one saved configuration: select the quantities it names.
+
+        The same gesture as the application's *Select from configuration*
+        (which, like this, loads the IDSs it lacks first), and the same
+        reading of the file (a .lsp as a .pcfg: what they name is the
+        quantities and nothing else). Answers how many were selected; a
+        name the folder does not hold is refused by name, naming the
+        ones the folder does hold.
+        """
+        view = self._viewForUri(uri)
+        from imasviz.VizGUI.VizGUICommands.VizDataSelection. \
+            QVizSelectFromConfiguration import QVizSelectFromConfiguration
+        path = self._namedFile(name, ('.lsp', '.pcfg'))
+        selected = QVizSelectFromConfiguration(view, path).execute()
+        return {'selected': int(selected), 'from': path}
+
+    def save_selection(self, uri, name):
+        """Write the case's selection out as a .lsp, as `QVizSaveNodeSelection` writes it."""
+        view = self._viewForUri(uri)
+        from imasviz.VizGUI.VizGUICommands.VizDataSelection. \
+            QVizSaveNodeSelection import QVizSaveNodeSelection
+        written = QVizSaveNodeSelection(view, name=name).execute()
+        return {'saved_to': written,
+                'count': len(view.selectedSignalsDict)}
+
+    def save_plot_configuration(self, uri, figure_key, name):
+        """Write one Table Plot View out as a .pcfg, as `QVizSavePlotConfiguration` does."""
+        view = self._viewForUri(uri)
+        record, frame = self._windowForKey(figure_key)
+        if not (callable(getattr(frame, 'panelsInTable', None))
+                and callable(getattr(frame, 'getPlotAxis', None))):
+            raise ValueError(
+                'The window "%s" is not a Table Plot View: this gesture '
+                'writes the window out as it lays its panels, and that '
+                'window is a %s. list_windows names the windows that '
+                'hold panels.' % (figure_key, record.kindLabel))
+        from imasviz.VizGUI.VizConfigurations.QVizSavePlotConfiguration \
+            import QVizSavePlotConfiguration
+        written = QVizSavePlotConfiguration(view, frame, name=name).execute()
+        return {'saved_to': written,
+                'panels': int(len(frame.panelsInTable()))}
+
+    def _namedFile(self, name, extensions):
+        """A configuration name resolved against the configuration folder.
+
+        The same guard the application applies to a name typed in a text
+        field (`QVizConfigurationFile.named`): a name typed with an
+        extension loses it, a name naming a place is refused. One of the
+        extensions the name may wear is accepted (a .lsp as a .pcfg),
+        and a name none of the extensions holds is refused by name,
+        naming the ones the folder does hold."""
+        import os
+
+        from imasviz.VizGUI.VizConfigurations.QVizConfigurationFile import \
+            QVizConfigurationFile
+        typed = (name or '').strip()
+        for extension in extensions:
+            if typed.endswith(extension):
+                typed = typed[:-len(extension)]
+                break
+        if not typed:
+            raise ValueError('A configuration needs a name.')
+        if os.path.sep in typed or (os.path.altsep and os.path.altsep
+                                    in typed) or typed in ('.', '..'):
+            raise ValueError(
+                '"%s" is not a configuration name: it names a place, not '
+                'a configuration. Name one inside the configuration '
+                'folder, the way the dialog asks.' % name)
+        folder = QVizConfigurationFile.directory()
+        for extension in extensions:
+            candidate = os.path.join(folder, typed + extension)
+            if os.path.isfile(candidate):
+                if os.path.dirname(os.path.realpath(candidate)) != \
+                        os.path.realpath(folder):
+                    raise ValueError(
+                        '"%s" would be read outside %s.' % (name, folder))
+                return candidate
+        held = sorted(set(QVizConfigurationFile.listing('plot'))
+                      | set(QVizConfigurationFile.listing('selection')))
+        raise ValueError(
+            'No configuration "%s" in %s: the folder holds %s.'
+            % (name, folder, ', '.join(held) or 'no configuration at all'))
 
     # ---------------------------------------------------------------- export
 

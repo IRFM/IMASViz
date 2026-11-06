@@ -297,6 +297,48 @@ def buildServer(core, dispatcher, name='imasviz'):
         figures and plugin windows drawn the way the file named them."""
         return _run(partial(core.restore_session, name=name, path=path))
 
+    @server.tool(name='list_sessions')
+    def list_sessions():
+        """The sessions the configuration folder holds, as the dialog lists them."""
+        return {'sessions': _run(core.list_sessions)}
+
+    @server.tool(name='list_configurations')
+    def list_configurations(kind: Optional[str] = None):
+        """The plot (.pcfg) and selection (.lsp) configurations the folder holds.
+
+        `kind` narrows to one of the two kinds; a kind the application
+        does not answer is refused by name, 'session' among them.
+        """
+        return _run(partial(core.list_configurations, kind))
+
+    @server.tool(name='select_from_configuration')
+    def select_from_configuration(uri: str, name: str):
+        """Apply one saved configuration: select the quantities it names.
+
+        A .lsp as a .pcfg; the IDSs the case would need and does not
+        hold are loaded first, the way the menu does it. A name the
+        folder does not hold is refused by name, naming the ones it does.
+        """
+        return _run(partial(core.select_from_configuration, uri, name))
+
+    @server.tool(name='save_selection')
+    def save_selection(uri: str, name: str):
+        """Write the current selection of the case out as a .lsp.
+
+        Nothing selected is refused by name; the name goes through the
+        guard the application applies in its own dialog.
+        """
+        return _run(partial(core.save_selection, uri, name))
+
+    @server.tool(name='save_plot_configuration')
+    def save_plot_configuration(uri: str, figure_key: str, name: str):
+        """Write one Table Plot View out as a .pcfg, the panels and their places.
+
+        A window that is not a Table Plot View is refused by name.
+        """
+        return _run(partial(core.save_plot_configuration, uri,
+                            figure_key, name))
+
     # ---------------------------------------------------------------- export
 
     @server.tool(name='export_to_ids')

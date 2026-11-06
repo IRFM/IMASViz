@@ -47,6 +47,8 @@ EXPECTED_TOOLS = {
     'list_windows', 'show_window', 'hide_window', 'close_window',
     'list_plugins', 'run_plugin',
     'save_session', 'restore_session',
+    'list_sessions', 'list_configurations', 'select_from_configuration',
+    'save_selection', 'save_plot_configuration',
     'export_to_ids',
     'get_screenshot', 'get_logs',
 }
