@@ -40,6 +40,12 @@ How to work with it:
    applies one (loading the IDSs the case would need), and
    save_selection / save_plot_configuration write the current
    selection / one Table Plot View out to a name.
+8. a report is self-contained HTML on disk, with the statistics of each
+   curve: plot_report names one window of curves (its image, one row per
+   trace it drew), and case_report names the whole loaded tree of a case
+   (one row per curve, in tree order). The file lands in
+   `~/.imasviz/reports` under the guard the configurations have; a window
+   or a case that has no curve to stat is refused by name.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -336,6 +342,32 @@ TOOLS = [
             'name': {'type': 'string'},
         }, 'required': ['uri', 'figure_key', 'name'],
          'additionalProperties': False},
+    ),
+    _tool(
+        'plot_report',
+        'A window of curves as a self-contained HTML report on disk: the '
+        'image of the window, and one row per trace it drew -- the '
+        'quantity, the number of samples, the finite minimum and maximum, '
+        'and the nan/inf counts. The file lands in `~/.imasviz/reports`; '
+        '`name` is the report name (a place, not a report, is refused). '
+        'A window that draws no curve it could stat is refused by name.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'case_report',
+        'The loaded tree of a case as a self-contained HTML report on '
+        'disk: one row per curve the tree holds -- the numeric arrays its '
+        'leaves read, in tree order -- with the statistics of each. An IDS '
+        'not yet loaded is not a curve, so the answer says how many curves '
+        'it gave and list_idss names what the case still holds. A case '
+        'whose loaded tree has no curve is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['uri'], 'additionalProperties': False},
     ),
     _tool(
         'export_to_ids',

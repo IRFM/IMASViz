@@ -35,6 +35,7 @@ rule the journey in `test_45` states for itself.
 """
 
 import os
+import re
 
 import pytest
 
@@ -443,6 +444,102 @@ def test_a_table_window_is_saved_as_a_plot_configuration(core):
     with pytest.raises(ValueError, match='not a Table Plot View'):
         session.save_plot_configuration(CASE_URI, curveFigure,
                                         'not_a_table')
+
+
+# ------------------------------------------------------------------- reports
+
+
+def test_curve_stats_are_nan_aware_and_empty_answers_zero(core):
+    """`curveStats` is a pure function of one `(x, y)` curve: one number
+    per field, the nan and inf entries *counted* rather than folded into
+    the minimum or the mean, and an empty curve the answer `n: 0` -- not
+    an exception, and not a minimum of the nothing."""
+    stats = McpGuiCore.curveStats(
+        ([0, 1, 2, 3], [1.0, 2.0, float('nan'), 4.0]))
+    assert stats['n'] == 4
+    assert stats['x0'] == 0 and stats['x1'] == 3
+    # The finite minimum and maximum: the nan is not one of them.
+    assert stats['min'] == 1.0 and stats['max'] == 4.0
+    assert stats['nan'] == 1 and stats['inf'] == 0
+    assert stats['mean'] == pytest.approx((1.0 + 2.0 + 4.0) / 3)
+    assert stats['std'] >= 0
+
+    empty = McpGuiCore.curveStats(([], []))
+    assert empty['n'] == 0
+    assert empty['min'] is None and empty['max'] is None
+    assert empty['nan'] == 0 and empty['inf'] == 0
+
+    both = McpGuiCore.curveStats(([1.0], [float('nan'), float('inf')]))
+    assert both['nan'] == 1 and both['inf'] == 1
+
+
+def test_plot_report_writes_the_window_and_refuses_the_panel(core):
+    """`plot_report` draws one window of curves into a self-contained
+    HTML page under the session's `~/.imasviz/reports`: the window's
+    image, one row per trace it drew with the statistics of each -- and
+    a window that draws no curve it could stat is refused by name."""
+    session, home = core
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH], additive=False)
+    figure = session.plot_selection(CASE_URI)['figures'][0]
+    assert figure.startswith('SlicesPlot'), figure
+
+    answer = session.plot_report(figure, name='mcp_plot_report')
+    saved = answer['saved_to']
+    assert saved.endswith('mcp_plot_report.html'), saved
+    assert answer['traces'] >= 2, 'the two quantities drew nothing to stat'
+    assert os.path.dirname(saved) == os.path.join(str(home), '.imasviz',
+                                                  'reports'), saved
+    assert os.path.exists(saved), saved
+
+    with open(saved, encoding='utf-8') as file:
+        page = file.read()
+    assert '<table>' in page, 'the page carries no table of curves'
+    assert 'data:image/png;base64,' in page, 'the window image is not in it'
+    assert 'equilibrium.time' in page, 'the clock quantity is not a row'
+    assert 'global_quantities.ip' in page, 'the scalar is not a row'
+
+    # A window that draws no curve it could stat is refused by name: the
+    # Profiles panel this file's own run put on screen is exactly such a
+    # window -- it holds a list, not a curve.
+    panelKeys = [key for key in session.api.figureframes
+                 if key.startswith('PlotView:')]
+    assert panelKeys, 'the Profiles window of the entry run is not on screen'
+    with pytest.raises(ValueError, match='has nothing to say about it'):
+        session.plot_report(panelKeys[0], name='no_curves')
+
+
+def test_case_report_stats_the_loaded_tree_and_refuses_the_absent(core):
+    """`case_report` stats the whole loaded tree of the case in tree
+    order, and a case that is not open in this session is refused by
+    name -- the read is of the one the session holds, not a guess.
+
+    A curve is a non-empty multi-dimensional number: the loaded
+    `equilibrium` here is mostly 0-D scalars (a single point, the domain
+    of `describe_node`) and empty 1-D bound arrays (no sample to stat),
+    so the report carries the arrays that actually hold values -- a
+    handful on this case, and among them the two named below.
+    """
+    session, home = core
+    answer = session.case_report(CASE_URI, name='mcp_case_report')
+    saved = answer['saved_to']
+    assert saved.endswith('mcp_case_report.html'), saved
+    # At least the clock and one profile curve hold values on this case.
+    assert answer['curves'] >= 2, answer
+    assert os.path.dirname(saved) == os.path.join(str(home), '.imasviz',
+                                                  'reports'), saved
+    assert os.path.exists(saved), saved
+
+    with open(saved, encoding='utf-8') as file:
+        page = file.read()
+    assert '<table>' in page, 'the page carries no table of curves'
+    assert 'equilibrium.time' in page, 'the clock curve is not a row'
+    assert 'profiles_1d.psi' in page, 'a profile curve is not a row'
+    # One row carries its sample count as an integer statistic cell.
+    assert re.search(r'<td class="s">\d+</td>', page), \
+        'no row carries a numeric statistic'
+
+    with pytest.raises(ValueError, match='is not open in this session'):
+        session.case_report('imas:hdf5?path=/no/such/case', name='nope')
 
 
 # -------------------------------------------------------------------- export

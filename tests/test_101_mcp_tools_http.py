@@ -49,6 +49,7 @@ EXPECTED_TOOLS = {
     'save_session', 'restore_session',
     'list_sessions', 'list_configurations', 'select_from_configuration',
     'save_selection', 'save_plot_configuration',
+    'plot_report', 'case_report',
     'export_to_ids',
     'get_screenshot', 'get_logs',
 }
@@ -205,7 +206,7 @@ def _screenshotApp(session):
 # -------------------------------------------------------------------- run
 
 def test_the_transport_lists_every_tool_and_says_the_method(mcpSession):
-    """Every one of the 24 tools is there, and the instructions read back.
+    """Every one of the tools is there, and the instructions read back.
 
     `results[0]` is the `InitializeResult` of the session: the server's
     name and its instructions -- the working method the agent is handed

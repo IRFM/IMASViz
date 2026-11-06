@@ -684,6 +684,309 @@ class McpGuiCore:
             'No configuration "%s" in %s: the folder holds %s.'
             % (name, folder, ', '.join(held) or 'no configuration at all'))
 
+    # ---------------------------------------------------------------- reports
+
+    def plot_report(self, figure_key, name=None):
+        """A window of curves as a self-contained HTML report.
+
+        The image of the window, and one row per trace it drew: the
+        quantity, the number of samples, the finite minimum and maximum,
+        and the counts of the entries that are not numbers. The file
+        lands in `~/.imasviz/reports/` under the guard the
+        configurations have, and a window that draws no curve it could
+        stat is refused by name.
+        """
+        record, frame = self._windowForKey(figure_key)
+        rows = []
+        refused = 0
+        for source in self._sourcesOf(frame):
+            for node, rank, curve in self._tracesOf(source):
+                stats = self.curveStats(self._curveData(curve))
+                if stats['n'] == 0:
+                    refused += 1
+                    continue
+                rows.append(((self._nodeLabel(node), rank, source), stats))
+        if not rows:
+            raise ValueError(
+                'The window "%s" (%s) holds %d trace(s), none of which '
+                'has a number to stat -- the report has nothing to say '
+                'about it.' % (figure_key, record.kindLabel, refused))
+        image = None
+        try:
+            image = self.screenshot(figure_key)
+        except ValueError:
+            image = None
+        path = self._namedReport(name, len(rows))
+        self._writeReport(path,
+                          title='Curves of %s' % figure_key,
+                          sub='window %s (%s) — %d trace(s)'
+                              % (figure_key, record.kindLabel, len(rows)),
+                          image=image, rows=rows)
+        self._logFor(record.cases,
+                     'plot_report wrote %s: %d trace(s) of the window %s.'
+                     % (path, len(rows), figure_key))
+        return {'saved_to': path, 'traces': len(rows), 'window': figure_key}
+
+    def case_report(self, uri, name=None):
+        """The loaded tree of one case as a self-contained HTML report.
+
+        One row per curve the loaded tree holds -- a non-empty,
+        multi-dimensional number (the arrays whose leaves read): with the
+        statistics of each, in tree order. A 0-D scalar is a single point
+        -- the domain of `describe_node` -- and an empty array has no
+        sample to stat, so neither is a curve here. The curves are as many
+        as the loads are: an IDS not yet loaded is not a curve, so the
+        report says how many curves it answered, and `list_idss` names
+        what the case still holds.
+        """
+        view = self._viewForUri(uri)
+        import numpy as np
+
+        from imasviz.VizUtils import QVizGlobalOperations
+
+        rows = []
+        for node in view.signalsList:
+            try:
+                if node.isIDSRoot() \
+                        or node.getDataType() in ('structure', 'struct_array'):
+                    continue
+            except Exception:
+                continue
+            try:
+                values = node.resolvePath(
+                    QVizGlobalOperations.makePythonPath(node.getPath()))
+            except Exception:
+                continue
+            if values is None:
+                continue
+            try:
+                array = np.asarray(values)
+            except Exception:
+                continue
+            if array.ndim < 1 or array.dtype.kind not in 'iufc':
+                continue
+            stats = self.curveStats((array, array))
+            if stats['n'] == 0:
+                continue
+            rows.append(((self._nodeLabel(node),), stats))
+        if not rows:
+            raise ValueError(
+                'The tree of %s holds no curve: load the IDSs it holds '
+                'first (list_idss names them, load_ids builds the branch).'
+                % uri)
+        path = self._namedReport(name, len(rows))
+        self._writeReport(path,
+                          title='Curves of %s' % uri,
+                          sub='data dictionary %s — %d curve(s), in tree order'
+                              % (getattr(view.dataSource, 'dd_version', '')
+                                 or '?', len(rows)),
+                          image=None, rows=rows)
+        self._logFor([uri],
+                     'case_report wrote %s: %d curve(s) of %s.'
+                     % (path, len(rows), uri))
+        return {'saved_to': path, 'curves': len(rows), 'uri': uri}
+
+    @staticmethod
+    def curveStats(xy):
+        """The statistics of one curve, as the report says them.
+
+        ``xy`` is a drawn curve ``(x, y)``. One number per field: the
+        count of samples, the finite minimum and maximum of the x axis,
+        the mean and standard deviation of the values, and the counts of
+        the ``nan`` and ``inf`` entries. An entry that is not a number is
+        neither a minimum nor a mean, so it is counted, not silently
+        folded into the statistics of the other ones -- the reading the
+        documentation panel applies.
+        """
+        import numpy as np
+
+        _empty = {'n': 0, 'min': None, 'max': None, 'mean': None,
+                  'std': None, 'nan': 0, 'inf': 0}
+
+        def statsOf(array):
+            if array is None:
+                return _empty
+            try:
+                values = np.asarray(array, dtype=float).ravel()
+            except (TypeError, ValueError):
+                return _empty
+            finite = values[np.isfinite(values)]
+            return {
+                'n': int(values.size),
+                'min': float(finite.min()) if finite.size else None,
+                'max': float(finite.max()) if finite.size else None,
+                'mean': float(finite.mean()) if finite.size else None,
+                'std': float(finite.std()) if finite.size else None,
+                'nan': int(np.count_nonzero(np.isnan(values))),
+                'inf': int(np.count_nonzero(np.isinf(values))),
+            }
+
+        x, y = xy
+        xStats = statsOf(x)
+        yStats = statsOf(y)
+        return {
+            'n': yStats['n'],
+            'x0': xStats['min'],
+            'x1': xStats['max'],
+            'min': yStats['min'],
+            'max': yStats['max'],
+            'mean': yStats['mean'],
+            'std': yStats['std'],
+            'nan': yStats['nan'],
+            'inf': yStats['inf'],
+        }
+
+    # ------------------------------------------------------- report helpers
+
+    def _sourcesOf(self, frame):
+        """Every part of the window that draws: a curve figure is one, a
+        table or stacked window one panel at a time -- the one answer
+        `QVizPlotStyling` gives the styling dialogue."""
+        from imasviz.VizGUI.VizPlot.QVizPlotStyling import sourcesOf
+        return list(sourcesOf(frame))
+
+    def _tracesOf(self, source):
+        """[(treeNode, rank, curve)] the traces one source answers --
+        the same list the styling dialogue colors, so a report row is
+        the trace behind one color."""
+        traces = getattr(source, 'tracesForStyling', None)
+        if not callable(traces):
+            return []
+        try:
+            return list(traces())
+        except Exception:
+            return []
+
+    @staticmethod
+    def _curveData(curve):
+        """The (x, y) of one drawn curve, one dimension each."""
+        from numpy import asarray
+
+        def one(values):
+            if values is None:
+                return None
+            return asarray(values).reshape(-1)
+
+        return (one(getattr(curve, 'xData', None)),
+                one(getattr(curve, 'yData', None)))
+
+    @staticmethod
+    def _nodeLabel(node):
+        for getter in (getattr(node, 'getDataName', None),
+                       getattr(node, 'getPath', None),
+                       getattr(node, 'getName', None)):
+            if getter is None:
+                continue
+            try:
+                label = getter()
+            except Exception:
+                label = None
+            if label:
+                return label
+        return str(node)
+
+    def _logFor(self, cases, line):
+        import logging
+        uri = next((case for case in cases if case), None)
+        logging.getLogger(uri or 'logPanel').info(line)
+
+    def _namedReport(self, name, count):
+        """The file one report writes: under `~/.imasviz/reports`, the
+        guard of the configurations, and the name the caller said -- or
+        the one the report is, when it said none."""
+        import os
+        import time
+
+        home = os.environ.get('HOME')
+        if not home:
+            raise ValueError(
+                'No HOME in the environment: the reports folder under '
+                'it cannot be named.')
+        folder = os.path.join(home, '.imasviz', 'reports')
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        typed = (name or '').strip()
+        if typed.endswith('.html'):
+            typed = typed[:-5]
+        if not typed:
+            typed = 'report-' + time.strftime('%Y%m%d-%H%M%S') + '-%d' % count
+        if os.path.sep in typed or (os.path.altsep and os.path.altsep
+                                    in typed) or typed in ('.', '..'):
+            raise ValueError(
+                '"%s" is not a report name: it names a place, not a '
+                'report. Name one inside %s.' % (name, folder))
+        path = os.path.join(folder, typed + '.html')
+        if os.path.dirname(os.path.realpath(path)) != os.path.realpath(folder):
+            raise ValueError('"%s" would be written outside %s.'
+                             % (name, folder))
+        return path
+
+    def _writeReport(self, path, title, sub, image, rows):
+        """The self-contained page the report is: one table, its own
+        little style, the image when there is one, and nothing to fetch."""
+        import base64
+        import html
+        import time
+
+        style = ("""
+        body { font-family: Cantarell, 'Open Sans', 'DejaVu Sans', sans-serif;
+               margin: 2rem; color: #182430; background: #ffffff; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #dde3e7; padding: .35rem .6rem;
+                 text-align: left; font-size: .95rem; }
+        th { background: #f0f4f5; }
+        .q  { font-family: 'DejaVu Sans Mono', monospace; font-size: .85rem; }
+        .s  { font-variant-numeric: tabular-nums; }
+        img { max-width: 90%; border: 1px solid #dde3e7; margin-bottom: 1.2rem; }
+        .sub { color: #5a6672; margin-top: .1rem; }
+        .ref { color: #a03030; }
+        """ )
+        parts = [
+            '<!doctype html>',
+            '<html lang="en"><head><meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            '<title>%s</title><style>%s</style></head><body>' % (
+                html.escape(title), style),
+            '<h1>%s</h1>' % html.escape(title),
+            '<p class="sub">%s — %s</p>' % (html.escape(sub),
+                                            time.strftime('%Y-%m-%d %H:%M:%S')),
+        ]
+        if image:
+            parts.append(
+                '<img alt="%s" src="data:image/png;base64,%s">' % (
+                    html.escape(title),
+                    base64.b64encode(image).decode('ascii')))
+        parts.append('<table>')
+        parts.append('<tr><th>quantity</th><th>n</th><th>x&nbsp;min</th>'
+                     '<th>x&nbsp;max</th><th>min</th><th>max</th><th>mean</th>'
+                     '<th>std</th><th>nan</th><th>inf</th></tr>')
+        for label, stats in rows:
+            quantity = label[0]
+            parts.append(
+                '<tr><td class="q">%s</td><td class="s">%s</td><td class="s">%s</td>'
+                '<td class="s">%s</td><td class="s">%s</td><td class="s">%s</td>'
+                '<td class="s">%s</td><td class="s">%s</td><td class="s">%s</td>'
+                '<td class="s">%s</td></tr>' % (
+                    html.escape(quantity),
+                    stats['n'],
+                    self._num(stats['x0']), self._num(stats['x1']),
+                    self._num(stats['min']), self._num(stats['max']),
+                    self._num(stats['mean']), self._num(stats['std']),
+                    stats['nan'], stats['inf']))
+        parts.append('</table></body></html>')
+        try:
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write('\n'.join(parts))
+        except OSError as error:
+            raise ValueError('The report could not be written to %s: %s'
+                             % (path, error))
+
+    @staticmethod
+    def _num(value):
+        if value is None:
+            return '—'
+        return ('%g' % float(value)) if isinstance(value, float) else str(value)
+
     # ---------------------------------------------------------------- export
 
     def export_to_ids(self, uri, target_uri, dd_version=None):

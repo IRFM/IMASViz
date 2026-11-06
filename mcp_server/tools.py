@@ -43,7 +43,11 @@ How to work with it:
 6. state is read with list_selection (what the case holds selected) and
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
-   preview) -- answers, not guesses, and empty is an answer too.
+   preview) -- answers, not guesses, and empty is an answer too;
+7. a report is self-contained HTML on disk, with the statistics of each
+   curve: plot_report names one window of curves (its image, one row per
+   trace it drew), and case_report names the whole loaded tree of a case
+   (one row per curve, in tree order).
 
 A refused gesture is not a failure of the server: it is an answer, with
 the reason the application names it. get_logs(uri) holds those reasons
@@ -338,6 +342,31 @@ def buildServer(core, dispatcher, name='imasviz'):
         """
         return _run(partial(core.save_plot_configuration, uri,
                             figure_key, name))
+
+    # --------------------------------------------------------------- reports
+
+    @server.tool(name='plot_report')
+    def plot_report(figure_key: str, name: Optional[str] = None):
+        """A window of curves as a self-contained HTML report on disk.
+
+        The image of the window, and one row per trace it drew -- the
+        quantity, the number of samples, the finite minimum and maximum,
+        and the nan/inf counts. The file lands in `~/.imasviz/reports`;
+        `name` is the report name (a place, not a report, is refused).
+        A window that draws no curve it could stat is refused by name.
+        """
+        return _run(partial(core.plot_report, figure_key, name=name))
+
+    @server.tool(name='case_report')
+    def case_report(uri: str, name: Optional[str] = None):
+        """The loaded tree of a case as a self-contained HTML report on disk.
+
+        One row per curve the tree holds -- the numeric arrays its leaves
+        read, in tree order -- with the statistics of each. `name` is the
+        report name (a place, not a report, is refused). A case whose
+        loaded tree has no curve is refused by name.
+        """
+        return _run(partial(core.case_report, uri, name=name))
 
     # ---------------------------------------------------------------- export
 
