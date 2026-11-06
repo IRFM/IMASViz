@@ -562,6 +562,54 @@ def test_an_entry_is_logged_before_it_is_handed_over(monkeypatch, view, caplog):
     assert 'Running plugin DeclaresSeven, entry 7.' in caplog.text
 
 
+class AnswersOnItsOfferNode(VizPlugin):
+    """A plugin that reads the IDS it was offered on -- like the registered two do.
+
+    The window a plugin draws names that IDS (the title and the session stamp),
+    so it is what the entry was *offered* on, not whatever node the catalog was
+    last built for.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def isEnabled(self):
+        return True
+
+    def getEntries(self):
+        return [1]
+
+    def getAllEntries(self):
+        return [(1, 'the one the node decides')]
+
+    def execute(self, vizAPI, pluginEntry):
+        RAN.append(('AnswersOnItsOfferNode',
+                    self.selectedTreeNode.getIDSName()))
+
+
+def test_an_entry_runs_on_the_node_it_was_offered_on(monkeypatch, view):
+    """An offer on one root keeps its node until the click, wherever the catalog was asked since.
+
+    Measured on the reference case: an `entriesFor` on a *different* IDS root
+    between the offer and the run left the plugin bound to that other root, and
+    the window it drew named that IDS in its title and its session stamp. The
+    entry is answered on the node it was offered on, and only there.
+    """
+    registerStubs(monkeypatch, AnswersOnItsOfferNode)
+    catalog = QVizPluginCatalog(view)
+    offeredOn = FakeTreeNode(idsName='equilibrium')
+    entry = catalog.entriesFor(offeredOn)[0]
+    assert entry.node is offeredOn
+    # The menu of another node is built in between: the plugin is now bound
+    # there, and is asked for nothing by it.
+    elsewhere = FakeTreeNode(idsName='core_profiles')
+    others = catalog.entriesFor(elsewhere)  # one line, still its own
+    assert len(others) == 1 and others[0].pluginName == entry.pluginName
+    assert catalog.plugins()[0][1].selectedTreeNode is elsewhere
+    catalog.run(entry)
+    assert RAN == [('AnswersOnItsOfferNode', 'equilibrium')]
+
+
 # --------------------------------------------------------------------------
 # The answers a session gives in the user's place
 # --------------------------------------------------------------------------

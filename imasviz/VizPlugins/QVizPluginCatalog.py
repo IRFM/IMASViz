@@ -55,6 +55,8 @@ import inspect
 import logging
 import re
 
+import shiboken6
+
 from imasviz.VizPlugins.VizPlugin import getRegisteredPlugins
 from imasviz.VizPlugins.QVizPluginSource import (BUILTIN, USER,
                                                  attachUserPackage,
@@ -88,13 +90,20 @@ class QVizPluginEntry:
     """
 
     def __init__(self, pluginName, plugin, number, label, description=None,
-                 source=None):
+                 source=None, node=None):
         self.pluginName = pluginName
         self.plugin = plugin
         self.number = number
         self.label = label
         self.description = description or pluginName
         self.source = source
+        # The node the entry was offered on: a plugin reads its IDS name from
+        # the node it was bound to, and the binding travels with the menu -- an
+        # entry asked on the equilibrium root and run a moment later must still
+        # be answered on that root, so `run` re-binds it here (measured stale:
+        # an `entriesFor` on another node between the offer and the click left
+        # the window naming that other node).
+        self.node = node
 
     def __repr__(self):
         return '<%s entry %s "%s">' % (self.pluginName, self.number, self.label)
@@ -323,7 +332,7 @@ class QVizPluginCatalog:
                 return []
             return [QVizPluginEntry(pluginName, plugin, 0,
                                    'Show the %s panel' % pluginName,
-                                   source=source)]
+                                   source=source, node=node)]
 
         bind = getattr(plugin, 'setSelectedTreeNode', None)
         if callable(bind):
@@ -357,7 +366,8 @@ class QVizPluginCatalog:
                              % (number, sorted(labels)))
                 continue
             entries.append(QVizPluginEntry(pluginName, plugin, number,
-                                          labels[number], tip, source=source))
+                                          labels[number], tip, source=source,
+                                          node=node))
         return entries
 
     def run(self, entry, answers=None):
@@ -391,6 +401,14 @@ class QVizPluginCatalog:
             return
         self._log().info('Running plugin %s, entry %s.'
                          % (entry.pluginName, entry.number))
+        # The entry is answered on the node it was offered on, whatever the
+        # plugin is bound to now: the binding is set by the last `entriesFor`,
+        # which need not be the offer this entry came out of. A node the tree
+        # took away in between is no node, and the plugin answers for itself.
+        node = getattr(entry, 'node', None)
+        bind = getattr(entry.plugin, 'setSelectedTreeNode', None)
+        if callable(bind) and node is not None and shiboken6.isValid(node):
+            bind(node)
         try:
             if answers is None:
                 execute(self.dataTreeView.imas_viz_api, entry.number)
