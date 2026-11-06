@@ -33,6 +33,7 @@ import pyqtgraph as pg
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
+from imasviz.VizDataAccess.QVizCurveAbscissa import TIME, describe, identityOf
 from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
 from imasviz.VizGUI.VizGuiCustomization import QVizStyle
 from imasviz.VizGUI.VizPlot.QVizCurveColors import penFor
@@ -224,21 +225,37 @@ class QVizPanel(QWidget):
 
     @staticmethod
     def abscissaOf(axesSpec, alongTime):
-        """(key, name) of the axis the curve runs along.
+        """(identity, name) of the abscissa the curve runs along.
+
+        The identity is the one the curve figure uses -- `QVizCurveAbscissa` --
+        rather than a key this panel spelled for itself, because the panel's
+        window (a Stacked Plot View) stacks a quantity the read may carry
+        **either** by walking the dynamic array **or** by slicing at a
+        coordinate of its own, and both roads can run along the same clock:
+        `alongTime` covers the walk, and `identityOf` covers the slice, since
+        it answers `TIME` for a leaf axis that **is** a time base
+        (`axis.is_time`, set by `QVizAxesSpec` from the coordinate's spelling)
+        -- `flux_loop(i1).flux.time` and `bpol_probe(i1).field.time` on the
+        reference case, both resolved by the read to `magnetics.time` (17 344
+        samples): the curve figure of test_59 draws them as two traces, while
+        the keying this method used to do refused the pair, "is read along
+        time, not time" -- two raw coordinates, one clock, two keys, one name.
 
         Asked of the plan rather than of the node, because the strategy decides
         it: the same quantity is against its own coordinate in one window and
-        against time in the next. Keyed by `QVizAxis.key()` so two quantities
-        sharing a coordinate name the same abscissa and two sitting on different
-        ones do not, which is what lets a window stack several panels against one
-        abscissa and name the refusal when a quantity does not run along it.
+        against time in the next. The name comes with the identity
+        (`describe`), and two different identities cannot agree on one --
+        which is what keeps a refusal from spelling the same word twice.
         """
         if alongTime:
-            return 'time', 'time'
+            # A scalar held by a dynamic array answers here: it has no axis of
+            # its own, so nothing below may be asked of it.
+            return TIME, describe(TIME)
         plotted = [axis for axis in axesSpec.axes if axis.origin == QVizAxis.LEAF]
         if not plotted:
             return (None, None)
-        return plotted[0].key(), QVizPanel.axisName(plotted[0])
+        identity = identityOf(plotted[0])
+        return identity, describe(identity)
 
     @staticmethod
     def axisName(axis):
