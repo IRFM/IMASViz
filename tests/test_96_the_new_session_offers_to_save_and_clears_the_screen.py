@@ -232,7 +232,7 @@ def aScreen(api):
     api.DTVframeList.append(view)
     api.DTVlist.append(view.dataTreeView)
     curve = StubWindow()
-    api.figureframes['SlicesPlot1'] = curve
+    api.figureframes['Plot1'] = curve
     return view, curve
 
 
@@ -378,7 +378,7 @@ def test_a_name_refused_keeps_the_whole_screen(qapp, question, monkeypatch,
     assert closed is False
     assert api.DTVframeList == [view] and \
         api.DTVlist == [view.dataTreeView]
-    assert api.figureframes == {'SlicesPlot1': curve, 'PlotView1': plugin}
+    assert api.figureframes == {'Plot1': curve, 'PlotView1': plugin}
     assert view.deletes == 0 and curve.deletes == 0 and plugin.deletes == 0
     assert 'no name' in caplog.text
 
@@ -402,7 +402,7 @@ def test_a_save_the_disk_refuses_keeps_the_whole_screen(qapp, question,
 
     assert closed is False
     assert api.DTVframeList == [view]
-    assert api.figureframes == {'SlicesPlot1': curve, 'PlotView1': plugin}
+    assert api.figureframes == {'Plot1': curve, 'PlotView1': plugin}
     assert view.deletes == 0 and curve.deletes == 0 and plugin.deletes == 0
     assert 'The folder refuses the name.' in caplog.text
     assert 'was not started' in caplog.text

@@ -180,7 +180,7 @@ def test_case_view_record_carrys_its_uri(qapp):
 
 
 def test_figure_record_carrys_every_uri_it_serves(qapp):
-    api = makeApi(cases=[], figures={'SlicesPlot1': [URI_A, URI_B]})
+    api = makeApi(cases=[], figures={'Plot1': [URI_A, URI_B]})
     [record] = api.openWindows()
     assert record.cases == (URI_A, URI_B)
 
@@ -189,15 +189,15 @@ def test_plugin_window_record_serves_no_case(qapp):
     # A case view and a figure that draws no node: the figure is real, has a
     # key, but serves no URI because nothing in figToNodes references one.
     # The record still carries an empty case set. The record is addressed by
-    # the word the bar shows -- the key `SlicesPlotX` stays in the registry.
-    api = makeApi(cases=[URI_A], figures={'SlicesPlotX': []})
+    # the word the bar shows -- the key `Plot3` stays in the registry.
+    api = makeApi(cases=[URI_A], figures={'Plot3': []})
     records = api.openWindows()
-    [record] = [r for r in records if r.label == 'Plot X']
+    [record] = [r for r in records if r.label == 'Plot 3']
     assert record.cases == ()
 
 
 def test_casesServedBy_answers_every_origin_a_figure_kept(qapp):
-    api = makeApi(cases=[], shared={'SlicesPlot1': (URI_A, URI_B)})
+    api = makeApi(cases=[], shared={'Plot1': (URI_A, URI_B)})
     [frame] = api.figureframes.values()
     assert api.casesServedBy(frame) == (URI_A, URI_B)
 
@@ -207,8 +207,8 @@ def test_casesServedBy_answers_every_origin_a_figure_kept(qapp):
 def test_isolateCase_shows_its_case_and_shared_hides_the_rest(qapp):
     api = makeApi(
         cases=[URI_A, URI_B],
-        figures={'SlicesPlot1': [URI_A]},
-        shared={'SlicesPlot2': (URI_A, URI_B)})
+        figures={'Plot1': [URI_A]},
+        shared={'Plot2': (URI_A, URI_B)})
     # After isolateCase(URI_A), everything that doesn't serve URI_A is
     # hidden, and everything that does -- including the shared figure --
     # stays shown.
@@ -216,8 +216,8 @@ def test_isolateCase_shows_its_case_and_shared_hides_the_rest(qapp):
     frames = {
         'caseA': api.DTVframeList[0],
         'caseB': api.DTVframeList[1],
-        'figA': api.figureframes['SlicesPlot1'],
-        'figAB': api.figureframes['SlicesPlot2'],
+        'figA': api.figureframes['Plot1'],
+        'figAB': api.figureframes['Plot2'],
     }
     assert not frames['caseA'].isHidden()
     assert frames['caseB'].isHidden()
@@ -228,15 +228,15 @@ def test_isolateCase_shows_its_case_and_shared_hides_the_rest(qapp):
 def test_isolateCase_the_other_case_reverses(qapp):
     api = makeApi(
         cases=[URI_A, URI_B],
-        figures={'SlicesPlot1': [URI_A]},
-        shared={'SlicesPlot2': (URI_A, URI_B)})
+        figures={'Plot1': [URI_A]},
+        shared={'Plot2': (URI_A, URI_B)})
     api.isolateCase(URI_A)
     api.isolateCase(URI_B)
     frames = {
         'caseA': api.DTVframeList[0],
         'caseB': api.DTVframeList[1],
-        'figA': api.figureframes['SlicesPlot1'],
-        'figAB': api.figureframes['SlicesPlot2'],
+        'figA': api.figureframes['Plot1'],
+        'figAB': api.figureframes['Plot2'],
     }
     assert frames['caseA'].isHidden()
     assert not frames['caseB'].isHidden()
@@ -270,8 +270,8 @@ def test_the_case_gestures_do_not_leave_a_blank_shell(qapp):
     mdi.addSubWindow(sub)
     sub.show()
     frame.show()
-    api.figureframes['SlicesPlot1'] = frame
-    api.figToNodes['SlicesPlot1'] = {0: (URI_A, None)}
+    api.figureframes['Plot1'] = frame
+    api.figToNodes['Plot1'] = {0: (URI_A, None)}
     qapp.processEvents()
 
     # The stranded state a window ends in when a hide reached the frame while
@@ -287,8 +287,8 @@ def test_the_case_gestures_do_not_leave_a_blank_shell(qapp):
 
 
 def test_hideOthers_keeps_only_the_one_named(qapp):
-    api = makeApi(cases=[URI_A, URI_B], figures={'SlicesPlot1': [URI_A]})
-    exceptFrame = api.figureframes['SlicesPlot1']
+    api = makeApi(cases=[URI_A, URI_B], figures={'Plot1': [URI_A]})
+    exceptFrame = api.figureframes['Plot1']
     for frame in api.DTVframeList:
         frame.show()
     exceptFrame.show()
@@ -298,29 +298,29 @@ def test_hideOthers_keeps_only_the_one_named(qapp):
 
 
 def test_closeOthers_closes_everything_but_the_one_named(qapp):
-    api = makeApi(cases=[URI_A, URI_B], figures={'SlicesPlot1': [URI_A]})
-    exceptFrame = api.figureframes['SlicesPlot1']
+    api = makeApi(cases=[URI_A, URI_B], figures={'Plot1': [URI_A]})
+    exceptFrame = api.figureframes['Plot1']
     api.closeOthers(exceptFrame)
     # The one named stays, the rest are out of the bookkeeping.
     assert exceptFrame in api.figureframes.values()
     assert len(api.DTVframeList) == 0
-    assert 'SlicesPlot1' in api.figureframes
+    assert 'Plot1' in api.figureframes
 
 
 def test_closeCase_closes_its_view_and_its_own_figures(qapp):
     api = makeApi(
         cases=[URI_A, URI_B],
-        figures={'SlicesPlotA': [URI_A]},
-        shared={'SlicesPlotAB': (URI_A, URI_B)})
-    figAB = api.figureframes['SlicesPlotAB']
+        figures={'Plot2': [URI_A]},
+        shared={'Plot9': (URI_A, URI_B)})
+    figAB = api.figureframes['Plot9']
     api.closeCase(URI_A)
     # The case view and the figure that only serves URI_A are gone.
     assert API_caseViewURI(api, URI_A) is None
-    assert 'SlicesPlotA' not in api.figureframes
+    assert 'Plot2' not in api.figureframes
     # The shared figure is hidden, not closed: its key stays.
-    assert 'SlicesPlotAB' in api.figureframes
+    assert 'Plot9' in api.figureframes
     assert figAB is not None
-    assert api.figureframes['SlicesPlotAB'] is figAB
+    assert api.figureframes['Plot9'] is figAB
 
 
 def test_closing_a_case_view_releases_a_window_it_takes_down(qapp):
@@ -378,8 +378,8 @@ def test_menu_groups_cases_first_and_has_gestures(qapp):
     from imasviz.VizDataSource.QVizIMASDataSource import caseLabel
     api = makeApi(
         cases=[URI_A, URI_B],
-        figures={'SlicesPlotA': [URI_A]},
-        shared={'SlicesPlotAB': (URI_A, URI_B)})
+        figures={'Plot2': [URI_A]},
+        shared={'Plot9': (URI_A, URI_B)})
     win_menu = QMenu()
     ctrl = QVizWindowMenu(win_menu, api, applicationBar=True)
     ctrl.refresh()
@@ -391,7 +391,7 @@ def test_menu_groups_cases_first_and_has_gestures(qapp):
     assert caseLabel(URI_B) in subMenus
     # One line is the shared figure's: it is drawn once per case that serves,
     # and names both, the same way the title bar does.
-    shared = titleWithCases('SlicesPlotAB', (URI_A, URI_B))
+    shared = titleWithCases('Plot9', (URI_A, URI_B))
     for uri in (URI_A, URI_B):
         labels = [x.text() for x in subMenus[caseLabel(uri)].actions()]
         assert shared in labels
@@ -403,7 +403,7 @@ def test_menu_groups_cases_first_and_has_gestures(qapp):
 
 
 def test_menu_disposition_on_the_app_bar(qapp, monkeypatch):
-    api = makeApi(cases=[URI_A], figures={'SlicesPlotA': [URI_A]})
+    api = makeApi(cases=[URI_A], figures={'Plot2': [URI_A]})
     win_menu = QMenu()
     ctrl = QVizWindowMenu(win_menu, api, applicationBar=True)
     ctrl.refresh()
@@ -417,7 +417,7 @@ def test_menu_disposition_on_the_app_bar(qapp, monkeypatch):
 
 
 def test_menu_disposition_not_on_a_shotview_bar(qapp):
-    api = makeApi(cases=[URI_A], figures={'SlicesPlotA': [URI_A]})
+    api = makeApi(cases=[URI_A], figures={'Plot2': [URI_A]})
     win_menu = QMenu()
     ctrl = QVizWindowMenu(win_menu, api, applicationBar=False)
     ctrl.refresh()
@@ -430,8 +430,8 @@ def test_menu_with_no_cases_stays_flat(qapp):
     # A plugin-style window with no case: the menu has no case sub-menus and no
     # case gestures, just the top-level window line and the *All* gestures.
     # The line shows the word the title bar shows -- `Plot 1` -- while the
-    # key the registry and the session file address stays `SlicesPlot1`.
-    api = makeApi(cases=[], figures={'SlicesPlot1': []})
+    # key the registry and the session file address stays `Plot1`.
+    api = makeApi(cases=[], figures={'Plot1': []})
     win_menu = QMenu()
     ctrl = QVizWindowMenu(win_menu, api, applicationBar=True)
     ctrl.refresh()
@@ -454,28 +454,45 @@ def test_titleWithCases_keeps_the_heading_when_no_case_serves():
 
 def test_the_title_reads_plot_and_image_where_the_key_carries_slices():
     # The word on the bar changed, the key behind it did not: the session
-    # files and `GetFiguresKeys` of the run still address `SlicesPlot1`.
+    # files and `GetFiguresKeys` of the run still address `Plot1`.
     from imasviz.Viz_API import figureDisplayHeading
+    assert figureDisplayHeading('Plot1') == 'Plot 1'
+    assert figureDisplayHeading('Image2') == 'Image 2'
+    # Backward compat: session files written before the key rename.
     assert figureDisplayHeading('SlicesPlot1') == 'Plot 1'
-    assert figureDisplayHeading('SlicesImage2') == 'Image 2'
-    # Whatever is already its own word passes through untouched.
+    assert figureDisplayHeading('SlicesImage1') == 'Image 1'
+    # Whatever carries its own name passes through untouched.
     assert figureDisplayHeading('PlotView:1') == 'PlotView:1'
     assert figureDisplayHeading('EquiPlotView:3') == 'EquiPlotView:3'
     assert figureDisplayHeading('TablePlotView:0') == 'TablePlotView:0'
 
 
+def test_session_reader_normalises_the_legacy_key():
+    """A .vsess file written before the rename reads without a word of
+    complaint: the reader maps ``SlicesPlot1`` to ``Plot1`` and the
+    rest of the application sees a single spelling."""
+    from imasviz.VizGUI.VizConfigurations.QVizSessionFile import _normalizeKey
+    assert _normalizeKey('SlicesPlot1') == 'Plot1'
+    assert _normalizeKey('SlicesImage3') == 'Image3'
+    # A key that is already current passes through unchanged.
+    assert _normalizeKey('Plot1') == 'Plot1'
+    assert _normalizeKey('PlotView:1') == 'PlotView:1'
+    # An Equilibrium window is not touched by the rename.
+    assert _normalizeKey('EquiPlotView:1') == 'EquiPlotView:1'
+
+
 def test_titleWithCases_says_whose_case_and_the_hover_says_the_uri():
     # The short label is what fits the one line; the whole URI is the hover.
-    # A key of the `SlicesPlot` family reads as the word the user asked for.
-    assert (titleWithCases('SlicesPlot1', (URI_A,))
+    # A key of the `Plot` family reads as the word the user asked for.
+    assert (titleWithCases('Plot1', (URI_A,))
             == 'Plot 1 — %s' % caseLabel(URI_A))
-    assert (titleWithCases('SlicesImage1', (URI_A,))
+    assert (titleWithCases('Image1', (URI_A,))
             == 'Image 1 — %s' % caseLabel(URI_A))
     assert caseTooltip((URI_A,)) == URI_A
     # A comparison figure names both, in the order they arrived, and the hover
     # holds the two URIs, one per line.
-    assert (titleWithCases('SlicesPlotAB', (URI_A, URI_B))
-            == 'Plot AB — %s; %s' % (caseLabel(URI_A), caseLabel(URI_B)))
+    assert (titleWithCases('Plot7', (URI_A, URI_B))
+            == 'Plot 7 — %s; %s' % (caseLabel(URI_A), caseLabel(URI_B)))
     assert caseTooltip((URI_A, URI_B)) == URI_A + '\n' + URI_B
 
 
@@ -508,7 +525,7 @@ def test_the_windows_menu_line_carries_the_ids_of_a_plugin_stamp(qapp):
     assert record.label == expected
     # A figure with no stamp carries no suffix: the case label is the whole
     # answer there.
-    api2 = makeApi(cases=[], figures={'SlicesPlot1': [URI_A]})
+    api2 = makeApi(cases=[], figures={'Plot1': [URI_A]})
     [record2] = api2.openWindows()
     assert record2.label == 'Plot 1 — %s' % caseLabel(URI_A)
 
@@ -516,10 +533,10 @@ def test_the_windows_menu_line_carries_the_ids_of_a_plugin_stamp(qapp):
 def test_case_view_figure_and_menu_agree_on_the_line(qapp):
     # The three readings of one window — the record, the title bar, the menu
     # line — are one answer, so a stub of each agrees.
-    api = makeApi(cases=[], figures={'SlicesPlot1': [URI_A]})
+    api = makeApi(cases=[], figures={'Plot1': [URI_A]})
     [record] = api.openWindows()
-    frame = api.figureframes['SlicesPlot1']
-    expected = titleWithCases('SlicesPlot1', (URI_A,))
+    frame = api.figureframes['Plot1']
+    expected = titleWithCases('Plot1', (URI_A,))
     assert record.label == expected
     assert frame.windowTitle() == expected
     assert frame.toolTip() == URI_A

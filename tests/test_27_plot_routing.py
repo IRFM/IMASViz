@@ -294,6 +294,6 @@ def test_the_figure_keys_leave_the_legacy_namespaces_alone(run):
     command, figures = run(_oneDimensionInTime(), _twoDimensionStatic())
     keys = [frame.figureKey for frame in figures]
 
-    assert keys == ['SlicesPlot1', 'SlicesImage1']
+    assert keys == ['Plot1', 'Image1']
     assert command.api.GetFiguresKeys('Figure:') == []
     assert command.api.GetFiguresKeys('Image:') == []

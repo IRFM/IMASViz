@@ -381,7 +381,7 @@ the name the *Plot X to -> Figure* menu offers when a quantity is added to a
 window that is already open. What the title bar and the :guilabel:`Windows`
 menu show is the name the user asks for, the case the window serves, and -- for
 a window a plugin drew -- the IDS its entry ran on: a window whose key is
-:guilabel:`SlicesPlot1` is what those list as :guilabel:`Plot 1 — west-54924.0`.
+:guilabel:`Plot1` is what those list as :guilabel:`Plot 1 — west-54924.0`.
 A saved session keeps the key, so the window that was
 :guilabel:`Plot 1 — west-54924.0` comes back under the very same title, and the
 menus still name one line for it.

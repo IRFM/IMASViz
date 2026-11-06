@@ -169,7 +169,7 @@ def view(qapp):
 
 @pytest.fixture
 def figure(qtbot):
-    widget = QVizImagePlot(title='SlicesImage1')
+    widget = QVizImagePlot(title='Image1')
     # Held from the frame: a Qt child does not keep the Python wrapper of its
     # parent alive, and a collected parent destroys the widget under the test.
     widget.frame = widget

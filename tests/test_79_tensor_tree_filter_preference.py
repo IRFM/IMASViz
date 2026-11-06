@@ -539,7 +539,7 @@ def test_the_pop_up_of_a_tensor_offers_the_tensor_entries(tensorView):
     lines = [a.text() for a in figures[0].menu().actions()]
     assert lines[0] == 'New', lines
     openFigures = set(tensorView.imas_viz_api.GetFiguresKeys(
-        figureType='SlicesPlot'))
+        figureType='Plot'))
     assert set(lines[1:]) <= openFigures, (lines, openFigures)
 
     # What the view still takes away: the family entry -- this view shows the

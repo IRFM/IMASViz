@@ -19,7 +19,7 @@ dictionary 3.35.0, the same numbers the journey in `test_45` measured):
 * loading occurrence 0 keeps 3368 signals for the tree, as the journey
   measured;
 * the selection of `equilibrium.time` and two global quantities plots into
-  a curve figure of the `SlicesPlot` namespace, and the case's log panel
+  a curve figure of the `Plot` namespace, and the case's log panel
   carries a line after each gesture;
 * the read answers 49 samples for `equilibrium.time` along time, the number
   the coordinate tests of the suite pin for that clock;
@@ -203,7 +203,7 @@ def test_plotting_the_selection_builds_a_curve_figure(core):
     figures = session.plot_selection(CASE_URI)['figures']
     assert figures, 'the selection of two readable quantities drew nothing'
     head = figures[0]
-    assert head.startswith('SlicesPlot'), head
+    assert head.startswith('Plot'), head
     frame = session.api.figureframes[head]
     assert frame.isDrawing()
 
@@ -222,7 +222,7 @@ def test_hiding_and_showing_a_window_keeps_its_key(core):
     assert session.show_window(head)['visible'] is True
 
     with pytest.raises(ValueError, match='No window holds the key'):
-        session.hide_window('SlicesPlotDoesNotExist')
+        session.hide_window('PlotDoesNotExist')
 
 
 def test_get_signal_answers_the_read_along_time(core):

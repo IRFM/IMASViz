@@ -192,7 +192,7 @@ def test_a_run_that_loaded_and_drew_is_a_session_that_fits_in_one_file(session):
     assert saved.cases[0].dd_version == CASE_DATA_DICTIONARY_VERSION
     assert saved.cases[0].loads == [QVizSessionLoad(IDS_NAME, 0, 'first')]
     assert [figure.key for figure in saved.figures] \
-        == ['SlicesPlot1', 'TablePlotView:1']
+        == ['Plot1', 'TablePlotView:1']
     assert [figure.kind for figure in saved.figures] == ['curve', 'table']
     assert [quantity.path for quantity in saved.figures[0].quantities] \
         == CURVE_PATHS
@@ -232,17 +232,17 @@ def test_putting_the_session_back_reopens_the_case_and_the_windows(session,
     assert sorted(session.pathsInSelection(view)) == sorted(CURVE_PATHS)
 
     figures = reopened.figureframes
-    assert sorted(figures) == ['SlicesPlot1', 'TablePlotView:1']
-    assert isinstance(figures['SlicesPlot1'], QVizCurvePlot)
+    assert sorted(figures) == ['Plot1', 'TablePlotView:1']
+    assert isinstance(figures['Plot1'], QVizCurvePlot)
     assert isinstance(figures['TablePlotView:1'], QVizTablePlot)
-    assert figures['SlicesPlot1'].curveCount() == 2
+    assert figures['Plot1'].curveCount() == 2
 
 
 def test_the_windows_that_come_back_are_drawn_from_the_data(session):
     """A restored window is a frame of the application, not a picture of one."""
     figures = session.reopened.figureframes
 
-    curve = figures['SlicesPlot1']
+    curve = figures['Plot1']
     assert curve.isDrawing()
     # The abscissa is settled by the first quantity drawn into a curve figure, so
     # replaying that quantity settles the same one: what is compared here is the
@@ -288,7 +288,7 @@ def test_a_case_that_cannot_be_reached_costs_its_own_windows_and_says_why(sessio
             '<?xml version="1.0" encoding="utf-8"?>\n'
             '<IMASVizSession version="1">\n'
             '  <Case uri="imas:hdf5?path=/no/such/case/0" dd_version="3.35.0"/>'
-            '  <Figure key="SlicesPlot1" kind="curve">\n'
+            '  <Figure key="Plot1" kind="curve">\n'
             '    <Quantity path="equilibrium/time" occurrence="0" '
             'uri="imas:hdf5?path=/no/such/case/0"/>\n'
             '  </Figure>\n'
@@ -389,7 +389,7 @@ def test_the_band_the_lines_and_the_zoom_come_back_on_the_restored_window(sessio
 
     fresh = session.freshApi()
     QVizRestoreSession(fresh, path=path).execute()
-    back = fresh.figureframes['SlicesPlot1']
+    back = fresh.figureframes['Plot1']
 
     assert back.sliceControls.keys() == [FLUX_LOOP]
     assert back.sliceControls.indices()[FLUX_LOOP] == MOVED_TO
@@ -432,7 +432,7 @@ def test_a_window_left_alone_comes_back_as_the_drawing_leaves_it(session):
 
     fresh = session.freshApi()
     QVizRestoreSession(fresh, path=path).execute()
-    back = fresh.figureframes['SlicesPlot1']
+    back = fresh.figureframes['Plot1']
 
     assert back.errors.errorBarCount() == 0
     assert back.pgPlotWidget.getViewBox().state['autoRange'] == [True, True]
@@ -455,7 +455,7 @@ def test_a_slider_key_the_restored_window_has_no_slider_for_is_named(session,
 
     fresh = session.freshApi()
     QVizRestoreSession(fresh, path=path).execute()
-    back = fresh.figureframes['SlicesPlot1']
+    back = fresh.figureframes['Plot1']
 
     assert 'AOS/magnetics/no_such_array' in caplog.text
     assert 'no such slider' in caplog.text

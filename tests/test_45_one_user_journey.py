@@ -34,7 +34,7 @@ numbers (WEST 54924 run 0, data dictionary pinned at 3.35.0, harness dictionary
 * selecting three leaves leaves 3 entries; saving writes
   ``<name>.lsp`` under ``$HOME/.imasviz`` with one ``<Quantity path occurrence
   uri/>`` each;
-* plotting those three draws **one** ``QVizCurvePlot`` (``SlicesPlot1``): the two
+* plotting those three draws **one** ``QVizCurvePlot`` (``Plot1``): the two
   scalars over time share it, and the third -- ``coordinate_system.r``, 2 axes to
   draw -- gets a picture frame that finds ``no values in the image`` and is
   dropped, so this case cannot exercise the picture branch;
@@ -47,7 +47,7 @@ numbers (WEST 54924 run 0, data dictionary pinned at 3.35.0, harness dictionary
   is the manual's "apply this selection to another database";
 * 55799's ``hard_x_rays`` holds occurrence 0, 5687 signals and 38 leaves named
   ``hard_x_rays.channel[<n>].radiance.data``; selecting channel 0 and plotting
-  gives one ``QVizImagePlot``, ``SlicesImage1``, ``isDrawing()`` True;
+  gives one ``QVizImagePlot``, ``Image1``, ``isDrawing()`` True;
 * removing the second view leaves 1 frame and 1 view.
 
 The figures keep the keys the api handed out in the order the steps run, so the
@@ -265,11 +265,11 @@ def test_plotting_the_selection_draws_one_curve_figure(journey, caplog):
     assert len(frames) == 1
     assert type(frames[0]) is QVizCurvePlot
     assert frames[0].isDrawing() is True
-    assert journey.newFigures(before) == ['SlicesPlot1']
+    assert journey.newFigures(before) == ['Plot1']
     assert QVizPlotAsSlices.IMAGE_FIGURE_TYPE not in journey.api.figureframes
     assert 'no values in the image' in caplog.text
 
-    stored = journey.api.figToNodes['SlicesPlot1']
+    stored = journey.api.figToNodes['Plot1']
     assert sorted(node.getPath() for _, node in stored.values()) \
         == ['equilibrium/time', 'equilibrium/time_slice(0)/global_quantities/ip']
 
@@ -333,7 +333,7 @@ def test_a_replayed_quantity_is_plotted_from_the_second_view(journey, otherShot)
 
     assert type(figure) is QVizCurvePlot
     assert figure.isDrawing() is True
-    assert journey.newFigures(before) == ['SlicesPlot2']
+    assert journey.newFigures(before) == ['Plot2']
 
 
 def test_the_picture_branch_needs_a_shot_that_holds_values(journey, otherShot):
@@ -352,8 +352,8 @@ def test_the_picture_branch_needs_a_shot_that_holds_values(journey, otherShot):
     assert len(frames) == 1
     assert type(frames[0]) is QVizImagePlot
     assert frames[0].isDrawing() is True
-    assert journey.newFigures(before) == ['SlicesImage1']
-    assert journey.api.figToNodes['SlicesImage1'][
+    assert journey.newFigures(before) == ['Image1']
+    assert journey.api.figToNodes['Image1'][
         otherShot.dataSource.dataKey(
             journey.leaf(otherShot, PICTURE_LEAF))][1].getPath() == PICTURE_PATH
 

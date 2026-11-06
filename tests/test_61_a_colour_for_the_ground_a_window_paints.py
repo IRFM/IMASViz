@@ -193,7 +193,7 @@ def test_a_figure_and_a_panel_paint_the_same_ground(qapp):
     configuration default. A panel is a `QWidget` holding a `PlotWidget`, so its
     ground is its own view's, and it is the same one a figure gets.
     """
-    figure = ownership.keep(QVizCurvePlot(title='SlicesPlot1'))
+    figure = ownership.keep(QVizCurvePlot(title='Plot1'))
     table = ownership.keep(QVizTablePlot(title='TablePlotView:probe'))
     panel = ownership.keep(QVizPanel(table))
 
@@ -211,7 +211,7 @@ def test_a_view_box_is_not_what_paints_the_ground(qapp):
     `setBackgroundColor` was called. Asked offscreen and unseen: hidden,
     `NoBrush` -- and a `color()` of `(0, 0, 0, 255)` all the same.
     """
-    figure = ownership.keep(QVizCurvePlot(title='SlicesPlot1'))
+    figure = ownership.keep(QVizCurvePlot(title='Plot1'))
     table = ownership.keep(QVizTablePlot(title='TablePlotView:probe'))
     panel = ownership.keep(QVizPanel(table))
 

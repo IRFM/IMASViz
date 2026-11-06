@@ -130,7 +130,7 @@ def _matrix():
 
 @pytest.fixture
 def figure(qtbot):
-    widget = QVizCurvePlot(title='SlicesPlot1')
+    widget = QVizCurvePlot(title='Plot1')
     qtbot.addWidget(widget)
     return widget
 
@@ -337,7 +337,7 @@ def test_an_image_window_and_a_table_panel_keep_their_rows_open(qapp):
     The manual makes those rows the saying of the colour scale and of the panel
     numbers, so folding them would take the answer away rather than the room.
     """
-    image = ownership.keep(QVizImagePlot(title='SlicesImage1'))
+    image = ownership.keep(QVizImagePlot(title='Image1'))
 
     assert image.sliceControls.isFoldable() is False
     assert image.sliceControls.isFolded() is False
