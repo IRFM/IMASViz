@@ -11,7 +11,7 @@ import logging
 from functools import partial
 from PySide6.QtWidgets import QApplication, QMenu, QInputDialog
 from PySide6.QtGui import QAction
-from imasviz.VizUtils import GlobalIcons
+from imasviz.VizUtils import GlobalIcons, QVizGlobalOperations
 from imasviz.VizGUI.VizConfigurations.QVizSessionFile import QVizSessionFile
 from imasviz.VizGUI.VizGUICommands.VizOpenViews.QVizOpenShotView import QVizOpenShotView
 from imasviz.VizGUI.VizGUICommands.VizSession.QVizSaveSession import QVizSaveSession
@@ -42,8 +42,10 @@ class QVizMainMenuController:
         self.menuAddSpecificUserDB(menu, listenerWidget)
 
     def menuSession(self, menu, listenerWidget):
-        """Save the session, and put back one that was saved.
+        """Start a new session, save the current one, and put one back.
 
+        *New session* is on top, because it is the question a run begins with
+        the same way it ends it: what to keep before the screen goes.
         *Load session* lists the sessions the folder holds rather than asking for
         a name: the point of saving a session is to come back to it without
         remembering what it was called. An empty list leaves no sub-menu on
@@ -53,6 +55,10 @@ class QVizMainMenuController:
         The caller rebuilds this on every opening of its menu, so a session saved
         a moment ago is on the list without restarting the application.
         """
+        action_newSession = QAction('New session', listenerWidget)
+        action_newSession.triggered.connect(self.newSession)
+        menu.addAction(action_newSession)
+
         action_saveSession = QAction('Save session', listenerWidget)
         action_saveSession.triggered.connect(self.saveSession)
         menu.addAction(action_saveSession)
@@ -88,15 +94,63 @@ class QVizMainMenuController:
         on the name -- that it stays inside the configuration folder -- belongs
         to the format, and its refusal lands in the log panel below.
         """
-        name, ok = QInputDialog.getText(self.dialogParent(), 'Save session',
-                                        'Name of the session:',
-                                        text=self.defaultSessionName())
-        if not ok:
+        name = self.askSessionName()
+        if name is None:
             return
         try:
             QVizSaveSession(self.openShotView.api, name=name).execute()
         except ValueError as e:
             logging.getLogger('logPanel').error(str(e))
+
+    def askSessionName(self):
+        """The name of a session to write, or None when the question is refused.
+
+        One shape, two callers: *Save session* asks it and stops, *New session*
+        asks it and clears the screen afterwards -- and what `saveSession` does
+        with a refused name, staying put, is the whole answer.
+        """
+        name, ok = QInputDialog.getText(self.dialogParent(), 'Save session',
+                                        'Name of the session:',
+                                        text=self.defaultSessionName())
+        return name if ok else None
+
+    def newSession(self):
+        """Start a new session: offer to save this one, then clear the screen.
+
+        The question is asked in the slot the user clicked, and not in a
+        command, the way `askForLastSession` asks its one -- a command that
+        opens a dialog cannot be run by a script, and what the gesture costs
+        the screen is exactly :meth:`Viz_API.closeAll`: the same shape as
+        the *Delete* lines of the *Windows* menu, nothing invented here.
+
+        Refusals each keep the screen and say why: a screen that is already a
+        new session is never asked its one question, a name the user does not
+        give is a save that did not happen and a screen that was not promised
+        away, and a session that cannot be written is a save the user answered
+        and the disk refused -- in all three the windows stay where they are.
+        """
+        api = self.openShotView.api
+        if not api.openWindows():
+            logging.getLogger('logPanel').info(
+                'No window to save or close: the screen is already a new '
+                'session.')
+            return False
+        if QVizGlobalOperations.YesNo(
+                question='Save the current session before starting a new one?',
+                caption='Please confirm'):
+            name = self.askSessionName()
+            if name is None:
+                logging.getLogger('logPanel').error(
+                    'The new session was not started: the session to keep has '
+                    'no name, and the screen is left as it was.')
+                return False
+            try:
+                QVizSaveSession(api, name=name).execute()
+            except ValueError as e:
+                logging.getLogger('logPanel').error(
+                    'The new session was not started: %s' % e)
+                return False
+        return api.closeAll()
 
     def defaultSessionName(self):
         """A name the user does not have to invent: the case of the first view."""

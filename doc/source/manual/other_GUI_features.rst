@@ -297,7 +297,7 @@ each of those windows. The two commands :menuselection:`File --> Save session`
 and :menuselection:`File --> Load session` write that down and put it back.
 
 .. note::
-   Those two lines are on the **File** menu of the application window, the bar
+   Those lines are on the **File** menu of the application window, the bar
    along the top of :guilabel:`IMASViz` -- not on a case view's
    :guilabel:`Actions` menu. A session is the whole screen, every case view and
    every figure together, so the gesture belongs to the window that holds them
@@ -316,6 +316,26 @@ session has been saved, and the list is drawn again every time the menu opens, s
 a session saved a minute ago is there without restarting. Nothing else is asked:
 the file names the cases, so a session comes back without retyping the database
 parameters.
+
+To start over, select :menuselection:`File --> New session`. It asks one
+question first -- whether the session that is on the screen should be saved --
+and clears the screen only afterwards. A *Yes* writes the session under the name
+the dialog gives it -- the same dialog as :guilabel:`Save session` -- and then
+clears it; a *No* clears it and keeps nothing. The clearing is the same gesture
+as the :guilabel:`Delete` lines of the :ref:`Windows menu
+<other_GUI_features>`: every case view goes, and with it every figure, and every
+window a plugin drew inside a case view -- so what is left is the start window
+alone, and the next case you open opens as the first window of the run, with the
+numbers of the figures back at 1.
+
+.. note::
+   The question is the only thing the gesture spends. A name you do not give,
+   or a session that cannot be written, keeps the whole screen as it was --
+   because what you were promised was a save *and* a clear, and half of it did
+   not happen -- and the reason is where you read it, on the log panel. And a
+   screen that holds no window answers with no question at all: it is already a
+   new session, and there is nothing to save or to clear. What the gesture keeps
+   is exactly what it saved, under exactly the name you gave.
 
 +-------------------------------------+-----------------------------------------+
 | **What the file keeps**             | **How it comes back**                   |

@@ -63,6 +63,7 @@ from imasviz.Viz_API import Viz_API
 
 from support import ownership
 
+NEW_SESSION = 'New session'
 SAVE = 'Save session'
 LOAD = 'Load session'
 NEW_PLUGIN = QVizFileMenu.NEW_PLUGIN
@@ -257,7 +258,7 @@ def test_a_window_that_holds_no_session_yet_offers_no_load_menu(qapp):
     window, fileMenu = aFileMenu(aRealController())
 
     assert labels(fileMenu.menu) == \
-        [SAVE, NEW_PLUGIN, MANAGE_PLUGINS, AGENT, QUIT]
+        [NEW_SESSION, SAVE, NEW_PLUGIN, MANAGE_PLUGINS, AGENT, QUIT]
     assert subMenuOf(fileMenu.menu, LOAD) is None
 
 
@@ -301,8 +302,8 @@ def test_refilling_the_menu_leaves_no_duplicate_line_on_it(qapp):
     for _ in range(4):
         openMenu(fileMenu.menu)
 
-    assert labels(fileMenu.menu) == [SAVE, LOAD, NEW_PLUGIN, MANAGE_PLUGINS,
-                                     AGENT, QUIT]
+    assert labels(fileMenu.menu) == [NEW_SESSION, SAVE, LOAD, NEW_PLUGIN,
+                                     MANAGE_PLUGINS, AGENT, QUIT]
     assert len(subMenuOf(fileMenu.menu, LOAD).actions()) == 1
 
 
