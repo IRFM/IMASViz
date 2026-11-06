@@ -69,6 +69,27 @@ def buildLLM(args):
     return client
 
 
+def _settleWindow(window, app):
+    """Take the run's window off the screen and settle the event queue.
+
+    A figure left *shown* as the process leaves is the one a queued paint
+    event can strike while the interpreter tears the widget down -- the
+    documented `Fatal … Segmentation fault inside pyqtgraph's
+    GraphicsView.paintEvent`, and a picture window in particular is retained
+    to the end of a run, so it is the one still on the paint queue at exit.
+    `hide()` is immediate and reaches the children, and it does not raise the
+    `QVizGlobalOperations.YesNo` confirmation the main window's `closeEvent`
+    would pop in offscreen mode; draining the queue after it means there is no
+    paint event left to land on a widget as the process dies.
+    """
+    hide = getattr(window, 'hide', None)
+    if callable(hide):
+        hide()
+    process = getattr(app, 'processEvents', None)
+    if callable(process):
+        process()
+
+
 def buildAgentStack(window, llm, core=None):
     """`McpGuiCore`, `GuiDispatcher`, `AgentLoop` -- the three of the panel.
 
@@ -188,9 +209,10 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
 
     if outcome[0] is not None:
         print('Agent refusal: %s' % outcome[0], flush=True)
-        return 1
     if not saved:
         print('REFUSAL — no image could be saved: %s'
               % ('; '.join(refused) or 'no window to ask'), flush=True)
-        return 1
-    return 0
+
+    code = 0 if (outcome[0] is None and saved) else 1
+    _settleWindow(window, app)
+    return code

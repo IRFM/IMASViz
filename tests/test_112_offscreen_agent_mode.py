@@ -221,6 +221,27 @@ def test_a_request_ending_on_a_tool_result_is_nudged_with_a_user_line():
     assert _messagesForRequest([]) == []
 
 
+def test_the_run_hides_its_window_before_returning(qapp, tmp_path):
+    """The one-shot path ends by letting the process exit over the widgets
+    it drew. A figure left *shown* at exit is the one a queued paint event
+    can strike while the interpreter tears it down -- the documented
+    `Fatal … Segmentation fault inside pyqtgraph's GraphicsView.paintEvent`.
+    The path must take its window off the screen before returning. A bare
+    `QMainWindow` stands in for the one it serves, and `hide()` is the
+    gesture under test (the one that does not raise the confirmation a
+    `close()` would pop in offscreen mode)."""
+    from PySide6.QtWidgets import QMainWindow
+    window = QMainWindow()
+    window.show()
+    assert window.isVisible()
+    args = buildArgs(tmp_path)
+    llm = FakeLLMClient([LLMResponse(content='done', finish_reason='stop')])
+    code = runAgentMode(args, app=qapp, window=window, core=FakeCore(),
+                        llm=llm)
+    assert code == 0
+    assert not window.isVisible()
+
+
 def test_empty_prompt_is_refused_before_anything(qapp, tmp_path):
     """A `--agent` with nothing after it is refused by name -- the
     panel says 'no prompt entered' -- and nothing is built for it."""
