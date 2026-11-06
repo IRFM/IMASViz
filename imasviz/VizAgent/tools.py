@@ -6,7 +6,7 @@
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-"""The system instructions and the 24 tool schemas for the in-app agent.
+"""The system instructions and the tool schemas for the in-app agent.
 
 One source of truth: the docstrings of the tools in ``mcp_server/tools.py``
 are the same text that the MCP surface reads; the schemas here are the
@@ -30,6 +30,10 @@ How to work with it:
    get_screenshot answers a PNG of the window for the user to read on
    screen (the LLM cannot parse a PNG on this stack; describe a figure
    by reading its underlying arrays with get_signal).
+6. state is read with list_selection (what the case holds selected) and
+   describe_node (what one node holds: documentation, units, size, the
+   finite minimum and maximum, the nan and inf counts, a bounded
+   preview) -- answers, not guesses, and empty is an answer too.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -128,6 +132,27 @@ TOOLS = [
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
         }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'list_selection',
+        'The current selection of the case, in the order it was put in: '
+        'the path, the data name, the IDS and the occurrence of each. '
+        'Empty is an answer, count 0 -- not a refusal.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'describe_node',
+        'What this node holds, as the application documentation says it: '
+        'dictionary documentation and units, and for an array the size, '
+        'shape, the finite minimum and maximum, the counts of zeros, nan and '
+        'inf entries, and a bounded preview of the values. A leaf the tree '
+        'does not hold is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string'},
+        }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
     _tool(
         'plot_one',

@@ -213,6 +213,59 @@ class McpGuiCore:
             import QVizSelectNodes
         return {'dropped': QVizSelectNodes(view).unselectAll()}
 
+    def list_selection(self, uri):
+        """The case's current selection, in the order it was put in.
+
+        The one record the selection is (`selectedSignalsDict`), spelled
+        the way this tree spells it: empty is an answer here, `count: 0`.
+        """
+        view = self._viewForUri(uri)
+        ordered = sorted(view.selectedSignalsDict.values(),
+                         key=lambda entry: entry.get('index', 0))
+        selection = []
+        for entry in ordered:
+            node = entry['QTreeWidgetItem']
+            selection.append({
+                'path': node.getPath(),
+                'data_name': node.getDataName(),
+                'ids': node.getIDSName(),
+                'occurrence': int(entry.get('occurrence',
+                                            node.getOccurrence() or 0)),
+                'name': node.getDataName() or node.getName(),
+            })
+        return {'count': len(selection), 'selection': selection}
+
+    def describe_node(self, uri, path):
+        """What this node holds, as the application's documentation says it.
+
+        The same answer the *Node Documentation* panel draws
+        (`QVizNodeFacts`): name, dictionary documentation and units, the
+        scalar's text for a 0D node, and for an array the size and shape,
+        the finite minimum and maximum, the counts of zeros and of the
+        nan and inf entries, and a preview the walk bounds. A leaf the
+        tree does not hold is refused by name, as every other gesture
+        that looks one up is.
+        """
+        view = self._viewForUri(uri)
+        node = self._nodeForPath(view, path)
+        from imasviz.VizGUI.VizWidgets.VizNodeDocumentation.QVizNodeFacts \
+            import QVizNodeFacts
+        facts = QVizNodeFacts(node)
+        answer = {
+            'name': facts.name,
+            'documentation': facts.documentation,
+            'status': facts.status,
+            'units': facts.units,
+        }
+        for field in ('value', 'shape', 'size', 'minimum', 'maximum',
+                      'zeros', 'nans', 'infs', 'preview'):
+            value = getattr(facts, field)
+            if value is not None:
+                answer[field] = value
+        if facts.refusal:
+            answer['refusal'] = facts.refusal
+        return answer
+
     # -------------------------------------------------------------- plotting
 
     def _aliasesOf(self, node):

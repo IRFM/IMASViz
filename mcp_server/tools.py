@@ -39,7 +39,11 @@ How to work with it:
    holds -- the paths select_signals, plot_one and get_signal take are
    any of those spellings;
 5. plot_one / plot_selection / plot_table / plot_stacked draw, and
-   get_screenshot answers a PNG of the window.
+   get_screenshot answers a PNG of the window;
+6. state is read with list_selection (what the case holds selected) and
+   describe_node (what one node holds: documentation, units, size, the
+   finite minimum and maximum, the nan and inf counts, a bounded
+   preview) -- answers, not guesses, and empty is an answer too.
 
 A refused gesture is not a failure of the server: it is an answer, with
 the reason the application names it. get_logs(uri) holds those reasons
@@ -135,6 +139,26 @@ def buildServer(core, dispatcher, name='imasviz'):
     def unselect_all(uri: str):
         """Empty the case selection; the answer says how many were dropped."""
         return _run(partial(core.unselect_all, uri))
+
+    @server.tool(name='list_selection')
+    def list_selection(uri: str):
+        """The case's current selection, in the order it was put in.
+
+        The path, the data name, the IDS and the occurrence of each;
+        empty is an answer, count 0 -- not a refusal.
+        """
+        return _run(partial(core.list_selection, uri))
+
+    @server.tool(name='describe_node')
+    def describe_node(uri: str, path: str):
+        """What this node holds, as the application's documentation says it.
+
+        Dictionary documentation and units, and for an array the size,
+        shape, the finite minimum and maximum, the counts of zeros, nan
+        and inf entries, and a bounded preview of the values. A leaf the
+        tree does not hold is refused by name.
+        """
+        return _run(partial(core.describe_node, uri, path))
 
     # -------------------------------------------------------------- plotting
 

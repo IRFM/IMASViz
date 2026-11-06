@@ -193,6 +193,50 @@ def test_unselecting_empties_the_selection_and_says_how_many(core):
     assert len(session.api.DTVlist[0].selectedSignalsDict) == 0
 
 
+def test_list_selection_answers_what_the_case_holds_selected(core):
+    """`select_signals` puts two leaves in, and the read answers them -- in
+    order, with the ids and occurrence the record holds. Empty is the
+    answer `count: 0`, not a refusal."""
+    session, _home = core
+    assert session.list_selection(CASE_URI) == {'count': 0,
+                                                'selection': []}
+
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH])
+    answer = session.list_selection(CASE_URI)
+    assert answer['count'] == 2
+    dataNames = [entry['data_name'] for entry in answer['selection']]
+    assert dataNames == [TIME_PATH, IP_PATH]
+    for entry in answer['selection']:
+        assert entry['ids'] == IDS_NAME
+        assert entry['occurrence'] == 0
+        assert entry['path'], entry
+
+
+def test_describe_node_is_the_documentation_of_the_tree(core):
+    """The same answer the *Node Documentation* panel draws: the array leaf
+    says its size and its finite numbers, the clock its number of samples,
+    and a leaf the tree does not hold is refused by name, through the same
+    lookup as every gesture that looks one up."""
+    session, _home = core
+
+    leaf = session.describe_node(
+        CASE_URI, 'equilibrium/time_slice(0)/profiles_1d/psi')
+    assert leaf['name'] == 'equilibrium.time_slice[0].profiles_1d.psi'
+    assert leaf['size'] == '101'
+    assert leaf['minimum'] is not None and leaf['maximum'] is not None
+    assert float(leaf['minimum']) <= float(leaf['maximum'])
+    assert leaf['preview']
+
+    clock = session.describe_node(CASE_URI, TIME_PATH)
+    assert clock['size'] == str(TIME_SAMPLES)
+
+    with pytest.raises(ValueError, match='is not a leaf of the case'):
+        session.describe_node(CASE_URI,
+                              'equilibrium/time_slice(7)/global_quantities/ip')
+    with pytest.raises(ValueError, match='is not open in this session'):
+        session.describe_node('imas:hdf5?path=/no/such/case', IP_PATH)
+
+
 # ------------------------------------------------------------------- plotting
 
 

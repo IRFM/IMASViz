@@ -41,7 +41,7 @@ EQUILIBRIUM_OCCURRENCES = [0, 1, 2, 3]
 EXPECTED_TOOLS = {
     'open_case', 'list_cases', 'close_case',
     'list_idss', 'load_ids', 'search_nodes', 'select_signals',
-    'unselect_all',
+    'unselect_all', 'list_selection', 'describe_node',
     'plot_one', 'plot_selection', 'plot_table', 'plot_stacked',
     'get_signal',
     'list_windows', 'show_window', 'hide_window', 'close_window',
