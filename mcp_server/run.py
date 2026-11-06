@@ -163,16 +163,23 @@ def main(argv=None):
 
     if args.agent is not None:
         # One-shot agent mode: offscreen by definition (a node without a
-        # display is what it is for), and the refusal -- an empty prompt,
-        # an endpoint that will not answer, a snapshot that will not
-        # render -- is named out loud before the exit code says 1.
+        # display is what it is for). All useful output (PNGs + transcript)
+        # is already on disk by the time runAgentMode returns, so the
+        # process can leave without running Py_FinalizeEx -- a return
+        # through main(), and then sys.exit, would still let Python's
+        # cyclic GC free the retained Qt / IMAS / h5py / numpy objects in
+        # an order that triggers a C-extension refcount bug (none_dealloc)
+        # on some builds. os._exit skips all of that.
         os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
         from mcp_server.agent_mode import runAgentMode
         try:
-            return runAgentMode(args)
+            code = runAgentMode(args)
         except Exception as e:
             print('REFUSAL — %s' % e, file=sys.stderr)
-            return 1
+            code = 1
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(code)
 
     if args.offscreen:
         os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
