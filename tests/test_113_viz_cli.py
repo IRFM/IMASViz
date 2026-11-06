@@ -10,6 +10,11 @@
 
 What it pins, in the order the client must answer them:
 
+* `/llm` prints what is in force, and `endpoint`, `model` and `key` are
+  set **and persisted** in the one preferences file the GUI reads (HOME
+  pointed at a test directory, the `test_39` pattern), so the two
+  interfaces stay on the same endpoint; an unknown field and a non-http
+  endpoint are refused by name;
 * a prompt runs the loop through the **real** dispatcher and event pump
   of `test_112`, and the turn that answers (or refuses) still leaves its
   images and its transcript on disk;
@@ -112,6 +117,76 @@ def toolCall():
     return LLMResponse(content='',
                        tool_calls=[{'name': 'list_cases', 'args': {}}],
                        finish_reason='tool_calls')
+
+
+def test_llm_prints_what_is_in_force(qapp, tmp_path, capsys):
+    session, _ = buildSession(qapp, tmp_path)
+    assert execute(parse('/llm'), session)
+    out = capsys.readouterr().out
+    assert DEAD_ENDPOINT in out
+    for word in ('endpoint', 'model', 'key', 'max_turns', 'temperature',
+                 'max_tokens'):
+        assert word in out
+
+
+def test_llm_endpoint_is_set_persisted_and_in_force(
+        qapp, tmp_path, monkeypatch, capsys):
+    """`/llm endpoint` is the one change the client persists: the line
+    lands in the preferences file the GUI reads, the in-memory value
+    moves with it, and the client in force answers the new endpoint."""
+    monkeypatch.setenv('HOME', str(tmp_path))
+    session, _ = buildSession(qapp, tmp_path)
+    new = 'http://10.0.0.7:8080/v1'
+    execute(parse('/llm endpoint %s' % new), session)
+    prefs = tmp_path / '.imasviz' / 'preferences'
+    assert prefs.is_file()
+    assert ('AgentLLMEndpoint=%s' % new) in prefs.read_text()
+    assert session.llm.endpoint == new
+    capsys.readouterr()
+
+
+def test_llm_refuses_an_unknown_field_by_name(qapp, tmp_path):
+    session, _ = buildSession(qapp, tmp_path)
+    try:
+        execute(parse('/llm banana 1'), session)
+    except ValueError as e:
+        text = str(e).lower()
+        assert 'banana' in text
+        for field in ('endpoint', 'model', 'key'):
+            assert field in text
+    else:
+        raise AssertionError('an unknown /llm field must be refused by name')
+
+
+def test_llm_endpoint_must_be_an_http_url(qapp, tmp_path):
+    session, _ = buildSession(qapp, tmp_path)
+    try:
+        execute(parse('/llm endpoint notanurl'), session)
+    except ValueError as e:
+        assert 'http' in str(e)
+    else:
+        raise AssertionError('a non-http endpoint must be refused by name')
+
+
+def test_llm_max_turns_and_sampling_are_session_only(qapp, tmp_path):
+    """The loop parameters steer this client run: set, read back, and
+    refused by name when they are not the number they claim to be."""
+    session, _ = buildSession(qapp, tmp_path)
+    execute(parse('/llm max_turns 4'), session)
+    assert session.max_turns == 4
+    execute(parse('/llm temperature 0.7'), session)
+    assert session.llm.temperature == 0.7
+    execute(parse('/llm max_tokens 321'), session)
+    assert session.llm.max_tokens == 321
+    for line in ('/llm max_turns zero', '/llm temperature -1',
+                 '/llm max_tokens -8'):
+        try:
+            execute(parse(line), session)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('%s must be refused by name' % line)
+    assert session.max_turns == 4
 
 
 def test_a_prompt_is_answered_and_its_turn_is_left_on_disk(qapp, tmp_path):
@@ -223,14 +298,16 @@ def test_unknown_command_is_refused_named(qapp, tmp_path):
     except ValueError as e:
         text = str(e)
         assert 'banana' in text
-        for command in ('/shots', '/session', '/history', '/help', '/quit'):
+        for command in ('/llm', '/shots', '/session', '/history', '/help',
+                        '/quit'):
             assert command in text
     else:
         raise AssertionError('an unknown command must be refused by name')
 
 
 def test_help_names_the_commands():
-    for command in ('/shots', '/session', '/history', '/help', '/quit'):
+    for command in ('/llm', '/shots', '/session', '/history', '/help',
+                    '/quit'):
         assert command in help_text()
 
 

@@ -8,17 +8,46 @@
 # ****************************************************
 """The `/` commands of the viz_cli REPL, parsed and answered by name.
 
-What a command answers is named when it cannot: an unknown command, a
-missing name on `/session` -- each refusal is a `ValueError` carrying the
-name the caller typed, which is the style the rest of the repository
-applies (`refused by name, the reason named where the user reads it`).
+What a command answers is named when it cannot: an unknown command, an
+unknown `/llm` field, a missing name on `/session` -- each refusal is a
+`ValueError` carrying the name the caller typed, which is the style the
+rest of the repository applies (`refused by name, the reason named
+where the user reads it`).
+
+Three of the fields `/llm` sets are the ones the GUI reads too --
+`endpoint`, `model`, `key`: they are written in the **same**
+preferences file the application builds from (`QVizPreferences.persist`,
+the file `~/.imasviz/preferences`), so the two interfaces stay on the
+same endpoint. The loop's own parameters (`max_turns`, `temperature`,
+`max_tokens`) steer this client run only, and say so when they are set;
+they have no line in that file, and inventing one would cost the GUI a
+line it does not read.
 """
+
+LLM_FIELDS = ('endpoint', 'model', 'key', 'max_turns', 'temperature',
+              'max_tokens')
+LLM_FILE_FIELDS = {
+    'endpoint': 'AgentLLMEndpoint',
+    'model': 'AgentLLMModel',
+    'key': 'AgentLLMApiKey',
+}
 
 HELP = """viz_cli — IMASViz driven without its window: the agent, offscreen.
 
 A line runs the agent (the LLM and the tools of this session); the
 images it drew and its transcript are left in the turns directory,
 named after the turn. Commands:
+
+  /llm                       the parameters in force
+  /llm endpoint URL          the model's endpoint, http://host:port/v1
+  /llm model NAME            the model to send; 'auto' = the endpoint's
+                             first /v1/models entry, read on first use
+  /llm key TOKEN             sent as Authorization when non-empty
+  /llm max_turns N           (this run only) the agent's turn limit
+  /llm temperature X         (this run only) of every call it sends
+  /llm max_tokens N          (this run only) of every call it sends
+                             endpoint, model and key are persisted in the
+                             preferences file the GUI reads; the others are not
 
   /shots [DIR]               where the turns save their images
   /session                   the cases open in this session
@@ -41,7 +70,7 @@ class Command:
         self.words = words
 
 
-COMMANDS = ('shots', 'session', 'history', 'help', 'quit')
+COMMANDS = ('llm', 'shots', 'session', 'history', 'help', 'quit')
 
 
 def parse(line):
@@ -74,6 +103,8 @@ def execute(cmd, session):
         print(help_text())
     elif cmd.name == 'quit':
         return False
+    elif cmd.name == 'llm':
+        _llm(cmd, session)
     elif cmd.name == 'shots':
         _shots(cmd, session)
     elif cmd.name == 'session':
@@ -83,7 +114,105 @@ def execute(cmd, session):
     return True
 
 
-# -------------------------------------------------------------------- /shots
+# ---------------------------------------------------------------------- /llm
+
+def _llm(cmd, session):
+    if not cmd.words:
+        _llmShow(session)
+        return
+    if len(cmd.words) != 2:
+        raise ValueError(
+            '/llm %s needs its value: /llm prints the ones in force, and '
+            'its fields are %s.'
+            % (cmd.words[0], ', '.join(LLM_FIELDS)))
+    field, value = cmd.words
+    if field == 'endpoint':
+        if not value.startswith(('http://', 'https://')):
+            raise ValueError(
+                '%r is not an endpoint: name it as http://host:port/v1 '
+                '(the one this client answers today: %s).'
+                % (value, session.llm.endpoint))
+        _setFileField(session, 'endpoint', value)
+    elif field == 'model':
+        _setFileField(session, 'model', '' if value == 'auto' else value)
+        if value == 'auto':
+            print('/llm — model = auto: the first entry of /v1/models is '
+                  'the one sent on first use.', flush=True)
+    elif field == 'key':
+        _setFileField(session, 'key', value)
+    elif field == 'max_turns':
+        _setNumber(None, value, min=1)
+        session.max_turns = int(value)
+        print('/llm — max_turns = %s (this client run; not persisted).'
+              % value, flush=True)
+    elif field == 'temperature':
+        try:
+            number = float(value)
+        except ValueError:
+            raise ValueError('%r is not a temperature: name it as a number.'
+                             % value)
+        if not 0.0 <= number <= 2.0:
+            raise ValueError(
+                '%s is not a temperature: the endpoints here take 0 to 2.'
+                % value)
+        session.llm.temperature = number
+        print('/llm — temperature = %s (this client run; not persisted).'
+              % value, flush=True)
+    elif field == 'max_tokens':
+        _setNumber(None, value, min=1)
+        session.llm.max_tokens = int(value)
+        print('/llm — max_tokens = %s (this client run; not persisted).'
+              % value, flush=True)
+    else:
+        raise ValueError(
+            '/llm %s — this client does not answer that field. Its fields: '
+            '%s.' % (field, ', '.join(LLM_FIELDS)))
+
+
+def _setNumber(placeholder, value, min=1):
+    try:
+        number = int(value)
+    except ValueError:
+        raise ValueError('%r is not a number: name it as an integer.' % value)
+    if number < min:
+        raise ValueError(
+            '%s is outside the range the loop takes: %d and up.'
+            % (value, min))
+    return number
+
+
+def _setFileField(session, field, value):
+    """One of the three fields the GUI reads too: set it in force and in
+    the file, then rebuild the client of this session around it."""
+    from imasviz.VizUtils import QVizPreferences
+    key = LLM_FILE_FIELDS[field]
+    old = getattr(QVizPreferences, key)
+    if old == value:
+        print('/llm — %s is already in force: %r' % (field, value),
+              flush=True)
+        return
+    QVizPreferences.persist(**{key: value})
+    setattr(QVizPreferences, key, value)
+    session.llm.apply()
+    print('/llm — %s = %s (in force now, and persisted in '
+          '~/.imasviz/preferences, the file the GUI reads).'
+          % (field, value), flush=True)
+
+
+def _llmShow(session):
+    print('LLM — what is in force for this session:')
+    print('  endpoint   : %s' % session.llm.endpoint)
+    print('  model      : %s'
+          % (session.llm.model
+             or '— the first entry of /v1/models, read on first use'))
+    print('  key        : %s' % ('(empty: no Authorization header)'
+                                 if not session.llm.key else 'set'))
+    print('  max_turns  : %d   (this client run)' % session.max_turns)
+    print('  temperature: %s (this client run)' % session.llm.temperature)
+    print('  max_tokens : %d   (this client run)' % session.llm.max_tokens)
+
+
+# --------------------------------------------------------------------- /shots
 
 def _shots(cmd, session):
     import os

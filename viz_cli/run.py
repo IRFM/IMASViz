@@ -78,10 +78,11 @@ def parseArguments(argv=None):
 
 
 def _candidates():
-    """Tab completion: the commands, so a completed tab leaves a word the
-    line can still take an argument on."""
-    from viz_cli.commands import COMMANDS
+    """Tab completion: the commands and the fields they steer, so a
+    completed tab leaves a word the line can still take an argument on."""
+    from viz_cli.commands import COMMANDS, LLM_FIELDS
     candidates = ['/' + c + ' ' for c in COMMANDS]
+    candidates += ['/llm ' + f + ' ' for f in LLM_FIELDS]
     candidates += ['/session save ', '/session restore ']
     return sorted(set(candidates))
 
