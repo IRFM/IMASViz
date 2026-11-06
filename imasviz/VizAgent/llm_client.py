@@ -30,6 +30,21 @@ import urllib.request
 import urllib.parse
 
 
+def _messagesForRequest(messages):
+    """The messages as sent, with the loop's tail made endpoint-safe.
+
+    The agent loop ends a request on a ``tool`` result and asks again.
+    An endpoint that requires the last message to be a user message
+    -- Ollama answers ``HTTP 500: no user query found in messages`` on
+    exactly that shape -- is not asked for anything but its answer: one
+    short user line is appended, and nothing else is moved.
+    """
+    if messages and messages[-1].get('role') == 'tool':
+        return list(messages) + [
+            {'role': 'user', 'content': 'Continue.'}]
+    return messages
+
+
 class LLMResponse:
     """One response from the LLM, as the agent loop reads it.
 
@@ -102,7 +117,7 @@ class LLMClient:
         model = self._resolveModel()
         payload = {
             'model': model,
-            'messages': messages,
+            'messages': _messagesForRequest(messages),
             'max_tokens': max_tokens,
             'temperature': temperature,
             'reasoning_effort': 'none',

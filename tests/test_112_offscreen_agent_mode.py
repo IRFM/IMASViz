@@ -26,7 +26,7 @@ What it pins, in the order the mode must answer them:
 import base64
 import os
 
-from imasviz.VizAgent.llm_client import LLMResponse
+from imasviz.VizAgent.llm_client import LLMResponse, _messagesForRequest
 
 from mcp_server.agent_mode import buildLLM, runAgentMode
 from mcp_server.run import parseArguments
@@ -193,6 +193,32 @@ def test_no_endpoint_keeps_the_preferences(monkeypatch, tmp_path):
     client = buildLLM(parseArguments(['--agent', 'x']))
     assert client.model == 'qwen3.8:27b'
     assert client.endpoint == 'http://127.0.0.1:11434/v1'
+
+
+def test_a_request_ending_on_a_tool_result_is_nudged_with_a_user_line():
+    """The loop always ends a request on the last tool result. An
+    endpoint that requires the last message to be a user one (Ollama:
+    ``HTTP 500: no user query found in messages``) gets one short line
+    appended -- and a request that already ends on a user message is
+    sent untouched, for the other endpoints."""
+    tool_tail = [
+        {'role': 'system', 'content': 'instruct'},
+        {'role': 'user', 'content': 'do it'},
+        {'role': 'assistant', 'content': None, 'tool_calls': [{}]},
+        {'role': 'tool', 'name': 'list_cases',
+         'content': '{"result": []}'},
+    ]
+    sent = _messagesForRequest(tool_tail)
+    assert sent is not tool_tail
+    assert sent[:-1] == tool_tail
+    assert sent[-1] == {'role': 'user', 'content': 'Continue.'}
+
+    user_tail = [
+        {'role': 'user', 'content': 'do it'},
+        {'role': 'assistant', 'content': 'done'},
+    ]
+    assert _messagesForRequest(user_tail) is user_tail
+    assert _messagesForRequest([]) == []
 
 
 def test_empty_prompt_is_refused_before_anything(qapp, tmp_path):
