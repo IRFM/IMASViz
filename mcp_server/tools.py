@@ -97,11 +97,27 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     @server.tool(name='list_idss')
     def list_idss(uri: str):
-        """Every IDS root of the case, and the occurrences each one holds.
+        """Every IDS the case's data dictionary declares, and the occurrences
+        each one holds -- including the roots that hold no data (an empty
+        occurrence list). Asked of the case itself, never listed from a file.
 
-        Asked of the case itself, not listed from a file.
+        For the short list of the IDS the case actually holds, use
+        list_case_idss instead: its names can be trusted as the case's own,
+        because they are read from the case through
+        DBEntry.list_all_occurrences, not recalled.
         """
         return {'idss': _run(partial(core.list_idss, uri))}
+
+    @server.tool(name='list_case_idss')
+    def list_case_idss(uri: str):
+        """Only the IDS the case actually holds, and the occurrences each one
+        names -- the roots the dictionary declares but the case does not fill
+        are left out.
+
+        The source of truth for "what is in this case". Do not present an IDS
+        list you did not read from this call.
+        """
+        return {'idss': _run(partial(core.list_case_idss, uri))}
 
     @server.tool(name='load_ids')
     def load_ids(uri: str, ids_name: str, occurrence: int = 0,
