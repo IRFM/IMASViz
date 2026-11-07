@@ -503,7 +503,7 @@ def test_plot_report_writes_the_window_and_refuses_the_panel(core):
     session, home = core
     session.select_signals(CASE_URI, [TIME_PATH, IP_PATH], additive=False)
     figure = session.plot_selection(CASE_URI)['figures'][0]
-    assert figure.startswith('SlicesPlot'), figure
+    assert figure.startswith('Plot'), figure
 
     answer = session.plot_report(figure, name='mcp_plot_report')
     saved = answer['saved_to']
