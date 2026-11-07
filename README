@@ -89,6 +89,13 @@ the following commands:
     setenv VIZ_HOME $PWD
     setenv UDA_DISABLED 1 #disable UDA
 
+The block above names the **foss** HLI. On the **gateway** nodes (whose profile
+pins `SciPy-bundle/2023.12-iimkl`) the foss variant fails to load that
+requirement, and what runs is the **intel** HLI instead —
+`IMAS-Python/2.3.0-intel-2023b`, `PyQtGraph/0.13.7-intel-2023b`. See [Starting
+on the Gateway](#starting-on-the-gateway): the scripts in `scripts/` load that
+stack and set this environment for you.
+
 IMASViz reads the IMAS Data Dictionary at run time through the Access Layer
 Python bindings (imas.ids_metadata), so no parser code is generated any more.
 No dictionary file is needed either: the shot view asks the case it has opened
@@ -270,6 +277,63 @@ Stylage and cursors are kept in the hands of the user; they are not offered
 as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`
 (without the SDK) and `tests/test_101_mcp_tools_http.py` (over a real
 transport).
+
+### The terminal client (viz_cli)
+
+The same gestures, from the shell, without a window: `viz_cli` is the in-app
+agent on your own keyboard. It holds **one** agent session open for its whole
+life — the offscreen application, its core, and one `AgentLoop` — so a prompt
+can point at what the one before it named. The arrow keys, the tab-completion
+and the history are the client's own (this node's Python has no C module behind
+`readline`), and the history file is the one it keeps in
+`$HOME/.imasviz/cli_history`, between runs, as the preferences are kept.
+
+    python3 -m viz_cli                          # the REPL, offscreen
+    python3 -m viz_cli "trace le champ"         # one prompt, then exit (0 if it
+                                                # answered, 1 if it refused)
+
+Inside the REPL, a line runs the agent; the `/` commands steer it:
+
+- `/help` — the commands and the gestures this instance offers;
+- `/llm <field> <value>` — the model it runs against, read from and written to
+  the **same** `$HOME/.imasviz/preferences` the GUI reads (`AgentLLMEndpoint`,
+  `AgentLLMModel`, `AgentLLMApiKey`); `/llm` alone reads them back.
+  `max_turns`, `temperature` and `max_tokens` live on the live client, for that
+  run;
+- `/mcp [name]` — the tools this session exposes and, for one, how to call it
+  (e.g. `/mcp plot_selection`);
+- `/session` — the cases open in this session, or `/session save <name>` and
+  `/session restore <name>` to write and put one back;
+- `/shots [dir]` — where the turns' images and transcripts are saved;
+- `/history` — the prompts of this client run;
+- `/quit` — leave (the arrows keep your prompts for the next run).
+
+What a turn answers is the answer of the application the way `test_100` pins
+it: a refused gesture is named, and `get_logs` holds those refusals. On a node
+without a display the client is offscreen by design; `--display` keeps the
+window when you have one.
+
+## Starting on the Gateway
+
+The two launchers in `scripts/` start IMASViz **from sources** on this node,
+loading the module stack and the production environment with them. They use the
+**intel** HLI: on the gateway nodes whose profile pins `SciPy-bundle/2023.12-iimkl`,
+the **foss** variant (the one the `Setting the environment` section above lists)
+fails to load its SciPy-bundle requirement, so it is not what runs here. `module`
+is a shell function, and the scripts never pipe it — a pipe would run the load in
+a subshell and lose the environment it sets.
+
+    scripts/run_imasviz.sh                      # the application, with its window (needs X)
+    scripts/run_viz_cli.sh                      # the terminal client (the `viz_cli` REPL above)
+    scripts/run_viz_cli.sh "trace le champ"     # one prompt through the client, then exit
+
+Both set, for the production run: `VIZ_HOME` (the repository root, found from the
+script's own location), `VIZ_PRODUCTION=1`, `UDA_DISABLED=1`,
+`TS_MAPPINGS_DIR` (default `$repo/ts_mapping_files`) and `IMAS_VIZ_VERSION`
+(overridable from the environment). They do **not** replace the modules'
+`PYTHONPATH` (that would drop the PySide6/IMAS paths the modules export); the
+code appends `VIZ_HOME` to `sys.path` itself. `run_viz_cli.sh` hands any argument
+straight to `viz_cli`, so it is the one to start a one-shot prompt from the shell.
 
 ## The in-app agent
 
