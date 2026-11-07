@@ -585,6 +585,110 @@ class McpGuiCore:
                 'interpolation': interpolation,
                 'kind': type(frame).__name__}
 
+    def plot_slice_all(self, uri, ids, occurrence=0, into_figure_key=None):
+        """Every 1D-profile leaf of one IDS that holds a value in this case,
+        at the slice the tree is standing on, into one `Plot:` figure.
+
+        The reader answers which leaf is filled and which reads empty, and it
+        already knows the structure, so it is the robust way to draw a whole
+        slice: an IDS whose profile is filled at a few leaves draws those, and
+        the empty ones are counted and said, not mistaken for curves. An IDS
+        that holds zero filled 1D-profile at the occurrence is refused by name,
+        so the answer is never an empty window. An interpolated value at an
+        arbitrary time is `plot_slice`, which is the other surface.
+        """
+        import numpy as np
+        from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
+        from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+        from imasviz.VizUtils import FigureTypes
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+            import QVizPlotOneNode
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
+
+        view = self._viewForUri(uri)
+        if not self.api.IDSDataAlreadyFetched(view, ids, occurrence):
+            self.load_ids(uri, ids, occurrence)
+
+        def plottedOne(node):
+            try:
+                return QVizNodePlotting(node).plottedAxes() == 1
+            except Exception:
+                return False
+
+        nodes = [n for n in view.signalsList
+                 if n.getIDSName() == ids
+                 and n.getOccurrence() == occurrence
+                 and plottedOne(n)]
+        if not nodes:
+            raise ValueError(
+                'plot_slice_all: the case holds no 1D-profile leaf of the %s '
+                'IDS at occurrence %d, so there is no slice to draw. '
+                'search_nodes names what this tree does hold.'
+                % (ids, occurrence))
+
+        try:
+            time_index = int(nodes[0].timeValue())
+        except Exception:
+            time_index = 0
+        reader = QVizTensorDataAccess(view.dataSource)
+
+        if into_figure_key is not None:
+            command = QVizPlotOneNode(view, nodes[0],
+                                      intoFigureKey=into_figure_key)
+            frame = command.frameFor()
+            if not hasattr(frame, 'pgPlotWidget'):
+                command.discardIfEmpty(frame)
+                raise ValueError(
+                    'plot_slice_all: %r is not a `Plot` figure: name a curve '
+                    'figure, e.g. Plot1.' % into_figure_key)
+        else:
+            command = QVizPlotOneNode(view, nodes[0])
+            frame = command.newFigure(FigureTypes.CURVEPLOTTYPE, QVizCurvePlot)
+
+        drawn = 0
+        empty = 0
+        for node in nodes:
+            leaf = node.getPath()
+            # The tree path is `core_profiles/profiles_1d(0)/grid/rho_tor_norm`;
+            # the legend reads what comes after the IDS root, which keeps the
+            # array of structures the profile is held by and stays unique.
+            label = leaf[len(ids) + 1:] if leaf.startswith(ids + '/') else leaf
+            try:
+                x, y = reader.GetSignal(treeNode=node, plotWidget=None,
+                                        as_function_of_time=False,
+                                        time_index=time_index)
+                x = np.asarray(x, dtype=float).ravel()
+                y = np.asarray(y, dtype=float).ravel()
+            except Exception:
+                empty += 1
+                continue
+            if x.size and x.size == y.size:
+                frame.pgPlotWidget.plot(x, y, name=label)
+                drawn += 1
+            else:
+                empty += 1
+
+        if drawn == 0:
+            command.discardIfEmpty(frame)
+            raise ValueError(
+                'plot_slice_all: the %s IDS at occurrence %d holds no filled '
+                '1D-profile in this case: all %d read empty, so there is '
+                'nothing to draw.' % (ids, occurrence, len(nodes)))
+
+        frame.pgPlotWidget.setLabel('left', ids)
+        frame.pgPlotWidget.setTitle(
+            'slice of %s (occurrence %d, slice %d): '
+            % (ids, occurrence, time_index) + str(drawn)
+            + ' of ' + str(len(nodes)) + ' profiles')
+        self._embedIfNew(command, frame)
+        return {'figure': frame.figureKey,
+                'drawn': drawn,
+                'empty': empty,
+                'candidates': len(nodes),
+                'occurrence': occurrence,
+                'time_slice_index': time_index,
+                'kind': type(frame).__name__}
+
     def plot_selection(self, uri):
         """The case's selection, drawn by `QVizPlotAsSlices` from this view alone.
 

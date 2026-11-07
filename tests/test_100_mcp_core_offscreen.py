@@ -369,6 +369,48 @@ def test_an_entry_the_case_does_not_offer_is_refused_by_name(core):
                            occurrence=0, ids_name=IDS_NAME)
 
 
+def test_slice_plugin_offered_and_draws_the_filled_profiles(core):
+    """The Slice entry is offered for an IDS root, and running it adds a
+    window that holds the IDS's filled 1D-profiles as curves -- the reader
+    says which leaf holds a value, and the ones that do are drawn, in the
+    `Plot` namespace, so the *Windows* menu reaches them.
+
+    `core_profiles` occurrence 0 holds a handful of filled profiles and many
+    that read empty in this shot; the window shows the filled ones, not the
+    empty ones mistaken for curves.
+    """
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    offer = session.list_plugins(CASE_URI, 'core_profiles')
+    entry = next(e for e in offer['entries'] if e['plugin'] == 'VizSlicePlugin')
+
+    before_keys = set(session.api.figureframes)
+    session.run_plugin(CASE_URI, 'VizSlicePlugin', entry['entry'],
+                       occurrence=0, ids_name='core_profiles')
+    new_keys = set(session.api.figureframes) - before_keys
+    assert new_keys, 'the slice entry added no window'
+
+    from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
+    figure = session.api.figureframes[next(iter(new_keys))]
+    assert isinstance(figure, QVizCurvePlot), 'the slice window is a curve figure'
+    curves = figure.styleCurves()
+    assert len(curves) > 0, 'the filled profiles were not drawn'
+
+
+def test_slice_all_refuses_an_ids_the_case_does_not_hold_and_costs_no_window(core):
+    """`plot_slice_all` on an IDS the case does not build is refused -- by
+    whichever branch answers first -- and, in the repository style, costs no
+    window: a refusal is not an empty figure on the screen."""
+    session, _home = core
+    before = set(session.api.figureframes)
+    with pytest.raises(ValueError) as exc:
+        session.plot_slice_all(CASE_URI, 'no_such_ids_root', occurrence=0)
+    refusal = str(exc.value)
+    assert 'no_such_ids_root' in refusal, 'the refusal names what was asked'
+    assert not (set(session.api.figureframes) - before), \
+        'a refusal left a window on the screen'
+
+
 # ------------------------------------------------------------------- session
 
 

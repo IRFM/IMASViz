@@ -877,34 +877,37 @@ def aShotView(qapp):
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
-def test_the_reference_case_offers_two_lines_for_equilibrium(qtbot):
+def test_the_reference_case_offers_three_lines_for_equilibrium(qtbot):
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     entries = QVizPluginCatalog(frame.dataTreeView).entriesFor(
         frame.dataTreeView.IDSRoots['equilibrium'])
-    # equilibriumcharts offers one and VizProfiles_plugin one -- and the numbers
-    # they run under are theirs, not their place in the menu. The Profiles plugin
-    # used to answer two lines here, each spelling the array of structures and the
-    # abscissa in its text; the window asks both with a control now.
+    # equilibriumcharts offers one, VizProfiles_plugin one and VizSlicePlugin one
+    # -- and the numbers they run under are theirs, not their place in the menu.
+    # The Profiles plugin used to answer two lines here, each spelling the array
+    # of structures and the abscissa in its text; the window asks both with a
+    # control now.
     assert [(entry.pluginName, entry.number, entry.label)
             for entry in entries] == [
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
-        ('VizProfiles_plugin', 0, 'Plot what the equilibrium IDS holds...')]
+        ('VizProfiles_plugin', 0, 'Plot what the equilibrium IDS holds...'),
+        ('VizSlicePlugin', 0, 'Draw the slice of the equilibrium IDS…')]
 
 
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
-def test_the_reference_case_offers_a_line_for_core_profiles(qtbot):
+def test_the_reference_case_offers_lines_for_core_profiles(qtbot):
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     entries = QVizPluginCatalog(frame.dataTreeView).entriesFor(
         frame.dataTreeView.IDSRoots['core_profiles'])
     # An IDS with no list of quantities of its own used to get no line at all: the
     # Profiles plugin knew five IDSs by name. What it can offer is the tree's
-    # answer, so any IDS root earns the line.
+    # answer, so any IDS root earns the line -- and the slice entry is offered on
+    # every IDS root the same way, so this one earns that line too.
     assert [(entry.pluginName, entry.number) for entry in entries] == \
-        [('VizProfiles_plugin', 0)]
+        [('VizProfiles_plugin', 0), ('VizSlicePlugin', 0)]
 
 
 @pytest.mark.case
@@ -967,13 +970,14 @@ def test_the_right_click_menu_of_a_node_offers_the_plugins_of_that_node(qtbot):
     assert shiboken6.isValid(plugins)
     assert [action.text() for action in plugins.actions()] == [
         'Equilibrium overview...',
-        'Plot what the equilibrium IDS holds...']
+        'Plot what the equilibrium IDS holds...',
+        'Draw the slice of the equilibrium IDS…']
 
 
 @pytest.mark.case
 @pytest.mark.ui
 @pytest.mark.dd
-def test_a_view_asks_its_two_plugins_once_across_its_menus(qtbot):
+def test_a_view_asks_its_three_plugins_once_across_its_menus(qtbot):
     frame = aShotView(qtbot)
     qtbot.addWidget(frame)
     view = frame.dataTreeView
@@ -981,9 +985,9 @@ def test_a_view_asks_its_two_plugins_once_across_its_menus(qtbot):
     second = QVizPluginMenu().catalogOf(view)
     assert first is second is view.pluginCatalog
     assert sorted(name for name, _ in first.plugins()) == \
-        ['VizProfiles_plugin', 'equilibriumcharts']
+        ['VizProfiles_plugin', 'VizSlicePlugin', 'equilibriumcharts']
     equilibrium = view.IDSRoots['equilibrium']
     for _ in range(3):
         menu = QMenu()
         menu.setParent(view)
-        assert QVizPluginMenu().buildPluginsMenu(equilibrium, view, menu) == 2
+        assert QVizPluginMenu().buildPluginsMenu(equilibrium, view, menu) == 3

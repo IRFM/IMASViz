@@ -203,15 +203,20 @@ def test_the_entry_is_offered_on_every_ids_of_the_case(session):
     what it called dynamic. Each of the four IDSs walked here earns the line, and
     the text of the line says which IDS it was offered on.
     """
-    assert session.entriesOf('magnetics') == \
-        [(PLUGIN, 0, 'Plot what the magnetics IDS holds...')]
-    assert session.entriesOf('wall') == \
-        [(PLUGIN, 0, 'Plot what the wall IDS holds...')]
-    # equilibrium carries the other plugin's line too, and the two numbers are the
-    # plugins' own, not their place in the menu.
+    # The slice entry is offered on every IDS root the same way, so each of them
+    # carries that line after the Profiles one.
+    assert session.entriesOf('magnetics') == [
+        (PLUGIN, 0, 'Plot what the magnetics IDS holds...'),
+        ('VizSlicePlugin', 0, 'Draw the slice of the magnetics IDS…')]
+    assert session.entriesOf('wall') == [
+        (PLUGIN, 0, 'Plot what the wall IDS holds...'),
+        ('VizSlicePlugin', 0, 'Draw the slice of the wall IDS…')]
+    # equilibrium carries the other plugin's line too, and the three numbers are
+    # the plugins' own, not their place in the menu.
     assert session.entriesOf('equilibrium') == [
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
-        (PLUGIN, 0, 'Plot what the equilibrium IDS holds...')]
+        (PLUGIN, 0, 'Plot what the equilibrium IDS holds...'),
+        ('VizSlicePlugin', 0, 'Draw the slice of the equilibrium IDS…')]
 
 
 def test_the_entry_asks_its_window_nothing_of_its_user(session):
