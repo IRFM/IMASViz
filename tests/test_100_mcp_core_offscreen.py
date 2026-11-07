@@ -369,6 +369,48 @@ def test_an_entry_the_case_does_not_offer_is_refused_by_name(core):
                            occurrence=0, ids_name=IDS_NAME)
 
 
+def test_slice_plugin_offered_and_draws_the_filled_profiles(core):
+    """The Slice entry is offered for an IDS root, and running it adds a
+    window that holds the IDS's filled 1D-profiles as curves -- the reader
+    says which leaf holds a value, and the ones that do are drawn, in the
+    `Plot` namespace, so the *Windows* menu reaches them.
+
+    `core_profiles` occurrence 0 holds a handful of filled profiles and many
+    that read empty in this shot; the window shows the filled ones, not the
+    empty ones mistaken for curves.
+    """
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    offer = session.list_plugins(CASE_URI, 'core_profiles')
+    entry = next(e for e in offer['entries'] if e['plugin'] == 'VizSlicePlugin')
+
+    before_keys = set(session.api.figureframes)
+    session.run_plugin(CASE_URI, 'VizSlicePlugin', entry['entry'],
+                       occurrence=0, ids_name='core_profiles')
+    new_keys = set(session.api.figureframes) - before_keys
+    assert new_keys, 'the slice entry added no window'
+
+    from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
+    figure = session.api.figureframes[next(iter(new_keys))]
+    assert isinstance(figure, QVizCurvePlot), 'the slice window is a curve figure'
+    curves = figure.styleCurves()
+    assert len(curves) > 0, 'the filled profiles were not drawn'
+
+
+def test_slice_all_refuses_an_ids_the_case_does_not_hold_and_costs_no_window(core):
+    """`plot_slice_all` on an IDS the case does not build is refused -- by
+    whichever branch answers first -- and, in the repository style, costs no
+    window: a refusal is not an empty figure on the screen."""
+    session, _home = core
+    before = set(session.api.figureframes)
+    with pytest.raises(ValueError) as exc:
+        session.plot_slice_all(CASE_URI, 'no_such_ids_root', occurrence=0)
+    refusal = str(exc.value)
+    assert 'no_such_ids_root' in refusal, 'the refusal names what was asked'
+    assert not (set(session.api.figureframes) - before), \
+        'a refusal left a window on the screen'
+
+
 # ------------------------------------------------------------------- session
 
 
@@ -654,6 +696,61 @@ def test_plot_one_time_and_along_time_are_refused_named(core):
     assert 'contradict' in refusal.lower()
     assert 'drop' in refusal.lower(), 'the refusal says how to ask the same ' \
                                       'thing the other way'
+
+
+def test_plot_slice_draws_a_leaf_interpolated_via_get_slice(core):
+    """`plot_slice` answers one 1D-profile leaf at an instant through the
+    Access Layer's own `DBEntry.get_slice` — the value the Access Layer
+    answers at that instant, not a GUI-side lerp — and the curve holds the
+    leaf's own coordinate, which is independent of time.
+
+    With `interpolation='linear'`, `time_slice_time` is the exact instant
+    asked at, because the HLI interpolates between the two slices that
+    bracket it. The answer names the figure, the point count the profile
+    holds, and both times apart.
+    """
+    session, _home = core
+    leaf = 'core_profiles.profiles_1d[0].electrons.temperature'
+    ans = session.plot_slice(CASE_URI, leaf, time=44.0, interpolation='linear')
+    assert 'figure' in ans
+    assert ans['figure'].startswith('Plot'), ans
+    assert ans['drawn'] > 0, 'a 1D profile holds points'
+    assert ans['time_requested'] == pytest.approx(44.0)
+    assert abs(ans['time_slice_time'] - 44.0) < 1e-6, \
+        'linear answers at the exact instant asked at (the HLI interpolates)'
+
+
+def test_plot_slice_closest_answers_the_slice_the_case_holds(core):
+    """`interpolation='closest'` returns the case's own slice near the ask:
+    `time_slice_time` is a slice the case holds (near 44), not the ask. A
+    time far outside the pulse is clamped to the last slice the case holds
+    and named as such — not echoed back as the slice drawn, and not refused.
+    """
+    session, _home = core
+    leaf = 'core_profiles.profiles_1d[0].electrons.temperature'
+    near = session.plot_slice(CASE_URI, leaf, time=44.0,
+                              interpolation='closest')
+    assert near['drawn'] > 0
+    assert abs(near['time_slice_time'] - 44.0) < 0.5, \
+        'closest answers the case\'s own slice near the ask'
+    clamped = session.plot_slice(CASE_URI, leaf, time=1e6,
+                                 interpolation='closest')
+    assert clamped['time_slice_time'] < 1e4, \
+        'a time far outside the pulse answers the last slice the case holds'
+
+
+def test_plot_slice_refuses_a_leaf_the_case_does_not_hold_named(core):
+    """A leaf the tree does not hold is refused by name, in the repository
+    style: the reason is in the message, and it says that path is not a
+    leaf of this case (so the fix is to name one `search_nodes` can give).
+    No empty figure is left on the screen."""
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    with pytest.raises(ValueError) as exc:
+        session.plot_slice(CASE_URI, 'core_profiles.no_such_leaf', time=44.0)
+    refusal = str(exc.value)
+    assert 'not a leaf of' in refusal
+    assert 'core_profiles.no_such_leaf' in refusal
 
 
 # -------------------------------------------------------------------- export

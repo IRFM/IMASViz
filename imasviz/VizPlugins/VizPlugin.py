@@ -58,6 +58,7 @@ RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
                      # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
                      # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',
                      'VizProfiles_plugin': 'viz_Profiles.VizProfiles_plugin',
+                     'VizSlicePlugin': 'viz_slice.VizSlicePlugin',
                      # 'simplePlotPluginExample': 'viz_simple_plot_example.simplePlotPluginExample',
                      # 'ETSpluginIMASViz': 'viz_ETS.ETSpluginIMASViz',
                      # A plugin drawn in Qt Designer registers the window it is

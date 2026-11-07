@@ -222,6 +222,36 @@ TOOLS = [
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
     _tool(
+        'plot_slice',
+        'Draw one 1D-profile leaf at a single time, through the Access '
+        'Layer\'s own DBEntry.get_slice (the value the Access Layer answers '
+        'at that instant, not a GUI-side lerp). The coordinate is the leaf\'s '
+        'own (independent of time); the curve is its value at `time`. '
+        'interpolation: "linear" (default), "closest" (the case\'s nearest '
+        'slice), or "previous" (the one at or before `time`). A time outside '
+        'the case\'s range answers the nearest slice the case holds, and the '
+        'answer names time_requested and time_slice_time apart. Not a '
+        '2D-pictorial leaf, nor a 0D scalar.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'leaf': {'type': 'string',
+                     'description': 'the full data path of the leaf, e.g. '
+                                    'core_profiles.profiles_1d[0].'
+                                    'electrons.temperature'},
+            'time': {'type': 'number',
+                     'description': 'the instant the profile is read at'},
+            'occurrence': {'type': 'integer', 'default': 0},
+            'interpolation': {'type': 'string',
+                              'enum': ['linear', 'closest', 'previous'],
+                              'default': 'linear'},
+            'into_figure_key': {'type': ['string', 'null'],
+                                'description': 'an open Plot: figure to add '
+                                               'to; by default a new '
+                                               'figure is opened'},
+        }, 'required': ['uri', 'leaf', 'time'],
+           'additionalProperties': False},
+    ),
+    _tool(
         'plot_selection',
         'Draw the case selection: one curve figure, one window per picture. '
         '`select_signals` first.',
