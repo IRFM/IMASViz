@@ -169,6 +169,7 @@ class McpGuiCore:
                 'parametrized': node.getParametrizedDataPath(),
                 'ids': node.getIDSName(),
                 'occurrence': node.getOccurrence(),
+                'kind': self._leafKind(node),
             })
             if len(found) >= limit:
                 break
@@ -294,6 +295,43 @@ class McpGuiCore:
             'what this tree can give, in every spelling it holds.'
             % (path, view.uri))
 
+    def _leafKind(self, node):
+        """What a plot does with this leaf: `curve`, `image`, or `scalar`.
+
+        Decided by the app's own abscissa rule (`abscissae` of the node's
+        axes), the same one the panel's routing uses, so a tool and a click
+        cannot disagree about whether a leaf is a curve. A curve runs along
+        one abscissa, an image has more than one of its own axes, and a
+        scalar has neither -- the one the read refuses with the panel's
+        "no explicit dependency on current X axis", a phrase that leaves an
+        agent without a panel with nothing to act on.
+        """
+        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+        from imasviz.VizDataAccess.QVizCurveAbscissa import abscissae
+        try:
+            spec = QVizAxesSpec.fromTreeNode(node)
+        except Exception:
+            return 'scalar'
+        if abscissae(spec):
+            return 'curve'
+        if spec.leafAxes():
+            return 'image'
+        return 'scalar'
+
+    def _scalarRefusal(self, path):
+        """The named refusal a scalar leaf earns on the tool path.
+
+        It says what the leaf is, and points at the sibling that is the
+        curve, because that is the answer that ends a retry loop: the panel's
+        "has no explicit dependency on current X axis" names a widget the
+        agent does not have, and a model reads it as "no data" and asks again.
+        """
+        return ('"%s" is a scalar -- one value per element of its array, '
+                'not a curve of time or coordinate. search_nodes marks the '
+                'curves with "kind": "curve"; for a leaf like this the '
+                'sibling "…/data" under the same array element is '
+                'usually the one a plot wanted.' % path)
+
     def _embedIfNew(self, command, frame):
         """A frame the command opened is embedded and shown; a joined one is not.
 
@@ -318,6 +356,12 @@ class McpGuiCore:
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
             import QVizPlotOneNode
         node = self._nodeForPath(view, path)
+        if self._leafKind(node) == 'scalar':
+            # A scalar with no abscissa at all is refused before the command
+            # logs the panel's "no explicit dependency on current X axis" and
+            # returns nothing -- the agent gets the answer and the pointer to
+            # the curve at once, not an opaque line to retry against.
+            raise ValueError(self._scalarRefusal(path))
         command = QVizPlotOneNode(view, node,
                                   intoFigureKey=into_figure_key,
                                   alongTime=along_time)
@@ -408,6 +452,11 @@ class McpGuiCore:
         """
         view = self._viewForUri(uri)
         node = self._nodeForPath(view, path)
+        if self._leafKind(node) == 'scalar':
+            # Refused before the read, in words the agent can act on, rather
+            # than the panel's "no explicit dependency on current X axis"
+            # after it.
+            raise ValueError(self._scalarRefusal(path))
         result = self.api.GetSignal(view, node,
                                     as_function_of_time=as_function_of_time,
                                     coordinate1_index=coordinate_index,
