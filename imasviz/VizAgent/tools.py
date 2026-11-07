@@ -54,7 +54,15 @@ reads them in the log panel.
 When the user asks you to do something, use the tools in the order that
 makes sense: open the case, list what it holds, load what you need,
 search for the exact paths, select them, and draw. Answer with the
-values the tools return, not with guesses."""
+values the tools return, not with guesses.
+
+NE JAMAIS présenter une liste d'IDS d'un cas sans avoir appelé d'abord
+un outil de cas dans cette conversation. list_case_idss(uri) est la
+bonne liste : les IDS que le cas porte, occurrence par occurrence, lus
+de son entrée via DBEntry.list_all_occurrences -- ce que le cas dit,
+pas ce que tu te rappelles. Si aucun cas n'est ouvert, demande à
+l'utilisateur d'ouvrir un cas avant de nommer quoi que ce soit : une
+liste de noms que tu récites n'est pas la vérité du cas."""
 
 
 def _tool(name, description, parameters):
@@ -96,8 +104,25 @@ TOOLS = [
     ),
     _tool(
         'list_idss',
-        'Every IDS root of the case, and the occurrences each one holds. '
-        'Asked of the case itself, not listed from a file.',
+        'Every IDS the case\'s data dictionary declares, and the occurrences '
+        'each one holds -- including the roots that hold no data (an empty '
+        'occurrence list). Asked of the case itself, never listed from a '
+        'file. For the short list of the IDS the case actually holds, use '
+        'list_case_idss instead.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'list_case_idss',
+        'Only the IDS the case actually holds, and the occurrences each one '
+        'names -- the roots the dictionary declares but the case does not '
+        'fill are left out. Asked of the case through '
+        'DBEntry.list_all_occurrences, so the names and counts are the case\'s '
+        'own. This is the list to answer "what is in this case" with; '
+        'recalling IDS names from memory is not. Do not summarise or rename '
+        'the answer, and do not present an IDS list you did not read from '
+        'this call.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
         }, 'required': ['uri'], 'additionalProperties': False},
@@ -169,12 +194,31 @@ TOOLS = [
     _tool(
         'plot_one',
         'Draw one quantity, into the figure its axes call for. '
-        'A curve figure for one axis to draw, a picture window for two.',
+        'A curve figure for one axis to draw, a picture window for two. '
+        '`time` pins a profile to one slice of its dynamic time array: by '
+        'default the nearest slice (the answer names the index and that '
+        'slice\'s own time, not the value asked at), or, with '
+        'time_interp=true, the linear interpolation between the two slices '
+        'that bracket the value (the answer then carries the exact value '
+        'requested). `along_time` and `time` are refused together.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
             'along_time': {'type': ['boolean', 'null']},
             'into_figure_key': {'type': ['string', 'null']},
+            'time': {'type': ['number', 'null'],
+                     'description': 'seconds; the time at which to pin the '
+                                    'profile. Nearest slice by default; '
+                                    'interpolated with time_interp=true.'},
+            'time_interp': {'type': ['boolean', 'null'],
+                            'description': 'when true, interpolates '
+                                           'linearly between the two slices '
+                                           'that bracket the requested time, '
+                                           'leaving the answer\'s '
+                                           'time_slice_time equal to the '
+                                           'exact value asked at, not the '
+                                           'nearest slice. Defaults to '
+                                           'false (nearest slice).'},
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
     _tool(
@@ -400,3 +444,29 @@ TOOLS = [
         }, 'additionalProperties': False},
     ),
 ]
+
+TOOL_PARAMETERS = {
+    tool['function']['name']: tool['function']['parameters']
+    for tool in TOOLS
+}
+
+
+def unknownParameters(name, args):
+    """The names in ``args`` that the tool ``name`` does not take.
+
+    Every tool in ``TOOLS`` declares ``additionalProperties: false`` and
+    lists the names it does take in ``parameters.properties``. An
+    argument whose name is not in that list is one the model invented --
+    ``time_index`` on ``plot_one`` is the one measured -- and the loop
+    must refuse it by naming the parameter that is not there and the ones
+    that are, instead of letting Python's ``TypeError`` (``unexpected
+    keyword argument``) speak for it. An unknown tool name, or a tool that
+    admits extra parameters, answers an empty list.
+    """
+    schema = TOOL_PARAMETERS.get(name)
+    if schema is None:
+        return []
+    if schema.get('additionalProperties', False):
+        return []
+    allowed = set(schema.get('properties', {}))
+    return sorted(set(args or {}) - allowed)

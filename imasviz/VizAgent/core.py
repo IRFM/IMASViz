@@ -115,6 +115,31 @@ class McpGuiCore:
                  'occurrences': sorted(occurrences.occurrencesOf(name))}
                 for name in sorted(view.IDSRoots)]
 
+    def list_case_idss(self, uri):
+        """Only the IDS the case actually holds -- the short, grounded list.
+
+        `list_idss` answers the dictionary's declaration: every root of the
+        case's data dictionary, the ones that hold no data included (an empty
+        occurrence list). A long list is what a model that is asked to
+        *summarise* it invents around. This one answers what the case names
+        through `DBEntry.list_all_occurrences` and keeps only the IDS whose
+        occurrence list is non-empty -- "what is in this case", in the words
+        the case says, not a list recalled from training. The same
+        `QVizCaseOccurrences` the application uses to colour the tree, so the
+        names and the counts are the truth the user reads on screen.
+        """
+        view = self._viewForUri(uri)
+        from imasviz.VizDataSource.QVizCaseOccurrences import \
+            QVizCaseOccurrences
+        occurrences = QVizCaseOccurrences(view.dataSource)
+        held = {}
+        for name in sorted(view.IDSRoots):
+            occ = sorted(occurrences.occurrencesOf(name))
+            if occ:
+                held[name] = occ
+        return [{'name': name, 'occurrences': held[name]}
+                for name in sorted(held)]
+
     def load_ids(self, uri, ids_name, occurrence=0, slices=FIRST):
         """Load one occurrence of one IDS, synchronously, the way a click loads it.
 
@@ -345,13 +370,30 @@ class McpGuiCore:
             self.api.addPlotWidgetToMDI(frame)
             frame.show()
 
-    def plot_one(self, uri, path, along_time=None, into_figure_key=None):
+    def plot_one(self, uri, path, along_time=None, into_figure_key=None,
+                 time=None, time_interp=False):
         """One quantity, drawn by `QVizPlotOneNode` into the frame its axes call for.
 
         `along_time` is None for no opinion, which leaves the figure's own
         rule standing; the read that cannot answer is named out of the
         case's log, because the command logs it there and returns nothing.
+
+        `time` pins a single slice of a quantity held by a dynamic time array
+        (e.g. `time_slice[i]`). Without `time_interp` the figure is drawn
+        at the nearest slice and the answer names the index and the slice's
+        own time (not the value the user asked at, because that may differ).
+        With `time_interp=True`, the figure is drawn by interpolating
+        linearly between the two slices that bracket `time`, so the answer
+        carries `time_slice_time = time` (the exact value), and the curves
+        on screen reflect the interpolated profile. `along_time` and `time`
+        are refused together: one draws every slice, the other pins one.
         """
+        if time is not None and along_time:
+            raise ValueError(
+                'plot_one: along_time and time are contradictory. '
+                'along_time draws the quantity as a history along its every '
+                'time slice, so one slice cannot be pinned at the same time. '
+                'Drop along_time, or drop the time value, and ask again.')
         view = self._viewForUri(uri)
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
             import QVizPlotOneNode
@@ -360,20 +402,120 @@ class McpGuiCore:
             # A scalar with no abscissa at all is refused before the command
             # logs the panel's "no explicit dependency on current X axis" and
             # returns nothing -- the agent gets the answer and the pointer to
-            # the curve at once, not an opaque line to retry against.
+            # the curve at once, not an opaque line to retry against. This
+            # also fires before the time-slice resolution below: a scalar
+            # has no dynamic time array to pin a slice in.
             raise ValueError(self._scalarRefusal(path))
+        time_index = None
+        report_time = None
+        should_interp = False
+        left = right = 0
+        if time is not None:
+            import numpy as np
+            tbase = self._timeBase(view, node)
+            if tbase is None or tbase.size == 0:
+                raise ValueError(
+                    'plot_one: %r has no time axis to pin to %g: '
+                    'the time parameter applies to a quantity held by a '
+                    'dynamic time array (e.g. time_slice[i]); this one is '
+                    'not, so a time value there has no slice to resolve to.'
+                    % (path, float(time)))
+            if time_interp:
+                left = int(np.searchsorted(tbase, float(time), side='right') - 1)
+                right = min(left + 1, tbase.size - 1)
+                if left < 0:
+                    left = 0
+                time_index = int(left)
+                should_interp = left != right
+            else:
+                time_index = int(np.argmin(np.abs(tbase - float(time))))
+                if abs(float(tbase[time_index]) - float(time)) > 1e-9:
+                    import logging
+                    logging.getLogger(
+                        getattr(view, 'uri', None) or 'IMASViz').warning(
+                        'plot_one: %s at time %g s: the case\'s nearest '
+                        'slice is index %d (time_slice[%d].time = %g s); '
+                        'the profile is drawn at that slice, not at %g s.'
+                        % (path, float(time), time_index, time_index,
+                           float(tbase[time_index]), float(time)))
+                left = right = time_index
+            report_time = float(time) if should_interp else float(
+                tbase[time_index])
         command = QVizPlotOneNode(view, node,
                                   intoFigureKey=into_figure_key,
-                                  alongTime=along_time)
+                                  alongTime=along_time,
+                                  timeIndex=time_index)
         frame = command.execute()
         if frame is None:
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
         self._embedIfNew(command, frame)
-        return {'figure': frame.figureKey,
-                'kind': type(frame).__name__,
-                'drawing': bool(frame.isDrawing())}
+        if should_interp:
+            self._interpolateInFigure(
+                frame, node, left, right, time,
+                float(tbase[left]), float(tbase[right]))
+        result = {'figure': frame.figureKey,
+                  'kind': type(frame).__name__,
+                  'drawing': bool(frame.isDrawing())}
+        if time is not None:
+            result['time_slice_index'] = time_index
+            result['time_slice_time'] = report_time
+            if time_interp:
+                result['time_interp'] = should_interp
+        return result
+
+
+    def _timeBase(self, view, node):
+        """The dynamic time array's own time values, or None.
+
+        Read from the reader, not cached: one read per ask is acceptable
+        because the reader does not touch the leaf; it walks the node to
+        find the time base and answers it. None is the refusal signal.
+        """
+        import numpy as np
+        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+        from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
+        tb = QVizTensorExtractor(node.getIDSRef()).timeBase(
+            QVizAxesSpec.fromTreeNode(node))
+        if tb is None:
+            return None
+        return np.asarray(tb, dtype=float)
+
+    def _interpolateInFigure(self, frame, node, left, right, time, t_left, t_right):
+        """Replace the curves currently drawn at `left` with their linear
+        interpolation toward `right`, weighted by the requested time.
+
+        The left curve is already on the screen (the frame was plotted
+        with it); only the right slice is read, and each curve's y-data
+        is replaced with (1-alpha) * y_left + alpha * y_right. x is
+        unchanged because both slices are read at the same coordinate
+        positions. `left == right` (time outside the range, or the array
+        has one element) is no-op.
+        """
+        if left == right:
+            return
+        from imasviz.VizDataAccess import QVizTensorDataAccess as acc
+        try:
+            x_r, y_r = acc.GetSignal(treeNode=node, plotWidget=frame,
+                                     time_index=right)
+        except Exception:
+            return
+        if x_r is None or x_r.size == 0:
+            return
+        if t_right == t_left:
+            return
+        alpha = (float(time) - t_left) / (t_right - t_left)
+        for trace in frame._curves:
+            row = trace.row
+            y_cur = trace.curve.getYData()
+            if y_r.ndim >= 2 and y_r.shape[0] > row:
+                y_new = (1.0 - alpha) * y_cur + alpha * y_r[row]
+            elif y_r.ndim == 1:
+                y_new = (1.0 - alpha) * y_cur + alpha * y_r
+            else:
+                continue
+            trace.curve.setData(trace.curve.getXData(), y_new)
 
     def plot_selection(self, uri):
         """The case's selection, drawn by `QVizPlotAsSlices` from this view alone.
@@ -1107,6 +1249,16 @@ class McpGuiCore:
         finally:
             buffer.close()
         return bytes(qbytes)
+
+    def get_screenshot(self, window='app'):
+        """Answer the tool name the loop dispatches under: ``TOOLS``
+        (``imasviz/VizAgent/tools.py``) offers ``get_screenshot`` to the
+        LLM, and ``AgentLoop._dispatch`` asks the core for that name.
+        Before this existed, the call refused by name -- the method below
+        is the same gesture, and both names must keep answering, which
+        ``tests/test_116`` pins.
+        """
+        return self.screenshot(window)
 
     # ------------------------------------------------------------- log panel
 

@@ -77,7 +77,7 @@ class CliSession:
     `shots_dir` the directory under which every turn leaves its images
     and its transcript.
     """
-    def __init__(self, app, window, core, llm, shots_dir, max_turns=8):
+    def __init__(self, app, window, core, llm, shots_dir, max_turns=12):
         from mcp_server.agent_mode import _apiOf
         self.app = app
         self.window = window

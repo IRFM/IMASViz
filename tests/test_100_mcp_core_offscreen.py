@@ -146,6 +146,28 @@ def test_loading_the_same_occurrence_is_the_already_answer(core):
     assert answer['signals'] == EQUILIBRIUM_SIGNALS
 
 
+def test_list_case_idss_holds_only_the_held(core):
+    """`list_case_idss` is the strict subset of `list_idss` that holds data:
+    no empty occurrence list slips through, every name is declined by the
+    case, and the short list is what a user is asking for when they say
+    "what is in this case"."""
+    session, _home = core
+    declared = session.list_idss(CASE_URI)
+    held = session.list_case_idss(CASE_URI)
+
+    declared_by_name = {e['name']: e['occurrences'] for e in declared}
+    held_by_name = {e['name']: e['occurrences'] for e in held}
+
+    assert all(held_by_name[name] for name in held_by_name), \
+        'a held IDS must name at least one occurrence'
+    assert set(held_by_name) <= set(declared_by_name)
+    for name, occ in held_by_name.items():
+        assert declared_by_name[name] == occ
+    expected = {n for n, o in declared_by_name.items() if o}
+    assert set(held_by_name) == expected
+    assert len(held) < len(declared)
+
+
 # -------------------------------------------------------------------- search
 
 
@@ -481,7 +503,7 @@ def test_plot_report_writes_the_window_and_refuses_the_panel(core):
     session, home = core
     session.select_signals(CASE_URI, [TIME_PATH, IP_PATH], additive=False)
     figure = session.plot_selection(CASE_URI)['figures'][0]
-    assert figure.startswith('SlicesPlot'), figure
+    assert figure.startswith('Plot'), figure
 
     answer = session.plot_report(figure, name='mcp_plot_report')
     saved = answer['saved_to']
@@ -540,6 +562,98 @@ def test_case_report_stats_the_loaded_tree_and_refuses_the_absent(core):
 
     with pytest.raises(ValueError, match='is not open in this session'):
         session.case_report('imas:hdf5?path=/no/such/case', name='nope')
+
+
+# ----------------------------------------- plotting one node, pinned by time
+
+
+def test_plot_one_pinned_by_time_names_nearest_slice_and_its_time(core):
+    """`plot_one` with a time value is answered with the slice the case
+    actually holds nearest to that time, not the value that was asked.
+
+    The user asks at a time ("the profile at 44 s"); the case answers with
+    a slice (index 1187, the element whose `time_slice[i].time` is closest),
+    and says both, so the profile drawn is not mistaken for being drawn at
+    the ask when it is one slice from it.
+    """
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    profile = 'core_profiles.profiles_1d[0].electrons.temperature'
+
+    at_44 = session.plot_one(CASE_URI, profile, time=44.0)
+    assert at_44['drawing'] is True
+    assert 'figure' in at_44
+    # The ask was 44 s; the case answered with a slice near 44 s but not
+    # exactly on it, because the profile is held by a discrete time axis.
+    assert at_44['time_slice_index'] >= 0, 'the slice index the read uses'
+    assert (abs(at_44['time_slice_time'] - 44.0) < 0.1), \
+        'the slice the case carries should be near the ask, not far from it'
+
+    # A time far outside the pulse: the case clamps to its nearest slice (the
+    # last one) and still names it, so the answer is not a silent echo of the
+    # ask. This is the "answer with what the case says, not what was asked"
+    # rule the suite pins for the other gestures.
+    at_out = session.plot_one(CASE_URI, profile, time=1e6)
+    assert at_out['time_slice_index'] > 0  # clamped to the last slice, not 0
+    assert (at_out['time_slice_index'] == at_44['time_slice_index']
+            or abs(at_out['time_slice_time'] - 1e6) > 1000.0), \
+        'a time value far outside the pulse is not echoed back as the ' \
+        'slice drawn, and not mistaken for slice zero'
+
+
+def test_plot_one_time_interpolated_returns_exact_time(core):
+    """`time_interp=True` interpolates between the two slices that bracket
+    the requested time, so the answer's time_slice_time is the exact value
+    asked at -- not the nearest slice, because the profile drawn is itself
+    a combination of the two slices, not one of them. Where the value
+    falls outside the case's range, the nearest slice is used and the
+    answer says so (time_interp=False in that case)."""
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    profile = 'core_profiles.profiles_1d[0].electrons.temperature'
+
+    # Ask at a time between two slices (44 seconds is within the case's
+    # range, and the time array has multiple slices, so the two-slice
+    # bracket exists)
+    ans = session.plot_one(CASE_URI, profile, time=44.0, time_interp=True)
+    assert ans['drawing']
+    assert 'time_slice_index' in ans
+    assert 'time_slice_time' in ans
+    # The interpolated case: when the value falls between two real slices,
+    # time_slice_time should be the exact value asked at.
+    if ans.get('time_interp'):
+        assert abs(ans['time_slice_time'] - 44.0) < 1e-9, \
+            'an interpolated answer must carry the exact value asked at, ' \
+            'not the nearest slice'
+    # The clamped case (ask far outside the range): time_interp=False,
+    # and time_slice_time is the nearest (last) slice.
+    clamped = session.plot_one(
+        CASE_URI, profile, time=1e6, time_interp=True)
+    assert clamped['drawing']
+    assert clamped.get('time_interp') in (False, None), \
+        'a clamped answer cannot be described as interpolated'
+
+
+def test_plot_one_time_and_along_time_are_refused_named(core):
+    """`plot_one` refuses `along_time=True` and `time=<value>` together, by
+    name, in the same style the other refusals in this suite use: the
+    reason is in the message, and it names the contradiction the two options
+    hold. The message is not the value the user asked at, and it says how
+    to ask the same thing the other way."""
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    profile = 'core_profiles.profiles_1d[0].electrons.temperature'
+    with pytest.raises(ValueError) as exc:
+        session.plot_one(CASE_URI, profile, along_time=True, time=44.0)
+    refusal = str(exc.value)
+    # Named, in the repository style, not a bare "bad arguments": the
+    # reason is in the message, and it names both options so the fix is
+    # one of them.
+    assert 'along_time' in refusal
+    assert 'time' in refusal
+    assert 'contradict' in refusal.lower()
+    assert 'drop' in refusal.lower(), 'the refusal says how to ask the same ' \
+                                      'thing the other way'
 
 
 # -------------------------------------------------------------------- export

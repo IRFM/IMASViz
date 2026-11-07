@@ -85,6 +85,11 @@ class FakeCore:
         return [{'uri': CASE_URI, 'dd_version': '3.35.0',
                  'loaded': {'equilibrium': [0]}, 'signals': 33}]
 
+    def list_case_idss(self, uri):
+        assert uri == CASE_URI, uri
+        return [{'name': 'equilibrium', 'occurrences': [0, 1, 2, 3]},
+                {'name': 'magnetics', 'occurrences': [0]}]
+
     def save_session(self, name=None, path=None):
         self.saved.append(name)
         return {'saved_to': '/preferences/%s.vsess' % name}
@@ -305,6 +310,62 @@ def test_shots_moves_the_turn_directory(qapp, tmp_path):
     execute(parse('/shots %s' % new), session)
     out = session.runPrompt('une image')
     assert out['dir'].startswith(new)
+
+
+def test_ids_prints_the_held_idss_without_the_llm(qapp, tmp_path, capsys):
+    """`/ids` reads `list_case_idss` off the core and prints it raw -- no
+    LLM, no round-trip: the names and their occurrence counts come to the
+    terminal straight from the case."""
+    session, core = buildSession(qapp, tmp_path)
+    core.list_case_idss  # exercised below, present on the core
+    assert execute(parse('/ids'), session)
+    out = capsys.readouterr().out
+    assert 'equilibrium' in out and '0, 1, 2, 3' in out
+    assert 'magnetics' in out and '0' in out
+    # The command names the case and the count, the way the /session lines do.
+    assert 'IDS 2 held by %s' % CASE_URI in out
+
+
+def test_ids_with_a_uri_passes_it_to_the_core(qapp, tmp_path, capsys):
+    """With a URI, `/ids` reads that case, not the single open one."""
+    session, core = buildSession(qapp, tmp_path)
+    assert execute(parse('/ids %s' % CASE_URI), session)
+    out = capsys.readouterr().out
+    assert 'equilibrium' in out
+    assert CASE_URI in out
+
+
+class _CoreWithTwoCases:
+    """A core that holds two cases at once: `/ids` with no URI must refuse."""
+    def list_cases(self):
+        return [{'uri': CASE_URI}, {'uri': CASE_URI + '/sibling'}]
+
+
+def test_ids_with_no_case_and_no_uri_is_refused_named(qapp, tmp_path):
+    """No case open and no URI: the refusal names the need for a case."""
+    session = CliSession(
+        app=None, window=None, core=type('C', (), {
+            'list_cases': lambda self: []})(),
+        llm=None, shots_dir=str(tmp_path))
+    try:
+        execute(parse('/ids'), session)
+    except ValueError as e:
+        assert 'uri' in str(e).lower() or 'case' in str(e).lower()
+    else:
+        raise AssertionError('/ids with no case and no URI must be refused')
+
+
+def test_ids_with_two_cases_and_no_uri_is_refused_named(qapp, tmp_path):
+    """More than one case open and no URI: name which one, not guess."""
+    session = CliSession(
+        app=None, window=None, core=_CoreWithTwoCases(),
+        llm=None, shots_dir=str(tmp_path))
+    try:
+        execute(parse('/ids'), session)
+    except ValueError as e:
+        assert '2' in str(e)
+    else:
+        raise AssertionError('/ids is ambiguous when more than one case is open')
 
 
 def test_session_save_and_restore_go_through_the_core(qapp, tmp_path):
