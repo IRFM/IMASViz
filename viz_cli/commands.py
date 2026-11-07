@@ -29,7 +29,8 @@ import json
 import urllib.error
 import urllib.request
 
-COMMANDS = ('llm', 'mcp', 'shots', 'session', 'history', 'help', 'quit')
+COMMANDS = ('llm', 'mcp', 'ids', 'shots', 'session', 'history', 'help',
+            'quit')
 
 LLM_FIELDS = ('endpoint', 'model', 'key', 'max_turns', 'temperature',
               'max_tokens')
@@ -59,6 +60,10 @@ named after the turn. Commands:
   /mcp                       the services this session answers today:
                              the endpoint, its models, its tools
   /mcp NAME                  one tool: its words and its parameters
+  /ids [URI]                 the IDS the open case actually holds, raw:
+                             the names and their occurrences, read of the
+                             case's entry (list_case_idss) with no LLM in
+                             between. With no URI, the one open case
   /shots [DIR]               where the turns save their images
   /session                   the cases open in this session
   /session save NAME         the session the application writes
@@ -121,6 +126,8 @@ def execute(cmd, session):
         _llm(cmd, session)
     elif cmd.name == 'mcp':
         _mcp(cmd, session)
+    elif cmd.name == 'ids':
+        _ids(cmd, session)
     elif cmd.name == 'shots':
         _shots(cmd, session)
     elif cmd.name == 'session':
@@ -317,6 +324,42 @@ def _modelsList(endpoint, key=None, timeout=5.0):
             'the endpoint %s holds no model at /v1/models — start the '
             'server with one (llama-server --model …).' % endpoint)
     return names
+
+
+# ---------------------------------------------------------------------- /ids
+
+def _ids(cmd, session):
+    """The IDS the open case actually holds, printed raw -- no LLM in
+    between. With a URI it is that case; with none, the one open case.
+    The answer is what `list_case_idss` reads off the case's entry, so the
+    names and the occurrence counts are the case's own, not a recalled list.
+    """
+    if len(cmd.words) > 1:
+        raise ValueError('/ids takes one URI, not %d: /ids imas:hdf5?path=…'
+                         % len(cmd.words))
+    uri = cmd.words[0] if cmd.words else _singleOpenCase(session)
+    held = session.core.list_case_idss(uri)
+    if not held:
+        print('the case holds no IDS with data: %s' % uri, flush=True)
+        return
+    print('IDS %d held by %s' % (len(held), uri), flush=True)
+    for entry in held:
+        occurrences = ', '.join(str(o) for o in entry['occurrences'])
+        print('  %-28s %s' % (entry['name'], occurrences), flush=True)
+
+
+def _singleOpenCase(session):
+    """The one open case's URI, refused by name if there is not exactly one."""
+    cases = session.core.list_cases()
+    if not cases:
+        raise ValueError(
+            '/ids needs a case URI, and none is open: name one (a URI) or '
+            'open a case first.')
+    if len(cases) > 1:
+        raise ValueError(
+            '/ids needs one URI; this session holds %d cases: %s.'
+            % (len(cases), ', '.join(case['uri'] for case in cases)))
+    return cases[0]['uri']
 
 
 # --------------------------------------------------------------------- /shots
