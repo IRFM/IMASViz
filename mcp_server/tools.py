@@ -39,7 +39,15 @@ How to work with it:
    holds -- the paths select_signals, plot_one and get_signal take are
    any of those spellings;
 5. plot_one / plot_selection / plot_table / plot_stacked draw, and
-   get_screenshot answers a PNG of the window.
+   get_screenshot answers a PNG of the window;
+6. state is read with list_selection (what the case holds selected) and
+   describe_node (what one node holds: documentation, units, size, the
+   finite minimum and maximum, the nan and inf counts, a bounded
+   preview) -- answers, not guesses, and empty is an answer too;
+7. a report is self-contained HTML on disk, with the statistics of each
+   curve: plot_report names one window of curves (its image, one row per
+   trace it drew), and case_report names the whole loaded tree of a case
+   (one row per curve, in tree order).
 
 A refused gesture is not a failure of the server: it is an answer, with
 the reason the application names it. get_logs(uri) holds those reasons
@@ -135,6 +143,26 @@ def buildServer(core, dispatcher, name='imasviz'):
     def unselect_all(uri: str):
         """Empty the case selection; the answer says how many were dropped."""
         return _run(partial(core.unselect_all, uri))
+
+    @server.tool(name='list_selection')
+    def list_selection(uri: str):
+        """The case's current selection, in the order it was put in.
+
+        The path, the data name, the IDS and the occurrence of each;
+        empty is an answer, count 0 -- not a refusal.
+        """
+        return _run(partial(core.list_selection, uri))
+
+    @server.tool(name='describe_node')
+    def describe_node(uri: str, path: str):
+        """What this node holds, as the application's documentation says it.
+
+        Dictionary documentation and units, and for an array the size,
+        shape, the finite minimum and maximum, the counts of zeros, nan
+        and inf entries, and a bounded preview of the values. A leaf the
+        tree does not hold is refused by name.
+        """
+        return _run(partial(core.describe_node, uri, path))
 
     # -------------------------------------------------------------- plotting
 
@@ -272,6 +300,73 @@ def buildServer(core, dispatcher, name='imasviz'):
         """Put a session back: the cases open, the loads replayed, the
         figures and plugin windows drawn the way the file named them."""
         return _run(partial(core.restore_session, name=name, path=path))
+
+    @server.tool(name='list_sessions')
+    def list_sessions():
+        """The sessions the configuration folder holds, as the dialog lists them."""
+        return {'sessions': _run(core.list_sessions)}
+
+    @server.tool(name='list_configurations')
+    def list_configurations(kind: Optional[str] = None):
+        """The plot (.pcfg) and selection (.lsp) configurations the folder holds.
+
+        `kind` narrows to one of the two kinds; a kind the application
+        does not answer is refused by name, 'session' among them.
+        """
+        return _run(partial(core.list_configurations, kind))
+
+    @server.tool(name='select_from_configuration')
+    def select_from_configuration(uri: str, name: str):
+        """Apply one saved configuration: select the quantities it names.
+
+        A .lsp as a .pcfg; the IDSs the case would need and does not
+        hold are loaded first, the way the menu does it. A name the
+        folder does not hold is refused by name, naming the ones it does.
+        """
+        return _run(partial(core.select_from_configuration, uri, name))
+
+    @server.tool(name='save_selection')
+    def save_selection(uri: str, name: str):
+        """Write the current selection of the case out as a .lsp.
+
+        Nothing selected is refused by name; the name goes through the
+        guard the application applies in its own dialog.
+        """
+        return _run(partial(core.save_selection, uri, name))
+
+    @server.tool(name='save_plot_configuration')
+    def save_plot_configuration(uri: str, figure_key: str, name: str):
+        """Write one Table Plot View out as a .pcfg, the panels and their places.
+
+        A window that is not a Table Plot View is refused by name.
+        """
+        return _run(partial(core.save_plot_configuration, uri,
+                            figure_key, name))
+
+    # --------------------------------------------------------------- reports
+
+    @server.tool(name='plot_report')
+    def plot_report(figure_key: str, name: Optional[str] = None):
+        """A window of curves as a self-contained HTML report on disk.
+
+        The image of the window, and one row per trace it drew -- the
+        quantity, the number of samples, the finite minimum and maximum,
+        and the nan/inf counts. The file lands in `~/.imasviz/reports`;
+        `name` is the report name (a place, not a report, is refused).
+        A window that draws no curve it could stat is refused by name.
+        """
+        return _run(partial(core.plot_report, figure_key, name=name))
+
+    @server.tool(name='case_report')
+    def case_report(uri: str, name: Optional[str] = None):
+        """The loaded tree of a case as a self-contained HTML report on disk.
+
+        One row per curve the tree holds -- the numeric arrays its leaves
+        read, in tree order -- with the statistics of each. `name` is the
+        report name (a place, not a report, is refused). A case whose
+        loaded tree has no curve is refused by name.
+        """
+        return _run(partial(core.case_report, uri, name=name))
 
     # ---------------------------------------------------------------- export
 

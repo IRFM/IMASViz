@@ -6,7 +6,7 @@
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-"""The system instructions and the 24 tool schemas for the in-app agent.
+"""The system instructions and the tool schemas for the in-app agent.
 
 One source of truth: the docstrings of the tools in ``mcp_server/tools.py``
 are the same text that the MCP surface reads; the schemas here are the
@@ -30,6 +30,22 @@ How to work with it:
    get_screenshot answers a PNG of the window for the user to read on
    screen (the LLM cannot parse a PNG on this stack; describe a figure
    by reading its underlying arrays with get_signal).
+6. state is read with list_selection (what the case holds selected) and
+   describe_node (what one node holds: documentation, units, size, the
+   finite minimum and maximum, the nan and inf counts, a bounded
+   preview) -- answers, not guesses, and empty is an answer too;
+7. the reusable work of the application is what the tools named after
+   it answer: list_sessions and list_configurations name the .vsess,
+   .lsp and .pcfg files the folder holds, select_from_configuration
+   applies one (loading the IDSs the case would need), and
+   save_selection / save_plot_configuration write the current
+   selection / one Table Plot View out to a name.
+8. a report is self-contained HTML on disk, with the statistics of each
+   curve: plot_report names one window of curves (its image, one row per
+   trace it drew), and case_report names the whole loaded tree of a case
+   (one row per curve, in tree order). The file lands in
+   `~/.imasviz/reports` under the guard the configurations have; a window
+   or a case that has no curve to stat is refused by name.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -128,6 +144,27 @@ TOOLS = [
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
         }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'list_selection',
+        'The current selection of the case, in the order it was put in: '
+        'the path, the data name, the IDS and the occurrence of each. '
+        'Empty is an answer, count 0 -- not a refusal.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'describe_node',
+        'What this node holds, as the application documentation says it: '
+        'dictionary documentation and units, and for an array the size, '
+        'shape, the finite minimum and maximum, the counts of zeros, nan and '
+        'inf entries, and a bounded preview of the values. A leaf the tree '
+        'does not hold is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'path': {'type': 'string'},
+        }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
     _tool(
         'plot_one',
@@ -252,6 +289,85 @@ TOOLS = [
             'name': {'type': ['string', 'null']},
             'path': {'type': ['string', 'null']},
         }, 'additionalProperties': False},
+    ),
+    _tool(
+        'list_sessions',
+        'The sessions the configuration folder holds (the .vsess files '
+        'next to the plot and selection configurations), as the '
+        'application lists them.',
+        {'type': 'object', 'properties': {}, 'additionalProperties': False},
+    ),
+    _tool(
+        'list_configurations',
+        'The plot configurations (.pcfg) and the selection configurations '
+        '(.lsp) the configuration folder holds. `kind` narrows to one of '
+        'the two kinds; a kind the application does not answer is '
+        'refused by name.',
+        {'type': 'object', 'properties': {
+            'kind': {'type': ['string', 'null'],
+                     'enum': ['plot', 'selection']},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'select_from_configuration',
+        'Apply one saved configuration: select in the case the '
+        'quantities it names (.lsp as .pcfg), loading first the IDSs the '
+        'case would need and does not hold. Answers how many were '
+        'selected; a name the folder does not hold is refused by name, '
+        'naming the ones it does.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': 'string'},
+        }, 'required': ['uri', 'name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'save_selection',
+        'Write the current selection of the case out as a .lsp, one '
+        'quantity per selected node. Nothing selected is refused by '
+        'name; the name goes through the guard the application applies '
+        'in its own dialog.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': 'string'},
+        }, 'required': ['uri', 'name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'save_plot_configuration',
+        'Write one Table Plot View out as a .pcfg: the quantities of its '
+        'panels, and the place each panel held. A window that is not a '
+        'Table Plot View is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'figure_key': {'type': 'string'},
+            'name': {'type': 'string'},
+        }, 'required': ['uri', 'figure_key', 'name'],
+         'additionalProperties': False},
+    ),
+    _tool(
+        'plot_report',
+        'A window of curves as a self-contained HTML report on disk: the '
+        'image of the window, and one row per trace it drew -- the '
+        'quantity, the number of samples, the finite minimum and maximum, '
+        'and the nan/inf counts. The file lands in `~/.imasviz/reports`; '
+        '`name` is the report name (a place, not a report, is refused). '
+        'A window that draws no curve it could stat is refused by name.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'case_report',
+        'The loaded tree of a case as a self-contained HTML report on '
+        'disk: one row per curve the tree holds -- the numeric arrays its '
+        'leaves read, in tree order -- with the statistics of each. An IDS '
+        'not yet loaded is not a curve, so the answer says how many curves '
+        'it gave and list_idss names what the case still holds. A case '
+        'whose loaded tree has no curve is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['uri'], 'additionalProperties': False},
     ),
     _tool(
         'export_to_ids',

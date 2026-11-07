@@ -35,6 +35,7 @@ rule the journey in `test_45` states for itself.
 """
 
 import os
+import re
 
 import pytest
 
@@ -193,6 +194,50 @@ def test_unselecting_empties_the_selection_and_says_how_many(core):
     assert len(session.api.DTVlist[0].selectedSignalsDict) == 0
 
 
+def test_list_selection_answers_what_the_case_holds_selected(core):
+    """`select_signals` puts two leaves in, and the read answers them -- in
+    order, with the ids and occurrence the record holds. Empty is the
+    answer `count: 0`, not a refusal."""
+    session, _home = core
+    assert session.list_selection(CASE_URI) == {'count': 0,
+                                                'selection': []}
+
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH])
+    answer = session.list_selection(CASE_URI)
+    assert answer['count'] == 2
+    dataNames = [entry['data_name'] for entry in answer['selection']]
+    assert dataNames == [TIME_PATH, IP_PATH]
+    for entry in answer['selection']:
+        assert entry['ids'] == IDS_NAME
+        assert entry['occurrence'] == 0
+        assert entry['path'], entry
+
+
+def test_describe_node_is_the_documentation_of_the_tree(core):
+    """The same answer the *Node Documentation* panel draws: the array leaf
+    says its size and its finite numbers, the clock its number of samples,
+    and a leaf the tree does not hold is refused by name, through the same
+    lookup as every gesture that looks one up."""
+    session, _home = core
+
+    leaf = session.describe_node(
+        CASE_URI, 'equilibrium/time_slice(0)/profiles_1d/psi')
+    assert leaf['name'] == 'equilibrium.time_slice[0].profiles_1d.psi'
+    assert leaf['size'] == '101'
+    assert leaf['minimum'] is not None and leaf['maximum'] is not None
+    assert float(leaf['minimum']) <= float(leaf['maximum'])
+    assert leaf['preview']
+
+    clock = session.describe_node(CASE_URI, TIME_PATH)
+    assert clock['size'] == str(TIME_SAMPLES)
+
+    with pytest.raises(ValueError, match='is not a leaf of the case'):
+        session.describe_node(CASE_URI,
+                              'equilibrium/time_slice(7)/global_quantities/ip')
+    with pytest.raises(ValueError, match='is not open in this session'):
+        session.describe_node('imas:hdf5?path=/no/such/case', IP_PATH)
+
+
 # ------------------------------------------------------------------- plotting
 
 
@@ -317,6 +362,184 @@ def test_saving_writes_the_file_and_restore_puts_it_back(core):
     assert putBack['cases'][0]['uri'] == CASE_URI
     # The figure the session wrote is back under the key it held.
     assert session.api.figureframes, 'the restore put back no window'
+
+
+# --------------------------------------------------------- configurations
+
+
+def test_listings_name_the_files_the_folder_holds(core):
+    """The listings read the folder the way the application's dialogs
+    name it, and a kind the application does not answer is refused by
+    name -- 'session' among them, by the tool that lists the sessions."""
+    session, home = core
+    assert 'mcp_core.vsess' in session.list_sessions()['sessions']
+
+    both = session.list_configurations()
+    assert 'plot' in both and 'selection' in both
+    assert session.list_configurations(kind='plot').keys() == {'plot'}
+    assert session.list_configurations(kind='selection').keys() == {'selection'}
+
+    with pytest.raises(ValueError, match='not a configuration kind'):
+        session.list_configurations(kind='banana')
+    with pytest.raises(ValueError, match='list_sessions'):
+        session.list_configurations(kind='session')
+
+
+def test_a_selection_is_saved_applied_and_listed_again(core):
+    """`save_selection` writes the .lsp the application writes,
+    `select_from_configuration` applies it the way the menu does (loading
+    what the case lacks first), and the listing sees the file under its
+    name."""
+    session, home = core
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH])
+    saved = session.save_selection(CASE_URI, 'mcp_sel')
+    assert saved['count'] == 2
+    assert saved['saved_to'].endswith('.lsp')
+    assert os.path.exists(saved['saved_to'])
+    assert 'mcp_sel.lsp' in session.list_configurations('selection')['selection']
+
+    assert session.unselect_all(CASE_URI) == {'dropped': 2}
+    answer = session.select_from_configuration(CASE_URI, 'mcp_sel')
+    assert answer['selected'] == 2
+    assert answer['from'] == saved['saved_to']
+    assert session.list_selection(CASE_URI)['count'] == 2
+
+    # A name the folder does not hold is refused by name, and names the
+    # ones the folder does hold.
+    with pytest.raises(ValueError, match='No configuration \"banana\"'):
+        session.select_from_configuration(CASE_URI, 'banana')
+
+
+def test_saving_a_selection_with_nothing_selected_is_refused_by_name(core):
+    session, _home = core
+    session.unselect_all(CASE_URI)
+    with pytest.raises(ValueError, match='Nothing to save'):
+        session.save_selection(CASE_URI, 'nothing_selected')
+
+
+def test_a_table_window_is_saved_as_a_plot_configuration(core):
+    """`save_plot_configuration` writes one Table Plot View as
+    `QVizSavePlotConfiguration` writes it: the .pcfg holding the panels
+    and their places, in the listing of its kind -- and refused by name
+    on a window that is not a Table Plot View."""
+    session, home = core
+    # The table window fills its panels from the case's selection, the
+    # way its entry fills them: the two quantities are in the selection
+    # when the window is asked for.
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH], additive=False)
+    table = session.plot_table(CASE_URI, [TIME_PATH, IP_PATH])
+    assert table['panels'] == 2
+
+    saved = session.save_plot_configuration(CASE_URI, table['figure'],
+                                            'mcp_table')
+    assert saved['panels'] == 2
+    assert saved['saved_to'].endswith('.pcfg')
+    assert os.path.exists(saved['saved_to'])
+    assert 'mcp_table.pcfg' in session.list_configurations('plot')['plot']
+
+    # A window that is not a Table Plot View is refused by name: a curve
+    # figure this test drew itself, so the window is alive when the
+    # refusal is asked.
+    curveFigure = session.plot_selection(CASE_URI)['figures'][0]
+    with pytest.raises(ValueError, match='not a Table Plot View'):
+        session.save_plot_configuration(CASE_URI, curveFigure,
+                                        'not_a_table')
+
+
+# ------------------------------------------------------------------- reports
+
+
+def test_curve_stats_are_nan_aware_and_empty_answers_zero(core):
+    """`curveStats` is a pure function of one `(x, y)` curve: one number
+    per field, the nan and inf entries *counted* rather than folded into
+    the minimum or the mean, and an empty curve the answer `n: 0` -- not
+    an exception, and not a minimum of the nothing."""
+    stats = McpGuiCore.curveStats(
+        ([0, 1, 2, 3], [1.0, 2.0, float('nan'), 4.0]))
+    assert stats['n'] == 4
+    assert stats['x0'] == 0 and stats['x1'] == 3
+    # The finite minimum and maximum: the nan is not one of them.
+    assert stats['min'] == 1.0 and stats['max'] == 4.0
+    assert stats['nan'] == 1 and stats['inf'] == 0
+    assert stats['mean'] == pytest.approx((1.0 + 2.0 + 4.0) / 3)
+    assert stats['std'] >= 0
+
+    empty = McpGuiCore.curveStats(([], []))
+    assert empty['n'] == 0
+    assert empty['min'] is None and empty['max'] is None
+    assert empty['nan'] == 0 and empty['inf'] == 0
+
+    both = McpGuiCore.curveStats(([1.0], [float('nan'), float('inf')]))
+    assert both['nan'] == 1 and both['inf'] == 1
+
+
+def test_plot_report_writes_the_window_and_refuses_the_panel(core):
+    """`plot_report` draws one window of curves into a self-contained
+    HTML page under the session's `~/.imasviz/reports`: the window's
+    image, one row per trace it drew with the statistics of each -- and
+    a window that draws no curve it could stat is refused by name."""
+    session, home = core
+    session.select_signals(CASE_URI, [TIME_PATH, IP_PATH], additive=False)
+    figure = session.plot_selection(CASE_URI)['figures'][0]
+    assert figure.startswith('SlicesPlot'), figure
+
+    answer = session.plot_report(figure, name='mcp_plot_report')
+    saved = answer['saved_to']
+    assert saved.endswith('mcp_plot_report.html'), saved
+    assert answer['traces'] >= 2, 'the two quantities drew nothing to stat'
+    assert os.path.dirname(saved) == os.path.join(str(home), '.imasviz',
+                                                  'reports'), saved
+    assert os.path.exists(saved), saved
+
+    with open(saved, encoding='utf-8') as file:
+        page = file.read()
+    assert '<table>' in page, 'the page carries no table of curves'
+    assert 'data:image/png;base64,' in page, 'the window image is not in it'
+    assert 'equilibrium.time' in page, 'the clock quantity is not a row'
+    assert 'global_quantities.ip' in page, 'the scalar is not a row'
+
+    # A window that draws no curve it could stat is refused by name: the
+    # Profiles panel this file's own run put on screen is exactly such a
+    # window -- it holds a list, not a curve.
+    panelKeys = [key for key in session.api.figureframes
+                 if key.startswith('PlotView:')]
+    assert panelKeys, 'the Profiles window of the entry run is not on screen'
+    with pytest.raises(ValueError, match='has nothing to say about it'):
+        session.plot_report(panelKeys[0], name='no_curves')
+
+
+def test_case_report_stats_the_loaded_tree_and_refuses_the_absent(core):
+    """`case_report` stats the whole loaded tree of the case in tree
+    order, and a case that is not open in this session is refused by
+    name -- the read is of the one the session holds, not a guess.
+
+    A curve is a non-empty multi-dimensional number: the loaded
+    `equilibrium` here is mostly 0-D scalars (a single point, the domain
+    of `describe_node`) and empty 1-D bound arrays (no sample to stat),
+    so the report carries the arrays that actually hold values -- a
+    handful on this case, and among them the two named below.
+    """
+    session, home = core
+    answer = session.case_report(CASE_URI, name='mcp_case_report')
+    saved = answer['saved_to']
+    assert saved.endswith('mcp_case_report.html'), saved
+    # At least the clock and one profile curve hold values on this case.
+    assert answer['curves'] >= 2, answer
+    assert os.path.dirname(saved) == os.path.join(str(home), '.imasviz',
+                                                  'reports'), saved
+    assert os.path.exists(saved), saved
+
+    with open(saved, encoding='utf-8') as file:
+        page = file.read()
+    assert '<table>' in page, 'the page carries no table of curves'
+    assert 'equilibrium.time' in page, 'the clock curve is not a row'
+    assert 'profiles_1d.psi' in page, 'a profile curve is not a row'
+    # One row carries its sample count as an integer statistic cell.
+    assert re.search(r'<td class="s">\d+</td>', page), \
+        'no row carries a numeric statistic'
+
+    with pytest.raises(ValueError, match='is not open in this session'):
+        session.case_report('imas:hdf5?path=/no/such/case', name='nope')
 
 
 # -------------------------------------------------------------------- export
