@@ -195,22 +195,30 @@ TOOLS = [
         'plot_one',
         'Draw one quantity, into the figure its axes call for. '
         'A curve figure for one axis to draw, a picture window for two. '
-        '`time` pins a profile to the slice of its dynamic time array whose '
-        'time_slice[i].time is nearest to the value; the answer carries '
-        'time_slice_index and time_slice_time, the case\'s own, so a value '
-        'the user asked at is not mistaken for a slice they did not name. '
-        '`along_time` and `time` are refused together.',
+        '`time` pins a profile to one slice of its dynamic time array: by '
+        'default the nearest slice (the answer names the index and that '
+        'slice\'s own time, not the value asked at), or, with '
+        'time_interp=true, the linear interpolation between the two slices '
+        'that bracket the value (the answer then carries the exact value '
+        'requested). `along_time` and `time` are refused together.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
             'along_time': {'type': ['boolean', 'null']},
             'into_figure_key': {'type': ['string', 'null']},
             'time': {'type': ['number', 'null'],
-                     'description': 'seconds; the slice to pin a profile '
-                                    'drawn along its own coordinate to. '
-                                    'Answered with the slice the case holds '
-                                    'nearest to this time, and that slice\'s '
-                                    'time, both named in the answer.'},
+                     'description': 'seconds; the time at which to pin the '
+                                    'profile. Nearest slice by default; '
+                                    'interpolated with time_interp=true.'},
+            'time_interp': {'type': ['boolean', 'null'],
+                            'description': 'when true, interpolates '
+                                           'linearly between the two slices '
+                                           'that bracket the requested time, '
+                                           'leaving the answer\'s '
+                                           'time_slice_time equal to the '
+                                           'exact value asked at, not the '
+                                           'nearest slice. Defaults to '
+                                           'false (nearest slice).'},
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
     _tool(

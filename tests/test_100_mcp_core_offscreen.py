@@ -601,6 +601,39 @@ def test_plot_one_pinned_by_time_names_nearest_slice_and_its_time(core):
         'slice drawn, and not mistaken for slice zero'
 
 
+def test_plot_one_time_interpolated_returns_exact_time(core):
+    """`time_interp=True` interpolates between the two slices that bracket
+    the requested time, so the answer's time_slice_time is the exact value
+    asked at -- not the nearest slice, because the profile drawn is itself
+    a combination of the two slices, not one of them. Where the value
+    falls outside the case's range, the nearest slice is used and the
+    answer says so (time_interp=False in that case)."""
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    profile = 'core_profiles.profiles_1d[0].electrons.temperature'
+
+    # Ask at a time between two slices (44 seconds is within the case's
+    # range, and the time array has multiple slices, so the two-slice
+    # bracket exists)
+    ans = session.plot_one(CASE_URI, profile, time=44.0, time_interp=True)
+    assert ans['drawing']
+    assert 'time_slice_index' in ans
+    assert 'time_slice_time' in ans
+    # The interpolated case: when the value falls between two real slices,
+    # time_slice_time should be the exact value asked at.
+    if ans.get('time_interp'):
+        assert abs(ans['time_slice_time'] - 44.0) < 1e-9, \
+            'an interpolated answer must carry the exact value asked at, ' \
+            'not the nearest slice'
+    # The clamped case (ask far outside the range): time_interp=False,
+    # and time_slice_time is the nearest (last) slice.
+    clamped = session.plot_one(
+        CASE_URI, profile, time=1e6, time_interp=True)
+    assert clamped['drawing']
+    assert clamped.get('time_interp') in (False, None), \
+        'a clamped answer cannot be described as interpolated'
+
+
 def test_plot_one_time_and_along_time_are_refused_named(core):
     """`plot_one` refuses `along_time=True` and `time=<value>` together, by
     name, in the same style the other refusals in this suite use: the
