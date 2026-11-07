@@ -341,14 +341,17 @@ class McpGuiCore:
         case's log, because the command logs it there and returns nothing.
 
         `time` pins a single slice of a quantity held by a dynamic time array
-        (e.g. `time_slice[i]`). Without `time_interp` the figure is drawn
-        at the nearest slice and the answer names the index and the slice's
-        own time (not the value the user asked at, because that may differ).
-        With `time_interp=True`, the figure is drawn by interpolating
-        linearly between the two slices that bracket `time`, so the answer
-        carries `time_slice_time = time` (the exact value), and the curves
-        on screen reflect the interpolated profile. `along_time` and `time`
-        are refused together: one draws every slice, the other pins one.
+        (e.g. `time_slice[i]`). The value of that slice is answered by
+        `plot_slice`, which reads it through the Access Layer's own
+        `DBEntry.get_slice` — the ONE interpolation the two surfaces share,
+        so `plot_one` no longer carries a second, manual two-slice lerp of
+        its own. `time_interp` only picks the primitive it asks
+        (`LINEAR_INTERP` for the value at the exact time, `CLOSEST_INTERP`
+        for the slice the case holds nearest). `time_slice_time` is that
+        slice's own time, and `time_slice_index` its index, so the answer
+        names the slice the case answered with and not the value asked.
+        `along_time` and `time` are refused together: one draws every slice,
+        the other pins one.
         """
         if time is not None and along_time:
             raise ValueError(
@@ -357,15 +360,10 @@ class McpGuiCore:
                 'time slice, so one slice cannot be pinned at the same time. '
                 'Drop along_time, or drop the time value, and ask again.')
         view = self._viewForUri(uri)
-        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
-            import QVizPlotOneNode
-        node = self._nodeForPath(view, path)
-        time_index = None
-        report_time = None
-        should_interp = False
-        left = right = 0
+
         if time is not None:
             import numpy as np
+            node = self._nodeForPath(view, path)
             tbase = self._timeBase(view, node)
             if tbase is None or tbase.size == 0:
                 raise ValueError(
@@ -374,50 +372,36 @@ class McpGuiCore:
                     'dynamic time array (e.g. time_slice[i]); this one is '
                     'not, so a time value there has no slice to resolve to.'
                     % (path, float(time)))
-            if time_interp:
-                left = int(np.searchsorted(tbase, float(time), side='right') - 1)
-                right = min(left + 1, tbase.size - 1)
-                if left < 0:
-                    left = 0
-                time_index = int(left)
-                should_interp = left != right
-            else:
-                time_index = int(np.argmin(np.abs(tbase - float(time))))
-                if abs(float(tbase[time_index]) - float(time)) > 1e-9:
-                    import logging
-                    logging.getLogger(
-                        getattr(view, 'uri', None) or 'IMASViz').warning(
-                        'plot_one: %s at time %g s: the case\'s nearest '
-                        'slice is index %d (time_slice[%d].time = %g s); '
-                        'the profile is drawn at that slice, not at %g s.'
-                        % (path, float(time), time_index, time_index,
-                           float(tbase[time_index]), float(time)))
-                left = right = time_index
-            report_time = float(time) if should_interp else float(
-                tbase[time_index])
+            T = float(time)
+            time_index = int(np.argmin(np.abs(tbase - T)))
+            clamped = bool(T < float(tbase[0]) or T > float(tbase[-1]))
+            # The value is answered the same way plot_slice answers one:
+            # through `DBEntry.get_slice`, with `time_interp` only choosing
+            # between the Access Layer's LINEAR_INTERP and CLOSEST_INTERP.
+            result = self.plot_slice(
+                uri, path, T,
+                interpolation='linear' if time_interp else 'closest',
+                into_figure_key=into_figure_key)
+            result['drawing'] = True
+            result['time_slice_index'] = time_index
+            result['time_interp'] = bool(time_interp) and not clamped
+            return result
+
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+            import QVizPlotOneNode
+        node = self._nodeForPath(view, path)
         command = QVizPlotOneNode(view, node,
                                   intoFigureKey=into_figure_key,
-                                  alongTime=along_time,
-                                  timeIndex=time_index)
+                                  alongTime=along_time)
         frame = command.execute()
         if frame is None:
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
         self._embedIfNew(command, frame)
-        if should_interp:
-            self._interpolateInFigure(
-                frame, node, left, right, time,
-                float(tbase[left]), float(tbase[right]))
-        result = {'figure': frame.figureKey,
-                  'kind': type(frame).__name__,
-                  'drawing': bool(frame.isDrawing())}
-        if time is not None:
-            result['time_slice_index'] = time_index
-            result['time_slice_time'] = report_time
-            if time_interp:
-                result['time_interp'] = should_interp
-        return result
+        return {'figure': frame.figureKey,
+                'kind': type(frame).__name__,
+                'drawing': bool(frame.isDrawing())}
 
 
     def _timeBase(self, view, node):
@@ -436,40 +420,170 @@ class McpGuiCore:
             return None
         return np.asarray(tb, dtype=float)
 
-    def _interpolateInFigure(self, frame, node, left, right, time, t_left, t_right):
-        """Replace the curves currently drawn at `left` with their linear
-        interpolation toward `right`, weighted by the requested time.
+    _INTERPOLATIONS = {
+        'linear':   'LINEAR_INTERP',
+        'previous': 'PREVIOUS_INTERP',
+        'closest':  'CLOSEST_INTERP',
+    }
 
-        The left curve is already on the screen (the frame was plotted
-        with it); only the right slice is read, and each curve's y-data
-        is replaced with (1-alpha) * y_left + alpha * y_right. x is
-        unchanged because both slices are read at the same coordinate
-        positions. `left == right` (time outside the range, or the array
-        has one element) is no-op.
+    def _sliceWalk(self, objs, relpath):
+        """Resolve a bracket-path like `profiles_1d[0].electrons.temperature`
+        into a struct array, honoring `[i]` indexes as getitem calls.
         """
-        if left == right:
-            return
-        from imasviz.VizDataAccess import QVizTensorDataAccess as acc
-        try:
-            x_r, y_r = acc.GetSignal(treeNode=node, plotWidget=frame,
-                                     time_index=right)
-        except Exception:
-            return
-        if x_r is None or x_r.size == 0:
-            return
-        if t_right == t_left:
-            return
-        alpha = (float(time) - t_left) / (t_right - t_left)
-        for trace in frame._curves:
-            row = trace.row
-            y_cur = trace.curve.getYData()
-            if y_r.ndim >= 2 and y_r.shape[0] > row:
-                y_new = (1.0 - alpha) * y_cur + alpha * y_r[row]
-            elif y_r.ndim == 1:
-                y_new = (1.0 - alpha) * y_cur + alpha * y_r
+        obj = objs
+        for part in relpath.split('.'):
+            if '[' in part:
+                name, idx = part.split('[', 1)
+                idx = int(idx.rstrip(']'))
+                obj = getattr(obj, name)[idx]
             else:
-                continue
-            trace.curve.setData(trace.curve.getXData(), y_new)
+                obj = getattr(obj, part)
+        return obj
+
+    def _leafDataAtTime(self, view, leafPath, T, interp, occurrence):
+        """The (x, y(T)) pair of one 1D-profile leaf read through `DBEntry.get_slice`.
+
+        `x` is the coordinate (time-independent, the same reader `plot_one`
+        uses to draw a curve); `y(T)` comes from the HLI's own
+        `get_slice(ids, T, interp, occurrence)` call. This is the ONE
+        path both `plot_slice` and `plot_one(time=…)` use, so the two
+        surfaces share one implementation of "the profile at a time"
+        rather than carrying two.
+
+        Refuses by name when the leaf is not a 1D profile (a scalar, a
+        tensor, or a leaf whose x and y sizes disagree).
+        """
+        import numpy as np
+        ids, dot, rel = leafPath.partition('.')
+        if not dot or not rel:
+            raise ValueError(
+                'plot_slice/plot_one(time=…): %r is not a leaf of an IDS: '
+                'the path must name an IDS root and a leaf, e.g. '
+                '`equilibrium.time_slice[0].f`.' % leafPath)
+        entry = view.dataSource.db_entry
+        try:
+            slice_ids = entry.get_slice(ids, float(T), int(interp), int(occurrence))
+        except Exception as e:
+            raise ValueError(
+                'plot_slice: `get_slice(%r, %g, interp=%d, occ=%d)` refused '
+                'by the Access Layer: %s'
+                % (ids, float(T), int(interp), int(occurrence),
+                   str(e).split('\n', 1)[0])[:300])
+        slice_time = float(getattr(slice_ids, 'time', [T])[0])
+        try:
+            y_raw = self._sliceWalk(slice_ids, rel)
+        except Exception as e:
+            raise ValueError(
+                'plot_slice: %r is not a 1D profile of %r in the case: %s'
+                % (leafPath, ids, str(e).split('\n', 1)[0])[:300])
+        # A 1D profile leaf reads one coordinate and one value per point;
+        # get_slice answers it as a flat array, and both must be non-empty.
+        y = np.asarray(y_raw, dtype=float).ravel()
+        if y.size == 0:
+            raise ValueError(
+                'plot_slice: %r holds no value at this instant in the case: '
+                'the branch is empty, so there is nothing to draw.' % leafPath)
+        from imasviz.VizDataAccess.QVizTensorDataAccess import QVizTensorDataAccess
+        node = self._nodeForPath(view, leafPath)
+        try:
+            x_raw, _ = QVizTensorDataAccess(view.dataSource).GetSignal(
+                treeNode=node, plotWidget=None,
+                as_function_of_time=False, time_index=0)
+        except Exception as e:
+            raise ValueError(
+                'plot_slice: %r is not read as a curve by the reader: %s'
+                % (leafPath, str(e).split('\n', 1)[0])[:300])
+        # The reader's own convention for a curve figure is a (rows, N) pair,
+        # one row per trace; ravel to (N,) so the check and the draw treat
+        # both as one coordinate and one value per point.
+        x = np.asarray(x_raw, dtype=float).ravel()
+        if x.size != y.size:
+            raise ValueError(
+                'plot_slice: %r reads %d coordinates and %d values — not a '
+                '1D profile leaf (one coordinate and one value per point). '
+                'A 2D leaf is drawn as a picture, a 0D scalar as a point; '
+                'neither is what this entry takes.'
+                % (leafPath, x.size, y.size))
+        return x, y, slice_time
+
+    def plot_slice(self, uri, leaf, time, occurrence=0, interpolation='linear',
+                   into_figure_key=None):
+        """One 1D-profile leaf of one IDS, drawn at a single time through `DBEntry.get_slice`.
+
+        The HLI's `get_slice(ids, time, interp, occurrence)` does the
+        interpolation at its end — the values are what the Access Layer
+        answers, not a manual lerp in the GUI process. The coordinate is
+        read from the same reader `plot_one` uses, so the two share ONE
+        implementation of "the profile at a time".
+
+        `interpolation` is one of 'linear' (default; `LINEAR_INTERP`,
+        the value at the exact `time`), 'closest' (`CLOSEST_INTERP`,
+        the case's own slice nearest to `time`) or 'previous'
+        (`PREVIOUS_INTERP`, the one at or before `time`).
+
+        The answer names the figure, `time_slice_time` (the value the
+        slice itself holds — equals `time` for 'linear', and the case's
+        own slice time otherwise), and how many points the profile holds.
+        """
+        if interpolation not in self._INTERPOLATIONS:
+            raise ValueError(
+                'plot_slice: interpolation must be one of %s, got %r.'
+                % (', '.join(sorted(self._INTERPOLATIONS)), interpolation))
+        import imas.ids_defs as _id
+        interp = getattr(_id, self._INTERPOLATIONS[interpolation])
+
+        view = self._viewForUri(uri)
+        ids = leaf.split('.', 1)[0]
+        if not self.api.IDSDataAlreadyFetched(view, ids, occurrence):
+            self.load_ids(uri, ids, occurrence)
+        # A time outside the case's own range answers the nearest slice the
+        # case holds (the last, or first), not a refusal and not an echo of
+        # the ask: the answer reports `time_requested` and `time_slice_time`
+        # separately, so a value asked far outside the pulse is still named
+        # as the slice the case actually answered with.
+        node = self._nodeForPath(view, leaf)
+        T = float(time)
+        tbase = self._timeBase(view, node)
+        if tbase is not None and tbase.size > 0:
+            T = float(min(max(T, float(tbase[0])), float(tbase[-1])))
+        x, y, slice_t = self._leafDataAtTime(view, leaf, T, interp, occurrence)
+
+        # Draw into a `Plot:` figure (the same kind `plot_one` uses) so
+        # the *Windows* menu, sessions, and `saveShots` all reach it.
+        # Refused by name when a non-curve figure is named by key.
+        from imasviz.VizUtils import FigureTypes
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+            import QVizPlotOneNode
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizCurvePlot import QVizCurvePlot
+        if into_figure_key is not None:
+            command = QVizPlotOneNode(view, node, intoFigureKey=into_figure_key)
+            frame = command.frameFor()
+            if not hasattr(frame, 'pgPlotWidget'):
+                command.discardIfEmpty(frame)
+                raise ValueError(
+                    'plot_slice: %r is not a `Plot` figure: name a curve '
+                    'figure (see list_windows), e.g. Plot1.' % into_figure_key)
+        else:
+            command = QVizPlotOneNode(view, node)
+            frame = command.newFigure(FigureTypes.CURVEPLOTTYPE, QVizCurvePlot)
+
+        frame.pgPlotWidget.plot(x, y, name=leaf)
+        frame.pgPlotWidget.setLabel('bottom', 'coordinate')
+        frame.pgPlotWidget.setLabel('left', leaf)
+        frame.pgPlotWidget.setTitle(
+            'slice of %s at t=%g (%s)' % (leaf, slice_t, interpolation))
+
+        self._embedIfNew(command, frame)
+        self.api.AddNodeToFigure(
+            frame.figureKey,
+            view.dataSource.dataKey(node),
+            (view.dataSource.uri, node))
+        return {'figure': frame.figureKey,
+                'drawn': int(len(x)),
+                'time_requested': T,
+                'time_slice_time': slice_t,
+                'interpolation': interpolation,
+                'kind': type(frame).__name__}
 
     def plot_selection(self, uri):
         """The case's selection, drawn by `QVizPlotAsSlices` from this view alone.

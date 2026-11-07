@@ -656,6 +656,61 @@ def test_plot_one_time_and_along_time_are_refused_named(core):
                                       'thing the other way'
 
 
+def test_plot_slice_draws_a_leaf_interpolated_via_get_slice(core):
+    """`plot_slice` answers one 1D-profile leaf at an instant through the
+    Access Layer's own `DBEntry.get_slice` — the value the Access Layer
+    answers at that instant, not a GUI-side lerp — and the curve holds the
+    leaf's own coordinate, which is independent of time.
+
+    With `interpolation='linear'`, `time_slice_time` is the exact instant
+    asked at, because the HLI interpolates between the two slices that
+    bracket it. The answer names the figure, the point count the profile
+    holds, and both times apart.
+    """
+    session, _home = core
+    leaf = 'core_profiles.profiles_1d[0].electrons.temperature'
+    ans = session.plot_slice(CASE_URI, leaf, time=44.0, interpolation='linear')
+    assert 'figure' in ans
+    assert ans['figure'].startswith('Plot'), ans
+    assert ans['drawn'] > 0, 'a 1D profile holds points'
+    assert ans['time_requested'] == pytest.approx(44.0)
+    assert abs(ans['time_slice_time'] - 44.0) < 1e-6, \
+        'linear answers at the exact instant asked at (the HLI interpolates)'
+
+
+def test_plot_slice_closest_answers_the_slice_the_case_holds(core):
+    """`interpolation='closest'` returns the case's own slice near the ask:
+    `time_slice_time` is a slice the case holds (near 44), not the ask. A
+    time far outside the pulse is clamped to the last slice the case holds
+    and named as such — not echoed back as the slice drawn, and not refused.
+    """
+    session, _home = core
+    leaf = 'core_profiles.profiles_1d[0].electrons.temperature'
+    near = session.plot_slice(CASE_URI, leaf, time=44.0,
+                              interpolation='closest')
+    assert near['drawn'] > 0
+    assert abs(near['time_slice_time'] - 44.0) < 0.5, \
+        'closest answers the case\'s own slice near the ask'
+    clamped = session.plot_slice(CASE_URI, leaf, time=1e6,
+                                 interpolation='closest')
+    assert clamped['time_slice_time'] < 1e4, \
+        'a time far outside the pulse answers the last slice the case holds'
+
+
+def test_plot_slice_refuses_a_leaf_the_case_does_not_hold_named(core):
+    """A leaf the tree does not hold is refused by name, in the repository
+    style: the reason is in the message, and it says that path is not a
+    leaf of this case (so the fix is to name one `search_nodes` can give).
+    No empty figure is left on the screen."""
+    session, _home = core
+    session.load_ids(CASE_URI, 'core_profiles', 0)
+    with pytest.raises(ValueError) as exc:
+        session.plot_slice(CASE_URI, 'core_profiles.no_such_leaf', time=44.0)
+    refusal = str(exc.value)
+    assert 'not a leaf of' in refusal
+    assert 'core_profiles.no_such_leaf' in refusal
+
+
 # -------------------------------------------------------------------- export
 
 
