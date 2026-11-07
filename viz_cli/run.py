@@ -62,8 +62,8 @@ def parseArguments(argv=None):
                         help='API key for the endpoint (sent only when '
                              'non-empty)')
     parser.add_argument('--max-turns', dest='max_turns', type=int,
-                        default=8,
-                        help='the agent loop\'s turn limit (default: 8)')
+                        default=12,
+                        help='the agent loop\'s turn limit (default: 12)')
     parser.add_argument('--shots', default=None,
                         help='directory the turns\' images and transcripts '
                              'are saved in (default: '

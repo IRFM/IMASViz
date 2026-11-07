@@ -60,7 +60,7 @@ class AgentLoop(QObject):
         self.history = []
         self._stop_requested = False
 
-    def ask(self, user_prompt, max_turns=8):
+    def ask(self, user_prompt, max_turns=12):
         """Run the agent loop, blocking until it is done.
 
         The caller decides what thread to call this from. In the panel,
@@ -92,6 +92,12 @@ class AgentLoop(QObject):
         # recalled, not read from the case. ``called_a_tool`` is what tells
         # the guard apart from a real, tool-grounded answer.
         called_a_tool = False
+        # The last tool the loop attempted, with what it answered (or the
+        # refusal it was met with). The max-turns stop below names it: a
+        # run that stops on the budget may have delivered everything (the
+        # report written, the figure drawn), and the user must find that
+        # in the refusal instead of reading the stop as a failure.
+        last_action = None
 
         for turn in range(max_turns):
             if self._stop_requested:
@@ -162,10 +168,12 @@ class AgentLoop(QObject):
                         self.transcriptLine.emit(
                             '  ← %s: %s' % (name, summary))
                         tool_result = {'result': result, 'error': None}
+                        last_action = '%s: %s' % (name, summary)
                     except Exception as e:
                         self.transcriptLine.emit(
                             '  ← %s: REFUSAL — %s' % (name, e))
                         tool_result = {'result': None, 'error': str(e)}
+                        last_action = '%s: REFUSAL — %s' % (name, e)
                     messages.append({
                         'role': 'tool',
                         'tool_call_id': 'call_%d' % i,
@@ -192,9 +200,20 @@ class AgentLoop(QObject):
             return
 
         # max_turns exhausted
-        self.transcriptLine.emit(
-            'Stopped: max_turns reached (%d).' % max_turns)
-        self.askFinished.emit('max_turns reached (%d)' % max_turns)
+        if last_action is None:
+            stopped = ('Stopped: max_turns reached (%d).' % max_turns)
+            self.askFinished.emit('max_turns reached (%d)' % max_turns)
+        else:
+            # The budget ran out, but the loop may have delivered: name
+            # the last action and what it answered (or was refused with),
+            # so the user finds the artifact in the stop instead of
+            # reading the stop as a failure with nothing behind it.
+            stopped = ('Stopped: max_turns reached (%d); the last action '
+                       'was %s.' % (max_turns, last_action))
+            self.askFinished.emit(
+                'max_turns reached (%d); the last action was %s.'
+                % (max_turns, last_action))
+        self.transcriptLine.emit(stopped)
 
     def _unfoundedIdsRefusal(self, content):
         """A final answer that presents an inventory of case identifiers with
