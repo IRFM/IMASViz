@@ -236,7 +236,8 @@ class QVizCurvePlot(QWidget):
         self.keepCurveBox.setEnabled(self.exploresTensor and self.liveCount() == 1)
         self.keepCurveBox.setToolTip(self._keepTooltip())
 
-    def plot(self, treeNode, as_function_of_time=None, tensor=False):
+    def plot(self, treeNode, as_function_of_time=None, tensor=False,
+             time_index=None):
         """Add one quantity to the figure, along the abscissa the figure draws.
 
         `tensor` is the other representation of the same quantity: the arrays the
@@ -244,6 +245,14 @@ class QVizCurvePlot(QWidget):
         the element the tree is standing on. The default -- an element -- puts a
         slider on the leaf's own coordinates only and writes the arrays in the
         legend.
+
+        `time_index` pins the element of the dynamic time array a profile is
+        read at: a caller that asks "the profile at the 42nd slice" resolves
+        the time value to an index elsewhere and passes it down; the read takes
+        it verbatim, so a slice the tree is not standing on is still drawn.
+        Ignored when the curve draws the time axis itself, because a pin and a
+        time history contradict -- and the caller that would ask for both
+        refuses before reaching here.
 
         The first curve settles the figure's abscissa; after that the figure
         decides it, and a quantity that cannot be read along it is refused by
@@ -277,6 +286,16 @@ class QVizCurvePlot(QWidget):
                   if position not in plotted]
         fixed, movable = self._pinning(pinned, tensor, self.walkingArrays)
         slices = self._readSlices(fixed, movable)
+        # A pinned time slice is the caller's explicit choice, and it must
+        # actually move the read: the read's own rule is that a slice for the
+        # dynamic axis (built from this figure's controls, or from the element
+        # the tree stands on) wins over a bare index. So the pin is put into
+        # the mapping itself, for the axis the read takes it from. A curve
+        # that draws the time axis does not reach here with a pin, so the
+        # guard is defensive.
+        if time_index is not None and timeAxis is not None and not alongTime:
+            slices = dict(slices or {})
+            slices[timeAxis.key()] = int(time_index)
 
         x, y = access.GetSignal(treeNode=treeNode, plotWidget=self,
                                 as_function_of_time=as_function_of_time,

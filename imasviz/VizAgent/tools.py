@@ -194,12 +194,23 @@ TOOLS = [
     _tool(
         'plot_one',
         'Draw one quantity, into the figure its axes call for. '
-        'A curve figure for one axis to draw, a picture window for two.',
+        'A curve figure for one axis to draw, a picture window for two. '
+        '`time` pins a profile to the slice of its dynamic time array whose '
+        'time_slice[i].time is nearest to the value; the answer carries '
+        'time_slice_index and time_slice_time, the case\'s own, so a value '
+        'the user asked at is not mistaken for a slice they did not name. '
+        '`along_time` and `time` are refused together.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
             'along_time': {'type': ['boolean', 'null']},
             'into_figure_key': {'type': ['string', 'null']},
+            'time': {'type': ['number', 'null'],
+                     'description': 'seconds; the slice to pin a profile '
+                                    'drawn along its own coordinate to. '
+                                    'Answered with the slice the case holds '
+                                    'nearest to this time, and that slice\'s '
+                                    'time, both named in the answer.'},
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
     _tool(

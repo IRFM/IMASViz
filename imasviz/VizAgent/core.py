@@ -332,29 +332,93 @@ class McpGuiCore:
             self.api.addPlotWidgetToMDI(frame)
             frame.show()
 
-    def plot_one(self, uri, path, along_time=None, into_figure_key=None):
+    def plot_one(self, uri, path, along_time=None, into_figure_key=None,
+                 time=None):
         """One quantity, drawn by `QVizPlotOneNode` into the frame its axes call for.
 
         `along_time` is None for no opinion, which leaves the figure's own
         rule standing; the read that cannot answer is named out of the
         case's log, because the command logs it there and returns nothing.
+
+        `time` pins a single slice of a quantity held by a dynamic time array
+        (e.g. `time_slice[i]`): it resolves to the slice whose
+        `time_slice[i].time` is nearest, the figure draws the profile along
+        the leaf's own coordinate at that slice, and the answer names the
+        slice the read landed on (its index and the slice's own time). The
+        user asks at a *time*; the case answers with a *slice* and its time,
+        and the answer says both, so it is not mistaken for the value that was
+        asked. `along_time` and `time` are refused together, because they
+        contradict: one draws every slice, the other pins one. Refused by name
+        too when the quantity has no time axis: there is no slice to pin.
         """
+        if time is not None and along_time:
+            raise ValueError(
+                'plot_one: along_time and time are contradictory. '
+                'along_time draws the quantity as a history along its every '
+                'time slice, so one slice cannot be pinned at the same time. '
+                'Drop along_time, or drop the time value, and ask again.')
         view = self._viewForUri(uri)
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
             import QVizPlotOneNode
         node = self._nodeForPath(view, path)
+        time_index, slice_time = None, None
+        if time is not None:
+            time_index, slice_time = self._resolveTimeSlice(
+                view, node, path, time)
         command = QVizPlotOneNode(view, node,
                                   intoFigureKey=into_figure_key,
-                                  alongTime=along_time)
+                                  alongTime=along_time,
+                                  timeIndex=time_index)
         frame = command.execute()
         if frame is None:
             raise ValueError(
                 '"%s" could not be drawn: %s'
                 % (path, self.lastLogLine(view) or 'see the log panel'))
         self._embedIfNew(command, frame)
-        return {'figure': frame.figureKey,
-                'kind': type(frame).__name__,
-                'drawing': bool(frame.isDrawing())}
+        result = {'figure': frame.figureKey,
+                  'kind': type(frame).__name__,
+                  'drawing': bool(frame.isDrawing())}
+        if time is not None:
+            result['time_slice_index'] = time_index
+            result['time_slice_time'] = slice_time
+        return result
+
+    def _resolveTimeSlice(self, view, node, path, time):
+        """The slice of a dynamic time array nearest to the requested time.
+
+        Read off the case, so the answer names the index the read uses and
+        the time that slice itself carries (time_slice[i].time) instead of
+        the value that was asked. Refused by name when the quantity has no
+        time axis, because a slice of a quantity that has no slice has
+        nothing to resolve to.
+        """
+        import logging
+        import numpy as np
+        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+        from imasviz.VizDataAccess.QVizTensorExtractor import QVizTensorExtractor
+        time_base = QVizTensorExtractor(node.getIDSRef()).timeBase(
+            QVizAxesSpec.fromTreeNode(node))
+        if time_base is None:
+            time_base = []
+        else:
+            time_base = np.asarray(time_base, dtype=float)
+        if len(time_base) == 0:
+            raise ValueError(
+                'plot_one: %r has no time axis to pin to %g: '
+                'the time parameter applies to a quantity held by a '
+                'dynamic time array (e.g. time_slice[i]); this one is not, '
+                'so a time value there has no slice to resolve to.'
+                % (path, float(time)))
+        index = int(np.argmin(np.abs(time_base - float(time))))
+        slice_time = float(time_base[index])
+        if abs(slice_time - float(time)) > 1e-9:
+            logging.getLogger(getattr(view, 'uri', None) or 'IMASViz').warning(
+                'plot_one: %s at time %g s: the case\'s nearest slice is '
+                'index %d (time_slice[%d].time = %g s); the profile is drawn '
+                'at that slice, not at %g s.'
+                % (path, float(time), index, index, slice_time,
+                   float(time)))
+        return index, slice_time
 
     def plot_selection(self, uri):
         """The case's selection, drawn by `QVizPlotAsSlices` from this view alone.

@@ -56,7 +56,7 @@ class QVizPlotOneNode(QVizAbstractCommand):
     IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
     def __init__(self, dataTreeView, treeNode, intoFigureKey=None,
-                 alongTime=None, tensor=False, figureKey=None):
+                 alongTime=None, tensor=False, figureKey=None, timeIndex=None):
         """
         Arguments:
             treeNode       (QVizTreeNode) : the node to draw, never the selection.
@@ -87,6 +87,10 @@ class QVizPlotOneNode(QVizAbstractCommand):
         self.alongTime = alongTime
         self.tensor = tensor
         self.figureKey = figureKey
+        # The slice of the dynamic time array a profile is drawn at (a time
+        # value resolved by the caller to the nearest slice); None for no
+        # opinion, which keeps the read at the slice the tree stands on.
+        self.timeIndex = timeIndex
         # Set when this command opened the figure itself: a frame that is already
         # on screen must not be embedded in a second subwindow.
         self.builtFigure = False
@@ -150,7 +154,7 @@ class QVizPlotOneNode(QVizAbstractCommand):
             frame.plot(self.treeNode)
             return
         frame.plot(self.treeNode, as_function_of_time=self.alongTime,
-                   tensor=self.tensor)
+                   tensor=self.tensor, time_index=self.timeIndex)
 
     def newFigure(self, figureType, frameClass):
         figureKey = self.api.FigureKeyFor(figureType, self.figureKey)
