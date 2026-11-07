@@ -1084,6 +1084,16 @@ class McpGuiCore:
             buffer.close()
         return bytes(qbytes)
 
+    def get_screenshot(self, window='app'):
+        """Answer the tool name the loop dispatches under: ``TOOLS``
+        (``imasviz/VizAgent/tools.py``) offers ``get_screenshot`` to the
+        LLM, and ``AgentLoop._dispatch`` asks the core for that name.
+        Before this existed, the call refused by name -- the method below
+        is the same gesture, and both names must keep answering, which
+        ``tests/test_116`` pins.
+        """
+        return self.screenshot(window)
+
     # ------------------------------------------------------------- log panel
 
     def get_logs(self, uri=None, tail=200):
