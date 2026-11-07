@@ -93,7 +93,7 @@ The block above names the **foss** HLI. On the **gateway** nodes (whose profile
 pins `SciPy-bundle/2023.12-iimkl`) the foss variant fails to load that
 requirement, and what runs is the **intel** HLI instead —
 `IMAS-Python/2.3.0-intel-2023b`, `PyQtGraph/0.13.7-intel-2023b`. See [Starting
-on the Gateway](#starting-on-the-gateway): the scripts in `scripts/` load that
+on the Gateway](#starting-from-sources-gateway-iter-hpc-west): the scripts in `scripts/` load that
 stack and set this environment for you.
 
 IMASViz reads the IMAS Data Dictionary at run time through the Access Layer
@@ -266,12 +266,13 @@ them for the user.
 | Group | Tools |
 | --- | --- |
 | cases | `open_case`, `list_cases`, `close_case` |
-| tree | `list_idss`, `load_ids`, `search_nodes`, `select_signals`, `unselect_all` |
-| plotting | `plot_one`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal` |
+| tree | `list_idss`, `load_ids`, `search_nodes`, `select_signals`, `unselect_all`, `list_selection`, `select_from_configuration` |
+| plotting | `plot_one`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal`, `save_plot_configuration` |
 | windows | `list_windows`, `show_window`, `hide_window`, `close_window` |
 | plugins | `list_plugins`, `run_plugin` |
-| session | `save_session`, `restore_session`, `export_to_ids` |
-| inspection | `get_screenshot` (PNG of a window), `get_logs` (the case log panel) |
+| session | `save_session`, `restore_session`, `export_to_ids`, `list_sessions`, `list_configurations`, `save_selection` |
+| inspection | `get_screenshot` (PNG of a window), `get_logs` (the case log panel), `describe_node` |
+| reports | `plot_report` (one window of curves as self-contained HTML with stats), `case_report` (the whole loaded tree as HTML with stats) |
 
 Stylage and cursors are kept in the hands of the user; they are not offered
 as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`
@@ -313,27 +314,49 @@ it: a refused gesture is named, and `get_logs` holds those refusals. On a node
 without a display the client is offscreen by design; `--display` keeps the
 window when you have one.
 
-## Starting on the Gateway
+## Starting from sources (Gateway, ITER HPC, WEST)
 
-The two launchers in `scripts/` start IMASViz **from sources** on this node,
-loading the module stack and the production environment with them. They use the
-**intel** HLI: on the gateway nodes whose profile pins `SciPy-bundle/2023.12-iimkl`,
-the **foss** variant (the one the `Setting the environment` section above lists)
-fails to load its SciPy-bundle requirement, so it is not what runs here. `module`
-is a shell function, and the scripts never pipe it — a pipe would run the load in
-a subshell and lose the environment it sets.
+Each site has its own launcher pair in `scripts/` — one for the **visible
+application** (needs X) and one for the **terminal client** (offscreen, or
+with `--display`). All use `VIZ_PRODUCTION=1` and locate `VIZ_HOME` from the
+script's own path, so they can be run from anywhere. `module` is a shell
+function and is never piped — a pipe would run the load in a subshell and lose
+the environment it sets.
 
-    scripts/run_imasviz.sh                      # the application, with its window (needs X)
-    scripts/run_viz_cli.sh                      # the terminal client (the `viz_cli` REPL above)
-    scripts/run_viz_cli.sh "trace le champ"     # one prompt through the client, then exit
+### Gateway (EUFUS)
 
-Both set, for the production run: `VIZ_HOME` (the repository root, found from the
-script's own location), `VIZ_PRODUCTION=1`, `UDA_DISABLED=1`,
-`TS_MAPPINGS_DIR` (default `$repo/ts_mapping_files`) and `IMAS_VIZ_VERSION`
-(overridable from the environment). They do **not** replace the modules'
-`PYTHONPATH` (that would drop the PySide6/IMAS paths the modules export); the
-code appends `VIZ_HOME` to `sys.path` itself. `run_viz_cli.sh` hands any argument
-straight to `viz_cli`, so it is the one to start a one-shot prompt from the shell.
+Loads the **intel** HLI (the foss variant does not load its SciPy-bundle
+requirement here).
+
+    scripts/run_imasviz.sh                      # the application, with its window
+    scripts/run_viz_cli.sh                      # the terminal client
+    scripts/run_viz_cli.sh "one prompt"         # one-shot, exit 0/1
+
+### ITER HPC
+
+Loads the four standard modules (no version pin, the profile resolves the
+active stack).
+
+    scripts/iter/run_imasviz.sh                 # the application, with its window
+    scripts/iter/run_viz_cli.sh                 # the terminal client
+    scripts/iter/run_viz_cli.sh "one prompt"    # one-shot
+
+### WEST
+
+Creates a Python virtualenv at `~/.imasviz/venv` on first run, pip-installs
+`IMAS-Python`, `PySide6`, `PyQtGraph` and `matplotlib` into it (the stack is
+re-verified on every run), then loads the IMAS core with `module load IMAS`.
+
+    scripts/west/run_imasviz.sh                 # the application, with its window
+    scripts/west/run_viz_cli.sh                 # the terminal client
+    scripts/west/run_viz_cli.sh "one prompt"    # one-shot
+
+All six launchers set, for the production run: `VIZ_HOME`, `VIZ_PRODUCTION=1`,
+`UDA_DISABLED=1`, `TS_MAPPINGS_DIR` (default `$repo/ts_mapping_files`) and
+`IMAS_VIZ_VERSION` (overridable from the environment). They do **not** replace
+the modules' `PYTHONPATH`; the code appends `VIZ_HOME` to `sys.path` itself.
+`run_viz_cli.sh` hands any argument straight to `viz_cli`, so it is the one to
+start a one-shot prompt from the shell.
 
 ## The in-app agent
 
