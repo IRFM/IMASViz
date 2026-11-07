@@ -425,3 +425,29 @@ TOOLS = [
         }, 'additionalProperties': False},
     ),
 ]
+
+TOOL_PARAMETERS = {
+    tool['function']['name']: tool['function']['parameters']
+    for tool in TOOLS
+}
+
+
+def unknownParameters(name, args):
+    """The names in ``args`` that the tool ``name`` does not take.
+
+    Every tool in ``TOOLS`` declares ``additionalProperties: false`` and
+    lists the names it does take in ``parameters.properties``. An
+    argument whose name is not in that list is one the model invented --
+    ``time_index`` on ``plot_one`` is the one measured -- and the loop
+    must refuse it by naming the parameter that is not there and the ones
+    that are, instead of letting Python's ``TypeError`` (``unexpected
+    keyword argument``) speak for it. An unknown tool name, or a tool that
+    admits extra parameters, answers an empty list.
+    """
+    schema = TOOL_PARAMETERS.get(name)
+    if schema is None:
+        return []
+    if schema.get('additionalProperties', False):
+        return []
+    allowed = set(schema.get('properties', {}))
+    return sorted(set(args or {}) - allowed)

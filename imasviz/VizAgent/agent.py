@@ -27,7 +27,12 @@ import threading
 
 from PySide6.QtCore import QObject, Signal
 
-from imasviz.VizAgent.tools import SYSTEM_INSTRUCTIONS, TOOLS
+from imasviz.VizAgent.tools import (
+    SYSTEM_INSTRUCTIONS,
+    TOOLS,
+    TOOL_PARAMETERS,
+    unknownParameters,
+)
 
 
 class AgentLoop(QObject):
@@ -225,11 +230,27 @@ class AgentLoop(QObject):
 
     def _dispatch(self, name, args):
         """Run one tool by name on the calling thread (the GUI thread,
-        when reached through ``GuiDispatcher``)."""
+        when reached through ``GuiDispatcher``).
+
+        Before the call, the arguments are checked against the tool's own
+        schema: an argument the tool does not take is refused by naming the
+        parameter that is not there and the ones that are, so the model
+        can correct the call. This is what a bare ``TypeError`` from
+        Python would not do: it says "unexpected keyword argument", not
+        which ones are expected.
+        """
         method = getattr(self.core, name, None)
         if method is None:
             raise ValueError(
                 'the tool "%s" is not a gesture of this session' % name)
+        unknown = unknownParameters(name, args or {})
+        if unknown:
+            allowed = ', '.join(sorted(
+                TOOL_PARAMETERS[name].get('properties', {})))
+            raise ValueError(
+                '"%s" is not a parameter of the %s tool: it takes %s. '
+                'Answer with the parameters the tool names.'
+                % (unknown[0], name, allowed))
         return method(**args)
 
 
