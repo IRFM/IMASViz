@@ -146,6 +146,28 @@ def test_loading_the_same_occurrence_is_the_already_answer(core):
     assert answer['signals'] == EQUILIBRIUM_SIGNALS
 
 
+def test_list_case_idss_holds_only_the_held(core):
+    """`list_case_idss` is the strict subset of `list_idss` that holds data:
+    no empty occurrence list slips through, every name is declined by the
+    case, and the short list is what a user is asking for when they say
+    "what is in this case"."""
+    session, _home = core
+    declared = session.list_idss(CASE_URI)
+    held = session.list_case_idss(CASE_URI)
+
+    declared_by_name = {e['name']: e['occurrences'] for e in declared}
+    held_by_name = {e['name']: e['occurrences'] for e in held}
+
+    assert all(held_by_name[name] for name in held_by_name), \
+        'a held IDS must name at least one occurrence'
+    assert set(held_by_name) <= set(declared_by_name)
+    for name, occ in held_by_name.items():
+        assert declared_by_name[name] == occ
+    expected = {n for n, o in declared_by_name.items() if o}
+    assert set(held_by_name) == expected
+    assert len(held) < len(declared)
+
+
 # -------------------------------------------------------------------- search
 
 

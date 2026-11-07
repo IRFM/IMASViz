@@ -115,6 +115,31 @@ class McpGuiCore:
                  'occurrences': sorted(occurrences.occurrencesOf(name))}
                 for name in sorted(view.IDSRoots)]
 
+    def list_case_idss(self, uri):
+        """Only the IDS the case actually holds -- the short, grounded list.
+
+        `list_idss` answers the dictionary's declaration: every root of the
+        case's data dictionary, the ones that hold no data included (an empty
+        occurrence list). A long list is what a model that is asked to
+        *summarise* it invents around. This one answers what the case names
+        through `DBEntry.list_all_occurrences` and keeps only the IDS whose
+        occurrence list is non-empty -- "what is in this case", in the words
+        the case says, not a list recalled from training. The same
+        `QVizCaseOccurrences` the application uses to colour the tree, so the
+        names and the counts are the truth the user reads on screen.
+        """
+        view = self._viewForUri(uri)
+        from imasviz.VizDataSource.QVizCaseOccurrences import \
+            QVizCaseOccurrences
+        occurrences = QVizCaseOccurrences(view.dataSource)
+        held = {}
+        for name in sorted(view.IDSRoots):
+            occ = sorted(occurrences.occurrencesOf(name))
+            if occ:
+                held[name] = occ
+        return [{'name': name, 'occurrences': held[name]}
+                for name in sorted(held)]
+
     def load_ids(self, uri, ids_name, occurrence=0, slices=FIRST):
         """Load one occurrence of one IDS, synchronously, the way a click loads it.
 

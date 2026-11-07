@@ -54,7 +54,15 @@ reads them in the log panel.
 When the user asks you to do something, use the tools in the order that
 makes sense: open the case, list what it holds, load what you need,
 search for the exact paths, select them, and draw. Answer with the
-values the tools return, not with guesses."""
+values the tools return, not with guesses.
+
+NE JAMAIS présenter une liste d'IDS d'un cas sans avoir appelé d'abord
+un outil de cas dans cette conversation. list_case_idss(uri) est la
+bonne liste : les IDS que le cas porte, occurrence par occurrence, lus
+de son entrée via DBEntry.list_all_occurrences -- ce que le cas dit,
+pas ce que tu te rappelles. Si aucun cas n'est ouvert, demande à
+l'utilisateur d'ouvrir un cas avant de nommer quoi que ce soit : une
+liste de noms que tu récites n'est pas la vérité du cas."""
 
 
 def _tool(name, description, parameters):
@@ -96,8 +104,25 @@ TOOLS = [
     ),
     _tool(
         'list_idss',
-        'Every IDS root of the case, and the occurrences each one holds. '
-        'Asked of the case itself, not listed from a file.',
+        'Every IDS the case\'s data dictionary declares, and the occurrences '
+        'each one holds -- including the roots that hold no data (an empty '
+        'occurrence list). Asked of the case itself, never listed from a '
+        'file. For the short list of the IDS the case actually holds, use '
+        'list_case_idss instead.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'list_case_idss',
+        'Only the IDS the case actually holds, and the occurrences each one '
+        'names -- the roots the dictionary declares but the case does not '
+        'fill are left out. Asked of the case through '
+        'DBEntry.list_all_occurrences, so the names and counts are the case\'s '
+        'own. This is the list to answer "what is in this case" with; '
+        'recalling IDS names from memory is not. Do not summarise or rename '
+        'the answer, and do not present an IDS list you did not read from '
+        'this call.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
         }, 'required': ['uri'], 'additionalProperties': False},
