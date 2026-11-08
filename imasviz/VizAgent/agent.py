@@ -34,6 +34,25 @@ from imasviz.VizAgent.tools import (
     unknownParameters,
 )
 
+# The shapes of a final answer that, after a successful tool, gives the work
+# the loop just did back to the user: it names no pending work, says it has
+# done none yet, or says no request was even attached. Keyed on the negative
+# claim -- not on "what would you like to do next", which a *correct* answer
+# may well offer -- so a good final answer is never mistaken for this.
+_DEFLLECTION_MARKERS = (
+    'no pending task', 'a pending task',
+    'i don\'t know what to do', 'i don\'t know what you',
+    'haven\'t drawn', 'have not drawn',
+    'haven\'t traced', 'have not traced',
+    'haven\'t plotted', 'have not plotted',
+    'haven\'t done', 'have not done',
+    'no question or instruction', 'no question attached',
+    'there was no question',
+    'je n\'ai pas de tâche', 'je n\'ai encore rien',
+    'je n\'ai rien tracé', 'je n\'ai rien fait',
+    'je ne sais pas quoi faire',
+)
+
 
 class AgentLoop(QObject):
     """One agent session: its LLM, its gestures, and the loop.
@@ -69,6 +88,10 @@ class AgentLoop(QObject):
         from the test thread.
         """
         self._stop_requested = False
+        # A deflected final answer (the work handed back to the user) is
+        # re-anchored once and then refused; a new ask restarts the budget, so
+        # each request gets its own single re-anchor instead of a shared one.
+        self._reanchors = 0
         try:
             self._run(user_prompt, max_turns)
         except Exception as e:
@@ -183,12 +206,33 @@ class AgentLoop(QObject):
                 continue
 
             # --- Final answer -----------------------------------------------
-            refusal = None if called_a_tool \
-                else self._unfoundedIdsRefusal(response.content)
+            if not called_a_tool:
+                refusal = self._unfoundedIdsRefusal(response.content)
+            else:
+                # The tools ran. An answer that says none of it happened and
+                # hands the request back to the user does not stand on top of
+                # the work the loop just delivered; one that reports the work
+                # is not second-guessed.
+                refusal = self._deflectionRefusal(response.content,
+                                                  last_action)
+                if refusal is not None and self._reanchors == 0:
+                    # The repro: it drew, and then said "no pending task,
+                    # give me the case URI and what to do". The work is done,
+                    # so name the refusal, re-anchor the model on what the
+                    # tools produced and the request it was given, and hand it
+                    # back one turn instead of abandoning the work.
+                    self._reanchors += 1
+                    self.transcriptLine.emit('REFUSAL: %s' % refusal)
+                    messages.append({
+                        'role': 'user',
+                        'content': self._reanchor(user_prompt, last_action),
+                    })
+                    continue
             if refusal is not None:
-                # The answer recites an inventory instead of reading it from
-                # the case: refuse it by name, the way a refused gesture is
-                # named, and point at the call that would ground it.
+                # Either it recites a case inventory it never read (the
+                # unfounded guard), or it deflects off the work it already did
+                # and the one re-anchor did not cure it. In both cases refuse
+                # by name, the way a refused gesture is named.
                 self.transcriptLine.emit('REFUSAL: %s' % refusal)
                 self.askFinished.emit(refusal)
                 return
@@ -246,6 +290,41 @@ class AgentLoop(QObject):
             'truth. Open the case and read it back with list_case_idss(uri) '
             'or list_idss(uri), and answer only from the names and '
             'occurrences that call returns.')
+
+    def _deflectionRefusal(self, content, last_action):
+        """A final answer, after a successful tool, that gives the work back
+        to the user is refused by name and re-anchored, instead of standing.
+
+        Returns the refusal reason, or None when the answer may stand. The
+        guard fires only when there was a delivered action to point at
+        (``last_action`` set) and the content carries one of the negative
+        shapes in ``_DEFLLECTION_MARKERS`` -- "no pending task", "haven't yet
+        traced", "no question was attached" -- which is the exact failure that
+        made the model abandon a figure it had drawn and, on a follow-up,
+        claim it had done nothing. It is deliberately not keyed on "what
+        would you like to do next", which a correct answer may well offer;
+        an honest final answer after a tool is not second-guessed.
+        """
+        if last_action is None:
+            return None
+        text = (content or '').lower()
+        if not any(marker in text for marker in _DEFLLECTION_MARKERS):
+            return None
+        return (
+            'the tools already produced "%s", but the answer says none of it '
+            'was done and asks the user to restate the request; the work is '
+            'done, so the answer must be drawn from it, not handed back.'
+            % last_action)
+
+    def _reanchor(self, user_prompt, last_action):
+        """The one message the loop appends to pull an answer back on to the
+        request it was given and the work it produced, after a deflection."""
+        return (
+            'You already ran the tools for this request: the last one was '
+            '"%s". The request was: "%s". Give your final answer now, '
+            'grounded in what those tools returned. Do not ask the user to '
+            'restate the request, and do not say nothing was done when it '
+            'was.' % (last_action, user_prompt))
 
     def _dispatch(self, name, args):
         """Run one tool by name on the calling thread (the GUI thread,
