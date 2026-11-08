@@ -116,6 +116,15 @@ def caseTooltip(uris):
     return '\n'.join(uris) if uris else None
 
 
+#: The size the embed hands a figure window that settles below a readable
+#: size (`addPlotWidgetToMDI`) and the size `focus_window` puts a window
+#: back to (`imasviz.VizAgent.core`). A subwindow that settles small is the
+#: unreadable screenshot the user reported, and `QWidget.grab()` renders at
+#: whatever size the window is -- so this is the size that makes a freshly
+#: drawn figure a picture the page can serve and the user can read.
+DEFAULT_FIGURE_SIZE = (1280, 800)
+
+
 class QVizMdiSubWindow(QMdiSubWindow):
     """The MDI window a frame is embedded in -- a figure or a case view.
 
@@ -1506,6 +1515,19 @@ class Viz_API:
         opens a figure behind it, and raising it and giving it the input focus
         is what makes the click read as something. A caller that did not ask
         for the window ignores the result and works as it did.
+
+        The subwindow settles on the size hint of the frame it holds, and a
+        content widget that carries none -- a bare one, or a container whose
+        layout does not propagate its children -- settles to 120x28 whatever
+        it was told before the show: `QWidget.grab()` takes the screenshot at
+        that size, which is the unreadable picture the user reported. The rule
+        judges the floor from the size the subwindow *settles to* and hands it
+        ``DEFAULT_FIGURE_SIZE`` when that is below 300 on a side, leaving alone
+        the frames that already answer a readable size (a pyqtgraph figure
+        settles to its own 600x480). A session's saved geometry is applied
+        *after* this embed, over the rule, and ``DEFAULT_FIGURE_SIZE`` is the
+        same constant ``focus_window`` (``imasviz.VizAgent.core``) puts a
+        window back to.
         """
         subWindow = QVizMdiSubWindow(self)
         # `setWidget` copies the widget's title to the subwindow and leaves
@@ -1514,12 +1536,33 @@ class Viz_API:
         # it carries on has to be handed over here, whatever the frame was told.
         subWindow.setWidget(plotWidget)
         subWindow.setToolTip(plotWidget.toolTip() or '')
-        subWindow.resize(plotWidget.width(), plotWidget.height())
         if self.getMDI() is not None:
             self.getMDI().addSubWindow(subWindow)
         else:
             self.subWindow = subWindow
         subWindow.show()
+        # The subwindow settles on the size hint of the frame it holds, not on
+        # the size the frame was told before the show: a bare content widget
+        # settles to 120x28 whatever it was resized to, and a pyqtgraph figure
+        # settles to its own 600x480. Judged on the size the frame *was told*,
+        # the floor reaches neither -- the 120x28 screenshot answers 640x480
+        # before the show, so the floor would skip it, and the already-readable
+        # figure answers 640x480 too, so it would be resized into the default
+        # for no reason. Judged on the size the subwindow *settles to*, the
+        # floor reaches exactly the windows too small for `QWidget.grab()` to
+        # make a readable screenshot and leaves the ones that are not:
+        # measured, a bare frame settles to 120x28 (the floor hands it
+        # DEFAULT_FIGURE_SIZE) and a pyqtgraph figure settles to 608x508 (the
+        # floor leaves it).
+        width, height = subWindow.width(), subWindow.height()
+        if width < 300 and height < 300:
+            # A resize done before the show survives nothing -- the first show
+            # settles the subwindow on the size hint -- so the default is
+            # re-asserted after it, where it answers for itself. The frame it
+            # carries follows, in the client area the shell leaves it: the
+            # picture a `QWidget.grab()` takes is DEFAULT_FIGURE_SIZE minus the
+            # shell's own chrome, and that is the size the page serves.
+            subWindow.resize(*DEFAULT_FIGURE_SIZE)
         # A window is now in the area: the moment the preferred layout (a
         # preference, one-shot) is applied to it.
         self._maybeApplyPreferredLayout()

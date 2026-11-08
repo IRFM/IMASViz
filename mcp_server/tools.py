@@ -419,6 +419,23 @@ def buildServer(core, dispatcher, name='imasviz'):
                 mimeType='image/png'),
         ]
 
+    @server.tool(name='focus_window')
+    def focus_window(window: str = 'app',
+                     width: Optional[int] = None,
+                     height: Optional[int] = None):
+        """Bring a window forward at a readable size -- the preparation of
+        a screenshot.
+
+        Shown, raised to the front, and resized to `width` x `height`
+        (named refusals when they are not positive integers), or to the
+        default figure size when either is left out. "app" for the
+        application, a figure key for one figure, a case URI for its shot
+        view. The answer is the size the window then holds; ask
+        get_screenshot on the same window to see it.
+        """
+        return _run(partial(core.focus_window, window,
+                            width=width, height=height))
+
     # ------------------------------------------------------------------- log
 
     @server.tool(name='get_logs')

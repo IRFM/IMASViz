@@ -163,7 +163,7 @@ class WebSession:
                     except (TypeError, RuntimeError):
                         pass
 
-            turn_dir, saved, refused, images = \
+            turn_dir, saved, refused, images, windows = \
                 self.dispatcher.call(lambda: self._finishTurn(lines))
 
             record = {'n': len(self.turns) + 1,
@@ -172,7 +172,12 @@ class WebSession:
                       'refusals': list(refused),
                       'error': outcome[0],
                       'images': images,
-                      'image_files': [os.path.basename(path) for path in saved],
+                      'image_files': [name for name in
+                                      (entry['name'] for entry in windows)],
+                      # The address of every picture: what the page's
+                      # Focus and Screenshot buttons send to focus_window
+                      # and get_screenshot.
+                      'image_windows': windows,
                       'reports': sorted(self.reportsOnDisk() - before_reports),
                       'dir': turn_dir}
             self.turns.append(record)
@@ -186,8 +191,10 @@ class WebSession:
         Asked through the `GuiDispatcher`, because it asks the core to
         render (`screenshot` -> `QWidget.grab()`), and a thread that does
         not own a widget must not ask one to draw. Returns the directory,
-        the list of the PNGs written (name and path), the ones the core
-        refused, and every PNG as `{'name', 'b64'}` for the page.
+        the list of the PNGs written (window and path), the ones the core
+        refused, every PNG as `{'name', 'window', 'b64'}` for the page,
+        and the `({'name', 'window'})` pairs the record keeps for the
+        page's buttons.
         """
         from mcp_server.agent_mode import _settleWindow, saveShots
 
@@ -200,14 +207,20 @@ class WebSession:
         saved, refused = saveShots(self.core, turn_dir)
         with open(os.path.join(turn_dir, 'transcript.txt'), 'w') as f:
             f.write('\n'.join(lines) + '\n')
-        # `saveShots` answers the paths it wrote, not (name, path) pairs:
-        # the name the page shows is the file's own.
+        # `saveShots` answers the (window, path) pairs it wrote: the name
+        # the page shows is the file's own, and `window` is the address
+        # the same page acts on it with -- focus_window and get_screenshot
+        # take that name back.
         images = []
-        for path in saved:
+        windows = []
+        for window, path in saved:
             with open(path, 'rb') as f:
                 images.append({'name': os.path.basename(path),
+                               'window': window,
                                'b64': base64.b64encode(f.read()).decode('ascii')})
-        return turn_dir, saved, list(refused), images
+            windows.append({'name': os.path.basename(path),
+                            'window': window})
+        return turn_dir, saved, list(refused), images, windows
 
     def stop(self):
         """Ask the loop to stop at the next turn boundary.

@@ -29,7 +29,10 @@ How to work with it:
 5. plot_one / plot_selection / plot_table / plot_stacked draw, and
    get_screenshot answers a PNG of the window for the user to read on
    screen (the LLM cannot parse a PNG on this stack; describe a figure
-   by reading its underlying arrays with get_signal).
+   by reading its underlying arrays with get_signal). A screenshot is
+   the size the window is: when the figure is one the user must see,
+   focus_window puts it forward at a readable size (1280x800 or the
+   named pixels) before the get_screenshot.
 6. state is read with list_selection (what the case holds selected) and
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
@@ -466,10 +469,28 @@ TOOLS = [
         'get_screenshot',
         'A window as it stands, in PNG. "app" for the application, a '
         'figure key for one figure, a case URI for its shot view. '
+        'The picture is the size the window is, and no bigger: when a '
+        'figure answers small, ask focus_window on it first. '
         'The LLM cannot parse this PNG on this stack; describe a figure '
         'by reading its underlying arrays with get_signal instead.',
         {'type': 'object', 'properties': {
             'window': {'type': 'string', 'default': 'app'},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'focus_window',
+        'Bring a window forward at a readable size before a screenshot: '
+        'shown, raised to the front, and resized to the default figure '
+        'size (1280x800), or to the named `width` x `height` in pixels. '
+        '"app" for the application, a figure key for one figure, a case '
+        'URI for its shot view. The answer is the size the window now '
+        'holds -- ask get_screenshot on the same window after.',
+        {'type': 'object', 'properties': {
+            'window': {'type': 'string', 'default': 'app'},
+            'width': {'type': ['integer', 'null'],
+                      'description': 'Pixels, 1 and up (default: 1280)'},
+            'height': {'type': ['integer', 'null'],
+                       'description': 'Pixels, 1 and up (default: 800)'},
         }, 'additionalProperties': False},
     ),
     _tool(

@@ -171,3 +171,29 @@ def test_the_page_wears_both_themes():
     assert 'data-theme="light"' in text
     assert 'data-theme="dark"' in text
     assert 'viz_web_theme' in text, 'no stored choice of theme for the page'
+
+
+def test_the_page_keeps_its_screenshots_and_can_act_on_them():
+    """The screenshots are the point of the page, and the page keeps them.
+
+    What it pins: the gallery accumulates a turn instead of replacing the
+    previous ones, and the pictures are rebuilt from `/api/turns` on load
+    -- served from the turn's directory on disk (`/api/turns/{n}/shots/…`),
+    which is what makes a reload of the page cost nothing. Each picture is
+    addressed to the window it shows (the name `focus_window` and
+    `get_screenshot` take), and a click enlarges it in the lightbox.
+    """
+    with open(INDEX, 'r', encoding='utf-8') as f:
+        text = f.read()
+    # The gallery, and that it is rebuilt from the turn history on load.
+    assert 'buildGallery' in text, 'no rebuild of the gallery from /api/turns'
+    assert '/api/turns' in text, 'the gallery is not served from the turn history'
+    assert '/shots/' in text, 'the pictures are not served from the turn directories'
+    assert 'prependTurnShots' in text, 'a turn replaces the previous ones, not joins them'
+    # The address of a picture, and the two gestures it answers.
+    assert 'image_windows' in text, 'the cards are not addressed to the window they show'
+    assert 'focus_window' in text, 'no Focus button on the screenshot cards'
+    assert 'get_screenshot' in text, 'no Screenshot button on the screenshot cards'
+    # The enlargement, and the section the page calls it by.
+    assert 'lightbox' in text, 'a picture has no way to be read full size'
+    assert 'Screenshots' in text
