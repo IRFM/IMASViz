@@ -53,6 +53,13 @@ _DEFLLECTION_MARKERS = (
     'je ne sais pas quoi faire',
 )
 
+# The loop's own surface: the tool names the model quotes to point the user
+# at a gesture (restore_session in `restore_session(name="from_web")`)
+# are the agent's own vocabulary, not names it recites from the case.
+# `_unfoundedIdsRefusal` keeps them out of its count for exactly that
+# reason: a "how do I do it later" answer is not a list.
+_TOOL_NAMES = frozenset(t['function']['name'] for t in TOOLS)
+
 
 class AgentLoop(QObject):
     """One agent session: its LLM, its gestures, and the loop.
@@ -260,21 +267,35 @@ class AgentLoop(QObject):
         self.transcriptLine.emit(stopped)
 
     def _unfoundedIdsRefusal(self, content):
-        """A final answer that presents an inventory of case identifiers with
-        no case tool called in this request is refused by name.
+        """A final answer that presents an inventory of names, with no tool
+        called in this request to ground it, is refused by name.
 
-        Returns the reason to refuse, or None when the answer may stand. The
-        signals are the *shapes* of an ungrounded inventory, not a claim
-        about any specific name: three or more snake_case identifiers (the
-        spelling of an IDS name or an IMAS path), or a markdown table of
-        three or more data rows. A recited name such as "equilibrium" is as
-        much a confabulation as a made-up one, so the guard keys on the
-        list shape with no call to ground it, and does not try to match
-        names.
+        Returns the reason to refuse, or None when the answer may stand.
+        The trigger is the *shape* of a bare recited inventory, and it
+        stays narrow on what counts:
+
+        * three or more **distinct** names that **stand on their own** --
+          a name that is a segment of a longer spelling does not stand:
+          ``magnetics.flux_loop[0].flux.data`` spells a path, and
+          ``rapport_flux_loop_10.html`` spells a file, not a list; nor
+          does the loop's own tool vocabulary, which the model quotes to
+          point the user at a gesture, recite the case;
+        * a markdown table of three or more data rows -- the shape the
+          recited inventories actually came in, and the one that stays
+          refused whatever its cells hold.
+
+        What this does *not* do, deliberately: it does not count the
+        occurrences of one name (an answer that spells ``flux_loop[i].flux.data``
+        and ``magnetics.flux_loop[0..16].flux.data`` repeats a single name,
+        it does not list three), and it does not match any specific name:
+        a recited "equilibrium" is as much a confabulation as a made-up
+        one, so the guard keys on the list shape with no tool to ground
+        it. One consequence, stated on purpose: an answer that names
+        three or more paths only (every name one of many segments)
+        stands even without a tool -- it spells, it does not list.
         """
         text = content or ''
-        identifiers = re.findall(
-            r'\b[a-z][0-9a-z]*(?:_[0-9a-z]+)+\b', text.lower())
+        names = _bareNames(text)
         # A markdown row is a line whose first non-space char is a pipe, and
         # which is neither blank nor the all-pipe separator row.
         table_rows = [
@@ -282,14 +303,15 @@ class AgentLoop(QObject):
             if line.strip().startswith('|')
             and not re.fullmatch(r'\|[\s:|-]+\|?', line.strip())
         ]
-        if len(identifiers) < 3 and len(table_rows) < 3:
+        if len(names) < 3 and len(table_rows) < 3:
             return None
         return (
-            'your answer presents a list of case names, but no case tool was '
-            'called this request; a list you recite is not the case\'s '
-            'truth. Open the case and read it back with list_case_idss(uri) '
-            'or list_idss(uri), and answer only from the names and '
-            'occurrences that call returns.')
+            'your answer presents a list of names, but no tool was called '
+            'this request to ground it; a list you recite is not the '
+            'truth of this session. Ground it: the case\'s IDS with '
+            'list_case_idss(uri) or list_idss(uri), the saved sessions '
+            'with list_sessions() -- and answer only from what that call '
+            'returns.')
 
     def _deflectionRefusal(self, content, last_action):
         """A final answer, after a successful tool, that gives the work back
@@ -350,6 +372,37 @@ class AgentLoop(QObject):
                 'Answer with the parameters the tool names.'
                 % (unknown[0], name, allowed))
         return method(**args)
+
+
+def _bareNames(text):
+    """The snake_case names that stand on their own in that text.
+
+    A name that is a segment of a longer spelling is not one of them --
+    ``magnetics.flux_loop[0].flux.data`` is a path, ``west/3/54924`` a
+    branch of one, ``rapport_flux_loop_10.html`` a file (a dot followed
+    by two or more letters: an extension, not the period of the
+    sentence, which is why ``equilibrium_time`` at the end of one still
+    counts). Nor is the loop's own tool vocabulary: the names in
+    ``TOOLS`` are quoted to point the user at a gesture, not recited
+    from the case. What is left is the set of names the text is
+    presenting, if it is presenting any.
+    """
+    names = set()
+    for m in re.finditer(r'\b[a-z][0-9a-z]*(?:_[0-9a-z]+)+\b',
+                         text.lower()):
+        name = m.group(0)
+        if name in _TOOL_NAMES:
+            continue
+        before = text[m.start() - 1] if m.start() else ''
+        after = text[m.end()] if m.end() < len(text) else ''
+        if before in './':
+            continue
+        if after == '/':
+            continue
+        if after == '.' and re.match(r'[A-Za-z]{2,}', text[m.end() + 1:]):
+            continue
+        names.add(name)
+    return names
 
 
 def _summarize(result, limit=120):
