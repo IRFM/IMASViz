@@ -102,6 +102,19 @@ class FakeCore:
         # unknown-parameter guard; the guard refuses before the body runs.
         return {'plotted': path}
 
+    def plot_report(self, figure_key, name=None):
+        # The one half the turn tests need of the core's own
+        # `plot_report`: the file under $HOME/.imasviz/reports, the folder
+        # its `_namedReport` resolves. The statistics it computes are what
+        # `test_100` drives on a real window, not this stand-in.
+        import os
+        folder = os.path.join(os.environ['HOME'], '.imasviz', 'reports')
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, (name or 'fake_report') + '.html')
+        with open(path, 'w') as f:
+            f.write('<!doctype html><title>fake</title></html>')
+        return {'saved_to': path, 'traces': 3, 'window': figure_key}
+
 
 class FakeWindow:
     def sessionApi(self):
@@ -197,6 +210,46 @@ def test_an_answered_turn_leaves_lines_images_and_transcript(qapp, tmp_path):
     app_png = next(im for im in record['images'] if im['name'] == '00_app.png')
     assert base64.b64decode(app_png['b64']) == PNG_1x1
     assert (tmp_path / 'shots' / record['dir'].split('shots/')[-1] / '00_app.png').is_file()
+
+
+def test_a_turn_that_writes_a_report_names_it_in_the_record(qapp, tmp_path, monkeypatch):
+    """The self-contained HTML the turn's `plot_report` writes is named
+    in the record -- the `done` event the page reads, and what the
+    Reports section fills from -- not a file the user has to find on
+    disk themselves. The folder the core's `_namedReport` resolves is
+    under $HOME, so pointing HOME at the test's own tree points it there
+    too (the pattern `test_39` applies to the configuration files)."""
+    monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+    llm = FakeLLMClient([
+        LLMResponse(tool_calls=[{'name': 'plot_report',
+                                 'args': {'figure_key': 'SlicesPlot1',
+                                          'name': 'tour_report'}}],
+                     content=''),
+        LLMResponse(content='Le rapport est écrit.', finish_reason='stop'),
+    ])
+    session, core = build(qapp, tmp_path, llm=llm)
+    record = inWorker(lambda: session.runTurn('écris le rapport du cas'), qapp)
+    assert record['error'] is None
+    assert record['reports'] == ['tour_report.html']
+    # And the file is where the service route serves it from: the folder
+    # under the HOME the test named, not a path the page cannot reach.
+    assert (tmp_path / 'home' / '.imasviz' / 'reports'
+            / 'tour_report.html').is_file()
+
+
+def test_a_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch):
+    """A turn that writes no report is not silent about it either: the
+    record holds the empty list -- the key the page fills the section
+    from -- not a missing key the page would have to guess at."""
+    monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+    llm = FakeLLMClient([
+        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+    ])
+    session, core = build(qapp, tmp_path, llm=llm)
+    record = inWorker(lambda: session.runTurn('liste les cas ouverts'), qapp)
+    assert record['error'] is None
+    assert record['reports'] == []
 
 
 def test_a_refused_turn_is_named_and_still_saves(qapp, tmp_path):

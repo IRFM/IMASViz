@@ -40,6 +40,7 @@ way it is.
 
 import base64
 import json
+import os
 import threading
 import time
 
@@ -115,6 +116,18 @@ class FakeCore:
 
     def plot_one(self, uri, path, **kwargs):
         return {'plotted': path}
+
+    def plot_report(self, figure_key, name=None):
+        # The one half a turn test needs of the core's own
+        # `plot_report`: the file under the $HOME the test names, the
+        # folder its `_namedReport` resolves.
+        folder = os.path.join(
+            os.environ['HOME'], '.imasviz', 'reports')
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, (name or 'fake_report') + '.html')
+        with open(path, 'w') as f:
+            f.write('<!doctype html><title>fake</title></html>')
+        return {'saved_to': path, 'traces': 3, 'window': figure_key}
 
 
 class FakeWindow:
@@ -263,6 +276,55 @@ def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
     assert len(session.turns) == 1
 
 
+def test_agent_turn_that_writes_a_report_names_it_in_the_done_event(
+        qapp, tmp_path, monkeypatch):
+    """The repro the page had: a turn whose loop writes a report leaves
+    the file on disk and says nothing to the page -- the `done` event
+    carries the images the turn drew and now must carry the report it
+    wrote, which is what the Reports section fills. Also pinned on the
+    history read back, `GET /api/turns/<n>`, the key the record holds."""
+    monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+    llm = ScriptedLLM([
+        LLMResponse(tool_calls=[{'name': 'plot_report',
+                                 'args': {'figure_key': 'SlicesPlot1',
+                                          'name': 'agent_report'}}],
+                     content=''),
+        LLMResponse(content='Le rapport est écrit.', finish_reason='stop'),
+    ])
+    session, _ = build(qapp, tmp_path, llm=llm)
+    client = TestClient(buildApp(session), base_url='http://t')
+    resp = makeRequest(client, qapp, 'POST', '/api/agent',
+                       json={'prompt': 'écris le rapport du cas'})
+    assert resp.status_code == 200
+
+    blocks = parseSSE(resp.text)
+    done = next(d for e, d in blocks if e == 'done')
+    assert done['reports'] == ['agent_report.html']
+
+    one = makeRequest(client, qapp, 'GET', '/api/turns/1')
+    assert one.status_code == 200
+    assert one.json()['reports'] == ['agent_report.html']
+
+
+def test_agent_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch):
+    """A turn that writes no report answers the empty list on the same
+    key -- the page fills the section from `data.reports`, and a missing
+    key is what it had to guess at before this."""
+    monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+    llm = ScriptedLLM([
+        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+    ])
+    session, _ = build(qapp, tmp_path, llm=llm)
+    client = TestClient(buildApp(session), base_url='http://t')
+    resp = makeRequest(client, qapp, 'POST', '/api/agent',
+                       json={'prompt': 'liste les cas'})
+    assert resp.status_code == 200
+    blocks = parseSSE(resp.text)
+    done = next(d for e, d in blocks if e == 'done')
+    assert done['reports'] == []
+
+
 def test_agent_refuses_an_empty_prompt_by_name(qapp, tmp_path):
     session, _ = build(qapp, tmp_path)
     client = TestClient(buildApp(session), base_url='http://t')
@@ -317,6 +379,59 @@ def test_tool_refuses_an_unknown_parameter_by_name(qapp, tmp_path):
     # The names it holds, the way `test_119`'s `callGesture` refusal reads.
     for allowed in ('uri', 'path', 'along_time'):
         assert allowed in body['error']
+
+
+# --------------------------------------------------------------------- reports
+
+def test_reports_route_lists_the_folder_by_name(qapp, tmp_path, monkeypatch):
+    """`GET /api/reports` -- the section the page fills at load: what the
+    reports folder holds, by name, whatever turn or session wrote it (the
+    page reload was losing exactly that). The folder the core's
+    `_namedReport` resolves is under $HOME, so the test points HOME at
+    its own tree; the state before the core's first write -- no folder --
+    is the empty list, not a 500 the page would have to read as failure."""
+    monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+    session, _ = build(qapp, tmp_path)
+    client = TestClient(buildApp(session), base_url='http://t')
+
+    resp = makeRequest(client, qapp, 'GET', '/api/reports')
+    assert resp.status_code == 200
+    assert resp.json() == {'reports': []}
+
+    folder = os.path.join(str(tmp_path / 'home'), '.imasviz', 'reports')
+    os.makedirs(folder)
+    for name in ('old_report.html', 'a_report.html'):
+        with open(os.path.join(folder, name), 'w') as f:
+            f.write('<!doctype html>')
+    resp = makeRequest(client, qapp, 'GET', '/api/reports')
+    assert resp.status_code == 200
+    # By name, and one name per file -- the section is the folder.
+    assert resp.json() == {'reports': ['a_report.html', 'old_report.html']}
+
+
+def test_report_route_serves_the_file_and_names_the_absent(
+        qapp, tmp_path, monkeypatch):
+    """`GET /api/reports/<name>` serves the file as HTML (the section's
+    links are to it), and a name the folder does not hold is refused by
+    name, in the words the route's sibling routes use -- a path a name
+    cannot hold is refused where the page reads it, before it is
+    resolved."""
+    monkeypatch.setenv('HOME', str(tmp_path / 'home'))
+    folder = os.path.join(str(tmp_path / 'home'), '.imasviz', 'reports')
+    os.makedirs(folder)
+    with open(os.path.join(folder, 'served.html'), 'w') as f:
+        f.write('<!doctype html><h1>bonjour</h1>')
+    session, _ = build(qapp, tmp_path)
+    client = TestClient(buildApp(session), base_url='http://t')
+
+    resp = makeRequest(client, qapp, 'GET', '/api/reports/served.html')
+    assert resp.status_code == 200
+    assert 'text/html' in resp.headers.get('content-type', '')
+    assert '<h1>bonjour</h1>' in resp.text
+
+    missing = makeRequest(client, qapp, 'GET', '/api/reports/absent.html')
+    assert missing.status_code == 404
+    assert 'absent.html' in missing.json()['error']
 
 
 # ------------------------------------------------------------------------ /llm
