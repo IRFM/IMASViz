@@ -39,7 +39,6 @@ from starlette.routing import Route
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _INDEX = os.path.join(_HERE, 'static', 'index.html')
-_REPORTS_DIR = os.path.join('~', '.imasviz', 'reports')
 
 
 def _default(o):
@@ -200,13 +199,21 @@ def buildApp(session):
 
     # ------------------------------------------------------------------ reports
 
+    async def reportList(request):
+        # The names the reports folder holds, by name: whatever turn or
+        # session wrote them (the page fills its section from this at
+        # load). The empty list while the folder does not exist yet --
+        # the state before the core's first write, and the one a test
+        # points the session at a fresh HOME for.
+        return JSONResponse({'reports': sorted(session.reportsOnDisk())})
+
     async def report(request):
         name = request.path_params['name']
         if os.sep in name or '/' in name or '\\' in name or name.startswith('.'):
             return JSONResponse(
                 {'error': 'a report name is a file, not a place: name one.'},
                 status_code=400)
-        base = os.path.realpath(os.path.expanduser(_REPORTS_DIR))
+        base = session.reportsFolder()
         path = os.path.realpath(os.path.join(base, name))
         if not path.startswith(base + os.sep) or not os.path.isfile(path):
             return JSONResponse(
@@ -244,6 +251,7 @@ def buildApp(session):
         Route('/api/turns', turnList, methods=['GET']),
         Route('/api/turns/{n}', turnOne, methods=['GET']),
         Route('/api/turns/{n}/shots/{name}', shot, methods=['GET']),
+        Route('/api/reports', reportList, methods=['GET']),
         Route('/api/reports/{name}', report, methods=['GET']),
         Route('/api/llm', llmGet, methods=['GET']),
         Route('/api/llm', llmSet, methods=['POST']),
@@ -269,13 +277,18 @@ def _turnNumber(request):
 
 
 def _turnEvent(record):
-    """The `done` event: what the page renders, and where the history holds it."""
+    """The `done` event: what the page renders, and where the history holds it.
+
+    `reports` is the record's own: the names the reports folder did not
+    hold before the turn and holds after it -- the page fills the Reports
+    section from it, the way it fills the images from `images`."""
     return {'turn': record['n'],
             'prompt': record['prompt'],
             'error': record['error'],
             'dir': record['dir'],
             'refusals': record['refusals'],
-            'images': record['images']}
+            'images': record['images'],
+            'reports': record.get('reports') or []}
 
 
 def _turnSummary(record):
@@ -283,6 +296,7 @@ def _turnSummary(record):
             'prompt': record['prompt'],
             'error': record['error'],
             'image_files': record['image_files'],
+            'reports': record.get('reports') or [],
             'dir': record['dir']}
 
 

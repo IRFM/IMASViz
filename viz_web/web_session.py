@@ -74,6 +74,25 @@ class WebSession:
 
     # ------------------------------------------------------------------ turns
 
+    @staticmethod
+    def reportsFolder():
+        """The reports folder, resolved the way the core's own
+        `_namedReport` resolves it: under $HOME -- one answer for the
+        two callers (the turn record and the service route), so a test
+        that points HOME at its own tree points both there."""
+        return os.path.realpath(os.path.expanduser(
+            os.path.join('~', '.imasviz', 'reports')))
+
+    @classmethod
+    def reportsOnDisk(cls):
+        """The names the reports folder holds -- the empty set while it
+        does not exist yet, the state before the core's first write."""
+        folder = cls.reportsFolder()
+        try:
+            return set(os.listdir(folder))
+        except OSError:
+            return set()
+
     def runTurn(self, prompt, onLine=None):
         """One prompt, and its whole turn.
 
@@ -84,9 +103,11 @@ class WebSession:
         answer.
 
         Returns the turn's record: the prompt, its lines, its images as
-        PNGs (with the base64 the page needs to draw them), the refusal
-        named, and the directory the images and the transcript are left
-        in. An empty prompt is a named refusal, as the REPL refuses it.
+        PNGs (with the base64 the page needs to draw them), the reports
+        its gestures wrote (the names the reports folder did not hold
+        before the turn and holds after it), the refusal named, and the
+        directory the images and the transcript are left in. An empty
+        prompt is a named refusal, as the REPL refuses it.
         """
         with self._lock:
             prompt = (prompt or '').strip()
@@ -99,6 +120,10 @@ class WebSession:
             lines = []
             done = threading.Event()
             outcome = [None]
+            # What the reports folder holds before the loop runs: the
+            # turn's own reports are the names it holds after that are
+            # not here now (the gestures write them through the core).
+            before_reports = self.reportsOnDisk()
 
             def onLineSlot(line):
                 lines.append(line)
@@ -148,6 +173,7 @@ class WebSession:
                       'error': outcome[0],
                       'images': images,
                       'image_files': [os.path.basename(path) for path in saved],
+                      'reports': sorted(self.reportsOnDisk() - before_reports),
                       'dir': turn_dir}
             self.turns.append(record)
             return record

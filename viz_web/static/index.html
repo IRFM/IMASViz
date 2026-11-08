@@ -312,9 +312,30 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function addReport(savedTo) {
+    // Idempotent on the name: a turn that lists a report the listing
+    // already added (or the other way round) must not name it twice.
     var base = String(savedTo).split('/').pop();
+    var list = byId('reports');
+    for (var i = 0; i < list.children.length; i++) {
+      var label = list.children[i].children[0];
+      if (label && label.textContent === base) return;
+    }
     var li = el('li', {}, [el('a', { href: '/api/reports/' + encodeURIComponent(base), target: '_blank', rel: 'noopener' }, [base])]);
-    byId('reports').appendChild(li);
+    list.appendChild(li);
+  }
+
+  async function refreshReports() {
+    // The section is the reports folder: whatever turn or session wrote
+    // it, a page reload must find it again. A listing that does not
+    // answer is named the way the rest of the page names its refusals,
+    // not swallowed.
+    try {
+      var r = await fetch('/api/reports');
+      var j = await r.json();
+      (j.reports || []).forEach(function (name) { addReport(name); });
+    } catch (e) {
+      appendLine('REFUSAL — la liste des rapports n\'a pas répondu : ' + e, 'refusal');
+    }
   }
 
   function renderImages(images) {
@@ -352,6 +373,10 @@ details.tool summary strong { color: var(--accent-strong); }
     }
     (data.refusals || []).forEach(function (r) { appendLine('  REFUSAL — screenshot: ' + r, 'refusal'); });
     renderImages(data.images);
+    // The reports the turn's gestures wrote: the same key the record
+    // holds for the images, and `addReport` is idempotent on the name,
+    // so a report the load-time listing already named is not doubled.
+    (data.reports || []).forEach(function (name) { addReport(name); });
     var li = el('li', {}, ['Turn ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
     byId('turns').prepend(li);
     refreshHealth();
@@ -410,7 +435,10 @@ details.tool summary strong { color: var(--accent-strong); }
     byId('transcript').textContent = '';
     byId('images').textContent = '';
     byId('images').appendChild(el('div', { 'class': 'empty' }, ['Aucune image pour l\'instant.']));
+    // The reports section is the folder, not this page's chat: cleared
+    // and then refilled from the server, not emptied for real.
     byId('reports').textContent = '';
+    refreshReports();
     byId('turns').textContent = '';
   }
 
@@ -446,6 +474,7 @@ details.tool summary strong { color: var(--accent-strong); }
     applyStoredTheme();
     wireButtons();
     refreshHealth();
+    refreshReports();
     buildTools().catch(function (e) { appendLine('REFUSAL — the tool list did not answer: ' + e, 'refusal'); });
   });
 })();
