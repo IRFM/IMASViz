@@ -109,9 +109,12 @@ def buildAgentStack(window, llm, core=None):
 def saveShots(core, shots_dir):
     """The app, and every window the session still holds, as PNGs on disk.
 
-    Returns the list of files written. A window that refuses to render is
-    named in the line that follows -- the style of the repository -- and
-    the other windows still come to disk.
+    Returns the list of files written, each as a `(window, path)` pair: the
+    window is the name the core was asked with ("app", the figure key, the
+    case URI) -- what `focus_window` and `get_screenshot` take back -- so a
+    page that draws the picture can act on the window it shows. A window
+    that refuses to render is named in the list that follows -- the style
+    of the repository -- and the other windows still come to disk.
     """
     os.makedirs(shots_dir, exist_ok=True)
     saved = []
@@ -145,7 +148,7 @@ def saveShots(core, shots_dir):
         path = os.path.join(shots_dir, name + '.png')
         with open(path, 'wb') as f:
             f.write(png)
-        saved.append(path)
+        saved.append((window, path))
     return saved, refused
 
 
@@ -203,7 +206,9 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
     transcript = os.path.join(args.shots, 'transcript.txt')
     with open(transcript, 'w') as f:
         f.write('\n'.join(lines) + '\n')
-    print('Saved images:', ', '.join(saved) or 'none', flush=True)
+    print('Saved images:',
+          ', '.join(os.path.basename(path) for _, path in saved) or 'none',
+          flush=True)
     for reason in refused:
         print('REFUSAL — screenshot: %s' % reason, flush=True)
 

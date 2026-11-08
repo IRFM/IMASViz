@@ -866,6 +866,68 @@ class McpGuiCore:
         self.api.closeWindow(frame)
         return {'closed': key}
 
+    # ------------------------------------------------------- focus, readably
+
+    def focus_window(self, window='app', width=None, height=None):
+        """Bring a window forward at a readable size -- the preparation of a
+        screenshot.
+
+        `screenshot` paints the window whatever size it is; a figure drawn
+        behind the others, or taken off the screen, reads small in the
+        picture. This puts it back: shown (the hide rule of the close box is
+        undone through `setWindowVisible`), raised to the front, and resized
+        to `width` x `height` -- or to `DEFAULT_FIGURE_SIZE`, the same
+        constant the embed hands a frame that never got one
+        (`Viz_API.addPlotWidgetToMDI`). "app" is the main window: it is
+        raised and answers its own size, and no figure is touched.
+
+        `width` and `height` are named refusals when they are not positive
+        integers: a size is a pair of pixel counts, and a number the window
+        cannot hold is one the caller mislabeled.
+        """
+        def side(name, value):
+            try:
+                number = int(value)
+            except (TypeError, ValueError):
+                raise ValueError(
+                    '%s=%r is not a pixel count: name it as an integer, '
+                    'or leave it out for the default size.'
+                    % (name, value))
+            if number < 1:
+                raise ValueError(
+                    '%s=%d has no room to be a window: name %d pixels '
+                    'and up, or leave it out.' % (name, number, 1))
+            return number
+
+        from imasviz.Viz_API import DEFAULT_FIGURE_SIZE
+        target = self._resolveWindow(window)
+        if window == 'app':
+            target.raise_()
+            if callable(getattr(target, 'activateWindow', None)):
+                target.activateWindow()
+            return {'window': window,
+                    'visible': bool(target.isVisible()),
+                    'size': [target.width(), target.height()]}
+
+        width = side('width', width) if width is not None else DEFAULT_FIGURE_SIZE[0]
+        height = side('height', height) if height is not None else DEFAULT_FIGURE_SIZE[1]
+        visible = self.api.setWindowVisible(target, True)
+        shell = self.api.mdiWindowOf(target)
+        if shell is not None:
+            # The shell is the window the user would see: it carries the
+            # title bar, so it is what is raised and resized -- the frame it
+            # holds follows through its own layout.
+            shell.resize(width, height)
+            shell.raise_()
+            shell.activateWindow()
+        else:
+            target.resize(width, height)
+            target.raise_()
+        size = target.size()
+        return {'window': window,
+                'visible': bool(visible),
+                'size': [size.width(), size.height()]}
+
     # -------------------------------------------------------------- plugins
 
     def _catalog(self, view):
@@ -1419,34 +1481,48 @@ class McpGuiCore:
 
     # ------------------------------------------------------------ screenshots
 
-    def screenshot(self, window='app'):
-        """One window as PNG: the application, a figure key, or a case URI.
+    def _resolveWindow(self, window):
+        """The widget holding a named window: the app, a figure key, a case URI.
 
-        `QWidget.grab()` renders the window without asking it to be anywhere
-        in particular -- the same reading the theme tests in the suite use
-        to sample pixels without entering the paint-queue hazard -- and an
-        offscreen application is the one this is asked of first.
+        The one reading `screenshot` and `focus_window` share: "app" is the
+        session's main window, a key is the frame registered under it, and a
+        URI is that case's shot view. A name none of the three holds is
+        refused from `list_windows` itself, the one the *Windows* menu
+        draws.
         """
         if window == 'app':
             if self.main_window is None:
                 raise ValueError(
                     'No application window to capture: this session was '
                     'built without one -- name a figure key or a case URI.')
-            target = self.main_window
+            return self.main_window
+        target = None
+        if window in self.api.figureframes:
+            target = self.api.figureframes[window]
         else:
-            target = None
-            if window in self.api.figureframes:
-                target = self.api.figureframes[window]
-            else:
-                view = self._viewForUri(window)
-                for frame in self.api.DTVframeList:
-                    if frame.dataTreeView is view:
-                        target = frame
-                        break
-            if target is None:
-                raise ValueError(
-                    '"%s" is neither a figure key nor an open case: '
-                    'list_windows names the keys.' % window)
+            view = self._viewForUri(window)
+            for frame in self.api.DTVframeList:
+                if frame.dataTreeView is view:
+                    target = frame
+                    break
+        if target is None:
+            raise ValueError(
+                '"%s" is neither a figure key nor an open case: '
+                'list_windows names the keys.' % window)
+        return target
+
+    def screenshot(self, window='app'):
+        """One window as PNG: the application, a figure key, or a case URI,
+        as it stands.
+
+        `QWidget.grab()` renders the window without asking it to be anywhere
+        in particular -- the same reading the theme tests in the suite use
+        to sample pixels without entering the paint-queue hazard -- and an
+        offscreen application is the one this is asked of first. The
+        picture is the size the window is, and no bigger: `focus_window`
+        exists to give a window a readable size before it is asked for.
+        """
+        target = self._resolveWindow(window)
         pixmap = target.grab()
         if pixmap is None or pixmap.isNull():
             raise ValueError('Qt could not render "%s": it answers no image.'

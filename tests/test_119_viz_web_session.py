@@ -198,6 +198,14 @@ def test_an_answered_turn_leaves_lines_images_and_transcript(qapp, tmp_path):
     assert base64.b64decode(app_png['b64']) == PNG_1x1
     assert (tmp_path / 'shots' / record['dir'].split('shots/')[-1] / '00_app.png').is_file()
 
+    # Every picture is also an address: the name the page's Focus and
+    # Screenshot buttons send to focus_window and get_screenshot.
+    by_file = {entry['name']: entry for entry in record['image_windows']}
+    assert by_file['00_app.png']['window'] == 'app'
+    assert by_file['SlicesPlot1.png']['window'] == 'SlicesPlot1'
+    # The base64 the page draws carries the address with it.
+    assert app_png['window'] == 'app'
+
 
 def test_a_refused_turn_is_named_and_still_saves(qapp, tmp_path):
     """The refusal (the truncation here) is not a silence: it is in the
