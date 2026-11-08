@@ -275,14 +275,26 @@ def _turnEvent(record):
             'error': record['error'],
             'dir': record['dir'],
             'refusals': record['refusals'],
-            'images': record['images']}
+            'images': record['images'],
+            # The address of every picture of this turn -- the page's
+            # Focus and Screenshot buttons take that name to focus_window
+            # and get_screenshot.
+            'image_windows': record.get('image_windows', [])}
 
 
 def _turnSummary(record):
+    """One line of the turn list, with the pictures and their addresses.
+
+    `image_windows` is what the page rebuilds its gallery from on load:
+    every picture of every turn, with the name the buttons send to
+    `focus_window` and `get_screenshot` -- the pictures are on disk under
+    the turn's `dir`, and `/api/turns/{n}/shots/{name}` serves them.
+    """
     return {'n': record['n'],
             'prompt': record['prompt'],
             'error': record['error'],
             'image_files': record['image_files'],
+            'image_windows': record.get('image_windows', []),
             'dir': record['dir']}
 
 

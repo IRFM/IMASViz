@@ -80,8 +80,11 @@ header .sub { color: var(--ink-faint); font-weight: 400; font-size: 15px; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .state { color: var(--ink-soft); font-size: 13px; }
 .main {
-  display: grid; grid-template-columns: minmax(340px, 1.1fr) minmax(320px, 1fr) minmax(300px, .9fr);
-  gap: 14px; padding: 14px 20px; max-width: 1600px; margin: 0 auto;
+  /* The screenshots are the point of the session, so their column is the
+     widest of the three: a picture at the size the window was drawn, not
+     a thumbnail beside the transcript. */
+  display: grid; grid-template-columns: minmax(340px, 1fr) minmax(320px, .9fr) minmax(380px, 1.25fr);
+  gap: 14px; padding: 14px 20px; max-width: 1700px; margin: 0 auto;
 }
 .column {
   background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
@@ -135,11 +138,35 @@ details.tool summary strong { color: var(--accent-strong); }
 .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
 .toolBody .run { align-self: flex-end; margin-top: 4px; padding: 5px 12px; }
 
-.images { display: flex; flex-direction: column; gap: 10px; }
-.images figure { margin: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-alt); }
-.images img { width: 100%; border-radius: 5px; display: block; }
-.images figcaption { padding: 5px 9px; color: var(--ink-faint); font-size: 12px; }
-.images .empty { color: var(--ink-faint); font-size: 13px; padding: 4px 0; }
+/* The screenshot gallery: a group per turn, a card per picture, one card
+   per window the turn drew. The newest turn sits on top and the older
+   ones are kept below -- the pictures are the point of the session, and
+   the buttons on their caption act on the window the picture shows
+   (focus_window / get_screenshot take its name). Clicking a picture
+   enlarges it in the lightbox. */
+.shots { display: flex; flex-direction: column; gap: 12px; }
+.shotGroup { display: flex; flex-direction: column; gap: 8px; }
+.shotGroup h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.shots .shot { margin: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-alt); overflow: hidden; }
+.shots .shot img { width: 100%; border-radius: 5px; display: block; cursor: zoom-in; }
+.shots .shot figcaption {
+  padding: 6px 9px; color: var(--ink-faint); font-size: 12px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.shots .shot figcaption .shotName { color: var(--ink-soft); font-weight: 500; }
+.shots .shot figcaption button { padding: 3px 10px; font-size: 12px; }
+.shots .empty { color: var(--ink-faint); font-size: 13px; padding: 4px 0; }
+
+/* The lightbox: the picture at the size it was drawn, over the page. */
+#lightbox {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(15, 19, 23, 0.88);
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; cursor: zoom-out;
+}
+#lightbox.open { display: flex; }
+#lightbox img { max-width: 95vw; max-height: 88vh; border-radius: 6px; background: var(--surface); }
+#lightbox .lbCaption { margin-top: 10px; color: var(--ink-soft); font-size: 13px; }
 
 @media (max-width: 900px) {
   .main { grid-template-columns: 1fr; }
@@ -174,12 +201,17 @@ details.tool summary strong { color: var(--accent-strong); }
     <div id="toolList" class="toolList"></div>
   </section>
 
-  <section id="results" class="column results" aria-label="Résultats">
-    <h2>Résultats</h2>
-    <div id="images" class="images"><div class="empty">Aucune image pour l'instant.</div></div>
+  <section id="results" class="column results" aria-label="Screenshots">
+    <h2>Screenshots</h2>
+    <div id="images" class="shots"><div class="empty">Aucun screenshot pour l'instant. Les screenshots de chaque tour restent ici, et survivent au rechargement de la page.</div></div>
     <h2>Reports</h2>
     <ul id="reports" class="reports"></ul>
   </section>
+</div>
+
+<div id="lightbox" role="dialog" aria-label="Agrandissement du screenshot">
+  <img id="lightboxImg" alt="">
+  <div id="lightboxCaption" class="lbCaption"></div>
 </div>
 
 <script>
@@ -317,19 +349,123 @@ details.tool summary strong { color: var(--accent-strong); }
     byId('reports').appendChild(li);
   }
 
-  function renderImages(images) {
-    var wrap = byId('images');
-    wrap.textContent = '';
-    if (!images || !images.length) {
-      wrap.appendChild(el('div', { 'class': 'empty' }, ['Aucune image pour ce tour.']));
-      return;
-    }
-    images.forEach(function (im) {
-      wrap.appendChild(el('figure', {}, [
-        el('img', { src: 'data:image/png;base64,' + im.b64, alt: im.name }),
-        el('figcaption', {}, [im.name]),
-      ]));
+  /* ---------------------------------------------------------------- the gallery
+
+     One card per picture, grouped per turn: the newest turn on top, the
+     previous turns kept below, and every card addressed to the window it
+     shows -- the name the `focus_window` and `get_screenshot` gestures
+     take. The pictures are served from the turn's directory on disk
+     (`/api/turns/{n}/shots/{name}`), which is what makes them survive a
+     reload of the page: `buildGallery` rebuilds them from `/api/turns`. */
+
+  function shotSrc(turn, name) {
+    return '/api/turns/' + turn + '/shots/' + encodeURIComponent(name);
+  }
+
+  function shotCard(turn, name, window) {
+    var card = el('figure', { 'class': 'shot' });
+    var src = shotSrc(turn, name);
+    var img = el('img', { src: src, alt: name, loading: 'lazy' });
+    img.addEventListener('click', function (e) {
+      e.stopPropagation();
+      openLightbox(src, name + ' — ' + (window || ''));
     });
+    card.appendChild(img);
+    var cap = el('figcaption', {}, [el('span', { 'class': 'shotName' }, [name])]);
+    if (window) {
+      var focus = el('button', { type: 'button' }, ['Focus']);
+      focus.addEventListener('click', function () { gesture('focus_window', { window: window }); });
+      var shot = el('button', { type: 'button' }, ['Screenshot']);
+      shot.addEventListener('click', function () { gesture('get_screenshot', { window: window }); });
+      cap.appendChild(focus);
+      cap.appendChild(shot);
+    }
+    card.appendChild(cap);
+    return card;
+  }
+
+  function turnGroup(turnNumber, prompt, windows) {
+    var children = [el('h3', {}, ['Turn ' + turnNumber + ' — '
+      + (String(prompt || '').slice(0, 70) || '—')])];
+    (windows || []).forEach(function (w) {
+      children.push(shotCard(turnNumber, w.name, w.window));
+    });
+    return el('div', { 'class': 'shotGroup' }, children);
+  }
+
+  function prependTurnShots(turn, prompt, windows) {
+    var wrap = byId('images');
+    if (!windows || !windows.length) return;
+    var empty = wrap.querySelector('.empty');
+    if (empty) empty.remove();
+    wrap.insertBefore(turnGroup(turn, prompt, windows), wrap.firstChild);
+  }
+
+  function buildGallery() {
+    var wrap = byId('images');
+    return fetch('/api/turns').then(function (r) {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    }).then(function (j) {
+      wrap.textContent = '';
+      var turns = (j.turns || []).slice().reverse();  // newest first
+      turns.forEach(function (t) {
+        var windows = t.image_windows
+          || (t.image_files || []).map(function (name) { return { name: name, window: '' }; });
+        if (windows.length) wrap.appendChild(turnGroup(t.n, t.prompt, windows));
+      });
+      if (!wrap.childElementCount) {
+        wrap.appendChild(el('div', { 'class': 'empty' },
+          ["Aucun screenshot pour l'instant."]));
+      }
+    }).catch(function (e) {
+      appendLine('REFUSAL — the gallery of the previous turns did not answer: ' + e, 'refusal');
+    });
+  }
+
+  function gesture(name, args) {
+    appendLine('→ ' + name + '(' + JSON.stringify(args) + ')');
+    return fetch('/api/tool', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, args: args }),
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (j.error) {
+          appendLine('  ← REFUSAL — ' + j.error, 'refusal');
+          return null;
+        }
+        if (name === 'focus_window') {
+          appendLine('  ← ' + JSON.stringify(j.result || j));
+        }
+        if (name === 'get_screenshot') {
+          // The core answers the PNG as bytes, the route spells it as
+          // base64: the lightbox is exactly where a screenshot belongs.
+          var b64 = null;
+          if (typeof j.result === 'string') b64 = j.result;
+          if (j.result && typeof j.result.b64 === 'string') b64 = j.result.b64;
+          if (b64) openLightbox('data:image/png;base64,' + b64, args.window || name);
+          else appendLine('  ← the answer carried no image: '
+            + JSON.stringify(j).slice(0, 160), 'refusal');
+        }
+        return j.result;
+      });
+    }).catch(function (e) {
+      appendLine('REFUSAL — ' + e, 'refusal');
+      return null;
+    });
+  }
+
+  /* ------------------------------------------------------------- the lightbox */
+
+  function openLightbox(src, caption) {
+    byId('lightboxImg').src = src;
+    byId('lightboxCaption').textContent = caption || '';
+    byId('lightbox').classList.add('open');
+  }
+
+  function closeLightbox() {
+    byId('lightbox').classList.remove('open');
+    byId('lightboxImg').src = '';
   }
 
   function lastTranscriptLine() {
@@ -351,7 +487,10 @@ details.tool summary strong { color: var(--accent-strong); }
       }
     }
     (data.refusals || []).forEach(function (r) { appendLine('  REFUSAL — screenshot: ' + r, 'refusal'); });
-    renderImages(data.images);
+    // The pictures join the gallery and stay: the previous turns keep
+    // theirs below, and a reload of the page rebuilds them all from
+    // `/api/turns` (`buildGallery`).
+    prependTurnShots(data.turn, data.prompt, data.image_windows);
     var li = el('li', {}, ['Turn ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
     byId('turns').prepend(li);
     refreshHealth();
@@ -409,7 +548,8 @@ details.tool summary strong { color: var(--accent-strong); }
   function clearAll() {
     byId('transcript').textContent = '';
     byId('images').textContent = '';
-    byId('images').appendChild(el('div', { 'class': 'empty' }, ['Aucune image pour l\'instant.']));
+    byId('images').appendChild(el('div', { 'class': 'empty' },
+      ["Aucun screenshot pour l'instant."]));
     byId('reports').textContent = '';
     byId('turns').textContent = '';
   }
@@ -425,7 +565,6 @@ details.tool summary strong { color: var(--accent-strong); }
     byId('runBtn').addEventListener('click', function () {
       var p = byId('prompt').value;
       if (!p.trim()) return;
-      renderImages([]);
       runAgent(p);
     });
     byId('stopBtn').addEventListener('click', function () {
@@ -433,6 +572,15 @@ details.tool summary strong { color: var(--accent-strong); }
     });
     byId('clearBtn').addEventListener('click', clearAll);
     byId('themeBtn').addEventListener('click', toggleTheme);
+
+    // The lightbox closes on the ground it paints and on Esc, not on the
+    // picture itself -- clicking a picture is the way to open it.
+    byId('lightbox').addEventListener('click', function (e) {
+      if (e.target === byId('lightbox') || e.target === byId('lightboxImg')) closeLightbox();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeLightbox();
+    });
   }
 
   function applyStoredTheme() {
@@ -446,6 +594,10 @@ details.tool summary strong { color: var(--accent-strong); }
     applyStoredTheme();
     wireButtons();
     refreshHealth();
+    // The screenshots of the previous turns are on disk, one directory per
+    // turn: rebuild the gallery from them so a reload of the page does not
+    // cost what the session already drew.
+    buildGallery().catch(function () {});
     buildTools().catch(function (e) { appendLine('REFUSAL — the tool list did not answer: ' + e, 'refusal'); });
   });
 })();
