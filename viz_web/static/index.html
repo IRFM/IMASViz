@@ -332,8 +332,24 @@ details.tool summary strong { color: var(--accent-strong); }
     });
   }
 
+  function lastTranscriptLine() {
+    var t = byId('transcript');
+    var last = null;
+    for (var i = t.childNodes.length - 1; i >= 0; i--) last = t.childNodes[i];
+    return last ? last.textContent : '';
+  }
+
   function onTurnDone(data) {
-    if (data.error) appendLine('REFUSAL — ' + data.error, 'refusal');
+    // The loop already printed the refusal it ended on, as a line of the
+    // streaming transcript ("REFUSAL: <reason>") -- the refusal is a line
+    // the user reads, and the final state of the turn does not print it a
+    // second time on top of its own line.
+    if (data.error) {
+      var last = lastTranscriptLine();
+      if (last !== 'REFUSAL: ' + data.error && last !== 'REFUSAL — ' + data.error) {
+        appendLine('REFUSAL — ' + data.error, 'refusal');
+      }
+    }
     (data.refusals || []).forEach(function (r) { appendLine('  REFUSAL — screenshot: ' + r, 'refusal'); });
     renderImages(data.images);
     var li = el('li', {}, ['Turn ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
