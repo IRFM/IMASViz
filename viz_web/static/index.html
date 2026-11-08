@@ -1,0 +1,438 @@
+<!doctype html>
+<!--
+  Copyright holders : Commissariat à l'Energie Atomique et aux Energies Alternatives (CEA), France;
+  and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
+  CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source
+  license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
+  Authors L. Fleury, X. Li, D. Penko
+
+  One self-contained page: no build, no external stylesheet or script, no webfont.
+  The colours are the application's own -- the same block doc/source/_static/imasviz.css
+  carries, and QVizStyle carries in Python, so tests/test_121 refuses the drift the way
+  tests/test_76 refuses it on the manual. The only links it makes are to its own server,
+  through the /api/… paths, and to the data: image of the turn the agent just drew.
+-->
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMASViz — l'agent, offscreen</title>
+<style>
+/* tokens:begin */
+:root, [data-theme="light"] {
+  --canvas: #eef1f3;
+  --surface: #ffffff;
+  --surface-alt: #f7f9fa;
+  --field: #f4f7f8;
+  --line: #dde3e7;
+  --line-soft: #eaeff1;
+  --ink: #1f2933;
+  --ink-soft: #4a5560;
+  --ink-faint: #616b77;
+  --accent: #0b7285;
+  --accent-strong: #085c6b;
+  --accent-soft: #e3f0f2;
+  --on-accent: #ffffff;
+  --selection: #bfe3ea;
+  --on-selection: #10222a;
+  --log-ground: #f6f8f9;
+  --log-info: #1f2933;
+  --log-warn: #9a5b00;
+  --log-error: #b3261e;
+}
+[data-theme="dark"] {
+  --canvas: #0f1317;
+  --surface: #181d22;
+  --surface-alt: #141a1f;
+  --field: #12171b;
+  --line: #2a333a;
+  --line-soft: #222a31;
+  --ink: #dbe2e8;
+  --ink-soft: #a7b3bd;
+  --ink-faint: #8494a0;
+  --accent: #5fd4e4;
+  --accent-strong: #8ce3ef;
+  --accent-soft: #1d3238;
+  --on-accent: #0f1317;
+  --selection: #22505a;
+  --on-selection: #eaf6f8;
+  --log-ground: #12171b;
+  --log-info: #dbe2e8;
+  --log-warn: #e0b070;
+  --log-error: #f19a92;
+}
+/* tokens:end */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: Inter, "Segoe UI", Cantarell, "DejaVu Sans", "Liberation Sans", sans-serif;
+  font-size: 15px; line-height: 1.5; color: var(--ink);
+  background: var(--canvas);
+}
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; background: var(--surface-alt);
+  border-bottom: 1px solid var(--line);
+}
+header h1 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: .2px; }
+header .sub { color: var(--ink-faint); font-weight: 400; font-size: 15px; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.state { color: var(--ink-soft); font-size: 13px; }
+.main {
+  display: grid; grid-template-columns: minmax(340px, 1.1fr) minmax(320px, 1fr) minmax(300px, .9fr);
+  gap: 14px; padding: 14px 20px; max-width: 1600px; margin: 0 auto;
+}
+.column {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 40vh;
+}
+.column h2 { margin: 4px 0 2px; font-size: 16px; font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--line-soft); padding-bottom: 4px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+textarea#prompt {
+  width: 100%; min-height: 78px; resize: vertical;
+  background: var(--field); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; font: inherit;
+}
+textarea#prompt:focus { outline: none; border-color: var(--accent); }
+button {
+  background: var(--surface); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 14px;
+  font: inherit; cursor: pointer;
+}
+button:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-strong); }
+button:disabled { color: var(--ink-faint); background: var(--surface-alt); cursor: not-allowed; }
+button#runBtn, button.run { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 500; }
+button#runBtn:hover, button.run:hover { background: var(--accent-strong); color: var(--on-accent); }
+button#themeBtn { padding: 4px 10px; }
+
+.transcript {
+  background: var(--log-ground); color: var(--log-info); border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px 12px; height: 55vh; overflow: auto;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+}
+.transcript .line { white-space: pre-wrap; }
+.transcript .refusal { color: var(--log-error); font-weight: 500; }
+.transcript .arrow { color: var(--accent-strong); }
+
+.turns, .reports { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.turns li, .reports li { padding: 4px 6px; border-radius: 4px; background: var(--surface-alt); color: var(--ink-soft); border-left: 3px solid var(--accent); }
+.reports li a { color: var(--accent-strong); text-decoration: none; }
+.reports li a:hover { text-decoration: underline; }
+
+.toolList { display: flex; flex-direction: column; gap: 6px; overflow: auto; }
+details.tool { background: var(--surface-alt); border: 1px solid var(--line-soft); border-radius: 6px; padding: 6px 10px; }
+details.tool summary { cursor: pointer; color: var(--ink); padding: 2px 0; }
+details.tool summary strong { color: var(--accent-strong); }
+.toolBody { padding: 8px 0 0 10px; display: flex; flex-direction: column; gap: 6px; }
+.field { display: flex; align-items: center; gap: 8px; }
+.field .fieldName { min-width: 160px; color: var(--ink-soft); font-size: 13px; }
+.field input, .field select {
+  flex: 1; background: var(--field); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 4px; padding: 5px 7px; font: inherit;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+.toolBody .run { align-self: flex-end; margin-top: 4px; padding: 5px 12px; }
+
+.images { display: flex; flex-direction: column; gap: 10px; }
+.images figure { margin: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-alt); }
+.images img { width: 100%; border-radius: 5px; display: block; }
+.images figcaption { padding: 5px 9px; color: var(--ink-faint); font-size: 12px; }
+.images .empty { color: var(--ink-faint); font-size: 13px; padding: 4px 0; }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>IMASViz <span class="sub">— l'agent, offscreen</span></h1>
+  <div class="header-actions">
+    <span id="state" class="state" role="status">…</span>
+    <button id="themeBtn" type="button" title="Changer de thème">◐</button>
+  </div>
+</header>
+
+<div class="main">
+  <section id="chat" class="column chat" aria-label="Agent">
+    <h2>Agent</h2>
+    <textarea id="prompt" placeholder="Ouvre un cas imas:hdf5?path=…, charge un IDS, cherche une grandeur, trace-la…"></textarea>
+    <div class="row">
+      <button id="runBtn" type="button">Tourner</button>
+      <button id="stopBtn" type="button" disabled>Arrêter</button>
+      <button id="clearBtn" type="button">Effacer</button>
+    </div>
+    <div id="transcript" class="transcript" aria-live="polite"></div>
+    <h2>Turns</h2>
+    <ul id="turns" class="turns"></ul>
+  </section>
+
+  <section id="tools" class="column tools" aria-label="Gestures">
+    <h2>Gestures</h2>
+    <div id="toolList" class="toolList"></div>
+  </section>
+
+  <section id="results" class="column results" aria-label="Résultats">
+    <h2>Résultats</h2>
+    <div id="images" class="images"><div class="empty">Aucune image pour l'instant.</div></div>
+    <h2>Reports</h2>
+    <ul id="reports" class="reports"></ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var byId = function (id) { return document.getElementById(id); };
+
+  function el(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) for (var key in attrs) {
+      if (key === 'class') node.className = attrs[key];
+      else if (key.indexOf('on') === 0 && key.length > 2) node.addEventListener(key.slice(2), attrs[key]);
+      else node.setAttribute(key, attrs[key]);
+    }
+    (children || []).forEach(function (c) {
+      node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    });
+    return node;
+  }
+
+  function appendLine(text, cls) {
+    var div = el('div', { 'class': cls || 'line' }, [el('span', { 'class': 'text' }, [text])]);
+    var t = byId('transcript');
+    t.appendChild(div);
+    t.scrollTop = t.scrollHeight;
+  }
+
+  function setBusy(busy) {
+    byId('runBtn').disabled = busy;
+    byId('stopBtn').disabled = !busy;
+  }
+
+  async function refreshHealth() {
+    try {
+      var r = await fetch('/api/health');
+      var j = await r.json();
+      byId('state').textContent = (j.ok ? 'ok' : 'down') + ' · ' + (j.cases || []).length + ' case(s) · ' + (j.turns || 0) + ' turn(s)';
+    } catch (e) {
+      byId('state').textContent = 'off';
+    }
+  }
+
+  async function buildTools() {
+    var r = await fetch('/api/tools');
+    var j = await r.json();
+    var list = byId('toolList');
+    (j.tools || []).forEach(function (t) { list.appendChild(buildOneTool(t)); });
+  }
+
+  function paramType(spec) {
+    var t = spec.type;
+    if (Array.isArray(t)) return t[0];
+    return t;
+  }
+
+  function buildOneTool(t) {
+    var detail = el('details', { 'class': 'tool' });
+    var desc = t.description.split('.')[0];
+    detail.appendChild(el('summary', {}, [el('strong', {}, [t.name]), ' — ', desc]));
+    var body = el('div', { 'class': 'toolBody' });
+    var params = (t.parameters && t.parameters.properties) || {};
+    var required = new Set((t.parameters && t.parameters.required) || []);
+    Object.keys(params).forEach(function (name) {
+      var spec = params[name];
+      var type = paramType(spec);
+      var field = el('label', { 'class': 'field' },
+        [el('span', { 'class': 'fieldName' }, [name + (required.has(name) ? ' *' : '')])]);
+      var input;
+      if (type === 'boolean') {
+        input = el('select', {}, [
+          el('option', { value: '' }, ['—']),
+          el('option', { value: 'true' }, ['true']),
+          el('option', { value: 'false' }, ['false']),
+        ]);
+      } else if (type === 'array') {
+        input = el('input', { type: 'text', placeholder: 'comma-separated' });
+      } else if (type === 'integer' || type === 'number') {
+        input = el('input', { type: 'number' });
+      } else {
+        input = el('input', { type: 'text' });
+      }
+      input.setAttribute('data-name', name);
+      input.setAttribute('data-type', type);
+      field.appendChild(input);
+      body.appendChild(field);
+    });
+    body.appendChild(el('button', { 'class': 'run', type: 'button', click: function () { runTool(t.name, body); } }, ['Run']));
+    detail.appendChild(body);
+    return detail;
+  }
+
+  function collectArgs(body) {
+    var args = {};
+    Array.prototype.forEach.call(body.querySelectorAll('[data-name]'), function (input) {
+      var name = input.getAttribute('data-name');
+      var type = input.getAttribute('data-type');
+      var v = (typeof input.value === 'string' ? input.value : String(input.value)).trim();
+      if (v === '') return;
+      if (type === 'boolean') v = (v === 'true');
+      else if (type === 'array') v = v.split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s !== ''; });
+      else if (type === 'integer') v = parseInt(v, 10);
+      else if (type === 'number') v = parseFloat(v);
+      args[name] = v;
+    });
+    return args;
+  }
+
+  async function runTool(name, body) {
+    var args = collectArgs(body);
+    appendLine('→ ' + name + '(' + JSON.stringify(args) + ')');
+    setBusy(true);
+    try {
+      var r = await fetch('/api/tool', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, args: args }),
+      });
+      var j = await r.json();
+      if (j.error) {
+        appendLine('  ← REFUSAL — ' + j.error, 'refusal');
+      } else {
+        var summary = JSON.stringify(j.result);
+        appendLine('  ← ' + name + ': ' + summary.slice(0, 240) + (summary.length > 240 ? ' …' : ''));
+        if (j.result && typeof j.result === 'object' && j.result.saved_to) {
+          if (String(j.result.saved_to).endsWith('.html')) addReport(j.result.saved_to);
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function addReport(savedTo) {
+    var base = String(savedTo).split('/').pop();
+    var li = el('li', {}, [el('a', { href: '/api/reports/' + encodeURIComponent(base), target: '_blank', rel: 'noopener' }, [base])]);
+    byId('reports').appendChild(li);
+  }
+
+  function renderImages(images) {
+    var wrap = byId('images');
+    wrap.textContent = '';
+    if (!images || !images.length) {
+      wrap.appendChild(el('div', { 'class': 'empty' }, ['Aucune image pour ce tour.']));
+      return;
+    }
+    images.forEach(function (im) {
+      wrap.appendChild(el('figure', {}, [
+        el('img', { src: 'data:image/png;base64,' + im.b64, alt: im.name }),
+        el('figcaption', {}, [im.name]),
+      ]));
+    });
+  }
+
+  function onTurnDone(data) {
+    if (data.error) appendLine('REFUSAL — ' + data.error, 'refusal');
+    (data.refusals || []).forEach(function (r) { appendLine('  REFUSAL — screenshot: ' + r, 'refusal'); });
+    renderImages(data.images);
+    var li = el('li', {}, ['Turn ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
+    byId('turns').prepend(li);
+    refreshHealth();
+  }
+
+  function handleBlock(block) {
+    var event = 'message';
+    var data = null;
+    block.split('\n').forEach(function (line) {
+      if (line.indexOf('event: ') === 0) event = line.slice(7);
+      else if (line.indexOf('data: ') === 0) {
+        try { data = JSON.parse(line.slice(6)); } catch (e) { data = line.slice(6); }
+      }
+    });
+    if (event === 'line' && data && typeof data.text !== 'undefined') appendLine(data.text);
+    else if (event === 'done') onTurnDone(data || {});
+  }
+
+  async function runAgent(prompt) {
+    setBusy(true);
+    try {
+      var resp = await fetch('/api/agent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt }),
+      });
+      if (!resp.ok) {
+        var j = {};
+        try { j = await resp.json(); } catch (e) { /* keep body as text */ }
+        appendLine('REFUSAL — ' + (j.error || resp.status), 'refusal');
+        return;
+      }
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = '';
+      for (;;) {
+        var part = await reader.read();
+        if (part.done) break;
+        buf += decoder.decode(part.value, { stream: true });
+        var idx = buf.indexOf('\n\n');
+        while (idx >= 0) {
+          var block = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          handleBlock(block);
+          idx = buf.indexOf('\n\n');
+        }
+      }
+      if (buf.trim()) handleBlock(buf);
+    } catch (e) {
+      appendLine('REFUSAL — ' + e, 'refusal');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function clearAll() {
+    byId('transcript').textContent = '';
+    byId('images').textContent = '';
+    byId('images').appendChild(el('div', { 'class': 'empty' }, ['Aucune image pour l\'instant.']));
+    byId('reports').textContent = '';
+    byId('turns').textContent = '';
+  }
+
+  function toggleTheme() {
+    var cur = document.documentElement.getAttribute('data-theme');
+    var next = (cur === 'dark') ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('viz_web_theme', next); } catch (e) { /* best-effort */ }
+  }
+
+  function wireButtons() {
+    byId('runBtn').addEventListener('click', function () {
+      var p = byId('prompt').value;
+      if (!p.trim()) return;
+      renderImages([]);
+      runAgent(p);
+    });
+    byId('stopBtn').addEventListener('click', function () {
+      fetch('/api/agent/stop', { method: 'POST' }).catch(function () {});
+    });
+    byId('clearBtn').addEventListener('click', clearAll);
+    byId('themeBtn').addEventListener('click', toggleTheme);
+  }
+
+  function applyStoredTheme() {
+    try {
+      var stored = localStorage.getItem('viz_web_theme');
+      if (stored === 'light' || stored === 'dark') document.documentElement.setAttribute('data-theme', stored);
+    } catch (e) { /* default stands */ }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    applyStoredTheme();
+    wireButtons();
+    refreshHealth();
+    buildTools().catch(function (e) { appendLine('REFUSAL — the tool list did not answer: ' + e, 'refusal'); });
+  });
+})();
+</script>
+</body>
+</html>

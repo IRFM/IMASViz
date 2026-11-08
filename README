@@ -314,6 +314,43 @@ it: a refused gesture is named, and `get_logs` holds those refusals. On a node
 without a display the client is offscreen by design; `--display` keeps the
 window when you have one.
 
+### The web interface (viz_web)
+
+The same gestures, from a browser — and the IMASViz window stays offscreen:
+a node without a display (a tablet) drives the whole session through one
+self-contained page, `viz_web/static/index.html`, no build step and no new
+dependency (it is served by the `starlette` + `uvicorn` the MCP server
+already required).
+
+    python3 -m viz_web                          # on http://127.0.0.1:8770
+    python3 -m viz_web --host 0.0.0.0 --port 8771   # another device on the box
+
+`--offscreen` forces the offscreen platform even when a `DISPLAY` is set (it
+is the default when there is none); `--llm-url` / `--llm-model` /
+`--llm-key` name the local model for the run, otherwise the `AgentLLM*`
+lines of `$HOME/.imasviz/preferences` stand, the same file the REPL and the
+in-app agent read. A device on the network points its browser at the box's
+address and port.
+
+The page is the REPL with a picture. The first column runs the agent: a
+prompt, and the transcript streamed in the order the loop writes it —
+refusals included, in the log colour they wear in the panel. The second
+column lists the raw gestures, one form per tool with its parameters, run
+the way the loop runs them (so `plot_one` given an argument it does not
+take is refused by name, the names it does hold beside it). Every turn
+leaves in `~/.imasviz/web/shots/<n>/` its transcript and the PNG of the
+application and of each of its windows, which the third column re-draws
+under *Résultats*, and the *Turns* list of the first column names the
+turns the session has had. The model's running parameters are read from
+and written to the same preferences through the page's own `/llm` line.
+
+The suite drives it in `tests/test_119_viz_web_session.py` (one turn at a
+time, the refusals named, the context between turns),
+`tests/test_120_viz_web_routes.py` (the routes, the stream, the shots read
+back) and `tests/test_121_viz_web_house_style.py` (the page wears the
+application's colours in both themes, and nothing of it imports a web
+framework this node does not hold).
+
 ## Starting from sources (Gateway, ITER HPC, WEST)
 
 Each site has its own launcher pair in `scripts/` — one for the **visible
@@ -357,6 +394,12 @@ All six launchers set, for the production run: `VIZ_HOME`, `VIZ_PRODUCTION=1`,
 the modules' `PYTHONPATH`; the code appends `VIZ_HOME` to `sys.path` itself.
 `run_viz_cli.sh` hands any argument straight to `viz_cli`, so it is the one to
 start a one-shot prompt from the shell.
+
+The web interface keeps no site launcher of its own: it starts with
+`python3 -m viz_web` once the same loading above holds, on the one condition
+that `starlette` and `uvicorn` import (on Gateway, the MCP requirement's
+`pip install --user "mcp[http]<2"` already brought them; elsewhere they come
+from the same line, or from the site's virtualenv).
 
 ## The in-app agent
 
