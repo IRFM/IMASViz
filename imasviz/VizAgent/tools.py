@@ -95,6 +95,22 @@ so when the user names one ambiguously, name the options found and ask
 which one means, instead of choosing one by feel: a probe picked at
 random is a wrong curve presented as the right one.
 
+The index of the arrays a quantity sits in, named. `plot_one` and
+`get_signal` both take the one schema: `along` names the axis the
+quantity runs along (the clock, when it holds one, or one of its own
+axes), and `indices` pins each OTHER axis at its index by that axis's
+name. Each of several nested arrays of structures is on its own, so a
+quantity in two arrays is addressed by one index per array. For
+`equilibrium.time_slice[i].profiles_1d.j_tor`, a profile held by the
+dynamic array, "tracer le long du temps pour un index de psi de 50" is
+`along=None` (or any clock spelling), `indices={"psi": 50}` -- and
+"tracer pour un ion de 4, un profil de 2" is `indices={"ion": 4, "f":
+2}`. The `numbers` get_signal answers and the `figure` plot_one opens
+are the same element of the same array, because both halves route
+through the same shared resolver; a word that names no axis the
+quantity holds, or an index past its extent, is a refusal the tool
+names -- answer with the refusal, do not retry with a different number.
+
 NE JAMAIS présenter une liste d'IDS d'un cas sans avoir appelé d'abord
 un outil de cas dans cette conversation. list_case_idss(uri) est la
 bonne liste : les IDS que le cas porte, occurrence par occurrence, lus
@@ -266,16 +282,41 @@ TOOLS = [
         'plot_one',
         'Draw one quantity, into the figure its axes call for. '
         'A curve figure for one axis to draw, a picture window for two. '
+        '`along` names the axis the quantity runs along (the clock, or one '
+        'of its own axes); `indices` pins each OTHER axis at its index -- '
+        'the same schema `get_signal` uses, so the figure the user sees and '
+        'the numbers get_signal reports are the same element. '
         '`time` pins a profile to one slice of its dynamic time array: by '
         'default the nearest slice (the answer names the index and that '
         'slice\'s own time, not the value asked at), or, with '
         'time_interp=true, the linear interpolation between the two slices '
         'that bracket the value (the answer then carries the exact value '
-        'requested). `along_time` and `time` are refused together.',
+        'requested). `along_time` / `along` / `indices` and `time` are '
+        'refused together (two opposite readings).',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
-            'along_time': {'type': ['boolean', 'null']},
+            'along_time': {'type': ['boolean', 'null'],
+                           'description': 'legacy: one axis to draw. '
+                                          'Prefer `along` + `indices`.'},
+            'along': {'type': ['string', 'null'],
+                      'description': 'the axis the quantity runs along: '
+                                     '"time"/"temps"/"t" for the clock, or '
+                                     'the name of one of its own axes '
+                                     '(e.g. "psi"). None for the default '
+                                     '(the clock when it holds one).'},
+            'indices': {'type': ['object', 'null'],
+                        'description': 'one entry per axis the figure does '
+                                       'not draw, by that axis\'s name, at '
+                                       'its 0-based index. An array of '
+                                       'structures (time_slice, profiles_1d, '
+                                       'ion, ...), or the leaf\'s own '
+                                       'coordinate (psi, ...); each of '
+                                       'several nested arrays on its own. '
+                                       'e.g. {"psi": 50} for a profile held '
+                                       'by the dynamic array, "ion": 4 '
+                                       'for one structure in it.',
+                        'additionalProperties': {'type': 'integer'}},
             'into_figure_key': {'type': ['string', 'null']},
             'time': {'type': ['number', 'null'],
                      'description': 'seconds; the time at which to pin the '
@@ -355,13 +396,40 @@ TOOLS = [
     _tool(
         'get_signal',
         'The values the tree read gives for one leaf, as JSON. '
-        '`as_function_of_time` true reads it along the clock, false along '
-        'its own axis.',
+        '`along` names the axis it runs along (the clock, or one of its own '
+        'axes); `indices` pins each OTHER axis at its index -- the same '
+        'schema `plot_one` uses, so what the figures show and what this '
+        'answers are the same element. Legacy `as_function_of_time` true '
+        'reads along the clock, false along its own axis; `coordinate_index` '
+        'pins one of the leaf\'s axes by position.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
-            'as_function_of_time': {'type': ['boolean', 'null']},
-            'coordinate_index': {'type': 'integer', 'default': 0},
+            'as_function_of_time': {'type': ['boolean', 'null'],
+                                    'description': 'legacy: one axis. '
+                                                   'Prefer `along` + '
+                                                   '`indices`.'},
+            'along': {'type': ['string', 'null'],
+                      'description': 'the axis the quantity runs along: '
+                                     '"time"/"temps"/"t" for the clock, or '
+                                     'the name of one of its own axes '
+                                     '(e.g. "psi"). None for the default '
+                                     '(the clock when it holds one).'},
+            'indices': {'type': ['object', 'null'],
+                        'description': 'one entry per axis the read does not '
+                                       'draw, by that axis\'s name, at its '
+                                       '0-based index. An array of '
+                                       'structures (time_slice, profiles_1d, '
+                                       'ion, ...), or the leaf\'s own '
+                                       'coordinate (psi, ...); each of '
+                                       'several nested arrays on its own. '
+                                       'e.g. {"psi": 50}; "ion": 4 for one '
+                                       'structure in it.',
+                        'additionalProperties': {'type': 'integer'}},
+            'coordinate_index': {'type': 'integer', 'default': 0,
+                                 'description': 'legacy: pin one axis of the '
+                                                'leaf by position. Prefer '
+                                                '`indices`.'},
             'time_index': {'type': ['integer', 'null']},
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
