@@ -219,13 +219,16 @@ details.tool summary strong { color: var(--accent-strong); }
 <div class="main">
   <section id="chat" class="column chat" aria-label="Agent">
     <h2>Agent</h2>
+    <!-- The transcript is on top and the input box is below it: the
+         answer scrolls into sight while the prompt stays under it, with
+         the button row after the input. -->
+    <div id="transcript" class="transcript" aria-live="polite"></div>
     <textarea id="prompt" placeholder="Open a case imas:hdf5?path=…, load an IDS, find a quantity, plot it…"></textarea>
     <div class="row">
       <button id="runBtn" type="button">Run</button>
       <button id="stopBtn" type="button" disabled>Stop</button>
       <button id="clearBtn" type="button">Clear</button>
     </div>
-    <div id="transcript" class="transcript" aria-live="polite"></div>
     <h2>Requests</h2>
     <ul id="turns" class="turns"></ul>
     <details id="rawGestures" class="rawGestures">
