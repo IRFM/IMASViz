@@ -11,10 +11,17 @@
 What it pins, in the order the session must answer:
 
 * one answered turn: the transcript lines in the order the loop writes
-  them, the app and its windows as PNGs with the base64 the page needs to
-  draw them, and the transcript the turn leaves on disk;
-* a refused turn: the refusal **named**, and the images **still** captured
-  -- not a silence the user reads as a failure;
+  them, the figure it drew as a PNG with the base64 the page needs to
+  draw it, and the transcript the turn leaves on disk;
+* the capture of a turn is its own: the figure it drew or asked to be
+  captured is the one it keeps, and the figures an earlier turn drew
+  are not repeated into it -- they stay in the files that turn left,
+  and the ask of a capture is what recaptures an older figure;
+* the interface is an ask: `app` and the data-tree panel of a case are
+  saved in the files of the turn that asked for them, and not in the
+  others;
+* a refused turn: the refusal **named**, and the figure it drew **still**
+  captured -- not a silence the user reads as a failure;
 * the context survives between two turns of one session: the second chat
   is asked with the first exchange, as `test_113` pins for the REPL;
 * the gesture the page asks of the core (`callGesture`) runs through the
@@ -68,20 +75,28 @@ class FakeLLMClient:
 class FakeCore:
     """A core that answers PNGs and the handful of gestures the tests
     drive: the session's bookkeeping, the tree it serves, and the values
-    `describe_node` / `get_signal` / `list_cases` the page reads."""
+    `describe_node` / `get_signal` / `list_cases` the page reads.
+
+    Its figures are the ones it has **drawn** -- `plot_one` is what
+    opens the one it draws, `SlicesPlot1`, and it then holds it --
+    because a turn's captures are the figures that turn drew or asked
+    for, and a stand-in that holds a figure before the turn drew it is
+    one the test cannot tell it apart from.
+    """
 
     def __init__(self):
         self.saved = []
         self.restored = []
+        self._windows = []
 
     def list_windows(self):
-        return [{'kind': 'SlicesPlot', 'label': 'SlicesPlot 1',
-                 'key': 'SlicesPlot1', 'visible': True, 'cases': []}]
+        return list(self._windows)
 
     def screenshot(self, window):
-        if window not in ('app', 'SlicesPlot1'):
-            raise ValueError('no such window: %r' % window)
-        return PNG_1x1
+        if window == 'app' or any(record['key'] == window
+                                  for record in self._windows):
+            return PNG_1x1
+        raise ValueError('no such window: %r' % window)
 
     def get_screenshot(self, window='app'):
         # The tool name the loop dispatches under, answering the one the
@@ -104,9 +119,16 @@ class FakeCore:
         return {'x': [0, 1, 2], 'y': [10, 20, 30]}
 
     def plot_one(self, uri, path, **kwargs):
-        # Present so a gesture by the tool's own name reaches the loop's
-        # unknown-parameter guard; the guard refuses before the body runs.
-        return {'plotted': path}
+        # The gesture that draws: the figure it opens once, and a second
+        # call finds it already held -- the key the application recycles
+        # is the one it already gave, and a stand-in may not invent a
+        # second one.
+        if any(record['key'] == 'SlicesPlot1' for record in self._windows):
+            return {'window': 'SlicesPlot1'}
+        self._windows.append({'kind': 'SlicesPlot', 'label': 'SlicesPlot 1',
+                              'key': 'SlicesPlot1', 'visible': True,
+                              'cases': []})
+        return {'window': 'SlicesPlot1'}
 
     def plot_report(self, figure_key, name=None):
         # The one half the turn tests need of the core's own
@@ -192,27 +214,31 @@ def inWorker(target, qapp, timeout=15.0):
 
 # ------------------------------------------------------------------- turns
 
-def test_an_answered_turn_leaves_lines_images_and_transcript(qapp, tmp_path):
-    """An answered loop: the lines in the order the loop writes them, the
-    figure on disk as a PNG (with the base64 the page needs to draw
-    it), the transcript beside it on disk -- and nothing but it. A
-    capture of a turn is its plots: the application shell and the
-    data-tree panel of a case are the captures that show the interface,
-    and their saving is the ask (a `get_screenshot` of the loop, or an
-    `EXTRA_SHOTS` of the one-shot), not the by-product of the turn this
-    one is. The one the turn drew is addressed, and the one the turn
-    did not ask for is not among the files."""
+def test_an_answered_turn_keeps_the_figure_it_drew(qapp, tmp_path):
+    """An answered loop: the lines in the order the loop writes them,
+    the figure the turn drew on disk as a PNG (with the base64 the page
+    needs to draw it), the transcript beside it on disk -- and nothing
+    but it. A capture of a turn is the figure it drew and the ones it
+    asked to be captured: the application shell and the data-tree panel
+    of a case are the captures that show the interface, and their saving
+    is the ask (a `get_screenshot` of the loop, or an `EXTRA_SHOTS` of
+    the one-shot), not the by-product of the turn. The figure the turn
+    drew is addressed, and the one the turn did not ask for is not among
+    its files -- here the figure is the one its own `plot_one` opened
+    in the same turn, and the stand-in held none before it."""
     llm = FakeLLMClient([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
-        LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+        LLMResponse(tool_calls=[
+            {'name': 'plot_one',
+             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            content=''),
+        LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)
-    record = inWorker(lambda: session.runTurn('liste les cas ouverts'), qapp)
+    record = inWorker(lambda: session.runTurn('trace une courbe du cas'), qapp)
 
     text = '\n'.join(record['lines'])
-    assert 'Le cas est ouvert.' in text
-    assert 'list_cases' in text
-    assert 'LLM: Le cas est ouvert.' in record['lines'][-1]
+    assert 'La figure est tracée.' in text
+    assert 'plot_one' in text
 
     # The figure is on disk under a directory the session names, and its
     # base64 is in the record -- the `data:` URI the page draws from.
@@ -235,44 +261,68 @@ def test_an_answered_turn_leaves_lines_images_and_transcript(qapp, tmp_path):
     assert '00_app.png' not in record['image_files']
 
 
-def test_a_turn_that_asks_for_the_interface_saves_it_with_the_figures(
-        qapp, tmp_path):
-    """The capture of the interface is an ask: the loop's `get_screenshot`
-    is the way the ask comes to the session, and the window it names is
-    the one saved beside the turn's figures at its end. The stand-in's
-    `list_windows` holds one figure key and no case, and the ask's window
-    is the application -- so the turn's files are its figure and `app`,
-    and the figure of a next turn of the same session stands alone again:
-    the ask is of the one turn that asked, and it does not bleed into the
-    one after."""
-    # One scripted LLM for both requests of the session -- the loop keeps
-    # its history between them, the way `test_the_context_survives_between_
-    # two_turns` pins -- so the four responses stand in the order the two
-    # asks draw them.
+def test_a_turn_captures_what_it_drew_or_asked_and_only_that(qapp, tmp_path):
+    """The capture of a turn is its own, not the session's: the figures
+    it drew and the windows it asked to be captured are the ones it
+    keeps, and a figure an earlier turn drew is not repeated into it --
+    it stays in the files that turn left. The ask of a capture is what
+    recaptures an older figure, into the turn that asks. What it pins,
+    on the **same** session whose core keeps the figure the first turn
+    opened: the one that drew a figure and asked the interface keeps
+    the two; the one that drew nothing and asked for nothing keeps
+    **none** -- not a wall of the same picture in every request; and
+    the one that asks a capture of the older figure gets it again. One
+    scripted LLM for the three turns -- the loop keeps its history
+    between them, the way the context test pins -- and the stand-in
+    holds the figure from the turn that drew it."""
     llm = FakeLLMClient([
+        # First: the figure is drawn, then the interface is asked.
         LLMResponse(tool_calls=[
-            {'name': 'get_screenshot', 'args': {'window': 'app'}},
-        ], content=''),
-        LLMResponse(content='The interface is captured.', finish_reason='stop'),
+            {'name': 'plot_one',
+             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            content=''),
+        LLMResponse(tool_calls=[
+            {'name': 'get_screenshot', 'args': {'window': 'app'}}],
+            content=''),
+        LLMResponse(content='La figure est tracée, et l''interface.',
+                    finish_reason='stop'),
+        # Second: nothing is drawn and nothing is asked.
         LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+        # Third: the capture of the older figure is asked.
+        LLMResponse(tool_calls=[
+            {'name': 'get_screenshot', 'args': {'window': 'SlicesPlot1'}}],
+            content=''),
+        LLMResponse(content='La capture est refaite.', finish_reason='stop'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)
-    record = inWorker(
-        lambda: session.runTurn('donne moi une capture de l''interface'), qapp)
-    assert record['error'] is None
-    files = sorted(record['image_files'])
-    assert 'SlicesPlot1.png' in files
-    assert '00_app.png' in files
-    by_file = {entry['name']: entry for entry in record['image_windows']}
+
+    first = inWorker(
+        lambda: session.runTurn('trace une figure et donne-moi l''interface'),
+        qapp)
+    assert first['error'] is None
+    assert sorted(first['image_files']) == ['00_app.png', 'SlicesPlot1.png']
+    # The figure the turn drew and the interface it asked for are both
+    # its captures, addressed as they are.
+    by_file = {entry['name']: entry for entry in first['image_windows']}
     assert by_file['00_app.png']['window'] == 'app'
-    assert (tmp_path / 'shots' / record['dir'].split('shots/')[-1]
+    assert by_file['SlicesPlot1.png']['window'] == 'SlicesPlot1'
+    assert (tmp_path / 'shots' / first['dir'].split('shots/')[-1]
             / '00_app.png').is_file()
-    # And the ask is of that turn only: the one after it drew nothing
-    # about the interface, and its files are its figure alone.
-    record2 = inWorker(lambda: session.runTurn('liste les cas'), qapp)
-    assert record2['error'] is None
-    assert record2['image_files'] == ['SlicesPlot1.png']
+
+    second = inWorker(lambda: session.runTurn('liste les cas'), qapp)
+    assert second['error'] is None
+    # The figure the first turn drew is not repeated here: it stays in
+    # the files that turn left, and this one drew nothing and asked for
+    # nothing. This is the turn whose page used to re-show the captures
+    # of the ones before it.
+    assert second['image_files'] == []
+
+    third = inWorker(
+        lambda: session.runTurn('donne-moi la capture de la figure'), qapp)
+    assert third['error'] is None
+    # An ask for a figure is what recaptures it, into the turn that asks.
+    assert third['image_files'] == ['SlicesPlot1.png']
 
 
 def test_a_turn_that_writes_a_report_names_it_in_the_record(qapp, tmp_path, monkeypatch):
@@ -317,19 +367,26 @@ def test_a_turn_that_writes_no_report_names_none(qapp, tmp_path, monkeypatch):
 
 def test_a_refused_turn_is_named_and_still_saves(qapp, tmp_path):
     """The refusal (the truncation here) is not a silence: it is in the
-    record's error and the transcript, and the turn still leaves its images
-    on disk -- the shape `test_112` pins for the one-shot and `test_113`
-    pins for the REPL."""
+    record's error and the transcript, and the figure the turn drew before
+    it was refused still comes to disk -- a capture of a turn is what it
+    drew or asked, and it drew one first. The refusal keeps the work:
+    the shape `test_112` pins for the one-shot and `test_113` for the
+    REPL. The stand-in holds no figure before the turn, so the one the
+    turn has is the one its `plot_one` opened in it."""
     llm = FakeLLMClient([
+        LLMResponse(tool_calls=[
+            {'name': 'plot_one',
+             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            content=''),
         LLMResponse(content='partial...', finish_reason='length'),
     ])
     session, core = build(qapp, tmp_path, llm=llm)
-    record = inWorker(lambda: session.runTurn('une requete trop longue'), qapp)
+    record = inWorker(lambda: session.runTurn('trace une figure et continue'), qapp)
     assert record['error'] is not None
     text = '\n'.join(record['lines'])
     assert 'REFUSAL' in text
     assert 'truncated' in text
-    assert record['image_files']   # the images still come
+    assert record['image_files'] == ['SlicesPlot1.png']   # what it drew is kept
 
 
 def test_max_turns_stops_the_loop_and_names_it(qapp, tmp_path):

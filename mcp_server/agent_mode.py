@@ -11,14 +11,19 @@
 
 The application is built (offscreen: a node without a display is what this
 is for), the agent asked its one prompt, and when the loop stops the
-session's figures are saved as PNGs under a directory the caller names --
+run's figures are saved as PNGs under a directory the caller names --
 that is how the images the agent drew reach the user: one
-``<figure key>.png`` per window the session still holds (a key's ``:``
+``<figure key>.png`` per figure the run left open (a key's ``:``
 spelled ``_``), and ``transcript.txt`` for the transcript the user reads
-on screen in the panel. A capture of the interface is an ask, not a
-by-product of the run -- the application shell (``00_app.png``) and the
-data-tree panel of a case (``case_…``) are the `EXTRA_SHOTS` a caller
-names with `--extra-shots`, and neither is saved by default.
+on screen in the panel. The run is one turn on a fresh app: every figure
+it holds, it drew. A session that keeps more turns (a page, a REPL)
+passes each turn's own figures to `saveShots`, because a figure an
+earlier turn drew is captured in that turn's files, not repeated into
+the one after. A capture of the interface is an ask anywhere -- the
+application shell (``00_app.png``) and the data-tree panel of a case
+(``case_…``) are the `EXTRA_SHOTS` a caller names -- with
+`--extra-shots` here, or the turn's own ask there -- and neither is
+saved by default.
 
 The stack the loop runs on is the one the *Agent* entry of the *File* menu
 builds (`QVizFileMenu.openAgent`): `McpGuiCore` on the session's api, one
@@ -111,32 +116,67 @@ def buildAgentStack(window, llm, core=None):
 
 #: The two captures that show the interface, not a figure of their own,
 #: named so that a page, a command line and a test can ask for one by
-#: name. A capture of a turn is the figures it drew, and these are the
-#: two that show the application instead: the whole application, or the
-#: data-tree panel of a case. Neither is saved by default: a capture of
-#: the interface is an ask, not a by-product of the turn.
+#: name. A capture of a turn is the figures it drew or asked to be
+#: captured, and these are the two that show the application instead:
+#: the whole application, or the data-tree panel of a case. Neither is
+#: saved by default: a capture of the interface is an ask, not a
+#: by-product of the turn.
 EXTRA_SHOTS = ('app', 'case-views')
 
 
-def saveShots(core, shots_dir, extras=()):
+def requestedCaptures(requested_windows):
+    """The windows a turn asked to be captured, split for `saveShots`:
+    the ones that name the interface are its `extras`, the ones that
+    name a figure are its `figures`.
+
+    `app` is the application extra; a case URI (`imas:…`, the name the
+    core takes for a shot view) is the `case-views` extra; the rest are
+    figure keys -- the figure the turn asked to be captured, whether it
+    drew it this turn or drew it in one before. A named ask for a figure
+    is the one that recaptures it, because a capture is only what a turn
+    asks for, and it cannot know the window is closed unless it names
+    it: `saveShots` refuses such a key by name, so the ask is not
+    answered with a silence.
+    """
+    extras, figures = [], []
+    for window in requested_windows or ():
+        if window == 'app':
+            if 'app' not in extras:
+                extras.append('app')
+        elif isinstance(window, str) and window.startswith('imas:'):
+            if 'case-views' not in extras:
+                extras.append('case-views')
+        elif window not in figures:
+            figures.append(window)
+    return extras, figures
+
+
+def saveShots(core, shots_dir, extras=(), figures=None):
     """The session's figure windows, and the extras that were asked for.
 
-    A capture of a turn is a picture of its plots by default: every
-    window the session still holds a key for is saved, and nothing but
-    them -- the application shell and the data-tree panel of a case show
-    the interface, and that is an ask (an entry of `EXTRA_SHOTS` in
-    `extras`), not what the turn leaves by itself. `extras` is a list
-    drawn from that tuple -- `'app'` for the whole application (saved as
-    `00_app.png`), `'case-views'` for the shot view of every open case --
-    and a name it does not hold is refused by naming the ones it does,
-    because a caller that spells one wrongly meant to have saved it.
+    The figures a caller names are the ones saved, when it names them:
+    a web or a REPL passes the figures of the one turn it is ending
+    (the ones it drew, the ones it asked to be captured), and a figure
+    an earlier turn drew stays in the files that turn left instead of
+    being repeated into every turn after it. A one-shot does not name
+    them: its app is fresh, so the figures it left open are the ones it
+    drew, and `figures=None` saves every window the session still holds
+    a key for.
 
-    Returns the list of files written, each as a `(window, path)` pair: the
-    window is the name the core was asked with ("app", the figure key, the
-    case URI) -- what `focus_window` and `get_screenshot` take back -- so a
-    page that draws the picture can act on the window it shows. A window
-    that refuses to render is named in the list that follows -- the style
-    of the repository -- and the other windows still come to disk.
+    The interface is an ask either way: the application shell (saved as
+    `00_app.png`) and the data-tree panel of a case are the `extras`,
+    drawn from `EXTRA_SHOTS`, and a name it does not hold is refused by
+    naming the ones it does, because a caller that spells one wrongly
+    meant to have saved it. The same refusal stands for a figure key a
+    caller named that the session no longer holds a window for: the
+    capture was asked, it is not made, and the caller reads why.
+
+    Returns the list of files written, each as a `(window, path)` pair:
+    the window is the name the core was asked with ("app", the figure
+    key, the case URI) -- what `focus_window` and `get_screenshot` take
+    back -- so a page that draws the picture can act on the window it
+    shows. A window that refuses to render is named in the list that
+    follows, and the other windows still come to disk.
     """
     extras = tuple(extras)
     unknown = [one for one in extras if one not in EXTRA_SHOTS]
@@ -145,17 +185,27 @@ def saveShots(core, shots_dir, extras=()):
             '%s is not a capture this run saves: the ones it holds '
             'beyond the figures are %s.'
             % (unknown, ', '.join(EXTRA_SHOTS)))
+    if figures is not None:
+        figures = set(figures)
     os.makedirs(shots_dir, exist_ok=True)
     saved = []
     refused = []
     targets = []
     if 'app' in extras:
         targets.append(('app', '00_app'))
+    heldFigureKeys = set()
     for record in core.list_windows():
         if record['key'] is not None:
-            targets.append((record['key'],
-                            record['key'].replace(':', '_')
-                            .replace('/', '_')))
+            heldFigureKeys.add(record['key'])
+            if figures is None or record['key'] in figures:
+                targets.append((record['key'],
+                                record['key'].replace(':', '_')
+                                .replace('/', '_')))
+    if figures is not None:
+        for key in sorted(figures - heldFigureKeys):
+            refused.append(
+                '%s: the session holds no figure window by that key: it '
+                'is not captured' % key)
     if 'case-views' in extras:
         for record in core.list_windows():
             if record['key'] is not None:

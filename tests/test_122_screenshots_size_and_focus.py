@@ -331,6 +331,70 @@ def test_saveShots_saves_the_interface_when_it_is_asked(qtbot, tmp_path):
     assert tuple(EXTRA_SHOTS) == ('app', 'case-views')
 
 
+def test_requestedCaptures_splits_the_interface_from_the_figures():
+    """The ask comes to `saveShots` as the windows the loop's
+    `get_screenshot` took -- and the split is by the shape of the name:
+    `app` and a case URI are the interface (the `extras`), a figure key
+    is a figure (the `figures`) -- the one `saveShots` can refuse by
+    name when the session does not hold it any more. The ask is deduped,
+    the order kept."""
+    from mcp_server.agent_mode import requestedCaptures
+    caseUri = ('imas:hdf5?path='
+               '/afs/eufus.eu/user/g/g2lfleur/public/imasdb'
+               '/west/3/54924/0')
+    extras, figures = requestedCaptures(['app', caseUri,
+                                         'SlicesPlot1', 'SlicesPlot1'])
+    assert extras == ['app', 'case-views']
+    assert figures == ['SlicesPlot1']
+    assert requestedCaptures(['app']) == (['app'], [])
+    assert requestedCaptures(['SlicesPlot2']) == ([], ['SlicesPlot2'])
+    assert requestedCaptures(()) == ([], [])
+    assert requestedCaptures(None) == ([], [])
+
+
+def test_saveShots_keeps_the_figures_the_turn_named(qtbot, tmp_path):
+    """The rule the page and the REPL read of a turn: `figures` narrows
+    the save to the keys named -- the session here holds two, the one a
+    turn drew and the one an earlier turn drew that it holds still, and
+    only the one named is left on disk. The one not named is left open
+    and out of the turn's files: a capture of a turn is its own. A key
+    the session does not hold is refused **named**, so an ask that
+    cannot be kept is not answered with a missing file.
+    `figures=None` stands as the one-shot's default, pinned by the two
+    tests above: its app is fresh, and its figures are all those it left
+    open."""
+    png = base64.b64decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
+        'AAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+
+    class TwoFiguresCore:
+        def list_windows(self):
+            return [{'kind': 'Plot', 'label': 'Plot %d' % i,
+                     'key': 'Plot%d' % i, 'visible': True, 'cases': []}
+                    for i in (1, 2)]
+
+        def screenshot(self, window):
+            if window not in ('app', 'Plot1', 'Plot2'):
+                raise ValueError('no such window: %r' % window)
+            return png
+
+    # Named: the one named is saved, the one not named is left out of
+    # the turn's files.
+    saved, refused = saveShots(TwoFiguresCore(), str(tmp_path / 'one'),
+                               figures={'Plot1'})
+    assert refused == []
+    assert [window for window, _ in saved] == ['Plot1']
+
+    # Named but gone: the refusal is named, and the one that is still
+    # held is the one that comes to disk.
+    saved, refused = saveShots(TwoFiguresCore(), str(tmp_path / 'two'),
+                               figures={'Plot1', 'Plot3'})
+    assert [window for window, _ in saved] == ['Plot1']
+    assert len(refused) == 1
+    assert 'Plot3' in refused[0]
+    assert 'not captured' in refused[0]
+
+
 # ------------------------------------------------------------------ the tool
 
 def test_focus_window_is_in_tools_with_its_parameters():
