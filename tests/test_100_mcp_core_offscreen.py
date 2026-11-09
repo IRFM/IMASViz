@@ -260,6 +260,63 @@ def test_describe_node_is_the_documentation_of_the_tree(core):
         session.describe_node('imas:hdf5?path=/no/such/case', IP_PATH)
 
 
+def test_describe_ids_reads_ids_properties(core):
+    """The comment, homogeneous_time, and DD version of equilibrium.
+
+    equilibrium is written at homogeneous_time = 0 (dynamic time array), so
+    the value must be 0. The comment is the data dictionary's description.
+    An IDS the case does not declare is refused by name.
+    """
+    session, _home = core
+    answer = session.describe_ids(CASE_URI, IDS_NAME, occurrence=0)
+    assert answer['name'] == IDS_NAME
+    assert answer['homogeneous_time'] == 0, \
+        'equilibrium is dynamic (homogeneous_time=0)'
+    # comment: the data dictionary's description; non-empty for equilibrium
+    assert answer.get('comment'), \
+        'equilibrium has a comment in the data dictionary'
+    # data_dictionary: the DD version the case was written at
+    assert answer.get('data_dictionary'), \
+        'the DD version should be present'
+    # An IDS not in the case is refused by name
+    with pytest.raises(ValueError, match='is not declared in the case'):
+        session.describe_ids(CASE_URI, 'nonexistent_ids')
+
+
+def test_list_quantities_lists_filled_tensors(core):
+    """The filled tensors (dimension >= 1) of equilibrium occurrence 0.
+
+    equilibrium is a dynamic IDS (homogeneous_time=0), so its quantities
+    live in the time_slice array. The answer must be grouped by the
+    driving array of structures, and must include at least the known
+    quantities (ip, pui, psi, ...) while excluding scalars (0D) and
+    quantities that contain no data.
+    """
+    session, _home = core
+    answer = session.list_quantities(CASE_URI, IDS_NAME, occurrence=0)
+    assert answer['ids'] == IDS_NAME
+    assert answer['total_quantities'] > 0, 'the case holds data'
+    groups = answer['groups']
+    assert groups, 'there must be at least one group'
+    # The groups must be the known ones for equilibrium:
+    # time_slice/boundary, time_slice/constraints, time_slice/profiles_1d,
+    # time_slice/global_quantities, time_slice/coordinate_system, etc.
+    labels = {g['label'] for g in groups}
+    # At least one group must be along time (equilibrium is dynamic)
+    assert any(g['along_time'] for g in groups), \
+        'equilibrium is dynamic; at least one group is along time'
+    # Each quantity must have a path starting with "equilibrium", and
+    # must be a tensor (dimension >= 1)
+    for group in groups:
+        for q in group['quantities']:
+            assert q['path'].startswith('equilibrium'), q['path']
+            assert q['data_type'] and not q['data_type'].endswith('0D'), \
+                'a listed quantity is a tensor (dimension >= 1): %s' % q['path']
+    # An IDS not in the case is refused by name
+    with pytest.raises(ValueError, match='is not declared in the case'):
+        session.list_quantities(CASE_URI, 'nonexistent_ids')
+
+
 # ------------------------------------------------------------------- plotting
 
 

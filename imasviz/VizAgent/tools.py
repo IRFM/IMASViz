@@ -40,10 +40,14 @@ How to work with it:
    screenshot is the size the window is: when the figure is one the user
    must see, focus_window puts it forward at a readable size (1280x800
    or the named pixels) before the get_screenshot.
-6. state is read with list_selection (what the case holds selected) and
+6. state is read with list_selection (what the case holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
-   preview) -- answers, not guesses, and empty is an answer too;
+   preview), describe_ids (what the data dictionary says about an IDS:
+   its comment, homogeneous_time, units, time units, data dictionary
+   version), and list_quantities (the filled tensors of one occurrence,
+   grouped by the array of structures that drives them, one entry per
+   quantity) -- answers, not guesses, and empty is an answer too;
 7. the reusable work of the application is what the tools named after
    it answer: list_sessions and list_configurations name the .vsess,
    .lsp and .pcfg files the folder holds, select_from_configuration
@@ -213,6 +217,38 @@ TOOLS = [
             'uri': {'type': 'string'},
             'path': {'type': 'string'},
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
+    ),
+    _tool(
+        'describe_ids',
+        'What the data dictionary says about an IDS: its comment '
+        '(ids_properties.comment), whether it is written with homogeneous '
+        'time (ids_properties.homogeneous_time), its units, time units, and '
+        'the data dictionary version the case was written at. The answer '
+        'holds only the fields the case fills; a property the case leaves '
+        'empty is absent, not invented. An IDS the case does not declare is '
+        'refused by name, naming the ones it does.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'ids_name': {'type': 'string'},
+            'occurrence': {'type': 'integer', 'default': 0},
+        }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
+    ),
+    _tool(
+        'list_quantities',
+        'The filled tensors (dimension >= 1) of one occurrence, grouped by '
+        'the array of structures that drives them: one entry per quantity '
+        '(its path, data name, parametrized path, units, data type, and how '
+        'many elements of its array the case holds). A quantity that '
+        'contains no data -- not blue in the tree -- is not listed, and '
+        'scalar leaves (0D) are not tensors and are not listed either. This '
+        'is the "what can be drawn" answer for one occurrence. An occurrence '
+        'whose tree was never built is refused by name: load it with '
+        'load_ids first.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'ids_name': {'type': 'string'},
+            'occurrence': {'type': 'integer', 'default': 0},
+        }, 'required': ['uri', 'ids_name'], 'additionalProperties': False},
     ),
     _tool(
         'plot_one',

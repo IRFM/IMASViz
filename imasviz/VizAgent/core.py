@@ -292,6 +292,130 @@ class McpGuiCore:
             answer['refusal'] = facts.refusal
         return answer
 
+    def describe_ids(self, uri, ids_name, occurrence=0):
+        """What the data dictionary says about an IDS: comment, homogeneous_time,
+        units, time_units, and the data dictionary version the case was written at.
+
+        `ids_properties` is a structure embedded in every IDS; the values are read
+        from the IMAS instance of that occurrence. An IDS the case does not hold
+        is refused by name, and a property the case does not fill is absent from
+        the answer rather than invented.
+        """
+        view = self._viewForUri(uri)
+        if ids_name not in view.IDSRoots:
+            available = sorted(view.IDSRoots)
+            raise ValueError(
+                'The "%s" IDS is not declared in the case %s -- it holds: %s.'
+                % (ids_name, uri, ', '.join('"%s"' % n for n in available)
+                   or 'none'))
+        occKey = '%s/%s' % (ids_name, occurrence)
+        root = view.ids_roots_occurrence.get(occKey)
+        idsInstance = getattr(root, 'idsRef', None) if root else None
+        if idsInstance is None:
+            raise ValueError(
+                'The "%s" IDS occurrence %s is not loaded in this view: '
+                'load it first with load_ids.' % (ids_name, occurrence))
+        props = getattr(idsInstance, 'ids_properties', None)
+        if props is None:
+            raise ValueError(
+                'The "%s" IDS has no ids_properties in its data dictionary.'
+                % ids_name)
+        answer = {'name': ids_name, 'occurrence': occurrence}
+        # comment: the node's documentation, which is ids_properties.comment
+        comment = root.getDocumentation()
+        if not comment:
+            try:
+                comment = str(getattr(props, 'comment', '') or '')
+            except Exception:
+                comment = ''
+        if comment:
+            answer['comment'] = comment
+        # homogeneous_time: set on the occurrence-root node when the tree is built
+        ht = root.getHomogeneousTime()
+        if ht is None:
+            try:
+                ht = int(getattr(props, 'homogeneous_time', 1))
+            except Exception:
+                ht = 1
+        answer['homogeneous_time'] = int(ht)
+        # units
+        units = root.getUnits()
+        if units:
+            answer['units'] = units
+        # time_units
+        try:
+            tu = str(getattr(props, 'time_units', '') or '')
+            if tu:
+                answer['time_units'] = tu
+        except Exception:
+            pass
+        # data dictionary version
+        try:
+            vp = getattr(props, 'version_put', None)
+            if vp is not None:
+                dd = str(getattr(vp, 'data_dictionary', '') or '')
+                if dd:
+                    answer['data_dictionary'] = dd
+        except Exception:
+            pass
+        # is_dynamic
+        if hasattr(root, 'ids_is_dynamic'):
+            answer['is_dynamic'] = bool(root.ids_is_dynamic)
+        return answer
+
+    def list_quantities(self, uri, ids_name, occurrence=0):
+        """The filled tensors (dimension >= 1) of one occurrence, grouped by the
+        array of structures that drives them.
+
+        One entry per **quantity**: the leaf that the tree stands on, its path,
+        its units, its data type, and how many elements of its array the case
+        holds. A quantity that contains no data (not blue in the tree) is not
+        listed, and the scalar leaves (0D) are not tensors and are not listed
+        either. This is the "what can be drawn" answer, read off the same tree
+        the panel walks, so the count here and the count the panel shows agree.
+        An occurrence whose tree was never built is refused by name.
+        """
+        view = self._viewForUri(uri)
+        if ids_name not in view.IDSRoots:
+            available = sorted(view.IDSRoots)
+            raise ValueError(
+                'The "%s" IDS is not declared in the case %s -- it holds: %s.'
+                % (ids_name, uri, ', '.join('"%s"' % n for n in available)
+                   or 'none'))
+        from imasviz.VizPlugins.viz_Profiles.viz_profiles.QVizProfileOffer \
+            import QVizProfileOffer
+        offer = QVizProfileOffer(view, ids_name, occurrence)
+        groups = offer.groups()
+        result = []
+        for group in groups:
+            quantities = []
+            for leaf in group.leaves:
+                if leaf.is0D():
+                    continue
+                if not leaf.hasAvailableData():
+                    continue
+                quantities.append({
+                    'path': leaf.getPath(),
+                    'data_name': leaf.getDataName(),
+                    'parametrized': leaf.getParametrizedDataPath(),
+                    'units': leaf.getUnits() or '',
+                    'data_type': leaf.getDataType() or '',
+                    'elements': group.elementsOf(leaf),
+                })
+            if quantities:
+                result.append({
+                    'label': group.label or '(no array of structures)',
+                    'along_time': bool(group.alongTime),
+                    'quantity_count': len(quantities),
+                    'quantities': quantities,
+                })
+        return {
+            'ids': ids_name,
+            'occurrence': occurrence,
+            'total_quantities': sum(g['quantity_count'] for g in result),
+            'groups': result,
+        }
+
     # -------------------------------------------------------------- plotting
 
     def _aliasesOf(self, node):

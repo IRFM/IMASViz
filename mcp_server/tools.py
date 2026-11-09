@@ -40,10 +40,14 @@ How to work with it:
    any of those spellings;
 5. plot_one / plot_selection / plot_table / plot_stacked draw, and
    get_screenshot answers a PNG of the window;
-6. state is read with list_selection (what the case holds selected) and
+6. state is read with list_selection (what the case holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
-   preview) -- answers, not guesses, and empty is an answer too;
+   preview), describe_ids (what the data dictionary says about an IDS:
+   comment, homogeneous_time, units, time units, data dictionary
+   version), and list_quantities (the filled tensors of one occurrence,
+   grouped by array of structures) -- answers, not guesses, and empty is
+   an answer too;
 7. a report is self-contained HTML on disk, with the statistics of each
    curve: plot_report names one window of curves (its image, one row per
    trace it drew), and case_report names the whole loaded tree of a case
@@ -179,6 +183,33 @@ def buildServer(core, dispatcher, name='imasviz'):
         tree does not hold is refused by name.
         """
         return _run(partial(core.describe_node, uri, path))
+
+    @server.tool(name='describe_ids')
+    def describe_ids(uri: str, ids_name: str, occurrence: int = 0):
+        """What the data dictionary says about an IDS: its comment
+        (ids_properties.comment), homogeneous_time, units, time units,
+        and the data dictionary version the case was written at.
+
+        A property the case leaves empty is absent, not invented; an IDS
+        the case does not declare is refused by name.
+        """
+        return _run(partial(core.describe_ids, uri, ids_name,
+                            occurrence=occurrence))
+
+    @server.tool(name='list_quantities')
+    def list_quantities(uri: str, ids_name: str, occurrence: int = 0):
+        """The filled tensors (dimension >= 1) of one occurrence, grouped
+        by the array of structures that drives them.
+
+        One entry per quantity: its path, data name, parametrized path,
+        units, data type, and how many elements of its array the case
+        holds. A quantity that contains no data (not blue in the tree) is
+        not listed, and scalar leaves (0D) are not tensors and are not
+        listed either. An occurrence whose tree was never built is
+        refused by name: load it with load_ids first.
+        """
+        return _run(partial(core.list_quantities, uri, ids_name,
+                            occurrence=occurrence))
 
     # -------------------------------------------------------------- plotting
 
