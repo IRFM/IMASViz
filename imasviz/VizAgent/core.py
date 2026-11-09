@@ -26,6 +26,249 @@ ALL = 'all'
 _SLICERS = {FIRST: 'FIRST_SLICE', ALL: 'ALL_SLICE'}
 
 
+# --------------------------------------------------------------------- addressing
+#
+# `axesAddressing` is the one answer to "which axis does this quantity run
+# along, and at which index are its other axes fixed". The read
+# (`get_signal`) and the figure (`plot_one`) both route through it, so they
+# cannot name one element and draw another. It is a read of the axes only --
+# no case open, no data read, no Qt -- and it refuses in words: an `along`
+# the quantity cannot run along, an index that names no axis it holds, an
+# index out of the extent the tree names, and a name that pins the very axis
+# the curve is drawn along.
+
+
+def _axisName(axis):
+    """The one word an axis goes by.
+
+    An array of structures goes by its array name; a leaf coordinate by the
+    last node the dictionary spells -- the word a user actually knows, `psi`;
+    an axis the dictionary leaves unbounded by its position among the leaf's
+    axes.
+    """
+    from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
+
+    if axis.origin == QVizAxis.AOS:
+        return axis.name or axis.placeholder or ('level %d' % axis.level)
+    if axis.coordinate:
+        node = str(axis.coordinate).rsplit('.', 1)[-1].rsplit('/', 1)[-1]
+        return node.split('[', 1)[0].split('(', 1)[0].strip()
+    return 'dimension %d' % axis.level
+
+
+def _axisWords(axis):
+    """The words an axis goes by, lowercased -- its name, plus the clock words
+    when it is the quantity's clock."""
+    words = {str(_axisName(axis)).strip().lower()}
+    if getattr(axis, 'is_time', False):
+        words |= {'time', 'temps', 't'}
+    return words
+
+
+def _axisNamed(spec, word, exclude=None):
+    """The one axis of `spec` named `word`, or None when no axis answers it.
+
+    None is the refusal the caller says in words (naming the words the quantity
+    does hold). A word that answers more than one axis is left ambiguous on
+    purpose, because resolving it by first match would fix the wrong element --
+    here, one of the two the user actually meant.
+    """
+    want = str(word).strip().lower()
+    hits = [axis for axis in spec.axes
+            if axis is not exclude and want in _axisWords(axis)]
+    if not hits:
+        return None
+    if len(hits) > 1:
+        raise ValueError(
+            '%s answers more than one axis of %s (%s); name the full '
+            'spelling that means the one you intend.'
+            % (word, spec.dataPath or spec.idsName or 'this quantity',
+               ', '.join('"%s"' % _axisName(a) for a in hits)))
+    return hits[0]
+
+
+def _holdRefusal(spec, word, exclude):
+    CLOCK = {'time', 'temps', 't'}
+    held = sorted({w for axis in spec.axes for w in _axisWords(axis)} - CLOCK)
+    drawn = ' it runs along "%s", which is drawn, not pinned.' \
+        % _axisName(exclude) if exclude is not None else ''
+    return ('"%s" names no axis of %s. This quantity goes by: %s.%s '
+            'Name one of those.'
+            % (word, spec.dataPath or spec.idsName or 'this quantity',
+               ', '.join(held) or 'none', drawn))
+
+
+def _checkExtent(axis, value):
+    word = str(_axisName(axis))
+    try:
+        index = int(value)
+    except (TypeError, ValueError):
+        raise ValueError(
+            'the index of "%s" must be a whole number, was %r'
+            % (word, value))
+    if index < 0:
+        raise ValueError(
+            'index %d of "%s" is negative; name 0 or greater' % (index, word))
+    if axis.length is not None and index >= int(axis.length):
+        raise ValueError(
+            'index %d of "%s" is past the %d elements that axis holds; '
+            'name 0 to %d'
+            % (index, word, axis.length, axis.length - 1))
+    return index
+
+
+def _scalarRefusal(spec):
+    """The named refusal a quantity earns when nothing runs along it.
+
+    A leaf the tree does not hold an axis for is a 0D element of an array of
+    structures; a quantity with more than one axis of its own is a picture.
+    Both are sayable, and both point at the gesture that would have meant it.
+    """
+    if not spec.leafAxes():
+        return ('\"%s\" is a 0D leaf -- one value held by its array of '
+                'structures, with no axis a curve runs along. The sibling '
+                '".data" under the same element is usually the curve, or draw '
+                'it as a table.'
+                % (spec.dataPath or spec.idsName or 'this quantity'))
+    return ('%s is not a curve the read can run along one axis: it carries '
+            'more than one axis of its own (a picture). Name one of them in '
+            '`along`, or draw it as a picture/table.'
+            % (spec.dataPath or spec.idsName or 'this quantity'))
+
+
+def _timeAxis(spec):
+    """The axis the quantity's clock is spelled by, if it has one."""
+    for axis in spec.axes:
+        if getattr(axis, 'is_time', False):
+            return axis
+    return None
+
+
+def _abscissaAxis(spec, identity):
+    from imasviz.VizDataAccess import QVizCurveAbscissa as AB
+
+    if identity == AB.TIME:
+        return _timeAxis(spec)
+    for axis in spec.axes:
+        try:
+            if AB.identityOf(axis) == identity:
+                return axis
+        except Exception:
+            pass
+    return None
+
+
+def _resolveAbcissa(spec, along):
+    """The identity the quantity runs along, or a named refusal.
+
+    The options are the ones the read itself offers (`abscissae`): the clock
+    when the quantity has one, and the coordinate it carries when it does.
+    `along` is `None` for the first of those, a clock word for the clock, or
+    the name of the axis the read can run along. Naming an axis none of them
+    answers is a refusal that names the ones it does.
+    """
+    from imasviz.VizDataAccess import QVizCurveAbscissa as AB
+
+    options = AB.abscissae(spec)
+    if not options:
+        raise ValueError(_scalarRefusal(spec))
+    if along is None:
+        return options[0]
+    word = str(along).strip().lower()
+    for option in options:
+        if option == AB.TIME:
+            clock = _timeAxis(spec)
+            words = _axisWords(clock) if clock is not None \
+                else {'time', 'temps', 't'}
+            if word in words:
+                return option
+            continue
+        ident = str(option[1]) if isinstance(option, tuple) and len(option) > 1 \
+            else str(option)
+        ident = ident.lower()
+        if word in ident.rsplit('.', 1) \
+                or word == ident \
+                or word in ident.replace('.', ' ').split():
+            return option
+    spelled = ', '.join(sorted(_identityWord(spec, option)
+                               for option in options))
+    raise ValueError(
+        '%s cannot run along "%s"; it runs along: %s. Name one of those.'
+        % (spec.dataPath or spec.idsName or 'this quantity', along, spelled))
+
+
+def _identityWord(spec, option):
+    from imasviz.VizDataAccess import QVizCurveAbscissa as AB
+
+    if option == AB.TIME:
+        clock = _timeAxis(spec)
+        return str(_axisName(clock)).strip() if clock is not None else 'time'
+    if isinstance(option, tuple) and len(option) > 1:
+        return str(option[1]).rsplit('.', 1)[-1]
+    return str(option)
+
+
+def axesAddressing(axesSpec, along=None, indices=None):
+    """The one addressing of a quantity: the axis it runs along, and the index
+    at which each of its other axes is fixed.
+
+    `axesSpec` is the axes of the quantity. `along` is the axis it runs along
+    -- `None` for the clock (or the quantity's own axis), a clock word, or the
+    name of the axis it can actually be read along. `indices` holds one entry
+    per axis the curve does *not* run along, by that axis's word, at its
+    0-based index.
+
+    It answers the three values the read consumes
+    (`QVizTensorDataAccess.GetSignal`): the abscissa identity, the
+    `as_function_of_time` flag, and the `slices` mapping keyed by axis. The
+    read (`get_signal`) and the figure (`plot_one`) route through this, so a
+    figure and its numbers cannot point at different elements of the same
+    array.
+
+    Named refusals: a quantity nothing runs along; a word no axis answers (or
+    that answers more than one); an index past the extent the tree names; and
+    a name for the axis the curve already runs along.
+    """
+    from imasviz.VizDataAccess import QVizCurveAbscissa as AB
+
+    if not axesSpec.isPlottable():
+        raise ValueError(_scalarRefusal(axesSpec))
+
+    abscissa = _resolveAbcissa(axesSpec, along)
+    abscissaAxis = _abscissaAxis(axesSpec, abscissa)
+
+    # Every word `indices` names is checked before a slice is built for it, so
+    # the refusal is the answer a model reads, not an empty one. A word that
+    # pins the abscissa is a contradiction; a word no axis answers is a miss;
+    # a value past the extent is a wrong element presented as the right one.
+    for key in (indices or {}):
+        word = str(key).strip().lower()
+        if abscissaAxis is not None and word in _axisWords(abscissaAxis):
+            raise ValueError(
+                '\"%s\" is the axis the curve runs along; it is the abscissa '
+                'and the abscissa is what the figure draws, not a slice to pin '
+                '-- name a different axis, or run the curve along that one.'
+                % key)
+        axis = _axisNamed(axesSpec, word, exclude=abscissaAxis)
+        if axis is None:
+            raise ValueError(_holdRefusal(axesSpec, key, abscissaAxis))
+        _checkExtent(axis, (indices or {})[key])
+
+    slices = {}
+    for axis in axesSpec.axes:
+        if axis is abscissaAxis:
+            continue  # the abscissa is drawn, so it takes no slice index
+        named = [key for key in (indices or {})
+                 if str(key).strip().lower() in _axisWords(axis)]
+        if named:
+            value = (indices or {})[named[0]]
+        else:
+            value = axis.index if axis.index is not None else 0
+        slices[axis.key()] = _checkExtent(axis, value)
+
+    return abscissa, (abscissa == AB.TIME), slices
+
+
 class McpGuiCore:
     """One application session: its cases, its selection, its windows.
 
