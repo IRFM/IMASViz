@@ -10,28 +10,44 @@
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-"""The system prompt names the probe-occurrence ambiguity instead of guessing.
+"""The system prompt keeps an occurrence apart from an element of an array
+of structures, and the probe ambiguity stays named instead of guessed.
 
-On WEST 54924 the ``magnetics`` IDS holds five ``bpol_probe`` occurrences
-(``[0]`` to ``[4]``); asked for "sonde 2", the agent picked occurrence
-``[2]`` by feel -- defensible, but not forced, and the follow-up showed it
-would rather lose the work than admit it had chosen. The instruction the
-in-app agent and the MCP surface share must say, in words, that a loose
-ordinal over an array-of-structures is an ambiguity to name and ask
-about, not a fact to resolve by picking. This file pins that sentence:
+What this file answers: the in-app agent was asked what the magnetics IDS
+of WEST 54924 holds and answered ``bpol_probe (5 occurrences : 0 à 4)`` --
+five, where the case holds **130** `bpol_probe` **elements** (T38), and it
+later drew that many. The number did not come from a tool: it came from the
+system instructions themselves, which carried ``five bpol_probe
+occurrences ([0] to [4])``, and it called the members of an AOS
+*occurrences*, which is not what an occurrence is in this application: an
+**occurrence** is a version of an IDS the case holds
+(``list_idss`` / ``load_ids(occurrence=…)``), while a member of an array
+of structures (``magnetics.bpol_probe[3]``) is an **element** -- one probe,
+and the count of them is what ``search_nodes`` and ``list_quantities``
+answer of the case, never a number the prompt recalls.
 
-* several occurrences of one array-of-structures (the bpol probes of
-  magnetics are the standing example);
-* that a loose ordinal is an ambiguity, not a fact -- occurrence 2 and the
-  first probe are different leaves;
-* that the answer names the options found and asks which occurrence means,
-  instead of choosing one by feel.
+The instruction the in-app agent reads therefore says, in words:
+
+* the two words, kept apart: an occurrence is a version of one IDS the
+  case holds; an element is one member of an array of structures, and it
+  is not an occurrence -- the magnetics bpol-probes stay the standing
+  example, spelled as a member index;
+* a count the agent gives back is a count a tool answered in this
+  conversation, not one the prompt carries -- and no number may sit
+  before ``bpol_probe`` in the prompt (the shape that came in as ``five
+  bpol_probe``);
+* a loose ordinal over one array of structures is an ambiguity, not a
+  fact: name the options found and ask which one means, instead of
+  choosing one by feel -- a probe picked at random is a wrong curve
+  presented as the right one.
 
 Pinning the prompt text is the shape the surface contracts use elsewhere
-(``test_116`` pins the tool names, this one pins the guardrail words),
-because there is no behaviour to drive without the local model that is
-being asked to change.
+(``test_116`` pins the tool names, this one pins these words), because
+there is no behaviour to drive without the local model that is being asked
+to change.
 """
+
+import re
 
 import pytest
 
@@ -45,36 +61,53 @@ def _text():
     return ' '.join(SYSTEM_INSTRUCTIONS.split()).lower()
 
 
-def test_the_prompt_names_the_array_of_structures_ambiguity():
-    """The instruction is present, and it is the one that says the ordinal
-    over several occurrences is an ambiguity rather than a fact."""
+def test_the_prompt_keeps_occurrence_apart_from_element():
+    """The two words the model mixes are defined, in the direction of the
+    application: an occurrence is the IDS version the case holds; a member
+    of an array of structures is an element, and an element is not an
+    occurrence."""
     text = _text()
-    assert 'several occurrences of one array-of-structures' in text
-    assert 'ambiguity, not a fact' in text
+    assert 'an occurrence is a version of one ids the case holds' in text
+    assert ('an element is one member of an array of structures, '
+            'and it is not an occurrence' in text)
 
 
-def test_the_prompt_points_at_the_standing_example():
-    """The magnetics bpol-probes are the standing example the rule leans on,
-    so a reader meets the ambiguity in concrete terms, not in the abstract."""
+def test_the_prompt_keeps_the_standing_example_without_a_count():
+    """The bpol probes of magnetics stay the standing example of the
+    ambiguity -- so a reader meets it in concrete terms -- but the prompt
+    spells one of them as an element index and carries **no** number of
+    them: a count before the name is the shape of the wrong ``five
+    bpol_probe`` that came back as ``5 occurrences`` on screen."""
     text = _text()
     assert 'bpol_probe' in text
     assert 'magnetics' in text
+    assert 'magnetics.bpol_probe[3]' in text
+    # No numeral -- digit or small word -- sitting before the name.
+    assert not re.search(r'\b\d+\s+bpol_probe\b', text)
+    assert not re.search(
+        r'\b(?:two|three|four|five|six|seven|eight|nine|ten)\s+bpol_probe\b',
+        text)
 
 
-def test_the_prompt_says_ask_which_occurrence_rather_than_guess():
-    """The rule ends in a question to the user, not a call one way or the
-    other: name the options found, ask which occurrence means, and do not
-    choose by feel -- a picked-at-random probe is a wrong curve presented
-    as the right one."""
-    text = _text()
-    assert 'ask which occurrence' in text
-    assert 'instead of choosing one by feel' in text
-
-
-def test_the_prompt_names_the_tool_that_lists_the_options():
-    """The options the agent is told to name come from a call, not from
-    memory: search_nodes and list_idss are where the case tells its
-    occurrences, and both are names the loop already knows."""
+def test_the_prompt_anchors_counts_to_tools():
+    """The counts an answer carries come from the tools of the
+    conversation -- search_nodes names the leaves, list_quantities says how
+    many elements of their array the case holds -- and the prompt says it
+    does not carry a count itself."""
     text = _text()
     assert 'search_nodes' in text
-    assert 'list_idss' in text
+    assert 'list_quantities' in text
+    assert 'how many elements of their array the case holds' in text
+    assert 'not one this prompt carries' in text
+
+
+def test_the_prompt_keeps_the_ordinal_guardrail():
+    """The ambiguity stays a question to the user, not a pick: a loose
+    ordinal over one array of structures is named as an ambiguity, and the
+    rule ends asking which one means instead of choosing one by feel."""
+    text = _text()
+    assert 'an ambiguity, not a fact' in text
+    assert 'name the options found and ask which one means' in text
+    assert 'instead of choosing one by feel' in text
+    assert ('a probe picked at random is a wrong curve '
+            'presented as the right one' in text)
