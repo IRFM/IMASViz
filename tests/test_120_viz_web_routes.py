@@ -93,16 +93,30 @@ class ScriptedLLM:
 
 class FakeCore:
     """The handful of gestures a route answers, and the images `saveShots`
-    asks, the shape `test_119`'s core carries."""
+    asks, the shape `test_119`'s core carries: the figures it holds are
+    the ones its `plot_one` drew, so a turn's captures are its own."""
+
+    def __init__(self):
+        self._windows = []
 
     def list_windows(self):
-        return [{'kind': 'SlicesPlot', 'label': 'SlicesPlot 1',
-                 'key': 'SlicesPlot1', 'visible': True, 'cases': []}]
+        return list(self._windows)
 
     def screenshot(self, window):
-        if window not in ('app', 'SlicesPlot1'):
-            raise ValueError('no such window: %r' % window)
-        return PNG_1x1
+        if window == 'app' or any(record['key'] == window
+                                  for record in self._windows):
+            return PNG_1x1
+        raise ValueError('no such window: %r' % window)
+
+    def plot_one(self, uri, path, **kwargs):
+        # The gesture that draws: the figure it opens once, the rest find
+        # it already held.
+        if any(record['key'] == 'SlicesPlot1' for record in self._windows):
+            return {'window': 'SlicesPlot1'}
+        self._windows.append({'kind': 'SlicesPlot', 'label': 'SlicesPlot 1',
+                              'key': 'SlicesPlot1', 'visible': True,
+                              'cases': []})
+        return {'window': 'SlicesPlot1'}
 
     def list_cases(self):
         return [{'uri': CASE_URI, 'dd_version': '3.35.0',
@@ -113,9 +127,6 @@ class FakeCore:
 
     def get_signal(self, uri, path, **kwargs):
         return {'x': [0, 1, 2], 'y': [10, 20, 30]}
-
-    def plot_one(self, uri, path, **kwargs):
-        return {'plotted': path}
 
     def plot_report(self, figure_key, name=None):
         # The one half a turn test needs of the core's own
@@ -240,14 +251,25 @@ def test_tools_lists_the_tables_the_loop_offers(qapp, tmp_path):
 # ---------------------------------------------------------------------- the agent
 
 def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
+    """The turn the page streams: the transcript lines come down as the loop
+    writes them, and the images come with the end of the turn -- the figure
+    the turn drew, because a capture of a turn is the figures it drew and
+    asked for: the stand-in core here opens `SlicesPlot1` with the
+    `plot_one` the scripted loop issues, and the `done` event carries that
+    PNG under the name the page serves it from. The stand-in holds no
+    figure before the turn, which is what makes the assertion mean the turn
+    drew it, not the session held it."""
     llm = ScriptedLLM([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
-        LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+        LLMResponse(tool_calls=[
+            {'name': 'plot_one',
+             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            content=''),
+        LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
     session, _ = build(qapp, tmp_path, llm=llm)
     client = TestClient(buildApp(session), base_url='http://t')
     resp = makeRequest(client, qapp, 'POST', '/api/agent',
-                       json={'prompt': 'liste les cas'})
+                       json={'prompt': 'trace une figure'})
     assert resp.status_code == 200
     assert 'text/event-stream' in resp.headers.get('content-type', '')
 
@@ -260,13 +282,13 @@ def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
     # answer the loop gives.
     data_texts = [d.get('text') for event, d in blocks if event == 'line']
     joined = '\n'.join(data_texts)
-    assert 'list_cases' in joined
-    assert 'Le cas est ouvert.' in joined
+    assert 'plot_one' in joined
+    assert 'La figure est tracée.' in joined
 
-    # The `done` event carries the images the page draws and where they
-    # live: the figure the turn drew, and not the application the turn
-    # did not ask for -- the capture of a turn is its plots, the way
-    # `test_119` pins it on the session.
+    # The `done` event carries the image the page draws and where it lives:
+    # the figure the turn drew, and not the application the turn did not
+    # ask for -- the capture of a turn is its own, the way `test_119` pins
+    # it on the session.
     done = next(d for e, d in blocks if e == 'done')
     names = [im['name'] for im in done['images']]
     assert names == ['SlicesPlot1.png']
@@ -499,8 +521,11 @@ def test_llm_set_max_turns_refused_when_below_the_floor(qapp, tmp_path):
 
 def test_turn_history_and_shot_read_back(qapp, tmp_path):
     llm = ScriptedLLM([
-        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
-        LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+        LLMResponse(tool_calls=[
+            {'name': 'plot_one',
+             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            content=''),
+        LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
     session, _ = build(qapp, tmp_path, llm=llm)
     client = TestClient(buildApp(session), base_url='http://t')

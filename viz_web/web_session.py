@@ -102,12 +102,15 @@ class WebSession:
         one but the record listens, and the turn is simply a call and its
         answer.
 
-        Returns the turn's record: the prompt, its lines, its images as
-        PNGs (with the base64 the page needs to draw them), the reports
-        its gestures wrote (the names the reports folder did not hold
-        before the turn and holds after it), the refusal named, and the
-        directory the images and the transcript are left in. An empty
-        prompt is a named refusal, as the REPL refuses it.
+        Returns the turn's record: the prompt, its lines, its captures as
+        PNGs -- the figures the turn drew or asked to be captured, with
+        the base64 the page needs to draw them and the window each one
+        shows (a figure an earlier turn drew is not among them: it is
+        captured in that turn's files) -- the reports its gestures wrote
+        (the names the reports folder did not hold before the turn and
+        holds after it), the refusal named, and the directory the images
+        and the transcript are left in. An empty prompt is a named
+        refusal, as the REPL refuses it.
         """
         with self._lock:
             prompt = (prompt or '').strip()
@@ -125,6 +128,15 @@ class WebSession:
             # turn's own reports are the names it holds after that are
             # not here now (the gestures write them through the core).
             before_reports = self.reportsOnDisk()
+            # What the session already holds as figures before this turn
+            # draws: the turn's own figures are the ones it adds to that,
+            # and the ones an earlier turn drew stay in the files that
+            # turn left, not repeated into this one. Asked the same way
+            # the end of the turn asks the core -- on the GUI thread.
+            figure_keys_before = self.dispatcher.call(
+                lambda: {record['key']
+                         for record in self.core.list_windows()
+                         if record['key'] is not None})
 
             def onLineSlot(line):
                 lines.append(line)
@@ -132,11 +144,11 @@ class WebSession:
                     onLine(line)
 
             def onGestureSlot(name, args):
-                # A capture of the interface is an ask, and the loop's
-                # `get_screenshot` is one: the window it names is the one
-                # this turn asks to be saved beside its figures -- which
-                # are captured by default anyway, and so a figure key
-                # named here costs nothing.
+                # A capture is an ask, and the loop's `get_screenshot`
+                # is one: the window it names is the one this turn asks
+                # to be saved -- a figure key is the capture of a figure
+                # the turn may not have drawn itself, and `app` or a case
+                # URI the one of the interface.
                 if name == 'get_screenshot':
                     requested_windows.append(
                         (args or {}).get('window', 'app'))
@@ -178,9 +190,14 @@ class WebSession:
                     except (TypeError, RuntimeError):
                         pass
 
-            turn_dir, saved, refused, images, windows = \
-                self.dispatcher.call(
-                    lambda: self._finishTurn(lines, requested_windows))
+            # The figures the turn owns are the ones it adds to the
+            # session's own, asked before the loop drew (`figure_keys
+            # _before`) and now: the end of the turn names the
+            # difference, and a figure an earlier turn drew stays in the
+            # files that turn left, not repeated into this one.
+            turn_dir, saved, refused, images, windows = self.dispatcher.call(
+                lambda: self._finishTurn(lines, requested_windows,
+                                         figure_keys_before))
 
             record = {'n': len(self.turns) + 1,
                       'prompt': prompt,
@@ -199,45 +216,22 @@ class WebSession:
             self.turns.append(record)
             return record
 
-    def _extrasFor(self, requested_windows):
-        """The windows this turn asked to be captured, as the extras of
-        `saveShots` -- which is where a capture of the interface stands.
-
-        `app` is the one extra named `app`; a case URI (anything the
-        application gives a shot view to) is `case-views`, the one
-        extra that keeps the shot view of every open case; a figure key
-        is not an extra, because it is already in the turn's own
-        capture -- a request for it is answered twice over, and that is
-        not a cost.
-        """
-        extras = []
-        keys = set()
-        for record in self.core.list_windows():
-            if record.get('key'):
-                keys.add(record['key'])
-        for window in requested_windows or []:
-            if window == 'app':
-                if 'app' not in extras:
-                    extras.append('app')
-            elif window in keys:
-                # A figure: already captured with the turn's figures.
-                continue
-            elif isinstance(window, str) and window.startswith('imas:'):
-                if 'case-views' not in extras:
-                    extras.append('case-views')
-        return extras
-
-    def _finishTurn(self, lines, requested_windows=()):
+    def _finishTurn(self, lines, requested_windows=(),
+                    figure_keys_before=None):
         """The part of a turn that runs on the GUI thread: the window off
         the screen, the images and the transcript on disk, the PNGs
         read back.
 
-        `requested_windows` are the windows the turn asked to be captured
-        (the `get_screenshot` of the loop, the user's asks), and they are
-        the extras of `saveShots`: the figures of the turn are saved by
-        default, and these are the ones that save the interface beside
-        them -- a capture of the interface is an ask, and this is the
-        one that was asked.
+        The turn's own figures are the ones it drew -- what it holds now
+        and did not hold before the loop ran (`figure_keys_before`) --
+        besides the windows the turn asked to be captured
+        (`requested_windows`, the `get_screenshot` of the loop, the user's
+        asks), which are its own even when the figure is an old one: a
+        capture is what a turn draws or asks for, and a figure an earlier
+        turn drew stays in the files that turn left. `requestedCaptures`
+        splits the asks for `saveShots`, which is where the interface
+        stands (`app` and the case URIs are its `extras`), and refuses a
+        figure key the session does not hold by naming it.
 
         Asked through the `GuiDispatcher`, because it asks the core to
         render (`screenshot` -> `QWidget.grab()`), and a thread that does
@@ -247,7 +241,8 @@ class WebSession:
         and the `({'name', 'window'})` pairs the record keeps for the
         page's buttons.
         """
-        from mcp_server.agent_mode import _settleWindow, saveShots
+        from mcp_server.agent_mode import (_settleWindow, requestedCaptures,
+                                           saveShots)
 
         number = len(self.turns) + 1
         turn_dir = os.path.join(
@@ -255,8 +250,14 @@ class WebSession:
             '%02d_%s' % (number, time.strftime('%Y%m%d-%H%M%S')))
         if self.app is not None and self.window is not None:
             _settleWindow(self.window, self.app)
+        extras, askedFigures = requestedCaptures(requested_windows)
+        figureKeysNow = {record['key']
+                         for record in self.core.list_windows()
+                         if record['key'] is not None}
+        figures = (figureKeysNow - (figure_keys_before or set())) \
+            | set(askedFigures)
         saved, refused = saveShots(
-            self.core, turn_dir, extras=self._extrasFor(requested_windows))
+            self.core, turn_dir, extras=extras, figures=figures)
         with open(os.path.join(turn_dir, 'transcript.txt'), 'w') as f:
             f.write('\n'.join(lines) + '\n')
         # `saveShots` answers the (window, path) pairs it wrote: the name

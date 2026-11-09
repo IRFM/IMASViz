@@ -67,19 +67,40 @@ class FakeLLMClient:
 
 
 class FakeCore:
-    """A core that answers PNGs and records the session gestures."""
+    """A core that answers PNGs and records the session gestures. Its
+    figures are the ones it has **drawn** -- `plot_one` opens the one
+    it draws, `SlicesPlot1`, and holds it -- because a prompt's captures
+    are the figures that prompt drew or asked for, and a stand-in that
+    holds a figure before the prompt drew it cannot tell the two apart."""
     def __init__(self):
         self.saved = []
         self.restored = []
+        self._windows = []
 
     def list_windows(self):
-        return [{'kind': 'SlicesPlot', 'label': 'SlicesPlot 1',
-                 'key': 'SlicesPlot1', 'visible': True, 'cases': []}]
+        return list(self._windows)
 
     def screenshot(self, window):
-        if window not in ('app', 'SlicesPlot1'):
-            raise ValueError('no such window: %r' % window)
-        return PNG_1x1
+        if window == 'app' or any(record['key'] == window
+                                  for record in self._windows):
+            return PNG_1x1
+        raise ValueError('no such window: %r' % window)
+
+    def get_screenshot(self, window='app'):
+        # The tool name the loop dispatches under, answering the one the
+        # core's own method runs -- the pair `McpGuiCore` keeps, so a
+        # `get_screenshot` of the loop reaches this stand-in too.
+        return self.screenshot(window)
+
+    def plot_one(self, uri, path, **kwargs):
+        # The gesture that draws: the figure it opens once, and a second
+        # call finds it already held.
+        if any(record['key'] == 'SlicesPlot1' for record in self._windows):
+            return {'window': 'SlicesPlot1'}
+        self._windows.append({'kind': 'SlicesPlot', 'label': 'SlicesPlot 1',
+                              'key': 'SlicesPlot1', 'visible': True,
+                              'cases': []})
+        return {'window': 'SlicesPlot1'}
 
     def list_cases(self):
         return [{'uri': CASE_URI, 'dd_version': '3.35.0',
@@ -125,6 +146,15 @@ def buildSession(qapp, tmp_path, llm=None, shots=None, max_turns=8):
 def toolCall():
     return LLMResponse(content='',
                        tool_calls=[{'name': 'list_cases', 'args': {}}],
+                       finish_reason='tool_calls')
+
+
+def plotCall():
+    # The gesture that draws the figure the prompt then owns.
+    return LLMResponse(content='',
+                       tool_calls=[{'name': 'plot_one',
+                                    'args': {'uri': CASE_URI,
+                                             'path': 'core.ion[0].temp'}}],
                        finish_reason='tool_calls')
 
 
@@ -226,34 +256,39 @@ def test_mcp_one_gesture_and_the_refusal_of_another(qapp, tmp_path):
 
 
 def test_a_prompt_is_answered_and_its_turn_is_left_on_disk(qapp, tmp_path):
-    llm = FakeLLMClient([toolCall(),
-                         LLMResponse(content='Le cas est ouvert.',
+    """The prompt answers, and its turn is left on disk: the capture of a
+    prompt is the figure it drew -- the one its own `plot_one` opened,
+    because the stand-in core held none before it -- and the application
+    it did not ask for is the one that is not saved (the default is the
+    plots, the way `test_122` pins it on `saveShots`)."""
+    llm = FakeLLMClient([plotCall(),
+                         LLMResponse(content='La figure est tracée.',
                                      finish_reason='stop')])
     session, _ = buildSession(qapp, tmp_path, llm=llm)
-    out = session.runPrompt('liste les cas ouverts')
+    out = session.runPrompt('trace une courbe du cas')
     assert out['refusal'] is None
     turn = out['dir']
-    # The capture of a turn is the figure it drew: the application the
-    # turn did not ask for is the one that is not saved (the default is
-    # the plots, the way `test_122` pins it on `saveShots`).
     with open(turn + '/SlicesPlot1.png', 'rb') as f:
         assert f.read() == PNG_1x1
     import os
     assert not os.path.isfile(turn + '/00_app.png')
     with open(turn + '/transcript.txt') as f:
         transcript = f.read()
-    assert 'Le cas est ouvert.' in transcript
-    assert 'list_cases' in transcript
+    assert 'La figure est tracée.' in transcript
+    assert 'plot_one' in transcript
 
 
 def test_a_refused_turn_is_named_and_still_saved(qapp, tmp_path):
     """The refusal (the truncation, here) is not a silence: it is named
-    in the outcome and the transcript, and the turn still leaves its
-    images on disk -- the rule `test_112` pins for the one-shot."""
-    llm = FakeLLMClient([LLMResponse(content='partial...',
+    in the outcome and the transcript, and the figure the prompt drew
+    before it died still comes to disk -- a capture of a prompt is what
+    it drew or asked, and it drew one first. Not a prompt that dies and
+    takes its work with it: the rule `test_112` pins for the one-shot."""
+    llm = FakeLLMClient([plotCall(),
+                         LLMResponse(content='partial...',
                                      finish_reason='length')])
     session, _ = buildSession(qapp, tmp_path, llm=llm)
-    out = session.runPrompt('une requete trop longue')
+    out = session.runPrompt('trace une figure et continue')
     assert out['refusal'] is not None
     with open(out['dir'] + '/transcript.txt') as f:
         transcript = f.read()
@@ -262,6 +297,69 @@ def test_a_refused_turn_is_named_and_still_saved(qapp, tmp_path):
     # And the capture of the turn is the figure it drew, and not the
     # application it did not ask for.
     assert os.path.isfile(out['dir'] + '/SlicesPlot1.png')
+
+
+def test_a_second_prompt_does_not_recapture_the_first_figure(qapp, tmp_path):
+    """A capture of a prompt is its own: the figure an earlier prompt
+    drew stays in the directory that prompt left, and is not repeated
+    into the one the prompt after it leaves -- here the second prompt
+    draws nothing and asks for nothing, so its directory holds no
+    figure. This is what the page asks of the turn it groups the
+    captures under each request: not the same picture in every request.
+
+    The stand-in core keeps the figure of the first prompt across the
+    second one (same session, as the application does), which is what
+    makes the assertion read as not re-saved, not as lost."""
+    llm = FakeLLMClient([plotCall(),
+                         LLMResponse(content='La figure est tracée.',
+                                     finish_reason='stop'),
+                         toolCall(),
+                         LLMResponse(content='Le cas est ouvert.',
+                                     finish_reason='stop')])
+    session, _ = buildSession(qapp, tmp_path, llm=llm)
+    first = session.runPrompt('trace une figure du cas')
+    assert first['refusal'] is None
+    second = session.runPrompt('liste les cas ouverts')
+    assert second['refusal'] is None
+
+    import os
+    first_files = set(os.listdir(first['dir']))
+    second_files = set(os.listdir(second['dir']))
+    assert 'SlicesPlot1.png' in first_files
+    assert 'SlicesPlot1.png' not in second_files
+    assert 'transcript.txt' in second_files
+
+
+def test_a_prompt_that_asks_for_the_figure_gets_its_capture(qapp, tmp_path):
+    """The one way an older figure comes into a newer prompt is the ask
+    for it: the `get_screenshot` of the loop is the ask, and it
+    recaptures the figure of the prompt that drew it into the directory
+    of the prompt that asked. The figure is still held by the stand-in
+    core across the prompts (same session), so this is a re-save, not
+    a discovery: the ask names a window the session can render."""
+    llm = FakeLLMClient([plotCall(),
+                         LLMResponse(content='La figure est tracée.',
+                                     finish_reason='stop'),
+                         LLMResponse(content='',
+                                     tool_calls=[{'name': 'get_screenshot',
+                                                  'args': {'window':
+                                                           'SlicesPlot1'}}],
+                                     finish_reason='tool_calls'),
+                         LLMResponse(content='La capture est refaite.',
+                                     finish_reason='stop')])
+    session, _ = buildSession(qapp, tmp_path, llm=llm)
+    first = session.runPrompt('trace une figure du cas')
+    assert first['refusal'] is None
+    second = session.runPrompt('donne-moi la capture de la figure')
+    assert second['refusal'] is None
+
+    import os
+    first_files = set(os.listdir(first['dir']))
+    second_files = set(os.listdir(second['dir']))
+    # The ask was for the capture of the figure, not of the interface.
+    assert 'SlicesPlot1.png' in first_files
+    assert 'SlicesPlot1.png' in second_files
+    assert '00_app.png' not in second_files
 
 
 def test_the_context_survives_between_two_prompts(qapp, tmp_path):

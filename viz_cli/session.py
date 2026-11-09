@@ -21,6 +21,13 @@ of the one-shot, asked after every prompt instead of once at the end.
 `Ctrl+C` during a turn asks the loop to stop at the turn boundary
 (`AgentLoop.stop`), and the turn that was started still leaves its
 images and its transcript on disk.
+
+And the same capture rule the page applies: a turn's captures are the
+figures it drew, or the windows it asked to be captured -- a figure an
+earlier prompt drew is captured in that prompt's directory, not
+repeated into every prompt after it, and an ask for it (the loop's
+`get_screenshot`, the way a prompt says "give me a capture of that
+figure") is the one that recaptures it into the prompt that asked.
 """
 
 import os
@@ -102,6 +109,7 @@ class CliSession:
         self.prompts.append(prompt)
 
         lines = []
+        requested_windows = []
         done = threading.Event()
         outcome = [None]
 
@@ -109,12 +117,29 @@ class CliSession:
             print(line, flush=True)
             lines.append(line)
 
+        def onGesture(name, args):
+            # A capture is an ask, and the loop's `get_screenshot` is
+            # one: the window it names is the one this prompt asks to be
+            # saved -- a figure the prompt may not have drawn itself, or
+            # the interface.
+            if name == 'get_screenshot':
+                requested_windows.append(
+                    (args or {}).get('window', 'app'))
+
         def onDone(error):
             outcome[0] = error
             done.set()
 
+        # What the session already holds as figures before this prompt
+        # draws: the prompt's own figures are the ones it adds to that,
+        # and the ones an earlier prompt drew stay in the directories
+        # those prompts left, not repeated into this one.
+        figure_keys_before = {record['key']
+                              for record in self.core.list_windows()
+                              if record['key'] is not None}
         self.agent.transcriptLine.connect(onLine)
         self.agent.askFinished.connect(onDone)
+        self.agent.gestureIssued.connect(onGesture)
         thread = threading.Thread(target=self.agent.ask,
                                   args=(prompt, self.max_turns),
                                   daemon=True)
@@ -133,7 +158,8 @@ class CliSession:
                 self.app.processEvents()
         finally:
             for signal, slot in ((self.agent.transcriptLine, onLine),
-                                 (self.agent.askFinished, onDone)):
+                                 (self.agent.askFinished, onDone),
+                                 (self.agent.gestureIssued, onGesture)):
                 try:
                     signal.disconnect(slot)
                 except (TypeError, RuntimeError):
@@ -145,8 +171,22 @@ class CliSession:
         sub = '%02d_%s' % (number, time.strftime('%Y%m%d-%H%M%S'))
         directory = os.path.join(self.shots_dir, sub)
 
-        from mcp_server.agent_mode import saveShots
-        saved, refused = saveShots(self.core, directory)
+        from mcp_server.agent_mode import requestedCaptures, saveShots
+
+        # The captures of this prompt only: the figures it drew (what it
+        # holds now and did not hold before the loop ran), and the
+        # windows it asked to be captured -- old or new. A figure an
+        # earlier prompt drew is not among them, and the one this prompt
+        # asked is, `saveShots` naming it by refusal when the session no
+        # longer holds it.
+        extras, askedFigures = requestedCaptures(requested_windows)
+        figure_keys_now = {record['key']
+                           for record in self.core.list_windows()
+                           if record['key'] is not None}
+        figures = ((figure_keys_now - figure_keys_before)
+                   | set(askedFigures))
+        saved, refused = saveShots(
+            self.core, directory, extras=extras, figures=figures)
         transcript = os.path.join(directory, 'transcript.txt')
         with open(transcript, 'w') as f:
             f.write('\n'.join(lines) + '\n')
