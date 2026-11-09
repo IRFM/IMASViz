@@ -263,11 +263,13 @@ def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
     assert 'list_cases' in joined
     assert 'Le cas est ouvert.' in joined
 
-    # The `done` event carries the images the page draws and where they live.
+    # The `done` event carries the images the page draws and where they
+    # live: the figure the turn drew, and not the application the turn
+    # did not ask for -- the capture of a turn is its plots, the way
+    # `test_119` pins it on the session.
     done = next(d for e, d in blocks if e == 'done')
     names = [im['name'] for im in done['images']]
-    assert '00_app.png' in names
-    assert 'SlicesPlot1.png' in names
+    assert names == ['SlicesPlot1.png']
     for im in done['images']:
         assert base64.b64decode(im['b64']) == PNG_1x1
     assert done['error'] is None
@@ -384,29 +386,43 @@ def test_tool_refuses_an_unknown_parameter_by_name(qapp, tmp_path):
 # --------------------------------------------------------------------- reports
 
 def test_reports_route_lists_the_folder_by_name(qapp, tmp_path, monkeypatch):
-    """`GET /api/reports` -- the section the page fills at load: what the
-    reports folder holds, by name, whatever turn or session wrote it (the
-    page reload was losing exactly that). The folder the core's
-    `_namedReport` resolves is under $HOME, so the test points HOME at
-    its own tree; the state before the core's first write -- no folder --
-    is the empty list, not a 500 the page would have to read as failure."""
+    """`GET /api/reports` -- the section the page fills at load and
+    after every request: what the reports folder holds, by name,
+    whatever turn or session wrote it (the page reload was losing
+    exactly that), and the folder it came from -- the page names it, so
+    a report the user asked for that is not among the names is one a
+    tool did not write there. The folder the core's `_namedReport`
+    resolves is under $HOME, so the test points HOME at its own tree;
+    the state before the core's first write -- no folder -- is the empty
+    list, not a 500 the page would have to read as failure; and a
+    subdirectory is not a report, so it is not among the names."""
     monkeypatch.setenv('HOME', str(tmp_path / 'home'))
     session, _ = build(qapp, tmp_path)
     client = TestClient(buildApp(session), base_url='http://t')
 
     resp = makeRequest(client, qapp, 'GET', '/api/reports')
     assert resp.status_code == 200
-    assert resp.json() == {'reports': []}
+    body = resp.json()
+    assert body['reports'] == []
+    # The folder, named so the page can say where a report either is or
+    # is not.
+    expected_folder = os.path.realpath(
+        os.path.join(str(tmp_path / 'home'), '.imasviz', 'reports'))
+    assert body['folder'] == expected_folder
 
     folder = os.path.join(str(tmp_path / 'home'), '.imasviz', 'reports')
     os.makedirs(folder)
     for name in ('old_report.html', 'a_report.html'):
         with open(os.path.join(folder, name), 'w') as f:
             f.write('<!doctype html>')
+    # A place, not a report: the listing keeps the files.
+    os.makedirs(os.path.join(folder, 'a_folder'))
     resp = makeRequest(client, qapp, 'GET', '/api/reports')
     assert resp.status_code == 200
     # By name, and one name per file -- the section is the folder.
-    assert resp.json() == {'reports': ['a_report.html', 'old_report.html']}
+    assert resp.json() == {
+        'folder': expected_folder,
+        'reports': ['a_report.html', 'old_report.html']}
 
 
 def test_report_route_serves_the_file_and_names_the_absent(

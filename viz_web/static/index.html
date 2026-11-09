@@ -10,13 +10,19 @@
   The colours are the application's own -- the same block doc/source/_static/imasviz.css
   carries, and QVizStyle carries in Python, so tests/test_121 refuses the drift the way
   tests/test_76 refuses it on the manual. The only links it makes are to its own server,
-  through the /api/… paths, and to the data: image of the turn the agent just drew.
+  through the /api/… paths, and to the data: image of the request the agent just drew.
+
+  Two columns on the page: the agent, and what the requests left behind. The
+  captures are the point of the session -- one collapsible group per request,
+  and a request shows its pictures when it is opened, not a wall of pictures
+  beside the transcript. The raw gestures (the direct calls to the application)
+  are the rarely used one, and so they sit in a section that stays closed.
 -->
-<html lang="fr" data-theme="light">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IMASViz — l'agent, offscreen</title>
+<title>IMASViz — the agent, offscreen</title>
 <style>
 /* tokens:begin */
 :root, [data-theme="light"] {
@@ -80,10 +86,10 @@ header .sub { color: var(--ink-faint); font-weight: 400; font-size: 15px; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
 .state { color: var(--ink-soft); font-size: 13px; }
 .main {
-  /* The screenshots are the point of the session, so their column is the
-     widest of the three: a picture at the size the window was drawn, not
-     a thumbnail beside the transcript. */
-  display: grid; grid-template-columns: minmax(340px, 1fr) minmax(320px, .9fr) minmax(380px, 1.25fr);
+  /* Two columns: the agent, and what the requests left behind. The
+     captures are the point of the session, so their column is the wider
+     of the two; a request shows its pictures when it is opened. */
+  display: grid; grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.3fr);
   gap: 14px; padding: 14px 20px; max-width: 1700px; margin: 0 auto;
 }
 .column {
@@ -93,7 +99,7 @@ header .sub { color: var(--ink-faint); font-weight: 400; font-size: 15px; }
 .column h2 { margin: 4px 0 2px; font-size: 16px; font-weight: 600; color: var(--ink); border-bottom: 1px solid var(--line-soft); padding-bottom: 4px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 textarea#prompt {
-  width: 100%; min-height: 78px; resize: vertical;
+  width: 100%; min-height: 120px; resize: vertical;
   background: var(--field); color: var(--ink); border: 1px solid var(--line);
   border-radius: 6px; padding: 8px 10px; font: inherit;
 }
@@ -111,7 +117,7 @@ button#themeBtn { padding: 4px 10px; }
 
 .transcript {
   background: var(--log-ground); color: var(--log-info); border: 1px solid var(--line);
-  border-radius: 6px; padding: 10px 12px; height: 55vh; overflow: auto;
+  border-radius: 6px; padding: 10px 12px; height: 62vh; overflow: auto;
   font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.55;
   white-space: pre-wrap; word-break: break-word;
 }
@@ -119,10 +125,16 @@ button#themeBtn { padding: 4px 10px; }
 .transcript .refusal { color: var(--log-error); font-weight: 500; }
 .transcript .arrow { color: var(--accent-strong); }
 
-.turns, .reports { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-.turns li, .reports li { padding: 4px 6px; border-radius: 4px; background: var(--surface-alt); color: var(--ink-soft); border-left: 3px solid var(--accent); }
-.reports li a { color: var(--accent-strong); text-decoration: none; }
-.reports li a:hover { text-decoration: underline; }
+.turns { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+.turns li { padding: 4px 6px; border-radius: 4px; background: var(--surface-alt); color: var(--ink-soft); border-left: 3px solid var(--accent); }
+
+/* The rarely used one: the direct calls to the application. A closed
+   section at the foot of the agent's column, and it stays closed until
+   the one who wants it opens it. */
+details.rawGestures { border-top: 1px solid var(--line-soft); margin-top: 4px; padding-top: 8px; }
+details.rawGestures summary { cursor: pointer; color: var(--ink-soft); font-weight: 600; }
+details.rawGestures summary .hint { color: var(--ink-faint); font-weight: 400; font-size: 13px; }
+details.rawGestures .toolList { margin-top: 8px; }
 
 .toolList { display: flex; flex-direction: column; gap: 6px; overflow: auto; }
 details.tool { background: var(--surface-alt); border: 1px solid var(--line-soft); border-radius: 6px; padding: 6px 10px; }
@@ -138,15 +150,24 @@ details.tool summary strong { color: var(--accent-strong); }
 .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
 .toolBody .run { align-self: flex-end; margin-top: 4px; padding: 5px 12px; }
 
-/* The screenshot gallery: a group per turn, a card per picture, one card
-   per window the turn drew. The newest turn sits on top and the older
-   ones are kept below -- the pictures are the point of the session, and
-   the buttons on their caption act on the window the picture shows
+/* The capture gallery: one collapsible group per request, closed by
+   default -- the request names itself and its count, and it reveals its
+   pictures when it is opened. A card per picture, one card per window
+   the request drew. The newest request sits on top and the older ones
+   are kept below -- the pictures are the point of the session, and the
+   buttons on their caption act on the window the picture shows
    (focus_window / get_screenshot take its name). Clicking a picture
    enlarges it in the lightbox. */
-.shots { display: flex; flex-direction: column; gap: 12px; }
-.shotGroup { display: flex; flex-direction: column; gap: 8px; }
-.shotGroup h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
+.shots { display: flex; flex-direction: column; gap: 10px; }
+.shots .shotGroup { margin: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.shots .shotGroup summary {
+  cursor: pointer; list-style: none; padding: 8px 10px;
+  font-size: 13px; font-weight: 600; color: var(--ink-soft);
+  background: var(--surface-alt);
+}
+.shots .shotGroup summary::-webkit-details-marker { display: none; }
+.shots .shotGroup[open] summary { border-bottom: 1px solid var(--line-soft); }
+.shots .shotBody { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 .shots .shot { margin: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-alt); overflow: hidden; }
 .shots .shot img { width: 100%; border-radius: 5px; display: block; cursor: zoom-in; }
 .shots .shot figcaption {
@@ -155,7 +176,20 @@ details.tool summary strong { color: var(--accent-strong); }
 }
 .shots .shot figcaption .shotName { color: var(--ink-soft); font-weight: 500; }
 .shots .shot figcaption button { padding: 3px 10px; font-size: 12px; }
-.shots .empty { color: var(--ink-faint); font-size: 13px; padding: 4px 0; }
+.empty { color: var(--ink-faint); font-size: 13px; padding: 4px 0; }
+
+/* The reports: the same grouping as the captures -- a request names the
+   ones it wrote, and the folder they live in is named above the list, so
+   a report that is not among them is one a tool did not write there. */
+.reportsCap { color: var(--ink-faint); font-size: 12px; word-break: break-all; }
+.reportsWrap { display: flex; flex-direction: column; gap: 8px; }
+.reportGroup { border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); }
+.reportGroup summary { cursor: pointer; list-style: none; padding: 7px 10px; font-size: 13px; font-weight: 600; color: var(--ink-soft); background: var(--surface-alt); }
+.reportGroup summary::-webkit-details-marker { display: none; }
+.reportGroup[open] summary { border-bottom: 1px solid var(--line-soft); }
+.reportGroup .reportList { margin: 0; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; }
+.reportGroup .reportList a { color: var(--accent-strong); text-decoration: none; font-size: 13px; }
+.reportGroup .reportList a:hover { text-decoration: underline; }
 
 /* The lightbox: the picture at the size it was drawn, over the page. */
 #lightbox {
@@ -175,41 +209,41 @@ details.tool summary strong { color: var(--accent-strong); }
 </head>
 <body>
 <header>
-  <h1>IMASViz <span class="sub">— l'agent, offscreen</span></h1>
+  <h1>IMASViz <span class="sub">— the agent, offscreen</span></h1>
   <div class="header-actions">
     <span id="state" class="state" role="status">…</span>
-    <button id="themeBtn" type="button" title="Changer de thème">◐</button>
+    <button id="themeBtn" type="button" title="Switch theme">◐</button>
   </div>
 </header>
 
 <div class="main">
   <section id="chat" class="column chat" aria-label="Agent">
     <h2>Agent</h2>
-    <textarea id="prompt" placeholder="Ouvre un cas imas:hdf5?path=…, charge un IDS, cherche une grandeur, trace-la…"></textarea>
+    <textarea id="prompt" placeholder="Open a case imas:hdf5?path=…, load an IDS, find a quantity, plot it…"></textarea>
     <div class="row">
-      <button id="runBtn" type="button">Tourner</button>
-      <button id="stopBtn" type="button" disabled>Arrêter</button>
-      <button id="clearBtn" type="button">Effacer</button>
+      <button id="runBtn" type="button">Run</button>
+      <button id="stopBtn" type="button" disabled>Stop</button>
+      <button id="clearBtn" type="button">Clear</button>
     </div>
     <div id="transcript" class="transcript" aria-live="polite"></div>
-    <h2>Turns</h2>
+    <h2>Requests</h2>
     <ul id="turns" class="turns"></ul>
+    <details id="rawGestures" class="rawGestures">
+      <summary>Raw gestures <span class="hint">(direct calls to the application)</span></summary>
+      <div id="toolList" class="toolList"></div>
+    </details>
   </section>
 
-  <section id="tools" class="column tools" aria-label="Gestures">
-    <h2>Gestures</h2>
-    <div id="toolList" class="toolList"></div>
-  </section>
-
-  <section id="results" class="column results" aria-label="Screenshots">
+  <section id="results" class="column results" aria-label="Screenshots and reports">
     <h2>Screenshots</h2>
-    <div id="images" class="shots"><div class="empty">Aucun screenshot pour l'instant. Les screenshots de chaque tour restent ici, et survivent au rechargement de la page.</div></div>
+    <div id="images" class="shots"><div class="empty">No capture yet. The figures of each request stay here, one group per request, and survive the reload of the page. A request opens when it is clicked, and the interface itself is captured when it is asked for in a prompt.</div></div>
     <h2>Reports</h2>
-    <ul id="reports" class="reports"></ul>
+    <div id="reportsFolder" class="reportsCap" aria-live="polite"></div>
+    <div id="reports" class="reportsWrap"></div>
   </section>
 </div>
 
-<div id="lightbox" role="dialog" aria-label="Agrandissement du screenshot">
+<div id="lightbox" role="dialog" aria-label="Enlargement of the screenshot">
   <img id="lightboxImg" alt="">
   <div id="lightboxCaption" class="lbCaption"></div>
 </div>
@@ -232,6 +266,12 @@ details.tool summary strong { color: var(--accent-strong); }
     return node;
   }
 
+  // The one state the page keeps of what the requests left behind: the
+  // requests (in the order the server hands them out, the oldest first),
+  // the names the reports folder holds, and the folder itself -- where a
+  // report either is or is not.
+  var state = { turns: [], reports: [], reportsFolder: '' };
+
   function appendLine(text, cls) {
     var div = el('div', { 'class': cls || 'line' }, [el('span', { 'class': 'text' }, [text])]);
     var t = byId('transcript');
@@ -248,7 +288,7 @@ details.tool summary strong { color: var(--accent-strong); }
     try {
       var r = await fetch('/api/health');
       var j = await r.json();
-      byId('state').textContent = (j.ok ? 'ok' : 'down') + ' · ' + (j.cases || []).length + ' case(s) · ' + (j.turns || 0) + ' turn(s)';
+      byId('state').textContent = (j.ok ? 'ok' : 'down') + ' · ' + (j.cases || []).length + ' case(s) · ' + (j.turns || 0) + ' request(s)';
     } catch (e) {
       byId('state').textContent = 'off';
     }
@@ -334,50 +374,93 @@ details.tool summary strong { color: var(--accent-strong); }
       } else {
         var summary = JSON.stringify(j.result);
         appendLine('  ← ' + name + ': ' + summary.slice(0, 240) + (summary.length > 240 ? ' …' : ''));
-        if (j.result && typeof j.result === 'object' && j.result.saved_to) {
-          if (String(j.result.saved_to).endsWith('.html')) addReport(j.result.saved_to);
-        }
       }
     } finally {
       setBusy(false);
+      // A report the direct call wrote lands in the folder, and the
+      // folder is the source of truth of the section: asked again after
+      // every call, whatever it wrote is there when the user looks.
+      refreshReports();
     }
   }
 
-  function addReport(savedTo) {
-    // Idempotent on the name: a turn that lists a report the listing
-    // already added (or the other way round) must not name it twice.
-    var base = String(savedTo).split('/').pop();
-    var list = byId('reports');
-    for (var i = 0; i < list.children.length; i++) {
-      var label = list.children[i].children[0];
-      if (label && label.textContent === base) return;
+  /* --------------------------------------------------------------- the reports
+
+     The section is the folder: whatever request or session wrote a
+     report stands in it, by name. The page names the folder -- a report
+     the user asked for that is not among the names is one a tool did
+     not write there -- and groups them the way it groups the captures:
+     a request names the ones it wrote, and the ones none of this
+     session's requests wrote sit together, under "Earlier requests".
+     Refreshed after every request ends, because a request is what
+     writes a report, and the page must not sit on the old answer. */
+
+  function reportGroup(title, names) {
+    var group = el('details', { 'class': 'reportGroup' });
+    group.appendChild(el('summary', {}, [title + ' (' + names.length + ')']));
+    var list = el('div', { 'class': 'reportList' });
+    names.forEach(function (name) {
+      list.appendChild(el('a',
+        { href: '/api/reports/' + encodeURIComponent(name),
+          target: '_blank', rel: 'noopener' }, [name]));
+    });
+    group.appendChild(list);
+    return group;
+  }
+
+  function renderReports() {
+    var wrap = byId('reports');
+    byId('reportsFolder').textContent =
+      state.reportsFolder ? ('folder: ' + state.reportsFolder) : '';
+    wrap.textContent = '';
+    // The requests, the newest first: the one who wrote a report names
+    // the ones it wrote, and the group is closed until it is opened --
+    // the same reading the captures above give.
+    var grouped = new Set();
+    state.turns.slice().reverse().forEach(function (t) {
+      var reports = t.reports || [];
+      if (!reports.length) return;
+      reports.forEach(function (n) { grouped.add(n); });
+      wrap.appendChild(reportGroup('Request ' + t.n, reports));
+    });
+    var rest = state.reports.filter(function (n) { return !grouped.has(n); });
+    if (rest.length) wrap.appendChild(reportGroup('Earlier requests', rest));
+    if (!wrap.childElementCount) {
+      wrap.appendChild(el('div', { 'class': 'empty' },
+        ['No report yet. The ones the requests write stand here, one group ' +
+         'per request; the folder they live in is named above the list, ' +
+         'and a report a request names that is not in that folder is one ' +
+         'a tool did not write there.']));
     }
-    var li = el('li', {}, [el('a', { href: '/api/reports/' + encodeURIComponent(base), target: '_blank', rel: 'noopener' }, [base])]);
-    list.appendChild(li);
   }
 
   async function refreshReports() {
-    // The section is the reports folder: whatever turn or session wrote
-    // it, a page reload must find it again. A listing that does not
-    // answer is named the way the rest of the page names its refusals,
-    // not swallowed.
+    // The folder is where a report either is or is not: the section is
+    // refilled from it at load, after every request, and after every
+    // direct call, and a listing that does not answer is named the way
+    // the rest of the page names its refusals, not swallowed.
     try {
       var r = await fetch('/api/reports');
       var j = await r.json();
-      (j.reports || []).forEach(function (name) { addReport(name); });
+      state.reports = (j.reports || []).slice();
+      state.reportsFolder = j.folder || '';
+      renderReports();
     } catch (e) {
-      appendLine('REFUSAL — la liste des rapports n\'a pas répondu : ' + e, 'refusal');
+      appendLine('REFUSAL — the reports listing did not answer: ' + e, 'refusal');
     }
   }
 
   /* ---------------------------------------------------------------- the gallery
 
-     One card per picture, grouped per turn: the newest turn on top, the
-     previous turns kept below, and every card addressed to the window it
-     shows -- the name the `focus_window` and `get_screenshot` gestures
-     take. The pictures are served from the turn's directory on disk
-     (`/api/turns/{n}/shots/{name}`), which is what makes them survive a
-     reload of the page: `buildGallery` rebuilds them from `/api/turns`. */
+     One card per picture, grouped per request: the newest request on
+     top, the previous ones kept below, and every card addressed to the
+     window it shows -- the name the `focus_window` and `get_screenshot`
+     gestures take. A group is closed by default: the request names
+     itself and its count, and it reveals its pictures when it is
+     opened. The pictures are served from the request's directory on
+     disk (`/api/turns/{n}/shots/{name}`), which is what makes them
+     survive a reload of the page: `buildGallery` rebuilds them from
+     `/api/turns`. */
 
   function shotSrc(turn, name) {
     return '/api/turns/' + turn + '/shots/' + encodeURIComponent(name);
@@ -406,12 +489,23 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function turnGroup(turnNumber, prompt, windows) {
-    var children = [el('h3', {}, ['Turn ' + turnNumber + ' — '
-      + (String(prompt || '').slice(0, 70) || '—')])];
+    // One request, its count, and its pictures behind the name it is
+    // closed under: the group is a `details`, closed, and it answers
+    // when it is clicked -- which is the reading "Request 3" is meant
+    // to give, instead of the wall the pictures used to make.
+    var group = el('details', { 'class': 'shotGroup' });
+    var count = (windows || []).length;
+    group.appendChild(el('summary', {}, [
+      'Request ' + turnNumber + ' — '
+      + (String(prompt || '').slice(0, 70) || '—')
+      + '  (' + count + (count === 1 ? ' shot' : ' shots') + ')'
+    ]));
+    var body = el('div', { 'class': 'shotBody' });
     (windows || []).forEach(function (w) {
-      children.push(shotCard(turnNumber, w.name, w.window));
+      body.appendChild(shotCard(turnNumber, w.name, w.window));
     });
-    return el('div', { 'class': 'shotGroup' }, children);
+    group.appendChild(body);
+    return group;
   }
 
   function prependTurnShots(turn, prompt, windows) {
@@ -422,29 +516,43 @@ details.tool summary strong { color: var(--accent-strong); }
     wrap.insertBefore(turnGroup(turn, prompt, windows), wrap.firstChild);
   }
 
+  function galleryEmpty() {
+    return el('div', { 'class': 'empty' },
+      ['No capture yet. The figures of each request stay here, one group ' +
+       'per request, and survive the reload of the page. A request opens ' +
+       'when it is clicked, and the interface itself is captured when it ' +
+       'is asked for in a prompt.']);
+  }
+
   function buildGallery() {
     var wrap = byId('images');
     return fetch('/api/turns').then(function (r) {
       if (!r.ok) throw new Error(r.status);
       return r.json();
     }).then(function (j) {
+      // The requests in the order the server hands them out, the
+      // oldest first: the report grouping below reads them back the
+      // way it groups them, the newest first.
+      state.turns = (j.turns || []).slice();
       wrap.textContent = '';
-      var turns = (j.turns || []).slice().reverse();  // newest first
-      turns.forEach(function (t) {
+      state.turns.slice().reverse().forEach(function (t) {
         var windows = t.image_windows
           || (t.image_files || []).map(function (name) { return { name: name, window: '' }; });
         if (windows.length) wrap.appendChild(turnGroup(t.n, t.prompt, windows));
       });
       if (!wrap.childElementCount) {
-        wrap.appendChild(el('div', { 'class': 'empty' },
-          ["Aucun screenshot pour l'instant."]));
+        wrap.appendChild(galleryEmpty());
       }
     }).catch(function (e) {
-      appendLine('REFUSAL — the gallery of the previous turns did not answer: ' + e, 'refusal');
+      appendLine('REFUSAL — the captures of the previous requests did not answer: ' + e, 'refusal');
     });
   }
 
   function gesture(name, args) {
+    // The explicit ask, from the page itself: the window the card it
+    // buttons was addressed to, or the one the user named. The answer
+    // of a capture is the picture, and it is the lightbox that shows
+    // it -- the gallery below keeps the ones a request asked for.
     appendLine('→ ' + name + '(' + JSON.stringify(args) + ')');
     return fetch('/api/tool', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -473,6 +581,12 @@ details.tool summary strong { color: var(--accent-strong); }
     }).catch(function (e) {
       appendLine('REFUSAL — ' + e, 'refusal');
       return null;
+    }).then(function () {
+      // A capture the page asked for is a picture the request asked
+      // for, and the gallery is where the asks of a request stand:
+      // asked again, so the one just taken is there when the user
+      // looks.
+      buildGallery().catch(function () {});
     });
   }
 
@@ -499,8 +613,8 @@ details.tool summary strong { color: var(--accent-strong); }
   function onTurnDone(data) {
     // The loop already printed the refusal it ended on, as a line of the
     // streaming transcript ("REFUSAL: <reason>") -- the refusal is a line
-    // the user reads, and the final state of the turn does not print it a
-    // second time on top of its own line.
+    // the user reads, and the final state of the request does not print
+    // it a second time on top of its own line.
     if (data.error) {
       var last = lastTranscriptLine();
       if (last !== 'REFUSAL: ' + data.error && last !== 'REFUSAL — ' + data.error) {
@@ -508,16 +622,19 @@ details.tool summary strong { color: var(--accent-strong); }
       }
     }
     (data.refusals || []).forEach(function (r) { appendLine('  REFUSAL — screenshot: ' + r, 'refusal'); });
-    // The pictures join the gallery and stay: the previous turns keep
+    // The pictures join the gallery and stay: the previous requests keep
     // theirs below, and a reload of the page rebuilds them all from
     // `/api/turns` (`buildGallery`).
     prependTurnShots(data.turn, data.prompt, data.image_windows);
-    // The reports the turn's gestures wrote: the same key the record
-    // holds for the images, and `addReport` is idempotent on the name,
-    // so a report the load-time listing already named is not doubled.
-    (data.reports || []).forEach(function (name) { addReport(name); });
-    var li = el('li', {}, ['Turn ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
+    // The report the request wrote stands under it, and the folder is
+    // the source of truth of the section: the request joins the list,
+    // and the folder is asked again, so a report that is among its names
+    // is in the page the moment the request ends.
+    state.turns = state.turns || [];
+    state.turns.push({ n: data.turn, prompt: data.prompt, reports: data.reports || [] });
+    var li = el('li', {}, ['Request ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
     byId('turns').prepend(li);
+    refreshReports();
     refreshHealth();
   }
 
@@ -573,13 +690,12 @@ details.tool summary strong { color: var(--accent-strong); }
   function clearAll() {
     byId('transcript').textContent = '';
     byId('images').textContent = '';
-    byId('images').appendChild(el('div', { 'class': 'empty' },
-      ["Aucun screenshot pour l'instant."]));
+    byId('images').appendChild(galleryEmpty());
     // The reports section is the folder, not this page's chat: cleared
     // and then refilled from the server, not emptied for real.
-    byId('reports').textContent = '';
-    refreshReports();
+    state.turns = [];
     byId('turns').textContent = '';
+    refreshReports();
   }
 
   function toggleTheme() {
@@ -623,9 +739,9 @@ details.tool summary strong { color: var(--accent-strong); }
     wireButtons();
     refreshHealth();
     refreshReports();
-    // The screenshots of the previous turns are on disk, one directory per
-    // turn: rebuild the gallery from them so a reload of the page does not
-    // cost what the session already drew.
+    // The captures of the previous requests are on disk, one directory
+    // per request: rebuild the gallery from them so a reload of the
+    // page does not cost what the session already drew.
     buildGallery().catch(function () {});
     buildTools().catch(function (e) { appendLine('REFUSAL — the tool list did not answer: ' + e, 'refusal'); });
   });

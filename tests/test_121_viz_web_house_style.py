@@ -176,20 +176,21 @@ def test_the_page_wears_both_themes():
 def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     """The screenshots are the point of the page, and the page keeps them.
 
-    What it pins: the gallery accumulates a turn instead of replacing the
-    previous ones, and the pictures are rebuilt from `/api/turns` on load
-    -- served from the turn's directory on disk (`/api/turns/{n}/shots/…`),
-    which is what makes a reload of the page cost nothing. Each picture is
-    addressed to the window it shows (the name `focus_window` and
-    `get_screenshot` take), and a click enlarges it in the lightbox.
+    What it pins: the gallery accumulates a request instead of replacing
+    the previous ones, and the pictures are rebuilt from `/api/turns` on
+    load -- served from the request's directory on disk
+    (`/api/turns/{n}/shots/…`), which is what makes a reload of the page
+    cost nothing. Each picture is addressed to the window it shows (the
+    name `focus_window` and `get_screenshot` take), and a click
+    enlarges it in the lightbox.
     """
     with open(INDEX, 'r', encoding='utf-8') as f:
         text = f.read()
-    # The gallery, and that it is rebuilt from the turn history on load.
+    # The gallery, and that it is rebuilt from the request history on load.
     assert 'buildGallery' in text, 'no rebuild of the gallery from /api/turns'
-    assert '/api/turns' in text, 'the gallery is not served from the turn history'
-    assert '/shots/' in text, 'the pictures are not served from the turn directories'
-    assert 'prependTurnShots' in text, 'a turn replaces the previous ones, not joins them'
+    assert '/api/turns' in text, 'the gallery is not served from the request history'
+    assert '/shots/' in text, 'the pictures are not served from the request directories'
+    assert 'prependTurnShots' in text, 'a request replaces the previous ones, not joins them'
     # The address of a picture, and the two gestures it answers.
     assert 'image_windows' in text, 'the cards are not addressed to the window they show'
     assert 'focus_window' in text, 'no Focus button on the screenshot cards'
@@ -197,3 +198,57 @@ def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     # The enlargement, and the section the page calls it by.
     assert 'lightbox' in text, 'a picture has no way to be read full size'
     assert 'Screenshots' in text
+
+
+def test_the_page_groups_the_captures_per_request():
+    """One group per request, closed until it is opened.
+
+    What it pins: a capture group is a `details` (collapsed until the
+    user opens it, so the page shows the request names and their counts,
+    not a wall of pictures), the groups are named by the request number
+    (the "Request 3" the user reads, not the "Turn" it used to read),
+    and the reports take the same grouping -- a request names the ones
+    it wrote, and the ones none of the requests wrote sit together
+    under their own name. The rarely used raw gestures sit in a closed
+    section of the agent's column, not in a column of their own.
+    """
+    with open(INDEX, 'r', encoding='utf-8') as f:
+        text = f.read()
+    # The collapsible group of the captures, and its closed-until-asked
+    # reading: a `details` the page builds, one per request.
+    assert 'shotGroup' in text, 'no per-request group for the captures'
+    # The naming: the request, not the turn.
+    assert 'Request ' in text, 'the groups are not named by the request'
+    assert 'Requests' in text, 'no list of the requests of the session'
+    # The reports grouped the way the captures are, and the folder named.
+    assert 'reportGroup' in text, 'no per-request group for the reports'
+    assert 'Earlier requests' in text, 'no group for the reports none of the requests wrote'
+    assert 'reportsFolder' in text, 'the folder a report either is or is not is not named'
+    # The raw gestures: a closed section, not a column.
+    assert 'rawGestures' in text, 'no closed section for the raw gestures'
+    assert 'id="tools"' not in text, 'the gestures are still a column of their own'
+
+
+def test_the_page_is_english():
+    """The interface the user reads is in the language the user reads.
+
+    What it pins: the buttons and the empty states stand in English --
+    the Run / Stop / Clear of the agent, the empty of the captures --
+    and the French the page carried before does not stand in the visible
+    strings. The transcript is the loop's, and the loop answers as it
+    answers, so it is not what this pins.
+    """
+    with open(INDEX, 'r', encoding='utf-8') as f:
+        text = f.read()
+    # The buttons the user presses.
+    assert '>Run<' in text, 'no Run button'
+    assert '>Stop<' in text, 'no Stop button'
+    assert '>Clear<' in text, 'no Clear button'
+    # The French the page carried is the one gone from the visible
+    # strings: the buttons and the empties the user reads.
+    for gone in ('>Tourner<', '>Arrêter<', '>Effacer<',
+                 'Aucun screenshot'):
+        assert gone not in text, 'the visible strings still hold the French: %s' % gone
+    # The page's own name, in the language it is read.
+    assert 'lang="en"' in text, 'the page does not name its language'
+    assert 'the agent, offscreen' in text, 'the page does not name itself'

@@ -202,10 +202,19 @@ def buildApp(session):
     async def reportList(request):
         # The names the reports folder holds, by name: whatever turn or
         # session wrote them (the page fills its section from this at
-        # load). The empty list while the folder does not exist yet --
-        # the state before the core's first write, and the one a test
-        # points the session at a fresh HOME for.
-        return JSONResponse({'reports': sorted(session.reportsOnDisk())})
+        # load and after every request, because the folder is where a
+        # report either is or is not -- and the page names that folder,
+        # so a report the user asked for that is not among these names
+        # is one a tool did not write there). A subdirectory is not a
+        # report: the listing keeps the files. The empty list while the
+        # folder does not exist yet -- the state before the core's first
+        # write, and the one a test points the session at a fresh HOME
+        # for.
+        folder = session.reportsFolder()
+        names = [name for name in sorted(session.reportsOnDisk())
+                 if name.endswith('.html')
+                 and os.path.isfile(os.path.join(folder, name))]
+        return JSONResponse({'folder': folder, 'reports': names})
 
     async def report(request):
         name = request.path_params['name']

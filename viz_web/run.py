@@ -21,8 +21,12 @@ served by the same uvicorn, on the same daemon thread of its own event loop.
     python3 -m viz_web --host 0.0.0.0 --port 8771   # the interface and port, named
 
 Then the browser is pointed at `http://127.0.0.1:8770`, and the page is the
-REPL with a picture: the prompt runs the agent, its lines stream as they come,
-the gestures are on the side, and every turn leaves what it drew.
+REPL with a picture: the prompt runs the agent, its lines stream as they
+come, and every request leaves what it drew -- one group per request in
+the captures, closed until it is opened, the reports grouped the way
+they are and named out of the folder they live in. The raw gestures are
+the rarely used one, and so they sit in a closed section of the agent's
+column, not in a column of their own.
 """
 
 import argparse
