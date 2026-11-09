@@ -738,12 +738,23 @@ class McpGuiCore:
             frame.show()
 
     def plot_one(self, uri, path, along_time=None, into_figure_key=None,
-                 time=None, time_interp=False):
+                 time=None, time_interp=False, along=None, indices=None):
         """One quantity, drawn by `QVizPlotOneNode` into the frame its axes call for.
 
         `along_time` is None for no opinion, which leaves the figure's own
         rule standing; the read that cannot answer is named out of the
         case's log, because the command logs it there and returns nothing.
+
+        `along` and `indices` are the one shared schema (`axesAddressing`, the
+        same path `get_signal` takes): `along` is the axis the quantity runs
+        along, `indices` fixes each other axis by name at its index. When they
+        are named, the figure opens **at** those indices: the abscissa is the
+        one the resolver settles, and the frame's slice controls are put on the
+        indices the user named rather than the ones the tree happened to carry.
+        That is the half of the unified schema the user asked for that was
+        missing -- before it, the numbers `get_signal` answered (element at
+        index 50) and the figure `plot_one` opened (slider at 0) could be two
+        different elements of the same array.
 
         `time` pins a single slice of a quantity held by a dynamic time array
         (e.g. `time_slice[i]`). The value of that slice is answered by
@@ -758,12 +769,17 @@ class McpGuiCore:
         `along_time` and `time` are refused together: one draws every slice,
         the other pins one.
         """
-        if time is not None and along_time:
+        if time is not None and (along_time or along is not None
+                                 or indices is not None):
             raise ValueError(
-                'plot_one: along_time and time are contradictory. '
-                'along_time draws the quantity as a history along its every '
-                'time slice, so one slice cannot be pinned at the same time. '
-                'Drop along_time, or drop the time value, and ask again.')
+                'plot_one: along_time / along / indices and time are '
+                'contradictory readings of the same array: the first runs '
+                'the quantity along an axis at a named index, the second '
+                'pins one slice at a clock value. Drop one of the two and '
+                'ask only for the other.')
+        if along is not None or indices is not None:
+            return self._plotOneAddressed(uri, path, along, indices,
+                                          into_figure_key=into_figure_key)
         view = self._viewForUri(uri)
         node = self._nodeForPath(view, path)
         if self._leafKind(node) == 'scalar':
@@ -815,6 +831,67 @@ class McpGuiCore:
         return {'figure': frame.figureKey,
                 'kind': type(frame).__name__,
                 'drawing': bool(frame.isDrawing())}
+
+    def _plotOneAddressed(self, uri, path, along, indices, into_figure_key=None):
+        """`plot_one` through the shared resolver.
+
+        The figure is built by `QVizPlotOneNode` with the abscissa the resolver
+        settles, and opened at the indices the resolver fixed -- the same two
+        halves `get_signal` uses for its numbers. So the element the numbers
+        name and the element the slider sits on are the same element of the
+        same array, whatever the depth of the nesting of arrays of structures
+        between them (the resolver walks the tree, and every axis it does not
+        draw earns a control).
+
+        A quantity the resolver refuses (scalar, ambiguous axis, index past
+        the extent the tree names, an axis it already runs along) is refused
+        in words before the figure is opened. A quantity the resolver answers
+        but the frame does not put a control on is a contradiction the frame
+        has no room for, and it is named rather than a slider at 0.
+        """
+        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+            import QVizPlotOneNode
+
+        view = self._viewForUri(uri)
+        node = self._nodeForPath(view, path)
+        if self._leafKind(node) == 'scalar':
+            raise ValueError(self._scalarRefusal(path))
+        axesSpec = QVizAxesSpec.fromTreeNode(node)
+        _abscissa, as_function_of_time, slices = axesAddressing(
+            axesSpec, along=along, indices=indices)
+        command = QVizPlotOneNode(view, node, intoFigureKey=into_figure_key,
+                                  alongTime=as_function_of_time)
+        frame = command.execute()
+        if frame is None:
+            raise ValueError(
+                '"%s" could not be drawn: %s'
+                % (path, self.lastLogLine(view) or 'see the log panel'))
+        self._embedIfNew(command, frame)
+
+        controls = getattr(frame, 'sliceControls', None)
+        wordByKey = {axis.key(): str(_axisName(axis)) for axis in axesSpec.axes}
+        openedAt = {}
+        if controls is not None:
+            for key, index in (slices or {}).items():
+                if controls.setIndex(key, index):
+                    openedAt[wordByKey.get(key, str(key))] = index
+                else:
+                    raise ValueError(
+                        'the figure for "%s" does not hold a slider for %s = %d'
+                        ' -- it runs along that axis, or the read answers no '
+                        'such axis; name a different one.'
+                        % (path, wordByKey.get(key, str(key)), int(index)))
+        elif slices:
+            raise ValueError(
+                'the figure for "%s" runs along its one axis and has no '
+                'array of structures or coordinate to pin at %s.'
+                % (path, ', '.join(wordByKey.get(k, str(k)) + '=%d' % v
+                                   for k, v in slices.items())))
+        return {'figure': frame.figureKey,
+                'kind': type(frame).__name__,
+                'drawing': bool(frame.isDrawing()),
+                'opened_at': openedAt}
 
 
     def _timeBase(self, view, node):

@@ -391,7 +391,10 @@ def test_get_signal_fixes_the_leaf_at_the_named_index(core):
     assert at50['y'] != carried['y'], 'the read ignored the psi[50] the user named'
 
     # A word no axis of the leaf answers is refused by name, not a silent 0
-    # (the extent refusal on a nested array is pinned off-case in test_123).
+    # (the extent refusal on a nested array is pinned off-case in test_123, and
+    # the half that opens the figure at that index is pinned off-module in
+    # test_124, because the `Plot` namespace keeps only the newest figure of a
+    # kind, and this module's later tests read the earliest one).
     with pytest.raises(ValueError) as exc:
         session.get_signal(CASE_URI, JTOR_PATH, indices={'flux_loop': 0})
     assert 'flux_loop' in str(exc.value)
