@@ -13,6 +13,8 @@ What it pins, on a scripted agent (no real LLM):
 * the panel is registered in ``figureframes`` under ``Agent:1``;
 * typing a prompt and clicking "Tourner" produces transcript lines
   that include the scripted LLM answer;
+* the input box sits below the transcript, so a scrolling answer stays
+  readable;
 * a refusal from the scripted agent is visible in the transcript with
   its ``REFUSAL`` prefix;
 * the *Windows* menu can reach the panel (it is in the session's
@@ -126,6 +128,44 @@ def test_panel_transcript_shows_refusal(qapp):
         text = panel.transcriptText()
         assert 'REFUSAL' in text
         assert 'nonexistent_tool' in text
+    finally:
+        key = panel.figureKey
+        if key in api.figureframes:
+            del api.figureframes[key]
+
+
+def test_panel_input_sits_below_the_transcript(qapp):
+    """The transcript is on top and the input box sits below it, so the
+    answer scrolls into sight while the prompt stays at the bottom of the
+    window -- the button row follows the input. Pinning the order is the
+    guard: an input above a scrolling transcript is exactly what the user
+    could not read past, and nothing else in this file checks geometry."""
+    from imasviz.VizAgent.panel import QVizAgentPanel
+
+    llm = FakeLLMClient([
+        LLMResponse(content='ok', tool_calls=None, finish_reason='stop')
+    ])
+    agent = AgentLoop(
+        core=FakeCore(), llm=llm, dispatcher=FakeDispatcher())
+    api = make_api(qapp)
+    panel = QVizAgentPanel(main_window=None, api=api, agent=agent)
+    try:
+        layout = panel.layout()
+
+        # ``layout.itemAt(i)`` answers a QLayoutItem, which is never
+        # ``is`` of the widget or sublayout it carries: the item is asked
+        # for ``.widget()`` and ``.layout()`` and the identity is checked
+        # there (``QLayout.indexOfLayout`` is not exposed on PySide6 6.6,
+        # and the button row is named on the panel as ``panel.buttonRow``).
+        def indexOf(item):
+            for i in range(layout.count()):
+                it = layout.itemAt(i)
+                if it is not None and (it.widget() is item or it.layout() is item):
+                    return i
+            raise AssertionError('not in the panel layout: %r' % item)
+
+        assert indexOf(panel.transcript) < indexOf(panel.promptEdit)
+        assert indexOf(panel.promptEdit) < indexOf(panel.buttonRow)
     finally:
         key = panel.figureKey
         if key in api.figureframes:

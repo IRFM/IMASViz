@@ -40,7 +40,8 @@ from imasviz.VizUtils import FigureTypes, QVizGlobalValues
 
 
 class QVizAgentPanel(QVizClosableWindow, QWidget):
-    """One agent window: a prompt box, a transcript, and a run button.
+    """One agent window: the transcript on top, and below it the prompt
+    box and the run button, so a scrolling answer stays readable.
 
     ``main_window`` is the ``QVizMainWindow``, or None in the test suite.
     ``api`` is the ``Viz_API`` the gestures drive -- the session's own
@@ -66,7 +67,17 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.figureKey = self._nextKey(api)
 
         # --- layout -----------------------------------------------------
+        # The transcript is on top and the input box is below it: the
+        # answer scrolls into sight while the prompt stays at the bottom
+        # of the window, with the button row after the input.
         layout = QVBoxLayout(self)
+
+        # Transcript
+        self.transcript = QPlainTextEdit()
+        self.transcript.setReadOnly(True)
+        self.transcript.setPlaceholderText('Le transcript apparaît ici.')
+        self.transcript.setLineWrapMode(QPlainTextEdit.NoWrap)
+        layout.addWidget(self.transcript)
 
         # Prompt
         self.promptEdit = QPlainTextEdit()
@@ -76,7 +87,8 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         layout.addWidget(self.promptEdit)
 
         # Buttons
-        buttons = QHBoxLayout()
+        self.buttonRow = QHBoxLayout()
+        buttons = self.buttonRow
         self.runButton = QPushButton('Tourner')
         self.runButton.clicked.connect(self._onRun)
         buttons.addWidget(self.runButton)
@@ -88,13 +100,6 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.clearButton.clicked.connect(self._onClear)
         buttons.addWidget(self.clearButton)
         layout.addLayout(buttons)
-
-        # Transcript
-        self.transcript = QPlainTextEdit()
-        self.transcript.setReadOnly(True)
-        self.transcript.setPlaceholderText('Le transcript apparaît ici.')
-        self.transcript.setLineWrapMode(QPlainTextEdit.NoWrap)
-        layout.addWidget(self.transcript)
 
         # Connect the agent signals
         if self.agent is not None:
