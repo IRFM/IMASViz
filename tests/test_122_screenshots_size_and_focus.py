@@ -248,11 +248,14 @@ def test_focus_window_refuses_the_app_the_session_was_built_without(qtbot):
 
 # ---------------------------------------------------------- the picture address
 
-def test_saveShots_answers_the_window_with_the_path(qtbot, tmp_path):
-    """The record of a turn is addressed: each picture names the window it
-    was asked of, and that name is what `focus_window` and `get_screenshot`
-    take back from the page's buttons. A pair is the shape the page can
-    act on -- a bare path is the shape it read as a file and nothing more."""
+def test_saveShots_saves_the_figures_by_default(qtbot, tmp_path):
+    """The capture of a turn is its plots: `saveShots` answers the
+    `(window, path)` pairs it wrote -- the window is what `focus_window`
+    and `get_screenshot` take back -- which is what the page's gallery
+    acts on each card with. The stand-in holds one figure and no case,
+    and no extra is asked for: the application is not saved, because a
+    capture of the interface is an ask, and this one is a turn that drew
+    a figure and nothing besides."""
     png = base64.b64decode(
         'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
         'AAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
@@ -267,10 +270,65 @@ def test_saveShots_answers_the_window_with_the_path(qtbot, tmp_path):
 
     saved, refused = saveShots(ShotsCore(), str(tmp_path / 'shots'))
     assert refused == []
-    assert [window for window, _ in saved] == ['app', 'Plot1']
+    assert [window for window, _ in saved] == ['Plot1']
+    assert [os.path.basename(path) for _, path in saved] == ['Plot1.png']
     for window, path in saved:
         assert path.startswith(str(tmp_path / 'shots'))
         assert os.path.isfile(path)
+
+
+def test_saveShots_saves_the_interface_when_it_is_asked(qtbot, tmp_path):
+    """The other half of the same rule: `extras` is where an ask of the
+    interface stands, and a ask of the application (and one of a case,
+    which the stand-in holds) is the one saved beside the figure. A
+    name `EXTRA_SHOTS` does not hold is refused by naming the ones it
+    does, because a caller that spells one wrongly meant to have saved
+    it -- the refusal is a value the caller reads, and the run is not
+    saved half of nothing."""
+    from mcp_server.agent_mode import EXTRA_SHOTS
+
+    png = base64.b64decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
+        'AAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+    case_uri = ('imas:hdf5?path='
+                '/afs/eufus.eu/user/g/g2lfleur/public/imasdb/west/3/54924/0')
+
+    class ShotsCore:
+        def list_windows(self):
+            return [
+                {'kind': 'case view', 'label': '54924 / 0', 'key': None,
+                 'visible': True, 'cases': [case_uri]},
+                {'kind': 'Plot', 'label': 'Plot 1',
+                 'key': 'Plot1', 'visible': True, 'cases': []},
+            ]
+
+        def screenshot(self, window):
+            return png
+
+    # Default: the figure alone.
+    saved, refused = saveShots(ShotsCore(), str(tmp_path / 'shots'))
+    assert refused == []
+    assert [window for window, _ in saved] == ['Plot1']
+
+    # Asked: the application and the case are saved beside the figure --
+    # the case under the URI the core takes for it (the address the page
+    # acts on), the application under its own name.
+    saved, refused = saveShots(ShotsCore(), str(tmp_path / 'shots2'),
+                               extras=('app', 'case-views'))
+    assert refused == []
+    assert sorted(window for window, _ in saved) == \
+        ['Plot1', 'app', case_uri]
+    names = sorted(os.path.basename(path) for _, path in saved)
+    assert '00_app.png' in names
+    assert any(name.startswith('case_') for name in names)
+
+    # A name the capture set does not hold: refused by naming the ones
+    # it has, before a single PNG is written.
+    with pytest.raises(ValueError) as excinfo:
+        saveShots(ShotsCore(), str(tmp_path / 'shots3'), extras=('panel',))
+    assert 'panel' in str(excinfo.value)
+    assert 'app' in str(excinfo.value) and 'case-views' in str(excinfo.value)
+    assert tuple(EXTRA_SHOTS) == ('app', 'case-views')
 
 
 # ------------------------------------------------------------------ the tool

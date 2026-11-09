@@ -11,11 +11,14 @@
 
 The application is built (offscreen: a node without a display is what this
 is for), the agent asked its one prompt, and when the loop stops the
-session's windows are saved as PNGs under a directory the caller names --
-that is how the images the agent drew reach the user: ``00_app.png`` for
-the application, one ``<figure key>.png`` per window the session still
-holds (a key's ``:`` spelled ``_``), and ``transcript.txt`` for the
-transcript the user reads on screen in the panel.
+session's figures are saved as PNGs under a directory the caller names --
+that is how the images the agent drew reach the user: one
+``<figure key>.png`` per window the session still holds (a key's ``:``
+spelled ``_``), and ``transcript.txt`` for the transcript the user reads
+on screen in the panel. A capture of the interface is an ask, not a
+by-product of the run -- the application shell (``00_app.png``) and the
+data-tree panel of a case (``case_…``) are the `EXTRA_SHOTS` a caller
+names with `--extra-shots`, and neither is saved by default.
 
 The stack the loop runs on is the one the *Agent* entry of the *File* menu
 builds (`QVizFileMenu.openAgent`): `McpGuiCore` on the session's api, one
@@ -106,8 +109,27 @@ def buildAgentStack(window, llm, core=None):
     return core, agent
 
 
-def saveShots(core, shots_dir):
-    """The app, and every window the session still holds, as PNGs on disk.
+#: The two captures that show the interface, not a figure of their own,
+#: named so that a page, a command line and a test can ask for one by
+#: name. A capture of a turn is the figures it drew, and these are the
+#: two that show the application instead: the whole application, or the
+#: data-tree panel of a case. Neither is saved by default: a capture of
+#: the interface is an ask, not a by-product of the turn.
+EXTRA_SHOTS = ('app', 'case-views')
+
+
+def saveShots(core, shots_dir, extras=()):
+    """The session's figure windows, and the extras that were asked for.
+
+    A capture of a turn is a picture of its plots by default: every
+    window the session still holds a key for is saved, and nothing but
+    them -- the application shell and the data-tree panel of a case show
+    the interface, and that is an ask (an entry of `EXTRA_SHOTS` in
+    `extras`), not what the turn leaves by itself. `extras` is a list
+    drawn from that tuple -- `'app'` for the whole application (saved as
+    `00_app.png`), `'case-views'` for the shot view of every open case --
+    and a name it does not hold is refused by naming the ones it does,
+    because a caller that spells one wrongly meant to have saved it.
 
     Returns the list of files written, each as a `(window, path)` pair: the
     window is the name the core was asked with ("app", the figure key, the
@@ -116,13 +138,28 @@ def saveShots(core, shots_dir):
     that refuses to render is named in the list that follows -- the style
     of the repository -- and the other windows still come to disk.
     """
+    extras = tuple(extras)
+    unknown = [one for one in extras if one not in EXTRA_SHOTS]
+    if unknown:
+        raise ValueError(
+            '%s is not a capture this run saves: the ones it holds '
+            'beyond the figures are %s.'
+            % (unknown, ', '.join(EXTRA_SHOTS)))
     os.makedirs(shots_dir, exist_ok=True)
     saved = []
     refused = []
-    targets = [('app', '00_app')]
+    targets = []
+    if 'app' in extras:
+        targets.append(('app', '00_app'))
     for record in core.list_windows():
-        key = record['key']
-        if key is None:
+        if record['key'] is not None:
+            targets.append((record['key'],
+                            record['key'].replace(':', '_')
+                            .replace('/', '_')))
+    if 'case-views' in extras:
+        for record in core.list_windows():
+            if record['key'] is not None:
+                continue
             # A case view answers no figure key (see `QVizWindowRecord`):
             # the case URI is the name its shot view is asked with, and
             # `McpGuiCore.screenshot` takes it. The file name keeps the
@@ -137,8 +174,6 @@ def saveShots(core, shots_dir):
             tail = uri.rsplit('path=', 1)[-1]
             tail = re.sub(r'[^A-Za-z0-9._-]', '_', tail).strip('_')
             targets.append((uri, 'case_%s' % (tail or str(len(targets)))))
-        else:
-            targets.append((key, key.replace(':', '_').replace('/', '_')))
     for window, name in targets:
         try:
             png = core.screenshot(window)
@@ -152,6 +187,26 @@ def saveShots(core, shots_dir):
     return saved, refused
 
 
+def extrasFromFlag(value):
+    """The value of `--extra-shots` as the list `saveShots` takes.
+
+    Names are comma-separated, kept in the order the caller spelled
+    them, and a name `EXTRA_SHOTS` does not hold is refused by naming
+    the ones it does -- the same words a misspelling gets from
+    `saveShots` itself, one place early: a flag that dies at parse time
+    is the one the user reads before any window is built.
+    """
+    extras = tuple(one.strip() for one in (value or '').split(',')
+                   if one.strip())
+    unknown = [one for one in extras if one not in EXTRA_SHOTS]
+    if unknown:
+        raise ValueError(
+            '%s is not a capture this run saves: the ones it holds '
+            'beyond the figures are %s.'
+            % (unknown, ', '.join(EXTRA_SHOTS)))
+    return extras
+
+
 def runAgentMode(args, app=None, window=None, core=None, llm=None):
     """Run the agent once with the prompt after `--agent`, and save what it
     drew. Returns the exit code of the run."""
@@ -160,6 +215,10 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
         raise ValueError(
             'no prompt after --agent: %r. Name it, or drop the flag and '
             'serve the MCP service the usual way.' % args.agent)
+    # Asked before any window is built: a name the run does not save dies
+    # here, in the words `saveShots` would otherwise answer only at the
+    # very end of the run.
+    extras = extrasFromFlag(getattr(args, 'extra_shots', ''))
     if app is None:
         from PySide6.QtWidgets import QApplication
         app = QApplication.instance()
@@ -202,7 +261,7 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
         app.processEvents()
     thread.join()
 
-    saved, refused = saveShots(core, args.shots)
+    saved, refused = saveShots(core, args.shots, extras=extras)
     transcript = os.path.join(args.shots, 'transcript.txt')
     with open(transcript, 'w') as f:
         f.write('\n'.join(lines) + '\n')
@@ -215,9 +274,17 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
     if outcome[0] is not None:
         print('Agent refusal: %s' % outcome[0], flush=True)
     if not saved:
-        print('REFUSAL — no image could be saved: %s'
-              % ('; '.join(refused) or 'no window to ask'), flush=True)
+        # Not a refusal: the loop answered, and it drew no figure -- the
+        # capture of a run is its plots, and a run that worked on words
+        # has none at its end. The interface captures are the ones a
+        # caller names with --extra-shots, and a caller who meant to have
+        # them is the one who was refused, by name, in the line above.
+        print('No figure was open at the end of the run: nothing besides '
+              'the transcript was saved.', flush=True)
 
-    code = 0 if (outcome[0] is None and saved) else 1
+    # The saved or the refused are the run's pictures, not its verdict:
+    # the verdict is whether the loop answered, and a refusal with no
+    # figure beside it is still the refusal the user reads.
+    code = 0 if outcome[0] is None else 1
     _settleWindow(window, app)
     return code

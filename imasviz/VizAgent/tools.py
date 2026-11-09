@@ -26,13 +26,20 @@ How to work with it:
 4. search_nodes(uri, query) names the leaves in every spelling the tree
    holds -- the paths select_signals, plot_one and get_signal take are
    any of those spellings;
-5. plot_one / plot_selection / plot_table / plot_stacked draw, and
-   get_screenshot answers a PNG of the window for the user to read on
-   screen (the LLM cannot parse a PNG on this stack; describe a figure
-   by reading its underlying arrays with get_signal). A screenshot is
-   the size the window is: when the figure is one the user must see,
-   focus_window puts it forward at a readable size (1280x800 or the
-   named pixels) before the get_screenshot.
+5. plot_one / plot_selection / plot_table / plot_stacked draw. A
+   screenshot is a capture the user asks for, not one you take
+   yourself: the LLM cannot read a PNG on this stack (describe a figure
+   by its underlying arrays with get_signal, and by name with
+   list_windows), so get_screenshot exists to save a picture for the
+   user, and it is yours to call only when the user asks for a capture
+   ("show me the interface", "give me a screenshot of this figure").
+   The pictures it saves are the figures the session has drawn -- the
+   captures of a turn. The application shell and the data-tree panel of
+   a case are the captures that show the interface instead, and those
+   are saved only when the user names that interface in the ask. A
+   screenshot is the size the window is: when the figure is one the user
+   must see, focus_window puts it forward at a readable size (1280x800
+   or the named pixels) before the get_screenshot.
 6. state is read with list_selection (what the case holds selected) and
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
@@ -48,7 +55,11 @@ How to work with it:
    trace it drew), and case_report names the whole loaded tree of a case
    (one row per curve, in tree order). The file lands in
    `~/.imasviz/reports` under the guard the configurations have; a window
-   or a case that has no curve to stat is refused by name.
+   or a case that has no curve to stat is refused by name. A report is
+   the one `plot_report` or `case_report` wrote: a final answer that
+   names a report file says it of a call this conversation made, and the
+   file it names is the path that call answered -- a report the tools did
+   not write is not one you say was written.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user

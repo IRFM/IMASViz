@@ -83,6 +83,12 @@ class FakeCore:
             raise ValueError('no such window: %r' % window)
         return PNG_1x1
 
+    def get_screenshot(self, window='app'):
+        # The tool name the loop dispatches under, answering the one the
+        # core's own method runs -- the same pair `McpGuiCore` keeps, so
+        # a `get_screenshot` of the loop reaches this stand-in too.
+        return self.screenshot(window)
+
     def list_cases(self):
         return [{'uri': CASE_URI, 'dd_version': '3.35.0',
                  'loaded': {'equilibrium': [0]}, 'signals': 33}]
@@ -188,8 +194,14 @@ def inWorker(target, qapp, timeout=15.0):
 
 def test_an_answered_turn_leaves_lines_images_and_transcript(qapp, tmp_path):
     """An answered loop: the lines in the order the loop writes them, the
-    app and the figure on disk as PNGs (with the base64 the page needs to
-    draw them), the transcript beside them on disk."""
+    figure on disk as a PNG (with the base64 the page needs to draw
+    it), the transcript beside it on disk -- and nothing but it. A
+    capture of a turn is its plots: the application shell and the
+    data-tree panel of a case are the captures that show the interface,
+    and their saving is the ask (a `get_screenshot` of the loop, or an
+    `EXTRA_SHOTS` of the one-shot), not the by-product of the turn this
+    one is. The one the turn drew is addressed, and the one the turn
+    did not ask for is not among the files."""
     llm = FakeLLMClient([
         LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
         LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
@@ -202,22 +214,65 @@ def test_an_answered_turn_leaves_lines_images_and_transcript(qapp, tmp_path):
     assert 'list_cases' in text
     assert 'LLM: Le cas est ouvert.' in record['lines'][-1]
 
-    # The images are on disk under a directory the session names, and their
+    # The figure is on disk under a directory the session names, and its
     # base64 is in the record -- the `data:` URI the page draws from.
     assert record['dir'].startswith(str(tmp_path / 'shots'))
-    assert '00_app.png' in record['image_files']
-    assert 'SlicesPlot1.png' in record['image_files']
-    app_png = next(im for im in record['images'] if im['name'] == '00_app.png')
-    assert base64.b64decode(app_png['b64']) == PNG_1x1
-    assert (tmp_path / 'shots' / record['dir'].split('shots/')[-1] / '00_app.png').is_file()
+    assert record['image_files'] == ['SlicesPlot1.png']
+    fig_png = next(im for im in record['images'] if im['name'] == 'SlicesPlot1.png')
+    assert base64.b64decode(fig_png['b64']) == PNG_1x1
+    assert (tmp_path / 'shots' / record['dir'].split('shots/')[-1]
+            / 'SlicesPlot1.png').is_file()
 
-    # Every picture is also an address: the name the page's Focus and
+    # The picture is also an address: the name the page's Focus and
     # Screenshot buttons send to focus_window and get_screenshot.
     by_file = {entry['name']: entry for entry in record['image_windows']}
-    assert by_file['00_app.png']['window'] == 'app'
     assert by_file['SlicesPlot1.png']['window'] == 'SlicesPlot1'
     # The base64 the page draws carries the address with it.
-    assert app_png['window'] == 'app'
+    assert fig_png['window'] == 'SlicesPlot1'
+    # And the interface capture the turn did not ask for is the one that
+    # is not there: the turn drew a figure, and said nothing about the
+    # application, so the application is not in its files.
+    assert '00_app.png' not in record['image_files']
+
+
+def test_a_turn_that_asks_for_the_interface_saves_it_with_the_figures(
+        qapp, tmp_path):
+    """The capture of the interface is an ask: the loop's `get_screenshot`
+    is the way the ask comes to the session, and the window it names is
+    the one saved beside the turn's figures at its end. The stand-in's
+    `list_windows` holds one figure key and no case, and the ask's window
+    is the application -- so the turn's files are its figure and `app`,
+    and the figure of a next turn of the same session stands alone again:
+    the ask is of the one turn that asked, and it does not bleed into the
+    one after."""
+    # One scripted LLM for both requests of the session -- the loop keeps
+    # its history between them, the way `test_the_context_survives_between_
+    # two_turns` pins -- so the four responses stand in the order the two
+    # asks draw them.
+    llm = FakeLLMClient([
+        LLMResponse(tool_calls=[
+            {'name': 'get_screenshot', 'args': {'window': 'app'}},
+        ], content=''),
+        LLMResponse(content='The interface is captured.', finish_reason='stop'),
+        LLMResponse(tool_calls=[{'name': 'list_cases', 'args': {}}], content=''),
+        LLMResponse(content='Le cas est ouvert.', finish_reason='stop'),
+    ])
+    session, core = build(qapp, tmp_path, llm=llm)
+    record = inWorker(
+        lambda: session.runTurn('donne moi une capture de l''interface'), qapp)
+    assert record['error'] is None
+    files = sorted(record['image_files'])
+    assert 'SlicesPlot1.png' in files
+    assert '00_app.png' in files
+    by_file = {entry['name']: entry for entry in record['image_windows']}
+    assert by_file['00_app.png']['window'] == 'app'
+    assert (tmp_path / 'shots' / record['dir'].split('shots/')[-1]
+            / '00_app.png').is_file()
+    # And the ask is of that turn only: the one after it drew nothing
+    # about the interface, and its files are its figure alone.
+    record2 = inWorker(lambda: session.runTurn('liste les cas'), qapp)
+    assert record2['error'] is None
+    assert record2['image_files'] == ['SlicesPlot1.png']
 
 
 def test_a_turn_that_writes_a_report_names_it_in_the_record(qapp, tmp_path, monkeypatch):

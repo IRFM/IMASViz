@@ -233,10 +233,13 @@ def test_a_prompt_is_answered_and_its_turn_is_left_on_disk(qapp, tmp_path):
     out = session.runPrompt('liste les cas ouverts')
     assert out['refusal'] is None
     turn = out['dir']
+    # The capture of a turn is the figure it drew: the application the
+    # turn did not ask for is the one that is not saved (the default is
+    # the plots, the way `test_122` pins it on `saveShots`).
     with open(turn + '/SlicesPlot1.png', 'rb') as f:
         assert f.read() == PNG_1x1
-    with open(turn + '/00_app.png', 'rb') as f:
-        assert f.read() == PNG_1x1
+    import os
+    assert not os.path.isfile(turn + '/00_app.png')
     with open(turn + '/transcript.txt') as f:
         transcript = f.read()
     assert 'Le cas est ouvert.' in transcript
@@ -256,7 +259,9 @@ def test_a_refused_turn_is_named_and_still_saved(qapp, tmp_path):
         transcript = f.read()
     assert 'REFUSAL' in transcript
     import os
-    assert os.path.isfile(out['dir'] + '/00_app.png')
+    # And the capture of the turn is the figure it drew, and not the
+    # application it did not ask for.
+    assert os.path.isfile(out['dir'] + '/SlicesPlot1.png')
 
 
 def test_the_context_survives_between_two_prompts(qapp, tmp_path):

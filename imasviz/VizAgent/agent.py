@@ -24,6 +24,7 @@ import json
 import logging
 import re
 import threading
+from collections.abc import Mapping, Sequence
 
 from PySide6.QtCore import QObject, Signal
 
@@ -61,6 +62,26 @@ _DEFLLECTION_MARKERS = (
 _TOOL_NAMES = frozenset(t['function']['name'] for t in TOOLS)
 
 
+def _serialisable(value):
+    """A tool result on its way to the model: the bytes it carries become
+    a named confirmation, not a `json.JSONDecodeError` at the dumps.
+
+    `get_screenshot` answers the window's PNG, and the model is asked
+    nothing from it -- what it needs is to know the capture happened and
+    how big, which `json.dumps` cannot say of a `bytes` object. The
+    answer names the size instead, and a list or mapping the gesture
+    returned is walked the same way, so one binary leaf among the data
+    is the same refusal the result alone would be.
+    """
+    if isinstance(value, (bytes, bytearray, memoryview)):
+        return 'captured: %d bytes' % len(value)
+    if isinstance(value, Mapping):
+        return {str(key): _serialisable(item) for key, item in value.items()}
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return [_serialisable(item) for item in value]
+    return value
+
+
 class AgentLoop(QObject):
     """One agent session: its LLM, its gestures, and the loop.
 
@@ -75,6 +96,13 @@ class AgentLoop(QObject):
 
     transcriptLine = Signal(str)
     askFinished = Signal(object)
+    # The gesture the loop is about to run, by its tool name and the
+    # arguments it passed validation with -- emitted by `_dispatch`,
+    # before the call, so a session that listens can say which windows a
+    # turn asked to be captured (`get_screenshot`) and save them beside
+    # its figures at the turn's end. A loop with no listener is
+    # unchanged: an emission with no receiver is a no-op in Qt.
+    gestureIssued = Signal(str, object)
 
     def __init__(self, core, llm, dispatcher, main_window=None, api=None):
         super(AgentLoop, self).__init__()
@@ -197,7 +225,8 @@ class AgentLoop(QObject):
                         summary = _summarize(result)
                         self.transcriptLine.emit(
                             '  ← %s: %s' % (name, summary))
-                        tool_result = {'result': result, 'error': None}
+                        tool_result = {'result': _serialisable(result),
+                                      'error': None}
                         last_action = '%s: %s' % (name, summary)
                     except Exception as e:
                         self.transcriptLine.emit(
@@ -371,6 +400,7 @@ class AgentLoop(QObject):
                 '"%s" is not a parameter of the %s tool: it takes %s. '
                 'Answer with the parameters the tool names.'
                 % (unknown[0], name, allowed))
+        self.gestureIssued.emit(name, args or {})
         return method(**args)
 
 

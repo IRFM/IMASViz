@@ -92,6 +92,12 @@ def parseArguments(argv=None):
                              'transcript are saved in (default: '
                              'agent_shots, created if absent; a relative '
                              'path counts from the working directory)')
+    parser.add_argument('--extra-shots', dest='extra_shots', default='',
+                        metavar='LIST',
+                        help='captures of the interface to save beside '
+                             'the run\'s figures, comma-separated '
+                             '(default: none -- the figures alone): '
+                             'app, case-views')
     return parser.parse_args(argv)
 
 

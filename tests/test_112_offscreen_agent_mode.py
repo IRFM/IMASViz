@@ -26,6 +26,8 @@ What it pins, in the order the mode must answer them:
 import base64
 import os
 
+import pytest
+
 from imasviz.VizAgent.llm_client import LLMResponse, _messagesForRequest
 
 from mcp_server.agent_mode import buildLLM, runAgentMode
@@ -87,11 +89,48 @@ def buildArgs(tmp_path, extra=None):
     return parseArguments(argv)
 
 
-def test_happy_path_saves_images_and_transcript(qapp, tmp_path):
-    """An answered loop: exit 0, the app and the figure on disk as PNGs,
-    the transcript beside them. The tool call ran through the real
-    dispatcher and the real event pump."""
+def test_happy_path_saves_the_figures_and_the_transcript(qapp, tmp_path):
+    """An answered loop: exit 0, the figure on disk as a PNG, the
+    transcript beside it -- and nothing besides them. The capture of a
+    run is its plots; the application and the case view are the captures
+    that show the interface, and their saving is the ask (the flag
+    `--extra-shots`, pinned in the next test) -- not the by-product of
+    the run. The tool call ran through the real dispatcher and the real
+    event pump."""
     args = buildArgs(tmp_path)
+    llm = FakeLLMClient([
+        LLMResponse(content='', tool_calls=[{'name': 'list_cases', 'args': {}}],
+                    finish_reason='tool_calls'),
+        LLMResponse(content='The case is open and the figure is drawn.',
+                    finish_reason='stop'),
+    ])
+    code = runAgentMode(args, app=qapp, window=AWindow(),
+                        core=FakeCore(), llm=llm)
+    assert code == 0
+    shots = tmp_path / 'shots'
+    with open(shots / 'SlicesPlot1.png', 'rb') as f:
+        assert f.read() == PNG_1x1
+    # The interface captures the run did not ask for are the ones that
+    # are not there.
+    assert not (shots / '00_app.png').is_file()
+    case_files = [p.name for p in shots.iterdir()
+                  if p.name.startswith('case_') and p.name.endswith('.png')]
+    assert case_files == []
+    transcript = (shots / 'transcript.txt').read_text()
+    assert 'The case is open and the figure is drawn.' in transcript
+    assert 'list_cases' in transcript
+
+
+def test_extra_shots_save_the_interface_beside_the_figures(qapp, tmp_path):
+    """The ask of the interface, from the command line:
+    `--extra-shots app,case-views` names the captures that show the
+    interface, and they come to disk beside the figure -- `00_app.png`
+    the whole application, the case view under the tail of the case it
+    serves, the way the default run answers its figure. A name the run
+    does not hold is refused by naming the ones it does, before any
+    window is built."""
+    from mcp_server.agent_mode import extrasFromFlag
+    args = buildArgs(tmp_path, extra=['--extra-shots', 'app,case-views'])
     llm = FakeLLMClient([
         LLMResponse(content='', tool_calls=[{'name': 'list_cases', 'args': {}}],
                     finish_reason='tool_calls'),
@@ -113,15 +152,24 @@ def test_happy_path_saves_images_and_transcript(qapp, tmp_path):
                           'imasdb_west_3_54924_0.png']
     with open(shots / case_files[0], 'rb') as f:
         assert f.read() == PNG_1x1
-    transcript = (shots / 'transcript.txt').read_text()
-    assert 'The case is open and the figure is drawn.' in transcript
-    assert 'list_cases' in transcript
+
+    # The flag's spelling: names kept in the order the caller spelled
+    # them, blanks dropped, a misspelling refused by naming the set.
+    assert extrasFromFlag('app, case-views') == ('app', 'case-views')
+    assert extrasFromFlag('') == ()
+    with pytest.raises(ValueError) as excinfo:
+        extrasFromFlag('panel')
+    assert 'panel' in str(excinfo.value)
+    assert 'app' in str(excinfo.value) and 'case-views' in str(excinfo.value)
 
 
 def test_refused_loop_still_saves_and_says_one(qapp, tmp_path):
-    """A refusal (the truncation, here) is not a silence: the images and
+    """A refusal (the truncation, here) is not a silence: the figure and
     the transcript come to disk for what was drawn, the exit code says 1,
-    and the transcript names it."""
+    and the transcript names it -- the capture of the run is the figure
+    it drew, and the application the run did not ask for is not the one
+    it saves (the default is the plots, and the ask of the interface is
+    the one the next test names)."""
     args = buildArgs(tmp_path)
     llm = FakeLLMClient([
         LLMResponse(content='partial answer...', finish_reason='length'),
@@ -130,7 +178,6 @@ def test_refused_loop_still_saves_and_says_one(qapp, tmp_path):
                         core=FakeCore(), llm=llm)
     assert code == 1
     shots = tmp_path / 'shots'
-    assert (shots / '00_app.png').is_file()
     assert (shots / 'SlicesPlot1.png').is_file()
     transcript = (shots / 'transcript.txt').read_text()
     assert 'REFUSAL' in transcript
