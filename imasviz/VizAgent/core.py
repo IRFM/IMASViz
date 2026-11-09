@@ -1169,13 +1169,29 @@ class McpGuiCore:
         return {'figure': frame.figureKey}
 
     def get_signal(self, uri, path, as_function_of_time=None,
-                   coordinate_index=0, time_index=None):
+                   coordinate_index=0, time_index=None,
+                   along=None, indices=None):
         """The values the tree's read gives for one leaf, as JSON.
 
         The same read the plots use (`Viz_API.GetSignal`), so what comes
         back is exactly what a panel drew: the coordinate and value arrays
         for a slice, or the named coordinates and values for a quantity of
         more than one array.
+
+        `along` is the axis the quantity runs along -- `None` for the one the
+        quantity defaults to (its clock, when it has one), a clock word, or the
+        name of the axis it can actually be read along. `indices` fixes each
+        other axis of the quantity by name at its 0-based index: an array of
+        structures (`time_slice`, `profiles_1d`, `ion`, ...) or a leaf
+        coordinate (`psi`, ...); several nested arrays are each named and
+        fixed on their own.
+
+        Both are read through the one shared resolver `axesAddressing`
+        (which `plot_one` uses too), so the value this answers and the element
+        a figure of the same leaf draws are the same element of the same
+        array. A word no axis answers is a refusal that names the axes the
+        quantity holds, and an index past their extent is refused before the
+        read is ever asked, not a silent 0.
         """
         view = self._viewForUri(uri)
         node = self._nodeForPath(view, path)
@@ -1184,10 +1200,20 @@ class McpGuiCore:
             # than the panel's "no explicit dependency on current X axis"
             # after it.
             raise ValueError(self._scalarRefusal(path))
+        if along is not None or indices is not None:
+            from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+
+            axesSpec = QVizAxesSpec.fromTreeNode(node)
+            abscissa, as_function_of_time, slices = \
+                axesAddressing(axesSpec, along=along, indices=indices)
+        else:
+            abscissa, slices = None, None
         result = self.api.GetSignal(view, node,
                                     as_function_of_time=as_function_of_time,
                                     coordinate1_index=coordinate_index,
-                                    time_index=time_index)
+                                    time_index=time_index,
+                                    slices=slices,
+                                    abscissa=abscissa)
         payload = self._jsonable(result)
         if isinstance(payload, dict) and payload.get('kind') == 'curve':
             payload['samples'] = len(payload.get('y') or [])

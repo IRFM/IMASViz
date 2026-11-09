@@ -1466,7 +1466,8 @@ class Viz_API:
             return self.GetDataSource(dataTreeFrame).data_entries[occurrence]
 
     def GetSignal(self, dataTreeView, vizTreeNode, as_function_of_time=None,
-                  coordinate1_index=0, time_index=None, plotWidget=None):
+                  coordinate1_index=0, time_index=None, plotWidget=None,
+                  slices=None, abscissa=None):
         from imasviz.VizDataAccess.QVizDataAccessFactory import QVizDataAccessFactory
         try:
             signalDataAccess = QVizDataAccessFactory(dataTreeView.dataSource).create()
@@ -1474,7 +1475,9 @@ class Viz_API:
                                               plotWidget=plotWidget,
                                               as_function_of_time=as_function_of_time,
                                               coordinate_index=coordinate1_index,
-                                              time_index=time_index)
+                                              time_index=time_index,
+                                              slices=slices,
+                                              abscissa=abscissa)
         except:
             raise
 

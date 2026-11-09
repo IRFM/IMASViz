@@ -358,6 +358,45 @@ def test_get_signal_answers_the_read_along_time(core):
     assert len(payload['y']) == TIME_SAMPLES
 
 
+JTOR_PATH = 'equilibrium.time_slice[0].profiles_1d.j_tor'
+
+
+def test_get_signal_fixes_the_leaf_at_the_named_index(core):
+    """The unified schema the user asked for: along what axis a quantity runs,
+    and the index each other axis is pinned at; several nested arrays pin on
+    their own.
+
+    WEST 54924, `equilibrium.time_slice[i].profiles_1d.j_tor`: drawn as a
+    history along the clock, `psi` is the one axis that is fixed, and the
+    user names it `psi[50]`. Two routes must answer the same element -- the
+    unified `along`/`indices` of this commit and the legacy `coordinate_index`
+    it replaces -- and both must be the element the user named, not the one
+    the tree happened to carry (index 0), which is what the read used to
+    answer for index 50 before the schema.
+    """
+    session, _home = core
+    at50 = session.get_signal(CASE_URI, JTOR_PATH, along=None,
+                              indices={'psi': 50})
+    assert at50['kind'] == 'curve'
+    assert at50['samples'] == TIME_SAMPLES
+
+    # The legacy spelling of the same addressing reaches the same element.
+    legacy = session.get_signal(CASE_URI, JTOR_PATH,
+                                as_function_of_time=True, coordinate_index=50)
+    assert legacy['samples'] == at50['samples']
+    assert at50['y'] == legacy['y']
+
+    # And it is the element the user named, not the one the tree carried.
+    carried = session.get_signal(CASE_URI, JTOR_PATH, as_function_of_time=True)
+    assert at50['y'] != carried['y'], 'the read ignored the psi[50] the user named'
+
+    # A word no axis of the leaf answers is refused by name, not a silent 0
+    # (the extent refusal on a nested array is pinned off-case in test_123).
+    with pytest.raises(ValueError) as exc:
+        session.get_signal(CASE_URI, JTOR_PATH, indices={'flux_loop': 0})
+    assert 'flux_loop' in str(exc.value)
+
+
 def test_screenshots_answer_png_and_refuse_the_absent_window(core):
     session, _home = core
     head = sorted(session.api.figureframes)[0]
