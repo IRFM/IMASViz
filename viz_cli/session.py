@@ -118,11 +118,15 @@ class CliSession:
             lines.append(line)
 
         def onGesture(name, args):
-            # A capture is an ask, and the loop's `get_screenshot` is
-            # one: the window it names is the one this prompt asks to be
-            # saved -- a figure the prompt may not have drawn itself, or
-            # the interface.
-            if name == 'get_screenshot':
+            # A capture is an ask. `get_screenshot` is the one the loop
+            # saves a PNG for. `focus_window` is the "show me this" in
+            # the desktop app: it brings the window forward so the user
+            # sees it. In the REPL there is **no screen** to bring
+            # forward -- the only way a figure reaches the user is the
+            # PNG this prompt saves -- so a focus of a figure or of `app`
+            # is a capture ask too, keeping to one file the way a focus
+            # and the screenshot of the same window deduplicate below.
+            if name in ('get_screenshot', 'focus_window'):
                 requested_windows.append(
                     (args or {}).get('window', 'app'))
 

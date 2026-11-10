@@ -144,12 +144,21 @@ class WebSession:
                     onLine(line)
 
             def onGestureSlot(name, args):
-                # A capture is an ask, and the loop's `get_screenshot`
-                # is one: the window it names is the one this turn asks
-                # to be saved -- a figure key is the capture of a figure
-                # the turn may not have drawn itself, and `app` or a case
-                # URI the one of the interface.
-                if name == 'get_screenshot':
+                # A capture is an ask. `get_screenshot` is the one the
+                # loop saves a PNG for. `focus_window` is the "show me
+                # this" in the desktop app: it brings the window forward
+                # so the user sees it. In the web there is **no screen** --
+                # the only way a figure reaches the user is the PNG this
+                # turn saves -- so a focus of a figure or of `app` is a
+                # capture ask too, not a by-product: the same window is
+                # asked for twice (focus, then the screenshot) but keeps
+                # to one file, the way the two `get_screenshot` asks of it
+                # deduplicate in `_finishTurn`. A focus is thus how the
+                # web answers "show me figure N" when the agent, on the
+                # strength of the gesture it named, did not also ask for
+                # the picture: the figure is still one the turn asked for,
+                # and it is kept.
+                if name in ('get_screenshot', 'focus_window'):
                     requested_windows.append(
                         (args or {}).get('window', 'app'))
 
