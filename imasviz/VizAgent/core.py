@@ -230,6 +230,7 @@ def axesAddressing(axesSpec, along=None, indices=None):
     a name for the axis the curve already runs along.
     """
     from imasviz.VizDataAccess import QVizCurveAbscissa as AB
+    from imasviz.VizDataAccess.QVizAxesSpec import QVizAxis
 
     if not axesSpec.isPlottable():
         raise ValueError(_scalarRefusal(axesSpec))
@@ -252,6 +253,22 @@ def axesAddressing(axesSpec, along=None, indices=None):
         axis = _axisNamed(axesSpec, word, exclude=abscissaAxis)
         if axis is None:
             raise ValueError(_holdRefusal(axesSpec, key, abscissaAxis))
+        # A static (non-time) AOS with a non-zero index in the path means the
+        # node IS a specific member of that family (e.g. flux_loop[1]) -- the
+        # figure for it is a single curve with no slider over the other
+        # members, so pinning that axis via `indices` is a no-op with an
+        # unwanted side effect (a figure created only to be refused). Refuse
+        # here, BEFORE the figure is opened, and point at the working move.
+        if (axis.origin == QVizAxis.AOS and not axis.is_time
+                and axis.index is not None and axis.index > 0):
+            raise ValueError(
+                '"%s" is already fixed at index %d by the path "%s": this '
+                'node is one member of that family, and the figure it draws '
+                'is that one member alone -- there is no slider over the '
+                'other members of the family. For another member, use its '
+                'own path (with into_figure_key to share the figure, or '
+                'select_signals + plot_selection for a selection).'
+                % (word, axis.index, axesSpec.dataPath or axesSpec.idsName or '?'))
         _checkExtent(axis, (indices or {})[key])
 
     slices = {}
