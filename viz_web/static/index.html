@@ -125,8 +125,23 @@ button#themeBtn { padding: 4px 10px; }
 .transcript .refusal { color: var(--log-error); font-weight: 500; }
 .transcript .arrow { color: var(--accent-strong); }
 
-.turns { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-.turns li { padding: 4px 6px; border-radius: 4px; background: var(--surface-alt); color: var(--ink-soft); border-left: 3px solid var(--accent); }
+/* The Requests of the session: a list the user copies from, not a wall of
+   truncated names. The prompt fills the row and wraps, the label is dim
+   and bold, and the copy of the whole prompt is one click away. */
+.turns { list-style: none; margin: 0; padding: 0; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+.turnItem {
+  padding: 7px 9px; border-radius: 5px; background: var(--surface-alt);
+  color: var(--ink-soft); border-left: 3px solid var(--accent);
+  display: flex; align-items: flex-start; gap: 9px;
+}
+.turnItem .turnLabel { color: var(--accent-strong); font-weight: 600; white-space: nowrap; }
+.turnItem .turnPrompt { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.copyBtn {
+  align-self: flex-start; padding: 2px 10px; font-size: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 5px;
+  color: var(--ink-soft); cursor: pointer; white-space: nowrap;
+}
+.copyBtn:hover { border-color: var(--accent); color: var(--accent-strong); background: var(--accent-soft); }
 
 /* The rarely used one: the direct calls to the application. A closed
    section at the foot of the agent's column, and it stays closed until
@@ -164,8 +179,12 @@ details.tool summary strong { color: var(--accent-strong); }
   cursor: pointer; list-style: none; padding: 8px 10px;
   font-size: 13px; font-weight: 600; color: var(--ink-soft);
   background: var(--surface-alt);
+  display: flex; align-items: flex-start; gap: 8px;
 }
 .shots .shotGroup summary::-webkit-details-marker { display: none; }
+.shots .shotGroup .shotGroupLabel { color: var(--accent-strong); white-space: nowrap; }
+.shots .shotGroup .shotGroupPrompt { flex: 1; font-weight: 400; white-space: pre-wrap; word-break: break-word; }
+.shots .shotGroup .shotGroupCount { color: var(--ink-faint); white-space: nowrap; }
 .shots .shotGroup[open] summary { border-bottom: 1px solid var(--line-soft); }
 .shots .shotBody { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 .shots .shot { margin: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-alt); overflow: hidden; }
@@ -280,6 +299,81 @@ details.tool summary strong { color: var(--accent-strong); }
     var t = byId('transcript');
     t.appendChild(div);
     t.scrollTop = t.scrollHeight;
+  }
+
+  /* ------------------------------------------------------------ the copy
+
+     The copy the user asks of a request: the whole prompt, not the truncated
+     name the list shows. The Clipboard API is the first reach -- it is only
+     present in a secure context -- and `document.execCommand('copy')` is the
+     stand-in where it is not, which is the common case on an AFS host over
+     `http`. Either way the button says what it did. */
+
+  function copyText(text, buttonEl) {
+    var mark = function (ok) {
+      if (!buttonEl) return;
+      var label = buttonEl.getAttribute('data-label') || 'Copy';
+      buttonEl.textContent = ok ? 'Copied ✓' : 'Copy failed';
+      setTimeout(function () { buttonEl.textContent = label; }, 1300);
+    };
+    var viaLegacy = function () {
+      try { mark(legacyCopy(text)); } catch (e) { mark(false); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { mark(true); }, viaLegacy);
+    } else {
+      viaLegacy();
+    }
+  }
+
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  /* ------------------------------------------------------------- the list
+
+     The Requests of the session, rebuilt from the state the page holds: the
+     state is the one place the whole prompt is kept (the list shows it, the
+     copy copies it), so the list is filled from it at load, after every
+     request, and on clear. Newest first, the way the gallery above orders
+     its groups. */
+
+  function turnsItem(n, prompt) {
+    prompt = String(prompt || '') || '(empty)';
+    var li = el('li', { 'class': 'turnItem' });
+    li.appendChild(el('span', { 'class': 'turnLabel' }, ['Request ' + n]));
+    li.appendChild(el('span', { 'class': 'turnPrompt' }, [prompt]));
+    var copy = el('button', { 'class': 'copyBtn', type: 'button',
+      'data-label': 'Copy' }, ['Copy']);
+    copy.addEventListener('click', function (e) {
+      e.stopPropagation();
+      copyText(prompt, copy);
+    });
+    li.appendChild(copy);
+    return li;
+  }
+
+  function renderTurnsList() {
+    var ul = byId('turns');
+    ul.textContent = '';
+    var turns = (state.turns || []).slice().reverse();
+    if (!turns.length) {
+      ul.appendChild(el('li', { 'class': 'empty' },
+        ['No request yet. The prompts of the session stay here, newest ' +
+         'first, with a copy of each.']));
+      return;
+    }
+    turns.forEach(function (t) { ul.appendChild(turnsItem(t.n, t.prompt)); });
   }
 
   function setBusy(busy) {
@@ -495,14 +589,26 @@ details.tool summary strong { color: var(--accent-strong); }
     // One request, its count, and its pictures behind the name it is
     // closed under: the group is a `details`, closed, and it answers
     // when it is clicked -- which is the reading "Request 3" is meant
-    // to give, instead of the wall the pictures used to make.
+    // to give, instead of the wall the pictures used to make. Unlike the
+    // list in the agent column, this group survives a reload of the page,
+    // so it carries the copy of the request it names.
+    prompt = String(prompt || '') || '—';
     var group = el('details', { 'class': 'shotGroup' });
     var count = (windows || []).length;
-    group.appendChild(el('summary', {}, [
-      'Request ' + turnNumber + ' — '
-      + (String(prompt || '').slice(0, 70) || '—')
-      + '  (' + count + (count === 1 ? ' shot' : ' shots') + ')'
-    ]));
+    var summary = el('summary', {});
+    summary.appendChild(el('span', { 'class': 'shotGroupLabel' },
+      ['Request ' + turnNumber]));
+    summary.appendChild(el('span', { 'class': 'shotGroupPrompt' }, [prompt]));
+    summary.appendChild(el('span', { 'class': 'shotGroupCount' },
+      ['(' + count + (count === 1 ? ' shot' : ' shots') + ')']));
+    var copy = el('button', { 'class': 'copyBtn', type: 'button',
+      'data-label': 'Copy' }, ['Copy']);
+    copy.addEventListener('click', function (e) {
+      e.stopPropagation();
+      copyText(prompt, copy);
+    });
+    summary.appendChild(copy);
+    group.appendChild(summary);
     var body = el('div', { 'class': 'shotBody' });
     (windows || []).forEach(function (w) {
       body.appendChild(shotCard(turnNumber, w.name, w.window));
@@ -537,6 +643,7 @@ details.tool summary strong { color: var(--accent-strong); }
       // oldest first: the report grouping below reads them back the
       // way it groups them, the newest first.
       state.turns = (j.turns || []).slice();
+      renderTurnsList();
       wrap.textContent = '';
       state.turns.slice().reverse().forEach(function (t) {
         var windows = t.image_windows
@@ -635,8 +742,7 @@ details.tool summary strong { color: var(--accent-strong); }
     // is in the page the moment the request ends.
     state.turns = state.turns || [];
     state.turns.push({ n: data.turn, prompt: data.prompt, reports: data.reports || [] });
-    var li = el('li', {}, ['Request ' + data.turn + ' — ' + String(data.prompt || '').slice(0, 50)]);
-    byId('turns').prepend(li);
+    renderTurnsList();
     refreshReports();
     refreshHealth();
   }
@@ -695,9 +801,11 @@ details.tool summary strong { color: var(--accent-strong); }
     byId('images').textContent = '';
     byId('images').appendChild(galleryEmpty());
     // The reports section is the folder, not this page's chat: cleared
-    // and then refilled from the server, not emptied for real.
+    // and then refilled from the server, not emptied for real. Both the
+    // list below and the gallery above come from the same state, and the
+    // list shows the empty it is rather than going quiet.
     state.turns = [];
-    byId('turns').textContent = '';
+    renderTurnsList();
     refreshReports();
   }
 
