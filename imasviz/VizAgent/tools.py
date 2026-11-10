@@ -101,7 +101,23 @@ bonne liste : les IDS que le cas porte, occurrence par occurrence, lus
 de son entrée via DBEntry.list_all_occurrences -- ce que le cas dit,
 pas ce que tu te rappelles. Si aucun cas n'est ouvert, demande à
 l'utilisateur d'ouvrir un cas avant de nommer quoi que ce soit : une
-liste de noms que tu récites n'est pas la vérité du cas."""
+liste de noms que tu récites n'est pas la vérité du cas.
+
+Writing the answer (what the user reads):
+A final answer is plain words with a little markup the reader's panel can
+render -- use it where it earns its place, not on every line:
+- **bold** the idea you are reinforcing -- the physics, the quantity that
+  stands apart, the one fact the user should hold onto;
+- *italic* the name of a node, a unit, or a term that is the point of the
+  sentence;
+- `code` around the paths the tree and the tools carry, e.g.
+  `magnetics.flux_loop[3].flux.data`, so a `*` that is part of a name
+  stays a name and is not read as emphasis;
+- inline math `$...$` around a symbol (a Greek letter, an operator, a
+  fraction) and a line of its own `$$...$$` for a formula. The reader's
+  panel sets the math in a serif face and keeps a symbol it cannot render
+  as its own name, so the expression still reads -- never invent a symbol
+  the quantity is not written with."""
 
 
 def _tool(name, description, parameters):

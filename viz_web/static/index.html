@@ -125,6 +125,24 @@ button#themeBtn { padding: 4px 10px; }
 .transcript .refusal { color: var(--log-error); font-weight: 500; }
 .transcript .arrow { color: var(--accent-strong); }
 
+/* The assistant's own words get a richer reading: bold and code sit on the
+   same ground they are painted, and the symbols of a formula read in a face
+   that is math, not text. Only the line the loop gives its answer
+   (`LLM: …`) is read as prose -- the tool calls, the refusals and the
+   answers keep the exact shape the loop names them. */
+.transcript .richLabel { color: var(--accent-strong); font-weight: 600; margin-right: 6px; }
+.transcript .richText strong { font-weight: 600; }
+.transcript .richText em { font-style: italic; }
+.transcript .richText code {
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12.5px;
+  background: var(--surface); border: 1px solid var(--line-soft); border-radius: 3px;
+  padding: 0 4px;
+}
+.transcript .richText .codeBlock { display: inline-block; white-space: pre-wrap; max-width: 100%; margin: 3px 0; padding: 4px 8px; }
+.transcript .mathInline { font-family: "Times New Roman", Georgia, "Cambria Math", serif; font-style: italic; }
+.transcript .mathDisplay { display: inline-block; margin: 3px 0; font-family: "Times New Roman", Georgia, "Cambria Math", serif; font-style: italic; }
+.transcript .richText a { color: var(--accent-strong); }
+
 /* The Requests of the session: a list the user copies from, not a wall of
    truncated names. The prompt fills the row and wraps, the label is dim
    and bold, and the copy of the whole prompt is one click away. */
@@ -294,8 +312,122 @@ details.tool summary strong { color: var(--accent-strong); }
   // report either is or is not.
   var state = { turns: [], reports: [], reportsFolder: '' };
 
+  /* --------------------------------------------------------------- the reading
+
+     The assistant's answer is the one line the loop gives its content
+     (`LLM: …`); every other line -- the tool calls, the answers, the
+     refusals, the stop -- is a shape the loop names and the page keeps
+     verbatim. A `*` in a tool argument is an argument, not emphasis, so the
+     markup below is read only on the assistant's words, and escaped first,
+     so what the page paints is the words the loop gave, not a re-reading of
+     them. Code, links and math are read before the prose is escaped, so the
+     `**` of a command and the `$` of a path are not swallowed as markup. */
+
+  var ASSISTANT_RE = /^LLM:\s?/;
+
+  function isAssistantLine(text) {
+    return typeof text === 'string' && ASSISTANT_RE.test(text);
+  }
+
+  function escapeHtml(text) {
+    // the five that end a tag or an attribute: the two that can open or
+    // close a tag, and the two that can lift the reader out of the
+    // attribute of a link the model gave, so the answer it reads is the
+    // words the loop gave, not the tag they carry
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  var MATH_TOKENS = {
+    'alpha':'α','beta':'β','gamma':'γ','delta':'δ','epsilon':'ε','zeta':'ζ',
+    'eta':'η','theta':'θ','kappa':'κ','lambda':'λ','mu':'μ','nu':'ν','xi':'ξ',
+    'pi':'π','rho':'ρ','sigma':'σ','tau':'τ','upsilon':'υ','phi':'φ','chi':'χ',
+    'psi':'ψ','omega':'ω','Gamma':'Γ','Delta':'Δ','Theta':'Θ','Lambda':'Λ',
+    'Pi':'Π','Sigma':'Σ','Phi':'Φ','Psi':'Ψ','Omega':'Ω','approx':'≈','sim':'∼',
+    'equiv':'≡','propto':'∝','leq':'≤','le':'≤','geq':'≥','ge':'≥','neq':'≠',
+    'ne':'≠','times':'×','div':'÷','cdot':'·','pm':'±','mp':'∓','infty':'∞',
+    'sum':'∑','prod':'∏','int':'∫','partial':'∂','nabla':'∇','to':'→','gets':'←',
+    'in':'∈','subset':'⊂','supset':'⊃','cup':'∪','cap':'∩','cdots':'⋯','ldots':'…'
+  };
+
+  function convertMath(text) {
+    var s = escapeHtml(String(text));
+    // \frac{a}{b} -> (a)/(b), the one structure worth a special case
+    s = s.replace(/\\frac\{([^{}]*)\}(\{[^{}]*\})/g, function (whole, a, b) {
+      return '(' + a + ')/(' + b.replace(/^\{|\}$/g, '') + ')';
+    });
+    s = s.replace(/\\sqrt\{([^{}]*)\}/g, '√($1)');
+    s = s.replace(/\\text\{([^{}]*)\}/g, '$1');
+    s = s.replace(/\\mathrm\{([^{}]*)\}/g, '$1');
+    // the named tokens: \alpha becomes α, and an unknown one stands as it is,
+    // so a symbol the map does not read is kept, not guessed
+    s = s.replace(/\\([A-Za-z]+)/g, function (whole, name) {
+      return Object.prototype.hasOwnProperty.call(MATH_TOKENS, name)
+        ? MATH_TOKENS[name] : whole;
+    });
+    return s;
+  }
+
+  function renderRich(text) {
+    var src = String(text);
+    var stash = [];
+    var NUL = '\u0000';
+    function protect(html) {
+      var i = stash.length;
+      stash.push(html);
+      return NUL + i + NUL;
+    }
+    // fenced code, inline code, links: read before the prose is escaped
+    src = src.replace(/```(?:\w+\s)?([\s\S]*?)```/g, function (whole, body) {
+      return protect('<code class="codeBlock">' + escapeHtml(body) + '</code>');
+    });
+    src = src.replace(/`([^`]+)`/g, function (whole, body) {
+      return protect('<code>' + escapeHtml(body) + '</code>');
+    });
+    src = src.replace(/\[([^\]]+)\]\(\s*([^)\s]+)\s*\)/g, function (whole, label, href) {
+      // only a web address is a link the page can open: the LLM reads case
+      // data it is not trusted to hand back as code, so a scheme it cannot
+      // open keeps the words it gave and drops the click
+      if (!/^(?:https?|mailto):/i.test(href) || /^(?:javascript|vbscript|data):/i.test(href)) {
+        return escapeHtml(label);
+      }
+      return protect('<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' +
+        escapeHtml(label) + '</a>');
+    });
+    // the prose: escaped once, then read for the emphasis and the math
+    src = escapeHtml(src);
+    src = src.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    src = src.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    src = src.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    src = src.replace(/\$\$([^$]+)\$\$/g, function (whole, body) {
+      return '<span class="mathDisplay">' + convertMath(body) + '</span>';
+    });
+    src = src.replace(/\$([^$\n]+)\$/g, function (whole, body) {
+      return '<span class="mathInline">' + convertMath(body) + '</span>';
+    });
+    // the stashed regions come back whole, the markup having gone around them
+    src = src.replace(/\u0000(\d+)\u0000/g, function (whole, i) { return stash[+i]; });
+    return src;
+  }
+
+  function renderLine(text) {
+    if (isAssistantLine(text)) {
+      var content = text.replace(ASSISTANT_RE, '');
+      var label = el('span', { 'class': 'richLabel' }, ['LLM']);
+      var body = el('span', { 'class': 'richText' });
+      body.innerHTML = renderRich(content);
+      return [label, body];
+    }
+    return [el('span', { 'class': 'text' }, [text])];
+  }
+
   function appendLine(text, cls) {
-    var div = el('div', { 'class': cls || 'line' }, [el('span', { 'class': 'text' }, [text])]);
+    var div = el('div', { 'class': cls || 'line' });
+    renderLine(text).forEach(function (node) { div.appendChild(node); });
     var t = byId('transcript');
     t.appendChild(div);
     t.scrollTop = t.scrollHeight;
