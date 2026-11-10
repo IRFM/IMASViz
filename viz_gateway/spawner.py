@@ -57,16 +57,35 @@ class Instance:
 def spawnEnv(entry):
     """The environment a local backend starts with: this gateway's, but its own HOME.
 
-    `HOME` is the whole isolation: it is what the run's reports, preferences
-    and shots are written under, and each user has one of its own. The rest of
-    the environment -- `VIZ_HOME`, `VIZ_PRODUCTION`, the IMAS-Python path, the
-    `IMAS_VERSION` the operator exported -- is inherited, so the gateway is
-    started from a shell that already `module load`s the HLI, exactly the
-    run's own start is started.
+    `HOME` is the isolation: it is what the run's reports, preferences and
+    shots are written under, and each user has one of its own. Moving it,
+    though, moves the interpreter's own user-site packages (starlette,
+    uvicorn, PySide6, the IMAS HLI on this node all live in one) out of reach,
+    so they are put back on `PYTHONPATH`: every path this gateway sees that is
+    not under the child's HOME. The child then imports what the parent
+    imported, and the two still cannot see one another's `$HOME/.imasviz`,
+    which is where the isolation has to live.
     """
+    import sys
+
     env = dict(os.environ)
-    env['HOME'] = entry['home']
+    home = os.path.abspath(os.path.expanduser(entry['home']))
+    env['HOME'] = home
     env.setdefault('QT_QPA_PLATFORM', 'offscreen')
+    keep = []
+    for dirName in sys.path:
+        if not dirName:
+            continue
+        real = os.path.abspath(dirName)
+        if not os.path.isdir(real):
+            continue
+        if real == home or real.startswith(home + os.sep):
+            continue
+        if real not in keep:
+            keep.append(real)
+    inherited = os.environ.get('PYTHONPATH', '')
+    parts = [p for p in (inherited.split(os.pathsep) if inherited else []) if p]
+    env['PYTHONPATH'] = os.pathsep.join(parts + keep)
     return env
 
 
