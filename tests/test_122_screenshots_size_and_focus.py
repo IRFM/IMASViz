@@ -214,6 +214,35 @@ def test_focus_window_refuses_a_name_the_session_does_not_hold(qtbot):
     with pytest.raises(ValueError) as excinfo:
         core.focus_window('Banana')
     assert 'Banana' in str(excinfo.value)
+    # The refusal is about a figure key, not a case URI: it must not steer
+    # the model to open_case first (which it cannot fix, since the name is
+    # not a case URI).
+    assert 'open_case' not in str(excinfo.value), \
+        'the refusal for a figure key must not say "open it with open_case"'
+
+
+def test_focus_window_refusal_names_the_open_figure_keys(qtbot):
+    """When a figure IS open and the named one is not, the refusal names the
+    open keys so the model corrects the guess instead of asking the user.
+
+    The measured case: the model LIKED "Plot2" after the figure key was
+    actually "Plot1" -- then called focus_window("Plot2") and got
+    "The case 'Plot2' is not open in this session. Open it with open_case
+    first." That message names neither the real key nor the mistake, so the
+    model fell back to Plot1 or gave up. The fixed refusal names Plot1.
+    """
+    mdi = QMdiArea()
+    qtbot.addWidget(mdi)
+    api, frame, subWindow = embeddedFrame(mdi, qtbot, sized=None)
+    api.figureframes['Plot1'] = frame
+    core = makeCore(api)
+    with pytest.raises(ValueError) as excinfo:
+        core.focus_window('Plot2')
+    message = str(excinfo.value)
+    # The real key is named in the refusal.
+    assert 'Plot1' in message, 'the refusal must name the open figure key'
+    # And it does not say "open_case" (the name is a figure key, not a case).
+    assert 'open_case' not in message
 
 
 def test_focus_window_refuses_a_size_that_is_not_pixels(qtbot):

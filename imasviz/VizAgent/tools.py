@@ -119,6 +119,15 @@ two then plot_selection -- never `indices` for the loop. When a refusal names
 one of those moves, change the call to it; repeating the refused call does
 not help.
 
+Two figures, when the families differ. When the user names two different
+families in sequence (e.g. "trace 2 sondes, puis 2 boucles"), that is TWO
+figures: plot_one the first family (it gets a key), then plot_one the second
+family WITHOUT into_figure_key (it gets a new key). Do not use
+into_figure_key to add one family onto the other's figure unless the user
+says "sur la même figure", "superposées", or "on the same figure". A figure
+with sondes and loops in it is not what "trace 2 sondes, puis 2 boucles"
+means.
+
 NE JAMAIS présenter une liste d'IDS d'un cas sans avoir appelé d'abord
 un outil de cas dans cette conversation. list_case_idss(uri) est la
 bonne liste : les IDS que le cas porte, occurrence par occurrence, lus
@@ -341,7 +350,16 @@ TOOLS = [
                                        'by the dynamic array, "ion": 4 '
                                        'for one structure in it.',
                         'additionalProperties': {'type': 'integer'}},
-            'into_figure_key': {'type': ['string', 'null']},
+            'into_figure_key': {
+                'type': ['string', 'null'],
+                'description': 'The key of an existing figure to add this '
+                               'quantity to (superposition). Use when the '
+                               'user says "sur la même figure", "superposées", '
+                               'or "on the same figure". Leave null to open a '
+                               'NEW figure -- which is the default when the '
+                               'user names different families in sequence '
+                               '(e.g. "2 sondes, puis 2 boucles" is two '
+                               'figures, not four in one).'},
             'time': {'type': ['number', 'null'],
                      'description': 'seconds; the time at which to pin the '
                                     'profile. Nearest slice by default; '
