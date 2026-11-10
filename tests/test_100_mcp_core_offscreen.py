@@ -410,9 +410,10 @@ def test_screenshots_answer_png_and_refuse_the_absent_window(core):
     with pytest.raises(ValueError, match='No application window'):
         session.screenshot('app')
 
-    # A name that is neither a figure key nor an open case is refused by name,
-    # through the same case lookup as every other gesture.
-    with pytest.raises(ValueError, match='is not open in this session'):
+    # A name that is neither a figure key nor an open case is refused by name:
+    # the refusal names what IS open (the figure keys and case URIs in the
+    # session), so the caller can correct the guess without asking the user.
+    with pytest.raises(ValueError, match='no/such/thing'):
         session.screenshot('no/such/thing')
 
 

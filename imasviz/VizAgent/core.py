@@ -1968,7 +1968,8 @@ class McpGuiCore:
         session's main window, a key is the frame registered under it, and a
         URI is that case's shot view. A name none of the three holds is
         refused from `list_windows` itself, the one the *Windows* menu
-        draws.
+        draws. The refusal names what IS open, so the model can see the
+        right key without inventing another guess.
         """
         if window == 'app':
             if self.main_window is None:
@@ -1976,20 +1977,33 @@ class McpGuiCore:
                     'No application window to capture: this session was '
                     'built without one -- name a figure key or a case URI.')
             return self.main_window
-        target = None
         if window in self.api.figureframes:
-            target = self.api.figureframes[window]
-        else:
+            return self.api.figureframes[window]
+        # Try as a case URI; _viewForUri raises when the case is not open,
+        # which is the right outcome for a name that is neither a figure key
+        # nor an open case.
+        try:
             view = self._viewForUri(window)
-            for frame in self.api.DTVframeList:
-                if frame.dataTreeView is view:
-                    target = frame
-                    break
-        if target is None:
+        except ValueError as exc:
+            # Re-frame the refusal: the caller guessed a figure key; name
+            # the figure keys that ARE open so the model can correct the
+            # guess without asking the user.
+            openFigures = [k for k in self.api.figureframes]
+            openCases = [getattr(v.dataSource, 'uri', None)
+                         for v in self.api.DTVlist
+                         if getattr(v.dataSource, 'uri', None)]
             raise ValueError(
-                '"%s" is neither a figure key nor an open case: '
-                'list_windows names the keys.' % window)
-        return target
+                '"%s" is not an open figure key (%s) or an open case '
+                '(holdings: %s). list_windows shows what is open.'
+                % (window,
+                   ', '.join('"%s"' % k for k in openFigures) or 'none',
+                   ', '.join('"%s"' % u for u in openCases) or 'no case open'))
+        for frame in self.api.DTVframeList:
+            if frame.dataTreeView is view:
+                return frame
+        raise ValueError(
+            '"%s" is a case that is open but has no shot view frame -- '
+            'list_windows names the figures.' % window)
 
     def screenshot(self, window='app'):
         """One window as PNG: the application, a figure key, or a case URI,
