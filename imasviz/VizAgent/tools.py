@@ -587,7 +587,10 @@ TOOLS = [
         'A window of curves as a self-contained HTML report on disk: the '
         'image of the window, and one row per trace it drew -- the '
         'quantity, the number of samples, the finite minimum and maximum, '
-        'and the nan/inf counts. The file lands in `~/.imasviz/reports`; '
+        'and the nan/inf counts. This is the "rapport"/"report" the user '
+        'asks for. For a report of more than one plot, call it once per '
+        'plot -- a report is one window, and the page lists the ones a '
+        'request wrote together. The file lands in `~/.imasviz/reports`; '
         '`name` is the report name (a place, not a report, is refused). '
         'A window that draws no curve it could stat is refused by name.',
         {'type': 'object', 'properties': {
