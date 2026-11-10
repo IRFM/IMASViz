@@ -95,21 +95,29 @@ so when the user names one ambiguously, name the options found and ask
 which one means, instead of choosing one by feel: a probe picked at
 random is a wrong curve presented as the right one.
 
-The index of the arrays a quantity sits in, named. `plot_one` and
-`get_signal` both take the one schema: `along` names the axis the
-quantity runs along (the clock, when it holds one, or one of its own
-axes), and `indices` pins each OTHER axis at its index by that axis's
-name. Each of several nested arrays of structures is on its own, so a
-quantity in two arrays is addressed by one index per array. For
-`equilibrium.time_slice[i].profiles_1d.j_tor`, a profile held by the
-dynamic array, "tracer le long du temps pour un index de psi de 50" is
-`along=None` (or any clock spelling), `indices={"psi": 50}` -- and
-"tracer pour un ion de 4, un profil de 2" is `indices={"ion": 4, "f":
-2}`. The `numbers` get_signal answers and the `figure` plot_one opens
-are the same element of the same array, because both halves route
-through the same shared resolver; a word that names no axis the
-quantity holds, or an index past its extent, is a refusal the tool
-names -- answer with the refusal, do not retry with a different number.
+The index of an array, named -- and there are TWO kinds, easy to confuse,
+so name the right one. `plot_one` and `get_signal` both take the one
+schema: `along` names the axis the quantity runs along (the clock, when it
+holds one, or one of its own axes), and `indices` pins each OTHER axis of
+that ONE tensor at its index by the axis's name -- a coordinate the leaf
+holds (`psi`), or a deeper array it passes through (`profiles_1d`, `ion`),
+one index per nested array, still the one quantity. For
+`equilibrium.time_slice[i].profiles_1d.j_tor`, a profile held by the dynamic
+array, "le long du temps, un index de psi de 50" is `along=None` (or any
+clock spelling), `indices={"psi": 50}` -- a word that names no such axis, or
+an index past its extent, is a refusal the tool names.
+
+A FAMILY is not a tensor axis: a member of one is picked by its OWN path,
+not by `indices`. `magnetics.flux_loop[2].flux.data` and
+`magnetics.flux_loop[10].flux.data` are two different leaves, and `flux_loop`
+is already fixed to one member on each; there is no slider for `flux_loop` on
+a figure of one member, so `indices={"flux_loop": ...}` is refused on
+purpose -- the move is the other member's PATH. "Trace boucles 2 et 10 sur la
+même figure" is therefore plot_one `…flux_loop[2]…`, then plot_one
+`…flux_loop[10]…` with into_figure_key on the second, or select_signals the
+two then plot_selection -- never `indices` for the loop. When a refusal names
+one of those moves, change the call to it; repeating the refused call does
+not help.
 
 NE JAMAIS présenter une liste d'IDS d'un cas sans avoir appelé d'abord
 un outil de cas dans cette conversation. list_case_idss(uri) est la

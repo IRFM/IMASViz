@@ -872,27 +872,37 @@ class McpGuiCore:
         controls = getattr(frame, 'sliceControls', None)
         wordByKey = {axis.key(): str(_axisName(axis)) for axis in axesSpec.axes}
         openedAt = {}
-        if controls is not None:
-            for key, index in (slices or {}).items():
-                if controls.setIndex(key, index):
-                    openedAt[wordByKey.get(key, str(key))] = index
-                else:
-                    raise ValueError(
-                        'the figure for "%s" does not hold a slider for %s = %d'
-                        ' -- it runs along that axis, or the read answers no '
-                        'such axis; name a different one.'
-                        % (path, wordByKey.get(key, str(key)), int(index)))
-        elif slices:
-            raise ValueError(
-                'the figure for "%s" runs along its one axis and has no '
-                'array of structures or coordinate to pin at %s.'
-                % (path, ', '.join(wordByKey.get(k, str(k)) + '=%d' % v
-                                   for k, v in slices.items())))
+        for key, index in (slices or {}).items():
+            word = wordByKey.get(key, str(key))
+            if controls is not None and controls.setIndex(key, index):
+                openedAt[word] = index
+            else:
+                raise ValueError(self._elementIsThePathRefusal(path, word))
         return {'figure': frame.figureKey,
                 'kind': type(frame).__name__,
                 'drawing': bool(frame.isDrawing()),
                 'opened_at': openedAt}
 
+    def _elementIsThePathRefusal(self, path, word):
+        """The one axis a family member fixes is not a slider to move: the
+        member is the path.
+
+        A single element of a family (`flux_loop[2]`, `bpol_probe[7]`) is its
+        own leaf, drawn on a figure that has no band for that family -- the
+        element is fixed by the path, so `setIndex` cannot move it. This is
+        the one a refusal has to steer off: the previous word, "name a
+        different one", is what made the model retry the same refused call into
+        the turn budget, and it is false anyway, because a single element has
+        no "different one" to name. The move is the OTHER member's path.
+        """
+        return (
+            '"%s" already picks %s by its path: this figure draws that one '
+            'member as its own curve, and the family %s has no slider here to '
+            'move to a different index. A family member is named by its own '
+            'path, not by indices: for another member, plot_one its own path '
+            '(with into_figure_key to put it in this figure) or select_signals '
+            'the two members and plot_selection. Change the call; repeating '
+            'the refused one will not help.' % (path, word, word))
 
     def _timeBase(self, view, node):
         """The dynamic time array's own time values, or None.
