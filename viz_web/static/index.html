@@ -733,10 +733,27 @@ details.tool summary strong { color: var(--accent-strong); }
     // hood, nothing saved. A gesture that closes every figure without
     // leaving a session behind is asked once, by name, before it runs.
     byId('newSessionBtn').addEventListener('click', function () {
-      if (!confirm('Start a new session? This closes every case view and '
-                   + 'every figure WITHOUT saving the session. The '
-                   + 'sessions on disk are untouched.')) return;
-      appendLine('→ new_session()');
+      // The click answers before it asks: a `confirm` its browser blocks
+      // (kiosk, popup blocker) returns false with no dialog on screen, and
+      // a handler that returns before writing a line is a click that did
+      // not happen to the user. So the ask is on the transcript first,
+      // and a refused ask is named where the user reads it. A browser
+      // that has no `confirm` at all is not a refusal -- it cannot ask --
+      // so it proceeds and says it could not have.
+      appendLine('→ new session? (confirmation asked)');
+      var ok;
+      try {
+        ok = confirm('Start a new session? This closes every case view '
+                     + 'and every figure WITHOUT saving the session. The '
+                     + 'sessions on disk are untouched.');
+      } catch (e) {
+        ok = true;
+        appendLine('  … this browser cannot confirm: proceeding.');
+      }
+      if (!ok) {
+        appendLine('  ← abandoned: the confirm was refused.', 'refusal');
+        return;
+      }
       fetch('/api/tool', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'new_session', args: {} }),
