@@ -862,9 +862,16 @@ class McpGuiCore:
 
         A quantity the resolver refuses (scalar, ambiguous axis, index past
         the extent the tree names, an axis it already runs along) is refused
-        in words before the figure is opened. A quantity the resolver answers
-        but the frame does not put a control on is a contradiction the frame
-        has no room for, and it is named rather than a slider at 0.
+        in words before the figure is opened.
+
+        Only the axes the caller fixed through `indices` need a control on
+        the frame: the members the path itself picked carry no band by
+        design, and drawing the member along its OWN coordinate (`along`
+        named by the leaf's axis) is the read the twin `get_signal` already
+        answers, not a contradiction. When a named index has no control to
+        hold it, the refusal closes the figure the attempt opened before it
+        is raised: a refusal costs no window, and the number that key has
+        gone back to the bookkeeping.
         """
         from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
@@ -888,12 +895,33 @@ class McpGuiCore:
 
         controls = getattr(frame, 'sliceControls', None)
         wordByKey = {axis.key(): str(_axisName(axis)) for axis in axesSpec.axes}
+        # Only the axes the caller actually fixed (its `indices`) need a
+        # control on the frame. The members the path itself picked are the
+        # very element the figure draws: a plain element has no band over
+        # its own family by design, so a control need not exist there --
+        # demanding one is what refused "this member, along its own
+        # coordinate" only after the figure had been opened.
+        named = set()
+        for word in (indices or {}):
+            w = str(word).strip().lower()
+            for axis in axesSpec.axes:
+                if w in _axisWords(axis):
+                    named.add(axis.key())
         openedAt = {}
         for key, index in (slices or {}).items():
+            if key not in named:
+                continue
             word = wordByKey.get(key, str(key))
             if controls is not None and controls.setIndex(key, index):
                 openedAt[word] = index
             else:
+                if getattr(command, 'builtFigure', False):
+                    # A refusal is not a ghost window: the figure the attempt
+                    # opened goes away again, and the key it consumed goes
+                    # back to the bookkeeping, instead of reappearing as a
+                    # window `list_windows` reports that was never on
+                    # screen and a number the next figure skips over.
+                    self.api.closeWindow(frame)
                 raise ValueError(self._elementIsThePathRefusal(path, word))
         return {'figure': frame.figureKey,
                 'kind': type(frame).__name__,
