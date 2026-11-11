@@ -1540,6 +1540,25 @@ class McpGuiCore:
                           for uri, view in views.items()],
                 'windows': self.list_windows()}
 
+    def new_session(self):
+        """One clean session, without saving the one it takes away.
+
+        The *New session* entry of the application's *File* menu, on the
+        surface the page and the agent share: the case views and every
+        figure go off the screen and out of the bookkeeping
+        (`Viz_API.closeAll`, named on what it costs the run), and
+        **nothing is written** -- a new session is not a save by another
+        hand, and the one on disk (the user's `last_session` and the
+        saved ones) is left untouched. What it closes is answered by
+        name, so the transcript and the page print the same line: the
+        figures the user drew are the ones it lost.
+        """
+        closed = self.api.closeAll()
+        return {'closed': len(closed),
+                'saved_to': None,
+                'note': 'the clean slate, without a save: the sessions '
+                        'on disk are untouched'}
+
     def list_sessions(self):
         """The sessions the configuration folder holds, as the dialog lists them."""
         from imasviz.VizGUI.VizConfigurations.QVizSessionFile import \

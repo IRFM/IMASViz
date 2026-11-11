@@ -228,6 +228,8 @@ details.tool summary strong { color: var(--accent-strong); }
       <button id="runBtn" type="button">Run</button>
       <button id="stopBtn" type="button" disabled>Stop</button>
       <button id="clearBtn" type="button">Clear</button>
+      <button id="newSessionBtn" type="button"
+              title="Close every case view and figure WITHOUT saving the session; the sessions on disk are untouched.">New session</button>
     </div>
     <h2>Requests</h2>
     <ul id="turns" class="turns"></ul>
@@ -719,6 +721,34 @@ details.tool summary strong { color: var(--accent-strong); }
     });
     byId('clearBtn').addEventListener('click', clearAll);
     byId('themeBtn').addEventListener('click', toggleTheme);
+    // The clean slate: the `new_session` the agent dispatches, asked of
+    // the core by its same name on `/api/tool` -- `closeAll` under the
+    // hood, nothing saved. A gesture that closes every figure without
+    // leaving a session behind is asked once, by name, before it runs.
+    byId('newSessionBtn').addEventListener('click', function () {
+      if (!confirm('Start a new session? This closes every case view and '
+                   + 'every figure WITHOUT saving the session. The '
+                   + 'sessions on disk are untouched.')) return;
+      appendLine('→ new_session()');
+      fetch('/api/tool', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'new_session', args: {} }),
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; });
+      }).then(function (j) {
+        if (j.error) {
+          appendLine('  ← REFUSAL — ' + j.error, 'refusal');
+          return;
+        }
+        var res = j.result || {};
+        appendLine('  ← new session: ' + (res.closed || 0)
+          + ' window(s) closed, nothing saved'
+          + (res.note ? ' — ' + res.note : ''));
+        clearAll();
+      }).catch(function (e) {
+        appendLine('REFUSAL — ' + e, 'refusal');
+      });
+    });
 
     // The lightbox closes on the ground it paints and on Esc, not on the
     // picture itself -- clicking a picture is the way to open it.

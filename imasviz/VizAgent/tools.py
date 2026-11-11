@@ -530,6 +530,20 @@ TOOLS = [
         }, 'additionalProperties': False},
     ),
     _tool(
+        'new_session',
+        'One clean session, WITHOUT saving: every case view and every '
+        'figure of this session is closed, and nothing is written -- '
+        'the sessions the user saved on disk (`last_session` and the '
+        'saved ones) are untouched, and the reports stay. Use it when '
+        'the user asks for a "nouvelle session"/"clean slate": the '
+        'figures they drew are the ones this gesture loses, and it '
+        'answers by name how many it closed. It is the *New session* '
+        'of the application\'s *File* menu, asked the way the page '
+        'asks it.',
+        {'type': 'object', 'properties': {},
+         'required': [], 'additionalProperties': False},
+    ),
+    _tool(
         'list_sessions',
         'The sessions the configuration folder holds (the .vsess files '
         'next to the plot and selection configurations), as the '
