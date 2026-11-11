@@ -147,6 +147,23 @@ def test_the_page_offers_the_clean_slate(qapp):
     assert re.search(r"newSessionBtn',\s*\{[^}]*name", page) or \
         'new_session' in page, \
         'the button must ask the core for the new_session gesture'
-    assert re.search(r'confirm\(', page), \
-        'a new session closes every figure without saving: the page ' \
-        'must ask once, by name, before it does'
+
+    # The handler of the button. A `confirm` its browser blocks (kiosk,
+    # popup blocker) comes back false with no dialog and no word: a
+    # handler that wrote nothing before it was its user's click never
+    # happening. So the ask is on the transcript first, a refusal is
+    # named where the user reads it, and a browser without `confirm`
+    # proceeds and says it could not have asked.
+    head = page.index("byId('newSessionBtn')")
+    handler = page[head:page.index('// The lightbox', head)]
+    ask = handler.index('appendLine(')
+    dialog = handler.index('confirm(')
+    assert ask < dialog, \
+        'the click must write the ask before it can be refused: a ' \
+        'blocked `confirm` is a click that did not happen to the ' \
+        'user'
+    assert 'catch' in handler, \
+        'a browser without `confirm` is not a refusal: the handler ' \
+        'must name a browser that cannot ask and proceed'
+    assert 'abandoned' in handler, \
+        'a refused confirm must be named, not a silence'
