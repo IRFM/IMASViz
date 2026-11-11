@@ -477,6 +477,58 @@ def test_call_gesture_refuses_an_unknown_parameter_by_name(qapp, tmp_path):
         assert name in out['error']
 
 
+def test_call_gesture_forwarding_the_tensor_addressing(qapp, tmp_path):
+    """The direct-call path the page (and the web_cli) drives --
+    `POST /api/tool`, answered by `callGesture` on the one shared core --
+    forwards the unified schema, not just the legacy spellings.
+
+    This is the surface the field met when it said "soucis avec les traces
+    de signaux multi-axes" : the schema the loop hands the LLM
+    (`test_125`) already names `along`/`indices`, and the core already
+    answers them (`test_124` / `test_132`), so the page's own direct path
+    has to carry them straight through to the core -- `plot_one` and
+    `get_signal`, the draw and the read, the same address. A stand-in core
+    records the kwargs it is asked with, so a surface that drops the
+    address is named here, the way it would be named where the page reads
+    it, instead of a figure and a number that answer two different
+    elements.
+    """
+    uri = CASE_URI
+    path = 'equilibrium.time_slice[0].profiles_1d.pressure'
+    asked = {}
+
+    class AddressingCore(FakeCore):
+        def get_signal(self, uri, path, **kwargs):
+            asked['get_signal'] = kwargs
+            return super().get_signal(uri, path, **kwargs)
+
+        def plot_one(self, uri, path, **kwargs):
+            asked['plot_one'] = kwargs
+            return super().plot_one(uri, path, **kwargs)
+
+    core = AddressingCore()
+    client = Client(LLMClient(endpoint=DEAD_ENDPOINT, model='stub',
+                              timeout=2.0))
+    session = WebSession(app=None, window=FakeWindow(), core=core,
+                         client=client, shots_dir=str(tmp_path / 'shots'),
+                         max_turns=8)
+    for gesture, args in (
+            ('get_signal', {'uri': uri, 'path': path,
+                            'along': 'psi', 'indices': {'psi': 50}}),
+            ('plot_one', {'uri': uri, 'path': path,
+                          'along': 'psi', 'indices': {'psi': 50}})):
+        out = inWorker(lambda g=gesture, a=args: session.callGesture(g, a), qapp)
+        assert out['error'] is None, out.get('error')
+    for gesture in ('get_signal', 'plot_one'):
+        got = asked[gesture]
+        assert got.get('along') == 'psi', (gesture, got)
+        assert got.get('indices') == {'psi': 50}, (gesture, got)
+        # The two legacy halves are not silently defaulted to over the
+        # address the page named: it is the unified schema that reached
+        # the core, whatever the legacy fields say in the schema.
+        assert 'time' not in got or got['time'] is None, (gesture, got)
+
+
 # ------------------------------------------------------------- serialization
 
 def test_one_turn_at_a_time_serialized(qapp, tmp_path):

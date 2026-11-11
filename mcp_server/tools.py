@@ -215,17 +215,63 @@ def buildServer(core, dispatcher, name='imasviz'):
 
     @server.tool(name='plot_one')
     def plot_one(uri: str, path: str, along_time: Optional[bool] = None,
-                 into_figure_key: Optional[str] = None):
+                 into_figure_key: Optional[str] = None,
+                 along: Optional[str] = None,
+                 indices: Optional[dict] = None,
+                 time: Optional[float] = None,
+                 time_interp: Optional[bool] = None):
         """Draw one quantity, into the figure its axes call for.
 
         A curve figure for one axis to draw, a picture window for two.
-        `along_time`: true reads the quantity as a history, false along
-        its own coordinate; `into_figure_key` adds it to an open curve
-        figure instead of opening one. A quantity the read cannot answer
-        is refused with the reason the application names in its log.
+        The address is the one the agent and `get_signal` take, so the
+        figure a reader sees and the numbers a read reports are the same
+        element of the same array: `along` names the axis the quantity
+        runs along (the clock, or one of its own axes, e.g. `psi`), and
+        `indices` pins each OTHER axis at its 0-based index, one entry per
+        nested array of structures (`time_slice`, `profiles_1d`, `ion`, ...)
+        or the leaf's own coordinate. `equilibrium.time_slice[0]
+        .profiles_1d.pressure` is a profile held by the dynamic array, so
+        "le long du temps, un index `psi` de 50" is `along` left out (the
+        clock) and `indices={"psi": 50}` -- not a legacy position.
+        `along_time` and `indices` are the legacy ways of the same ask.
+        `time` pins a profile to one slice of its dynamic time array (by
+        default the nearest; `time_interp=true` the value between the two
+        that bracket it); `time` and the unified schema are refused
+        together, as opposite readings. `into_figure_key` adds it to an
+        open curve figure (a superposition) instead of opening one. A
+        quantity the read cannot answer, or an index past the extent the
+        tree names, is refused with the reason the application names in
+        its log, not a silent 0.
         """
-        return _run(partial(core.plot_one, uri, path,
-                            along_time=along_time,
+        kwargs = {'along_time': along_time,
+                  'into_figure_key': into_figure_key,
+                  'along': along, 'indices': indices,
+                  'time': time}
+        if time_interp is not None:
+            kwargs['time_interp'] = time_interp
+        return _run(partial(core.plot_one, uri, path, **kwargs))
+
+    @server.tool(name='plot_slice')
+    def plot_slice(uri: str, leaf: str, time: float,
+                   occurrence: int = 0,
+                   interpolation: str = 'linear',
+                   into_figure_key: Optional[str] = None):
+        """Draw one 1D-profile leaf at a single time, the value the Access
+        Layer answers at that instant (its own `DBEntry.get_slice`, not a
+        GUI-side lerp).
+
+        The coordinate is the leaf's own (independent of time); the curve
+        is its value at `time`. `interpolation` is `linear` (default),
+        `closest` (the case's nearest slice) or `previous` (the one at or
+        before `time`); a time outside the case's range answers the nearest
+        slice it holds, and the answer names `time_requested` and
+        `time_slice_time` apart. `into_figure_key` adds the profile to an
+        open figure (a superposition of slices) instead of opening one.
+        Not a 2D-pictorial leaf, nor a 0D scalar.
+        """
+        return _run(partial(core.plot_slice, uri, leaf, time,
+                            occurrence=occurrence,
+                            interpolation=interpolation,
                             into_figure_key=into_figure_key))
 
     @server.tool(name='plot_selection')
@@ -263,18 +309,26 @@ def buildServer(core, dispatcher, name='imasviz'):
     def get_signal(uri: str, path: str,
                    as_function_of_time: Optional[bool] = None,
                    coordinate_index: int = 0,
-                   time_index: Optional[int] = None):
+                   time_index: Optional[int] = None,
+                   along: Optional[str] = None,
+                   indices: Optional[dict] = None):
         """The values the tree read gives for one leaf, as JSON.
 
-        The same read the plots use: the coordinate and value arrays of
-        a slice, or the named coordinates and values of a taller
-        quantity. `as_function_of_time` true reads it along the clock,
-        false along its own axis.
+        The same read the plots use, so what a figure of it draws and
+        what this reports are the same element of the same array: `along`
+        names the axis the quantity runs along (the clock by default, or
+        one of its own axes, e.g. `psi`), and `indices` pins each other
+        axis at its 0-based index (the shared schema of `plot_one`).
+        `as_function_of_time`, `coordinate_index` and `time_index` are
+        the legacy spellings of the same address. A word no axis answers,
+        or an index past the extent the tree names, is refused with the
+        reason the application names, not a silent 0.
         """
         return _run(partial(core.get_signal, uri, path,
                             as_function_of_time=as_function_of_time,
                             coordinate_index=coordinate_index,
-                            time_index=time_index))
+                            time_index=time_index,
+                            along=along, indices=indices))
 
     # -------------------------------------------------------------- windows
 
