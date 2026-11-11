@@ -223,7 +223,12 @@ def test_new_session_clears_the_loop_memory(qapp):
         {'role': 'assistant', 'content': 'Plotted on Plot1, and piled '
                                          'psi=10 and psi=50 onto it'},
     ]
-    loop._dispatch('new_session', {})
+    # The user's own gesture (the page's New-session button, or a "new
+    # session" the request names): `requested_by='user'` is the ask, so
+    # the destructive guard stands aside and the reset runs. `test_135`
+    # pins the model's unasked new_session the other way (refused, memory
+    # kept); this one keeps the clean-slate half the reset was owed.
+    loop._dispatch('new_session', {}, requested_by='user')
     assert loop.history == [], \
         'a new session is a clean slate for the loop too: it still held ' \
         'the turns it served before the reset (%r), and the next turn ' \

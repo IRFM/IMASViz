@@ -54,6 +54,37 @@ _DEFLLECTION_MARKERS = (
     'je ne sais pas quoi faire',
 )
 
+# The three gestures that erase bookkeeping: a figure, a case and its
+# own figures, or the whole session. The loop runs one of them only
+# when the user's own request asks for it, or when the caller IS the
+# user (the page's button, `requested_by='user'`) -- `_dispatch` asks
+# the question, and it is the one choke point both callers reach.
+DESTRUCTIVE_GESTURES = ('close_window', 'close_case', 'new_session')
+
+# A word (or pair) the user's request carries when it asks for one of
+# them, in either language. Kept narrow on purpose: a gesture that
+# erases a figure is refused by a prompt that does not name it, and a
+# word that is a normal request word ("fresh data", "remove the noise")
+# is not what this gate is for.
+_CLOSURE_WORDS = (
+    'close', 'ferm', 'suppr', 'delete',
+    'new session', 'nouvelle session',
+    'reset', 'réinitialis', 'reinitialis',
+    'restart', 'recommenc', 'nettoy', 'wipe', 'purge',
+)
+
+
+def _userAskedForAClosure(user_prompt):
+    """Whether the user's own request asks for a close or a reset.
+
+    Asked is carried by the user's words, not by the model's intent:
+    the same call the model reaches for on a "trace la pression" is
+    the ask for the "ferme Plot2" that names the figure it erases.
+    """
+    text = (user_prompt or '').lower()
+    return any(word in text for word in _CLOSURE_WORDS)
+
+
 # The loop's own surface: the tool names the model quotes to point the user
 # at a gesture (restore_session in `restore_session(name="from_web")`)
 # are the agent's own vocabulary, not names it recites from the case.
@@ -221,7 +252,8 @@ class AgentLoop(QObject):
                         name, json.dumps(args)[:80]))
                     try:
                         result = self.dispatcher.call(
-                            lambda n=name, a=args: self._dispatch(n, a))
+                            lambda n=name, a=args: self._dispatch(
+                                n, a, user_prompt=user_prompt))
                         summary = _summarize(result)
                         self.transcriptLine.emit(
                             '  ← %s: %s' % (name, summary))
@@ -420,7 +452,36 @@ class AgentLoop(QObject):
             'answer only from what those calls return. '
             'The request was: "%s".' % user_prompt)
 
-    def _dispatch(self, name, args):
+    def _destructiveRefusal(self, name, user_prompt):
+        """The named refusal a destructive gesture receives on a request
+        that does not ask for it.
+
+        The rule the model sees, in the shape ``test_115``'s refusals
+        wear: who is refused (the gesture, by name), what it costs
+        (the figure, the case and its own figures, or the whole session),
+        that the refusal did not run the gesture (the same thing the user
+        sees on screen still stands), and the one word that unblocks it
+        (an ask in the user's own words, either language). The field
+        report it answers: a figure that "created and then disappears"
+        -- a close the model ran, on a request that did not name one.
+        """
+        taken = {
+            'close_window': 'the figure it names',
+            'close_case': 'the case it names and the figures that serve '
+                          'it alone',
+            'new_session': 'every case of the session and every figure',
+        }[name]
+        return (
+            'the %s gesture takes %s away for good, and this request '
+            'does not ask for it: "%s" names no figure or case to close '
+            'and no reset. A figure is gone when it is closed -- a close '
+            'is asked for, not taken. Nothing was closed by this call: '
+            'the window and the session still stand. Run it only once '
+            'the user asks for it in their own words ("close Plot5", '
+            '"ferme la figure", "nouvelle session"), and answer from '
+            'what that call returns.' % (name, taken, user_prompt))
+
+    def _dispatch(self, name, args, requested_by='model', user_prompt=''):
         """Run one tool by name on the calling thread (the GUI thread,
         when reached through ``GuiDispatcher``).
 
@@ -430,6 +491,17 @@ class AgentLoop(QObject):
         can correct the call. This is what a bare ``TypeError`` from
         Python would not do: it says "unexpected keyword argument", not
         which ones are expected.
+
+        And the destructive ones -- the three that erase bookkeeping,
+        ``close_window`` / ``close_case`` / ``new_session`` -- are asked,
+        not taken: a gesture the MODEL reaches for is refused when the
+        user's request names no figure, case or session to close, no
+        reset. The gesture the USER reaches for (``requested_by='user'``,
+        the page's own button through ``callGesture``) owes no word: the
+        click is the ask. A refusal never runs the gesture -- the figure,
+        the case and the session it names still stand after a refused
+        turn -- and it names the gesture and the rule, in the shape the
+        rest of this file's refusals wear.
         """
         method = getattr(self.core, name, None)
         if method is None:
@@ -443,6 +515,10 @@ class AgentLoop(QObject):
                 '"%s" is not a parameter of the %s tool: it takes %s. '
                 'Answer with the parameters the tool names.'
                 % (unknown[0], name, allowed))
+        if (name in DESTRUCTIVE_GESTURES
+                and requested_by == 'model'
+                and not _userAskedForAClosure(user_prompt)):
+            raise ValueError(self._destructiveRefusal(name, user_prompt))
         self.gestureIssued.emit(name, args or {})
         result = method(**args)
         if name == 'new_session':

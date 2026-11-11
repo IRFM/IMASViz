@@ -397,12 +397,22 @@ class WebSession:
         value the page prints -- which is what `test_116`/`test_117` pin
         on the loop, and what this path inherits because it runs the same
         method.
+
+        And this is the USER's own gesture: the caller is the person on
+        the other side of the button, not a model deciding its turn, so
+        it reaches `_dispatch` as `requested_by='user'`. The loop's own
+        destructive gesture (`close_window`, `close_case`, `new_session`)
+        is asked-for-not-taken: the model does not close a figure, a case
+        or a session on a request that does not name one, and a `test_135`
+        that runs this path pins the button is never refused for a word
+        it does not have to give.
         """
         with self._lock:
             try:
                 return {'error': None,
                         'result': self.dispatcher.call(
-                            lambda: self.agent._dispatch(name, args or {}))}
+                            lambda: self.agent._dispatch(
+                                name, args or {}, requested_by='user'))}
             except Exception as e:
                 return {'error': str(e), 'result': None}
 
