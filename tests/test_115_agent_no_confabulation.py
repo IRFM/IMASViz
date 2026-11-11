@@ -64,6 +64,12 @@ class FakeCore:
         return self._HELD
     def list_cases(self):
         return [{'uri': 'imas:hdf5?path=/fake', 'dd_version': '3.35.0'}]
+    # A small, fixed array: the read the agent is sent back to call once its
+    # fabricated profile is refused, so the re-anchored-and-grounded flow has
+    # a real (if small) answer to stand on.
+    def get_signal(self, uri, path, **kwargs):
+        return {'x': [1.0, 2.0, 3.0], 'y': [10.0, 20.0, 30.0],
+                'samples': 3}
 
 
 class FakeDispatcher:
@@ -146,20 +152,74 @@ def _ask(agent, prompt):
     return ' '.join(lines), errors
 
 
-def test_an_unfounded_inventory_is_refused(qapp, agent_kwargs):
-    """The farfelus 13-name table, no case tool called: the refusal is named
-    and points at the call that would ground the list."""
+def test_a_persistent_fabrication_is_refused_after_one_reanchor(qapp,
+                                                                agent_kwargs):
+    """The farfelus 13-name table, no tool called. The verrou hands the model
+    back once (the named refusal + the instruction to ground it with a tool);
+    it fabricates the same shape a second time, and THAT is the named
+    refusal it ends on -- naming the tool that would ground the list, never
+    the list itself."""
     llm = FakeLLMClient([
+        LLMResponse(content=CONFABULATED, tool_calls=None,
+                    finish_reason='stop'),
         LLMResponse(content=CONFABULATED, tool_calls=None,
                     finish_reason='stop'),
     ])
     agent = AgentLoop(core=FakeCore(), llm=llm,
                       dispatcher=FakeDispatcher(), **agent_kwargs)
     joined, errors = _ask(agent, 'what ids are in this case?')
-    assert errors and errors[0] is not None, 'an unfounded list must be refused'
-    assert 'REFUSAL' in joined
+    assert errors and errors[0] is not None, \
+        'an unfounded list must end in a named refusal'
+    assert joined.count('REFUSAL') >= 2, \
+        'the one re-anchor and the final refusal are each named'
     assert 'list_case_idss' in errors[0], 'the refusal names the grounding tool'
     assert 'bpol_probe' not in errors[0], 'the refusal is not the list itself'
+
+
+def test_a_fabricated_profile_is_reanchored_then_answered_from_the_read(
+        qapp, agent_kwargs):
+    """The exact field repro: asked for the pressure at several psi along
+    time, the model answered with a made-up figure and peak values without a
+    single read or draw. The verrou does not let that stand as the answer:
+    it names the fabrication and hands the model back to actually read the
+    arrays; the model calls ``get_signal``, and the resulting tool-grounded
+    answer -- not the fabricated table -- is what reaches the user."""
+    fabricated = (
+        'Les trois courbes sont tracées sur la même figure (figure Plot4) : '
+        'pressure le long du temps, figée à psi = 10, psi = 20 et psi = 30.\n'
+        '\n'
+        '| psi | pic max |\n'
+        '|---|---|\n'
+        '| 10 | ~41 096 Pa |\n'
+        '| 20 | ~33 761 Pa |\n'
+        '| 30 | ~27 826 Pa |\n')
+    grounded = ('D''après la lecture : profil pressure à psi=10, '
+                'x=[1.0, 2.0, 3.0], y=[10.0, 20.0, 30.0], max 30.0, '
+                '3 échantillons.')
+    llm = FakeLLMClient([
+        LLMResponse(content=fabricated, tool_calls=None,
+                    finish_reason='stop'),
+        LLMResponse(content='', finish_reason='tool_calls', tool_calls=[
+            {'name': 'get_signal',
+             'args': {'uri': 'imas:hdf5?path=/fake',
+                      'path': 'equilibrium.time_slice[0].profiles_1d.pressure',
+                      'along': 'time', 'indices': {'psi': 10}}},
+        ]),
+        LLMResponse(content=grounded, tool_calls=None,
+                    finish_reason='stop'),
+    ])
+    agent = AgentLoop(core=FakeCore(), llm=llm,
+                      dispatcher=FakeDispatcher(), **agent_kwargs)
+    joined, errors = _ask(agent,
+                          'trace pressure en fonction du temps pour psi=10,20,30')
+    assert errors == [None], \
+        'a re-anchored, tool-grounded answer must stand and reach the user'
+    assert 'REFUSAL' in joined, \
+        'the fabrication is named before the work is done'
+    assert 'get_signal' in joined, \
+        'the grounding read is the call the re-anchor sent the model to'
+    assert '41 096' not in joined.split('get_signal')[-1], \
+        'the fabricated figure is not repeated as the grounded answer'
 
 
 def test_a_list_of_identifiers_is_refused_without_a_tool(qapp, agent_kwargs):
@@ -273,11 +333,18 @@ def test_an_inventory_named_by_plain_words_is_still_refused(qapp, agent_kwargs):
 
 
 def test_the_refusal_points_at_the_grounding_tools(qapp, agent_kwargs):
-    """The refusal names the call that grounds each list it could be:
-    the case's IDS and the saved sessions, not the case alone -- the old
-    words sent the model to list_case_idss for what may be a list of
-    sessions, a repair that answers the other question."""
+    """The final refusal names the call that grounds each shape it could be:
+    the case's IDS and the saved sessions -- and, since a fabricated answer is
+    just as often a figure and its value table, the read that grounds a
+    profile (``get_signal``) and the draw that shows its curve
+    (``plot_one``). Two fabrications, so the refusal named is the one it
+    ends on, not the re-anchor. The old words sent the model to
+    list_case_idss for what may be a list of sessions, a repair that
+    answers the other question; the draw/read grounding is added for the
+    same reason."""
     llm = FakeLLMClient([
+        LLMResponse(content=CONFABULATED, tool_calls=None,
+                    finish_reason='stop'),
         LLMResponse(content=CONFABULATED, tool_calls=None,
                     finish_reason='stop'),
     ])
@@ -288,3 +355,5 @@ def test_the_refusal_points_at_the_grounding_tools(qapp, agent_kwargs):
     assert 'list_case_idss' in errors[0]
     assert 'list_idss' in errors[0]
     assert 'list_sessions' in errors[0]
+    assert 'get_signal' in errors[0], 'a figure claim is grounded by the read'
+    assert 'plot_one' in errors[0], 'a curve is shown by the draw tool'
