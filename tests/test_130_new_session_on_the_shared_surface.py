@@ -18,6 +18,21 @@ gesture the loop dispatches (`new_session`) and the page acts on
 by name what it closes, without writing a single session file: "nettoyer
 une session sans la sauvegarder" is the contract, and a refusal of a
 name the core does not answer is the one `test_116` pins for the loop.
+
+And a *new session* is a clean slate for the **loop's own memory** too,
+not just for the core's state. The core closes every case view and figure
+(this file), but the `AgentLoop` holds a conversation list
+(`agent.history`) that outlives the core it served -- and before this
+fix `new_session` never reached that list. The field repro: after a new
+session, the model *remembers* the old case (26 IDS, 3368 signaux of
+the case it served, the figure keys it drew) and recites them on the
+next turn. The `_unfoundedIdsRefusal` guard
+(`tests/test_115_agent_no_confabulation.py`) catches a bare recital like
+that and forces a real `list_cases` (which then answers `[]`), and the
+model self-corrects -- the transcript the user saw. The same desync is
+why a subsequent drawing ask may not produce a figure: a model that
+believes it already drew the profiles does not re-issue `plot_one`, or
+it targets `into_figure_key` values that `new_session` already closed.
 """
 
 import os
@@ -167,3 +182,49 @@ def test_the_page_offers_the_clean_slate(qapp):
         'must name a browser that cannot ask and proceed'
     assert 'abandoned' in handler, \
         'a refused confirm must be named, not a silence'
+
+
+def test_new_session_clears_the_loop_memory(qapp):
+    """A *new session* the loop dispatched is a clean slate for the loop
+    too, not just for the core.
+
+    The core closes every case view and figure (the test above), but the
+    conversation list the loop holds (`AgentLoop.history`) is separate
+    state, and a loop that still carried the turns it served before the
+    reset recites them on the next one -- the field report: "is a case
+    open?" answered from memory with the old case's case view and 3368
+    signaux, the `_unfoundedIdsRefusal` guard then forcing a real
+    `list_cases` (which answers `[]`) and the model correcting itself.
+    And on the figure side the same desync: a model that believes it
+    already drew the profiles does not re-issue `plot_one`, so "aucune
+    figure n'apparait" after a new session.
+
+    `AgentLoop._dispatch` is the one choke point both entry paths pass
+    through -- the page's New session button
+    (`WebSession.callGesture` -> `agent._dispatch`) and the agent's own
+    tool call (`AgentLoop._run` -> `self._dispatch`) -- so the reset lives
+    there, and only after the core has answered the reset itself: a
+    `new_session` the core refuses is not a clean slate the memory may be
+    cleared for.
+    """
+    from imasviz.VizAgent.agent import AgentLoop
+
+    class Core:
+        def new_session(self):
+            return {'closed': 0, 'saved_to': None}
+
+    loop = AgentLoop(core=Core(), llm=object(), dispatcher=object(),
+                     main_window=None, api=None)
+    # The turns the loop served before the reset: a case it opened, a
+    # figure it drew. What the next turn must NOT still be able to recite.
+    loop.history = [
+        {'role': 'user', 'content': 'trace the pressure profile, several '
+                                    'psi slices'},
+        {'role': 'assistant', 'content': 'Plotted on Plot1, and piled '
+                                         'psi=10 and psi=50 onto it'},
+    ]
+    loop._dispatch('new_session', {})
+    assert loop.history == [], \
+        'a new session is a clean slate for the loop too: it still held ' \
+        'the turns it served before the reset (%r), and the next turn ' \
+        'would recite the case and figures off that memory' % loop.history

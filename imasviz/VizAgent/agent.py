@@ -444,7 +444,21 @@ class AgentLoop(QObject):
                 'Answer with the parameters the tool names.'
                 % (unknown[0], name, allowed))
         self.gestureIssued.emit(name, args or {})
-        return method(**args)
+        result = method(**args)
+        if name == 'new_session':
+            # A new session is a clean slate for the loop's own memory too,
+            # not just for the core it closed. The core answered the reset
+            # (every case view and figure gone); a loop that still carried
+            # the turns it served would recite them on the next one -- the
+            # "is a case open?" answered from memory that the field sent
+            # back, and the missing figures after (a model that believes it
+            # already drew a curve does not re-issue plot_one). This is the
+            # one choke point both the page's New session button and the
+            # agent's own new_session call pass through, so the reset lives
+            # here and only after the core answered it: a new_session the
+            # core refused never clears the memory.
+            self.history = []
+        return result
 
 
 def _bareNames(text):
