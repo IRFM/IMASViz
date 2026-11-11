@@ -239,6 +239,25 @@ C'est l'équivalent du « Plot4 » qui n'a jamais existé : le mode a tracé
 `psi=0/50/10` sur des figures `Plot1/2/3` distinctes, et ce n'est **pas** la même
 figure `Plot4` qu'il a ensuite nommé comme si elle existait.
 
+### 6.4 Fermer est une **demande**, pas une action
+
+Les trois gestes qui effacent du bookkeeping — `close_window` (une
+figure), `close_case` (un cas et ses figures qui ne servent que lui),
+`new_session` (tout) — sont **demandés, pas pris**
+(`agent.py::_dispatch`, épinglés par `test_135`) : le modèle ne les pose
+que si **ton message du tour** le demande — « ferme Plot5 », « close the
+figure », « referme le cas », « nouvelle session », « reset », « nettoie
+la session »… (français et anglais, les deux sont lus). S'il les pose sur
+un tour qui ne les demande pas, c'est un refus nommé, l'outil ne s'exécute
+**pas**, et la figure / le cas / la session restent debout — la réponse
+dit alors expressément que rien n'a été fermé. C'est la voie par laquelle
+une figure présentait « puis disparaissait » sans que tu aies demandé à
+fermer quoi que ce soit : le mode fermait, la figure n'était plus dans
+`list_windows`, et le modèle le constatait sans l'avoir demandé. Si le
+refus te semble trop large sur un mot que tu emploies naturellement
+(« close to 10% », « refresh »…), dis-le : la liste des mots qui comptent
+(`agent.py::_CLOSURE_WORDS`, FR/EN) se règle en conséquence.
+
 ---
 
 ## 7. « Après quelques tours, les captures ne s'affichent plus »
