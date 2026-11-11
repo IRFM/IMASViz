@@ -261,15 +261,29 @@ class WebSession:
         and the `({'name', 'window'})` pairs the record keeps for the
         page's buttons.
         """
-        from mcp_server.agent_mode import (_settleWindow, requestedCaptures,
-                                           saveShots)
+        from mcp_server.agent_mode import (requestedCaptures, saveShots)
 
         number = len(self.turns) + 1
         turn_dir = os.path.join(
             self.shots_dir,
             '%02d_%s' % (number, time.strftime('%Y%m%d-%H%M%S')))
-        if self.app is not None and self.window is not None:
-            _settleWindow(self.window, self.app)
+        if self.app is not None:
+            # Settle the event queue, without hiding the application.
+            # This session stays open for the next turn, and its
+            # `show_window` / `focus_window` have to be able to bring a
+            # figure back forward: a sub-window whose top-level was
+            # hidden is not a sub-window that can be shown again -- it
+            # answers `visible: false` to every `show()` (measured:
+            # after one turn every figure of the session answered
+            # `visible: false`, and `show_window` / `focus_window`
+            # repeated the same answer to every retry). The hide at
+            # the end is the one for a process that is leaving -- the
+            # one-shot agent mode and the exit paths of the server and
+            # the REPL (`_settleWindow`) -- not the one a turn of a
+            # session that stays open earns.
+            drain = getattr(self.app, 'processEvents', None)
+            if callable(drain):
+                drain()
         extras, askedFigures = requestedCaptures(requested_windows)
         figureKeysNow = {record['key']
                          for record in self.core.list_windows()
