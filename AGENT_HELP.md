@@ -76,9 +76,19 @@ La feuille a une coordonnée (`psi`) :
 ```text
 "trace la pression en fonction de psi"
 ```
-→ `plot_one(uri, path, along="psi")`. L'agent s'adresse à l'axe par son **nom** ;
-c'est le resolver (`axesAddressing` / `QVizAxesSpec`) qui décide quelle abscisse on
-tient, et qui refuse (en nommant les axes) un mot qu'aucun axe ne répond.
+→ `plot_one(uri, path, along="psi")` **et** `get_signal(uri, path, along="psi")`.
+L'agent s'adresse à l'axe par son **nom** ; c'est le resolver (`axesAddressing` /
+`QVizAxesSpec`) qui décide quelle abscisse on tient, et qui refuse (en nommant les
+axes) un mot qu'aucun axe ne répond.
+
+Sur `equilibrium.time_slice[0].profiles_1d.pressure`, c'est **la même moitié** pour
+le tracer et pour le lire : `along="psi"` donne une courbe de **101 échantillons**
+dont `x` court sur la coordonnée de la feuille (x≈-7,97…-7,78), **pas** les **49**
+échantillons / ~16,4 s qu'on obtient le long du temps. Avant la correction ce même
+appel était refusé *après* qu'une figure vide avait été ouverte (un « Plot2 » qui
+restait dans `figureframes`, sa clé consommée, la figure suivante numérotée au-dessus
+du trou) — `test_134` l'épingle ; aujourd'hui `along="psi"` se trace comme
+il se lit.
 
 ### 3.3 Un slice à un instant donné
 
@@ -233,9 +243,22 @@ figure `Plot4` qu'il a ensuite nommé comme si elle existait.
 
 ## 7. « Après quelques tours, les captures ne s'affichent plus »
 
-Ce n'est **pas** un bug du core — c'est le mental model de la surface web. Ce que
-`viz_web` fait, et ce qu'il faut lui demander pour avoir des images :
+Deux causes se sont mêlées dans le cas du field : il y avait **un vrai défaut**
+du core (un refus coûtait une fenêtre vide et un numéro — corrigé, plus bas),
+et **le mental model** de la surface web (une figure est un fait par tour).
+Ce que `viz_web` fait, et ce qu'il faut lui demander pour avoir des images :
 
+- **Une cause réelle est corrigée et épinglée par `test_134`.** Avant,
+  « pressure en fonction de psi » sur `equilibrium.time_slice[0]…` était
+  **refusé** *après* qu'une figure vide avait été ouverte : `list_windows`
+  nommait cette figure `visible`, sa cle était consommée (la figure suivante
+  était numérotée au-dessus du trou), puis le collecteur la recueillait
+  (« released from the bookkeeping ») — d'où « Plot2/Plot3 créées puis
+  disparues ». Maintenant, `along='psi'` sur un membre designé par son chemin
+  **se trace** (101 échantillons, x sur la coordonnée de la feuille), un refus
+  ne coûte **ni** fenêtre **ni** numéro, et `get_signal` avec la même adresse
+  répond la même courbe — la figure qu'on *voit* et le nombre qu'on *lit*
+  sont le même élément.
 - **Une figure est capturée dans le tour qui la trace.** `viz_web/web_session.py`
   (`_finishTurn`) sauve les figures que le tour **ajoute** à la session — les images
   d'un tour ne sont pas répétées dans le tour suivant. C'est voulu : un tour qui ne
