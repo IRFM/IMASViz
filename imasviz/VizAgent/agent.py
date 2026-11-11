@@ -244,6 +244,23 @@ class AgentLoop(QObject):
             # --- Final answer -----------------------------------------------
             if not called_a_tool:
                 refusal = self._unfoundedIdsRefusal(response.content)
+                if refusal is not None and self._reanchors == 0:
+                    # The repro (a field run): a made-up figure and its value
+                    # table -- no draw or read tool called this request --
+                    # surfaced as *the* answer, a refusal bolted on after the
+                    # fact. The work the user asked for (a plotted profile)
+                    # was never done, so a refusal note does not fix it. Name
+                    # it, and hand the model back once with the instruction to
+                    # actually call get_signal / plot_one and answer only
+                    # from what those return. A second fabrication of the same
+                    # shape still falls to the named refusal below.
+                    self._reanchors += 1
+                    self.transcriptLine.emit('REFUSAL: %s' % refusal)
+                    messages.append({
+                        'role': 'user',
+                        'content': self._groundReanchor(user_prompt),
+                    })
+                    continue
             else:
                 # The tools ran. An answer that says none of it happened and
                 # hands the request back to the user does not stand on top of
@@ -335,12 +352,15 @@ class AgentLoop(QObject):
         if len(names) < 3 and len(table_rows) < 3:
             return None
         return (
-            'your answer presents a list of names, but no tool was called '
-            'this request to ground it; a list you recite is not the '
+            'your answer presents a list of names, or a figure and a '
+            'table of values, but no tool was called this request to '
+            'ground it; a list, curve or number you recite is not the '
             'truth of this session. Ground it: the case\'s IDS with '
             'list_case_idss(uri) or list_idss(uri), the saved sessions '
-            'with list_sessions() -- and answer only from what that call '
-            'returns.')
+            'with list_sessions(), the profile\'s arrays with '
+            'get_signal(uri, path, ...) -- and show its curve with '
+            'plot_one(uri, path, ...) -- and answer only from what those '
+            'calls return.')
 
     def _deflectionRefusal(self, content, last_action):
         """A final answer, after a successful tool, that gives the work back
@@ -376,6 +396,29 @@ class AgentLoop(QObject):
             'grounded in what those tools returned. Do not ask the user to '
             'restate the request, and do not say nothing was done when it '
             'was.' % (last_action, user_prompt))
+
+    def _groundReanchor(self, user_prompt):
+        """The one message the loop appends when an answer presented a list,
+        figure or value table on the strength of no tool call this request.
+
+        This is the confabulation branch of ``ask``: the work behind the
+        claim was never done. The instruction is to *do* it -- read the
+        arrays with ``get_signal``, draw the figure with ``plot_one`` --
+        and answer only from what those calls return, so the next turn is
+        either a real, tool-grounded answer or a repeated fabrication that
+        the named refusal below finally turns away.
+        """
+        return (
+            'Your last answer presented a list, a figure, or a table of '
+            'values, but this request called no tool to ground any of it. '
+            'A figure or number you recite is not the truth of this '
+            'session, and answering again in the same shape will be '
+            'refused. Do the work instead: read the arrays with '
+            'get_signal(uri, path, ...) and, where a curve is owed, draw '
+            'it with plot_one(uri, path, ...) -- piling further slices of '
+            'the same quantity onto one figure with into_figure_key -- and '
+            'answer only from what those calls return. '
+            'The request was: "%s".' % user_prompt)
 
     def _dispatch(self, name, args):
         """Run one tool by name on the calling thread (the GUI thread,
