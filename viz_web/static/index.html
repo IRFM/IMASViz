@@ -518,7 +518,14 @@ details.tool summary strong { color: var(--accent-strong); }
     if (!windows || !windows.length) return;
     var empty = wrap.querySelector('.empty');
     if (empty) empty.remove();
-    wrap.insertBefore(turnGroup(turn, prompt, windows), wrap.firstChild);
+    // A picture the request just drew is opened on arrival: a group
+    // that stays closed after its own turn is the "aucune figure ne
+    // s'affiche" the user reported -- the capture is on disk and the
+    // agent names it, and the wall does not. The ones put back by
+    // `buildGallery` stay closed under their name.
+    var group = turnGroup(turn, prompt, windows);
+    group.open = true;
+    wrap.insertBefore(group, wrap.firstChild);
   }
 
   function galleryEmpty() {

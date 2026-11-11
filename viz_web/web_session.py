@@ -29,7 +29,9 @@ dispatcher exists for.
 """
 
 import base64
+import json
 import os
+import re
 import threading
 import time
 
@@ -55,6 +57,61 @@ class WebSession:
     which a worker of the loop or the page is.
     """
 
+    # The subset of a turn's record that reaches the disk: the fields
+    # the page renders and the routes serve. Never the base64 the live
+    # stream hands over (big) and never the transcript twice
+    # (`transcript.txt` already holds it) -- and the one a turn that
+    # comes back on a restart reads is the same subset, so the page
+    # sees its captures and addresses the way it did on the run that
+    # drew them.
+    PERSISTED_KEYS = ('n', 'prompt', 'error', 'refusals',
+                      'image_files', 'image_windows', 'reports', 'dir')
+
+    @staticmethod
+    def recordsFromDisk(shots_dir):
+        """The records the captures directory holds, oldest first.
+
+        A directory that holds no `turn.json` is one the run that wrote
+        it predates the record (or one a test made by hand): its `n`
+        comes from the number the directory name leads with, and its
+        pictures the PNGs it holds -- an address the shot route can
+        serve and the gallery re-builds from. The name of the picture
+        carries the window it shows, because that is how a PNG without
+        a record can still be acted on (`Plot1.png` -> `Plot1`).
+        """
+        records = []
+        if not os.path.isdir(shots_dir):
+            return records
+        for entry in sorted(os.listdir(shots_dir)):
+            match = re.match(r'^(\d+)_', entry)
+            if not match:
+                continue
+            directory = os.path.join(shots_dir, entry)
+            if not os.path.isdir(directory):
+                continue
+            number = int(match.group(1))
+            record = None
+            path = os.path.join(directory, 'turn.json')
+            if os.path.isfile(path):
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        record = json.load(f)
+                except (OSError, ValueError):
+                    record = None
+            if record is None:
+                images = sorted(name for name in os.listdir(directory)
+                                if name.endswith('.png'))
+                record = {'n': number, 'prompt': '', 'error': None,
+                          'refusals': [], 'image_files': images,
+                          'image_windows': [{'name': name,
+                                             'window': name[:-4]}
+                                            for name in images],
+                          'reports': [], 'dir': directory}
+            record['dir'] = os.path.abspath(directory)
+            records.append(record)
+        records.sort(key=lambda record: record['n'])
+        return records
+
     def __init__(self, app, window, core, client, shots_dir, max_turns=12):
         from mcp_server.agent_mode import _apiOf
 
@@ -69,7 +126,11 @@ class WebSession:
         self.agent = AgentLoop(core, client, self.dispatcher,
                                main_window=window, api=_apiOf(window))
         self.prompts = []
-        self.turns = []
+        # The turns the captured directory holds, oldest first: a
+        # restart of the process keeps the captures and the list that
+        # names them. The one this process draws continues the numbering
+        # where the ones on disk stop.
+        self.turns = self.recordsFromDisk(self.shots_dir)
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------ turns
@@ -234,6 +295,13 @@ class WebSession:
                       'reports': sorted(self.reportsOnDisk() - before_reports),
                       'dir': turn_dir}
             self.turns.append(record)
+            # The record stays on disk beside its PNGs, the subset
+            # `recordsFromDisk` reads back: a server that restarts between
+            # turns answers its earlier turns from the folder instead of
+            # an empty list while its captures sit there.
+            with open(os.path.join(record['dir'], 'turn.json'), 'w',
+                      encoding='utf-8') as f:
+                json.dump({k: record.get(k) for k in self.PERSISTED_KEYS}, f)
             return record
 
     def _finishTurn(self, lines, requested_windows=(),
