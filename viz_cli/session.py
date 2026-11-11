@@ -126,9 +126,20 @@ class CliSession:
             # PNG this prompt saves -- so a focus of a figure or of `app`
             # is a capture ask too, keeping to one file the way a focus
             # and the screenshot of the same window deduplicate below.
+            # The same rule stands for `plot_one` with `into_figure_key`
+            # set: the agent drew onto a figure it already held, so the
+            # delta `figure_keys_now - figure_keys_before` is empty (the
+            # key was in both), and without this the transcript would
+            # "en parler" while the PNG never lands -- the same "je ne
+            # vois plus les autres figures" case. The redraw names its
+            # target, and it is the capture ask.
             if name in ('get_screenshot', 'focus_window'):
                 requested_windows.append(
                     (args or {}).get('window', 'app'))
+            elif name == 'plot_one':
+                key = (args or {}).get('into_figure_key')
+                if key and key not in requested_windows:
+                    requested_windows.append(key)
 
         def onDone(error):
             outcome[0] = error

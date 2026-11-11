@@ -158,9 +158,20 @@ class WebSession:
                 # strength of the gesture it named, did not also ask for
                 # the picture: the figure is still one the turn asked for,
                 # and it is kept.
+                # The same rule stands for `plot_one` with `into_figure_key`
+                # set: the agent drew onto a figure it already held, so the
+                # delta `figure_keys_now - figure_keys_before` is empty
+                # (the key was in both), and without this the page would
+                # render nothing for a turn the loop says drew -- the "je
+                # ne vois plus les autres figures" case. The redraw names
+                # its target, and it is the capture ask.
                 if name in ('get_screenshot', 'focus_window'):
                     requested_windows.append(
                         (args or {}).get('window', 'app'))
+                elif name == 'plot_one':
+                    key = (args or {}).get('into_figure_key')
+                    if key and key not in requested_windows:
+                        requested_windows.append(key)
 
             def onDone(error):
                 outcome[0] = error
@@ -250,15 +261,29 @@ class WebSession:
         and the `({'name', 'window'})` pairs the record keeps for the
         page's buttons.
         """
-        from mcp_server.agent_mode import (_settleWindow, requestedCaptures,
-                                           saveShots)
+        from mcp_server.agent_mode import (requestedCaptures, saveShots)
 
         number = len(self.turns) + 1
         turn_dir = os.path.join(
             self.shots_dir,
             '%02d_%s' % (number, time.strftime('%Y%m%d-%H%M%S')))
-        if self.app is not None and self.window is not None:
-            _settleWindow(self.window, self.app)
+        if self.app is not None:
+            # Settle the event queue, without hiding the application.
+            # This session stays open for the next turn, and its
+            # `show_window` / `focus_window` have to be able to bring a
+            # figure back forward: a sub-window whose top-level was
+            # hidden is not a sub-window that can be shown again -- it
+            # answers `visible: false` to every `show()` (measured:
+            # after one turn every figure of the session answered
+            # `visible: false`, and `show_window` / `focus_window`
+            # repeated the same answer to every retry). The hide at
+            # the end is the one for a process that is leaving -- the
+            # one-shot agent mode and the exit paths of the server and
+            # the REPL (`_settleWindow`) -- not the one a turn of a
+            # session that stays open earns.
+            drain = getattr(self.app, 'processEvents', None)
+            if callable(drain):
+                drain()
         extras, askedFigures = requestedCaptures(requested_windows)
         figureKeysNow = {record['key']
                          for record in self.core.list_windows()
