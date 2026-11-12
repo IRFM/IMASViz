@@ -20,12 +20,8 @@ needs the python HLI hosted at https://github.com/iterorganization/IMAS-Python.g
 (the IMAS-Python module, distribution "imas-python").
 
 IMASViz CANNOT run on the generated python HLI hosted at
-ssh://git@git.iter.org/imas/al-python.git (the IMAS-AL-Python module, distribution
-"imas"). Measured on IMAS-AL-Python/5.4.0: that package exports DBEntry, IDSName,
-IDSBase and one module per IDS (imas.equilibrium, imas.tf, ...), and carries no
-metadata reflection API at all — IDSDataType and IDSStructArray appear in none of
-its files. `import imas` succeeds there, so the application says so out loud at
-start-up: which package is in charge, what it lacks, and which module to load. 
+ssh://git@git.iter.org/imas/al-python.git (the IMAS-AL-Python module, distribution that pack
+"imas"). IMAS-AL-Python is deprecated and carries no metadata reflection API at all. 
 
 IMASViz requires the following libraries:
 
@@ -35,16 +31,7 @@ IMASViz requires the following libraries:
    - PySide6 (Qt for Python — the sources import PySide6, not PyQt5)
    - pyqtgraph
    - matplotlib
-   - numpy. The code asks only names that NumPy 1 and NumPy 2 both answer, which is
-     what lets it run on a stack built on either. That is a rule the test suite
-     enforces -- a test walks every source of the package and refuses a name the
-     other generation removed -- and it went unenforced once: the Equilibrium
-     overview plugin asked np.unicode_, NumPy 2 has no such name, and the plugin was
-     refused on a numpy 2 stack with one line in the log panel where its window
-     should have been. What has *not* been verified is a whole run under numpy 2: on
-     the node these sources are tested on that is impossible, because the Access
-     Layer there is compiled against numpy 1 and forcing a numpy 2 makes
-     ``import imas`` die in scipy with a binary incompatibility.
+
    - Sphinx
    (pip3 install sphinx)
    No Sphinx theme is needed: the manual is built on Sphinx's own ``basic``
@@ -65,36 +52,46 @@ To switch to the develop branch:
 
 ### Setting the environment
 
-To set the environment, load the modules providing IMAS, PySide6, pyqtgraph,
-numpy and matplotlib, then go to the **repository root** (the top-level package
+To set the environment, load the modules providing IMAS-Core, IMAS-Python, PySide6, pyqtgraph,
+and matplotlib, then go to the **repository root** (the top-level package
 is **imasviz/**) and set **VIZ_HOME**, **VIZ_PRODUCTION**,
-**IMAS_VIZ_VERSION** and **UDA_DISABLED** environment variables by executing
-the following commands:
+**IMAS_VIZ_VERSION** and **UDA_DISABLED** environment variables.
+
+On the Eurofusion Gateway (EFGW), execute the following commands:
 
     module load ach-modules
+    module load IMAS-Core/5.7.1-intel-2023b
     module load PySide6/6.6.2-GCCcore-13.2.0
-    module load IMAS-Python/2.3.0-foss-2023b
-    module load PyQtGraph/0.13.7-foss-2023b
+    module load IMAS-Python/2.3.0-intel-2023b
+    module load PyQtGraph/0.13.7-intel-2023b
 
     cd IMASViz
 
     # bash
     export VIZ_PRODUCTION=1
     export VIZ_HOME=$PWD
-    export IMAS_VIZ_VERSION=2.3.7
+    export IMAS_VIZ_VERSION=3.0.0
     export UDA_DISABLED=1 #disable UDA
 
     # csh
     setenv VIZ_PRODUCTION 1
     setenv VIZ_HOME $PWD
+    setenv IMAS_VIZ_VERSION=3.0.0
     setenv UDA_DISABLED 1 #disable UDA
 
-The block above names the **foss** HLI. On the **gateway** nodes (whose profile
-pins `SciPy-bundle/2023.12-iimkl`) the foss variant fails to load that
+On EFGW nodes the foss variant fails to load that
 requirement, and what runs is the **intel** HLI instead —
 `IMAS-Python/2.3.0-intel-2023b`, `PyQtGraph/0.13.7-intel-2023b`. See [Starting
 on the Gateway](#starting-from-sources-gateway-iter-hpc-west): the scripts in `scripts/` load that
 stack and set this environment for you.
+
+on ITER cluster, execute the following commands:
+
+    module load IMAS-Core
+    module load IMAS-Python
+    module load PyQtGraph
+    module load matplotlib
+
 
 IMASViz reads the IMAS Data Dictionary at run time through the Access Layer
 Python bindings (imas.ids_metadata), so no parser code is generated any more.
@@ -102,18 +99,14 @@ No dictionary file is needed either: the shot view asks the case it has opened
 which data dictionary version that case is stored with (DBEntry.dd_version) and
 takes the list of IDSs and their documentation from the factory of that version
 (imas.IDSFactory), which the IMAS-Python distribution carries inside its own
-package. A case is opened **at its own version**: an entry left unpinned settles
+package. A data entry (case) is opened **at its own version**: an entry left unpinned settles
 on the newest dictionary the package holds (4.1.1 on the stack above), and the
 Access Layer then reads every IDS of a case written under another major version
 while still listing its contents -- so IMASViz reads the version the URI spells
 (version=3, or the <db>/<data version>/<shot>/<run> of a path case), asks the
 case the exact version its first filled IDS names, and opens the entry there.
 **IMAS_VERSION**, if you export it, is the version of the data
-dictionary — IMAS-Python reads that variable itself — and never an Access Layer
-number: on the stack above, AL_VERSION is 5.7.1 while the newest dictionary the
-package holds is 4.1.1, and a version the package does not carry is refused by
-name when the case is opened. It is the fallback for a case that spells no
-version at all.
+dictionary — IMAS-Python reads that variable itself. 
 
 The repository Makefile builds the documentation only:
 
@@ -127,7 +120,6 @@ The repository Makefile builds the documentation only:
 2. The file 'UDA_machines' located in directory $VIZ_HOME/config lists all tokamaks with remote UDA servers which
 can be accessed from the current machine where IMASViz is installed.
 Please refers to the documentation for the required prerequisites for accessing a particular remote UDA server.
-
 
 
 ### Running IMASViz from sources
@@ -152,54 +144,6 @@ In $VIZ_HOME directory execute:
     # to open HTML documentation
     firefox doc/build/html/index.html
 
-
-
-
-## Running IMASViz from installed modules on Gateway and ITER HPC
-
-### GateWay HPC
-
-Load the following modules:
-
-    module load cineca
-    module load imasenv
-
-Check the installed IMASViz modules:
-
-    module available imas-viz
-
-Load a specific version of IMASViz, for example:
-
-    module load imas-viz/2.3.7
-
-
-### ITER HPC
-
-Load the IMAS module:
-
-    module load IMAS
-
-Check the installed IMASViz modules:
-
-    module available Viz
-
-Load a specific version of IMASViz, for example:
-
-    module load Viz/2.3.7-intel-2018a-Python-3.6.4
-
-
-### Launching IMASViz
-
-To launch **IMASViz**, execute the following command:
-
-    viz
-
-
-### IMASViz documentation
-
-To browse IMASViz documentation, just type:
-
-    viz_doc
 
 
 ### Saving and restoring a session
@@ -360,7 +304,7 @@ script's own path, so they can be run from anywhere. `module` is a shell
 function and is never piped — a pipe would run the load in a subshell and lose
 the environment it sets.
 
-### Gateway (EUFUS)
+### Gateway (EFGW)
 
 Loads the **intel** HLI (the foss variant does not load its SciPy-bundle
 requirement here).
