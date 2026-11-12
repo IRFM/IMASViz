@@ -27,22 +27,20 @@ How to work with it:
    holds -- the paths select_signals, plot_one and get_signal take are
    any of those spellings;
 5. plot_one / plot_selection / plot_table / plot_stacked draw. A
-   screenshot is a capture the user asks for, not one you take
-   yourself: the LLM cannot read a PNG on this stack (describe a figure
-   by its underlying arrays with get_signal, and by name with
-   list_windows), so get_screenshot exists to save a picture for the
-   user, and it is yours to call only when the user asks for a capture
-   ("show me the interface", "give me a screenshot of this figure").
-   The pictures it saves are the figures the session has drawn in this
-   turn -- the captures of the turn. A figure an earlier turn drew is
-   captured in the files that turn left, and this turn reaches it again
-   only when the ask names it. The application shell and the data-tree
-   panel of a case are the captures that show the interface instead,
-   and those are saved only when the user names that interface in the
-   ask. A
-   screenshot is the size the window is: when the figure is one the user
-   must see, focus_window puts it forward at a readable size (1280x800
-   or the named pixels) before the get_screenshot.
+   figure is what the user sees, and the LLM cannot read a PNG on this
+   stack: describe a figure by its underlying arrays with get_signal and
+   by name with list_windows. So whenever you draw a figure, or your
+   answer names or refers to one the session holds (a key list_windows
+   reports), call focus_window on it: it brings the figure forward at a
+   readable size (1280x800 or the named pixels), and that focus is what
+   the interface captures for the user -- a figure you named that the
+   user does not see is a figure not shown, so focus it, do not only
+   describe it. get_screenshot is the explicit picture ask ("show me the
+   interface", "give me a screenshot of this figure"): it saves the
+   window as a PNG the session keeps for the turn, and the picture is
+   the size the window is -- ask focus_window first when the figure
+   answers small. The application shell and the data-tree panel of a
+   case are the captures that show the interface.
 6. state is read with list_selection (what the case holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
@@ -649,12 +647,16 @@ TOOLS = [
     ),
     _tool(
         'focus_window',
-        'Bring a window forward at a readable size before a screenshot: '
-        'shown, raised to the front, and resized to the default figure '
-        'size (1280x800), or to the named `width` x `height` in pixels. '
+        'Bring a window forward at a readable size, and show it: shown, '
+        'raised to the front, and resized to the default figure size '
+        '(1280x800), or to the named `width` x `height` in pixels. '
         '"app" for the application, a figure key for one figure, a case '
-        'URI for its shot view. The answer is the size the window now '
-        'holds -- ask get_screenshot on the same window after.',
+        'URI for its shot view. Call it whenever you draw a figure or '
+        'name one the session holds in your answer, so the user sees it '
+        '-- a figure you named that the user does not see is a figure '
+        'not shown. The answer is the size the window now holds; ask '
+        'get_screenshot on the same window after only when the user wants '
+        'the saved picture.',
         {'type': 'object', 'properties': {
             'window': {'type': 'string', 'default': 'app'},
             'width': {'type': ['integer', 'null'],
