@@ -126,12 +126,15 @@ ligne JSON.
 
 ## 4. Brancher un navigateur
 
-Ouvrir `http://127.0.0.1:8760`. Pour que la gateway reconnaisse le user, il
-faut lui donner son token. Deux façons :
+Ouvrir `http://127.0.0.1:8760` — la gateway propose la **page de login**
+(`/login`) : une seule case, le token, **In**. Le token posé est **posé en
+cookie** (`imasviz_token`, `HttpOnly`) et la session continue dessus ; on
+referme la page et on revient dessus sans retaper le token.
 
-- **Header** `Authorization: Bearer <token>` (typique pour un script ou une
-  API).
-- **Cookie** `imasviz_token=<token>` (typique pour un navigateur).
+Pour un **script** ou une **API**, on garde l'en-tête `Authorization: Bearer
+<token>` (ce que fait l'exemple `curl` ci-dessous), ou on se connecte par
+`POST /login` avec un corps JSON `{"token": "..."}` pour récupérer le
+cookie.
 
 Puis, depuis l'app, tout est transité dans l'ordre : la page, `list_cases`,
 `open_case`, le flux `POST /api/agent`, les gestures d'outils.
