@@ -41,9 +41,10 @@ def localEntry(home):
 
 
 def makeSpawn(registry):
-    def spawn(user, entry, port, env):
+    def spawn(user, entry, port, env, max_turns=12):
         handle = FakeHandle()
-        registry[user] = {'port': port, 'env': env, 'handle': handle}
+        registry[user] = {'port': port, 'env': env, 'handle': handle,
+                          'max_turns': max_turns}
         return handle
     return spawn
 
@@ -146,4 +147,25 @@ def test_stopping_a_user_frees_its_budget(tmp_path):
     assert registry['alice']['handle'].terminated
     pool.ensure('bob', localEntry(str(tmp_path / 'b')))
     assert pool.liveUsers() == ['bob']
+    pool.close()
+
+
+def test_the_pool_forwards_max_turns_to_the_spawn(tmp_path):
+    """The operator's --max-turns reaches the child, not just the pool."""
+    registry = {}
+    pool = Pool(spawn=makeSpawn(registry), health=lambda url, h: None,
+                maxUsers=3, maxTurns=24)
+    pool.ensure('alice', localEntry(str(tmp_path / 'a')))
+    assert registry['alice']['max_turns'] == 24
+    pool.close()
+
+
+def test_max_turns_defaults_like_the_child_when_unset(tmp_path):
+    registry = {}
+    pool = Pool(spawn=makeSpawn(registry), health=lambda url, h: None,
+                maxUsers=3)
+    pool.ensure('alice', localEntry(str(tmp_path / 'a')))
+    # 12: the viz_web default, so an operator who sets neither gets the same
+    # loop limit with or without a gateway in front.
+    assert registry['alice']['max_turns'] == 12
     pool.close()
