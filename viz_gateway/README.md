@@ -45,10 +45,13 @@ widget : c'est un proxy HTTP et un superviseur de processus.
        'bob', 'remote', url='https://viz.example:8770') # → son token
    ```
 
-3. **Pointer le navigateur** sur `http://127.0.0.1:8760` avec le token du
-   user (header `Authorization: Bearer <token>` ou cookie `imasviz_token`),
-   et tout le reste est transité : la page, `/api/agent` (le flux SSE arrive
-   comme il est écrit), et `/api/tool` (les gestures raw).
+3. **Pointer le navigateur** sur `http://127.0.0.1:8760` : la gateway
+   propose la **page de login** (`/login`) — le token du user, **In** — et
+   pose en cookie (`imasviz_token`, `HttpOnly`) le token validé par le
+   catalogue. Puis tout le reste est transité : la page, `/api/agent` (le
+   flux SSE arrive comme il est écrit), et `/api/tool` (les gestures raw).
+   Pour un script ou une API : header `Authorization: Bearer <token>`, ou
+   `POST /login` avec `{"token": "..."}` pour récupérer le cookie.
 
 ## Les refus sont nommés
 
