@@ -278,6 +278,19 @@ Ce que `viz_web` fait, et ce qu'il faut lui demander pour avoir des images :
   ne coûte **ni** fenêtre **ni** numéro, et `get_signal` avec la même adresse
   répond la même courbe — la figure qu'on *voit* et le nombre qu'on *lit*
   sont le même élément.
+- **L'agent montre maintenant d'office les figures qu'il trace ou nomme**
+  (c'est le correctif de la « paresse » : « une paresse à me montrer des
+  plots pourtant existants — si je lui dis *je ne vois pas*, il fait un
+  effort et finit par faire une capture qui marche »). Épinglé par `test_136`
+  dans le prompt (`tools.py`, item 5 + la description de `focus_window`) :
+  dès qu'il trace une figure ou en nomme une que la session porte, il appelle
+  `focus_window` dessus — et un focus *est* une demande de capture
+  (`web_session.py:216`, épinglé par `test_127`), donc la page l'affiche.
+  L'ancienne consigne « *only when the user asks for a capture* » lisait
+  « je ne vois pas » comme une demande et une question d'état comme un
+  silence — c'est d'où venait la paresse. `get_screenshot` reste la capture
+  PNG **explicite** (« donne-moi une capture de `Plot1` », « montre-moi
+  l'interface »).
 - **Une figure est capturée dans le tour qui la trace.** `viz_web/web_session.py`
   (`_finishTurn`) sauve les figures que le tour **ajoute** à la session — les images
   d'un tour ne sont pas répétées dans le tour suivant. C'est voulu : un tour qui ne
