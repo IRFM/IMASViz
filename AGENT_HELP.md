@@ -221,7 +221,18 @@ deux `bpol_probe` (2 et 10) sur une figure, c'est deux **chemins** de deux feuil
 de deux éléments, pas deux indices d'une même feuille. Le mode refuse `indices = { "bpol_probe": … }`
 parce que la famille est déjà fixée sur une sonde par le chemin. Deux familles
 différentes (2 sondes, puis 2 boucles) → **deux** figures, pas quatre dans une ; c'est
-l'absence de `into_figure_key` qui fait que la deuxième ouvre une deuxième figure.
+l'absence d'`into_figure_key` qui fait que la deuxième ouvre une deuxième figure.
+
+**N indices d'une même feuille, une figure** — le cas « `psi=75, 80, 85, 25` » :
+c'est la première `plot_one` qui **ouvre** la figure et qui garde le curseur (un
+curseur à balayage) ; les suivantes, en empilant sur la même figure, sont des
+**éléments distincts** de la même feuille et sont **gelés** sur leur index nommé.
+Chaque courbe répond à son index, pas à la position du curseur (le curseur n'est
+plus touché quand on empile — sinon toutes les courbes répondraient à la dernière
+valeur posée, et c'est le bug « 4 courbes identiques » que le core ne doit plus
+produire. Épinglé par `test_132`). Empiler des indices d'une **autre** famille
+(`bpol_probe[7]`, pas `bpol_probe`) reste refusé : la famille est fixée par le
+chemin, ce n'est pas un curseur. (Épinglé par `test_134`, la moitié refus.)
 
 ### 6.2 `select_signals` + `plot_selection`
 

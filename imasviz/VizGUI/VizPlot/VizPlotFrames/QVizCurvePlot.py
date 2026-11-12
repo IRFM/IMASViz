@@ -237,7 +237,7 @@ class QVizCurvePlot(QWidget):
         self.keepCurveBox.setToolTip(self._keepTooltip())
 
     def plot(self, treeNode, as_function_of_time=None, tensor=False,
-             time_index=None):
+             time_index=None, named_indices=None):
         """Add one quantity to the figure, along the abscissa the figure draws.
 
         `tensor` is the other representation of the same quantity: the arrays the
@@ -262,6 +262,14 @@ class QVizCurvePlot(QWidget):
         `psi` (101 points) and the second, `.psi`, ran against its index (101
         points) and rewrote the figure's single bottom label.
 
+        `named_indices` is the axes the caller fixed to specific indices, by key:
+        a named axis the figure already holds a curve of (a named element drawn
+        on top of this leaf) is a different element of the array, and is frozen
+        at its own index rather than riding the leaf's shared control -- which
+        reads it everywhere the control sits, the "psi slices of one profile all
+        collapse to the last one named" bug. The figure's one element of a leaf
+        keeps the control, so it still carries its slider.
+
         Returns the number of rows drawn.
         """
         access = self.accessFor(treeNode)
@@ -284,7 +292,16 @@ class QVizCurvePlot(QWidget):
                                                              abscissa)
         pinned = [axis for position, axis in enumerate(axesSpec.axes)
                   if position not in plotted]
-        fixed, movable = self._pinning(pinned, tensor, self.walkingArrays)
+        named = dict(named_indices or {})
+        # A named axis the figure already holds a curve of (a named element on
+        # top of this leaf) is a different element of that array: frozen at its
+        # own index, not a view of the one on the shared control (which reads it
+        # everywhere the control sits -- psi slices of one profile all reading
+        # the last index named). The figure's one element of a leaf keeps the
+        # control, so it still carries its slider.
+        sibling = bool(named) and self.hasCurveOf(treeNode)
+        fixed, movable = self._pinning(pinned, tensor, self.walkingArrays,
+                                       named=named, sibling=sibling)
         slices = self._readSlices(fixed, movable)
         # A pinned time slice is the caller's explicit choice, and it must
         # actually move the read: the read's own rule is that a slice for the
@@ -453,6 +470,26 @@ class QVizCurvePlot(QWidget):
     def traces(self):
         return list(self._curves)
 
+    def hasCurveOf(self, treeNode):
+        """True when this figure already holds a curve of this leaf.
+
+        The leaf is the quantity, so a curve of this node at another index is
+        already here: adding a named element of the same node is then a different
+        element of that array (frozen at its index), not another view of the one
+        on the shared control, which reads it at the first element's index. A
+        curve of a *different* leaf is not a sibling -- its leaves share a control
+        and the figure sweeps both, the comparable case this must not freeze.
+        """
+        from imasviz.VizDataAccess.QVizNodePlotting import QVizNodePlotting
+        try:
+            path = QVizNodePlotting(treeNode).path()
+        except Exception:
+            return any(trace.treeNode is treeNode for trace in self._curves)
+        for trace in self._curves:
+            if QVizNodePlotting(trace.treeNode).path() == path:
+                return True
+        return False
+
     def errorQuantities(self):
         """Which drawn curve came from which node, as [(node, curve)].
 
@@ -548,7 +585,7 @@ class QVizCurvePlot(QWidget):
                 | arraysLeftOut(axesSpec, abscissa)
 
     @staticmethod
-    def _pinning(pinned, tensor, walkingArrays):
+    def _pinning(pinned, tensor, walkingArrays, named=None, sibling=False):
         """Split the axes a trace leaves out into its own and the figure's.
 
         An array of structures the tree is standing on belongs to the identity of
@@ -565,14 +602,42 @@ class QVizCurvePlot(QWidget):
         one element must not move under them -- it is frozen on every axis it
         leaves out, its own coordinate included, and its legend spells the whole
         index set.
+
+        `named` is the axes the caller fixed to specific indices and `sibling`
+        whether the figure already holds a curve of this leaf: a NAMED element on
+        top of a curve of the same leaf is one of the different elements above,
+        and is frozen at its named index (a shared control would read it at the
+        first one's -- the bug); the figure's one element of a leaf stays on the
+        control, so a figure of a single element still carries its slider.
         """
+        named = dict(named or {})
         fixed = {}
         movable = []
         frozen = bool(walkingArrays) and not tensor
         for axis in pinned:
-            if tensor or (axis.origin == QVizAxis.LEAF and not frozen):
+            if tensor:
                 movable.append(axis)
+            elif axis.origin == QVizAxis.LEAF and not frozen:
+                # A leaf's own coordinate: a control of the figure. If the
+                # caller NAMED it and the figure already holds a curve of this
+                # leaf (a sibling: a different element of the same array), this
+                # element is frozen at its named index -- a shared control would
+                # read it at the first element's index, the "psi slices of one
+                # profile collapse to the last one named" bug. The sole element
+                # of the leaf keeps the control (a slider to sweep), and a leaf
+                # no index named still sweeps from the tree's element.
+                if (axis.key() in named) and sibling:
+                    fixed[axis.key()] = named[axis.key()]
+                else:
+                    movable.append(axis)
             else:
+                # A non-leaf axis (an array of structures) is not a slider to
+                # sit on: it names a family member, the one the path fixed.
+                # Asking the caller's index for a DIFFERENT member is a
+                # different element, not a position on this one -- it is left
+                # fixed at the path's index, and the caller's `setIndex` for it
+                # fails, which is the genuine refusal (a different member of the
+                # family, by index) rather than a silent move to that member.
                 fixed[axis.key()] = axis.index
         return fixed, movable
 
