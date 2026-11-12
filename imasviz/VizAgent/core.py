@@ -873,7 +873,7 @@ class McpGuiCore:
         is raised: a refusal costs no window, and the number that key has
         gone back to the bookkeeping.
         """
-        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec
+        from imasviz.VizDataAccess.QVizAxesSpec import QVizAxesSpec, QVizAxis
         from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
             import QVizPlotOneNode
 
@@ -884,8 +884,34 @@ class McpGuiCore:
         axesSpec = QVizAxesSpec.fromTreeNode(node)
         _abscissa, as_function_of_time, slices = axesAddressing(
             axesSpec, along=along, indices=indices)
+        # The axes the caller fixed, by key and the value it fixed them at:
+        # what a named element is frozen at when it is a different element of
+        # the leaf the figure already holds -- several psi slices of one profile
+        # stay their own elements instead of all riding the shared control.
+        named = set()
+        for word in (indices or {}):
+            w = str(word).strip().lower()
+            for axis in axesSpec.axes:
+                if w in _axisWords(axis):
+                    named.add(axis.key())
+        named_indices = {key: index for key, index in (slices or {}).items()
+                         if key in named}
+        # Does the figure this element joins already hold a curve of this leaf?
+        # Then it is a sibling: frozen at its named index, and the control of
+        # the element it joins is left where it sits -- moving that control to
+        # this index would drag that element here, and every stacked element to
+        # the last one named (the reported "several psi slices show the same
+        # curve" bug). A curve of a DIFFERENT leaf is not a sibling: its control
+        # stays shared, the comparable case this must not freeze.
+        sibling = False
+        if into_figure_key is not None:
+            existing = self.api.figureframes.get(into_figure_key)
+            if existing is not None:
+                sibling = bool(getattr(existing, 'hasCurveOf', None)
+                               and existing.hasCurveOf(node))
         command = QVizPlotOneNode(view, node, intoFigureKey=into_figure_key,
-                                  alongTime=as_function_of_time)
+                                  alongTime=as_function_of_time,
+                                  namedIndices=named_indices or None)
         frame = command.execute()
         if frame is None:
             raise ValueError(
@@ -895,24 +921,23 @@ class McpGuiCore:
 
         controls = getattr(frame, 'sliceControls', None)
         wordByKey = {axis.key(): str(_axisName(axis)) for axis in axesSpec.axes}
-        # Only the axes the caller actually fixed (its `indices`) need a
-        # control on the frame. The members the path itself picked are the
-        # very element the figure draws: a plain element has no band over
-        # its own family by design, so a control need not exist there --
-        # demanding one is what refused "this member, along its own
-        # coordinate" only after the figure had been opened.
-        named = set()
-        for word in (indices or {}):
-            w = str(word).strip().lower()
-            for axis in axesSpec.axes:
-                if w in _axisWords(axis):
-                    named.add(axis.key())
+        originByKey = {axis.key(): axis.origin for axis in axesSpec.axes}
         openedAt = {}
         for key, index in (slices or {}).items():
             if key not in named:
                 continue
             word = wordByKey.get(key, str(key))
-            if controls is not None and controls.setIndex(key, index):
+            # A NAMED leaf axis the figure already holds a curve of (a sibling:
+            # a different element of the same array) is frozen at its index by
+            # the frame, and the control of the element it joins must not be
+            # moved -- moving it here would drag that element to this index, and
+            # every stacked element to the last one named. A NAMED family member
+            # (an array of structures) is a different element, but it is not a
+            # leaf's coordinate: it is fixed by the path, and the refusal is the
+            # answer, so it still goes through `setIndex`, which fails.
+            if (sibling and originByKey.get(key) == QVizAxis.LEAF):
+                openedAt[word] = index
+            elif controls is not None and controls.setIndex(key, index):
                 openedAt[word] = index
             else:
                 if getattr(command, 'builtFigure', False):

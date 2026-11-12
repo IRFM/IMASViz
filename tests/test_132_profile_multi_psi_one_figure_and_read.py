@@ -100,6 +100,22 @@ def test_multi_psi_slices_stack_onto_one_figure_with_three_curves(core):
     assert frame.curveCount() == 3, \
         'three psi slices on one figure must be three curves, not one'
 
+    # Three psi slices of ONE profile are three DIFFERENT elements of the
+    # same array of structures: the three curves must sit at three different
+    # indices and answer three different values -- not one element read three
+    # times at the index named last (the reported bug: psi slices stacked on
+    # one figure all showing one curve, the psi slider on the last one named).
+    # The peaks are the same numbers `get_signal` answers below.
+    peaks = []
+    for trace in frame._curves:
+        ys = [v for v in trace.curve.getData()[1] if v == v]
+        if ys:
+            peaks.append(max(ys))
+    assert len(peaks) == 3, peaks
+    assert len(set(round(p, 1) for p in peaks)) == 3, \
+        'three psi slices must be three distinct elements, not the last one '\
+        'read three times: %s' % peaks
+
 
 def test_per_psi_reads_are_distinct_monotone_and_the_measured_peak(core):
     """`get_signal` at each of the three psi answers a DIFFERENT element, and

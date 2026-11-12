@@ -56,7 +56,8 @@ class QVizPlotOneNode(QVizAbstractCommand):
     IMAGE_FIGURE_TYPE = FigureTypes.IMAGEPLOTTYPE
 
     def __init__(self, dataTreeView, treeNode, intoFigureKey=None,
-                 alongTime=None, tensor=False, figureKey=None, timeIndex=None):
+                 alongTime=None, tensor=False, figureKey=None, timeIndex=None,
+                 namedIndices=None):
         """
         Arguments:
             treeNode       (QVizTreeNode) : the node to draw, never the selection.
@@ -91,6 +92,13 @@ class QVizPlotOneNode(QVizAbstractCommand):
         # value resolved by the caller to the nearest slice); None for no
         # opinion, which keeps the read at the slice the tree stands on.
         self.timeIndex = timeIndex
+        # The axes the caller fixed to specific indices ({axis key: index});
+        # None for no opinion. A named element drawn on top of a curve the figure
+        # already holds of its leaf is a different element of that array: it is
+        # frozen at its index instead of riding the leaf's shared control, which
+        # is what keeps several named psi slices of one profile distinct instead
+        # of all reading wherever the shared control sits (the last one named).
+        self.namedIndices = namedIndices
         # Set when this command opened the figure itself: a frame that is already
         # on screen must not be embedded in a second subwindow.
         self.builtFigure = False
@@ -154,7 +162,8 @@ class QVizPlotOneNode(QVizAbstractCommand):
             frame.plot(self.treeNode)
             return
         frame.plot(self.treeNode, as_function_of_time=self.alongTime,
-                   tensor=self.tensor, time_index=self.timeIndex)
+                   tensor=self.tensor, time_index=self.timeIndex,
+                   named_indices=self.namedIndices)
 
     def newFigure(self, figureType, frameClass):
         figureKey = self.api.FigureKeyFor(figureType, self.figureKey)
