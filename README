@@ -7,8 +7,17 @@ visualizing static and dynamic IMAS data, stored within IMAS
 
 Copyright holders : Commissariat � l�Energie Atomique et aux Energies Alternatives (CEA), France;
 and Laboratory for Engineering Design - LECAD, University of Ljubljana, Slovenia
-CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html  
+CEA and LECAD authorize the use of the METIS software under the CeCILL-C open source license https://cecill.info/licences/Licence_CeCILL-C_V1-en.html
 The terms and conditions of the CeCILL-C license are deemed to be accepted upon downloading the software and/or exercising any of the rights granted under the CeCILL-C license.
+
+
+## IMASViz 3.0.0 — what is new
+
+This release turns IMASViz from a plotter into a session you can drive:
+
+- **The agent is in the application.** One LLM-driven agent operates the gestures of the application itself — no external agent and no MCP client needed — and it is reached five ways: the *Agent* line of the application's [File menu](#the-in-app-agent), the terminal *REPL* [`viz_cli`](#the-terminal-client-viz_cli), the browser page [`viz_web`](#the-web-interface-viz_web), the [multi-user gateway](#the-multi-user-gateway-viz_gateway) (one isolated instance per user, behind a token), and as [MCP tools](#driving-imasviz-from-an-agent-mcp-tools) for external clients such as Qwen Code. The [one-shot mode](#the-one-shot-agent-mode) runs a prompt on a node without a display and leaves the pictures and the transcript on disk.
+- **The multi-axis data, along the axis you want.** Any quantity can be traced where it lives — along the clock, or along the leaf's own coordinate (the `equilibrium` pressure profile as a function of `psi`), a slice at any instant (`plot_slice`), and slices stacked on the same figure with each curve's index fixed in the legend (`into_figure_key`) — the way `AGENT_HELP.md` at the repository root talks it through.
+- **A major cleanup.** The defects of the earlier releases were chased down and fixed; the fixes are pinned by the test suite under `tests/` (see `TESTING.md`), which is what keeps them fixed.
 
 
 ## Installing and launching IMASViz from sources
@@ -210,18 +219,41 @@ them for the user.
 | Group | Tools |
 | --- | --- |
 | cases | `open_case`, `list_cases`, `close_case` |
-| tree | `list_idss`, `load_ids`, `search_nodes`, `select_signals`, `unselect_all`, `list_selection`, `select_from_configuration` |
-| plotting | `plot_one`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal`, `save_plot_configuration` |
-| windows | `list_windows`, `show_window`, `hide_window`, `close_window` |
+| tree | `list_idss`, `list_case_idss` (the IDS the case actually holds), `load_ids`, `search_nodes`, `describe_node`, `describe_ids`, `list_quantities`, `select_signals`, `unselect_all`, `list_selection`, `select_from_configuration` |
+| plotting | `plot_one` (along the clock or a leaf coordinate, `time`/`time_interp` for a slice, `into_figure_key` to stack on an open figure), `plot_slice`, `plot_selection`, `plot_table`, `plot_stacked`, `get_signal`, `save_plot_configuration` |
+| windows | `list_windows`, `show_window`, `hide_window`, `close_window`, `focus_window` (bring a window to the front at a readable size) |
 | plugins | `list_plugins`, `run_plugin` |
 | session | `save_session`, `restore_session`, `export_to_ids`, `list_sessions`, `list_configurations`, `save_selection` |
-| inspection | `get_screenshot` (PNG of a window), `get_logs` (the case log panel), `describe_node` |
+| inspection | `get_screenshot` (PNG of a window — a figure key it does not hold is refused by name), `get_logs` (the case log panel) |
 | reports | `plot_report` (one window of curves as self-contained HTML with stats), `case_report` (the whole loaded tree as HTML with stats) |
 
 Stylage and cursors are kept in the hands of the user; they are not offered
 as tools. The suite drives this layer in `tests/test_100_mcp_core_offscreen.py`
 (without the SDK) and `tests/test_101_mcp_tools_http.py` (over a real
 transport).
+
+### The one-shot agent mode
+
+The same agent on a node without a display: one prompt, the pictures it
+drew and its transcript left on disk, then the process leaves. No MCP
+service is served on that path, and the exit code is the verdict — 0 when
+the loop answered, 1 when it refused (the refusal is named, in the
+transcript and on the line that follows it):
+
+    python -m mcp_server --agent "Ouvre le cas …, trace le champ" \
+        --llm-url http://127.0.0.1:8080/v1 \
+        [--llm-model NAME] [--llm-key KEY] \
+        [--max-turns 8] [--shots ./agent_shots] [--extra-shots app,case-views]
+
+Each figure the run left open is saved as `<figure key>.png` (the `:` of a
+key spelled `_`) beside its `transcript.txt`; `--extra-shots` names the
+interface captures to save as well — `app` (`00_app.png`) and `case-views`
+(`case_…`) — and a capture is an ask, never a by-product. An endpoint named
+without a model takes the endpoint's first `/v1/models` entry; a figure key
+the session does not hold is refused by name. `viz_cli`'s one prompt
+delegates to this same path, and so does `AGENT_HELP.md`'s
+walkthrough. `tests/test_112_offscreen_agent_mode.py` pins the images, the
+transcript and the exit code.
 
 ### The terminal client (viz_cli)
 
@@ -237,16 +269,30 @@ and the history are the client's own (this node's Python has no C module behind
     python3 -m viz_cli "trace le champ"         # one prompt, then exit (0 if it
                                                 # answered, 1 if it refused)
 
+The one-shot takes the same flags as the [one-shot agent mode](#the-one-shot-agent-mode)
+above — `--llm-url` / `--llm-model` / `--llm-key`, `--max-turns` (default 12,
+this run's loop limit), `--shots DIR` (default `~/.imasviz/cli/shots`) and
+`--history FILE` (default `~/.imasviz/cli_history`) — plus `--display` to
+keep the window when you have one (offscreen is the point of the client,
+the default on a node without a display).
+
 Inside the REPL, a line runs the agent; the `/` commands steer it:
 
 - `/help` — the commands and the gestures this instance offers;
-- `/llm <field> <value>` — the model it runs against, read from and written to
-  the **same** `$HOME/.imasviz/preferences` the GUI reads (`AgentLLMEndpoint`,
-  `AgentLLMModel`, `AgentLLMApiKey`); `/llm` alone reads them back.
-  `max_turns`, `temperature` and `max_tokens` live on the live client, for that
-  run;
-- `/mcp [name]` — the tools this session exposes and, for one, how to call it
+- `/llm <field> <value>` — the model it runs against. `endpoint`, `model` and
+  `key` are persisted in the **same** `$HOME/.imasviz/preferences` the GUI
+  reads (`AgentLLMEndpoint`, `AgentLLMModel`, `AgentLLMApiKey`), so the two
+  interfaces stay on the same endpoint; `/llm` alone reads them back.
+  `max_turns`, `temperature` and `max_tokens` live on the live client, for
+  that run only; `/llm model auto` makes the sent name the endpoint's first
+  `/v1/models` entry, read on first use;
+- `/mcp [name]` — the services this session answers today (endpoint, models,
+  tools) and, for one tool, its words and its parameters
   (e.g. `/mcp plot_selection`);
+- `/ids [URI]` — the IDS the open case actually holds, raw: the names and
+  their occurrences read off the case's entry, with no LLM in between
+  (with no URI, the one open case, refused by name when there is no
+  single one);
 - `/session` — the cases open in this session, or `/session save <name>` and
   `/session restore <name>` to write and put one back;
 - `/shots [dir]` — where the turns' images and transcripts are saved;
@@ -254,9 +300,10 @@ Inside the REPL, a line runs the agent; the `/` commands steer it:
 - `/quit` — leave (the arrows keep your prompts for the next run).
 
 What a turn answers is the answer of the application the way `test_100` pins
-it: a refused gesture is named, and `get_logs` holds those refusals. On a node
-without a display the client is offscreen by design; `--display` keeps the
-window when you have one.
+it: a refused gesture is named, and `get_logs` holds those refusals; the
+REPL itself is pinned by `tests/test_113_viz_cli.py`, and the one prompt
+behaves the way `tests/test_112_offscreen_agent_mode.py` pins the
+[one-shot agent mode](#the-one-shot-agent-mode).
 
 ### The web interface (viz_web)
 
@@ -273,27 +320,95 @@ already required).
 is the default when there is none); `--llm-url` / `--llm-model` /
 `--llm-key` name the local model for the run, otherwise the `AgentLLM*`
 lines of `$HOME/.imasviz/preferences` stand, the same file the REPL and the
-in-app agent read. A device on the network points its browser at the box's
-address and port.
+in-app agent read; `--max-turns` (default 12) is that run's loop limit, and
+`--shots DIR` names where the turns' images and transcripts go (default
+`~/.imasviz/web/shots`). A device on the network points its browser at the
+box's address and port.
 
-The page is the REPL with a picture. The first column runs the agent: a
-prompt, and the transcript streamed in the order the loop writes it —
-refusals included, in the log colour they wear in the panel. The second
-column lists the raw gestures, one form per tool with its parameters, run
-the way the loop runs them (so `plot_one` given an argument it does not
-take is refused by name, the names it does hold beside it). Every turn
-leaves in `~/.imasviz/web/shots/<n>/` its transcript and the PNG of the
-application and of each of its windows, which the third column re-draws
-under *Résultats*, and the *Turns* list of the first column names the
-turns the session has had. The model's running parameters are read from
-and written to the same preferences through the page's own `/llm` line.
+The page is the REPL with a picture. The left column runs the agent: a
+prompt, the transcript streamed in the order the loop writes it — refusals
+included, in the log colour they wear in the panel — the *Requests* list
+naming the turns the session has had, and beneath it a closed *Raw
+gestures* group (the rarely used one), one form per tool with its
+parameters, run the way the loop runs them (so `plot_one` given an
+argument it does not take is refused by name, the names it does hold
+beside it). The right column re-draws under *Screenshots* and *Reports*
+what each turn left on disk in `~/.imasviz/web/shots/<n>/` — its
+transcript, and the PNG of the application and of each of its windows:
+when the agent draws or names a figure it calls `focus_window` on it, and
+a focus is a capture ask, so the figure lands in the page's gallery and
+the previous turns' pictures stay, folded under their name. The model's
+running parameters are read from and written to the same preferences
+through the page's own `/llm` line.
 
 The suite drives it in `tests/test_119_viz_web_session.py` (one turn at a
 time, the refusals named, the context between turns),
 `tests/test_120_viz_web_routes.py` (the routes, the stream, the shots read
-back) and `tests/test_121_viz_web_house_style.py` (the page wears the
+back), `tests/test_121_viz_web_house_style.py` (the page wears the
 application's colours in both themes, and nothing of it imports a web
-framework this node does not hold).
+framework this node does not hold),
+`tests/test_127_web_show_focus_and_report.py` (show, focus and report),
+`tests/test_128_web_redraw_captured.py` (a turn's stack on an open figure
+re-draws it), `tests/test_129_web_turn_keeps_the_session_on_screen.py` and
+`tests/test_131_web_figures_visible_and_kept.py` (the figures the agent
+names are shown and kept, the way `tests/test_136_agent_shows_the_figures_it_names.py`
+pins the loop itself).
+
+### The multi-user gateway (viz_gateway)
+
+One browser per user at the same time. `viz_gateway` wraps `viz_web` so a
+node answers **more than one user at a time** — and it does not modify
+them: `imasviz/`, `viz_web/`, `viz_cli/` and `mcp_server/` do not budge.
+The model is one instance per user: a *local* user's token answers on a
+`viz_web` the gateway spawns, isolated by its own process and its own
+`$HOME` (under `~/.imasviz/gateway/homes/<user>`); a *remote* user's token
+points at a backend URL that has its own process and configuration
+elsewhere. The gateway itself owns **no** widget — it is an HTTP proxy and
+a process supervisor, and the children it spawns inherit the module stack
+the launching shell loaded, changing only their `HOME`.
+
+Start it from a shell that already loaded the HLI stack (the *Gateway*
+block of [Setting the environment](#setting-the-environment) above, or the
+site's launcher minus the launch itself), then:
+
+    python3 -m viz_gateway --port 8760 --max-users 20 --max-turns 12 --idle-timeout 1800
+
+The users sit in `~/.imasviz/gateway/users.json` (token → user → backend),
+written by hand or scripted through `viz_gateway.userstore.UserStore`. A
+browser is pointed at `http://127.0.0.1:8760`: the login page takes the
+token in, keeps it in an `HttpOnly` cookie (`imasviz_token`), and then the
+page, the agent stream and the tool calls are all proxied through. For a
+script: the `Authorization: Bearer <token>` header, or `POST /login` with
+`{"token": "…"}` to collect the cookie.
+
+The budget counts live instances, not ports: `--max-users` (default 20)
+caps how many local instances may be alive at once (`--max-users` is also
+the answer to "how many users on this node?"), and an instance idle for
+`--idle-timeout` (default 1800 s) is reaped — the token survives, the
+session (cases, figures, selection) does not, and the user's next request
+restarts one behind its token without the caller noticing. The real limit
+is memory, one Qt process per user (≈ 150–300 Mo), long before the port
+space runs out. `--max-turns` (default 12) is forwarded to every local
+instance it spawns, and stays changeable on a live one with
+`POST /api/llm`.
+
+The refusals are named the way the application names them: a `401` naming
+both the token it was given and the users the file holds, a `503` naming
+the live instances and the budget, and a backend that does not come up
+naming its port, its `HOME` and its exit code. The known limit of v1:
+local backends listen on `127.0.0.1`, a socket any account on the box can
+technically reach — the token controls the *content*, and the route to a
+per-user socket is the v2 plan, spelled in `viz_gateway/README.md` with the
+doctrine. The how-to is `viz_gateway/USAGE.md`, and what to say to the
+agent about the multi-axis plots is `AGENT_HELP.md` at the repository
+root. The suite pins it in `tests/test_127_gateway_token.py` (the catalog,
+the refusals by name), `tests/test_128_gateway_proxy_streams.py` (the
+proxy against a real stub backend, the SSE stream end to end),
+`tests/test_129_gateway_pool.py` (one instance and one port per user, the
+budget, the reaping) and
+`tests/test_130_gateway_two_real_users_are_isolated.py`
+(`@pytest.mark.case` — two **real** `viz_web` instances the spawner
+launches: the case user A opens, user B does not see).
 
 ## Starting from sources (Gateway, ITER HPC, WEST)
 
@@ -312,6 +427,17 @@ requirement here).
     scripts/run_imasviz.sh                      # the application, with its window
     scripts/run_viz_cli.sh                      # the terminal client
     scripts/run_viz_cli.sh "one prompt"         # one-shot, exit 0/1
+
+The web page and the multi-user gateway serve on exactly this stack — load
+the same modules (the launchers above already do, minus the launch), then
+`python3 -m viz_web --port 8770` (or `python3 -m viz_web --host 0.0.0.0`
+for a browser on another device) and/or
+`python3 -m viz_gateway --port 8760 --max-users 20`: see
+[The web interface](#the-web-interface-viz_web) and
+[The multi-user gateway](#the-multi-user-gateway-viz_gateway) above. The
+one-shot prompt of the [in-app agent](#the-one-shot-agent-mode) works on
+this node without a display:
+`python -m mcp_server --agent "Ouvre le cas …, trace …" --shots ./shot`.
 
 ### ITER HPC
 
@@ -347,20 +473,26 @@ from the same line, or from the site's virtualenv).
 
 ## The in-app agent
 
-IMASViz can run the agent itself: the application talks to a local LLM
-(`llama-server` by default, `127.0.0.1:8080`) and drives its own gestures
-through the same `McpGuiCore` the MCP surface uses. No external agent or
-MCP client is needed in production.
+IMASViz can run the agent itself: the application talks to a local
+OpenAI-compatible server — `llama-server`, Ollama, or any endpoint that
+answers `/v1/chat/completions` and `/v1/models` — and drives its own
+gestures through the same `McpGuiCore` the MCP surface uses. No external
+agent or MCP client is needed in production.
 
-The agent is visible in the *Windows* menu as `Agent:1`. Type a prompt,
-click *Tourner*, and the LLM chooses the gestures — the transcript shows
-each step, and refusals are named the same way they appear in the log panel.
+It is opened from the **Agent** line of the application's *File* menu:
+one window per session — the entry reuses it on every click after the
+first rather than rebuilding a second loop on the same api — and it sits
+in the *Windows* menu as `Agent:1`, alongside the figures the user drew.
+Type a prompt, click *Tourner*, and the LLM chooses the gestures — the
+transcript shows each step, and refusals are named the same way they
+appear in the log panel; *Arrêter* stops the turn at the next tool
+boundary and *Effacer* clears the transcript.
 
-Configuration (in `$HOME/.imasviz/preferences`):
+Configuration (in `$HOME/.imasviz/preferences`, the values the code ships):
 
-    AgentLLMEndpoint=http://127.0.0.1:8080/v1
-    AgentLLMModel=                          # empty = read from /v1/models
-    AgentLLMApiKey=                         # empty = no auth header
+    AgentLLMEndpoint=http://127.0.0.1:11434/v1   # point it at any OpenAI-compatible server
+    AgentLLMModel=qwen3.8:27b                     # empty = the endpoint's first /v1/models entry
+    AgentLLMApiKey=                               # empty = no auth header
 
 The suite drives the agent loop and panel in `tests/test_110_agent_loop.py`
 (scripted LLM, no network) and `tests/test_111_agent_panel.py` (widget,
