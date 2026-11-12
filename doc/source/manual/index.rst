@@ -24,6 +24,7 @@ User Manual
    plotting_2d_arrays.rst
    plugins.rst
    other_GUI_features.rst
+   agentics.rst
    scripting.rst
    user_preferences.rst
    UDA.rst
