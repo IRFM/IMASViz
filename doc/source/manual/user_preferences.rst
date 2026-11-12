@@ -20,6 +20,8 @@ Few user preferences options are available:
 - the box in the corner of a window can take that window off the screen (default)
   or close it for good
 - the MDI area can be laid out windowed (default), tabbed, tiled, or cascaded
+- the endpoint, the model name and the key the agent's runs talk to
+  (:ref:`agentics_llm`)
 
 
 To change user preferences, you need to create a text file named 'preferences' in your ~/.imasviz folder with
@@ -41,7 +43,13 @@ the following content:
 
 #Mdi_view_mode=windowed
 
-These are the default values of the 8 currently available options.
+#AgentLLMEndpoint=http://127.0.0.1:11434/v1
+
+#AgentLLMModel=qwen3.8:27b
+
+#AgentLLMApiKey=
+
+These are the default values of the 11 currently available options.
 
 To change an option, just remove the # character preceding the option name and change the value.
 
@@ -174,3 +182,33 @@ sub-menu of the Windows menu: the value is written into this file, so a run in
 the next session is opened laid out the way you left it. A name that is none of
 the four is named in the log panel and leaves the mode the application had
 standing.
+
+The agent's model
+~~~~~~~~~~~~~~~~~
+
+The three lines of the agent's runs -- the faces of :ref:`agentics` read them,
+the panel of :guilabel:`File --> Agent` among them, and the REPL of
+``python3 -m viz_cli`` writes them back when it is asked to, one field at a
+time (``/llm endpoint``, ``/llm model``, ``/llm key``). None of them reaches
+anything but the model: a line that cannot be read is named where the run
+reads it and leaves the default standing, and the runs before the line does
+not change.
+
+- **AgentLLMEndpoint** -- the endpoint of a chat that speaks the OpenAI shape,
+  the last word of it being ``/v1``. The default is
+  ``http://127.0.0.1:11434/v1``, the one a local server answers on port 11434.
+  A face is never left hanging on it: the first run against an endpoint that
+  does not answer is a named refusal, the endpoint it asked for in the words.
+
+- **AgentLLMModel** -- the name of the model, sent with every call. An empty
+  name is **not** a refusal and not a guess: the endpoint is asked, and the
+  first entry of its ``/v1/models`` is the one sent, on the first connect. A
+  name the endpoint does not hold costs one round trip and a named refusal; it
+  is not silently replaced by the one it does hold.
+
+- **AgentLLMApiKey** -- the token, for an endpoint that asks for one. Sent as
+  an ``Authorization`` header **only when it is non-empty**; the default is
+  empty, and a local server does not ask for one, so the default line never
+  sends a header. The word is not logged, not in the log panel and not in a
+  transcript: it is the one word of the file that is not repeated where it is
+  named.

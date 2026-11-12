@@ -21,6 +21,15 @@ While the tool itself is already available for use it is still under active
 development, and various features, GUI improvements etc. are still being
 implemented.
 
+Since 3.0.0 the application is also driven by name: an agent of the session
+runs its own gestures from a window of the GUI (the :guilabel:`File --> Agent`
+entry), over the Model Context Protocol (``python -m mcp_server``), from a
+line without its window (``python3 -m viz_cli``), from a page
+(``python3 -m viz_web``), and the multi-user gateway
+(``python3 -m viz_gateway``) keeps one of them per user, behind a token. The
+manual's section :ref:`agentics` is the authoritative description; the README
+at the root of the repository carries the installation words of the stack.
+
 For additional support or if any issues are found with IMASViz please contact
 the developers via e-mail or submit a ticket on
 `JIRA ITER Webpage <https://jira.iter.org>`_.

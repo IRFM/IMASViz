@@ -21,7 +21,10 @@ as a curve against time or against a coordinate, as a picture of a 2D array, as 
 table of panels, as a stack of curves; and the selection, the plot and the whole
 screen can be written to a file and put back later. The application is scripted
 from Python as much as it is driven from the screen, and it is extended by
-plugins.
+plugins. Since 3.0.0 it is addressed by name as well: an agent that runs a
+session's own gestures answers from a window of the GUI, from an MCP client, from
+a line, from a page -- and a gateway keeps more than one of them, one per user,
+behind a token (the manual's section :ref:`agentics`).
 
 .. list-table::
    :header-rows: 0
@@ -31,7 +34,8 @@ plugins.
      - What the tool is for, the terms it uses, and what changed in each release.
    * - :doc:`manual/index`
      - How to work with it: opening a case, the tree, selecting, plotting,
-       configuring, exporting, preferences.
+       configuring, exporting, preferences -- and talking to it: the agent,
+       the MCP service, the line, the page, the gateway.
    * - :doc:`howto/index`
      - Short guided recipes, including how to write a plugin of your own.
 

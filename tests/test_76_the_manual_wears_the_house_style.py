@@ -441,7 +441,7 @@ def test_the_landing_page_points_three_ways_in():
 def test_every_page_of_the_manual_is_in_the_tree(build):
     """A page no toctree points at is written and never reachable.
 
-    The manual is 21 sources; the navigation column is drawn from the tree, so a
+    The manual is 22 sources; the navigation column is drawn from the tree, so a
     page outside it is a page a reader cannot get to -- and the only thing that
     says so is a build warning nobody reads.
     """
@@ -450,7 +450,7 @@ def test_every_page_of_the_manual_is_in_the_tree(build):
         for name in files:
             if name.endswith('.rst'):
                 sources.append(os.path.relpath(os.path.join(folder, name), SOURCE))
-    assert len(sources) == 21, sources
+    assert len(sources) == 22, sources
     for source in sources:
         page = os.path.join(build.folder, source[:-4] + '.html')
         assert os.path.exists(page), '%s did not come out' % source

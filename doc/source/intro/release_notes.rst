@@ -19,6 +19,45 @@ Release notes
 =============
 
 -------------
+Version 3.0.0
+-------------
+Released 11/12/2026
+
+- Agentic interfaces: IMASViz is addressed by name as well as it is
+  clicked. One core and one tool set, seen through five faces
+  (section :ref:`agentics` of the manual):
+
+    - the in-app agent: the :guilabel:`File --> Agent` entry of the
+      application window -- the transcript, the prompt, the loop -- one
+      window of the session, its figures indistinguishable from the ones
+      the user drew;
+    - the MCP service: ``python -m mcp_server``, the session's tools as a
+      Model Context Protocol endpoint, ``http://127.0.0.1:8765/mcp``;
+    - the line client: ``python3 -m viz_cli``, the same loop without its
+      window -- offscreen by default, its images and its transcript on
+      disk, and a one-shot mode for a node without a display;
+    - the web client: ``python3 -m viz_web``, the same loop on a page --
+      the chat, the gestures, the captures of the turns -- the
+      application's window offscreen;
+    - the multi-user gateway: ``python3 -m viz_gateway``, one web session
+      per user behind a token -- the pool, the login page, the budget of
+      live instances.
+
+- The model of the session: three preferences lines --
+  ``AgentLLMEndpoint`` (default ``http://127.0.0.1:11434/v1``),
+  ``AgentLLMModel`` (an empty name is the endpoint's first
+  ``/v1/models`` entry, read on the first connect) and ``AgentLLMApiKey``
+  (sent only when non-empty).
+- The reading of a multi-axis quantity is one shape on every face: the
+  ``along`` the quantity runs with, and the ``indices`` of the axes it
+  pins -- a shared schema of the plot and of the read, so the figure a
+  viewer sees and the numbers a read reports are the same element of the
+  same array.
+- The refusals of the runs are named, and cost nothing: a refusal opens no
+  empty figure, takes no figure number, and says its reason where the face
+  that asked for it reads it.
+
+-------------
 Version 2.8.0
 -------------
 Released 12/15/2023

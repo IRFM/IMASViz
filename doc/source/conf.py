@@ -29,9 +29,9 @@ copyright = '2018, Dejan Penko, Fleury Ludovic'
 author = 'Dejan Penko, Fleury Ludovic'
 
 # The short X.Y version
-version = ''
+version = '3.0'
 # The full version, including alpha/beta/rc tags
-release = '2022'
+release = '3.0.0'
 
 
 # -- General configuration ---------------------------------------------------
