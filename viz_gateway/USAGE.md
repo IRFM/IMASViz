@@ -51,6 +51,7 @@ avant l'épuisement des ports.
 python3 -m viz_gateway \
     --port 8760 \
     --max-users 20 \
+    --max-turns 20 \
     --idle-timeout 1800 \
     --users-dir ~/.imasviz/gateway
 ```
@@ -63,7 +64,12 @@ Options (défaut dans la parenthèse) :
 | `--port` | `8760` | port de **la gateway** (les backends locaux reçoivent leur port par le kernel) |
 | `--users-dir` | `~/.imasviz/gateway` | dossier qui tient `users.json` et les `homes/` des users locaux |
 | `--max-users` | `20` | nombre d'instances vivantes au maximum |
+| `--max-turns` | `12` | limite de tours de la boucle agent, **transmise** à chaque instance locale qu'elle lance (défaut identique à `viz_web`) |
 | `--idle-timeout` | `1800` (s) | temps d'inactivité avant que le pool tue une instance |
+
+Note : `--max-turns` pose la limite à la **création** d'une instance. Pour la
+changer sur une instance déjà ouverte, `POST /api/llm` avec
+`{"field": "max_turns", "value": N}` la met à jour à chaud, sans relance.
 
 Le **reap** court en arrière-plan toutes les 30 s : le pool demande de lui les
 users inactifs plus de `--idle-timeout`, les stoppe, libère le port. Un user qui

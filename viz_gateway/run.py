@@ -51,6 +51,10 @@ def parseArguments(argv=None):
     parser.add_argument('--max-users', dest='max_users', type=int, default=20,
                         help='the pool budget: how many live instances at '
                              'once (default: 20)')
+    parser.add_argument('--max-turns', dest='max_turns', type=int, default=12,
+                        help='the agent loop turn limit forwarded to every '
+                             'local instance it spawns (default: 12, the '
+                             'viz_web default)')
     return parser.parse_args(argv)
 
 
@@ -64,7 +68,8 @@ def main(argv=None):
     import uvicorn
 
     store = UserStore(args.users_dir)
-    pool = Pool(idleTimeout=args.idle_timeout, maxUsers=args.max_users)
+    pool = Pool(idleTimeout=args.idle_timeout, maxUsers=args.max_users,
+                maxTurns=args.max_turns)
     app = buildApp(store, pool)
 
     config = uvicorn.Config(app, host=args.host, port=args.port,

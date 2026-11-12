@@ -89,15 +89,16 @@ def spawnEnv(entry):
     return env
 
 
-def spawnVizWeb(user, entry, port, env):
+def spawnVizWeb(user, entry, port, env, max_turns=12):
     """One live `viz_web` on its port, in `env`. Returns the process handle.
 
-    `QT_QPA_PLATFORM` is already offscreen from `spawnEnv`, and `--offscreen`
-    the run names it too, so the window stays off the screen whatever the
-    operator's own display.
+    --max-turns is forwarded to the child: the child's default (12) is the
+    same as here, so an operator who does not set either gets the same loop
+    limit whether or not there is a gateway.
     """
     command = ['python3', '-m', 'viz_web',
-               '--host', '127.0.0.1', '--port', str(port), '--offscreen']
+               '--host', '127.0.0.1', '--port', str(port), '--offscreen',
+               '--max-turns', str(max_turns)]
     return subprocess.Popen(command, env=env)
 
 
@@ -149,12 +150,13 @@ class Pool:
     """
 
     def __init__(self, spawn=None, health=None, idleTimeout=1800,
-                 maxUsers=20, host='127.0.0.1', clock=time.monotonic):
+                 maxUsers=20, host='127.0.0.1', maxTurns=12,
+                 clock=time.monotonic):
         if maxUsers < 1:
             raise ValueError('a pool holds at least one user; its max is %d.'
                              % maxUsers)
-        self._spawn = spawn or (lambda user, entry, port, env:
-                                spawnVizWeb(user, entry, port, env))
+        self._maxTurns = maxTurns
+        self._spawn = spawn or spawnVizWeb
         self._health = health if health is not None else pollHealth
         self._idleTimeout = idleTimeout
         self._maxUsers = maxUsers
@@ -187,9 +189,11 @@ class Pool:
                     % (len(live), self._maxUsers))
             port = freePort(self._host)
             url = 'http://%s:%d' % (self._host, port)
-            handle = self._spawn(user, entry, port, spawnEnv(entry))
+            handle = self._spawn(user, entry, port, spawnEnv(entry),
+                                 self._maxTurns)
             self._health(url, handle)
-            self._instances[user] = Instance(user, entry, port, url, handle, now)
+            self._instances[user] = Instance(user, entry, port, url, handle,
+                                             now)
             return url
 
     def touch(self, user):
