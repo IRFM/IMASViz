@@ -74,10 +74,15 @@ class LLMClient:
     def __init__(self, endpoint=None, model=None, api_key=None,
                  timeout=120.0):
         from imasviz.VizUtils import QVizPreferences
+        # A field typed on a command line or in the REPL never passed through
+        # the preferences reader, so a stray room at its end would stand: strip
+        # it here, where it is read for the URL, the model name and the header.
         self.endpoint = (endpoint or
-                         QVizPreferences.AgentLLMEndpoint).rstrip('/')
-        self.model = model or QVizPreferences.AgentLLMModel or None
-        self.api_key = api_key or QVizPreferences.AgentLLMApiKey or ''
+                         QVizPreferences.AgentLLMEndpoint).strip().rstrip('/')
+        self.model = (model or QVizPreferences.AgentLLMModel or
+                      '').strip() or None
+        self.api_key = (api_key or
+                        QVizPreferences.AgentLLMApiKey or '').strip()
         self.timeout = timeout
         self._model_resolved = False
 

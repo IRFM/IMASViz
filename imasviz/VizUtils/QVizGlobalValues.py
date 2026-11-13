@@ -348,13 +348,16 @@ class QVizPreferences:
                                     QVizPreferences.listView(line[len(option14):])
                             elif line.startswith(option15):
                                 QVizPreferences.AgentLLMEndpoint = \
-                                    line[len(option15):].strip()
+                                    QVizPreferences.stripComment(
+                                        line[len(option15):])
                             elif line.startswith(option16):
                                 QVizPreferences.AgentLLMModel = \
-                                    line[len(option16):].strip()
+                                    QVizPreferences.stripComment(
+                                        line[len(option16):])
                             elif line.startswith(option17):
                                 QVizPreferences.AgentLLMApiKey = \
-                                    line[len(option17):].strip()
+                                    QVizPreferences.stripComment(
+                                        line[len(option17):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],
@@ -437,6 +440,24 @@ class QVizPreferences:
                    ' or '.join(repr(one) for one in
                                QVizPreferences.URI_LIST_VIEWS)))
         return asked
+
+    def stripComment(text):
+        """The value of the three AgentLLM lines, commentless.
+
+        The example block of the README puts a comment on exactly these
+        lines -- ``AgentLLMEndpoint=http://127.0.0.1:11434/v1   # point it
+        at any OpenAI-compatible server`` -- so copying the block into
+        ``~/.imasviz/preferences`` was how a user ended up with the comment
+        inside the value: the endpoint then dies in urllib as ``URL can't
+        contain control characters``, and the model is sent with words
+        behind it. A ``#`` that follows a space or a tab ends the value;
+        any other ``#`` is part of it, so a token carrying a ``#`` with no
+        room on either side keeps it.
+        """
+        for i, letter in enumerate(text):
+            if letter == '#' and i and text[i - 1] in ' \t':
+                return text[:i].strip()
+        return text.strip()
 
 
 class QVizGlobalValues:

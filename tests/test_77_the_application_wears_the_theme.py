@@ -369,6 +369,38 @@ def test_a_colour_that_means_nothing_is_named_and_costs_only_its_own_line(
                for one in named), named
 
 
+def test_the_readme_block_of_agent_lines_reads_clean(privateHome):
+    """The three AgentLLM lines, with the comments their example block spells.
+
+    Copying the block of the README into ``~/.imasviz/preferences`` is how a
+    user ended up with the words of a comment inside the value: the endpoint
+    then died in urllib as ``URL can't contain control characters``, with
+    three rooms at its end. A ``#`` after a room ends the value; the endpoint
+    reads usable, the model without its tail, and the empty key stays empty.
+    """
+    readPreferences(privateHome / '.imasviz',
+                    'AgentLLMEndpoint=http://127.0.0.1:11434/v1   '
+                    '# point it at any OpenAI-compatible server\n'
+                    'AgentLLMModel=qwen3.8:27b-q4_K_M                     '
+                    "# empty = the endpoint's first /v1/models entry\n"
+                    'AgentLLMApiKey=                               '
+                    '# empty = no auth header\n')
+    assert QVizPreferences.AgentLLMEndpoint == 'http://127.0.0.1:11434/v1'
+    assert QVizPreferences.AgentLLMModel == 'qwen3.8:27b-q4_K_M'
+    assert QVizPreferences.AgentLLMApiKey == ''
+
+
+def test_a_hash_with_no_room_behind_keeps_its_token(privateHome):
+    """A ``#`` is a comment only when it follows a room.
+
+    A token that carries a ``#`` with no room on either side is still what
+    the line says -- the rule of ``stripComment`` -- so the comment of the
+    example block does not reach into a key nobody commented.
+    """
+    readPreferences(privateHome / '.imasviz', 'AgentLLMApiKey=abc#def\n')
+    assert QVizPreferences.AgentLLMApiKey == 'abc#def'
+
+
 # ------------------------------------------------------------ on the screen --
 
 @pytest.mark.ui
