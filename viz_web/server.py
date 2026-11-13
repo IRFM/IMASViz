@@ -301,6 +301,11 @@ def _turnEvent(record):
             # Focus and Screenshot buttons take that name to focus_window
             # and get_screenshot.
             'image_windows': record.get('image_windows', []),
+            # The windows this turn closed for good: the page drops the
+            # cards they named from its gallery, so a close the loop did
+            # is not a figure the page keeps under the reader's eyes
+            # while the transcript says it is closed.
+            'closed': record.get('closed') or [],
             'reports': record.get('reports') or []}
 
 
