@@ -130,6 +130,27 @@ class FakeCore:
                               'cases': []})
         return {'window': 'SlicesPlot1'}
 
+    def close_window(self, key):
+        # The gesture the loop dispatches to close a figure for good:
+        # the window leaves the stand-in's holding, and a key it does
+        # not hold is refused by name -- the same words the real core's
+        # `_windowForKey` answers.
+        for record in list(self._windows):
+            if record['key'] == key:
+                self._windows.remove(record)
+                return {'closed': key}
+        raise ValueError(
+            'No window holds the key "%s" any more' % key)
+
+    def new_session(self):
+        # The clean slate: every window the stand-in holds goes, and the
+        # count is answered the way `McpGuiCore.new_session` answers it.
+        closed = len(self._windows)
+        self._windows = []
+        return {'closed': closed, 'saved_to': None,
+                'note': 'the clean slate, without a save: the sessions '
+                        'on disk are untouched'}
+
     def plot_report(self, figure_key, name=None):
         # The one half the turn tests need of the core's own
         # `plot_report`: the file under $HOME/.imasviz/reports, the folder

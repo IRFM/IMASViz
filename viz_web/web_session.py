@@ -183,6 +183,15 @@ class WebSession:
 
             lines = []
             requested_windows = []
+            # The figures the turn closes, by key: the `close_window` the
+            # loop ran, or the `new_session` that closes every figure of
+            # the session. The close runs on the application side (the
+            # window is off the screen and out of the bookkeeping); what
+            # the session owes the page is to take the figure out of the
+            # records -- the live gallery and the one a reload rebuilds --
+            # and that is asked here, from the asks of the turn.
+            closed = []
+            closed_all = False
             done = threading.Event()
             outcome = [None]
             # What the reports folder holds before the loop runs: the
@@ -233,6 +242,23 @@ class WebSession:
                     key = (args or {}).get('into_figure_key')
                     if key and key not in requested_windows:
                         requested_windows.append(key)
+                elif name == 'close_window':
+                    # A close is an ask of its own: the figure the core
+                    # closes for good is one the session loses. It is
+                    # named here, by the key the gesture answers, so the
+                    # end of the turn takes it out of the records -- the
+                    # live page and the one a reload rebuilds -- instead
+                    # of the page keeping the figure under the user's
+                    # eyes while the agent says it closed it.
+                    key = (args or {}).get('key')
+                    if key and key not in closed:
+                        closed.append(key)
+                elif name == 'new_session':
+                    # The *New session* of the page and the loop: every
+                    # figure of the session goes, and the records are the
+                    # ones the clean slate must leave without a capture --
+                    # or the reload of the page brings the session back.
+                    closed_all = True
 
             def onDone(error):
                 outcome[0] = error
@@ -295,14 +321,83 @@ class WebSession:
                       'reports': sorted(self.reportsOnDisk() - before_reports),
                       'dir': turn_dir}
             self.turns.append(record)
+            # The figures the turn closed are the ones the session lost,
+            # asked before the record is written: the record of the turn
+            # that drew them keeps the captures the close did not name,
+            # and the `done` the page reads names the ones it drops.
+            # A close without a record to answer it (the key was asked,
+            # no capture names it) leaves the records as they are and
+            # names nobody -- there is no card the page would have to
+            # drop.
+            if closed or closed_all:
+                record['closed'] = self._markFiguresClosed(
+                    closed, closed_all)
             # The record stays on disk beside its PNGs, the subset
             # `recordsFromDisk` reads back: a server that restarts between
             # turns answers its earlier turns from the folder instead of
-            # an empty list while its captures sit there.
+            # an empty list while its captures sit there -- and the ones
+            # it closed the same way, the rewrite above having reached
+            # the disk before this write.
             with open(os.path.join(record['dir'], 'turn.json'), 'w',
                       encoding='utf-8') as f:
                 json.dump({k: record.get(k) for k in self.PERSISTED_KEYS}, f)
             return record
+
+    def _markFiguresClosed(self, keys=(), close_all=False):
+        """The figures the session lost: what the close takes out of the
+        records.
+
+        The close ran on the application side -- the window is off the
+        screen and out of the bookkeeping, the core answered for it. What
+        is left is the page's side of the truth: the gallery it builds,
+        live and on the reload, is built from the records of the turns,
+        and the figure the close named is still in them. The records
+        lose it -- the memory of the session and the `turn.json` beside
+        its PNGs, so the restart of the server and the reload of the page
+        both read the closure back -- and the capture the close did not
+        name stands: the removal is keyed on the keys the close answered,
+        not on the pictures of a turn.
+
+        The PNG stays on disk under the turn that drew it, beside its
+        transcript: what makes the page's `shot` route refuse it is the
+        record no longer naming it, and a refusal by name is the style of
+        this code. Deleting the file would cost the turn its capture, and
+        the turn is the one that asked for it.
+
+        :param keys: the windows the close named (the `window` fields of
+                     `image_windows`)
+        :param close_all: every capture the records hold -- the
+                          `new_session`
+        :returns: (list) the windows it took out, in the order it met
+                  them -- the address the page drops by
+        """
+        keys = set(keys or ())
+        if close_all:
+            for record in self.turns:
+                for entry in record.get('image_windows') or []:
+                    window = entry.get('window')
+                    if window:
+                        keys.add(window)
+        removed = []
+        for record in self.turns:
+            windows = record.get('image_windows') or []
+            kept = []
+            for entry in windows:
+                window = entry.get('window')
+                if window in keys:
+                    if window not in removed:
+                        removed.append(window)
+                    continue
+                kept.append(entry)
+            if len(kept) == len(windows):
+                continue
+            record['image_windows'] = kept
+            record['image_files'] = [entry['name'] for entry in kept]
+            with open(os.path.join(record['dir'], 'turn.json'), 'w',
+                      encoding='utf-8') as f:
+                json.dump({k: record.get(k) for k in self.PERSISTED_KEYS},
+                          f)
+        return removed
 
     def _finishTurn(self, lines, requested_windows=(),
                     figure_keys_before=None):
@@ -409,12 +504,29 @@ class WebSession:
         """
         with self._lock:
             try:
-                return {'error': None,
-                        'result': self.dispatcher.call(
-                            lambda: self.agent._dispatch(
-                                name, args or {}, requested_by='user'))}
+                result = self.dispatcher.call(
+                    lambda: self.agent._dispatch(
+                        name, args or {}, requested_by='user'))
             except Exception as e:
                 return {'error': str(e), 'result': None}
+            # The page asks the close directly (the *New session* button
+            # is the one the loop's own `new_session` does not pass
+            # through `runTurn`): the gesture ran on the application
+            # side, and the records keep the figure it closed as long as
+            # they name it -- so the same mark the loop's turn applies
+            # is applied here, or the reload of the page brings the
+            # figures the page just cleared back under the user's eyes.
+            # A refusal of the gesture (a `close_window` on a key the
+            # core does not hold) is the `ValueError` above, and it
+            # takes nothing out: there is no card to drop the close did
+            # not earn.
+            if name == 'close_window':
+                key = (args or {}).get('key')
+                if key:
+                    self._markFiguresClosed([key])
+            elif name == 'new_session':
+                self._markFiguresClosed(close_all=True)
+            return {'error': None, 'result': result}
 
     def llmFields(self):
         """What /llm reports, as the one command answers it: the endpoint,

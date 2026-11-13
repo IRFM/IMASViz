@@ -698,7 +698,12 @@ details.tool summary strong { color: var(--accent-strong); }
   }
 
   function shotCard(turn, name, window) {
-    var card = el('figure', { 'class': 'shot' });
+    // The card keeps the address of the window it shows: what the
+    // Focus and Screenshot buttons of the card send, and what a close
+    // names when it takes the figure out of the session's records --
+    // the page drops the card by it, so the gallery and the records
+    // cannot hold different truths of what a close left behind.
+    var card = el('figure', { 'class': 'shot', 'data-window': window || '' });
     var src = shotSrc(turn, name);
     var img = el('img', { src: src, alt: name, loading: 'lazy' });
     img.addEventListener('click', function (e) {
@@ -764,6 +769,32 @@ details.tool summary strong { color: var(--accent-strong); }
     var group = turnGroup(turn, prompt, windows);
     group.open = true;
     wrap.insertBefore(group, wrap.firstChild);
+  }
+
+  function removeClosed(closed) {
+    // The figures this turn closed: the session lost them, and the
+    // records it rebuilt the gallery from no longer name them (the
+    // server took them out of the `turn.json`s, so the reload of the
+    // page and the restart of the server both keep them gone). The
+    // gallery keeps the live truth of the same: the card a closed key
+    // names leaves it -- and the group that held it counts what
+    // remains, so the count the reader sees is the pictures the reader
+    // can still open, Focus and Screenshot among them the ones a close
+    // did not take away.
+    (closed || []).forEach(function (key) {
+      if (!key) return;
+      Array.prototype.forEach.call(
+        byId('images').querySelectorAll('figure.shot[data-window="' + key + '"]'),
+        function (card) { card.remove(); });
+    });
+    Array.prototype.forEach.call(
+      byId('images').querySelectorAll('details.shotGroup'),
+      function (group) {
+        var count = group.querySelectorAll('figure.shot').length;
+        var label = group.querySelector('.shotGroupCount');
+        if (label) label.textContent = '(' + count
+          + (count === 1 ? ' shot' : ' shots') + ')';
+      });
   }
 
   function galleryEmpty() {
@@ -877,6 +908,12 @@ details.tool summary strong { color: var(--accent-strong); }
     // theirs below, and a reload of the page rebuilds them all from
     // `/api/turns` (`buildGallery`).
     prependTurnShots(data.turn, data.prompt, data.image_windows);
+    // The figures this turn closed leave the gallery: the server took
+    // them out of the records (so the reload and the restart of the
+    // server keep them gone), and the page drops the cards they named
+    // -- a close the agent says it did is not a figure kept under the
+    // reader's eyes while the transcript says it is closed.
+    removeClosed(data.closed);
     // The report the request wrote stands under it, and the folder is
     // the source of truth of the section: the request joins the list,
     // and the folder is asked again, so a report that is among its names
