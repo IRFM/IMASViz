@@ -119,6 +119,11 @@ def test_a_known_parameter_is_not_refused(qapp, agent_kwargs):
     ])
     agent = AgentLoop(core=core, llm=llm, dispatcher=FakeDispatcher(),
                       **agent_kwargs)
+    # This test reads the `←` line back -- the figure the core named -- which
+    # the default `hide` mode (tools run, the traffic cut) does not put in the
+    # transcript. Pin `verbose`, the shape that shows the traffic, so the
+    # assertion is about a figure reaching the transcript, not about the mode.
+    agent.tools_mode = 'verbose'
     transcript, errors = _ask(agent, core, 'plot it along time')
     assert core.calls == [{'uri': 'x', 'path': 'equilibrium.f',
                            'along_time': 1, 'into_figure_key': None}], \

@@ -95,6 +95,11 @@ class CliSession:
         self.dispatcher = GuiDispatcher()
         self.agent = AgentLoop(core, self.llm, self.dispatcher,
                                main_window=window, api=_apiOf(window))
+        # A turn is left on disk here: its `transcript.txt` is what a reader
+        # answers back, so the tool calls have to be in it -- the panel's
+        # `hide` (the default, a shape for a live reader) would leave the
+        # file with only the final answer, a turn a reader cannot audit.
+        self.agent.tools_mode = 'verbose'
         self.prompts = []
         self.turns = []
 

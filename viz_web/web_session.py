@@ -125,6 +125,12 @@ class WebSession:
         self.dispatcher = GuiDispatcher()
         self.agent = AgentLoop(core, client, self.dispatcher,
                                main_window=window, api=_apiOf(window))
+        # Same reason as the CLI and the one-shot offscreen mode: a turn is
+        # left on disk here and the transcript that keeps it must read as a
+        # turn a reader can audit, so the tool calls stay in it. `hide` --
+        # the panel's default, the shape for the live reader -- is not the
+        # shape of a transcript kept on disk.
+        self.agent.tools_mode = 'verbose'
         self.prompts = []
         # The turns the captured directory holds, oldest first: a
         # restart of the process keeps the captures and the list that
