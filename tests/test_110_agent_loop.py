@@ -124,7 +124,13 @@ def test_truncated_response(qapp, agent_kwargs):
 
 
 def test_tool_call_then_final(qapp, agent_kwargs):
-    """LLM asks for a tool, the tool runs, the LLM gives the final answer."""
+    """LLM asks for a tool, the tool runs, the LLM gives the final answer.
+
+    Pinned on `verbose`, whose transcript carries the tool traffic: the
+    default `hide` shape cuts those lines by design (pinned in
+    `tests/test_117_agent_tools_mode.py`), so this test names the shape it
+    asserts on rather than reading the loop's default.
+    """
     call = LLMResponse(
         content='',
         tool_calls=[{'name': 'list_cases', 'args': {}}],
@@ -140,6 +146,7 @@ def test_tool_call_then_final(qapp, agent_kwargs):
         dispatcher=FakeDispatcher(),
         **agent_kwargs,
     )
+    agent.tools_mode = 'verbose'
     lines = []
     agent.transcriptLine.connect(lines.append)
     error = []

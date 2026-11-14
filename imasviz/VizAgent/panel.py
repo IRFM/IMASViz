@@ -27,6 +27,7 @@ import threading
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QGridLayout,
     QHBoxLayout,
     QPlainTextEdit,
@@ -99,12 +100,36 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.clearButton = QPushButton('Effacer')
         self.clearButton.clicked.connect(self._onClear)
         buttons.addWidget(self.clearButton)
+        # The tools switch. On (the default) the agent runs its gestures and
+        # the transcript holds only the answer -- `hide`; off the agent is
+        # offered no tool at all, a pure text shape -- `off`. It is the
+        # in-session switch: it follows the preference on build and, when the
+        # user flips it, follows the choice for the rest of the session. The
+        # shape that is reached across a new session is the `AgentToolsMode`
+        # file preference, which is also where `off` is written, and which
+        # the switch mirrors on build without overwriting it.
+        buttons.addStretch(1)
+        self.toolsBox = QCheckBox('Appels aux outils')
+        buttons.addWidget(self.toolsBox)
         layout.addLayout(buttons)
 
         # Connect the agent signals
         if self.agent is not None:
             self.agent.transcriptLine.connect(self._appendTranscript)
             self.agent.askFinished.connect(self._onFinished)
+            # The switch mirrors the shape the loop wears: checked is a
+            # tools-on shape (`hide`/`verbose`), unchecked the chat shape
+            # (`off`). It sets the agent's mode but does not write the file --
+            # the file is where the shape persists -- so a panel rebuilt after
+            # a new session reads the same shape back, and neither overwrites
+            # the other.
+            from imasviz.VizUtils import QVizPreferences
+            self.toolsBox.blockSignals(True)
+            self.toolsBox.setChecked(
+                QVizPreferences.AgentToolsMode != 'off')
+            self.toolsBox.blockSignals(False)
+            self.agent.tools_mode = QVizPreferences.AgentToolsMode
+            self.toolsBox.toggled.connect(self._onToolsToggled)
 
         self.setWindowTitle(
             'Agent — %s' % QVizGlobalValues.IMAS_VIZ_VERSION)
@@ -194,6 +219,18 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.transcript.clear()
         self.promptEdit.clear()
         self.promptEdit.setFocus()
+
+    def _onToolsToggled(self, checked):
+        """The tools switch: on is the tools-on shape (`hide`), off the chat
+        shape (`off`, no gesture offered).
+
+        It follows the choice for the rest of this session -- a panel
+        rebuilt after a new session reads the shape back from the
+        `AgentToolsMode` preference, which is where it is reached across a
+        new session and where the switch mirrors it on build.
+        """
+        if self.agent is not None:
+            self.agent.tools_mode = 'hide' if checked else 'off'
 
     def _appendTranscript(self, line):
         """One line from the agent loop, appended to the transcript."""

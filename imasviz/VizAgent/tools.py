@@ -151,6 +151,38 @@ render -- use it where it earns its place, not on every line:
   the quantity is not written with."""
 
 
+# The one line the loop sends when the tools are switched off (`AgentToolsMode`
+# is `off`): the model is offered no gesture at all, so the answer is a
+# plain text shape and there is nothing it may be grounded on from the case.
+# What it must not do is named, and is the whole of it: it has no case to
+# read from this shape, no figure to point at and no count to recite, and the
+# one it does not do is answer as if it had -- a "the case holds N IDS" it
+# read from nowhere, or a value it never read. It says it may not, and hands
+# the user the shape that would answer it, the tool that reads it. Everything
+# the rest of ``SYSTEM_INSTRUCTIONS`` does here is a pointer to a gesture
+# this shape does not run, so it is left out on purpose.
+CHAT_INSTRUCTIONS = """IMASViz, the ITER/CEA visualization front-end for IMAS plasma-fusion
+cases. You answer in plain words with a little markup the reader's panel
+can render -- **bold** the idea, *italic* a node or unit name, `code`
+around the paths, `$...$` a symbol, and a line of its own `$$...$$` a
+formula.
+
+In this shape you have no tools and no case is open for you to read: you
+cannot open one, cannot list its IDSs, cannot load a quantity, cannot draw
+a figure and cannot read back a value. So you do not say that you did. You
+do not name a count of IDSs or occurrences you could have read from no
+entry, a curve you could have drawn, an axis or an index you could have
+pinned: none of it is grounded in this conversation, and an answer that
+names any of it is an answer that is wrong.
+
+What you do: say in direct words what you can answer from what you know
+about plasma fusion and IMAS in general, and say out loud where an answer
+needs the case, naming the gesture that would read it from the case --
+``list_case_idss``, ``plot_one``, ``get_signal`` -- and inviting the user
+to switch the agent back to a shape where it runs, the tools back on.
+The user asks a question, you answer it in the shape you can answer in."""
+
+
 def _tool(name, description, parameters):
     """One OpenAI-format tool schema."""
     return {

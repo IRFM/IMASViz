@@ -282,6 +282,15 @@ def runAgentMode(args, app=None, window=None, core=None, llm=None):
     if llm is None:
         llm = buildLLM(args)
     core, agent = buildAgentStack(window, llm, core=core)
+    # An offscreen scripted run's transcript is its own artifact: the
+    # caller is reading back what the agent did, so the tool traffic has
+    # to be in it. `hide` (the default the in-app loop wears, a shape that
+    # cuts the traffic on the transcript for a live reader) would leave the
+    # file with only the final answer, which is a trace without its calls
+    # -- a user who read back a scripted run cannot tell what the agent did.
+    # `verbose` puts both the calls and the answer in, which is what this
+    # mode is for: producing a trace a human can audit after the run.
+    agent.tools_mode = 'verbose'
 
     lines = []
     done = threading.Event()
