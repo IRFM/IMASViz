@@ -28,6 +28,7 @@ and a quantity read along another quantity's abscissa came out labelled with the
 wrong axis.
 """
 
+import numpy as np
 import pyqtgraph as pg
 
 from PySide6.QtWidgets import QLabel, QScrollArea, QVBoxLayout, QWidget
@@ -150,9 +151,33 @@ class QVizPanel(QWidget):
                                                       as_function_of_time=as_function_of_time))
         return y.shape[0]
 
+    def plotRaw(self, x, y, name, name_units='', x_label='', x_units=''):
+        """Draw a raw (x, y) pair here.
+
+        The value the Access Layer answered at a named instant (a profile of
+        the equilibrium read, `QVizEquilibriumRead.profilesAt`), not a
+        quantity the tree is standing on: the read there is an IDS-object
+        read the axes model does not carry, and the panel is still the same
+        panel -- one curve in the palette's order, a title and a label. It
+        keeps no band, because there is no read for the band to fix.
+        """
+        self._curves = [self.pgPlotWidget.plot(
+            np.asarray(x, dtype=float), np.asarray(y, dtype=float),
+            pen=penFor(0), name=name)]
+        # The abscissa the curve runs along: the window that stacks the
+        # panels (`QVizStackedPlot`) settles it on this first panel and
+        # checks the rest against it, on the same identity both sides spell.
+        self.abscissa = (str(x_label), x_label)
+        self.pgPlotWidget.setTitle(name)
+        quantity = name if not name_units else name + '[' + name_units + ']'
+        self.pgPlotWidget.setLabel('left', quantity)
+        self.pgPlotWidget.setLabel('bottom', x_label, units=x_units or '')
+        self.sliceControls.setVisible(False)
+        return 1
+
     def refresh(self):
         """Re-read this panel through its own controls."""
-        if not getattr(self, '_curves', None):
+        if not getattr(self, '_curves', None) or getattr(self, 'treeNode', None) is None:
             return
         for row, curve in enumerate(self._curves):
             x, y = self.accessFor(self.treeNode).GetSignal(

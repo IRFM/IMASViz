@@ -36,6 +36,16 @@ class FigureTypes:
     # Profiles panel it serves the case of the shot view it was opened from,
     # with a `None` node in `figToNodes` -- neither draws a curve of its own.
     EQUILIBRIUMPLOTTYPE = "EquiPlotView:"
+    # The flux-surface row of the application's own equilibrium read
+    # (`QVizEquilibriumFigure`): one frame per named instant, in the
+    # application's own drawing style. Like the Equilibrium overview window it
+    # keeps its own prefix, because it does not draw a curve through the axes
+    # model the "add this quantity to that figure" entries offer -- that is the
+    # prefix's contract, and a kind that none of them fills stays a namespace
+    # of its own. Registered in `figureframes`, the *Windows* menu, its
+    # *Delete* sub-menu, the sessions and the screenshots reach it like any
+    # other.
+    EQUISURFACES = "EquiSurfaces:"
     # The agent panel is a window like the others: it is registered in
     # `figureframes`, so the *Windows* menu and its *Delete* sub-menu reach it.
     # It is not a figure (it draws no curves), so it keeps its own prefix.
@@ -54,6 +64,7 @@ class FigureTypes:
                   ('Plot', 'Figure', CURVEPLOTTYPE),
                   ('Image', 'Image', IMAGEPLOTTYPE),
                   ('Equilibrium', 'Figure', EQUILIBRIUMPLOTTYPE),
+                  ('EquiSurfaces', 'Figure', EQUISURFACES),
                   ('Agent', 'Agent', AGENTTYPE))
 
 class UserInputs:

@@ -131,6 +131,32 @@ class QVizStackedPlot(QWidget):
         self.applyXLabelsPolicy()
         return drawn
 
+    def plotRaw(self, x, y, name, name_units='', x_label='', x_units=''):
+        """One panel of a raw (x, y) pair, with the discipline of `plot()`.
+
+        The numbers here are the value the Access Layer answered at a named
+        instant (a profile of the equilibrium read), not a quantity the tree
+        stands on: the read there is an IDS-object read the axes model does
+        not carry, so the panel is asked for the same panel with the numbers
+        handed to it instead. Everything else stands -- the shared abscissa,
+        the link policy, the label discipline, and the refusal that a
+        quantity drawn along another abscissa earns.
+        """
+        panel = QVizPanel(self)
+        panel.plotRaw(x, y, name, name_units=name_units,
+                      x_label=x_label, x_units=x_units)
+        if self.abscissa is not None and panel.abscissa[0] != self.abscissa[0]:
+            raise ValueError('"%s" is read along %s, not %s: a stacked window '
+                             'draws every panel against the abscissa of the '
+                             'first panel added.'
+                             % (name, x_label, self.abscissa[1] or 'nothing'))
+        self.abscissa = self.abscissa or panel.abscissa
+        self._panels.append(panel)
+        self.grid.addWidget(panel, len(self._panels) - 1, 0)
+        self.applyLinkPolicy()
+        self.applyXLabelsPolicy()
+        return 1
+
     def applyLinkPolicy(self):
         """Share the first panel's ranges, or hand every panel back its own."""
         if len(self._panels) < 2:
