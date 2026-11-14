@@ -193,6 +193,22 @@ class QVizPreferences:
     AgentLLMEndpoint = 'http://127.0.0.1:11434/v1'
     AgentLLMModel = 'qwen3.8:27b'
     AgentLLMApiKey = ''
+    # The embeddings endpoint: the journal search ranks by this when it
+    # is named in the preferences, and by keyword when it is not. It is
+    # the OpenAI-compatible /embeddings of a llama-server (--embeddings)
+    # or an Ollama that serves an embedding model -- not the chat model
+    # the agent runs (qwen3.8:27b is a chat model, it has no embedding
+    # table). Empty means the search does not rank by this and falls
+    # back to the keyword, and the answer says which one it used.
+    AgentEmbedEndpoint = ''
+    AgentEmbedModel = ''
+    # The shared journal: the folder two users share. The personal one
+    # is under ~/.imasviz (a per-user path), and this is the one the
+    # shared one is -- an AFS path, the rule of the preferences that
+    # points the two users at the folder they share. Empty is a
+    # refusal by name: the shared journal has no folder to sit in until
+    # this is set.
+    SharedJournalDir = ''
     # The agent's tools, and how its answer reads on the transcript. Three
     # shapes, and they are what the loop asks of the LLM:
     #   `hide`    -- the agent still runs its gestures, but the transcript
@@ -322,6 +338,9 @@ class QVizPreferences:
             option16 = "AgentLLMModel="
             option17 = "AgentLLMApiKey="
             option18 = "AgentToolsMode="
+            option19 = "AgentEmbedEndpoint="
+            option20 = "AgentEmbedModel="
+            option21 = "SharedJournalDir="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -391,6 +410,18 @@ class QVizPreferences:
                                 QVizPreferences.AgentToolsMode = \
                                     QVizPreferences.toolsMode(
                                         line[len(option18):])
+                            elif line.startswith(option19):
+                                QVizPreferences.AgentEmbedEndpoint = \
+                                    QVizPreferences.stripComment(
+                                        line[len(option19):])
+                            elif line.startswith(option20):
+                                QVizPreferences.AgentEmbedModel = \
+                                    QVizPreferences.stripComment(
+                                        line[len(option20):])
+                            elif line.startswith(option21):
+                                QVizPreferences.SharedJournalDir = \
+                                    QVizPreferences.stripComment(
+                                        line[len(option21):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],

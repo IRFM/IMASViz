@@ -193,3 +193,154 @@ class LLMClient:
                 % finish_reason)
 
         return response
+
+
+class EmbeddingClient:
+    """A client for an OpenAI-compatible ``/embeddings`` endpoint.
+
+    The same ``urllib`` plumbing as ``LLMClient``, on an endpoint of
+    its own: ``AgentEmbedEndpoint`` and ``AgentEmbedModel`` in the
+    preferences, read when the fields are left out of the call. A
+    chat endpoint (the ``qwen3.8:27b`` the application runs) is not an
+    embedding one — the model that answers ``/embeddings`` has to
+    carry an embedding table, so the two are named apart, and a
+    preference that sets the chat one does not set this one.
+
+    ``embed(text)`` is one text to one vector (the shape the journals
+    ask of, one note at a time), and ``embed_batch(texts)`` is the same
+    with a list. Refusals are named: an endpoint with no server, one
+    that answers a non-2xx, and one that does not answer the shape this
+    client reads are all a ``ValueError`` with the reason, the rule the
+    ``LLMClient`` applies to its own call.
+    """
+    def __init__(self, endpoint=None, model=None, api_key=None,
+                 timeout=120.0):
+        from imasviz.VizUtils import QVizPreferences
+        self.endpoint = (endpoint or
+                         QVizPreferences.AgentEmbedEndpoint or '').strip()
+        self.endpoint = self.endpoint.rstrip('/')
+        self.model = (model or QVizPreferences.AgentEmbedModel or '').strip()
+        self.api_key = (api_key or '').strip()
+        self.timeout = timeout
+
+    def __call__(self, text):
+        """One text to its vector. The journals' ``rankByVector`` asks
+        of it one note at a time, and it is the callable the core hands
+        to that (a ``text -> list[float]``). An endpoint that is not
+        named is a named refusal: the caller reads it and falls back to
+        the keyword, and the ``journals`` module is the one that names
+        the fallback in the answer, not this client."""
+        return self.embed(text)
+
+    def embed(self, text):
+        """One text to its vector, the one OpenAI-compatible shape the
+        servers on this stack answer. A text that does not vectorise
+        (an empty one, or a shape the endpoint does not answer) is a
+        named refusal, the rule ``LLMClient.chat`` applies to its
+        empty answer."""
+        text = (text or '').strip()
+        if not text:
+            raise ValueError(
+                'a text that is empty does not vectorise: name one.')
+        if not self.endpoint:
+            raise ValueError(
+                'the embeddings endpoint is not named: set '
+                'AgentEmbedEndpoint in ~/.imasviz/preferences to point '
+                'at one (llama-server --embeddings, or an Ollama that '
+                'serves an embedding model). The keyword search is the '
+                'one that answers while it is not named.')
+        payload = {'input': text}
+        if self.model:
+            payload['model'] = self.model
+        body = json.dumps(payload).encode()
+        request = urllib.request.Request(
+            self.endpoint + '/embeddings',
+            data=body, method='POST',
+            headers={'Content-Type': 'application/json'})
+        if self.api_key:
+            request.add_header('Authorization', 'Bearer ' + self.api_key)
+        context = 'one text: %r' % (text[:40] if len(text) > 40 else text)
+        return self._embedResponse(self._send(request, body),
+                                   context=context)
+
+    def embed_batch(self, texts):
+        """Several texts to their vectors, in the order they were
+        asked. The journals do not use it in this run (one note at a
+        time), but the shape is the one a later ``rankByVector`` that
+        wants to ask of the endpoint a batch at once will hold, and the
+        refusal is the one ``embed`` has: an endpoint it does not
+        answer is a named error on the whole batch, not a half of it."""
+        texts = [one for one in (texts or []) if (one or '').strip()]
+        if not texts:
+            raise ValueError('a batch that is empty does not vectorise.')
+        if not self.endpoint:
+            raise ValueError(
+                'the embeddings endpoint is not named: set '
+                'AgentEmbedEndpoint in ~/.imasviz/preferences to point '
+                'at it.')
+        payload = {'input': texts}
+        if self.model:
+            payload['model'] = self.model
+        body = json.dumps(payload).encode()
+        request = urllib.request.Request(
+            self.endpoint + '/embeddings',
+            data=body, method='POST',
+            headers={'Content-Type': 'application/json'})
+        if self.api_key:
+            request.add_header('Authorization', 'Bearer ' + self.api_key)
+        return self._embedResponse(self._send(request, body),
+                                   context='%d text(s)' % len(texts),
+                                   batch=True)
+
+    def _send(self, request, body):
+        """One HTTP round trip: the 2xx body, or a named error. The
+        ``ConnectionError`` and the ``HTTPError`` are the two the
+        ``LLMClient`` has for its own call, the same shape, and the
+        caller falls back to the keyword instead of reading them."""
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as resp:
+                return resp.read().decode()
+        except urllib.error.HTTPError as e:
+            text = e.read().decode() if e.fp else ''
+            raise RuntimeError(
+                'the embeddings endpoint answered HTTP %d: %s'
+                % (e.code, text[:200]))
+        except urllib.error.URLError as e:
+            raise ConnectionError(
+                'the embeddings endpoint %s does not answer (within %d s): '
+                '%s — start the server, or set AgentEmbedEndpoint in the '
+                'preferences to point at one that does.'
+                % (self.endpoint or '(none named)', self.timeout, e.reason))
+        except (TimeoutError, OSError) as e:
+            raise ConnectionError(
+                'the embeddings endpoint %s did not answer: %s'
+                % (self.endpoint or '(none named)', e))
+
+    @staticmethod
+    def _embedResponse(raw, context='', batch=False):
+        """The one vector or the list a ``/embeddings`` call answers,
+        read off its body. The shape this client answers is the
+        OpenAI one (``data``: a list of ``{"embedding": [...]}``), and
+        a body that is not that shape is a named refusal, the rule the
+        ``LLMClient`` has for a JSON it cannot read."""
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError as e:
+            raise RuntimeError(
+                'the embeddings endpoint answered a body this client '
+                'does not read (%s): %s' % (e, raw[:200]))
+        items = data.get('data')
+        if not isinstance(items, list) or not items:
+            raise ValueError(
+                'the embeddings endpoint did not answer %s: its body '
+                'holds no embedding to read.' % (context or 'this text'))
+        vectors = [item['embedding'] for item in items
+                   if isinstance(item, dict) and item.get('embedding')]
+        if not vectors:
+            raise ValueError(
+                'the embeddings endpoint did not answer %s: its body '
+                'holds no vector under `embedding` to read.'
+                % (context or 'this text'))
+        if batch:
+            return vectors
+        return vectors[0]
