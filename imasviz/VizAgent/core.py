@@ -1259,6 +1259,169 @@ class McpGuiCore:
                 'time_slice_index': time_index,
                 'kind': type(frame).__name__}
 
+    # ---------------------------------------------------------- equilibrium
+
+    def _equilibriumRead(self, uri, occurrence):
+        """The `(view, reader)` of the `equilibrium` IDS of one open case.
+
+        The read is the IDS-object read (the same as the Equilibrium
+        plugin), so it does not walk the tree and costs one lazy `get`;
+        a case that holds no `equilibrium` IDS refuses by naming its own.
+        """
+        view = self._viewForUri(uri)
+        if 'equilibrium' not in view.IDSRoots:
+            raise ValueError(
+                '%s holds no equilibrium IDS, so there is no flux surface to '
+                'draw: list_case_idss names the IDS this case does hold.'
+                % uri)
+        from imasviz.VizDataAccess.QVizEquilibriumRead import \
+            QVizEquilibriumRead
+        return view, QVizEquilibriumRead(view.dataSource, occurrence)
+
+    def _newEquilibriumFigure(self, view, figure_key=None):
+        """The next `EquiSurfaces:` frame, registered like every other figure.
+
+        Allocated through `QVizPlotOneNode.newFigure` because that is the
+        one place a key is handed out against the api's own bookkeeping
+        (`figureframes`), which is what the *Windows* menu, its *Delete*
+        sub-menu, the sessions and `list_windows` read. `figure_key` is the
+        key a session replay names: `newFigure` honours it through
+        `FigureKeyFor` (refusing a key a live window already holds), so the
+        window comes back under the name the file said rather than a new one.
+        """
+        from imasviz.VizUtils import FigureTypes
+        from imasviz.VizGUI.VizGUICommands.VizPlotting.QVizPlotOneNode \
+            import QVizPlotOneNode
+        from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizEquilibriumFigure \
+            import QVizEquilibriumFigure
+        command = QVizPlotOneNode(view, view.IDSRoots['equilibrium'],
+                                  figureKey=figure_key)
+        frame = command.newFigure(FigureTypes.EQUISURFACES,
+                                  QVizEquilibriumFigure)
+        return command, frame
+
+    def _equilibriumFrameDrawn(self, command, frame, what):
+        """A frame the read left empty is taken back, naming the refusal."""
+        if frame.isDrawing():
+            return frame
+        command.discardIfEmpty(frame)
+        raise ValueError(
+            'equilibrium: the read answered, but the window of %s holds no '
+            'curve at all: the refusal above is the reason it is closed.'
+            % what)
+
+    def equilibrium_surfaces(self, uri, times, occurrence=0, figure_key=None):
+        """The flux surfaces of `equilibrium`, one frame per named instant.
+
+        `times` is the list of instants asked (a single number is read as a
+        list of one; each answers the case's own slice nearest to it, since
+        a GGD grid is discrete and an interpolated surface is a drawing no
+        one owns). The window is one of the application's own — an
+        `EquiSurfaces:` key in `figureframes`, dressed on the black ground
+        and the trace palette like a curve figure — with every frame on the
+        same bounds, so the instants are compared at equal measure: the same
+        levels, the same scale, the same marks (boundary, axis, O-point,
+        limiter) at the instants named.
+        """
+        if times is None:
+            raise ValueError(
+                'equilibrium_surfaces: name the instants to draw -- '
+                'times is the list of them, e.g. [40, 44, 48].')
+        if isinstance(times, (int, float)):
+            times = [times]
+        try:
+            times = [float(t) for t in times]
+        except TypeError:
+            raise ValueError(
+                'equilibrium_surfaces: times must be a list of numbers '
+                '(seconds in the case clock), was %r.' % (times,))
+
+        view, reader = self._equilibriumRead(uri, occurrence)
+        command, frame = self._newEquilibriumFigure(view, figure_key)
+        try:
+            surfaces = []
+            frames = []
+            for requested in times:
+                index, sliceTime, clamped = reader.resolve(requested)
+                surface = reader.surfaceAt(index)
+                surface['time_slice_time'] = sliceTime
+                surfaces.append(surface)
+                frames.append({
+                    'time_requested': requested,
+                    'time_slice_time': sliceTime,
+                    'slice_index': index,
+                    'clamped': clamped,
+                    'b0_T': surface['b0'],
+                    'r0_m': surface['r0'],
+                })
+            frame.drawRow(surfaces, wall=reader.wall())
+        except ValueError:
+            command.discardIfEmpty(frame)
+            raise
+        self._equilibriumFrameDrawn(command, frame, 'the row')
+        self._embedIfNew(command, frame)
+        return {
+            'figure': frame.figureKey,
+            'kind': type(frame).__name__,
+            'occurrence': occurrence,
+            'frames': frames,
+            'wall': reader.wall() is not None,
+        }
+
+    def equilibrium_at_time(self, uri, time, occurrence=0, figure_key=None):
+        """One instant of the equilibrium: its flux surface, its radial
+        profiles under it, and its global quantities in the answer.
+
+        The frame is the one the case answers for the instant -- `time`
+        resolves to the nearest slice the case holds, named back through
+        `time_requested` vs `time_slice_time` the way `plot_slice` says it
+        -- and under the surface the stack holds, one panel per radial
+        quantity the Equilibrium plugin draws (q, elongation,
+        triangularities, j_tor, pressure, f_df_dpsi, dpressure_dpsi), all
+        on the common abscissa the read settled (`rho_tor_norm`), with the
+        group pan on. The global quantities of the slice (Ip, q95, q_axis,
+        li_3, W_mhd, axis position) are values of the answer, not a drawing:
+        the window has no axis to spread a scalar over.
+        """
+        try:
+            requested = float(time)
+        except (TypeError, ValueError):
+            raise ValueError(
+                'equilibrium_at_time: time must be a number (seconds in the '
+                'case clock), was %r.' % (time,))
+        view, reader = self._equilibriumRead(uri, occurrence)
+        index, sliceTime, clamped = reader.resolve(requested)
+        surface = reader.surfaceAt(index)
+        surface['time_slice_time'] = sliceTime
+        profiles = reader.profilesAt(index)
+
+        command, frame = self._newEquilibriumFigure(view, figure_key)
+        try:
+            frame.drawRow([surface], wall=reader.wall())
+            frame.drawProfiles(profiles['x'], profiles['x_label'], '',
+                               profiles['profiles'])
+        except ValueError:
+            command.discardIfEmpty(frame)
+            raise
+        self._equilibriumFrameDrawn(command, frame, 'the figure')
+        self._embedIfNew(command, frame)
+        return {
+            'figure': frame.figureKey,
+            'kind': type(frame).__name__,
+            'occurrence': occurrence,
+            'time_requested': requested,
+            'time_slice_time': sliceTime,
+            'slice_index': index,
+            'clamped': clamped,
+            'b0_T': surface['b0'],
+            'r0_m': surface['r0'],
+            'wall': reader.wall() is not None,
+            'abscissa': profiles['x_label'],
+            'profiles': [name for name, _, _ in profiles['profiles']],
+            'empty_profiles': profiles['empty'],
+            'global': profiles['global'],
+        }
+
     def plot_selection(self, uri):
         """The case's selection, drawn by `QVizPlotAsSlices` from this view alone.
 

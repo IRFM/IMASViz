@@ -39,7 +39,11 @@ How to work with it:
    holds -- the paths select_signals, plot_one and get_signal take are
    any of those spellings;
 5. plot_one / plot_selection / plot_table / plot_stacked draw, and
-   get_screenshot answers a PNG of the window;
+   get_screenshot answers a PNG of the window; the equilibrium has its
+   own two entries -- equilibrium_surfaces puts the flux surfaces of the
+   instants you name side by side, and equilibrium_at_time puts one
+   instant's surface with its radial profiles in one window, the global
+   quantities of the slice coming back in the answer;
 6. state is read with list_selection (what the case holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
@@ -273,6 +277,40 @@ def buildServer(core, dispatcher, name='imasviz'):
                             occurrence=occurrence,
                             interpolation=interpolation,
                             into_figure_key=into_figure_key))
+
+    @server.tool(name='equilibrium_surfaces')
+    def equilibrium_surfaces(uri: str, times: list, occurrence: int = 0):
+        """The flux surfaces of the equilibrium, one frame per named instant.
+
+        `times` is the list of instants in seconds (a single number is read
+        as a list of one). The instants answer the case's own slices
+        nearest to them -- a GGD grid is discrete, and the frame each
+        instant answered is named back: `time_requested` vs
+        `time_slice_time` and the slice index, per frame. Every frame
+        shares the levels, the bounds and the marks (plasma boundary,
+        magnetic axis, O-point, limiter), so the instants compare at
+        equal measure. The window opens in the session like every other
+        figure (`EquiSurfaces:` key); get_screenshot answers its PNG."""
+        return _run(partial(core.equilibrium_surfaces, uri, times,
+                            occurrence=occurrence))
+
+    @server.tool(name='equilibrium_at_time')
+    def equilibrium_at_time(uri: str, time: float, occurrence: int = 0):
+        """One instant of the equilibrium, the way the Equilibrium plugin
+        reads it: the flux surface at the instant, the radial profiles
+        under it (q, elongation, triangularities, j_tor in MA/m^2,
+        pressure in kPa, f_df_dpsi, dpressure_dpsi -- the plugin's
+        quantities and its unit conversions, on rho_tor_norm), and the
+        global quantities of the slice (Ip in kA, q95, q_axis, li_3,
+        W_mhd in kJ, axis position) in the answer itself.
+
+        `time` in seconds answers the nearest slice the case holds, named
+        back as `time_slice_time`; a time outside the case's range says
+        it was clamped. Not a leaf of the tree: the read is the one the
+        plugin does on the IDS object, which the tree does not hold
+        (the GGD branch, and the profiles read at one named slice)."""
+        return _run(partial(core.equilibrium_at_time, uri, time,
+                            occurrence=occurrence))
 
     @server.tool(name='plot_selection')
     def plot_selection(uri: str):

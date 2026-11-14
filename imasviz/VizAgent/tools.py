@@ -404,6 +404,43 @@ TOOLS = [
            'additionalProperties': False},
     ),
     _tool(
+        'equilibrium_surfaces',
+        'The flux surfaces of the equilibrium, one frame per named instant, '
+        'side by side in one window (the Equilibrium plugin\'s reading of '
+        'the equilibrium IDS: the psi levels, the plasma boundary, the '
+        'magnetic axis, the O-point, the limiter, at equal bounds). '
+        '`times` is the list of instants in seconds, e.g. [40, 44, 48]; '
+        'each answers the nearest slice the case holds, named back '
+        '(time_requested vs time_slice_time). Use it when the user asks '
+        'to compare the equilibrium at several instants, or to trace the '
+        'flux surfaces (surfaces de flux).',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'times': {'type': 'array', 'items': {'type': 'number'},
+                      'description': 'instants in the case clock, seconds'},
+            'occurrence': {'type': 'integer', 'default': 0},
+        }, 'required': ['uri', 'times'], 'additionalProperties': False},
+    ),
+    _tool(
+        'equilibrium_at_time',
+        'One instant of the equilibrium, the way the Equilibrium plugin '
+        'reads it: the flux surface at the instant with the radial '
+        'profiles under it (q, elongation, triangularities, j_tor [MA/m^2], '
+        'pressure [kPa], f_df_dpsi, dpressure_dpsi, on rho_tor_norm), and '
+        'the global quantities of the slice (Ip [kA], q95, q_axis, li_3, '
+        'W_mhd [kJ], axis position) in the answer. `time` is the instant '
+        'in seconds; it answers the nearest slice the case holds, named '
+        'back as time_slice_time. Use it when the user names one instant '
+        'of the equilibrium ("l\'équilibre à 44 s", "q et pression à '
+        'cet instant").',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'time': {'type': 'number',
+                     'description': 'the instant in seconds'},
+            'occurrence': {'type': 'integer', 'default': 0},
+        }, 'required': ['uri', 'time'], 'additionalProperties': False},
+    ),
+    _tool(
         'plot_selection',
         'Draw the case selection: one curve figure, one window per picture. '
         '`select_signals` first.',
