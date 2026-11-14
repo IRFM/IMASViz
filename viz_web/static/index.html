@@ -239,6 +239,69 @@ details.tool summary strong { color: var(--accent-strong); }
 .reportGroup .reportList a { color: var(--accent-strong); text-decoration: none; font-size: 13px; }
 .reportGroup .reportList a:hover { text-decoration: underline; }
 
+/* The notes: the two journals, driven by the same /api/tool the raw
+   gestures use -- a list of notes the user can search, read by id,
+   add to (with their own fields), and delete. The scope tabs are
+   personal / shared, and the filter row names the filters the core
+   already answers (machine, campaign, shot, date_from, date_to,
+   author). A note without a field the user did not name is a match
+   on the rest of its body, not a refusal. */
+.notesWrap { display: flex; flex-direction: column; gap: 10px; }
+.notesStats { color: var(--ink-faint); font-size: 12px; }
+.notesTabs { display: flex; gap: 6px; }
+.notesTabs button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 3px 8px; font-size: 13px; cursor: pointer;
+}
+.notesTabs button[aria-pressed="true"] {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.notesFilters { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.notesFilters label { font-size: 13px; color: var(--ink-soft); display: flex; gap: 4px; align-items: center; }
+.notesFilters input[type="text"], .notesFilters input[type="date"] {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 3px 6px; font-size: 13px;
+}
+.notesFilters button {
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  border-radius: 4px; padding: 3px 8px; font-size: 13px; cursor: pointer;
+}
+.notesList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.notesList li {
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; display: flex; flex-direction: column; gap: 2px;
+}
+.notesList li.active { border-color: var(--accent); }
+.notesList .noteMeta { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+.notesList .noteSnippet { font-size: 13px; color: var(--ink); }
+.notesList .noteActions { margin-top: 4px; display: flex; gap: 6px; }
+.notesList .noteActions button {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 2px 6px; font-size: 12px; cursor: pointer;
+}
+.notesReader {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;
+}
+.notesReader .noteFields { color: var(--ink-soft); font-size: 12px; }
+.notesReader .noteBody { white-space: pre-wrap; }
+.notesAdd {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+}
+.notesAdd label { font-size: 13px; color: var(--ink-soft); }
+.notesAdd input[type="text"], .notesAdd textarea {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  border-radius: 4px; padding: 4px 6px; font-size: 13px;
+}
+.notesAdd textarea { min-height: 72px; resize: vertical; }
+.notesAdd .notesAddRow { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+.notesAdd .notesAddRow label { min-width: 90px; }
+.notesAdd button {
+  border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer;
+}
+
 /* The lightbox: the picture at the size it was drawn, over the page. */
 #lightbox {
   position: fixed; inset: 0; z-index: 50;
@@ -307,6 +370,16 @@ details.tool summary strong { color: var(--accent-strong); }
     <h2>Reports</h2>
     <div id="reportsFolder" class="reportsCap" aria-live="polite"></div>
     <div id="reports" class="reportsWrap"></div>
+
+    <h2>Notes</h2>
+    <div id="notes" class="notesWrap" aria-live="polite">
+      <div id="notesStats" class="notesStats"></div>
+      <div id="notesTabs" class="notesTabs" role="tablist"></div>
+      <div id="notesFilters" class="notesFilters"></div>
+      <ul id="notesList" class="notesList"></ul>
+      <details id="notesReader"></details>
+      <details id="notesAdd" class="notesAdd"></details>
+    </div>
   </section>
 </div>
 
@@ -703,6 +776,223 @@ details.tool summary strong { color: var(--accent-strong); }
       renderReports();
     } catch (e) {
       appendLine('REFUSAL — the reports listing did not answer: ' + e, 'refusal');
+    }
+  }
+
+  /* --------------------------------------------------------------- the notes
+
+     The two journals — `search_journals` for the list (ranked for the
+     query or listed for the filters), `read_note` for the body of one,
+     `add_note` and `delete_note` for the write and the erase, and
+     `journal_stats` for the overview at the top. The scope is a two-
+     button tab (personal / shared), the filter row reads off the six
+     filters the core already answers (machine, campaign, shot,
+     date_from, date_to, author), and the add form at the foot is what
+     the user fills to write one. A note without the field the user did
+     not name is a match on the rest of its body, not a refusal. */
+
+  var notesTab = { scope: 'personal' };
+
+  function notesFetch(name, args) {
+    return fetch('/api/tool', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, args: args }),
+    }).then(function (r) { return r.json(); })
+      .catch(function (e) { return { error: String(e) }; });
+  }
+
+  function notesFiltersFromUi() {
+    function read(id) { var input = byId(id); return input ? input.value.trim() : ''; }
+    var args = {};
+    ['machine', 'campaign', 'shot', 'date_from', 'date_to', 'author'].forEach(function (key) {
+      var value = read('notes' + key.charAt(0).toUpperCase() + key.slice(1));
+      if (value) args[key] = value;
+    });
+    return args;
+  }
+
+  function notesRenderStats(j) {
+    var line = '';
+    ['personal', 'shared'].forEach(function (scope) {
+      var entry = j[scope] || {};
+      var part = scope + ': ' + (entry.notes || 0) + ' note(s)';
+      if (entry.folder) part += ' (' + entry.folder + ')';
+      if (entry.refusal) part += ' — ' + entry.refusal;
+      line += part + '  •  ';
+    });
+    var emb = j.embeddings || {};
+    line += emb.endpoint_named
+      ? ('ranking: embeddings ' + (emb.endpoint || '') + ' ' + (emb.model || ''))
+      : 'ranking: keywords (no embeddings endpoint set yet)';
+    byId('notesStats').textContent = line;
+  }
+
+  function notesRefreshStats() {
+    return notesFetch('journal_stats', {}).then(function (j) {
+      if (j.error) byId('notesStats').textContent = 'REFUSAL — ' + j.error;
+      else notesRenderStats(j.result);
+    });
+  }
+
+  function notesRenderList(result) {
+    var wrap = byId('notesList');
+    wrap.innerHTML = '';
+    var notesIn = (result && result.notes) || [];
+    if (!notesIn.length) {
+      wrap.appendChild(el('li', null, ['No note matches the filters and the query.']));
+      return;
+    }
+    notesIn.forEach(function (note) {
+      var li = el('li');
+      var meta = (note.title ? note.title + '  —  ' : '') +
+        [note.machine, note.campaign, note.shot, note.date, note.author]
+          .filter(Boolean).join(' · ');
+      li.appendChild(el('span', { 'class': 'noteMeta' }, [meta || note.scope]));
+      var snippet = note.snippet || note.text || '';
+      if (snippet) li.appendChild(el('span', { 'class': 'noteSnippet' }, [snippet]));
+      var actions = el('div', { 'class': 'noteActions' });
+      var readBtn = el('button', { 'onclick': function () {
+        openNotesOne(note.scope || notesTab.scope, note.id);
+      } });
+      readBtn.textContent = 'Read';
+      var deleteBtn = el('button', { 'onclick': function () {
+        if (confirm('Delete ' + note.id + ' from ' + (note.scope || notesTab.scope) + '?'))
+          notesDelete(note.scope || notesTab.scope, note.id);
+      } });
+      deleteBtn.textContent = 'Delete';
+      actions.appendChild(readBtn);
+      actions.appendChild(deleteBtn);
+      li.appendChild(actions);
+      wrap.appendChild(li);
+    });
+  }
+
+  function notesDoSearch() {
+    var filters = notesFiltersFromUi();
+    filters.scope = notesTab.scope;
+    var query = (byId('notesQuery') || {}).value || '';
+    if (query.trim()) filters.query = query.trim();
+    return (filters.query
+      ? notesFetch('search_journals', filters)
+      : notesFetch('list_notes', filters)
+    ).then(function (j) {
+      var wrap = byId('notesList');
+      wrap.innerHTML = '';
+      if (j.error) {
+        wrap.appendChild(el('li', null, ['REFUSAL — ' + j.error]));
+      } else {
+        notesRenderList(j.result);
+      }
+    });
+  }
+
+  function openNotesOne(scope, id) {
+    return notesFetch('read_note', { scope: scope, note_id: id }).then(function (j) {
+      var reader = byId('notesReader');
+      reader.innerHTML = '';
+      if (j.error) {
+        reader.appendChild(el('p', null, ['REFUSAL — ' + j.error]));
+      } else {
+        var n = j.result;
+        reader.appendChild(el('summary', null, [(n.title || n.id) + '  —  ' +
+          [n.machine, n.campaign, n.shot, n.date].filter(Boolean).join(' · ')]));
+        reader.appendChild(el('div', { 'class': 'noteFields' },
+          ['scope: ' + n.scope + '   author: ' + (n.author || '—')]));
+        reader.appendChild(el('div', { 'class': 'noteBody' }, [n.text || '(empty body)']));
+        reader.setAttribute('open', 'true');
+      }
+    });
+  }
+
+  function notesDelete(scope, id) {
+    return notesFetch('delete_note', { scope: scope, note_id: id }).then(function (j) {
+      if (j.error) appendLine('  ← REFUSAL — delete_note: ' + j.error, 'refusal');
+      else appendLine('  ← delete_note: ' + id + ' is from ' + scope);
+      notesDoSearch();
+      notesRefreshStats();
+    });
+  }
+
+  function notesInit() {
+    var tabs = byId('notesTabs');
+    tabs.innerHTML = '';
+    ['personal', 'shared'].forEach(function (scope) {
+      var button = el('button', {
+        'aria-pressed': String(scope === notesTab.scope),
+        'role': 'tab',
+        'onclick': function () {
+          notesTab.scope = scope;
+          tabs.querySelectorAll('button').forEach(function (b) {
+            b.setAttribute('aria-pressed', 'false');
+          });
+          button.setAttribute('aria-pressed', 'true');
+          notesDoSearch();
+        },
+      });
+      button.textContent = scope;
+      tabs.appendChild(button);
+    });
+
+    var filters = byId('notesFilters');
+    filters.innerHTML = '';
+    filters.appendChild(el('input', {
+      'type': 'text', 'id': 'notesQuery', 'placeholder': 'query (optional)', 'size': '24',
+    }));
+    [
+      ['machine', 'Machine'], ['campaign', 'Campaign'], ['shot', 'Shot'],
+      ['date_from', 'From'], ['date_to', 'To'], ['author', 'Author'],
+    ].forEach(function (pair) {
+      var key = pair[0], label = pair[1];
+      var inputId = 'notes' + key.charAt(0).toUpperCase() + key.slice(1);
+      var input = el('input', {
+        'type': (key === 'date_from' || key === 'date_to') ? 'date' : 'text',
+        'id': inputId, 'size': '10',
+      });
+      filters.appendChild(el('label', null, [label, input]));
+    });
+    filters.appendChild(el('button', { 'onclick': function () { notesDoSearch(); } }, ['Search']));
+
+    var addBox = byId('notesAdd');
+    addBox.innerHTML = '';
+    addBox.appendChild(el('summary', null, ['Add a note']));
+    [
+      ['notesAddTitle', 'title (optional)', ''],
+      ['notesAddAuthor', 'author (falls back to your $USER)', ''],
+      ['notesAddMachine', 'machine / tokamak', ''],
+      ['notesAddCampaign', 'campaign', ''],
+      ['notesAddShot', 'shot number', ''],
+    ].forEach(function (field) {
+      addBox.appendChild(el('label', null, [
+        field[2], el('input', { 'type': 'text', 'id': field[0], 'placeholder': field[1], 'size': '20' })
+      ]));
+    });
+    addBox.appendChild(el('label', null, ['Date', el('input', {
+      'type': 'date', 'id': 'notesAddDate' })]));
+    addBox.appendChild(el('textarea', {
+      'id': 'notesAddBody', 'placeholder': 'the note (required)' }));
+    addBox.appendChild(el('button', { 'onclick': notesAdd }, ['Save note']));
+
+    notesRefreshStats().then(function () { notesDoSearch(); });
+  }
+
+  async function notesAdd() {
+    function val(id) { var i = byId(id); return i ? i.value.trim() : ''; }
+    var text = val('notesAddBody');
+    if (!text) { appendLine('A note needs a body.', 'refusal'); return; }
+    var args = { scope: notesTab.scope, text: text };
+    ['title', 'author', 'machine', 'campaign', 'shot', 'date'].forEach(function (field) {
+      var id = 'notesAdd' + field.charAt(0).toUpperCase() + field.slice(1);
+      if (val(id)) args[field] = val(id);
+    });
+    var j = await notesFetch('add_note', args);
+    if (j.error) {
+      appendLine('  ← REFUSAL — add_note: ' + j.error, 'refusal');
+    } else {
+      appendLine('  ← add_note: ' + j.result.id + '  under  ' + j.result.path);
+      var area = byId('notesAddBody');
+      if (area) area.value = '';
+      notesDoSearch();
+      notesRefreshStats();
     }
   }
 
@@ -1215,6 +1505,10 @@ details.tool summary strong { color: var(--accent-strong); }
     // page does not cost what the session already drew.
     buildGallery().catch(function () {});
     buildTools().catch(function (e) { appendLine('REFUSAL — the tool list did not answer: ' + e, 'refusal'); });
+    // The two journals: the stats at the top and the list in the active
+    // scope tab, read from the disk the core answers -- a reload does not
+    // cost the notes the session already wrote.
+    notesInit();
   });
 })();
 </script>
