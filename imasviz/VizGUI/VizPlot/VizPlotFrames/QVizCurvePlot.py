@@ -467,6 +467,49 @@ class QVizCurvePlot(QWidget):
     def curves(self):
         return [trace.curve for trace in self._curves]
 
+    def removeCurve(self, index=None):
+        """Take one trace off the figure, or all of them.
+
+        `index` is the draw-order position of the curve to drop (0 through
+        `curveCount() - 1`), or `None` to drop the figure's whole set. The
+        trace's curve leaves the plot item (with its legend entry, which
+        `removeItem` takes with its owner) and the figure forgets it --
+        the one answer the inverse of `plot` / `keepCurve` is. Refused by
+        name when there is no curve to drop or the index does not name one
+        the figure holds, so the caller reads the refusal rather than a
+        picture the count of curves and the picture disagree on.
+
+        The answer is how many curves are still held, so the caller
+        knows, at the same time, the number of curves and the ones that
+        are left. `curveCount()` answers the same, and `traces()` the
+        objects still there.
+        """
+        if index is None:
+            targets = list(self._curves)
+        else:
+            if (isinstance(index, bool) or not isinstance(index, int)
+                    or not (0 <= index < len(self._curves))):
+                held = len(self._curves)
+                names = ', '.join(self.labelOf(t, t.fixed)
+                                  for t in self._curves)
+                raise ValueError(
+                    'The curve at index %s is not on this figure: it '
+                    'holds %d curve(s), index 0 to %d (%s).'
+                    % (index, held, held - 1 if held else -1, names
+                       or 'none'))
+            targets = [self._curves[index]]
+        for trace in targets:
+            self._curves.remove(trace)
+            # Removing the item takes its legend entry with it: the
+            # legend is the one that named the curve, and a curve whose
+            # legend is gone keeps its name in the picture with no way
+            # to move or name it any more.
+            self.pgPlotWidget.removeItem(trace.curve)
+            if trace in self._kept:
+                self._kept.remove(trace)
+        self._updateKeepBox()
+        return len(self._curves)
+
     def traces(self):
         return list(self._curves)
 

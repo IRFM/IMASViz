@@ -65,6 +65,20 @@ How to work with it:
    names a report file says it of a call this conversation made, and the
    file it names is the path that call answered -- a report the tools did
    not write is not one you say was written.
+9. manipulating a figure is work on what it holds, by name of the figure
+   and of the curve: scale_curve multiplies its value by a constant,
+   shift_curve adds one, normalize_curve divides by its own peak/first/
+   mean; curve_stats and export_curve read the numbers as they stand, so
+   the value a transform put on is the one a reader opens. reset_curve
+   takes the transform off, and remove_curve takes the curve off. The
+   axes are set by name and number: set_axis_range pins the window (xmin/
+   xmax, ymin/ymax, or auto=True to re-fit), set_log_scale makes an axis
+   log (True) or linear (False), and invert_axis flips one. A curve is
+   selected by a substring of its name, a 0-based index, or left out for
+   every one; a log on values that cross zero is refused by name, and a
+   figure that is not a single one (a table, or the flux-surface figure)
+   is refused the same way -- name the figure the single curve was drawn
+   in.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -510,6 +524,134 @@ TOOLS = [
             'time_index': {'type': ['integer', 'null']},
         }, 'required': ['uri', 'path'], 'additionalProperties': False},
     ),
+
+    # the figures: work on the data the figure holds, and the axes it draws to
+    _tool(
+        'scale_curve',
+        'Multiply a figure\'s drawn curve(s) by a constant. In place and '
+        'reversible (reset_curve); `curve` is a name substring, a 0-based '
+        'index, or left out for every curve. `factor` must be a finite '
+        'number. curve_stats and export_curve then read the multiplied '
+        'value, the quantity in the tree unchanged.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'factor': {'type': 'number'},
+            'curve': {'type': ['string', 'integer', 'null'],
+                      'description': 'a name substring, a 0-based index, '
+                                     'or null for every curve'},
+        }, 'required': ['figure_key', 'factor'], 'additionalProperties': False},
+    ),
+    _tool(
+        'shift_curve',
+        'Add a constant to a figure\'s drawn curve(s): a vertical offset. '
+        'The inverse of a subtraction, on the same `curve` as scale_curve. '
+        '`offset` must be a finite number.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'offset': {'type': 'number'},
+            'curve': {'type': ['string', 'integer', 'null']},
+        }, 'required': ['figure_key', 'offset'], 'additionalProperties': False},
+    ),
+    _tool(
+        'normalize_curve',
+        'Divide a figure\'s drawn curve(s) by a reference of their own: '
+        '`max` (the largest sample), `first` (index 0), or `mean`. A '
+        'reference that is zero or not a number is refused by name.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'mode': {'type': 'string', 'enum': ['max', 'first', 'mean'],
+                     'default': 'max'},
+            'curve': {'type': ['string', 'integer', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'reset_curve',
+        'Put a figure\'s curve(s) back to the data they were drawn with: '
+        'the scale/shift/normalize put on is taken off. A curve nobody '
+        'transformed is not in the answer.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'curve': {'type': ['string', 'integer', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'remove_curve',
+        'Take a curve off a figure, or every one when `curve` is left '
+        'out. The curve leaves the plot and the figure forgets it; the '
+        'answer is the count still held. A table or the flux-surface '
+        'figure is not a single figure and is refused by name.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'curve': {'type': ['string', 'integer', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'set_axis_range',
+        'The window (the range) of a figure\'s axes, by name and number: '
+        'pin `xmin`/`xmax` together, `ymin`/`ymax` together, or both; '
+        '`auto=true` clears the pins and re-fits. A partial pair is '
+        'refused (a range is two bounds); a window not a single figure is '
+        'refused by name.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'xmin': {'type': ['number', 'null']},
+            'xmax': {'type': ['number', 'null']},
+            'ymin': {'type': ['number', 'null']},
+            'ymax': {'type': ['number', 'null']},
+            'auto': {'type': 'boolean', 'default': False},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'set_log_scale',
+        'A log axis, by name: `x`/`y` each `true` for log, `false` for '
+        'linear; name at least one. A log turned on where the values cross '
+        'zero or below is refused by name (the picture would hide them); '
+        'shift_curve to clear them is the answer.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'x': {'type': ['boolean', 'null']},
+            'y': {'type': ['boolean', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'invert_axis',
+        'Invert (flip) an axis: `x=true`/`y=true` turn one around so the '
+        'negative direction is the other way; `false` puts it back. Name at '
+        'least one. Inversion and range are independent.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'x': {'type': ['boolean', 'null']},
+            'y': {'type': ['boolean', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'curve_stats',
+        'The numbers of a figure\'s drawn curve(s): sample count, finite '
+        'min/max/mean/std of the values, the nan/inf counts, and the peak '
+        'value with its abscissa. The read of a figure before or after a '
+        'scale/shift/normalize; plot_report is the same read with an HTML '
+        'file on disk.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'curve': {'type': ['string', 'integer', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+    _tool(
+        'export_curve',
+        'Take a figure\'s drawn curve(s) out to a file: the values as they '
+        'stand (a scale/shift/normalize is in the file). `format` csv or '
+        'json; `curve` a name, an index, or left out. The file lands in '
+        '~/.imasviz/exports; a `name` that names a place is refused by '
+        'name.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'curve': {'type': ['string', 'integer', 'null']},
+            'format': {'type': 'string', 'enum': ['csv', 'json'],
+                      'default': 'csv'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
+
     _tool(
         'list_windows',
         'Every window of the session, in the order the menus draw them. '

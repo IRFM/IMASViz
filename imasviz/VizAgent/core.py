@@ -1539,6 +1539,521 @@ class McpGuiCore:
             payload['samples'] = len(payload.get('y') or [])
         return payload
 
+    # -------------------------------- curves: work on the data the figure holds
+
+    def scale_curve(self, figure_key, factor, curve=None):
+        """Multiply a figure's drawn curve(s) by a constant.
+
+        In place, on the curves the figure named, so the reader sees the
+        picture change and `curve_stats` / `export_curve` read the value
+        back multiplied. `curve` is `None` for every curve the figure holds,
+        an index in draw order, or a quantity-name substring. `factor` must
+        be a finite number, refused by name when it is not. `reset_curve`
+        takes the multiplication off (or `plot_one` redraws the unmultiplied
+        curve), because a transform is one of the view, not of the quantity
+        in the tree. A window that holds no curve to multiply is refused by
+        name, naming what it holds instead.
+        """
+        import math
+
+        if (isinstance(factor, bool) or not isinstance(factor, (int, float))
+                or not math.isfinite(factor)):
+            raise ValueError(
+                'The factor is %r: a finite number the value may be '
+                'multiplied by, not a name, zero, or a boolean.' % (factor,))
+        record, curves = self._curveFor(figure_key, curve)
+        done = []
+        for node, rank, item, source in curves:
+            x, y = self._curveData(item)
+            if x is None or y is None:
+                continue
+            self._rememberOrig(item)
+            item.setData(x, y * factor)
+            done.append(self._curveName(node, rank))
+        if not done:
+            raise ValueError(
+                'The %d curve(s) of "%s" hold no number to multiply, every '
+                'one being empty as it stands.' % (len(curves), figure_key))
+        self._logFor(record.cases,
+                     'scale_curve: %s x %g on %s.'
+                     % (', '.join(done), factor, figure_key))
+        return {'window': figure_key, 'factor': float(factor),
+                'curves': done}
+
+    def shift_curve(self, figure_key, offset, curve=None):
+        """Add a constant to a figure's drawn curve(s): a vertical offset.
+
+        The inverse of a subtraction; `reset_curve` takes it off. Everything
+        else is the rule of `scale_curve`: in place, `curve` the one or the
+        figure's, and the named refusals the figure's holds earn.
+        """
+        import math
+
+        if (isinstance(offset, bool) or not isinstance(offset, (int, float))
+                or not math.isfinite(offset)):
+            raise ValueError(
+                'The offset is %r: a finite number the value may be shifted '
+                'by, not a name or a boolean.' % (offset,))
+        record, curves = self._curveFor(figure_key, curve)
+        done = []
+        for node, rank, item, source in curves:
+            x, y = self._curveData(item)
+            if x is None or y is None:
+                continue
+            self._rememberOrig(item)
+            item.setData(x, y + offset)
+            done.append(self._curveName(node, rank))
+        if not done:
+            raise ValueError(
+                'The %d curve(s) of "%s" hold no number to shift, every one '
+                'being empty as it stands.' % (len(curves), figure_key))
+        self._logFor(record.cases,
+                     'shift_curve: %s + %g on %s.'
+                     % (', '.join(done), offset, figure_key))
+        return {'window': figure_key, 'offset': float(offset),
+                'curves': done}
+
+    def normalize_curve(self, figure_key, mode='max', curve=None):
+        """Divide a figure's drawn curve(s) by a reference of their own.
+
+        `mode` is `max` (divide by the largest sample -- the peak goes to 1),
+        `first` (divide by the first sample, the one at index 0 -- that
+        sample goes to 1), or `mean` (divide by the mean -- the mean goes to
+        1); `curve` selects the curve or the figure's as elsewhere. The
+        reference is read off the curve as it stands, so a shift already on
+        of it is what the reference is taken from. A reference that is zero
+        or not a number is refused by name -- the division is then `inf` or
+        `nan`, and the reader would read a picture full of them for a
+        quantity nobody divided by anything. `reset_curve` restores the
+        unnormalized values.
+        """
+        if mode not in ('max', 'first', 'mean'):
+            raise ValueError(
+                'The mode is %r: max, first, or mean -- the one the value '
+                'is divided by.' % (mode,))
+        import numpy as np
+
+        record, curves = self._curveFor(figure_key, curve)
+        done = []
+        reference = None
+        for node, rank, item, source in curves:
+            x, y = self._curveData(item)
+            if x is None or y is None:
+                continue
+            values = np.asarray(y, dtype=float)
+            if mode == 'max':
+                reference = float(np.nanmax(values))
+            elif mode == 'first':
+                reference = float(values[0])
+            else:
+                reference = float(np.nanmean(values))
+            if not (np.isfinite(reference) and reference != 0.0):
+                raise ValueError(
+                    'The reference of %s in the %s mode is %r: zero or '
+                    'not a number, so the division is undefined (it would '
+                    'be the inf or nan of a picture full of no signal). '
+                    'Name a curve that holds a non-zero value to %s from.'
+                    % (self._curveName(node, rank), mode, reference, mode))
+            self._rememberOrig(item)
+            item.setData(x, values / reference)
+            done.append(self._curveName(node, rank))
+        if not done:
+            raise ValueError(
+                'The %d curve(s) of "%s" hold no number to normalize, every '
+                'the value it holds being empty.'
+                % (len(curves), figure_key))
+        self._logFor(record.cases,
+                     'normalize_curve: %s / %s (=%g) on %s.'
+                     % (', '.join(done), mode, reference, figure_key))
+        return {'window': figure_key, 'mode': mode,
+                'reference': float(reference), 'curves': done}
+
+    def reset_curve(self, figure_key, curve=None):
+        """Take the transforms off: put the curve(s) back to the data they
+        were drawn with.
+
+        Scale, shift and normalize each capture the drawn (x, y) on the
+        first they are asked on a curve; this takes it off, and `curve`
+        targets the one or the figure's as elsewhere. A curve nobody
+        transformed keeps the data it was drawn with and is not in the
+        answer's list: nothing to reset is refused by name, saying what is
+        held as drawn already and what a re-plot would give back, so the
+        caller does not mistake a clean window for an empty one.
+        """
+        record, curves = self._curveFor(figure_key, curve)
+        restored = []
+        held = 0
+        for node, rank, item, source in curves:
+            held += 1
+            if not hasattr(item, '_imastemp_orig'):
+                continue
+            x, y = item._imastemp_orig
+            item.setData(x, y)
+            del item._imastemp_orig
+            restored.append(self._curveName(node, rank))
+        if not restored:
+            raise ValueError(
+                'No transform to take off on "%s": the %d curve(s) it '
+                'holds stand as drawn (a reset asks for a curve that was '
+                'scaled, shifted, or normalized, or a re-plot with '
+                'plot_one).' % (figure_key, held))
+        self._logFor(record.cases,
+                     'reset_curve: %s back to the data as drawn, on %s.'
+                     % (', '.join(restored), figure_key))
+        return {'window': figure_key, 'restored': restored}
+
+    def remove_curve(self, figure_key, curve=None):
+        """Take a curve off a figure, or every one when `curve` is left out.
+
+        The curve leaves the plot and the figure forgets it: its legend entry
+        goes with it, and the figure's `curveCount` answers the rest. The
+        figure is the one the curve was drawn in (a curve figure: a table and
+        a stacked window each draw a panel and are not a single figure to
+        remove a curve from). A name or an index no curve answers is refused
+        by name, the curve(s) it does hold being said alongside, and a
+        window that holds no curve is refused the same way.
+        """
+        record, frame = self._windowForKey(figure_key)
+        if not hasattr(frame, 'removeCurve'):
+            raise ValueError(
+                'The window "%s" (%s) is not a single figure a curve can '
+                'be removed from: it holds %s, and the figure a single '
+                'curve was drawn in is what remove_curve takes.'
+                % (figure_key, record.kindLabel, record.kindLabel))
+        # `_curveFor` resolves what to drop; this maps it to the indices
+        # of the figure's own draw order, so the curves the answer named
+        # and the ones the figure forgets are the same, and a name that
+        # matched several of them is one removal per match, not one that
+        # names all.
+        record, curves = self._curveFor(figure_key, curve)
+        if curve is None:
+            count = frame.removeCurve()
+        else:
+            indexes = []
+            for node, rank, item, source in curves:
+                for i, trace in enumerate(frame._curves):
+                    if trace.curve is item:
+                        indexes.append(i)
+                        break
+            if not indexes:
+                raise ValueError(
+                    'The named curve is not on "%s" in a place remove_curve '
+                    'can take it from.' % figure_key)
+            for i in sorted(indexes, reverse=True):
+                frame.removeCurve(i)
+            count = frame.curveCount()
+        self._logFor(record.cases,
+                     'remove_curve: %s left on %s.' % (count, figure_key))
+        return {'window': figure_key, 'curves_left': int(count)}
+
+    # -------------------------------- figures: the axes and the view they draw to
+
+    def set_axis_range(self, figure_key, xmin=None, xmax=None, ymin=None,
+                       ymax=None, auto=False):
+        """The window (the range) of a figure's axes, set by name and number.
+
+        Pin the abscissa's window with `xmin` and `xmax` together, the
+        ordinate's with `ymin` and `ymax` together, both at once, or
+        `auto=True` to clear the pins and let the view re-fit to the curves.
+        Partial (one bound of a pair) is refused because a range is two
+        bounds; so is a bound that is not a finite number or in the wrong
+        order (`xmin` must be less than `xmax`, `ymin` less than `ymax`)
+        -- an inversion is one the reader misreads. The window is what
+        pyqtgraph holds on screen after the call, returned so the caller
+        reads the same numbers the figure shows.
+
+        A curve figure is one the axis set of; a table, a stacked view and
+        the flux-surface figure each draw their own and are not this one,
+        so naming one of them is refused by name, the shape that names the
+        figure the single curve was drawn in.
+        """
+        import math
+
+        record, frame = self._windowForKey(figure_key)
+        box = self._viewBoxOf(frame, figure_key)
+
+        def finite(bound, value):
+            if value is None:
+                return
+            if (isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)):
+                raise ValueError(
+                    '%s is %r: a finite number the bound must be, not a '
+                    'name or a boolean.' % (bound, value))
+
+        def pair(boundA, a, boundB, b):
+            if (a is not None) != (b is not None):
+                raise ValueError(
+                    'The axis is a pair: name %s and %s together, or leave '
+                    'both out.' % (boundA, boundB))
+
+        pair('xmin', xmin, 'xmax', xmax)
+        pair('ymin', ymin, 'ymax', ymax)
+        finite('xmin', xmin); finite('xmax', xmax)
+        finite('ymin', ymin); finite('ymax', ymax)
+        if auto and (xmin is not None or xmax is not None
+                     or ymin is not None or ymax is not None):
+            raise ValueError(
+                '`auto` clears the manual pins and is not a bound: pick '
+                'the auto ask or the manual one, not both.')
+
+        if auto:
+            box.enableAutoRange()
+            xR, yR = box.state['viewRange']
+            self._logFor(record.cases,
+                         'set_axis_range: %s re-fits (the auto range is '
+                         'back on).' % figure_key)
+            return {'window': figure_key, 'auto': True,
+                    'xRange': [float(xR[0]), float(xR[1])],
+                    'yRange': [float(yR[0]), float(yR[1])]}
+
+        if xmin is None and ymin is None:
+            raise ValueError(
+                'A range needs at least one axis to pin: x (`xmin`, '
+                '`xmax`), y (`ymin`, `ymax`), or `auto=True` to clear '
+                'the pins.')
+        if xmin is not None and xmin >= xmax:
+            raise ValueError(
+                'The x range is inverted (%g >= %g): `xmin` must be less '
+                'than `xmax`.' % (xmin, xmax))
+        if ymin is not None and ymin >= ymax:
+            raise ValueError(
+                'The y range is inverted (%g >= %g): `ymin` must be less '
+                'than `ymax`.' % (ymin, ymax))
+        box.disableAutoRange()
+        if xmin is not None:
+            box.setXRange(xmin, xmax)
+        if ymin is not None:
+            box.setYRange(ymin, ymax)
+        xR, yR = box.state['viewRange']
+        self._logFor(record.cases,
+                     'set_axis_range: %s pinned, x=%s, y=%s.'
+                     % (figure_key,
+                        '[%g..%g]' % (xmin, xmax) if xmin is not None
+                        else 'left to re-fit',
+                        '[%g..%g]' % (ymin, ymax) if ymin is not None
+                        else 'left to re-fit'))
+        return {'window': figure_key, 'pinned': True,
+                'xRange': [float(xR[0]), float(xR[1])],
+                'yRange': [float(yR[0]), float(yR[1])]}
+
+    def set_log_scale(self, figure_key, x=None, y=None):
+        """A log axis, by name: `x=True/False` and `y=True/False` for the
+        abscissa/ordinate, going to log or linear. Leave the one you are
+        not touching out, and name at least one of the two.
+
+        The axis is the one of a curve figure -- a single figure the curves
+        were drawn in, the one the range and the inset tools address. Refused
+        by name: no axis named, a `True/False` the bound is not, and a log
+        axis turned on where the drawn values cross zero or below (log is
+        undefined there, and pyqtgraph would hide those points so the figure
+        read as "no data" where it holds a half-empty axis). A shift of the
+        values (a `shift_curve` to clear negative values) is the honest
+        answer for a flux loop that runs through zero.
+        """
+        import numpy as np
+
+        if x is None and y is None:
+            raise ValueError(
+                'An axis is named: `x`, `y`, or both -- `True` for log, '
+                '`False` for linear.')
+        for name, value in (('x', x), ('y', y)):
+            if value is None:
+                continue
+            if not isinstance(value, bool):
+                raise ValueError(
+                    '%s is %r: `True` to go log, `False` to go back to '
+                    'linear.' % (name, value))
+        record, frame = self._windowForKey(figure_key)
+        box = self._viewBoxOf(frame, figure_key)
+        for axis, on in (('x', x), ('y', y)):
+            if on is not True:
+                continue
+            values = []
+            for node, rank, item, source in self._curveFor(figure_key)[1]:
+                xvals, yvals = self._curveData(item)
+                values.append(xvals if axis == 'x' else yvals)
+            values = [np.asarray(v, dtype=float).reshape(-1)
+                      for v in values if v is not None and len(v)]
+            if not values:
+                continue
+            joined = np.concatenate(values)
+            finite = joined[np.isfinite(joined)]
+            if finite.size == 0:
+                continue
+            n_bad = int(np.sum(finite <= 0))
+            if n_bad:
+                raise ValueError(
+                    'A log %s axis is undefined where a value is zero or '
+                    'negative: %d of the %d sampled point%s read so. The '
+                    'picture would hide them and read as empty where it '
+                    'holds a half-empty axis, so the log ask on it is '
+                    'refused, and `shift_curve` (up to the zero or above) '
+                    'is the answer to give it back.'
+                    % (axis, n_bad, int(finite.size),
+                       '' if finite.size == 1 else 's'))
+        if x is not None:
+            box.setLogMode('x', bool(x))
+        if y is not None:
+            box.setLogMode('y', bool(y))
+        logMode = list(box.state.get('logMode') or [None, None])
+        self._logFor(record.cases,
+                     'set_log_scale: %s, x=%s, y=%s (now %s).'
+                     % (figure_key, x, y, str(logMode)))
+        return {'window': figure_key, 'x': logMode[0],
+                'y': logMode[1], 'logMode': logMode}
+
+    def invert_axis(self, figure_key, x=None, y=None):
+        """Invert (flip) an axis: the negative side goes the other way, and
+        the reader's reading of the picture follows it.
+
+        `x=True/False` inverts/puts back the abscissa, `y=True/False` the
+        ordinate, leaving the one you do not touch out and naming at least
+        one of the two. The axis is the one of a figure a single curve was
+        drawn in; naming a window that is not one of those is refused by
+        name. Inversion and range are independent: a range you have pinned
+        keeps it where the values sit, and the picture reads reversed.
+        """
+        if x is None and y is None:
+            raise ValueError(
+                'An axis is named: `x`, `y`, or both -- `True` to invert '
+                'the picture, `False` to put it back.')
+        for name, value in (('x', x), ('y', y)):
+            if value is None:
+                continue
+            if not isinstance(value, bool):
+                raise ValueError(
+                    '%s is %r: `True` to invert, `False` to put back.'
+                    % (name, value))
+        record, frame = self._windowForKey(figure_key)
+        box = self._viewBoxOf(frame, figure_key)
+        if x is not None:
+            state = box.state
+            state['xInverted'] = bool(x)
+            box.setState(state)
+        if y is not None:
+            state = box.state
+            state['yInverted'] = bool(y)
+            box.setState(state)
+        state = box.state
+        self._logFor(record.cases,
+                     'invert_axis: %s, x=%s, y=%s.'
+                     % (figure_key, x, y))
+        return {'window': figure_key,
+                'xInverted': bool(state.get('xInverted', False)),
+                'yInverted': bool(state.get('yInverted', False))}
+
+    # -------------------------------- figures: read the numbers under the picture
+
+    def curve_stats(self, figure_key, curve=None):
+        """The numbers of a figure's drawn curves, one per curve.
+
+        `n` the sample count, `min`/`max`/`mean`/`std` the finite minimum,
+        maximum, mean and standard deviation of the values, `nan`/`inf` the
+        count of the non-number entries, and -- where both x and y are
+        present and the same length -- `peak_value` the largest magnitude
+        the values take and `peak_at` the abscissa it sits at. The read is
+        the one `get_signal` uses on the same leaf, so a figure it holds
+        and its answer agree: the values of a figure of one quantity and the
+        values of a tree read of the same quantity differ only by the
+        transform this family of gestures has applied to the figure, not
+        by a different quantity.
+
+        `curve` targets one (an index in draw order or a name substring) or
+        every curve the figure holds; the window is the one a single curve
+        was drawn in, the refusal naming the window that draws a picture
+        this does not stat.
+        """
+        import numpy as np
+
+        record, curves = self._curveFor(figure_key, curve)
+        out = []
+        for node, rank, item, source in curves:
+            x, y = self._curveData(item)
+            entry = dict(self.curveStats((x, y)))
+            label = self._curveName(node, rank)
+            if x is not None and y is not None and len(y):
+                xs = np.asarray(x, dtype=float).reshape(-1)
+                ys = np.asarray(y, dtype=float).reshape(-1)
+                if xs.size and ys.size and xs.size == ys.size:
+                    mask = np.isfinite(ys)
+                    if mask.any():
+                        which = int(np.where(mask, np.abs(ys),
+                                             0.0).argmax())
+                        entry['peak_value'] = float(ys[which])
+                        entry['peak_at'] = float(xs[which])
+            entry['name'] = label
+            entry['rank'] = int(rank)
+            out.append(entry)
+        if not out:
+            raise ValueError(
+                'The window "%s" held no curve to stat.' % figure_key)
+        self._logFor(record.cases,
+                     'curve_stats: %d curve(s) of %s.'
+                     % (len(out), figure_key))
+        return {'window': figure_key, 'count': len(out), 'curves': out}
+
+    def export_curve(self, figure_key, curve=None, format='csv', name=None):
+        """The x/y of a figure's drawn curves, as a file.
+
+        The values as they stand -- any transform this family has put on
+        them (a scale, a shift, a normalize) is in the file, so what a
+        reader opens is the same as the figure the analyst sees. `curve`
+        targets one or the figure's as elsewhere. `format` is `csv`
+        (default: one line per sample, two when it is one curve, a header
+        per curve in the label order when it is more) or `json` (one object
+        per curve, the x and y arrays and the name).
+
+        The file lands in `~/.imasviz/exports` under the guard of the
+        configurations, and `name` -- when it is one -- is a name inside
+        that folder, not a place (`/` in it is refused by name). A window
+        that holds no curve with a value to write is refused the same way,
+        saying how many it tried and how many were empty.
+        """
+        record, curves = self._curveFor(figure_key, curve)
+        if format not in ('csv', 'json'):
+            raise ValueError(
+                '`format` is %r: `csv` or `json`, the shape the file '
+                'comes in.' % (format,))
+        rows = []
+        empty = 0
+        for node, rank, item, source in curves:
+            x, y = self._curveData(item)
+            if x is None or y is None or len(y) == 0:
+                empty += 1
+                continue
+            rows.append((self._curveName(node, rank), x, y))
+        if not rows:
+            raise ValueError(
+                'None of the %d curve(s) of "%s" holds a value to write '
+                '(the %d it tried all stand empty as they are).'
+                % (len(curves), figure_key, empty))
+        path = self._namedExport(name, format, len(rows))
+        if format == 'csv':
+            with open(path, 'w', newline='') as file:
+                for label, x, y in rows:
+                    file.write('# %s\n' % label)
+                    for i in range(len(y)):
+                        file.write('%r,%r\n' % (x[i], y[i]))
+        else:
+            import json
+
+            with open(path, 'w') as file:
+                json.dump(
+                    {'window': figure_key,
+                     'curves': [{
+                         'name': label,
+                         'x': [float(value) for value in x],
+                         'y': [float(value) for value in y]}
+                        for label, x, y in rows]},
+                    file, indent=2)
+        self._logFor(record.cases,
+                     'export_curve wrote %s: %d curve(s) of %s.'
+                     % (path, len(rows), figure_key))
+        return {'saved_to': path, 'curves': len(rows),
+                'empty': int(empty)}
+
     # -------------------------------------------------------------- windows
 
     def list_windows(self):
@@ -2119,6 +2634,144 @@ class McpGuiCore:
                 '"%s" is not a report name: it names a place, not a '
                 'report. Name one inside %s.' % (name, folder))
         path = os.path.join(folder, typed + '.html')
+        if os.path.dirname(os.path.realpath(path)) != os.path.realpath(folder):
+            raise ValueError('"%s" would be written outside %s.'
+                             % (name, folder))
+        return path
+
+    def _curveFor(self, figure_key, curve=None):
+        """(record, [(node, rank, curve, source)]) for the requested curve.
+
+        `curve` is `None` (every trace the window drew), an index in draw
+        order (top of the legend to bottom), or a substring of a quantity's
+        name as read from its node. Refused by name: a window that holds no
+        curve, a curve index past the last it holds, a curve name it does not
+        hold, a curve selector that is not one of the three. For a curve
+        figure the `source` is the figure itself; for a window of panels, one
+        panel per curve. `record` is the window record the refusal or log
+        names, so the log line and the error both say which window it was.
+        """
+        record, frame = self._windowForKey(figure_key)
+        pairs = []
+        for source in self._sourcesOf(frame):
+            for node, rank, item in self._tracesOf(source):
+                pairs.append((node, rank, item, source))
+        if not pairs:
+            raise ValueError(
+                'The window "%s" (%s) holds no curve to work on.'
+                % (figure_key, record.kindLabel))
+        if curve is None:
+            return record, pairs
+        if isinstance(curve, bool):
+            raise ValueError(
+                '"' + str(curve) + '" is a true/false answer; the curve to '
+                'work on is a name, a 0-based index, or left out for every '
+                'curve the figure holds.')
+        if isinstance(curve, int):
+            if not (0 <= curve < len(pairs)):
+                names = ', '.join(self._nodeLabel(p[0]) for p in pairs)
+                raise ValueError(
+                    'curve=%d is out of range: "%s" holds %d curve(s) '
+                    '(0 to %d): %s.'
+                    % (curve, figure_key, len(pairs), len(pairs) - 1, names))
+            return record, [pairs[curve]]
+        if isinstance(curve, str):
+            needle = curve.strip().lower()
+            if not needle:
+                raise ValueError('A curve name is the substring of a '
+                                 'quantity, not the empty string.')
+            names = []
+            matched = []
+            for node, rank, item, source in pairs:
+                label = self._nodeLabel(node)
+                names.append(label)
+                if needle in label.lower():
+                    matched.append((node, rank, item, source))
+            if not matched:
+                seen = []
+                for n in names:
+                    if n not in seen:
+                        seen.append(n)
+                raise ValueError(
+                    'No curve of "%s" names "%s"; its traces are: %s.'
+                    % (figure_key, curve, ', '.join(seen) or 'none'))
+            return record, matched
+        raise ValueError(
+            'The curve is a substring of a quantity name or a 0-based '
+            'index into the traces the figure drew, not %r.' % (curve,))
+
+    def _viewBoxOf(self, frame, figure_key=None):
+        """The single axis set of a curve figure: `pgPlotWidget`'s ViewBox.
+
+        A curve figure (a QVizCurvePlot) has one plot widget and one axis
+        set; a table and a stacked window have one panel per picture, and
+        the flux-surface figure draws its own plot inside a graphics
+        layout -- none of them have the single `pgPlotWidget.getViewBox()`
+        this asks for, and the refusal says why, so the caller learns the
+        window is not one the figure-axes tools address.
+        """
+        pgPlot = getattr(frame, 'pgPlotWidget', None)
+        if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
+            raise ValueError(
+                'The window "%s" draws no single figure whose axes a range, '
+                'a log scale, or an inversion can be set on: a curve figure '
+                'does, and the table panels and the flux-surface figure do '
+                'not. Name the figure the single curve was drawn in.'
+                % (figure_key or 'this window'))
+        return pgPlot.getViewBox()
+
+    @staticmethod
+    def _curveName(node, rank):
+        """The name a manipulated curve carries in an answer.
+
+        The label of the quantity it came from, and its rank among the
+        traces that quantity drew when more than one -- the one the legend
+        shows and the session files it by.
+        """
+        label = McpGuiCore._nodeLabel(node)
+        return label if rank == 0 else '%s (trace %d)' % (label, rank)
+
+    @staticmethod
+    def _rememberOrig(curve):
+        """The first call on a curve captures its (x, y) under a marker,
+        so `reset_curve` can take the transform off. Subsequent calls leave
+        the original it was first asked off, which is the composition the
+        analyst expects: scale then shift is scale and then shift, not
+        both asked in parallel from the original."""
+        try:
+            if not hasattr(curve, '_imastemp_orig'):
+                curve._imastemp_orig = (curve.xData, curve.yData)
+        except Exception:
+            pass
+
+    def _namedExport(self, name, ext, count):
+        """The file an export writes: under `~/.imasviz/exports`, the guard
+        of the configurations, and the name the caller said -- or the one
+        the export is, when it said none. `ext` is the extension it writes
+        with (`csv` or `json`), and the name that ends in it is stripped
+        so the file is `name.csv` under `~/.imasviz/exports` either way."""
+        import os
+        import time
+
+        home = os.environ.get('HOME')
+        if not home:
+            raise ValueError(
+                'No HOME in the environment: the exports folder under it '
+                'cannot be named.')
+        folder = os.path.join(home, '.imasviz', 'exports')
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        typed = (name or '').strip()
+        if typed.endswith('.' + ext):
+            typed = typed[:-(len(ext) + 1)]
+        if not typed:
+            typed = 'export-' + time.strftime('%Y%m%d-%H%M%S') + '-%d' % count
+        if os.path.sep in typed or (os.path.altsep and os.path.altsep
+                                    in typed) or typed in ('.', '..'):
+            raise ValueError(
+                '"%s" is not a file name: it names a place, not an export. '
+                'Name one inside %s.' % (name, folder))
+        path = os.path.join(folder, typed + '.' + ext)
         if os.path.dirname(os.path.realpath(path)) != os.path.realpath(folder):
             raise ValueError('"%s" would be written outside %s.'
                              % (name, folder))

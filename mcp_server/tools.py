@@ -56,6 +56,19 @@ How to work with it:
    curve: plot_report names one window of curves (its image, one row per
    trace it drew), and case_report names the whole loaded tree of a case
    (one row per curve, in tree order).
+8. manipulating a figure is work on what it holds, by name of the figure
+   and of the curve: scale_curve multiplies its value by a constant,
+   shift_curve adds one, normalize_curve divides by its own peak/first/
+   mean; curve_stats and export_curve read the numbers as they stand, so a
+   transform a hand put on is the value it returns. reset_curve takes the
+   transform off, remove_curve takes the curve off. The axes are set by
+   name and number: set_axis_range pins the window (xmin/xmax, ymin/ymax,
+   or auto=True to re-fit), set_log_scale makes an axis log (True) or
+   linear (False), invert_axis flips one. A curve is selected by a
+   substring of its name, a 0-based index, or left out for every one; a
+   log on values that cross zero is refused by name, and a figure that is
+   not a single one (a table, or the flux-surface figure) is refused the
+   same way -- name the figure the single curve was drawn in.
 
 A refused gesture is not a failure of the server: it is an answer, with
 the reason the application names it. get_logs(uri) holds those reasons
@@ -367,6 +380,126 @@ def buildServer(core, dispatcher, name='imasviz'):
                             coordinate_index=coordinate_index,
                             time_index=time_index,
                             along=along, indices=indices))
+
+    # ------------------------------------ the figures: the data and the axes
+
+    @server.tool(name='scale_curve')
+    def scale_curve(figure_key: str, factor: float,
+                    curve: Optional[str] = None):
+        """Multiply a figure's drawn curve(s) by a constant.
+
+        In place and reversible (`reset_curve`), on the curves the figure
+        named: `curve` is a name substring, an index, or left out for every
+        curve the figure holds. `factor` must be a finite number. This turns
+        the value of the curve as a reader of it reads it, not the quantity
+        in the tree, so `curve_stats` and `export_curve` then answer the
+        multiplied number.
+        """
+        return _run(partial(core.scale_curve, figure_key, factor, curve=curve))
+
+    @server.tool(name='shift_curve')
+    def shift_curve(figure_key: str, offset: float,
+                    curve: Optional[str] = None):
+        """Add a constant to a figure's drawn curve(s): a vertical offset.
+
+        The inverse of a subtraction, on the same curve (by name, index, or
+        all) as `scale_curve`. `offset` must be a finite number.
+        """
+        return _run(partial(core.shift_curve, figure_key, offset, curve=curve))
+
+    @server.tool(name='normalize_curve')
+    def normalize_curve(figure_key: str, mode: str = 'max',
+                        curve: Optional[str] = None):
+        """Divide a figure's drawn curve(s) by a reference of their own.
+
+        `mode` is `max` (split by the largest sample), `first` (split by the
+        first, index 0), or `mean` (split by the mean). A reference that is
+        zero or not a number is refused by name; the division is then
+        undefined and would read as a picture full of no-signal.
+        """
+        return _run(partial(core.normalize_curve, figure_key, mode, curve=curve))
+
+    @server.tool(name='reset_curve')
+    def reset_curve(figure_key: str, curve: Optional[str] = None):
+        """Put a figure's curve(s) back to the data they were drawn with.
+
+        The transform that scale, shift and normalize put on is taken off,
+        and a curve nobody transformed is not in the answer. `curve` targets
+        the one or the figure's.
+        """
+        return _run(partial(core.reset_curve, figure_key, curve=curve))
+
+    @server.tool(name='remove_curve')
+    def remove_curve(figure_key: str, curve: Optional[str] = None):
+        """Take a curve off a figure, or every one when `curve` is left out.
+
+        The trace leaves the plot and the figure forgets it; the answer is
+        the count still held. The figure is the one a single curve was drawn
+        in; a table or the flux-surface figure are not it, and are refused
+        by name.
+        """
+        return _run(partial(core.remove_curve, figure_key, curve=curve))
+
+    @server.tool(name='set_axis_range')
+    def set_axis_range(figure_key: str, xmin: Optional[float] = None,
+                       xmax: Optional[float] = None,
+                       ymin: Optional[float] = None,
+                       ymax: Optional[float] = None,
+                       auto: bool = False):
+        """The window (the range) of a figure's axes, by name and number.
+
+        Pin `xmin`/`xmax` together (the abscissa) and/or `ymin`/`ymax`
+        (the ordinate); a partial ask (one bound of a pair) is refused
+        because a range is two. `auto=True` clears the pins and re-fits. A
+        window that is not a single figure is refused by name.
+        """
+        return _run(partial(core.set_axis_range, figure_key,
+                            xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
+                            auto=auto))
+
+    @server.tool(name='set_log_scale')
+    def set_log_scale(figure_key: str, x: Optional[bool] = None,
+                      y: Optional[bool] = None):
+        """A log axis, by name: `x`/`y` each `True` for log, `False` for
+        linear. Name at least one. A log on a set of values that cross zero
+        or below is refused by name, because the picture hides them and
+        reads as empty where it holds a half-empty axis; `shift_curve` to
+        clear the negatives is the answer.
+        """
+        return _run(partial(core.set_log_scale, figure_key, x=x, y=y))
+
+    @server.tool(name='invert_axis')
+    def invert_axis(figure_key: str, x: Optional[bool] = None,
+                    y: Optional[bool] = None):
+        """Invert (flip) an axis: `x=True`/`y=True` turn one around so the
+        negative direction is the other way. `False` puts it back. Name at
+        least one. Inversion and range are independent; a pinned range
+        stays where the values sit, the picture reads reversed.
+        """
+        return _run(partial(core.invert_axis, figure_key, x=x, y=y))
+
+    @server.tool(name='curve_stats')
+    def curve_stats(figure_key: str, curve: Optional[str] = None):
+        """The numbers of a figure's drawn curve(s): sample count, the
+        finite min/max/mean/std of the values, the nan/inf counts, and the
+        peak value with its abscissa. The read of a figure's curves in a
+        place the reader can act on, before or after a scale/shift/
+        normalize; a `plot_report` is the same read with an HTML file.
+        """
+        return _run(partial(core.curve_stats, figure_key, curve=curve))
+
+    @server.tool(name='export_curve')
+    def export_curve(figure_key: str, curve: Optional[str] = None,
+                     format: str = 'csv', name: Optional[str] = None):
+        """Take a figure's drawn curve(s) out to a file: the values as they
+        stand (a scale/shift/normalize on them is in the file). `format`
+        `csv` (default) or `json`; `curve` a name, an index, or left out.
+        The file lands in `~/.imasviz/exports` under the guard of the
+        configurations; a `name` that names a place, not a file, is refused
+        by name.
+        """
+        return _run(partial(core.export_curve, figure_key, curve=curve,
+                            format=format, name=name))
 
     # -------------------------------------------------------------- windows
 
