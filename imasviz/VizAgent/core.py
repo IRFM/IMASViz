@@ -2504,6 +2504,196 @@ class McpGuiCore:
                      % (path, len(rows), uri))
         return {'saved_to': path, 'curves': len(rows), 'uri': uri}
 
+    # ---------------------------------------------------------------- journals
+
+    def search_journals(self, scope=None, query=None, limit=20,
+                        machine=None, campaign=None, shot=None,
+                        date_from=None, date_to=None, author=None):
+        """The RAG of the two journals.
+
+        Two steps, in that order:
+        1. the structured filter (``machine``/``campaign``/``shot``/
+           ``date_from``/``date_to``/``author``) narrows to the notes
+           that name each of the fields the caller asked of;
+        2. the ranking of what is left — by embeddings when the
+           ``AgentEmbedEndpoint`` preference is named and the endpoint
+           answers (the cosine between the query's vector and each
+           note's, through the local cache under the journal's folder),
+           and by keyword (a light BM25, no dependency) when it is not
+           or when the endpoint does not answer.
+
+        An empty filter answer (a note the filters narrowed out) is the
+        ``total: 0`` the answer holds, and a fallback from embeddings
+        to keyword — the endpoint named but not answering, or answering
+        a shape ``rankByVector`` does not read — is named in the answer
+        as ``method: 'keyword'`` and ``fallback_reason``: the run that
+        read it does not present it as an embeddings answer.
+        """
+        from imasviz.VizAgent import journals
+        notes = journals.JournalStore.list_notes(
+            scope=scope, machine=machine, campaign=campaign, shot=shot,
+            date_from=date_from, date_to=date_to, author=author)
+        total = len(notes)
+        try:
+            limit = max(1, int(limit))
+        except (TypeError, ValueError):
+            limit = 20
+        if not query or not str(query).strip():
+            return {
+                'scope': scope or 'both', 'query': None, 'total': total,
+                'returned': min(total, limit), 'method': 'list',
+                'notes': [note.asSearchResult() for note in notes[:limit]],
+            }
+        from imasviz.VizUtils import QVizPreferences
+        endpoint = (QVizPreferences.AgentEmbedEndpoint or '').strip()
+        if endpoint:
+            from imasviz.VizAgent.llm_client import EmbeddingClient
+            cacheFolders = {}
+            if scope in (None, 'personal'):
+                try:
+                    cacheFolders['personal'] = \
+                        journals.JournalStore.personalDirectory()
+                except ValueError:
+                    pass
+            if scope in (None, 'shared'):
+                try:
+                    cacheFolders['shared'] = \
+                        journals.JournalStore.sharedDirectory()
+                except ValueError:
+                    pass
+            try:
+                embedder = EmbeddingClient()
+                # A query the embedder refuses is a refusal the ranking
+                # does not hide: the keyword answers the same question
+                # the embeddings could not, and the answer says it fell
+                # back and why (the same rule the ``rankByVector``'s
+                # own `ValueError` is, one the caller reads).
+                try:
+                    ranked = journals.rankByVector(
+                        notes, query, embedder, cacheFolders=cacheFolders,
+                        limit=limit)
+                except ValueError as e:
+                    # A query the endpoint does not vectorise is not an
+                    # error: it is the keyword, with the reason named.
+                    # A note the endpoint could not vectorise is not
+                    # one the ranked list holds, and the search does
+                    # not say it does not exist either.
+                    ranked = journals.rankByKeyword(notes, query, limit=limit)
+                    return {
+                        'scope': scope or 'both', 'query': str(query).strip(),
+                        'total': total, 'returned': len(ranked),
+                        'method': 'keyword',
+                        'fallback_from': 'embeddings',
+                        'fallback_reason': str(e),
+                        'notes': [n.asSearchResult() for n in ranked],
+                    }
+                answered = bool(ranked)
+                # The query that answered nothing through the embeddings
+                # is one the keyword answers in its own name: the
+                # ranked list is empty, but the note the keyword would
+                # rank is not a note that is not there — it is one
+                # the embeddings did not reach. The answer says which
+                # method the run used, and the caller names the note
+                # it could not rank.
+                if not answered:
+                    keyword = journals.rankByKeyword(notes, query,
+                                                     limit=limit)
+                    return {
+                        'scope': scope or 'both', 'query': str(query).strip(),
+                        'total': total, 'returned': len(keyword),
+                        'method': 'keyword (no embeddings ranked this)',
+                        'notes': [n.asSearchResult() for n in keyword],
+                    }
+                return {
+                    'scope': scope or 'both', 'query': str(query).strip(),
+                    'total': total, 'returned': len(ranked),
+                    'method': 'embeddings',
+                    'notes': [note.asSearchResult() for note in ranked],
+                }
+            except (ConnectionError, RuntimeError) as e:
+                # An endpoint that does not answer is the keyword, with
+                # the reason named: the keyword reads the same notes
+                # and ranks them by what they hold, not nothing.
+                ranked = journals.rankByKeyword(notes, query, limit=limit)
+                return {
+                    'scope': scope or 'both', 'query': str(query).strip(),
+                    'total': total, 'returned': len(ranked),
+                    'method': 'keyword',
+                    'fallback_from': 'embeddings',
+                    'fallback_reason': str(e),
+                    'notes': [n.asSearchResult() for n in ranked],
+                }
+        ranked = journals.rankByKeyword(notes, query, limit=limit)
+        return {
+            'scope': scope or 'both', 'query': str(query).strip(),
+            'total': total, 'returned': len(ranked),
+            'method': 'keyword',
+            'notes': [note.asSearchResult() for note in ranked],
+        }
+
+    def read_note(self, scope, note_id):
+        """The full body of one note of one journal, by its id (the
+        file name without ``.md``). Not in the journal is a refusal by
+        name, naming the ids it does hold; a note whose file is there
+        but does not parse as one (no ``author``) is the same refusal,
+        the shape ``journal`` does not answer is one the read does
+        not hide."""
+        from imasviz.VizAgent import journals
+        return journals.JournalStore.read_note(scope, note_id)
+
+    def list_notes(self, scope=None, machine=None, campaign=None, shot=None,
+                   author=None):
+        """The notes the two journals hold, filtered (the author is
+        the one required on every note, the others optional), newest
+        first. Empty is the answer that the caller reads as an answer,
+        not a refusal: the folder holds no note of the shape the
+        filters ask of, and that is what the answer says."""
+        from imasviz.VizAgent import journals
+        notes = journals.JournalStore.list_notes(
+            scope=scope, machine=machine, campaign=campaign, shot=shot,
+            author=author)
+        return {'scope': scope or 'both',
+                'count': len(notes),
+                'notes': [note.asSearchResult() for note in notes]}
+
+    def journal_stats(self):
+        """The state of the two journals and the embeddings: the folder
+        the personal and the shared are each under (a ``refusal`` when
+        no folder is named / not a directory), the count of notes each
+        holds, and the state of the embeddings — is the endpoint named
+        in the preferences, and if so, what model it names. The caller
+        reads the refusal to decide whether the answer for the shared
+        one is a refusal, and the one the search asks of to decide the
+        method it will rank with (embeddings vs keyword)."""
+        from imasviz.VizAgent import journals
+        return journals.JournalStore.stats()
+
+    def add_note(self, scope, text, author=None, machine=None,
+                 campaign=None, shot=None, date=None, title=None):
+        """One new note in one journal.
+
+        The author is required on every write: ``author`` named by the
+        caller, or ``$USER`` when the caller left it out — a run with
+        no ``$USER`` and no ``author`` is a named refusal, because a
+        writer it cannot attribute to is one the journal does not hold.
+        A note with no body is the same refusal, and the file is not
+        written: the shape the journal does not hold is not one the
+        write will cost.
+        """
+        from imasviz.VizAgent import journals
+        return journals.JournalStore.add_note(
+            scope, text, author=author, machine=machine, campaign=campaign,
+            shot=shot, date=date, title=title)
+
+    def delete_note(self, scope, note_id):
+        """One note of one journal, gone: the file and the cache entry
+        the run holds for it. Not in the journal is a named refusal,
+        naming the ids it does hold, and the cache is invalidated by
+        the same rule the write is: a note the run deleted is one the
+        next search does not rank, because its file is not there."""
+        from imasviz.VizAgent import journals
+        return journals.JournalStore.delete_note(scope, note_id)
+
     @staticmethod
     def curveStats(xy):
         """The statistics of one curve, as the report says them.

@@ -902,6 +902,114 @@ TOOLS = [
             'tail': {'type': 'integer', 'default': 200},
         }, 'additionalProperties': False},
     ),
+    _tool(
+        'search_journals',
+        'The lab notebook, in its two journals (the personal under '
+        '~/.imasviz/journals, the shared under the folder '
+        'SharedJournalDir names), asked as a RAG: the structured '
+        'filters (machine, campaign, shot, date, author) narrow to '
+        'the notes that name each field you ask of, then your `query` '
+        'is ranked over them -- by embeddings when the preferences '
+        'name the embedding endpoint and it answers, else by keyword, '
+        'and the answer names which it used. A note about a shot names '
+        'machine, campaign, shot and date, and a note with none of '
+        'them is a general one, the same journal. With no query, the '
+        'notes come back in the order they are newest.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared'],
+                      'description': 'the one journal to ask of; left '
+                                     'out, both are asked'},
+            'query': {'type': ['string', 'null'],
+                      'description': 'the text to rank the filtered '
+                                     'notes by; left out, the notes '
+                                     'come back newest first'},
+            'limit': {'type': 'integer', 'default': 20},
+            'machine': {'type': ['string', 'null']},
+            'campaign': {'type': ['string', 'null']},
+            'shot': {'type': ['string', 'null']},
+            'date_from': {'type': ['string', 'null'],
+                          'description': 'ISO 8601 YYYY-MM-DD, inclusive'},
+            'date_to': {'type': ['string', 'null'],
+                        'description': 'ISO 8601 YYYY-MM-DD, inclusive'},
+            'author': {'type': ['string', 'null']},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'read_note',
+        'The full body of one note, by its `note_id` (the file name '
+        'without .md) and its `scope`. The `snippet` of '
+        'search_journals is the one it is a hand for -- not the full '
+        'text this one gives. Not in the journal is refused by name, '
+        'naming the ids it does hold.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
+            'note_id': {'type': 'string'},
+        }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
+    ),
+    _tool(
+        'list_notes',
+        'The notes in the journal(s) the caller names, filtered '
+        '(machine, campaign, shot, author) and newest first. A note '
+        'the filter does not name is excluded, and a filter left out '
+        'is no filter at all. Empty is an answer, the same shape a '
+        'search_journals that answers nothing holds.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared']},
+            'machine': {'type': ['string', 'null']},
+            'campaign': {'type': ['string', 'null']},
+            'shot': {'type': ['string', 'null']},
+            'author': {'type': ['string', 'null']},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'journal_stats',
+        'The state of the two journals: the folder each is under, '
+        'the count of notes each holds, and the state of the '
+        'embeddings (is the endpoint named, and which model it '
+        'names). Ask of it before a search, and it tells the method '
+        'a run will rank with -- and the shared one answers a '
+        'refusal (not a folder named) when it is not set up.',
+        {'type': 'object', 'properties': {}, 'additionalProperties': False},
+    ),
+    _tool(
+        'add_note',
+        'One new note in the journal you name. `text` is the body '
+        '(required), `author` is the one who wrote it (defaults to '
+        '$USER, and a write with no author at all is refused by '
+        'name: the write is visible to whoever reads the journal), '
+        'and `machine`/`campaign`/`shot`/`date`/`title` are the '
+        'note\'s filters -- a note that names them is the one about '
+        'a shot, and one that does not is the one that is general. '
+        'A write to the shared journal is a visible line in a place '
+        'everyone you share it with reads, and it is the loop that '
+        'asks for it in the user\'s own words before it runs -- the '
+        'word you would give for the shared one.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
+            'text': {'type': 'string'},
+            'author': {'type': ['string', 'null']},
+            'machine': {'type': ['string', 'null']},
+            'campaign': {'type': ['string', 'null']},
+            'shot': {'type': ['string', 'null']},
+            'date': {'type': ['string', 'null'],
+                     'description': 'ISO 8601 YYYY-MM-DD'},
+            'title': {'type': ['string', 'null']},
+        }, 'required': ['scope', 'text'], 'additionalProperties': False},
+    ),
+    _tool(
+        'delete_note',
+        'One note gone: its file and the cache entry the run holds '
+        'for it. `scope` and `note_id` name the one to take out, and '
+        'not in the journal is refused by name, naming the ids it '
+        'does hold. The next search of the journal you take one out '
+        'of does not hold the note it did: its file is not there.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
+            'note_id': {'type': 'string'},
+        }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
+    ),
 ]
 
 TOOL_PARAMETERS = {
