@@ -62,16 +62,36 @@ _DEFLLECTION_MARKERS = (
 # the question, and it is the one choke point both callers reach.
 DESTRUCTIVE_GESTURES = ('close_window', 'close_case', 'new_session')
 
-# A word (or pair) the user's request carries when it asks for one of
-# them, in either language. Kept narrow on purpose: a gesture that
-# erases a figure is refused by a prompt that does not name it, and a
-# word that is a normal request word ("fresh data", "remove the noise")
-# is not what this gate is for.
+# The two gestures that put a line in one of the journals, and the
+# one that names the shared journal is the one this gate applies: a
+# visible line the writers all read, and the loop runs it only when the
+# user's own request names the journal to put it in. A gesture the
+# model reaches for on a request that does not name the journal is
+# refused by name, the same rule DESTRUCTIVE_GESTURES applies.
+SHARED_JOURNAL_GESTURES = ('add_note', 'delete_note')
+
+# A word (or pair) the user's request carries when it asks for a close
+# or a reset, in either language. Kept narrow on purpose: a gesture
+# that erases a figure is refused by a prompt that does not name it,
+# and a word that is a normal request word ("fresh data", "remove the
+# noise") is not what this gate is for.
 _CLOSURE_WORDS = (
     'close', 'ferm', 'suppr', 'delete',
     'new session', 'nouvelle session',
     'reset', 'réinitialis', 'reinitialis',
     'restart', 'recommenc', 'nettoy', 'wipe', 'purge',
+)
+
+# The same shape, for a write to the shared journal: the word the user
+# would give before the journal it wants a line in ("publier au
+# journal partagé", "share this", "write it to the shared journal").
+# Kept narrow, as _CLOSURE_WORDS is: the word a model recites is not
+# the ask, and the ask the model did not give a word for is one the
+# loop does not run.
+_PUBLISH_WORDS = (
+    'publier', 'partager', 'share',
+    'journal partagé', 'journal commun', 'journal de manip',
+    'shared journal', 'cahier de manip',
 )
 
 
@@ -84,6 +104,17 @@ def _userAskedForAClosure(user_prompt):
     """
     text = (user_prompt or '').lower()
     return any(word in text for word in _CLOSURE_WORDS)
+
+
+def _userAskedForAPublish(user_prompt):
+    """Whether the user's own request asks for a write to the shared
+    journal. The same shape as ``_userAskedForAClosure``: the words on
+    the ask, in the user's own hand, and the write the model reaches
+    for in a shared write runs only when the user's ask names the
+    journal it will put a line in.
+    """
+    text = (user_prompt or '').lower()
+    return any(word in text for word in _PUBLISH_WORDS)
 
 
 # The loop's own surface: the tool names the model quotes to point the user
@@ -554,6 +585,38 @@ class AgentLoop(QObject):
             '"ferme la figure", "nouvelle session"), and answer from '
             'what that call returns.' % (name, taken, user_prompt))
 
+    def _sharedJournalRefusal(self, name, user_prompt):
+        """The named refusal a shared-journal write receives on a
+        request that does not ask for it.
+
+        The rule the model sees, in the shape the rest of this file's
+        refusals wear: who is refused (the gesture, by name), where the
+        write would land (the shared journal the writers all read --
+        the note the user sees in the application, the viz_web page
+        and the other writers' sessions), that the refusal did not run
+        the gesture (the line is not in the journal), and the one word
+        that unblocks it (an ask in the user's own words). The write
+        the model reaches for on a "note down what I said" goes to
+        the PERSONAL journal.
+        """
+        taken = {
+            'add_note': 'a line the writers all read',
+            'delete_note': 'a line the writers all read',
+        }[name]
+        return (
+            'the %s gesture writes to the shared journal, and this '
+            'request does not ask for it: "%s" does not name a '
+            'journal to put a line in -- not a "publier au journal '
+            'partagé", not a "share this", not a "cahier de manip". '
+            'A shared journal is visible to the writers all read: '
+            'every session and every writer on this machine, '
+            'and the line stays. Nothing was written by this call: '
+            'the shared journal still stands. Run it only once '
+            'the user asks for it in their own words ('
+            '("publier au journal partagé", "share this", '
+            '"cahier de manip"), and answer from what that call '
+            'returns.' % (name, user_prompt))
+
     def _dispatch(self, name, args, requested_by='model', user_prompt=''):
         """Run one tool by name on the calling thread (the GUI thread,
         when reached through ``GuiDispatcher``).
@@ -592,6 +655,20 @@ class AgentLoop(QObject):
                 and requested_by == 'model'
                 and not _userAskedForAClosure(user_prompt)):
             raise ValueError(self._destructiveRefusal(name, user_prompt))
+        # The shared-journal write is the same shape asked a different
+        # way: a gesture the MODEL reaches for, in a prompt that does not
+        # name the journal it will put a line in, is refused by name.
+        # The gesture the USER reaches for (``requested_by='user'``, the
+        # page's button through ``callGesture``) is the ask. A write to
+        # the PERSONAL journal does not answer this question: a note in
+        # the user's own file is not put into the hands of the writers
+        # all read, and the same call the model reaches for on
+        # "note down what I said" is the one to run there.
+        if (name in SHARED_JOURNAL_GESTURES
+                and args.get('scope') == 'shared'
+                and requested_by == 'model'
+                and not _userAskedForAPublish(user_prompt)):
+            raise ValueError(self._sharedJournalRefusal(name, user_prompt))
         self.gestureIssued.emit(name, args or {})
         result = method(**args)
         if name == 'new_session':
