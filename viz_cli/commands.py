@@ -613,10 +613,10 @@ def _noteSearch(session, words):
     answer = session.core.search_journals(query=query, **flags)
     if not answer['notes']:
         print('no note in %s fits: %s %s'
-              % (answer['scopes'], query, _flagWords(flags)))
+              % (answer['scope'], query, _flagWords(flags)))
         return True
     print('%d note(s) under %s, ranked for %s by %s'
-          % (len(answer['notes']), answer['scopes'], query,
+          % (len(answer['notes']), answer['scope'], query,
              answer['method']))
     for note in answer['notes']:
         print('  %s' % _noteLine(note))
@@ -631,9 +631,9 @@ def _noteList(session, words):
     answer = session.core.list_notes(**flags)
     if not answer['notes']:
         print('no note in %s fits %s'
-              % (answer['scopes'], _flagWords(flags) or 'the filters'))
+              % (answer['scope'], _flagWords(flags) or 'the filters'))
         return True
-    print('%d note(s) under %s' % (len(answer['notes']), answer['scopes']))
+    print('%d note(s) under %s' % (len(answer['notes']), answer['scope']))
     for note in answer['notes']:
         print('  %s' % _noteLine(note))
     return True
@@ -694,7 +694,7 @@ def _noteDelete(session, words):
     scope = flags.pop('scope', None) or 'personal'
     answer = session.core.delete_note(scope, note_id)
     print('  %s of %s is gone'
-          % (answer['note_id'], answer['scope']))
+          % (answer['id'], scope))
     return True
 
 
