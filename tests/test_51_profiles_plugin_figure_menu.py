@@ -211,10 +211,13 @@ def test_the_entry_is_offered_on_every_ids_of_the_case(session):
     assert session.entriesOf('wall') == [
         (PLUGIN, 0, 'Plot what the wall IDS holds...'),
         ('VizSlicePlugin', 0, 'Draw the slice of the wall IDS…')]
-    # equilibrium carries the other plugin's line too, and the three numbers are
-    # the plugins' own, not their place in the menu.
+    # equilibrium carries the other plugins' lines too, and the numbers are the
+    # plugins' own, not their place in the menu. The surfaces plugin earns its
+    # two lines here only -- it is offered on no other IDS of the case.
     assert session.entriesOf('equilibrium') == [
         ('equilibriumcharts', 0, 'Equilibrium overview...'),
+        ('equilibriumsurfaces', 0, 'Surfaces de flux (début, milieu, fin)...'),
+        ('equilibriumsurfaces', 1, 'Équilibre à un instant (surface + profils)...'),
         (PLUGIN, 0, 'Plot what the equilibrium IDS holds...'),
         ('VizSlicePlugin', 0, 'Draw the slice of the equilibrium IDS…')]
 
