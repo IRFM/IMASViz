@@ -202,6 +202,71 @@ the same descriptions. The tools, in the order the faces group them:
      - the log panel of one case, or of every case: the last lines the gestures
        wrote there, the named refusals among them -- where a loop reads what a
        dialog would have told a hand.
+   * - the journals
+     - ``search_journals``, ``list_notes``, ``read_note``, ``add_note``,
+       ``delete_note``, ``journal_stats``
+     - the two journals of the run: the **personal** one (the author's own
+       notes, under ``~/.imasviz/journals``) and the **shared** one
+       (:ref:`agentics_journal_shared`) -- a note is one file with its own
+       front matter (*machine*, *campaign*, *shot*, *date*, *author*,
+       *title*) and its body, and a search narrows by any of the filters and
+       ranks by meaning when the embeddings endpoint is named
+       (:ref:`agentics_journal_llm`), by words while it is not.
+
+.. _agentics_journal:
+
+The two journals
+----------------
+
+A note is one line in a journal: a file of a front matter the reader filters
+on -- the *machine* (the tokamak), the *campaign*, the *shot* number, the
+*date* of the shot, the *author* of the note (required on every write, the
+``$USER`` of the run when the one that wrote it did not name one), and a *title*
+-- and a body. A note may name a shot and a machine, and one as well as an
+observation with neither: the *date* of a shot is still a date the note
+answers by, and the body is what a query runs on while the fields name the
+note the filters do not.
+
+The two are:
+
+- the **personal** one, under ``~/.imasviz/journals/``, one for each user of
+  the node; and
+- the **shared** one, under :code:`SharedJournalDir` in the preferences
+  (:ref:`agentics_journal_shared`) -- an AFS directory the writers of the
+  node reach, so that a note written by one is reachable by the others, and
+  the author of the note is the ``$USER`` of the writer, written by hand.
+
+The read: ``search_journals`` (the query and the filters), ``list_notes`` (the
+filters alone, in date order), ``read_note`` (the body by the id a search or
+a list names), and ``journal_stats`` (what the two journals hold on this node,
+and whether the embeddings endpoint is named and the model it names). The
+write: ``add_note`` (a new line in one of the two, the fields that name it,
+and the body), and ``delete_note`` (one of them, gone). Every refusal the read
+answers is one the write does not take: a note with no author is refused by
+name, a body that is empty is refused by name, and an explicit ask for the
+shared journal on a node that does not hold one names the reason, not the
+other journal.
+
+The shared journal is a visible line the writers read: a write to the shared
+one is **asked for, not taken** -- the loop runs it only when the request
+names the shared journal in the user's own words (*publier au journal
+partagé*, *share this*, *cahier de manip*, or in English), and a write
+the model reaches for on a request that names no shared journal is a named
+refusal: the gesture, the journal that would hold the line, and nothing was
+written. The same rule wears on the *Windows* menu's close and on the *File*
+menu's new session: a close the model runs, the loop names the gesture and
+the rule, the case and the session are still in force.
+
+The ranking: ``search_journals`` ranks by **embeddings** when
+:code:`AgentEmbedEndpoint` is named and the server answers (the
+:ref:`agentics_journal_llm`), and by **words** while it is not, or while the
+server does not answer -- which is what ``journal_stats`` says, in
+``method`` and, for the fallback case, in ``fallback_from`` and
+``fallback_reason``: a search that ran on the keyword with the reason named
+is not a search that presented itself as an embeddings answer. The vectors
+the endpoints answer are cached under the note's journal folder, keyed on
+the note's body, so a second search of the same corpus asks the endpoint for
+the query and reads the rest.
 
 .. _agentics_axes:
 

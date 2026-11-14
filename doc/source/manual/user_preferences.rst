@@ -212,3 +212,45 @@ not change.
   sends a header. The word is not logged, not in the log panel and not in a
   transcript: it is the one word of the file that is not repeated where it is
   named.
+
+The agent's journals
+~~~~~~~~~~~~~~~~~~~~
+
+The two journals the agent reads and writes on the runs of :ref:`agentics` --
+the :ref:`agentics_journal` that holds the notes -- are steered here. None of
+them reaches anything but the journals: a line that cannot be read is named
+where the run reads it and leaves the default standing.
+
+.. _agentics_journal_llm:
+
+The embeddings endpoint
+-----------------------
+
+The journal search ranks by **meaning** when one of these is set and the
+endpoint answers, and by **words** while it is not, or while the endpoint
+does not answer.
+
+- **AgentEmbedEndpoint** -- the endpoint of a server that answers
+  ``POST /v1/embeddings`` in the OpenAI shape. A **chat** endpoint (the one
+  ``AgentLLMEndpoint`` names) is not one: the model that answers
+  ``/embeddings`` has to carry an embedding table, so the two are apart.
+  While this line is empty, or an endpoint it names does not answer, the
+  journal search ranks by **words** (a light rank, no dependency) and names
+  the fallback in the answer (``fallback_from: 'embeddings'`` and the reason).
+- **AgentEmbedModel** -- the name of the embedding model, sent with every call
+  to the endpoint named by ``AgentEmbedEndpoint``. An empty name is not a
+  refusal: the server answers with the model it holds, and the search reads
+  the vector it gives. The same word is not logged.
+
+.. _agentics_journal_shared:
+
+The shared journal
+------------------
+
+- **SharedJournalDir** -- the directory the **shared** journal lives in, the
+  one the writers of the node reach (an AFS path). Empty by default: on a node
+  with no shared one, an explicit ask for the shared journal is refused by
+  name (naming the reason and the other journal) and a search that spans the
+  two degrades to the personal one the node does hold, with the reason in the
+  log. The author of a note written to the shared journal is the ``$USER`` of
+  the writer: it is a visible line the writers read, and the writer is named.
