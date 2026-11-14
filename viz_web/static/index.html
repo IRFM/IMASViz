@@ -104,6 +104,17 @@ textarea#prompt {
   border-radius: 6px; padding: 8px 10px; font: inherit;
 }
 textarea#prompt:focus { outline: none; border-color: var(--accent); }
+select#historyBox {
+  width: 100%; background: var(--field); color: var(--ink-soft);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: inherit;
+}
+select#historyBox:focus { outline: none; border-color: var(--accent); }
+select#toolsBox {
+  width: 100%; background: var(--field); color: var(--ink-soft);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font: inherit;
+  margin-top: 8px;
+}
+select#toolsBox:focus { outline: none; border-color: var(--accent); }
 button {
   background: var(--surface); color: var(--ink);
   border: 1px solid var(--line); border-radius: 6px; padding: 7px 14px;
@@ -260,6 +271,20 @@ details.tool summary strong { color: var(--accent-strong); }
          answer scrolls into sight while the prompt stays under it, with
          the button row after the input. -->
     <div id="transcript" class="transcript" aria-live="polite"></div>
+    <!-- The history menu and the input: the recent prompts, newest first,
+         shared with the panel and the client; choosing one puts it back in
+         the box to run again. -->
+    <select id="historyBox" aria-label="Recent prompts"
+            title="Recent prompts, shared with the panel and the client. Choose one to put it back in the box."></select>
+    <!-- The transcript mode: the shape the agent's answer wears while it
+         works (hide = the answer with the calls cut, off = no tools,
+         verbose = the whole traffic). The page's own live view is what
+         wears it; the transcript it stores on disk is always the full
+         render, whatever this says. Shared with the panel and the
+         client: choosing one here, the /tools of the REPL, and the combo
+         of the panel are the same control. -->
+    <select id="toolsBox" aria-label="Transcript mode"
+            title="Transcript mode: how the agent's answer wears while it works. hide (the answer, the calls cut), off (no tools), verbose (the whole traffic). Shared with the panel and the client."></select>
     <textarea id="prompt" placeholder="Open a case imas:hdf5?path=…, load an IDS, find a quantity, plot it…"></textarea>
     <div class="row">
       <button id="runBtn" type="button">Run</button>
@@ -925,6 +950,80 @@ details.tool summary strong { color: var(--accent-strong); }
     refreshHealth();
   }
 
+  // The one prompt history the whole application shares: a turn of the
+  // panel, the client or this page is listed here, newest first. Choosing
+  // a line puts that prompt back in the box, to run again -- the memory a
+  // `new session` cannot reach, the way the panel's menu holds it. The
+  // selection is kept across the refresh when the line it was on still
+  // stands, so a refresh after one run does not reset the box the user
+  // was about to run.
+  async function loadHistory(limit) {
+    var box = byId('historyBox');
+    if (!box) return;
+    limit = limit || 20;
+    var prev = box.value;
+    function reset() {
+      box.textContent = '';
+      var empty = document.createElement('option');
+      empty.value = '';
+      box.appendChild(empty);
+      return empty;
+    }
+    try {
+      var r = await fetch('/api/history?limit=' + limit);
+      var j = await r.json();
+      var prompts = (j && j.prompts) || [];
+      var first = reset();
+      first.textContent = prompts.length
+        ? '– recent prompts · ' + prompts.length
+        : '– no prompt yet –';
+      prompts.forEach(function (p) {
+        var o = document.createElement('option');
+        o.value = p;
+        o.textContent = p;
+        box.appendChild(o);
+      });
+      box.value = (prev && prompts.indexOf(prev) >= 0) ? prev : '';
+    } catch (e) {
+      // A history that does not answer is named where the user reads it,
+      // and the box keeps what it held -- never a silence to guess at.
+      reset().textContent = '– history did not answer: ' + (e || 'no answer') + ' –';
+    }
+  }
+
+  // The transcript mode: the shape the answer wears while it works. Read
+  // from the same file the panel and the client share, and written back on
+  // change (to the loop in force and that file), so all three sides answer
+  // the same mode to a reader. The one the page stores on disk is never it
+  // -- that stays the full render of the turn, whatever the mode is here.
+  async function loadToolsMode() {
+    var box = byId('toolsBox');
+    if (!box) return;
+    try {
+      var r = await fetch('/api/tools_mode');
+      var j = await r.json();
+      var mode = j && j.mode;
+      var modes = (j && j.modes) || ['hide', 'off', 'verbose'];
+      box.textContent = '';
+      modes.forEach(function (m) {
+        var o = document.createElement('option');
+        o.value = m;
+        o.textContent = m;
+        box.appendChild(o);
+      });
+      box.value = (mode && modes.indexOf(mode) >= 0) ? mode : 'hide';
+    } catch (e) {
+      // The default is a state the mode still has -- the box says what it
+      // reads so the reader is not left guessing.
+      box.textContent = '';
+      var o = document.createElement('option');
+      o.value = 'hide';
+      o.textContent = 'hide (mode did not answer)';
+      box.appendChild(o);
+      box.value = 'hide';
+    }
+  }
+
   function handleBlock(block) {
     var event = 'message';
     var data = null;
@@ -971,6 +1070,9 @@ details.tool summary strong { color: var(--accent-strong); }
       appendLine('REFUSAL — ' + e, 'refusal');
     } finally {
       setBusy(false);
+      // The prompt ran (or was refused): the shared menu holds it now, and
+      // the box lists what the run asked for, newest first.
+      loadHistory().catch(function () {});
     }
   }
 
@@ -999,6 +1101,34 @@ details.tool summary strong { color: var(--accent-strong); }
       var p = byId('prompt').value;
       if (!p.trim()) return;
       runAgent(p);
+    });
+    // The history menu: choosing a line puts that prompt back in the box,
+    // to run again, and the menu clears to its head so a second choice is a
+    // deliberate act, not the one the menu was showing.
+    byId('historyBox').addEventListener('change', function () {
+      var box = byId('historyBox');
+      var value = box.value;
+      if (!value) return;
+      byId('prompt').value = value;
+      box.value = '';
+      byId('prompt').focus();
+    });
+    // The transcript mode: choose one, it is sent to the loop in force and
+    // to the preferences file the panel and the client read back -- the
+    // same control everywhere. A refusal a name earns is named in the
+    // transcript, like the rest of the page's answers.
+    byId('toolsBox').addEventListener('change', function () {
+      var box = byId('toolsBox');
+      var value = box.value;
+      if (!value) return;
+      fetch('/api/tools_mode', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: value }),
+      }).then(function (r) {
+        if (!r.ok) return r.json().then(function (j) {
+          appendLine('REFUSAL — mode: ' + (j.error || r.status), 'refusal');
+        });
+      }).catch(function () {});
     });
     byId('stopBtn').addEventListener('click', function () {
       fetch('/api/agent/stop', { method: 'POST' }).catch(function () {});
@@ -1073,6 +1203,13 @@ details.tool summary strong { color: var(--accent-strong); }
     wireButtons();
     refreshHealth();
     refreshReports();
+    // The prompt history is the one every surface shares: fill the menu
+    // with what a prior run of the panel, the client or this page asked
+    // for, so a reload does not cost the list the user recalls from.
+    loadHistory().catch(function () {});
+    // The transcript mode, read back from the same file the panel and the
+    // client share, so the box says the one in force rather than guessing.
+    loadToolsMode().catch(function () {});
     // The captures of the previous requests are on disk, one directory
     // per request: rebuild the gallery from them so a reload of the
     // page does not cost what the session already drew.

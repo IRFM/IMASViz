@@ -69,8 +69,10 @@ def parseArguments(argv=None):
                              'are saved in (default: '
                              '~/.imasviz/cli/shots)')
     parser.add_argument('--history', default=None,
-                        help='readline history file (default: '
-                             '~/.imasviz/cli_history)')
+                        help='seed a plain-text history file into the shared '
+                             'list the arrows walk (default: none -- the '
+                             'arrows recall the list the whole application '
+                             'shares, ~/.imasviz/agent_prompts)')
     parser.add_argument('--display', action='store_true',
                         help='keep the display when you have one (default: '
                              'offscreen — the point of the client)')
@@ -179,8 +181,11 @@ def interactive(args, session=None, inputs=None, settle=True):
         window = session.window
         built = False
 
-    history = History(args.history
-                      or os.path.expanduser('~/.imasviz/cli_history'))
+    # The arrows walk the one list the whole application shares, so the
+    # prompts a turn of the panel or the web asked for are recallable here,
+    # and a prompt typed here is where the panel and the web recall it.
+    # `--history` seeds a plain-text file a run kept into that list.
+    history = History(args.history)
     candidates = _candidates()
     print(banner(session.llm, session.max_turns, session.shots_dir))
     print('')
@@ -203,8 +208,8 @@ def interactive(args, session=None, inputs=None, settle=True):
             print('')
             continue
         if line is None:
-            print("Leaving: the arrows keep this run's prompts in %s"
-                  % history.path)
+            print("Leaving: the prompts the arrows recall stay in %s, "
+                  "with the panel and the web" % history.path)
             break
         line = (line or '').strip()
         if not line:

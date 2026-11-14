@@ -29,8 +29,10 @@ import json
 import urllib.error
 import urllib.request
 
-COMMANDS = ('llm', 'mcp', 'ids', 'shots', 'session', 'history', 'help',
-            'quit')
+from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
+
+COMMANDS = ('llm', 'mcp', 'ids', 'shots', 'session', 'history', 'tools',
+            'help', 'quit')
 
 LLM_FIELDS = ('endpoint', 'model', 'key', 'max_turns', 'temperature',
               'max_tokens')
@@ -68,10 +70,18 @@ named after the turn. Commands:
   /session                   the cases open in this session
   /session save NAME         the session the application writes
   /session restore NAME      put that session back
-  /history                   the prompts of this client run
+  /history                   the shared prompt history, newest first: the
+                             prompts the panel, the web and the client's
+                             arrows all recall
+  /tools                     the transcript mode in force (hide, off,
+                             verbose): the live view wears it, the file on
+                             disk is still the full render
+  /tools MODE                set it -- the panel, the web and the client
+                             read the same one -- and persist it
   /help                      this text
-  /quit                      leave; the arrows keep your prompts in
-                             ~/.imasviz/cli_history between runs
+  /quit                      leave; the arrows keep the prompts they
+                             recall in ~/.imasviz/agent_prompts, with the
+                             panel and the web
 
 Ctrl+C during a turn stops it at the next turn boundary and still saves
 what it drew.
@@ -134,6 +144,8 @@ def execute(cmd, session):
         _session(cmd, session)
     elif cmd.name == 'history':
         _history(cmd, session)
+    elif cmd.name == 'tools':
+        _toolsMode(cmd, session)
     return True
 
 
@@ -418,10 +430,65 @@ def _session(cmd, session):
 # ------------------------------------------------------------------- /history
 
 def _history(cmd, session):
-    if not session.prompts:
-        print('No prompt in this client run yet: type one, or /help for '
+    """The prompts in the shared history, newest first.
+
+    The one list the panel, the web and the client's arrows all read: what
+    a turn of any of the three asked for, and `new session` cannot reach it
+    -- so the answer here is the list the user recalls, not just what this
+    run typed. An empty list is an answer, as the panel's box is empty when
+    no prompt has run yet."""
+    try:
+        prompts = QVizPromptHistory.mostRecentFirst()
+    except ValueError as e:
+        raise ValueError(
+            'the shared prompt history could not be read: %s' % e)
+    if not prompts:
+        print('No prompt in the shared history yet: type one, or /help for '
               'the commands.')
         return
-    print('Prompts of this client run:')
-    for number, prompt in enumerate(session.prompts, start=1):
+    print('Prompts in the shared history, newest first -- the one the panel '
+          'and the web recall too: %d' % len(prompts))
+    for number, prompt in enumerate(prompts, start=1):
         print('  %d. %s' % (number, prompt))
+
+
+def _toolsMode(cmd, session):
+    """The transcript mode a turn wears: `hide`, `off`, `verbose`.
+
+    Set it and it is pinned on this client's loop (the very next turn wears
+    it) and persisted to the preferences the panel and the web read too --
+    one mode, the same three sides. It is the mode of the **live view**
+    (the console here, the panel, the page); the on-disk `transcript.txt`
+    is never it -- that stays the full render of the turn, so a reader can
+    still audit what a `hide`-wearing run did. A value outside the three
+    is refused by name, the way `/llm` refuses a bad field.
+    """
+    from imasviz.VizUtils import QVizPreferences
+
+    modes = QVizPreferences.AGENT_TOOLS_MODES
+    if not cmd.words:
+        agent = getattr(session, 'agent', None)
+        current = (getattr(agent, 'tools_mode', None) if agent is not None
+                   else None)
+        if current is None:
+            current = QVizPreferences.AgentToolsMode
+        print('Transcript mode: %s (the live view; the file on disk is '
+              'still the full render) -- /tools %s to change it.'
+              % (current, ' / '.join(modes)))
+        return
+    if len(cmd.words) != 1:
+        raise ValueError(
+            '/tools takes one word, its mode: %s -- /tools by itself '
+            'prints the one in force.' % ' / '.join(modes))
+    value = cmd.words[0]
+    try:
+        mode = QVizPreferences.toolsMode(value)
+    except ValueError as e:
+        raise ValueError(str(e))
+    # Pin it on the loop in force so the very next turn wears it, and in the
+    # file so the panel and the web read the same one back.
+    session.agent.tools_mode = mode
+    QVizPreferences.persist(AgentToolsMode=mode)
+    print('/tools — %s (this client now, and the panel and the web read it '
+          'back too; the file on disk is still the full render).' % mode,
+          flush=True)

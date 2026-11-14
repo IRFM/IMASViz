@@ -267,6 +267,11 @@ def test_agent_streams_the_turn_then_the_images(qapp, tmp_path):
         LLMResponse(content='La figure est tracée.', finish_reason='stop'),
     ])
     session, _ = build(qapp, tmp_path, llm=llm)
+    # `verbose`: the live view is the full render (the `→` / `←` the
+    # streaming mechanism carries); `hide` would put them in the artifact
+    # only, and the stream-test here is about the line mechanism on the
+    # page.
+    session.agent.tools_mode = 'verbose'
     client = TestClient(buildApp(session), base_url='http://t')
     resp = makeRequest(client, qapp, 'POST', '/api/agent',
                        json={'prompt': 'trace une figure'})

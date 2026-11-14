@@ -35,6 +35,8 @@ points at a port nothing listens on.
 
 import base64
 
+import pytest
+
 from imasviz.VizAgent.llm_client import LLMClient, LLMResponse
 
 from viz_cli.commands import execute, help_text, parse
@@ -128,6 +130,18 @@ class FakeWindow:
 
     def hide(self):
         pass
+
+
+@pytest.fixture(autouse=True)
+def _isolated_home(tmp_path, monkeypatch):
+    """A turn now lands in the one prompt history the whole application
+    shares, under `$HOME/.imasviz/agent_prompts`. The client's tests must
+    not read or write the user's real list, so every test here points
+    `HOME` at its own folder -- the pattern `test_111` and `test_117`
+    keep for a configuration the application would otherwise write to
+    the user's own tree.
+    """
+    monkeypatch.setenv('HOME', str(tmp_path))
 
 
 def buildSession(qapp, tmp_path, llm=None, shots=None, max_turns=8):
@@ -393,17 +407,25 @@ def test_the_context_survives_between_two_prompts(qapp, tmp_path):
     assert any('ouvre le cas de reference' in c for c in contents)
 
 
-def test_history_lists_the_prompts_in_order(qapp, tmp_path, capsys):
+def test_history_lists_the_shared_store_newest_first(qapp, tmp_path, capsys):
+    """What a turn asked lands in the one list the application shares, and
+    `/history` lists it newest first -- the order the arrows and the web's
+    menu read it in. The two prompts the session ran are both in that
+    list, and the one typed later answers before the one before it."""
+    from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
     llm = FakeLLMClient([LLMResponse(content='un.', finish_reason='stop')
-                         for _ in range(3)])
+                         for _ in range(2)])
     session, _ = buildSession(qapp, tmp_path, llm=llm)
     session.runPrompt('le premier prompt')
     session.runPrompt('le deuxieme prompt')
+    # Both prompts are in the shared list the whole application reads.
+    assert QVizPromptHistory.load() == ['le premier prompt',
+                                        'le deuxieme prompt']
     assert execute(parse('/history'), session)
     out = capsys.readouterr().out
     assert 'le premier prompt' in out
     assert 'le deuxieme prompt' in out
-    assert out.index('le premier prompt') < out.index('le deuxieme prompt')
+    assert out.index('le deuxieme prompt') < out.index('le premier prompt')
 
 
 def test_shots_moves_the_turn_directory(qapp, tmp_path):
@@ -535,31 +557,35 @@ def test_main_oneshot_refuses_an_empty_prompt(capsys):
     assert 'REFUSAL' in capsys.readouterr().err
 
 
-def test_history_lands_in_the_file_and_comes_back(tmp_path):
-    """The file is plain text under $HOME/.imasviz, as the preferences:
-    a line added is in it, and the client that reopens it holds the
-    lines it holds already. Two consecutive additions of the same line
-    cost one entry, the rule the shells apply."""
+def test_history_lands_in_the_shared_store_and_comes_back(tmp_path):
+    """A prompt the client runs is in the one list the whole application
+    shares, under $HOME/.imasviz/agent_prompts, and the client that
+    reopens it holds it already. Two consecutive additions of the same
+    line cost one entry, the rule the shared store applies -- and the
+    list the client reads is the very list the panel and the web recall
+    from."""
     from viz_cli.history import History
-    path = str(tmp_path / '.imasviz' / 'cli_history')
-    history = History(path)
+    from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
+    history = History()
     line = "trace le champ de l'iteration 0"
     history.add(line)
     history.add(line)
-    with open(path) as f:
-        held = f.read()
-    assert held.count(line) == 1
-    again = History(path)
+    assert QVizPromptHistory.load() == [line]
+    again = History()
     assert again.entries == [line]
+    # Where it lives: the shared list, not a per-client plain-text file.
+    assert history.path.endswith('.imasviz/agent_prompts')
 
 
-def test_the_arrows_walk_the_history_and_the_typed_line_comes_back(
-        tmp_path):
+def test_the_arrows_walk_the_shared_store_and_the_typed_line_comes_back():
     """The up and down walk, as a shell walks its own: up from the current
     line gives the newest, again the one before, and down from the
-    oldest gives the line the walk left back. Driven through a real
-    pty, because the editor is `termios` and `select` and a pipe would
-    not reach it."""
+    oldest gives the line the walk left back. The store the arrows walk
+    is the one the whole application shares -- a prompt the panel or the
+    web ran is recallable here, and this walk lives under the `HOME`
+    the fixture isolates, so the client's own list is what it keeps.
+    Driven through a real pty, because the editor is `termios` and
+    `select` and a pipe would not reach it."""
     import io
     import os
     import pty
@@ -568,7 +594,7 @@ def test_the_arrows_walk_the_history_and_the_typed_line_comes_back(
     from viz_cli.history import History
     from viz_cli import tui
 
-    history = History(str(tmp_path / 'cli_history'))
+    history = History()
     history.add('premier prompt')
     history.add('deuxieme prompt')
 

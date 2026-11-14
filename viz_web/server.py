@@ -250,6 +250,53 @@ def buildApp(session):
             return JSONResponse({'error': str(e)}, status_code=400)
         return JSONResponse(session.llmFields())
 
+    # ------------------------------------------------------------ transcript mode
+
+    async def toolsModeGet(request):
+        # The mode in force now -- pinned on this session if the user or
+        # `/tools` asked this run, the preference otherwise (the panel,
+        # the client and the page share the same file, and this reads the
+        # same one).
+        from imasviz.VizUtils import QVizPreferences
+        return JSONResponse({'mode': _currentToolsMode(session),
+                             'modes': list(QVizPreferences.AGENT_TOOLS_MODES)})
+
+    async def toolsModeSet(request):
+        body = await request.json()
+        mode = (body or {}).get('mode')
+        if mode is None:
+            return JSONResponse(
+                {'error': 'name the mode: {mode: hide | off | verbose}.'},
+                status_code=400)
+        try:
+            setToolsMode(session, mode)
+        except ValueError as e:
+            return JSONResponse({'error': str(e)}, status_code=400)
+        return JSONResponse({'mode': _currentToolsMode(session)})
+
+    # ---------------------------------------------------------------- history
+
+    async def history(request):
+        # The one prompt history the whole application shares: a turn of the
+        # panel, the client or this page is recallable here, and `new session`
+        # cannot reach it. Newest first, capped by `limit` when it is named;
+        # an empty list is an answer, as the panel's menu is empty before a
+        # prompt has run, and a store that refuses to read is a 400, named.
+        from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
+        limit = request.query_params.get('limit')
+        if limit is not None:
+            try:
+                limit = int(limit)
+            except (TypeError, ValueError):
+                return JSONResponse(
+                    {'error': 'limit must be a number: %r' % limit},
+                    status_code=400)
+        try:
+            prompts = QVizPromptHistory.mostRecentFirst(limit)
+        except ValueError as e:
+            return JSONResponse({'error': str(e)}, status_code=400)
+        return JSONResponse({'prompts': prompts})
+
     return Starlette(routes=[
         Route('/', index),
         Route('/api/health', health, methods=['GET']),
@@ -260,10 +307,13 @@ def buildApp(session):
         Route('/api/turns', turnList, methods=['GET']),
         Route('/api/turns/{n}', turnOne, methods=['GET']),
         Route('/api/turns/{n}/shots/{name}', shot, methods=['GET']),
+        Route('/api/history', history, methods=['GET']),
         Route('/api/reports', reportList, methods=['GET']),
         Route('/api/reports/{name}', report, methods=['GET']),
         Route('/api/llm', llmGet, methods=['GET']),
         Route('/api/llm', llmSet, methods=['POST']),
+        Route('/api/tools_mode', toolsModeGet, methods=['GET']),
+        Route('/api/tools_mode', toolsModeSet, methods=['POST']),
     ])
 
 
@@ -395,3 +445,32 @@ def _number(field, value, min=1):
         raise ValueError('%s is outside the range the loop takes: %d and up.'
                          % (value, min))
     return number
+
+
+def _currentToolsMode(session):
+    """The transcript mode in force for this session: the one pinned on its
+    loop when it is (`/tools` or a set asked this run), the preference
+    otherwise. Reading the same file the panel and the CLI write is what
+    keeps the three sides answering the same mode to a reader asking."""
+    agent = getattr(session, 'agent', None)
+    if agent is not None and getattr(agent, 'tools_mode', None) is not None:
+        return agent.tools_mode
+    from imasviz.VizUtils import QVizPreferences
+    return QVizPreferences.AgentToolsMode
+
+
+def setToolsMode(session, mode):
+    """Set the mode a turn wears: the three names the panel and the CLI take
+    (anything else is refused by name), pinned on this session's loop (the
+    very next turn of it wears it) and in the preferences file the panel
+    and the CLI read too -- one mode, the same three surfaces. The mode of
+    the live view: it is never what the on-disk `transcript.txt` wears,
+    which stays the full render the `fullLine` leaves there.
+    """
+    from imasviz.VizUtils import QVizPreferences
+    try:
+        mode = QVizPreferences.toolsMode(mode)
+    except ValueError as e:
+        raise ValueError(str(e))
+    session.agent.tools_mode = mode
+    QVizPreferences.persist(AgentToolsMode=mode)

@@ -39,6 +39,7 @@ from PySide6.QtCore import Qt
 
 from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.dispatcher import GuiDispatcher
+from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
 
 class WebSession:
@@ -125,12 +126,14 @@ class WebSession:
         self.dispatcher = GuiDispatcher()
         self.agent = AgentLoop(core, client, self.dispatcher,
                                main_window=window, api=_apiOf(window))
-        # Same reason as the CLI and the one-shot offscreen mode: a turn is
-        # left on disk here and the transcript that keeps it must read as a
-        # turn a reader can audit, so the tool calls stay in it. `hide` --
-        # the panel's default, the shape for the live reader -- is not the
-        # shape of a transcript kept on disk.
-        self.agent.tools_mode = 'verbose'
+        # No mode is pinned here: `ask` reads the preference each turn (the
+        # live view the page sees, `hide` by default), and `runTurn` feeds
+        # the on-disk transcript from the `fullLine` -- the full render,
+        # which carries the tool traffic whatever the page's live view
+        # hides. So the page's quiet under `hide` does not leave the
+        # audited file with only the final answer; the mode is what the
+        # page wears, and the file is never it. The same rule the CLI and
+        # the panel follow.
         self.prompts = []
         # The turns the captured directory holds, oldest first: a
         # restart of the process keeps the captures and the list that
@@ -186,6 +189,10 @@ class WebSession:
                     'no prompt: name what to ask, or a gesture on the '
                     'tools panel.')
             self.prompts.append(prompt)
+            # The one list the whole application shares: the prompt this turn
+            # asks is where the panel, the client, and the page's own history
+            # menu recall it, and `new session` cannot reach it.
+            QVizPromptHistory.append(prompt)
 
             lines = []
             requested_windows = []
@@ -214,10 +221,21 @@ class WebSession:
                          for record in self.core.list_windows()
                          if record['key'] is not None})
 
+            # The live view the page reads and the on-disk transcript are
+            # two different shapes of the same turn: the page wears the
+            # mode (it is the live reader, and under `hide` the tool
+            # traffic is not what it shows), the file is the full render
+            # the `fullLine` carries whatever the mode cuts from the page.
+            # Splitting them is the whole point of the `fullLine` -- the
+            # mode is what the page wears and it is never what a reader of
+            # `transcript.txt` sees, so a `hide` turn the page did stays
+            # audited on disk the way a reader of it should be able to.
             def onLineSlot(line):
-                lines.append(line)
                 if onLine is not None:
                     onLine(line)
+
+            def onFullSlot(line):
+                lines.append(line)
 
             def onGestureSlot(name, args):
                 # A capture is an ask. `get_screenshot` is the one the
@@ -282,6 +300,7 @@ class WebSession:
             # two primitives want; the widget work below already crosses to
             # the GUI thread through the `GuiDispatcher`.
             self.agent.transcriptLine.connect(onLineSlot, Qt.DirectConnection)
+            self.agent.fullLine.connect(onFullSlot, Qt.DirectConnection)
             self.agent.askFinished.connect(onDone, Qt.DirectConnection)
             self.agent.gestureIssued.connect(onGestureSlot,
                                              Qt.DirectConnection)
@@ -295,6 +314,7 @@ class WebSession:
                 thread.join()
             finally:
                 for signal, slot in ((self.agent.transcriptLine, onLineSlot),
+                                     (self.agent.fullLine, onFullSlot),
                                      (self.agent.askFinished, onDone),
                                      (self.agent.gestureIssued,
                                       onGestureSlot)):
