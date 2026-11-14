@@ -36,6 +36,7 @@ import time
 
 from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.dispatcher import GuiDispatcher
+from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
 
 class Client:
@@ -95,11 +96,13 @@ class CliSession:
         self.dispatcher = GuiDispatcher()
         self.agent = AgentLoop(core, self.llm, self.dispatcher,
                                main_window=window, api=_apiOf(window))
-        # A turn is left on disk here: its `transcript.txt` is what a reader
-        # answers back, so the tool calls have to be in it -- the panel's
-        # `hide` (the default, a shape for a live reader) would leave the
-        # file with only the final answer, a turn a reader cannot audit.
-        self.agent.tools_mode = 'verbose'
+        # No mode is pinned here: `ask` reads the preference each turn (the
+        # live view, `hide` by default), and the on-disk transcript is fed by
+        # the `fullLine` -- the full render, which carries the tool traffic
+        # whatever the live view hides. So the live view follows `hide`, and
+        # the audited file still gets the calls it ran: the two were the same
+        # shape before (forced `verbose`), and now the file stops being tied
+        # to the view's quietness. `/tools` pins and persists the mode.
         self.prompts = []
         self.turns = []
 
@@ -112,14 +115,28 @@ class CliSession:
             raise ValueError(
                 'no prompt: name what to ask, or /help for the commands.')
         self.prompts.append(prompt)
+        # The one list the whole application shares: a prompt this turn asks
+        # is where the panel, the web, and the arrows of the next run recall
+        # it, and `new session` cannot reach it.
+        QVizPromptHistory.append(prompt)
 
+        # The live view (the console) and the artifact (`transcript.txt`)
+        # are two different shapes of the same turn: the console wears the
+        # mode (`transcriptLine` -- quiet under `hide`), the file is the full
+        # render the `fullLine` carries whatever the mode hides. Splitting
+        # them is the whole point of `fullLine`: the reader who audits the
+        # turn needs the `get_screenshot(…)` / `← focus_window: …` the mode
+        # cut from the view, and the mode is not what decides what lands on
+        # disk.
         lines = []
         requested_windows = []
         done = threading.Event()
         outcome = [None]
 
-        def onLine(line):
+        def onLive(line):
             print(line, flush=True)
+
+        def onFull(line):
             lines.append(line)
 
         def onGesture(name, args):
@@ -157,7 +174,8 @@ class CliSession:
         figure_keys_before = {record['key']
                               for record in self.core.list_windows()
                               if record['key'] is not None}
-        self.agent.transcriptLine.connect(onLine)
+        self.agent.transcriptLine.connect(onLive)
+        self.agent.fullLine.connect(onFull)
         self.agent.askFinished.connect(onDone)
         self.agent.gestureIssued.connect(onGesture)
         thread = threading.Thread(target=self.agent.ask,
@@ -177,7 +195,8 @@ class CliSession:
             while not done.wait(0.1) and time.time() < deadline:
                 self.app.processEvents()
         finally:
-            for signal, slot in ((self.agent.transcriptLine, onLine),
+            for signal, slot in ((self.agent.transcriptLine, onLive),
+                                 (self.agent.fullLine, onFull),
                                  (self.agent.askFinished, onDone),
                                  (self.agent.gestureIssued, onGesture)):
                 try:

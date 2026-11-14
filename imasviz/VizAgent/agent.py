@@ -127,6 +127,14 @@ class AgentLoop(QObject):
     """
 
     transcriptLine = Signal(str)
+    # The full render of every transcript line, regardless of the mode that
+    # `transcriptLine` paints. A surface whose transcript is an ARTIFACT (the
+    # client, the web -- the file that is audited) listens to this so that a
+    # run wearing `hide` still lands the tool traffic it ran, while the panel
+    # -- whose transcript IS its live view -- keeps listening to
+    # `transcriptLine` alone. Emitted by `_emit`, the one place every line
+    # passes, so the two can never drift apart in what a line says.
+    fullLine = Signal(str)
     askFinished = Signal(object)
     # The gesture the loop is about to run, by its tool name and the
     # arguments it passed validation with -- emitted by `_dispatch`,
@@ -149,6 +157,18 @@ class AgentLoop(QObject):
         # test) sets it to one of ``QVizPreferences.AGENT_TOOLS_MODES`` to pin
         # the shape for every turn without re-reading the file in between.
         self.tools_mode = None
+
+    def _emit(self, line, live=True):
+        """Every transcript line passes through here: the full render goes to
+        `fullLine` always, and the live view (`transcriptLine`) only when the
+        current mode says this line is one it carries. A single choke point is
+        what keeps the two surfaces -- the live view and the audited artifact
+        -- agreeing on what a line says while disagreeing on which lines they
+        show.
+        """
+        self.fullLine.emit(line)
+        if live:
+            self.transcriptLine.emit(line)
 
     def ask(self, user_prompt, max_turns=12, tools_mode=None):
         """Run the agent loop, blocking until it is done.
@@ -177,7 +197,7 @@ class AgentLoop(QObject):
         try:
             self._run(user_prompt, max_turns, mode)
         except Exception as e:
-            self.transcriptLine.emit('ERROR: %s' % e)
+            self._emit('ERROR: %s' % e)
             self.askFinished.emit(str(e))
         # askFinished was already emitted by _run; this is the safety
         # net for an unexpected exception.
@@ -217,7 +237,7 @@ class AgentLoop(QObject):
 
         for turn in range(max_turns):
             if self._stop_requested:
-                self.transcriptLine.emit(
+                self._emit(
                     'Stopped: user requested stop before turn %d.' % turn)
                 self.askFinished.emit('user requested stop')
                 return
@@ -229,12 +249,12 @@ class AgentLoop(QObject):
                 # LLMClient raises ValueError for truncation and empty content
                 # (the named refusal); the test stand-in returns the
                 # LLMResponse and the checks below catch the same cases.
-                self.transcriptLine.emit(
+                self._emit(
                     'REFUSAL: %s (turn %d)' % (e, turn))
                 self.askFinished.emit(str(e))
                 return
             except Exception as e:
-                self.transcriptLine.emit(
+                self._emit(
                     'REFUSAL: LLM call failed — %s' % e)
                 self.askFinished.emit(str(e))
                 return
@@ -242,27 +262,28 @@ class AgentLoop(QObject):
             # Named refusals, checked here so a stand-in LLM that returns
             # the LLMResponse directly (without raising) is caught too:
             if response.finish_reason == 'length':
-                self.transcriptLine.emit(
+                self._emit(
                     'REFUSAL: response truncated by max_tokens (turn %d)'
                     % turn)
                 self.askFinished.emit(
                     'response truncated by max_tokens (turn %d)' % turn)
                 return
             if not response.content and not response.tool_calls:
-                self.transcriptLine.emit(
+                self._emit(
                     'REFUSAL: LLM returned empty content (turn %d)' % turn)
                 self.askFinished.emit(
                     'LLM returned empty content (turn %d)' % turn)
                 return
 
-            if response.content and not (
-                    tools_mode == 'hide' and response.tool_calls):
+            if response.content:
                 # In `hide`, an answer that still ends in a tool call is the
-                # mid-run chatter the mode exists to cut: the transcript
-                # carries the final answer, not the steps between. `off` has
-                # no tools and `verbose` shows the traffic, so the line
-                # stands in both.
-                self.transcriptLine.emit('LLM: %s' % response.content)
+                # mid-run chatter the mode exists to cut: it stays in the
+                # artifact (the `fullLine`), it is cut from the live view.
+                # `off` has no tools and `verbose` shows the traffic, so the
+                # line stands in both.
+                self._emit('LLM: %s' % response.content,
+                           live=not (tools_mode == 'hide'
+                                     and response.tool_calls))
 
             # --- Tool calls -------------------------------------------------
             if response.tool_calls:
@@ -281,17 +302,21 @@ class AgentLoop(QObject):
                 for i, tc in enumerate(response.tool_calls):
                     name = tc['name']
                     args = tc['args']
-                    if tools_mode == 'verbose':
-                        self.transcriptLine.emit('  → %s(%s)' % (
-                            name, json.dumps(args)[:80]))
+                    # The call and its result are the traffic a `hide` run
+                    # runs and hides: they stay in the artifact (the
+                    # `fullLine`), they are cut from the live view. In
+                    # `verbose` they stand in both.
+                    self._emit('  → %s(%s)' % (
+                        name, json.dumps(args)[:80]),
+                        live=tools_mode == 'verbose')
                     try:
                         result = self.dispatcher.call(
                             lambda n=name, a=args: self._dispatch(
                                 n, a, user_prompt=user_prompt))
                         summary = _summarize(result)
-                        if tools_mode == 'verbose':
-                            self.transcriptLine.emit(
-                                '  ← %s: %s' % (name, summary))
+                        self._emit(
+                            '  ← %s: %s' % (name, summary),
+                            live=tools_mode == 'verbose')
                         tool_result = {'result': _serialisable(result),
                                       'error': None}
                         last_action = '%s: %s' % (name, summary)
@@ -300,7 +325,7 @@ class AgentLoop(QObject):
                         # it is the refusal the gesture names, and the mode
                         # that cuts the noise is not the one that cuts the
                         # reason an answer turned out the way it did.
-                        self.transcriptLine.emit(
+                        self._emit(
                             '  ← %s: REFUSAL — %s' % (name, e))
                         tool_result = {'result': None, 'error': str(e)}
                         last_action = '%s: REFUSAL — %s' % (name, e)
@@ -335,7 +360,7 @@ class AgentLoop(QObject):
                     # from what those return. A second fabrication of the same
                     # shape still falls to the named refusal below.
                     self._reanchors += 1
-                    self.transcriptLine.emit('REFUSAL: %s' % refusal)
+                    self._emit('REFUSAL: %s' % refusal)
                     messages.append({
                         'role': 'user',
                         'content': self._groundReanchor(user_prompt),
@@ -355,7 +380,7 @@ class AgentLoop(QObject):
                     # tools produced and the request it was given, and hand it
                     # back one turn instead of abandoning the work.
                     self._reanchors += 1
-                    self.transcriptLine.emit('REFUSAL: %s' % refusal)
+                    self._emit('REFUSAL: %s' % refusal)
                     messages.append({
                         'role': 'user',
                         'content': self._reanchor(user_prompt, last_action),
@@ -366,7 +391,7 @@ class AgentLoop(QObject):
                 # unfounded guard), or it deflects off the work it already did
                 # and the one re-anchor did not cure it. In both cases refuse
                 # by name, the way a refused gesture is named.
-                self.transcriptLine.emit('REFUSAL: %s' % refusal)
+                self._emit('REFUSAL: %s' % refusal)
                 self.askFinished.emit(refusal)
                 return
             self.history.append({'role': 'user', 'content': user_prompt})
@@ -390,7 +415,7 @@ class AgentLoop(QObject):
             self.askFinished.emit(
                 'max_turns reached (%d); the last action was %s.'
                 % (max_turns, last_action))
-        self.transcriptLine.emit(stopped)
+        self._emit(stopped)
 
     def _unfoundedIdsRefusal(self, content):
         """A final answer that presents an inventory of names, with no tool
