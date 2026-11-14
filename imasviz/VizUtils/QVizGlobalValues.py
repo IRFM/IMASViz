@@ -193,6 +193,23 @@ class QVizPreferences:
     AgentLLMEndpoint = 'http://127.0.0.1:11434/v1'
     AgentLLMModel = 'qwen3.8:27b'
     AgentLLMApiKey = ''
+    # The agent's tools, and how its answer reads on the transcript. Three
+    # shapes, and they are what the loop asks of the LLM:
+    #   `hide`    -- the agent still runs its gestures, but the transcript
+    #                shows only the prompt, the final answer and the refusals:
+    #                no `-> tool(args)` / `<- result` line, no intermediate
+    #                model chatter. The default: it is the verbosity cut,
+    #                without cutting the work.
+    #   `off`     -- the agent is offered no tools at all: a pure text
+    #                answer, no gesture run, and the "ground it with a tool"
+    #                guard skipped, because in this shape there is no tool to
+    #                call it to. What the preference file reaches as
+    #                `AgentToolsMode=off`.
+    #   `verbose` -- the transcript shows the whole tool traffic, the shape
+    #                the loop wore before the default moved: kept to trace a
+    #                refusal back through the calls that produced it.
+    AgentToolsMode = 'hide'
+    AGENT_TOOLS_MODES = ('hide', 'off', 'verbose')
 
     def persist(**options):
         """Write `options` (``key`` -> ``value``) into the user preferences file.
@@ -304,6 +321,7 @@ class QVizPreferences:
             option15 = "AgentLLMEndpoint="
             option16 = "AgentLLMModel="
             option17 = "AgentLLMApiKey="
+            option18 = "AgentToolsMode="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -369,6 +387,10 @@ class QVizPreferences:
                                 QVizPreferences.AgentLLMApiKey = \
                                     QVizPreferences.stripComment(
                                         line[len(option17):])
+                            elif line.startswith(option18):
+                                QVizPreferences.AgentToolsMode = \
+                                    QVizPreferences.toolsMode(
+                                        line[len(option18):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],
@@ -450,6 +472,27 @@ class QVizPreferences:
                 % (text.strip(),
                    ' or '.join(repr(one) for one in
                                QVizPreferences.URI_LIST_VIEWS)))
+        return asked
+
+    def toolsMode(text):
+        """Which of the three tool shapes the agent wears, refusing any word
+        it does not.
+
+        ``AGENT_TOOLS_MODES`` is what the preference offers -- ``hide``
+        (the default: gestures run, the transcript holds only the answer),
+        ``off`` (no gesture offered, a pure text shape) and ``verbose``
+        (the whole tool traffic shown) -- so a file that spells a fourth one
+        is a word nobody wrote, refused by what the line says, and the loop
+        keeps the shape it was holding: the same "a line answers for itself"
+        rule ``layoutMode`` and ``listView`` apply.
+        """
+        asked = text.strip().lower()
+        if asked not in QVizPreferences.AGENT_TOOLS_MODES:
+            raise ValueError(
+                '%r is not a shape for the agent\'s tools: write %s'
+                % (text.strip(),
+                   ' or '.join(repr(one)
+                               for one in QVizPreferences.AGENT_TOOLS_MODES)))
         return asked
 
     def stripComment(text):

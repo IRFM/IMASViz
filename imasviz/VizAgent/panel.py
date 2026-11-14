@@ -27,6 +27,8 @@ import threading
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QComboBox,
     QGridLayout,
     QHBoxLayout,
     QPlainTextEdit,
@@ -34,6 +36,8 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
 from imasviz.Viz_API import QVizClosableWindow
 from imasviz.VizUtils import FigureTypes, QVizGlobalValues
@@ -79,6 +83,15 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.transcript.setLineWrapMode(QPlainTextEdit.NoWrap)
         layout.addWidget(self.transcript)
 
+        # Prompt history: a dropdown of the prompts the run has typed,
+        # newest first, so a run that started after a new session reaches
+        # them still -- a new session takes this panel off the screen but
+        # the list it left behind is what the run asks back.
+        self.promptHistoryBox = QComboBox()
+        self.promptHistoryBox.activated.connect(self._onHistorySelected)
+        layout.addWidget(self.promptHistoryBox)
+        self._loadHistory()
+
         # Prompt
         self.promptEdit = QPlainTextEdit()
         self.promptEdit.setPlaceholderText(
@@ -99,12 +112,36 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.clearButton = QPushButton('Effacer')
         self.clearButton.clicked.connect(self._onClear)
         buttons.addWidget(self.clearButton)
+        # The tools switch. On (the default) the agent runs its gestures and
+        # the transcript holds only the answer -- `hide`; off the agent is
+        # offered no tool at all, a pure text shape -- `off`. It is the
+        # in-session switch: it follows the preference on build and, when the
+        # user flips it, follows the choice for the rest of the session. The
+        # shape that is reached across a new session is the `AgentToolsMode`
+        # file preference, which is also where `off` is written, and which
+        # the switch mirrors on build without overwriting it.
+        buttons.addStretch(1)
+        self.toolsBox = QCheckBox('Appels aux outils')
+        buttons.addWidget(self.toolsBox)
         layout.addLayout(buttons)
 
         # Connect the agent signals
         if self.agent is not None:
             self.agent.transcriptLine.connect(self._appendTranscript)
             self.agent.askFinished.connect(self._onFinished)
+            # The switch mirrors the shape the loop wears: checked is a
+            # tools-on shape (`hide`/`verbose`), unchecked the chat shape
+            # (`off`). It sets the agent's mode but does not write the file --
+            # the file is where the shape persists -- so a panel rebuilt after
+            # a new session reads the same shape back, and neither overwrites
+            # the other.
+            from imasviz.VizUtils import QVizPreferences
+            self.toolsBox.blockSignals(True)
+            self.toolsBox.setChecked(
+                QVizPreferences.AgentToolsMode != 'off')
+            self.toolsBox.blockSignals(False)
+            self.agent.tools_mode = QVizPreferences.AgentToolsMode
+            self.toolsBox.toggled.connect(self._onToolsToggled)
 
         self.setWindowTitle(
             'Agent — %s' % QVizGlobalValues.IMAS_VIZ_VERSION)
@@ -155,6 +192,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
             return
         self.runButton.setEnabled(False)
         self.stopButton.setEnabled(True)
+        self._recordPrompt(prompt)
         self.agent.ask(prompt)
 
     def transcriptText(self):
@@ -180,6 +218,7 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.runButton.setEnabled(False)
         self.stopButton.setEnabled(True)
         self._appendTranscript('User: %s' % prompt)
+        self._recordPrompt(prompt)
         self._run_thread = threading.Thread(
             target=self.agent.ask, args=(prompt,), daemon=True)
         self._run_thread.start()
@@ -190,10 +229,79 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
             self.agent.stop()
 
     def _onClear(self):
-        """Clear the transcript and the prompt."""
+        """Clear the transcript and the prompt.
+
+        The history is not cleared: a prompt the run has typed is what
+        the run reached this time, and `Effacer` leaves that in place so
+        a run does not lose its own past just because it wants a fresh
+        box. A panel rebuilt after a run types the same prompts back out,
+        which is the one that makes the history matter.
+        """
         self.transcript.clear()
         self.promptEdit.clear()
         self.promptEdit.setFocus()
+
+    def _loadHistory(self):
+        """The box from disk: newest first. A run that started after a
+        new session reaches it still, which is the point of a history
+        the run asked for -- what a run reached is not the same as what
+        a run asked for.
+        """
+        self.promptHistoryBox.blockSignals(True)
+        self.promptHistoryBox.clear()
+        try:
+            for entry in QVizPromptHistory.mostRecentFirst(limit=20):
+                self.promptHistoryBox.addItem(entry)
+        except ValueError:
+            pass
+        self.promptHistoryBox.blockSignals(False)
+
+    def _onHistorySelected(self, index):
+        """A line picked from the box: the prompt the run typed before,
+        put back in the box to be re-run, or re-edited, or both. A run
+        that starts from a line in the box does not type it again -- it
+        types what the line says, and the run it gets is what it asked
+        for, not what the line asked of the run."""
+        text = self.promptHistoryBox.itemText(index)
+        if text:
+            self.promptEdit.setPlainText(text)
+
+    def _recordPrompt(self, prompt):
+        """The prompt a run types in: it goes in the history, and the box
+        refreshes to include it. A run that starts from a line in the box
+        re-types what the line says, and a run that types a fresh prompt
+        records it -- the run the box holds is the one the run asked for
+        and the one it asked of the box, in that order.
+        """
+        try:
+            QVizPromptHistory.append(prompt)
+        except ValueError as e:
+            # A prompt that cannot be recorded is the prompt a run still
+            # runs, and the refusal is the one the user reads in the
+            # transcript rather than the one the run reads in the box.
+            self._appendTranscript('REFUSAL — history: %s' % e)
+            return
+        self._loadHistory()
+        # The line just typed is the one the box now answers to: point the
+        # box at it so the run a reader sees matches the run the reader
+        # typed.
+        count = self.promptHistoryBox.count()
+        if count:
+            self.promptHistoryBox.blockSignals(True)
+            self.promptHistoryBox.setCurrentIndex(0)
+            self.promptHistoryBox.blockSignals(False)
+
+    def _onToolsToggled(self, checked):
+        """The tools switch: on is the tools-on shape (`hide`), off the chat
+        shape (`off`, no gesture offered).
+
+        It follows the choice for the rest of this session -- a panel
+        rebuilt after a new session reads the shape back from the
+        `AgentToolsMode` preference, which is where it is reached across a
+        new session and where the switch mirrors it on build.
+        """
+        if self.agent is not None:
+            self.agent.tools_mode = 'hide' if checked else 'off'
 
     def _appendTranscript(self, line):
         """One line from the agent loop, appended to the transcript."""

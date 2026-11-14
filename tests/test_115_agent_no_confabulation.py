@@ -248,6 +248,11 @@ def test_an_inventory_stands_after_a_case_tool(qapp, agent_kwargs):
     ])
     agent = AgentLoop(core=FakeCore(), llm=llm,
                       dispatcher=FakeDispatcher(), **agent_kwargs)
+    # Verbose, whose transcript carries the grounding call -- the assertion
+    # below reads that line. `hide` (the default) cuts it by design; that
+    # same "grounded inventory stands" is checked there in
+    # tests/test_117_agent_tools_mode.py without reading the call line.
+    agent.tools_mode = 'verbose'
     joined, errors = _ask(agent, 'list the ids in the case')
     assert errors == [None], 'a tool-grounded answer must stand'
     assert 'list_case_idss' in joined, 'the grounding call showed in the log'
