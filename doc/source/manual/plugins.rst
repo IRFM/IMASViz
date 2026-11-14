@@ -191,6 +191,66 @@ Enable plot grid
 
 To enable grid on all plots check the :guilabel:`Enable Grid` option.
 
+Equilibrium surfaces plugin
+---------------------------
+
+This plugin draws the same quantities the **Equilibrium overview** plots -- the
+magnetic flux surfaces and the radial profiles -- but through IMASViz's *own*
+figures: black ground, the one trace palette every curve window wears, one
+:guilabel:`EquiSurfaces` key in the figure bookkeeping. The window it opens is
+therefore a line of the :guilabel:`Windows` menu, reachable by the case
+gestures, and put back by a session -- unlike the overview's matplotlib
+window, it has no slider to keep and no grid checkbox to toggle.
+
+It is offered on the **equilibrium** IDS only, as two entries:
+
+- :guilabel:`Surfaces de flux (début, milieu, fin)...`
+- :guilabel:`Équilibre à un instant (surface + profils)...`
+
+Executing the equilibrium surfaces plugin
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. In the opened IMAS database navigate to the **equilibrium** IDS.
+
+2. **Right-click** the **equilibrium** node and choose one of the two lines in
+   the :guilabel:`Plugins` sub-menu.
+
+The first line draws the flux surfaces of three instants -- the first, middle
+and last slice the case holds -- side by side, one frame each, all on the same
+scale: the same psi levels, the same bounds, the same marks (plasma boundary,
+magnetic axis, O-point, limiter) at each named instant. That is the comparison a
+side-by-side row exists for, and a window the case answers cannot answer costs
+no figure: the refusal is named in the log panel of the shot view.
+
+The second line asks, through a dialog bounded to the case's own clock, for the
+instant to draw. It then holds the flux surface of that instant, and, stacked
+under it, the eight radial profiles the overview draws (``q``, ``elongation``,
+``triangularity_upper``, ``triangularity_lower``, ``j_tor`` in MA/m²,
+``pressure`` in kPa, ``f_df_dpsi``, ``dpressure_dpsi``) on the common radius,
+with the slice's global quantities (``ip`` in kA, ``q_95``, ``q_axis``,
+``li_3``, ``w_mhd`` in kJ, axis position) said in the window title.
+
+.. note::
+   Both entries read **occurrence 0** of the :guilabel:`equilibrium` and
+   :guilabel:`wall` IDSs, like the overview. An instant far outside the case's
+   clock is not drawn: it is clamped into the case's range and the slice that
+   answered is named back.
+
+.. note::
+   A session replaying the second entry puts it back **at the instant the file
+   held**, not the one it opens on: the instant the entry answered is written
+   with the window and handed back instead of re-asked, so a restore does not
+   open that dialog a second time.
+
+Also available as tools, not just the menu
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The same two surfaces are the two gestures the in-app agent and the MCP server
+drive (``equilibrium_surfaces`` and ``equilibrium_at_time``), so the agent can
+open them from a conversation and an external client over MCP can draw them
+without a GUI. What they draw and how they refuse is the code this menu line
+runs -- and a refusal is the named reason rather than an empty window.
+
 'Profiles' plugin overview
 --------------------------
 
