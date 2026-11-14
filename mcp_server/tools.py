@@ -702,4 +702,101 @@ def buildServer(core, dispatcher, name='imasviz'):
         have told it."""
         return _run(partial(core.get_logs, uri, tail=tail))
 
+    # ------------------------------------------------------------- journals
+
+    @server.tool(name='search_journals')
+    def search_journals(
+            scope: Optional[str] = None,
+            query: Optional[str] = None,
+            limit: int = 20,
+            machine: Optional[str] = None,
+            campaign: Optional[str] = None,
+            shot: Optional[str] = None,
+            date_from: Optional[str] = None,
+            date_to: Optional[str] = None,
+            author: Optional[str] = None,
+    ):
+        """The notes that fit the filters you name, ranked for the query
+        you ask in: `scope` is `personal` or `shared`, and left out it
+        answers both (a journal not on this node is left out of the
+        answer, named in it). `query` ranks by words first and by
+        meaning when an embeddings endpoint is set -- the method it used
+        is in the answer. The filters are `machine` (the tokamak),
+        `campaign`, `shot` (the shot number), `date_from` / `date_to`
+        (the shot date, `YYYY-MM-DD` range), and `author` (who wrote the
+        note). A note may be a general observation that names no shot
+        and no machine: a filter it does not carry is left out of the
+        answer, and it is a match on the query you ran on the rest of
+        its body."""
+        return _run(partial(core.search_journals,
+                            scope=scope, query=query, limit=limit,
+                            machine=machine, campaign=campaign,
+                            shot=shot, date_from=date_from, date_to=date_to,
+                            author=author))
+
+    @server.tool(name='read_note')
+    def read_note(scope: str, note_id: str):
+        """The whole note under `scope` (`personal` or `shared`) by its
+        `note_id` -- the fields that name it (author, machine, campaign,
+        shot, date, title) and the body of the note itself. The `note_id`
+        comes from a search_journals or list_notes answer."""
+        return _run(partial(core.read_note, scope, note_id))
+
+    @server.tool(name='list_notes')
+    def list_notes(
+            scope: Optional[str] = None,
+            machine: Optional[str] = None,
+            campaign: Optional[str] = None,
+            shot: Optional[str] = None,
+            author: Optional[str] = None,
+    ):
+        """The notes under `scope` (`personal`, `shared`, or left out and
+        both) that fit the filters you name, in date order: the short
+        view of each (the fields that name it and a line of its body).
+        Where a `search_journals` ranks for a query, this lists for a
+        filter -- the query is the ranking, and the filters are here."""
+        return _run(partial(core.list_notes, scope=scope, machine=machine,
+                            campaign=campaign, shot=shot, author=author))
+
+    @server.tool(name='journal_stats')
+    def journal_stats():
+        """What the two journals hold on this node: the personal and shared
+        directories, the count of notes each answers, and whether an
+        embeddings endpoint is set (and on which model) -- the search on
+        this node ranks by words until it is."""
+        return _run(partial(core.journal_stats))
+
+    @server.tool(name='add_note')
+    def add_note(
+            scope: str,
+            text: str,
+            author: Optional[str] = None,
+            machine: Optional[str] = None,
+            campaign: Optional[str] = None,
+            shot: Optional[str] = None,
+            date: Optional[str] = None,
+            title: Optional[str] = None,
+    ):
+        """A line in one of the journals: `scope` is `personal` (the
+        author's own notes) or `shared` (the shared cahier that a writer
+        sees), the `text` is the body of the note, and the fields that
+        name it are `author` (who wrote the note -- the user's name, left
+        out for a note by the agent), `machine`, `campaign`, `shot`,
+        `date` (all optional: a note may be a general observation that
+        names no shot and no machine), and `title`. The `id` and `path`
+        the file lands under come back in the answer."""
+        return _run(partial(core.add_note, scope, text,
+                            author=author, machine=machine,
+                            campaign=campaign, shot=shot, date=date,
+                            title=title))
+
+    @server.tool(name='delete_note')
+    def delete_note(scope: str, note_id: str):
+        """Take a line out of one of the journals (the `scope` and
+        `note_id` you named in a search_journals or list_notes answer).
+        The note is gone, and the answer names the scope and the id that
+        was removed -- the same line the agent sees in the transcript,
+        not a silent `True`."""
+        return _run(partial(core.delete_note, scope, note_id))
+
     return server
