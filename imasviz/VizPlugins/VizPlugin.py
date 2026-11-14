@@ -40,9 +40,13 @@ from collections import namedtuple
 # attribute, and the Equilibrium chart has neither either -- only the api's
 # `figureframes` bookkeeping knows the key, and only the plugin knew the entry
 # number and the occurrence its own dialog had answered. So the plugin stamps
-# this record on the frame it registers, and the session writes it.
+# this record on the frame it registers, and the session writes it. `time` is
+# the instant one entry answered -- `equilibriumsurfaces` entry 1 asks which
+# time to draw, and a restore must put back that instant rather than ask again;
+# it is `None` for an entry that asks no time.
 QVizPluginWindow = namedtuple('QVizPluginWindow',
-                              'uri plugin entry ids occurrence')
+                              'uri plugin entry ids occurrence time',
+                              defaults=(None,))
 
 # The answers a session hands back to a plugin entry it is replaying, so the
 # entry draws the window without asking the user a second time. The Profiles
@@ -50,10 +54,16 @@ QVizPluginWindow = namedtuple('QVizPluginWindow',
 # a probe left to answer that dialog sat in `askForOccurrence` for 240 s until a
 # watchdog killed it, which is why a restore cannot go through the question.
 # `figureKey` is here for the same reason the plot commands take one: the key is
-# the identity the *Windows* menu and its *Delete* sub-menu address the
-QVizPluginAnswers = namedtuple('QVizPluginAnswers', 'occurrence figureKey')
+# the identity the *Windows* menu and its *Delete* sub-menu address the window
+# by. `time` is the instant an entry answered -- a session replaying
+# `equilibriumsurfaces` entry 1 hands it the number the file held instead of
+# opening the dialog a second time; it is `None` when the entry asks no time.
+QVizPluginAnswers = namedtuple('QVizPluginAnswers',
+                               'occurrence figureKey time',
+                               defaults=(None,))
 
 RegisteredPlugins = {'equilibriumcharts': 'viz_equi.equilibriumcharts',
+                     'equilibriumsurfaces': 'viz_equi.equilibriumsurfaces',
                      # 'ToFuPlugin': 'viz_tofu.viz_tofu_plugin',
                      # 'viz_example_plugin': 'viz_example_plugin.viz_example_plugin',
                      # 'viz_spectrometer_plugin': 'viz_spectrometer.viz_spectrometer_plugin',

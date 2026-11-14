@@ -152,7 +152,12 @@ class QVizSaveSession:
             windows.setdefault(stamp.uri, []).append(
                 QVizSessionPluginWindow(key=figureKey, plugin=stamp.plugin,
                                         entry=stamp.entry, ids=stamp.ids,
-                                        occurrence=stamp.occurrence))
+                                        occurrence=stamp.occurrence,
+                                        # The instant one entry answered, or
+                                        # None for an entry that asks no time:
+                                        # the file writes it only in that case,
+                                        # and the restore puts it back.
+                                        time=getattr(stamp, 'time', None)))
         return windows
 
     # ----------------------------------------------------------------- cases

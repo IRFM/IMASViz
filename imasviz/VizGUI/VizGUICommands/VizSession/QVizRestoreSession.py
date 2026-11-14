@@ -666,8 +666,12 @@ class QVizRestoreSession:
                    window.ids, window.entry, window.plugin))
             return False
 
+        # `time` is the instant the entry answered, or None for an entry that
+        # asks no time: handed back here instead of re-asked, which is what
+        # keeps a restore from opening a modal dialog nobody will answer.
         catalog.run(entry, answers=QVizPluginAnswers(
-            occurrence=window.occurrence, figureKey=window.key))
+            occurrence=window.occurrence, figureKey=window.key,
+            time=window.time))
         if window.key not in self.api.figureframes:
             logging.getLogger(view.uri).error(
                 'The %s entry of plugin %s was asked for the window "%s" of "%s" '

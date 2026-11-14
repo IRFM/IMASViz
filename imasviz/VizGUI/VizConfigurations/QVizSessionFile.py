@@ -243,8 +243,13 @@ QVizSessionCase = namedtuple('QVizSessionCase',
 # None for both registered plugin windows), so none of version 2's four states
 # applies to it. It belongs to its `<Case>` because the gesture was a menu line
 # of that view, and the restore needs that view to ask its plugin catalog.
+# `time` is the instant one entry answered -- `equilibriumsurfaces` entry 1
+# draws a single time and the restore must put it back without asking again;
+# absent (`None`) for an entry that asks no time, and for every file written
+# before the field existed.
 QVizSessionPluginWindow = namedtuple('QVizSessionPluginWindow',
-                                     'key plugin entry ids occurrence')
+                                     'key plugin entry ids occurrence time',
+                                     defaults=(None,))
 
 ROOT = 'IMASVizSession'
 VERSION = '5'
@@ -479,6 +484,13 @@ class QVizSessionFile:
                 # reads and never asks: an absent occurrence would be a case the
                 # restore is free to plot on another one.
                 child.set('occurrence', str(window.occurrence))
+                # Written only when an entry answered a time, the way the other
+                # optional attributes are: `equilibriumsurfaces` entry 1 draws
+                # one instant and the restore must put that one back without
+                # re-asking it, while entry 0 and every plugin that asks no time
+                # leave it out.
+                if window.time is not None:
+                    child.set('time', str(window.time))
         for figure in self.figures:
             element = ET.SubElement(root, 'Figure')
             element.set('key', figure.key)
@@ -708,12 +720,26 @@ def _pluginWindowOf(element, path):
     """
     for name in ('key', 'plugin', 'entry', 'ids', 'occurrence'):
         _attribute(element, name, path, 'PluginWindow')
+    # `time` is the one attribute that may be absent: an entry that asks no
+    # time (entry 0 of `equilibriumsurfaces`, `equilibriumcharts`, the
+    # Profiles panel) never writes it, and every file written before the field
+    # existed does not hold it either. It is an instant in the case clock, so
+    # it is read as a number -- and a value that is not one is named.
+    time = element.get('time')
+    if time is not None:
+        try:
+            time = float(time)
+        except ValueError:
+            raise ValueError('"%s" holds a <PluginWindow time="%s">: the instant '
+                             'is a number in the case clock, and that is not one.'
+                             % (path, time))
     return QVizSessionPluginWindow(
         key=element.get('key'),
         plugin=element.get('plugin'),
         entry=_integer(element, 'entry', 0, path),
         ids=element.get('ids'),
-        occurrence=_integer(element, 'occurrence', 0, path))
+        occurrence=_integer(element, 'occurrence', 0, path),
+        time=time)
 
 
 def _normalizeKey(key):
