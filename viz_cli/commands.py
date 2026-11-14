@@ -32,7 +32,7 @@ import urllib.request
 from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 
 COMMANDS = ('llm', 'mcp', 'ids', 'shots', 'session', 'history', 'tools',
-            'help', 'quit')
+            'note', 'help', 'quit')
 
 LLM_FIELDS = ('endpoint', 'model', 'key', 'max_turns', 'temperature',
               'max_tokens')
@@ -78,6 +78,23 @@ named after the turn. Commands:
                              disk is still the full render
   /tools MODE                set it -- the panel, the web and the client
                              read the same one -- and persist it
+  /note                      the two journals of this node: the folders,
+                             the notes each answers, and whether an
+                             embeddings endpoint is set
+  /note search QUERY         the notes that fit the filters, ranked for
+                             QUERY: --machine --campaign --shot
+                             --date_from --date_to --author --scope
+                             --limit
+  /note list                 the notes that fit the filters, in date
+                             order: the same flags as /note search
+  /note read ID              the whole note by its ID (a search or a
+                             list's answer names one)
+  /note add SCOPE TEXT       a line in a journal: personal (the author's
+                             own) or shared (the one the writers read),
+                             with --author --machine --campaign --shot
+                             --date --title
+  /note delete ID            take a line out of a journal (the search or
+                             the list answer names it)
   /help                      this text
   /quit                      leave; the arrows keep the prompts they
                              recall in ~/.imasviz/agent_prompts, with the
@@ -146,6 +163,8 @@ def execute(cmd, session):
         _history(cmd, session)
     elif cmd.name == 'tools':
         _toolsMode(cmd, session)
+    elif cmd.name == 'note':
+        _note(cmd, session)
     return True
 
 
@@ -492,3 +511,209 @@ def _toolsMode(cmd, session):
     print('/tools — %s (this client now, and the panel and the web read it '
           'back too; the file on disk is still the full render).' % mode,
           flush=True)
+
+
+# ---------------------------------------------------------------------- /note
+
+# The flags the note commands accept and the field each one maps to in
+# the core. One table, both the parse and the refusal read off it, so
+# a flag that is not one of them is refused by naming the ones this
+# client holds instead of reaching for a value it does not keep.
+_NOTE_FLAGS = (
+    'machine', 'campaign', 'shot', 'date',
+    'date_from', 'date_to', 'author', 'scope', 'title', 'limit',
+)
+
+
+def _parseFlagged(words):
+    """`--shot 54924 --scope personal` -> ({shot: '54924', scope:
+    'personal'}, []) -- the flags in order, the bare words left. A
+    flag this client does not hold, or a `--flag` with no value, is
+    refused by naming the ones it does.
+    """
+    flags, bare = {}, []
+    while words:
+        word = words.pop(0)
+        if word.startswith('--'):
+            if not words:
+                raise ValueError(
+                    '%s needs its value: --shot 54924, --scope '
+                    'personal.' % word)
+            key = word[2:]
+            if key not in _NOTE_FLAGS:
+                raise ValueError(
+                    'unknown flag %s -- this client answers %s.'
+                    % (word, ' '.join('--' + f for f in _NOTE_FLAGS)))
+            flags[key] = words.pop(0)
+        else:
+            bare.append(word)
+    return flags, bare
+
+
+def _note(cmd, session):
+    """The two journals on this node, driven off the core: the same
+    six names the panel and the web reach, and the same refusals the
+    core answers, read raw into the console -- no LLM in between, as
+    `/ids` reads them.
+    """
+    words = cmd.words
+    if not words:
+        return _noteStats(session)
+    sub = words[0]
+    rest = words[1:]
+    if sub == 'stats':
+        return _noteStats(session)
+    if sub == 'search':
+        return _noteSearch(session, rest)
+    if sub == 'list':
+        return _noteList(session, rest)
+    if sub in ('read', 'get'):
+        return _noteRead(session, rest)
+    if sub == 'add':
+        return _noteAdd(session, rest)
+    if sub in ('delete', 'remove'):
+        return _noteDelete(session, rest)
+    raise ValueError(
+        '/note %s -- this client answers /note search, /note list, '
+        '/note read, /note add, /note delete, /note stats, and /note '
+        'alone (the stats overview).' % sub)
+
+
+def _noteStats(session):
+    answer = session.core.journal_stats()
+    for scope in ('personal', 'shared'):
+        folder = answer['folder_' + scope]
+        count = answer['count_' + scope]
+        print('  %-9s %d note(s)  under %s'
+              % (scope, count, folder or '(not set on this node)'))
+    endpoint = answer['embeddings_endpoint']
+    model = answer['embeddings_model']
+    print('  ranking   : %s'
+          % ('embeddings on %s (model %s)' % (endpoint, model)
+             if endpoint else 'keywords -- no embeddings endpoint is set '
+                              'yet; set one and the search ranks by '
+                              'meaning'))
+    return True
+
+
+def _noteSearch(session, words):
+    flags, bare = _parseFlagged(words)
+    query = ' '.join(bare).strip()
+    if not query:
+        raise ValueError(
+            '/note search needs a query: /note search "plasma unstable" '
+            'is the words it ranks for.')
+    answer = session.core.search_journals(query=query, **flags)
+    if not answer['notes']:
+        print('no note in %s fits: %s %s'
+              % (answer['scopes'], query, _flagWords(flags)))
+        return True
+    print('%d note(s) under %s, ranked for %s by %s'
+          % (len(answer['notes']), answer['scopes'], query,
+             answer['method']))
+    for note in answer['notes']:
+        print('  %s' % _noteLine(note))
+    return True
+
+
+def _noteList(session, words):
+    flags, bare = _parseFlagged(words)
+    if bare:
+        raise ValueError(
+            '/note list takes flags, not bare words: %s.' % ' '.join(bare))
+    answer = session.core.list_notes(**flags)
+    if not answer['notes']:
+        print('no note in %s fits %s'
+              % (answer['scopes'], _flagWords(flags) or 'the filters'))
+        return True
+    print('%d note(s) under %s' % (len(answer['notes']), answer['scopes']))
+    for note in answer['notes']:
+        print('  %s' % _noteLine(note))
+    return True
+
+
+def _noteRead(session, words):
+    flags, bare = _parseFlagged(words)
+    bare = [word for word in bare if word]
+    if not bare:
+        raise ValueError(
+            '/note read needs an ID: a /note search or /note list names '
+            'the one.')
+    if len(bare) > 1:
+        raise ValueError('/note read takes one ID, got %d: %s.'
+                         % (len(bare), ' '.join(bare)))
+    note_id = bare[0]
+    scope = flags.pop('scope', None) or 'personal'
+    note = session.core.read_note(scope, note_id)
+    print('  id      : %s' % note['id'])
+    print('  scope   : %s' % note['scope'])
+    print('  author  : %s' % (note.get('author') or '(none)'))
+    for field in ('machine', 'campaign', 'shot', 'date', 'title'):
+        if note.get(field):
+            print('  %s  : %s' % (field, note[field]))
+    print('-')
+    print(note.get('text') or '(empty body)')
+    return True
+
+
+def _noteAdd(session, words):
+    flags, bare = _parseFlagged(words)
+    if len(bare) < 2:
+        raise ValueError(
+            '/note add SCOPE TEXT: name the journal to put a line in '
+            '(personal or shared) and the body of the note.')
+    scope, text = bare[0], ' '.join(bare[1:])
+    if scope not in ('personal', 'shared'):
+        raise ValueError(
+            '/note add %s -- name the journal as personal or shared.'
+            % scope)
+    answer = session.core.add_note(scope, text, **flags)
+    print('  %s -> %s (under %s)'
+          % (answer['id'], answer['path'],
+             _flagWords(flags) or 'no fields named'))
+    return True
+
+
+def _noteDelete(session, words):
+    flags, bare = _parseFlagged(words)
+    if not bare:
+        raise ValueError(
+            '/note delete needs an ID: a /note search or /note list '
+            'names the one.')
+    if len(bare) > 1:
+        raise ValueError('/note delete takes one ID, got %d: %s.'
+                         % (len(bare), ' '.join(bare)))
+    note_id = bare[0]
+    scope = flags.pop('scope', None) or 'personal'
+    answer = session.core.delete_note(scope, note_id)
+    print('  %s of %s is gone'
+          % (answer['note_id'], answer['scope']))
+    return True
+
+
+def _noteLine(note):
+    """One line for a note in a list: its ID, the fields that name it,
+    and a line of its body -- the shape a search answer wears."""
+    names = [str(note.get(field)) for field in
+             ('machine', 'campaign', 'shot', 'date', 'title')
+             if note.get(field)]
+    prefix = ' '.join(names) or note['scope']
+    snippet = (note.get('snippet') or note.get('text') or '').strip()
+    if len(snippet) > 64:
+        snippet = snippet[:64] + '…'
+    return '%-40s  %-28s  %s' % (note['id'], prefix, snippet)
+
+
+def _flagWords(flags):
+    """The flags a caller named, in the --word value shape the help
+    carries -- empty for no flags."""
+    if not flags:
+        return ''
+    pairs = []
+    for field in ('scope', 'machine', 'campaign', 'shot', 'date_from',
+                  'date_to', 'author', 'title', 'limit'):
+        if field in flags:
+            word = {'date_from': 'date_from',
+                    'date_to': 'date_to'}.get(field, field.lstrip('-'))
+            pairs.append('--%s %s' % (field, flags[field]))
+    return ' '.join(pairs)

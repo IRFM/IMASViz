@@ -88,6 +88,9 @@ def _candidates():
     candidates = ['/' + c + ' ' for c in COMMANDS]
     candidates += ['/llm ' + f + ' ' for f in LLM_FIELDS]
     candidates += ['/session save ', '/session restore ']
+    candidates += ['/note ' + s + ' '
+                   for s in ('search', 'list', 'read', 'add', 'delete',
+                             'stats')]
     try:
         from imasviz.VizAgent.tools import TOOLS
         candidates += ['/mcp ' + t['function']['name'] + ' ' for t in TOOLS]
