@@ -582,17 +582,24 @@ def _note(cmd, session):
 def _noteStats(session):
     answer = session.core.journal_stats()
     for scope in ('personal', 'shared'):
-        folder = answer['folder_' + scope]
-        count = answer['count_' + scope]
-        print('  %-9s %d note(s)  under %s'
-              % (scope, count, folder or '(not set on this node)'))
-    endpoint = answer['embeddings_endpoint']
-    model = answer['embeddings_model']
-    print('  ranking   : %s'
-          % ('embeddings on %s (model %s)' % (endpoint, model)
-             if endpoint else 'keywords -- no embeddings endpoint is set '
-                              'yet; set one and the search ranks by '
-                              'meaning'))
+        entry = answer[scope]
+        folder = entry.get('folder')
+        count = entry.get('notes', 0)
+        line = '  %-9s %d note(s)' % (scope, count)
+        if folder:
+            line += '  under %s' % folder
+        refusal = entry.get('refusal')
+        if refusal:
+            line += '  — %s' % refusal
+        print(line)
+    emb = answer.get('embeddings') or {}
+    if emb.get('endpoint_named'):
+        print('  ranking   : embeddings on %s (model %s)'
+              % (emb.get('endpoint') or '…', emb.get('model') or '…'))
+    else:
+        print('  ranking   : keywords — no embeddings endpoint is set yet; '
+              'set one (AgentEmbedEndpoint + AgentEmbedModel in the '
+              'preferences) and the search ranks by meaning.')
     return True
 
 
