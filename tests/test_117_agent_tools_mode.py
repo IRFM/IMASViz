@@ -76,6 +76,17 @@ def restore_mode():
     QVizPreferences.AgentToolsMode = saved
 
 
+@pytest.fixture(autouse=True)
+def agent_home(tmp_path, monkeypatch):
+    """The panel tests below build the panel, and it reads the prompt
+    history from ``$HOME/.imasviz`` when it does -- so this file points
+    ``HOME`` at its own folder rather than the user's real one, the
+    pattern ``tests/test_39*`` keeps for a configuration the application
+    writes. The loop tests above it do not build the panel, so the
+    isolation is harmless there and required for the two below."""
+    monkeypatch.setenv('HOME', str(tmp_path))
+
+
 @pytest.fixture
 def agent_kwargs(qapp):
     return {'main_window': None, 'api': None}

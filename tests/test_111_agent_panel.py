@@ -57,6 +57,19 @@ def make_api(qapp):
     return Viz_API(None)
 
 
+@pytest.fixture(autouse=True)
+def _agent_home(tmp_path, monkeypatch):
+    """The panel reads the prompt history from ``$HOME/.imasviz`` when it
+    is built and when a run records into it, so a test that constructs
+    the panel points ``HOME`` at its own folder rather than the user's
+    real one -- the pattern ``tests/test_39*`` keeps for a configuration
+    the application writes. The loop the panel drives does not touch the
+    file, so isolating ``HOME`` here is what keeps a test from reading the
+    user's own prompt history, not the loop.
+    """
+    monkeypatch.setenv('HOME', str(tmp_path))
+
+
 def test_panel_registered_in_figureframes(qapp):
     """The panel is in the session's figureframes under Agent:1."""
     from imasviz.VizAgent.panel import QVizAgentPanel
