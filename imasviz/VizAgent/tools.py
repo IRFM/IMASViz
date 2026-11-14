@@ -78,7 +78,11 @@ How to work with it:
    every one; a log on values that cross zero is refused by name, and a
    figure that is not a single one (a table, or the flux-surface figure)
    is refused the same way -- name the figure the single curve was drawn
-   in.
+   in. A gesture of this section changes what the figure shows without
+   redrawing it, so it is still a figure the user must see: name it in
+   your answer the same way (the key is how the user acts on it), and
+   the session keeps it in view the way a drawn figure is kept -- a
+   figure you moved is a figure that stands, not one described and left.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -881,7 +885,11 @@ TOOLS = [
         'URI for its shot view. Call it whenever you draw a figure or '
         'name one the session holds in your answer, so the user sees it '
         '-- a figure you named that the user does not see is a figure '
-        'not shown. The answer is the size the window now holds; ask '
+        'not shown. The same ask stands after a gesture that moved its '
+        'content (scale_curve, shift_curve, normalize_curve, reset_curve, '
+        'remove_curve, set_axis_range, set_log_scale or invert_axis): the '
+        'contents changed, and the user must see what changed. The '
+        'answer is the size the window now holds; ask '
         'get_screenshot on the same window after only when the user wants '
         'the saved picture.',
         {'type': 'object', 'properties': {

@@ -686,8 +686,11 @@ def buildServer(core, dispatcher, name='imasviz'):
         (named refusals when they are not positive integers), or to the
         default figure size when either is left out. "app" for the
         application, a figure key for one figure, a case URI for its shot
-        view. The answer is the size the window then holds; ask
-        get_screenshot on the same window to see it.
+        view. The same ask stands after a gesture that moved a figure's
+        content (scale_curve, shift_curve, normalize_curve, reset_curve,
+        remove_curve, the axes): the contents changed, and the reader
+        must see what changed. The answer is the size the window then
+        holds; ask get_screenshot on the same window to see it.
         """
         return _run(partial(core.focus_window, window,
                             width=width, height=height))

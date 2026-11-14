@@ -23,16 +23,26 @@ of the one-shot, asked after every prompt instead of once at the end.
 images and its transcript on disk.
 
 And the same capture rule the page applies: a turn's captures are the
-figures it drew, or the windows it asked to be captured -- a figure an
-earlier prompt drew is captured in that prompt's directory, not
-repeated into every prompt after it, and an ask for it (the loop's
-`get_screenshot`, the way a prompt says "give me a capture of that
-figure") is the one that recaptures it into the prompt that asked.
+figures it drew, the figures its gestures moved (scale, shift,
+normalize, reset, remove, the axes -- they ask for their `figure_key`
+the way the redraw asks for its `into_figure_key`, so a turn that
+multiplied a curve an earlier prompt drew keeps that figure for the
+user), and the windows it asked to be captured -- a figure an earlier
+prompt drew is captured in that prompt's directory, not repeated into
+every prompt after it, and an ask for it (the loop's `get_screenshot`,
+the way a prompt says "give me a capture of that figure") is the one
+that recaptures it into the prompt that asked. A figure the ACCEPTED
+final answer names by its key is an ask of the same kind: the promise
+the agent makes -- show the figures it traces OR NAMES -- holds
+mechanical this way, and not on the model's deciding to call
+focus_window after it drew, moved or named one.
 """
 
 import os
 import threading
 import time
+
+from PySide6.QtCore import Qt
 
 from imasviz.VizAgent.agent import AgentLoop
 from imasviz.VizAgent.dispatcher import GuiDispatcher
@@ -130,6 +140,15 @@ class CliSession:
         # disk.
         lines = []
         requested_windows = []
+        # The accepted final answer(s) of this turn: the one the loop
+        # emits on the path that accepts them (`finalAnswer`), not on a
+        # refusal or the max-turns stop. A figure it names by a key the
+        # session holds is an ask the turn owes its capture -- the
+        # "ou nomme" half of the promise, held mechanical here instead
+        # of on the model's calling focus_window. Appending to a local
+        # list touches no widget, so the direct hand-off is the one the
+        # web keeps for the same reason: no loop to pump this onto.
+        final_texts = []
         done = threading.Event()
         outcome = [None]
 
@@ -155,17 +174,25 @@ class CliSession:
             # "en parler" while the PNG never lands -- the same "je ne
             # vois plus les autres figures" case. The redraw names its
             # target, and it is the capture ask.
-            if name in ('get_screenshot', 'focus_window'):
-                requested_windows.append(
-                    (args or {}).get('window', 'app'))
-            elif name == 'plot_one':
-                key = (args or {}).get('into_figure_key')
-                if key and key not in requested_windows:
-                    requested_windows.append(key)
+            # And the gestures that move a figure's content (scale,
+            # shift, normalize, reset, remove, the axes) ask for the
+            # figure they work on: the turn moved a figure an earlier one
+            # drew, and the delta is empty the way the redraw's is --
+            # "multiplie la courbe par 3" left a transcript and no
+            # picture until this read the `figure_key` as the ask.
+            # `captureAsk` holds the whole rule, one place, and the web
+            # asks the one it shares.
+            from mcp_server.agent_mode import captureAsk
+            window = captureAsk(name, args)
+            if window and window not in requested_windows:
+                requested_windows.append(window)
 
         def onDone(error):
             outcome[0] = error
             done.set()
+
+        def onFinal(text):
+            final_texts.append(text)
 
         # What the session already holds as figures before this prompt
         # draws: the prompt's own figures are the ones it adds to that,
@@ -178,6 +205,7 @@ class CliSession:
         self.agent.fullLine.connect(onFull)
         self.agent.askFinished.connect(onDone)
         self.agent.gestureIssued.connect(onGesture)
+        self.agent.finalAnswer.connect(onFinal, Qt.DirectConnection)
         thread = threading.Thread(target=self.agent.ask,
                                   args=(prompt, self.max_turns),
                                   daemon=True)
@@ -198,7 +226,8 @@ class CliSession:
             for signal, slot in ((self.agent.transcriptLine, onLive),
                                  (self.agent.fullLine, onFull),
                                  (self.agent.askFinished, onDone),
-                                 (self.agent.gestureIssued, onGesture)):
+                                 (self.agent.gestureIssued, onGesture),
+                                 (self.agent.finalAnswer, onFinal)):
                 try:
                     signal.disconnect(slot)
                 except (TypeError, RuntimeError):
@@ -211,19 +240,33 @@ class CliSession:
         directory = os.path.join(self.shots_dir, sub)
 
         from mcp_server.agent_mode import requestedCaptures, saveShots
+        from imasviz.VizAgent.agent import figuresNamedIn
 
         # The captures of this prompt only: the figures it drew (what it
-        # holds now and did not hold before the loop ran), and the
-        # windows it asked to be captured -- old or new. A figure an
-        # earlier prompt drew is not among them, and the one this prompt
-        # asked is, `saveShots` naming it by refusal when the session no
-        # longer holds it.
+        # holds now and did not hold before the loop ran), the figures
+        # its gestures moved (`captureAsk` reads their `figure_key` as
+        # the ask), and the windows it asked to be captured -- old or
+        # new. A figure an earlier prompt drew is not among them, and
+        # the one this prompt asked is, `saveShots` naming it by
+        # refusal when the session no longer holds it.
+        # The figures the ACCEPTED final answer names stand beside those
+        # three: the promise the agent made ("show the figures it
+        # traces or NAMES") is what the scan holds mechanical, and it
+        # walks only the keys the session holds NOW -- a figure the turn
+        # closed, or one the answer invented, is not named, because a
+        # capture of it would be the refusal the core earns, and the
+        # promise is about the figures the session shows, not the words
+        # it does not hold. A refused turn has no final answer (the loop
+        # emits it only where it accepts one), and so names nothing.
         extras, askedFigures = requestedCaptures(requested_windows)
         figure_keys_now = {record['key']
                            for record in self.core.list_windows()
                            if record['key'] is not None}
+        namedFigures = figuresNamedIn('\n'.join(final_texts),
+                                      sorted(figure_keys_now))
         figures = ((figure_keys_now - figure_keys_before)
-                   | set(askedFigures))
+                   | set(askedFigures)
+                   | set(namedFigures))
         saved, refused = saveShots(
             self.core, directory, extras=extras, figures=figures)
         transcript = os.path.join(directory, 'transcript.txt')

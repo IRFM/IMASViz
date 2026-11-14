@@ -84,6 +84,41 @@ def test_the_prompt_makes_showing_a_standing_rule():
         'only describe it'
 
 
+def test_a_gesture_that_moved_a_figure_keeps_the_show_ask():
+    """The field repro that left the figure off the screen was a
+    `scale_curve`: the gesture moves what the figure shows without
+    redrawing it, so it is still a figure the user must see. The
+    instruction and the tool description both keep the standing ask
+    alive across that kind of gesture -- item 9 says the gesture is
+    work the user sees and names it the same way a drawn figure is
+    kept, and `focus_window` says the same ask stands after a gesture
+    that moved its content, naming every gesture that moves one."""
+    text = _text()
+    assert 'a gesture of this section changes what the figure shows ' \
+           'without redrawing it' in text, \
+        'the item-9 rule is missing: moving a curve is not the work ' \
+        'on a figure the user must see'
+    assert 'a figure you moved is a figure that stands' in text, \
+        'the item-9 rule is missing: a figure the gesture moved must ' \
+        'still be a figure that stands, not one described and left'
+    description = next((t.get('function', {}).get('description', '')
+                        for t in TOOLS
+                        if t.get('function', {}).get('name') == 'focus_window'),
+                       '')
+    text = ' '.join(description.split()).lower()
+    assert 'the same ask stands after a gesture that moved its content' \
+        in text, \
+        'the focus_window description lost the standing ask after a ' \
+        'gesture: the moved figure is never shown again'
+    for gesture in ('scale_curve', 'shift_curve', 'normalize_curve',
+                    'reset_curve', 'remove_curve', 'set_axis_range',
+                    'set_log_scale', 'invert_axis'):
+        assert gesture in text, \
+            'the focus_window description does not name %s: the gesture ' \
+            'that moves the figure is not the one the ask stands after' \
+            % gesture
+
+
 def test_focus_window_reads_itself_as_the_show_gesture():
     """The tool the model calls on the strength of the prompt reads itself
     proactively: it is the "show it" gesture, called whenever a figure is

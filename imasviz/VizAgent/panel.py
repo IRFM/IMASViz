@@ -20,6 +20,14 @@ during the call); the gestures run on the GUI thread through
 Refusals are shown in the transcript with their ``REFUSAL`` prefix,
 the style of this repository: a named refusal is a line the user reads,
 not a silent failure.
+
+And the promise the loop makes -- "montre les figures qu'il trace ou
+nomme" -- is held on this surface the way the REPL and the web hold it
+mechanical: the accepted final answer is the one that names what the
+user should be looking at, and a figure of the session it names by its
+key comes forward (`focus_window`) on the GUI thread, delivered by the
+`finalAnswer` signal the loop emits when it accepts one -- not on the
+model's deciding to call focus_window itself.
 """
 
 import threading
@@ -129,6 +137,16 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         if self.agent is not None:
             self.agent.transcriptLine.connect(self._appendTranscript)
             self.agent.askFinished.connect(self._onFinished)
+            # The accepted final answer, as the loop emits it on the
+            # path that accepts one: the figures it names come forward
+            # -- the "montre les figures qu'il trace ou nomme" promise,
+            # mechanical on this surface too, and not on the model's
+            # deciding to call focus_window. The panel is a GUI-thread
+            # object, so the queued hand-off runs the raise on the
+            # thread that owns the widgets -- the rule a thread that
+            # does not own a widget must not touch one is kept this
+            # way, whatever thread the loop runs on.
+            self.agent.finalAnswer.connect(self._showNamedFigures)
             # The switch mirrors the shape the loop wears: checked is a
             # tools-on shape (`hide`/`verbose`), unchecked the chat shape
             # (`off`). It sets the agent's mode but does not write the file --
@@ -318,3 +336,36 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
             # The refusal was already appended to the transcript by the
             # loop; this is the final state update.
             pass
+
+    def _showNamedFigures(self, text):
+        """The figures the accepted answer names: the ones the session
+        shows, so they come forward.
+
+        `figuresNamedIn` walks only the keys the session holds
+        (a figure the turn closed, or one the answer invented, is not
+        named -- a raise of it would be the refusal the core earns),
+        and a name that is a tail of a longer key is not a name. The
+        stand-in cores of this suite hold no focus gesture of their
+        own, and a panel they serve skips the raise silently -- there
+        is no figure to show, and a refusal the core would not earn is
+        not a line the user reads. A refusal the core WOULD earn (the
+        key went away between the answer and the raise) is named in
+        the transcript, the style of this repository.
+        """
+        if not text:
+            return
+        core = getattr(self.agent, 'core', None) if self.agent else None
+        focus = getattr(core, 'focus_window', None)
+        if not callable(focus):
+            return
+        frames = getattr(self.api, 'figureframes', None)
+        if not isinstance(frames, dict):
+            return
+        from imasviz.VizAgent.agent import figuresNamedIn
+        openFigures = [key for key in frames
+                       if key and not key.startswith(FigureTypes.AGENTTYPE)]
+        for name in figuresNamedIn(text, openFigures):
+            try:
+                focus(name)
+            except Exception as e:
+                self._appendTranscript('REFUSAL — focus: %s' % e)

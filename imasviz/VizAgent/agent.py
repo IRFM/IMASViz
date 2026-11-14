@@ -174,6 +174,18 @@ class AgentLoop(QObject):
     # its figures at the turn's end. A loop with no listener is
     # unchanged: an emission with no receiver is a no-op in Qt.
     gestureIssued = Signal(str, object)
+    # The accepted final answer, as the loop delivers it -- emitted by the
+    # final-answer path of `_run`, just before `askFinished` (and not on a
+    # refusal, not on the max-turns stop: those are not an answer the user
+    # read, and they name nothing to be shown). A surface that listens
+    # answers the promise `gestureIssued` answers for the calls: a figure
+    # the ANSWER names by its key is a figure the turn showed -- the panel
+    # raises it in the MDI area, and the REPL and the web save it beside
+    # the figures the turn drew, so the "montre les figures qu'il trace ou
+    # nomme" promise holds mechanical, not on the model's deciding to call
+    # focus_window. A loop with no listener is unchanged: an emission with
+    # no receiver is a no-op in Qt.
+    finalAnswer = Signal(str)
 
     def __init__(self, core, llm, dispatcher, main_window=None, api=None):
         super(AgentLoop, self).__init__()
@@ -429,6 +441,11 @@ class AgentLoop(QObject):
             self.history.append({
                 'role': 'assistant', 'content': response.content,
             })
+            # The accepted answer, as it stands: the surfaces read the
+            # figures the turn named from it. A refused or re-anchored
+            # answer never reaches this line -- the path above returns or
+            # continues instead -- so this is the text the user read.
+            self.finalAnswer.emit(response.content)
             self.askFinished.emit(None)
             return
 
@@ -716,6 +733,43 @@ def _bareNames(text):
             continue
         names.add(name)
     return names
+
+
+def figuresNamedIn(text, keys):
+    """The figure keys that stand on their own in that text.
+
+    A figure key in a final answer is a figure the answer SHOWS the user
+    (`finalAnswer` is what the surfaces read this from): the panel raises
+    it, and the REPL and the web capture it. "Stands on its own" keeps
+    the rule honest against the keys that spell one another:
+
+    * a word character on either side is another spelling, not the
+      name -- `PlotView:1` inside `EquiPlotView:1` is the second key
+      wearing the first as its tail, and `SlicesPlot1` inside
+      `SlicesPlot12` is the 12th figure, not the first;
+    * a key whose name is one longer key's is not named by the longer
+      one, whatever it spells around it;
+    * an answer that spells no key the session holds names nothing:
+      `keys` bounds the candidates, so a key the session does not
+      (or no longer) holds cannot be asked for -- a capture of a closed
+      figure is the refusal it would earn, and a figure nobody holds is
+      not a figure an answer shows.
+
+    `None` and the empty answer name nothing; the order the keys were
+    asked in is the order the names come back in (the callers ask a
+    sorted list, so the answer is deterministic whatever the order the
+    text met them).
+    """
+    found = []
+    if not text or not keys:
+        return found
+    for key in keys:
+        if not key:
+            continue
+        if re.search(r'(?<![0-9A-Za-z_])' + re.escape(key)
+                     + r'(?![0-9A-Za-z_])', text):
+            found.append(key)
+    return found
 
 
 def _summarize(result, limit=120):

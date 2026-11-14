@@ -124,6 +124,55 @@ def buildAgentStack(window, llm, core=None):
 EXTRA_SHOTS = ('app', 'case-views')
 
 
+#: The gestures that change what a drawn figure shows without redrawing
+#: it: the curve transforms and the axis gestures. Each names its
+#: window by `figure_key`, and that is an ask to see it the way the
+#: redraw's `into_figure_key` is: the figure's content moved, and a
+#: turn that moved it must keep it in frame for the user the way a turn
+#: that draws it does -- not only when the model separately decides to
+#: focus it. The reads of a figure (`curve_stats`, `export_curve`) are
+#: not here: they change nothing the user sees on the figure.
+FIGURE_MUTATIONS = ('scale_curve', 'shift_curve', 'normalize_curve',
+                    'reset_curve', 'remove_curve', 'set_axis_range',
+                    'set_log_scale', 'invert_axis')
+
+
+def captureAsk(name, args):
+    """What one gesture asks to be seen: the window name, or None.
+
+    The one rule the two turn surfaces (the REPL and the web) share when
+    they gather the windows a turn asked to be captured:
+
+    * `get_screenshot` / `focus_window` ask for their `window` (the
+      default `app` is the application, the interface extra);
+    * `plot_one` asks for the figure it draws onto when it names one
+      (`into_figure_key`): the redraw adds no new key, so without it the
+      delta the turn drew would be empty while the loop printed the
+      trace;
+    * a gesture of `FIGURE_MUTATIONS` asks for the figure it works on
+      (`figure_key`): the same shape as the redraw, for the turn that
+      moved a figure an earlier one drew -- the field repro is exactly
+      this one: "trace 2 boucles" drew, "multiplie la courbe par 3"
+      moved it, and the second turn left the user a transcript and no
+      picture;
+    * everything else asks for nothing: a capture of a turn is what it
+      drew or asked to see, and a gesture that does neither is not one.
+
+    A refusal of the gesture does not undo the ask: the figure it named
+    is the one the turn was about, and asking to see it stands even when
+    the move was refused named -- the same the redraw's target earns
+    today.
+    """
+    args = args or {}
+    if name in ('get_screenshot', 'focus_window'):
+        return args.get('window', 'app')
+    if name == 'plot_one':
+        return args.get('into_figure_key')
+    if name in FIGURE_MUTATIONS:
+        return args.get('figure_key')
+    return None
+
+
 def requestedCaptures(requested_windows):
     """The windows a turn asked to be captured, split for `saveShots`:
     the ones that name the interface are its `extras`, the ones that
