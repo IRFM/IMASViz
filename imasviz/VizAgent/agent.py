@@ -277,6 +277,14 @@ class AgentLoop(QObject):
         # report written, the figure drawn), and the user must find that
         # in the refusal instead of reading the stop as a failure.
         last_action = None
+        # The artifacts a successful call delivered this request, so the
+        # accepted answer may name them without the fabricated-artifact
+        # guard misreading a truthful reference as an invention: the report
+        # paths a `plot_report`/`case_report` wrote, and the figure a
+        # `close_window` closed. Both empty while no such call ran -- the
+        # state the guard below keys on.
+        reports_written = set()
+        closed_figures = set()
 
         for turn in range(max_turns):
             if self._stop_requested:
@@ -363,6 +371,18 @@ class AgentLoop(QObject):
                         tool_result = {'result': _serialisable(result),
                                       'error': None}
                         last_action = '%s: %s' % (name, summary)
+                        # The deliverables, on the strength of the call
+                        # that earned them: a report path the answer may
+                        # name, a figure the close ran. Grounded by a
+                        # success -- a refused call is not a deliverable.
+                        if (name in ('plot_report', 'case_report')
+                                and isinstance(result, dict)
+                                and result.get('saved_to')):
+                            reports_written.add(result['saved_to'])
+                        if name == 'close_window':
+                            key = (args or {}).get('key')
+                            if key:
+                                closed_figures.add(key)
                     except Exception as e:
                         # The one call line that never hides, in any shape:
                         # it is the refusal the gesture names, and the mode
@@ -381,6 +401,34 @@ class AgentLoop(QObject):
                 continue
 
             # --- Final answer -----------------------------------------------
+            # A figure or report the answer names, but that this request
+            # neither drew nor wrote, is the single-artifact confabulation:
+            # one invented key presented with content ("Plot3 shows the
+            # flux loop"), or "the report is written to rapport.html" when
+            # no plot_report ran -- the field run drew a real figure and
+            # then invented two more beside it. This runs in either branch
+            # (tools ran and tools did not), so it is not folded into
+            # _unfoundedIdsRefusal, which is only entered when no tool ran.
+            # The refusal wears the same shape as every refusal in this
+            # loop: named, re-anchored once to do the work, refused the
+            # second time, and `finalAnswer` never carries the fabrication.
+            if tools_mode != 'off':
+                held = self._heldFigureKeys()
+                fab_refusal = self._fabricatedArtifactRefusal(
+                    response.content, held, closed_figures,
+                    reports_written)
+                if fab_refusal is not None and self._reanchors == 0:
+                    self._reanchors += 1
+                    self._emit('REFUSAL: %s' % fab_refusal)
+                    messages.append({
+                        'role': 'user',
+                        'content': self._artifactReanchor(user_prompt),
+                    })
+                    continue
+                if fab_refusal is not None:
+                    self._emit('REFUSAL: %s' % fab_refusal)
+                    self.askFinished.emit(fab_refusal)
+                    return
             if not called_a_tool:
                 if tools_mode == 'off':
                     # The chat shape has no gesture it could have called, so
@@ -572,6 +620,85 @@ class AgentLoop(QObject):
             'the same quantity onto one figure with into_figure_key -- and '
             'answer only from what those calls return. '
             'The request was: "%s".' % user_prompt)
+
+    def _heldFigureKeys(self):
+        """The figure keys the session holds now, through the
+        dispatcher (a Qt walk). ``None`` when the core cannot report
+        them -- a stand-in, or the ``off`` shape with no gesture: with
+        no ground truth to answer against, a figure claim cannot be
+        accused (the unfounded guard is what applies there). A core that
+        can list but holds none answers the *empty* set, which does
+        ground a claim against it -- a fabrication on a fresh session is
+        then caught.
+        """
+        method = getattr(self.core, 'list_windows', None)
+        if method is None:
+            return None
+        try:
+            windows = self.dispatcher.call(lambda: method())
+        except Exception:
+            return None
+        return {w['key'] for w in (windows or [])
+                if isinstance(w, dict) and w.get('key')}
+
+    def _fabricatedArtifactRefusal(self, content, held, closed,
+                                   reports_written):
+        """A figure or report the answer names, that this request
+        neither drew nor wrote, is refused by name.
+
+        The single-artifact shape the unfounded guard does not cover:
+        one invented key presented with a content word ("Plot3 shows a
+        curve"), or a report claim with no report call to back it. A
+        close of a real figure, an honest self-correction
+        ("Plot3 does not exist", "Plot3 et Plot4 n'existent pas"), or
+        the acknowledgement that a key was invented are not flagged:
+        the content-word and negation checks in
+        :func:`fabricatedFigureKeys` / :func:`reportClaimed` are what
+        keep the honest shape allowed.
+
+        Returns the refusal reason, or None when the answer may stand.
+        """
+        # The report first: it is unambiguous and the field failure the
+        # user reported most clearly.
+        if reportClaimed(content) and not reports_written:
+            return (
+                'the answer says a report was written, but no '
+                'plot_report or case_report call succeeded this '
+                'request -- the file it names was never produced. '
+                'Write it: call plot_report(figure_key) or '
+                'case_report(uri) and answer with the path that '
+                'call returns.')
+        # Only when the core can say which figures stand: with no ground
+        # truth to answer against, a figure claim cannot be accused. A
+        # core that can list but holds none (a fresh session) still does
+        # ground a claim against it, and is not excluded here.
+        if held is not None:
+            invented = fabricatedFigureKeys(content, held, closed)
+            if invented:
+                return (
+                    'the answer presents %s with a curve it does not '
+                    'hold: the session has no such figure open -- '
+                    'list_windows() names what is, and it is not among '
+                    'them. Draw it: call plot_one(uri, path, ...), '
+                    'pill it onto its figure with into_figure_key where '
+                    'a curve belongs, and answer from what that call '
+                    'returns.' % ' and '.join(sorted(invented)))
+        return None
+
+    def _artifactReanchor(self, user_prompt):
+        """The one re-anchor for a claimed-but-undone figure or report:
+        do the work, and answer from the calls, not from the claim.
+        """
+        return (
+            'Your answer named a figure or a report that this '
+            'request did not produce: the figure is not in the '
+            'session and no report call succeeded. A figure that '
+            'does not stand and a report that was never written '
+            'are not what the user asked for. Do the work: draw '
+            'the figure with plot_one(uri, path, ...) and write '
+            'the report with plot_report(figure_key) or '
+            'case_report(uri) -- and answer only from what those '
+            'calls return. The request was: "%s".' % user_prompt)
 
     def _destructiveRefusal(self, name, user_prompt):
         """The named refusal a destructive gesture receives on a request
@@ -769,6 +896,130 @@ def figuresNamedIn(text, keys):
         if re.search(r'(?<![0-9A-Za-z_])' + re.escape(key)
                      + r'(?![0-9A-Za-z_])', text):
             found.append(key)
+    return found
+
+
+# The word families the fabricated-artifact guard uses to tell the
+# *claim* (the fabrication it refuses) from the *honest mention* (the
+# self-correction it must allow). A content word says the answer
+# presents the figure with data ("Plot3 shows a curve"), not just names
+# it ("Plot3 was closed" is in the ground set, "Plot3 does not exist"
+# is negated, "compare Plot1 and Plot5" names Plot5 with no content,
+# so none of those stand as a fabrication). A negation within the same
+# clause is the honest shape ("the report was never written").
+# The figure-key spellings a session can produce (the ``FigureTypes``
+# kinds without their trailing number): the guard scans these even while
+# no figure is open, so a fabrication on a fresh session is caught. They
+# mirror ``FigureTypes`` in ``imasviz/VizUtils/QVizGlobalValues.py``; the
+# agent panel prefix is not a data figure and is not listed here.
+_FIGURE_KEY_PREFIXES = (
+    'StackedPlotView:', 'TablePlotView:', 'EquiPlotView:', 'PlotView:',
+    'Image', 'Plot',
+)
+_FIGURE_CONTENT_WORDS = (
+    'shows', 'holds', 'contains', 'displays', 'value', 'values',
+    'sample', 'samples', 'curve', 'curves', 'points', 'point',
+    'data', 'tracé', 'trace', 'montre', 'contient', 'valeur',
+    'valeurs', 'échantillon', 'échantillons', 'courbe', 'courbes',
+    'donnée', 'données', 'figure', 'graphe',
+)
+# A *claim* is a first-person or present-assertion voice near the report
+# reference: "j'ai généré", "le rapport est prêt", "I generated the
+# report". A past participle alone -- "``rapport_flux.html`` généré" in a
+# quoted log, "``[INFO]`` Rapport HTML généré:" as a log line label -- is
+# a description or a quotation, not a claim, and stays allowed (the
+# honest "le rapport n'a jamais été écrit" is negated into the refusal
+# below, the quoted log simply has no agent voice to key on).
+_AGENT_VOICE = (
+    "j'ai", "j' ai", "est prêt", "est généré", "est écrit",
+    "est produit", "est ready", "i generated", "i wrote", "i saved",
+    "i created", "i have", "the report is", "we generated", "we saved",
+    "we wrote", "generated the report", "wrote the report",
+    "saved the report",
+)
+_NEGATIONS = (
+    'not', "n't", 'never', 'no report', 'no html',
+    'n\'ai pas', "n'a pas", "n'a jamais", 'jamais',
+    'n\'existe', "n'existe", 'n\'existent', "n'existent",
+    'inexistant', 'impossible', 'sans rapport', 'sans html',
+    'invented', 'inventée', 'inventées', 'inventé', 'inventés',
+)
+
+
+def reportClaimed(text):
+    """Whether the text asserts -- in the agent's own voice -- that a
+    report was written.
+
+    A ``.html`` path or the report noun is only a *reference*; it becomes
+    a *claim* when a first-person or present-assertion voice sits near it
+    ("j'ai généré", "le rapport est prêt", "I generated the report"). A
+    quoted log ("``Rapport`` : rapport_…html généré"), a past participle
+    with no agent subject, and a negation ("le rapport n'a jamais été
+    écrit") are descriptions or self-corrections, not claims -- this
+    answers False for each, and the guard lets them stand.
+    """
+    text = (text or '').lower()
+    # The one reference the guard can key on: a ``.html`` file on disk, or
+    # the report noun. Without either there is no report to claim.
+    if not (re.search(r'report|rapport|\.html', text)):
+        return False
+    # A claim is a reference with an agent voice near it and no negation.
+    for m in re.finditer(r'rapport|report|\.html', text):
+        window = text[max(0, m.start() - 70):m.end() + 40]
+        if not any(voice in window for voice in _AGENT_VOICE):
+            continue
+        if any(neg in window for neg in _NEGATIONS):
+            continue
+        return True
+    return False
+
+
+def fabricatedFigureKeys(text, held, closed):
+    """The figure keys the session does not hold and the answer presents
+    with a content word, un-negated.
+
+    The keys the session actually holds now (``held``) and the ones a
+    close this request ran (``closed``) form the ground set: a figure
+    the loop never drew and never closed is not grounded. The kinds the
+    session can produce are scanned (so a fabrication on a fresh session
+    is caught, not just the invented keys beside real ones), matched
+    case-insensitively against the answer and reported back in the
+    canonical spelling the session uses. A content word, no negation
+    nearby, and a key outside the ground set is what the guard refuses.
+    """
+    text = (text or '').lower()
+    ground = {k.lower() for k in (set(held or set()) | set(closed or set()))
+              if k}
+    # Each lowercase kind stem maps to the spelling to report it in: the
+    # known kinds first, then the kind the session already holds (its own
+    # spelling wins). Longest kind first, so a short stem ("Plot") does
+    # not match inside a longer key ("TablePlotView:1"). Case-insensitive
+    # against the (lowercased) answer, reported in the real spelling.
+    canonical = {}
+    for prefix in _FIGURE_KEY_PREFIXES:
+        canonical.setdefault(prefix.lower(), prefix)
+    for key in (set(held or set()) | set(closed or set())):
+        if key:
+            stem = re.sub(r'[0-9]+$', '', key)
+            canonical.setdefault(stem.lower(), stem)
+    if not canonical:
+        return set()
+    found = set()
+    for stem, spelling in sorted(canonical.items(),
+                                 key=lambda pair: len(pair[1]),
+                                 reverse=True):
+        pat = r'(?<![0-9A-Za-z_])' + re.escape(stem) + \
+            r'\d+(?![0-9A-Za-z_])'
+        for m in re.finditer(pat, text):
+            if m.group(0) in ground:
+                continue
+            if not any(word in text for word in _FIGURE_CONTENT_WORDS):
+                continue
+            window = text[max(0, m.start() - 40):m.end() + 40]
+            if any(neg in window for neg in _NEGATIONS):
+                continue
+            digits = re.search(r'\d+$', m.group(0)).group(0)
+            found.add(spelling + digits)
     return found
 
 
