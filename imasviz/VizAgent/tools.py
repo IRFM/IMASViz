@@ -950,16 +950,20 @@ TOOLS = [
     _tool(
         'list_notes',
         'The notes in the journal(s) the caller names, filtered '
-        '(machine, campaign, shot, author) and newest first. A note '
-        'the filter does not name is excluded, and a filter left out '
-        'is no filter at all. Empty is an answer, the same shape a '
-        'search_journals that answers nothing holds.',
+        '(machine, campaign, shot, date_from, date_to, author) and '
+        'newest first. date_from and date_to bound the shot date '
+        '(YYYY-MM-DD); a note that names no date is excluded only '
+        'when a window is named. A filter left out is no filter at '
+        'all. Empty is an answer, the same shape a search_journals '
+        'that answers nothing holds.',
         {'type': 'object', 'properties': {
             'scope': {'type': ['string', 'null'],
                       'enum': ['personal', 'shared']},
             'machine': {'type': ['string', 'null']},
             'campaign': {'type': ['string', 'null']},
             'shot': {'type': ['string', 'null']},
+            'date_from': {'type': ['string', 'null']},
+            'date_to': {'type': ['string', 'null']},
             'author': {'type': ['string', 'null']},
         }, 'additionalProperties': False},
     ),

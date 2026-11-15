@@ -2642,16 +2642,19 @@ class McpGuiCore:
         return journals.JournalStore.read_note(scope, note_id)
 
     def list_notes(self, scope=None, machine=None, campaign=None, shot=None,
-                   author=None):
+                   date_from=None, date_to=None, author=None):
         """The notes the two journals hold, filtered (the author is
         the one required on every note, the others optional), newest
-        first. Empty is the answer that the caller reads as an answer,
-        not a refusal: the folder holds no note of the shape the
-        filters ask of, and that is what the answer says."""
+        first. ``date_from`` and ``date_to`` bound the shot date the
+        note carries (``YYYY-MM-DD``); a note that names no date is
+        excluded only when the caller names a window. An empty list is
+        the answer the caller reads as an answer, not a refusal: the
+        folder holds no note of the shape the filters ask of, and that
+        is what the answer says."""
         from imasviz.VizAgent import journals
         notes = journals.JournalStore.list_notes(
             scope=scope, machine=machine, campaign=campaign, shot=shot,
-            author=author)
+            date_from=date_from, date_to=date_to, author=author)
         return {'scope': scope or 'both',
                 'count': len(notes),
                 'notes': [note.asSearchResult() for note in notes]}
