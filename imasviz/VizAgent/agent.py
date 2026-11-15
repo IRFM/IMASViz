@@ -62,13 +62,14 @@ _DEFLLECTION_MARKERS = (
 # the question, and it is the one choke point both callers reach.
 DESTRUCTIVE_GESTURES = ('close_window', 'close_case', 'new_session')
 
-# The two gestures that put a line in one of the journals, and the
+# The three gestures that write a line in one of the journals, and the
 # one that names the shared journal is the one this gate applies: a
-# visible line the writers all read, and the loop runs it only when the
-# user's own request names the journal to put it in. A gesture the
-# model reaches for on a request that does not name the journal is
-# refused by name, the same rule DESTRUCTIVE_GESTURES applies.
-SHARED_JOURNAL_GESTURES = ('add_note', 'delete_note')
+# visible line the writers all read (a new one, an erased one, or one
+# changed in place), and the loop runs it only when the user's own
+# request names the journal to put it in. A gesture the model reaches
+# for on a request that does not name the journal is refused by name,
+# the same rule DESTRUCTIVE_GESTURES applies.
+SHARED_JOURNAL_GESTURES = ('add_note', 'edit_note', 'delete_note')
 
 # A word (or pair) the user's request carries when it asks for a close
 # or a reset, in either language. Kept narrow on purpose: a gesture
@@ -745,6 +746,7 @@ class AgentLoop(QObject):
         """
         taken = {
             'add_note': 'a line the writers all read',
+            'edit_note': 'a line the writers all read',
             'delete_note': 'a line the writers all read',
         }[name]
         return (

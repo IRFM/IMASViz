@@ -379,6 +379,7 @@ details.tool summary strong { color: var(--accent-strong); }
       <ul id="notesList" class="notesList"></ul>
       <details id="notesReader"></details>
       <details id="notesAdd" class="notesAdd"></details>
+      <details id="notesEdit" class="notesAdd"></details>
     </div>
   </section>
 </div>
@@ -783,13 +784,16 @@ details.tool summary strong { color: var(--accent-strong); }
 
      The two journals — `search_journals` for the list (ranked for the
      query or listed for the filters), `read_note` for the body of one,
-     `add_note` and `delete_note` for the write and the erase, and
-     `journal_stats` for the overview at the top. The scope is a two-
-     button tab (personal / shared), the filter row reads off the six
-     filters the core already answers (machine, campaign, shot,
-     date_from, date_to, author), and the add form at the foot is what
-     the user fills to write one. A note without the field the user did
-     not name is a match on the rest of its body, not a refusal. */
+     `add_note` for the write, `edit_note` for a line the writers read
+     back changed in place (the note keeps the id it reads under, and
+     the fields you name take the place of the ones it held),
+     `delete_note` for the erase, and `journal_stats` for the overview
+     at the top. The scope is a two-button tab (personal / shared), the
+     filter row reads off the six filters the core already answers
+     (machine, campaign, shot, date_from, date_to, author), and the add
+     and edit forms at the foot are what the user fills to write one or
+     to change one of them. A note without the field the user did not
+     name is a match on the rest of its body, not a refusal. */
 
   var notesTab = { scope: 'personal' };
 
@@ -855,12 +859,17 @@ details.tool summary strong { color: var(--accent-strong); }
         openNotesOne(note.scope || notesTab.scope, note.id);
       } });
       readBtn.textContent = 'Read';
+      var editBtn = el('button', { 'onclick': function () {
+        notesEditOpen(note.scope || notesTab.scope, note.id);
+      } });
+      editBtn.textContent = 'Edit';
       var deleteBtn = el('button', { 'onclick': function () {
         if (confirm('Delete ' + note.id + ' from ' + (note.scope || notesTab.scope) + '?'))
           notesDelete(note.scope || notesTab.scope, note.id);
       } });
       deleteBtn.textContent = 'Delete';
       actions.appendChild(readBtn);
+      actions.appendChild(editBtn);
       actions.appendChild(deleteBtn);
       li.appendChild(actions);
       wrap.appendChild(li);
@@ -908,6 +917,99 @@ details.tool summary strong { color: var(--accent-strong); }
     return notesFetch('delete_note', { scope: scope, note_id: id }).then(function (j) {
       if (j.error) appendLine('  ← REFUSAL — delete_note: ' + j.error, 'refusal');
       else appendLine('  ← delete_note: ' + id + ' is from ' + scope);
+      notesDoSearch();
+      notesRefreshStats();
+    });
+  }
+
+  /* The edit of one note, the way the add is: the form the note already
+     wears (read back through `read_note`, so the form holds what the
+     note holds, not what the list's snippet showed), and the Save the
+     user presses asks `edit_note` for it. The note keeps the id it
+     reads under: `scope` and `note_id` of the form are fixed to the one
+     it was opened on, and only the fields the form names can move.
+     A field the form leaves empty is cleared from the note, and a
+     field the form fills replaces the one the note held -- the rule
+     the core answers, and the refusal the core earns (an empty author
+     or an empty body) is printed where the add prints its own. */
+  var notesEditing = null;
+
+  function notesEditOpen(scope, id) {
+    return notesFetch('read_note', { scope: scope, note_id: id }).then(function (j) {
+      var box = byId('notesEdit');
+      box.innerHTML = '';
+      if (j.error) {
+        box.appendChild(el('summary', null, ['Edit note ' + id]));
+        box.appendChild(el('p', null, ['REFUSAL — ' + j.error]));
+        box.setAttribute('open', 'true');
+        return;
+      }
+      var n = j.result;
+      notesEditing = { scope: scope, id: id };
+      box.appendChild(el('summary', null,
+        ['Edit note ' + id + '  —  a field you leave empty loses it, ' +
+         'a field you fill takes the place of the one it held']));
+      [
+        ['notesEditTitle', 'title', n.title || ''],
+        ['notesEditAuthor', 'author (required)', n.author || ''],
+        ['notesEditMachine', 'machine / tokamak', n.machine || ''],
+        ['notesEditCampaign', 'campaign', n.campaign || ''],
+        ['notesEditShot', 'shot number', (n.shot === null || n.shot === undefined) ? '' : String(n.shot)],
+      ].forEach(function (field) {
+        box.appendChild(el('label', null, [
+          field[1],
+          el('input', {
+            'type': 'text', 'id': field[0], 'placeholder': field[1],
+            'size': '20', 'value': field[2]
+          })
+        ]));
+      });
+      box.appendChild(el('label', null, ['Date', el('input', {
+        'type': 'date', 'id': 'notesEditDate', 'value': n.date || '' })]));
+      var body = el('textarea', { 'id': 'notesEditBody' });
+      body.value = n.text || '';
+      box.appendChild(body);
+      var save = el('button', { 'onclick': notesSaveEdit }, ['Save edit']);
+      var cancel = el('button', { 'onclick': function () {
+        box.removeAttribute('open');
+      } }, ['Cancel']);
+      box.appendChild(save);
+      box.appendChild(cancel);
+      box.setAttribute('open', 'true');
+    });
+  }
+
+  function notesSaveEdit() {
+    if (!notesEditing) {
+      appendLine('Edit a note first: the Edit button of one of the ' +
+        'notes is the one that opens the form to change it.', 'refusal');
+      return;
+    }
+    var scope = notesEditing.scope, id = notesEditing.id;
+    function val(name) { var i = byId(name); return i ? i.value.trim() : ''; }
+    var body = val('notesEditBody');
+    if (!body) {
+      appendLine('A note keeps its body: the edit named an empty one.',
+        'refusal');
+      return;
+    }
+    var args = {
+      scope: scope, note_id: id, text: body,
+      author: val('notesEditAuthor'),
+      title: val('notesEditTitle'),
+      machine: val('notesEditMachine'),
+      campaign: val('notesEditCampaign'),
+      shot: val('notesEditShot'),
+      date: val('notesEditDate'),
+    };
+    notesFetch('edit_note', args).then(function (j) {
+      if (j.error) {
+        appendLine('  ← REFUSAL — edit_note: ' + j.error, 'refusal');
+      } else {
+        appendLine('  ← edit_note: ' + id + ' is as you changed it, ' +
+          'under ' + j.result.path);
+        byId('notesEdit').removeAttribute('open');
+      }
       notesDoSearch();
       notesRefreshStats();
     });

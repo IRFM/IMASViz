@@ -1007,6 +1007,34 @@ TOOLS = [
         }, 'required': ['scope', 'text'], 'additionalProperties': False},
     ),
     _tool(
+        'edit_note',
+        'One existing note, changed in place: `scope` and `note_id` '
+        'name it, and it keeps the id the other writers read it under. '
+        'A field you leave out keeps the one the note held, a field '
+        'you name replaces it, and an empty one clears it -- except '
+        'the author (a note keeps its author) and the body (your '
+        '`text` left out keeps the one it held; an empty one is a '
+        'refusal). Not in the journal is refused by name, naming the '
+        'ids it does hold. A write to the shared journal is a visible '
+        'line in a place everyone you share it with reads, and it is '
+        'the loop that asks for it in the user\'s own words before it '
+        'runs -- the word you would give for the shared one.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': 'string', 'enum': ['personal', 'shared']},
+            'note_id': {'type': 'string'},
+            'text': {'type': ['string', 'null'],
+                     'description': 'the new body; left out, the one '
+                                    'the note held'},
+            'author': {'type': ['string', 'null']},
+            'machine': {'type': ['string', 'null']},
+            'campaign': {'type': ['string', 'null']},
+            'shot': {'type': ['string', 'null']},
+            'date': {'type': ['string', 'null'],
+                     'description': 'ISO 8601 YYYY-MM-DD'},
+            'title': {'type': ['string', 'null']},
+        }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
+    ),
+    _tool(
         'delete_note',
         'One note gone: its file and the cache entry the run holds '
         'for it. `scope` and `note_id` name the one to take out, and '

@@ -35,7 +35,7 @@ from imasviz.VizAgent.agent import AgentLoop
 
 
 class RecordingSharedCore:
-    """The core one write reaches: the two shared-journal gestures,
+    """The core one write reaches: the three shared-journal gestures,
     recorded, and nothing else. A refused write must not leave a call
     behind, so the test reads the record and sees the gate did what
     it named."""
@@ -47,6 +47,13 @@ class RecordingSharedCore:
         self.calls.append(('add_note', {'scope': scope, 'text': text}))
         return {'id': 'a-note-id', 'scope': scope, 'path': '/note.md',
                 'overwritten': True}
+
+    def edit_note(self, scope, note_id, text=None, author=None, machine=None,
+                  campaign=None, shot=None, date=None, title=None):
+        self.calls.append(('edit_note', {'scope': scope,
+                                         'note_id': note_id, 'text': text}))
+        return {'id': note_id, 'scope': scope, 'path': '/note.md',
+                'edited': True}
 
     def delete_note(self, scope, note_id):
         self.calls.append(('delete_note', {'scope': scope,
@@ -141,8 +148,8 @@ def test_a_model_write_to_the_personal_journal_not_refused(loop):
 
 
 def test_the_delete_gate_reads_the_same_way(loop):
-    """The two gestures the gate names — ``add_note`` and ``delete_note``
-    — read the same: a model ``delete_note(scope='shared')`` on a
+    """The gesture the gate names — ``delete_note`` — reads the
+    same as the add: a model ``delete_note(scope='shared')`` on a
     request that names no shared journal is refused, and the one the
     user names in their own words runs."""
     agent, core = loop
@@ -159,6 +166,35 @@ def test_the_delete_gate_reads_the_same_way(loop):
                     requested_by='user')
     assert core.calls, 'a user delete to the shared journal runs: %r' \
         % core.calls
+
+
+def test_the_edit_gate_reads_the_same_way(loop):
+    """The third gesture the gate names — ``edit_note`` — reads the
+    same as the other two: a model ``edit_note(scope='shared')`` on a
+    request that names no shared journal is refused by name (the edit
+    is a write to a place the writers all read, whatever it changes),
+    and the one the user names in their own words runs."""
+    agent, core = loop
+    with pytest.raises(ValueError) as exc:
+        agent._dispatch('edit_note', {'scope': 'shared',
+                                      'note_id': 'a-note-id',
+                                      'text': 'it was unstable, not steady'},
+                        requested_by='model',
+                        user_prompt='fix that last line about the plasma')
+    refusal = str(exc.value)
+    assert core.calls == [], \
+        'a refused shared edit must not reach the core: %r' % core.calls
+    assert 'shared' in refusal, \
+        'the refusal names the journal the edit would land in: %r' % refusal
+
+    agent._dispatch('edit_note', {'scope': 'shared',
+                                  'note_id': 'a-note-id',
+                                  'text': 'it was unstable, not steady'},
+                    requested_by='user')
+    assert core.calls, 'a user edit to the shared journal runs: %r' \
+        % core.calls
+    assert core.calls[0][0] == 'edit_note'
+    assert core.calls[0][1]['scope'] == 'shared'
 
 
 def test_the_publish_words_are_the_unblock_in_either_language():

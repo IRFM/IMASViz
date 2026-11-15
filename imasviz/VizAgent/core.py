@@ -2685,6 +2685,20 @@ class McpGuiCore:
             scope, text, author=author, machine=machine, campaign=campaign,
             shot=shot, date=date, title=title)
 
+    def edit_note(self, scope, note_id, text=None, author=None, machine=None,
+                  campaign=None, shot=None, date=None, title=None):
+        """One note of one journal, changed in place: the note keeps the
+        id the other writers read it under, and the fields the caller
+        names take the place of the ones it held (a field left out
+        keeps the one it held, an empty one clears it — except the
+        author and the body, the two a note does not go without:
+        an edit that empties either is the named refusal the add does
+        not take, and the note on disk is not touched)."""
+        from imasviz.VizAgent import journals
+        return journals.JournalStore.edit_note(
+            scope, note_id, text=text, author=author, machine=machine,
+            campaign=campaign, shot=shot, date=date, title=title)
+
     def delete_note(self, scope, note_id):
         """One note of one journal, gone: the file and the cache entry
         the run holds for it. Not in the journal is a named refusal,

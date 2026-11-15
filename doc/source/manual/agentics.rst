@@ -204,7 +204,7 @@ the same descriptions. The tools, in the order the faces group them:
        dialog would have told a hand.
    * - the journals
      - ``search_journals``, ``list_notes``, ``read_note``, ``add_note``,
-       ``delete_note``, ``journal_stats``
+       ``edit_note``, ``delete_note``, ``journal_stats``
      - the two journals of the run: the **personal** one (the author's own
        notes, under ``~/.imasviz/journals``) and the **shared** one
        (:ref:`agentics_journal_shared`) -- a note is one file with its own
@@ -241,7 +241,11 @@ filters alone, in date order), ``read_note`` (the body by the id a search or
 a list names), and ``journal_stats`` (what the two journals hold on this node,
 and whether the embeddings endpoint is named and the model it names). The
 write: ``add_note`` (a new line in one of the two, the fields that name it,
-and the body), and ``delete_note`` (one of them, gone). Every refusal the read
+and the body), ``edit_note`` (one of the lines, changed in place — the note
+keeps the id it reads under, a field the caller names takes the place of
+the one it held, a field left out keeps it, and an empty one clears it,
+leaving the author and the body the two a note does not go without), and
+``delete_note`` (one of them, gone). Every refusal the read
 answers is one the write does not take: a note with no author is refused by
 name, a body that is empty is refused by name, and an explicit ask for the
 shared journal on a node that does not hold one names the reason, not the

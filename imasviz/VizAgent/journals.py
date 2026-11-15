@@ -687,6 +687,76 @@ class JournalStore:
         }
 
     @classmethod
+    def edit_note(cls, scope, note_id, text=None, author=None, machine=None,
+                  campaign=None, shot=None, date=None, title=None):
+        """One note of one journal, changed in place: the file the note
+        holds keeps its name, and the fields the caller names take the
+        place of the ones it held.
+
+        The id is the name the other writers read the note under, and it
+        is not a field the edit moves: the note they read back under the
+        same id is the one the edit wrote, not a new line — a new line is
+        what ``add_note`` is for. A field left out (``None``) keeps the
+        one the note held; a field named replaces the one it held; an
+        empty one clears the field it held — the only exceptions are the
+        two a note does not go without: the author (a note with no
+        author is not a note of this journal, the same refusal the
+        ``add_note`` does not take) and the body (a body the edit names
+        and that is empty is the same refusal). The cache of the body
+        the note held is invalidated, so a search after the edit does
+        not rank the line the reader read before it; the cache of the
+        new body is the same, when the body changed.
+        """
+        folder = cls.folderFor(scope)
+        current = cls.read_note(scope, note_id)
+        # A left-out author keeps the one the note held; an empty one
+        # was asked to clear it, and a note has no such shape — the
+        # refusal, not the fallback: an edit that silently kept the
+        # writer the note named was not the clear its caller asked.
+        if author is None:
+            author = (current['author'] or '').strip()
+        else:
+            author = (author or '').strip()
+        if not author:
+            raise ValueError(
+                'A note keeps its author: the edit named an empty one '
+                'for "%s", and a note with no author is not one this '
+                'journal holds.' % note_id)
+        body = current['text']
+        if text is not None:
+            body = (text or '').strip()
+            if not body:
+                raise ValueError(
+                    'A note keeps its body: the edit named an empty one '
+                    'for "%s", and a note that is only its filters is '
+                    'the shape this journal does not hold.' % note_id)
+
+        def kept(value, old):
+            if value is None:
+                return old
+            value = str(value).strip()
+            return value or None
+
+        machine_v = kept(machine, current.get('machine'))
+        campaign_v = kept(campaign, current.get('campaign'))
+        shot_v = kept(shot, current.get('shot'))
+        date_v = kept(date, current.get('date'))
+        title_v = kept(title, current.get('title'))
+        path = cls._notePath(folder, note_id)
+        rendered = _renderNote(author, machine_v, campaign_v, shot_v, date_v,
+                               title_v, body)
+        with open(path, 'w') as f:
+            f.write(rendered)
+        for digest in dict.fromkeys((_hashBody(current['text']),
+                                    _hashBody(body))):
+            _invalidateCache(folder, digest)
+        return {
+            'id': note_id, 'scope': scope, 'path': path, 'author': author,
+            'machine': machine_v, 'campaign': campaign_v, 'shot': shot_v,
+            'date': date_v, 'title': title_v, 'text': body, 'edited': True,
+        }
+
+    @classmethod
     def delete_note(cls, scope, note_id):
         """One note of one journal, gone: the file is removed, and the
         entry the cache holds for it drops out of the search. The note

@@ -229,6 +229,31 @@ def test_the_page_groups_the_captures_per_request():
     assert 'id="tools"' not in text, 'the gestures are still a column of their own'
 
 
+def test_the_page_edits_a_journal_note_in_place():
+    """The notes the page lists are the ones the user is allowed to change.
+
+    What it pins: every note of the list carries an Edit button beside its
+    Read and Delete, the edit form is its own section (the note the user
+    edits is named by the id it reads under, and the fields the form
+    holds are pre-filled from the read of that note), and the Save asks
+    `edit_note` -- the gesture that changes the note in place -- not a
+    delete-and-re-add that would cost the note a new id the other
+    writers read it under.
+    """
+    with open(INDEX, 'r', encoding='utf-8') as f:
+        text = f.read()
+    # The Edit button of the list, beside its Read and Delete.
+    assert "'Edit'" in text, 'no Edit button on the notes of the list'
+    # The form: its own section and its body, pre-filled from the read.
+    assert 'notesEdit' in text, 'no edit section for the note being changed'
+    assert 'notesEditBody' in text, 'no body to edit on the note being changed'
+    assert 'notesEditOpen' in text, 'no open of the edit form from a note'
+    assert 'read_note' in text, 'the form is pre-filled from the read of the note'
+    # The gesture the Save asks, and the save itself.
+    assert 'edit_note' in text, 'the page does not ask the edit gesture'
+    assert 'notesSaveEdit' in text, 'no save of the edit'
+
+
 def test_the_page_is_english():
     """The interface the user reads is in the language the user reads.
 
