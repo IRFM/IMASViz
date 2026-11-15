@@ -751,15 +751,20 @@ def buildServer(core, dispatcher, name='imasviz'):
             machine: Optional[str] = None,
             campaign: Optional[str] = None,
             shot: Optional[str] = None,
+            date_from: Optional[str] = None,
+            date_to: Optional[str] = None,
             author: Optional[str] = None,
     ):
         """The notes under `scope` (`personal`, `shared`, or left out and
         both) that fit the filters you name, in date order: the short
         view of each (the fields that name it and a line of its body).
+        `date_from` and `date_to` bound the shot date (`YYYY-MM-DD`).
         Where a `search_journals` ranks for a query, this lists for a
         filter -- the query is the ranking, and the filters are here."""
         return _run(partial(core.list_notes, scope=scope, machine=machine,
-                            campaign=campaign, shot=shot, author=author))
+                            campaign=campaign, shot=shot,
+                            date_from=date_from, date_to=date_to,
+                            author=author))
 
     @server.tool(name='journal_stats')
     def journal_stats():
