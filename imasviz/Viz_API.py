@@ -969,16 +969,55 @@ class Viz_API:
         pass leaves it to Qt rather than closing it twice -- its key is already
         out of ``figureframes`` when the loop gets to it.
 
+        One case that refuses in the middle of the close is named and left for
+        the next pass, and the rest of the run is still taken care of -- the
+        same shape :meth:`closeOthers` and :meth:`closeCase` already wear.
+        `closeAll` is the one that did not: the body of *New session* is the
+        gesture the user asked for, and a refusal of the case the close had just
+        reached used to be the one the screen was left with -- the window no one
+        asked to close, open, the way the field reported it.
+
         :returns: (list) the frames it took away, the case views first
         """
         closed = []
         for frame in list(self.DTVframeList):
-            if self.closeWindow(frame):
+            if self._closeOneWindow(frame, self._caseNameof(frame)):
                 closed.append(frame)
         for figureKey, frame in list(self.figureframes.items()):
-            if self.closeWindow(frame):
+            if self._closeOneWindow(frame, figureKey):
                 closed.append(frame)
         return closed
+
+    def _closeOneWindow(self, frame, name):
+        """Close one window of the group gesture; say what it refused and go on.
+
+        :meth:`closeWindow` is the one place the refusal is answered, and
+        :meth:`closeAll` is the one place a refusal must cost itself and
+        nothing else. The name is the one the log panel reads: a case view is
+        the URI behind it, a figure is the key it is registered under.
+        """
+        try:
+            return self.closeWindow(frame)
+        except Exception as error:
+            logging.getLogger('logPanel').warning(
+                'The window "%s" could not be closed: %s. The other '
+                'windows of the clean slate were still taken care of.'
+                % (name, error))
+            return False
+
+    def _caseNameof(self, frame):
+        """The name the log panel reads for this case view: the URI it serves.
+
+        Asked off the view rather than the frame, because the frame is the
+        bookkeeping's name for the case, and the URI is the user's. A frame
+        whose view is already gone still answers something, so a half-closed
+        case is still nameable rather than an `AttributeError`.
+        """
+        try:
+            uri = getattr(frame.dataTreeView.dataSource, 'uri', None)
+        except Exception:
+            uri = None
+        return 'case "%s"' % uri if uri else 'the case view'
 
     def mdiWindowOf(self, frame):
         """The MDI window a frame is embedded in, or None if it stands alone.
