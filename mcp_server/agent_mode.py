@@ -126,12 +126,12 @@ EXTRA_SHOTS = ('app', 'case-views')
 
 #: The gestures that change what a drawn figure shows without redrawing
 #: it: the curve transforms and the axis gestures. Each names its
-#: window by `figure_key`, and that is an ask to see it the way the
-#: redraw's `into_figure_key` is: the figure's content moved, and a
-#: turn that moved it must keep it in frame for the user the way a turn
-#: that draws it does -- not only when the model separately decides to
-#: focus it. The reads of a figure (`curve_stats`, `export_curve`) are
-#: not here: they change nothing the user sees on the figure.
+#: window by `figure_key`, and that is what the capture holds the turn
+#: to the way the redraw's `into_figure_key` does: the turn moved a
+#: figure, so the figure it moved is part of what the turn did -- not a
+#: show the model decides on its own. The reads of a figure
+#: (`curve_stats`, `export_curve`) are not here: they change nothing
+#: the turn did to a figure.
 FIGURE_MUTATIONS = ('scale_curve', 'shift_curve', 'normalize_curve',
                     'reset_curve', 'remove_curve', 'set_axis_range',
                     'set_log_scale', 'invert_axis')
@@ -141,10 +141,14 @@ def captureAsk(name, args):
     """What one gesture asks to be seen: the window name, or None.
 
     The one rule the two turn surfaces (the REPL and the web) share when
-    they gather the windows a turn asked to be captured:
+    they gather the windows a turn asked to be captured. A capture is the
+    result of asked work, not a show: none of these three is the model
+    deciding a figure "stands" after a draw.
 
     * `get_screenshot` / `focus_window` ask for their `window` (the
-      default `app` is the application, the interface extra);
+      default `app` is the application, the interface extra). A
+      `focus_window` reaches here only when the user asked it -- the
+      "montre-moi Plot1" command -- not after the turn drew a figure;
     * `plot_one` asks for the figure it draws onto when it names one
       (`into_figure_key`): the redraw adds no new key, so without it the
       delta the turn drew would be empty while the loop printed the

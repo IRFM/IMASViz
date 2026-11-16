@@ -195,8 +195,11 @@ the same descriptions. The tools, in the order the faces group them:
    * - the screen
      - ``get_screenshot``, ``focus_window``
      - a window as it stands, in PNG -- the application, one figure, or the
-       shot view of a case -- and bringing a window forward at a readable
-       size, the preparation of a capture.
+       shot view of a case -- and the "show me this" gesture: a window
+       brought forward (shown when off screen, raised when not), at the
+       size it holds, and the pixels only when they are named. Showing is
+       the user's command, not something the loop does after a draw: the
+       figure is in the *Windows* menu, and that is where the raise lives.
    * - the log
      - ``get_logs``
      - the log panel of one case, or of every case: the last lines the gestures
@@ -377,10 +380,13 @@ A dictionary of ready phrases, with what they answer on the reference case:
    * - the value at one psi
      - "read the pressure at psi = 50"
      - :code:`get_signal(..., indices={"psi": 50})`
+   * - to see the figure
+     - "show me Plot1" / "bring Plot1 forward"
+     - :code:`focus_window(window="Plot1")` -- the window comes forward,
+       at the size it holds; *"en grand"* adds the pixels to put it at
    * - a capture of the figure
-     - "show me Plot1" / "capture of Plot1"
-     - :code:`focus_window(window="Plot1")` /
-       :code:`get_screenshot(window="Plot1")`
+     - "a capture of Plot1"
+     - :code:`get_screenshot(window="Plot1")`
 
 The MCP service
 ---------------
@@ -564,10 +570,13 @@ answers by default:
   Draw **and** ask for the figure in the same prompt: *"trace the pressure at
   psi = 0, 10 and 50 on one figure, and give me the capture"* -- one run, one
   image, the group arrives open.
-- **A re-capture is asked by the name of the figure.** *"show me Plot1"*
-  brings that figure forward (``focus_window``); *"a capture of Plot1"* saves
-  it (``get_screenshot``). The page's own button on a capture card does the
-  second one.
+- **A re-capture is asked, by the name of the figure.** *"show me Plot1"*
+  brings that figure forward (``focus_window``, at the size it holds);
+  *"a capture of Plot1"* saves it (``get_screenshot``). The page's own
+  button on a capture card does the second one. A figure the answer only
+  *names* is not among these: a show is the user's command, and the
+  mention stays in the transcript, beside the PNG the turn that drew it
+  already left.
 
 The multi-user gateway
 ----------------------

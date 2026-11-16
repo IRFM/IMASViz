@@ -10,37 +10,28 @@
 # ****************************************************
 #     Authors L. Fleury, X. Li, D. Penko
 # ****************************************************
-"""The agent shows the figures it names, not the ones it only describes.
+"""Showing a figure is the user's command, not the model's standing duty.
 
-The field report, word for word: "une certaine paresse à me montrer des
-plots pourtant existants; si je lui dis 'je ne vois pas cette figure',
-l'agent fait un effort et finit par faire une capture qui fonctionne."
+The first cut of this direction was what this file used to pin the
+other way around: the model focused a figure whenever it drew one or
+named one, on the standing rule that a figure named that the user
+cannot see is a figure not shown (``focus it, do not only describe it``,
+``whenever you draw a figure or name one``, ``a figure you moved is a
+figure that stands``). The user's call on it: a show is an explicit
+command ("montre-moi Plot1"), and a draw or a mention in the answer is
+not one -- the figure is in the *Windows* menu, and the raise and the
+size are the user's own gestures there.
 
-The machinery is not the cause. A web turn captures exactly the figures
-it drew plus the windows it focused
-(`viz_web/web_session.py::_finishTurn`, `saveShots`), and `focus_window`
-IS a capture ask there -- a focus of a figure "is a capture ask too, not
-a by-product" (`web_session.py:216`), pinned by `test_127`/`test_128`.
-So the figure reaches the screen the moment the model calls
-`focus_window` on it. What was missing was the model never calling it
-unless the phrasing sounded like an ask: the system prompt carried
-"it is yours to call **only when the user asks** for a capture ... this
-turn reaches it again **only when the ask names it**"
-(`imasviz/VizAgent/tools.py`, item 5) -- a standing instruction to stay
-quiet about a figure until the user chases it. "je ne vois pas" read as
-a chase; a bare question about state read as silence.
-
-The fix is in the prompt the model reads, and this file pins it the way
-the other surface contracts do (`test_120` pins the probe-ambiguity
-words, `test_125` the unified schema): the lazy "only when the user
-asks" trigger is gone, and the standing rule is now that a figure the
-model named but the user cannot see is a figure not shown -- so it is
-focused, not merely described. There is no behaviour to drive without
-the local model that is being asked to change, and the guard is what
-keeps a revert honest.
+So the guard stands as it is now: the instruction the model reads
+(``SYSTEM_INSTRUCTIONS``) and the tool description it calls on the
+strength of the instruction (``focus_window``) both say the show is
+the user's command, keep the size the window holds, and refuse the
+standing-show vocabulary -- and this file keeps a revert honest the
+way the other surface contracts do (``test_120`` pins the
+probe-ambiguity words, ``test_125`` the unified schema). There is no
+behaviour to drive without the local model that is being asked to
+change, and the guard is what keeps the direction.
 """
-
-import pytest
 
 from imasviz.VizAgent.tools import SYSTEM_INSTRUCTIONS, TOOLS
 
@@ -52,88 +43,114 @@ def _text():
     return ' '.join(SYSTEM_INSTRUCTIONS.split()).lower()
 
 
-def test_the_lazy_only_when_asked_trigger_is_gone():
-    """The clause that made the model stay quiet about figures until the
-    user chased it -- "only when the user asks for a capture" and the
-    twin "reaches it again only when the ask names it" -- must not be in
-    the instruction the model reads."""
-    text = _text()
-    assert 'only when the user asks for a capture' not in text, \
-        'the lazy "only when the user asks" trigger is back: the model ' \
-        'stays quiet about a figure until the user chases it'
-    assert 'reaches it again only when the ask names it' not in text, \
-        'the "only when the ask names it" trigger is back: a figure an ' \
-        'earlier turn drew is never shown again until the user chases it'
+def _focus_description():
+    """The `focus_window` tool description, collapsed as `_text` does."""
+    description = next((t.get('function', {}).get('description', '')
+                        for t in TOOLS
+                        if t.get('function', {}).get('name') == 'focus_window'),
+                       '')
+    return ' '.join(description.split()).lower()
 
 
-def test_the_prompt_makes_showing_a_standing_rule():
-    """The rule is now the direction it was missing: whenever the model
-    draws a figure or names one the session holds, it focuses it so the
-    user sees it -- a figure named that the user does not see is a figure
-    not shown."""
+def test_showing_is_the_users_command_in_the_instruction():
+    """The direction the user calls: a show is the user's own command, a
+    draw is not one, and neither a draw nor a mention in the answer is a
+    reason to raise or size a window -- a window the user sized stays
+    the size it was given."""
     text = _text()
-    assert 'focus_window' in text, \
-        'the instruction no longer names focus_window: the show gesture ' \
-        'is unreachable'
+    assert 'showing a figure is the user\'s command' in text, \
+        'the instruction no longer says a show is the user\'s command'
+    assert 'a draw is not one' in text, \
+        'the instruction lost the "a draw is not one" refusal: a draw ' \
+        'is the show again'
+    assert 'call neither of them because a figure was drawn ' \
+           'or because your answer names one' in text, \
+        'the instruction lets the model focus a figure it drew or named: ' \
+        'the standing show is back'
+    assert 'a window they sized stays the size it was given' in text, \
+        'the instruction lost the size keep: a window the user sized ' \
+        'is resized by the model again'
+
+
+def test_the_standing_show_vocabulary_is_gone():
+    """Every phrase of the previous direction -- the standing duty to
+    focus on a draw or a mention, and the "moved figure stands" rule of
+    item 9 -- must not be in the instruction the model reads."""
+    text = _text()
     assert 'a figure you named that the user does not see ' \
-           'is a figure not shown' in text, \
-        'the standing rule is missing: a figure the model named but the ' \
-        'user cannot see must be a figure not shown, to be focused'
-    assert 'focus it, do not only describe it' in text, \
-        'the remedy is missing: the model must focus the figure, not ' \
-        'only describe it'
+           'is a figure not shown' not in text, \
+        'the standing rule is back: a figure the model named must be ' \
+        'focused so the user sees it'
+    assert 'focus it, do not only describe it' not in text, \
+        'the standing remedy is back: the model must focus the figure ' \
+        'it named'
+    assert 'whenever you draw a figure or name one' not in text, \
+        'the standing trigger is back: a draw or a mention is a show'
+    assert 'a figure you moved is a figure that stands' not in text, \
+        'the item-9 rule is back: a figure the gesture moved must be ' \
+        'focused again'
 
 
-def test_a_gesture_that_moved_a_figure_keeps_the_show_ask():
-    """The field repro that left the figure off the screen was a
-    `scale_curve`: the gesture moves what the figure shows without
-    redrawing it, so it is still a figure the user must see. The
-    instruction and the tool description both keep the standing ask
-    alive across that kind of gesture -- item 9 says the gesture is
-    work the user sees and names it the same way a drawn figure is
-    kept, and `focus_window` says the same ask stands after a gesture
-    that moved its content, naming every gesture that moves one."""
+def test_item9_a_gesture_is_not_an_ask_to_show():
+    """The tail of item 9: a gesture of the curve section moves what the
+    figure shows without redrawing it, and it is not an ask to show
+    anything -- the window keeps the place and the size the user gave
+    it."""
     text = _text()
     assert 'a gesture of this section changes what the figure shows ' \
            'without redrawing it' in text, \
-        'the item-9 rule is missing: moving a curve is not the work ' \
-        'on a figure the user must see'
-    assert 'a figure you moved is a figure that stands' in text, \
-        'the item-9 rule is missing: a figure the gesture moved must ' \
-        'still be a figure that stands, not one described and left'
-    description = next((t.get('function', {}).get('description', '')
-                        for t in TOOLS
-                        if t.get('function', {}).get('name') == 'focus_window'),
-                       '')
-    text = ' '.join(description.split()).lower()
-    assert 'the same ask stands after a gesture that moved its content' \
+        'the item-9 rule is missing: moving a curve is not work on a ' \
+        'figure'
+    assert 'it is not an ask to show anything' in text, \
+        'the item-9 refusal is missing: a gesture moved the figure and ' \
+        'the model shows it again'
+    assert 'the window keeps the place and the size the user gave it' \
         in text, \
-        'the focus_window description lost the standing ask after a ' \
-        'gesture: the moved figure is never shown again'
-    for gesture in ('scale_curve', 'shift_curve', 'normalize_curve',
-                    'reset_curve', 'remove_curve', 'set_axis_range',
-                    'set_log_scale', 'invert_axis'):
-        assert gesture in text, \
-            'the focus_window description does not name %s: the gesture ' \
-            'that moves the figure is not the one the ask stands after' \
-            % gesture
+        'the item-9 keep is missing: the place and the size the user ' \
+        'gave the window move again'
 
 
-def test_focus_window_reads_itself_as_the_show_gesture():
+def test_focus_window_reads_itself_as_the_users_command():
     """The tool the model calls on the strength of the prompt reads itself
-    proactively: it is the "show it" gesture, called whenever a figure is
-    drawn or named -- not only the preparation of an explicit screenshot.
-    Without the system prompt and the tool description agreeing, one of
-    them would keep the old "only before a screenshot" posture and the
-    model would have two of the opposite mind about the same call."""
-    description = next((t.get('function', {}).get('description', '')
-                        for t in TOOLS
-                        if t.get('function', {}).get('name') == 'focus_window'),
-                       '')
-    text = ' '.join(description.split()).lower()
-    assert 'so the user sees it' in text, \
-        'the focus_window description is not the show gesture: it does ' \
-        'not say it exists so the user sees the figure'
-    assert 'whenever you draw a figure or name one' in text, \
-        'the focus_window description does not name the standing trigger: ' \
-        'call it whenever a figure is drawn or named'
+    the same way: the user's "show me this" command, bringing the window
+    to the front -- shown when off screen, raised when not -- keeping
+    the size it holds unless pixels are named, and refusing the draw and
+    the mention as reasons to call it. Without the system prompt and the
+    tool description agreeing, one of them would keep the standing-show
+    posture and the model would have two of the opposite mind about the
+    same call."""
+    text = _focus_description()
+    assert 'the user\'s "show me this" command' in text, \
+        'the focus_window description is not the user\'s command: the ' \
+        'standing-show reading is back'
+    assert 'keeps the size it holds' in text, \
+        'the focus_window description lost the size keep: a call with ' \
+        'no pixels resizes the window again'
+    assert 'a side left out keeps the size the window holds on that side' \
+        in text, \
+        'the focus_window description lost the half keep: one named side ' \
+        'and one kept side must stand'
+    assert 'a draw is not an ask to show it' in text, \
+        'the focus_window description lets the model focus on a draw: ' \
+        'the standing show is back in the tool it would call'
+    assert 'whenever you draw a figure or name one' not in text, \
+        'the standing trigger is back in the focus_window description'
+
+
+def test_focus_window_keeps_its_size_in_its_properties():
+    """The `width` and `height` properties say the keep out loud: a side
+    left out keeps the size the window holds, not a default of 1280."""
+    tool = next((t for t in TOOLS
+                 if t.get('function', {}).get('name') == 'focus_window'),
+                None)
+    assert tool is not None, 'the focus_window tool is gone'
+    properties = tool['function']['parameters']['properties']
+    for side in ('width', 'height'):
+        description = ' '.join(properties[side].get('description', '')
+                               .split()).lower()
+        assert 'left out, the size the window holds' in description, \
+            'the %s property no longer says the keep: a call without it ' \
+            'resizes the window on that side again' % side
+        assert 'default: 1280' not in description, \
+            'the %s property is back to the 1280 default: the no-pixels ' \
+            'show resizes the window again' % side

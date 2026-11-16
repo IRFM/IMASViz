@@ -26,11 +26,14 @@ What it pins, in the order the session must answer it:
   is applied after the embed, over the rule.
 
 * **`focus_window`.** The core gesture the page's buttons and the agent's
-  tool list take: a window is shown (a hid one put back), raised to the
-  front, and resized -- to the named pixels, or to `DEFAULT_FIGURE_SIZE`
-  the same constant the embed handed the frame in question. "app" is the
-  main window; a size that is not a positive pair of integers is refused by
-  name, and a name the session does not hold is refused from the open ones.
+  tool list take: the user's "show me this" -- a window is shown (a hid
+  one put back) and raised to the front, and keeps the size it holds
+  unless `width` and `height` name the pixels to put it at (a side left
+  out keeps the size the window holds on that side). A draw and a
+  mention are not a reason for it: the show is the user's command. "app"
+  is the main window, raised with no figure touched; a side that is not
+  a pixel count is refused by name, and a name the session does not hold
+  is refused from the open ones.
 
 * **the address of a picture.** `saveShots` answers the `(window, path)`
   pairs it wrote -- the window is what `focus_window` and `get_screenshot`
@@ -144,13 +147,14 @@ def test_a_frame_that_chose_a_size_keeps_it(qapp, qtbot):
 
 # ---------------------------------------------------------------- focus_window
 
-def test_focus_window_puts_a_figure_forward_at_the_read(qapp, qtbot):
-    """The gesture the page's buttons take: a figure the session holds is
-    shown, raised, and resized to the default figure size -- and the
-    answer is the size it then holds, so the caller knows what the
-    screenshot will answer. `focus_window` takes the figure key
-    `list_windows` names, and the subwindow it resizes is the shell the
-    *Windows* menu acts on."""
+def test_focus_window_puts_a_figure_forward_and_keeps_its_size(qapp, qtbot):
+    """The gesture the user's "montre-moi Plot1" takes: a figure the
+    session holds is shown (a hid one put back) and raised to the front,
+    and keeps the size it holds -- a show is not a resize, and a window
+    the user placed is not moved by the model showing it. The answer is
+    the size the figure then holds, so the caller knows what a
+    screenshot of it will answer. `focus_window` takes the figure key
+    `list_windows` names."""
     mdi = QMdiArea()
     qtbot.addWidget(mdi)
     mdi.show()
@@ -160,20 +164,25 @@ def test_focus_window_puts_a_figure_forward_at_the_read(qapp, qtbot):
     core = makeCore(api)
     api.setWindowVisible(frame, False)  # a figure the close box hid is the one a focus most earns
 
+    before = (subWindow.size().width(), subWindow.size().height())
     out = core.focus_window('Plot1')
 
     assert out['window'] == 'Plot1'
     assert out['visible'] is True
-    # The shell is resized to the pixels `focus_window` takes, and the
-    # frame it carries is inside it -- the frame answers at most the shell,
-    # minus the shell's own chrome, and never above it.
-    assert (subWindow.size().width(), subWindow.size().height()) == DEFAULT_FIGURE_SIZE
-    assert frame.size().width() <= DEFAULT_FIGURE_SIZE[0]
-    assert frame.size().height() <= DEFAULT_FIGURE_SIZE[1]
+    # No side named: the shell keeps the size it held, and the frame it
+    # carries the size it held -- a "montre-moi" moved nothing.
+    assert (subWindow.size().width(), subWindow.size().height()) == before, \
+        'a focus with no pixels named resizes the window: the show is ' \
+        'a resize again'
+    assert (frame.size().width(), frame.size().height()) == \
+        (out['size'][0], out['size'][1])
     assert frame.size().width() > 0 and frame.size().height() > 0
 
 
 def test_focus_window_takes_the_named_pixels(qtbot):
+    """The user's "montre Plot1 en grand" half: pixels named are the
+    pixels the window takes -- and a side left out keeps the size the
+    window holds on that side, so half an answer is still a whole show."""
     mdi = QMdiArea()
     qtbot.addWidget(mdi)
     api, frame, subWindow = embeddedFrame(mdi, qtbot, sized=(400, 300))
@@ -183,6 +192,25 @@ def test_focus_window_takes_the_named_pixels(qtbot):
     out = core.focus_window('Plot1', width=900, height=600)
 
     assert (subWindow.size().width(), subWindow.size().height()) == (900, 600)
+    assert out['size'] == [frame.size().width(), frame.size().height()]
+
+
+def test_focus_window_keeps_the_side_it_is_not_told(qtbot):
+    """The other half of the same rule: one side named, one left out --
+    the window takes the named side and keeps the size it holds on the
+    side that was not named."""
+    mdi = QMdiArea()
+    qtbot.addWidget(mdi)
+    api, frame, subWindow = embeddedFrame(mdi, qtbot, sized=(400, 300))
+    api.figureframes['Plot1'] = frame
+    core = makeCore(api)
+    heightBefore = subWindow.size().height()
+
+    out = core.focus_window('Plot1', width=900)
+
+    assert subWindow.size().width() == 900
+    assert subWindow.size().height() == heightBefore, \
+        'a side left out was resized: the half keep is lost'
     assert out['size'] == [frame.size().width(), frame.size().height()]
 
 
@@ -196,14 +224,17 @@ def test_focus_window_on_the_app_answers_the_main_window(qapp, qtbot):
     main.show()
     qapp.processEvents()
     core = makeCore(api, main_window=main)
+    figureBefore = (subWindow.size().width(), subWindow.size().height())
 
-    out = core.focus_window('app', width=1000, height=800)
+    out = core.focus_window('app')
 
-    # "app" raises the main window and answers its own size -- the figure
-    # it carries is not resized by a gesture that names the application.
+    # "app" raises the main window and answers the size it holds -- and
+    # no figure it serves is touched by a gesture that names the
+    # application.
     assert out['window'] == 'app'
     assert out['visible'] is True
-    assert (subWindow.size().width(), subWindow.size().height()) == DEFAULT_FIGURE_SIZE
+    assert figureBefore == (subWindow.size().width(), subWindow.size().height()), \
+        'a gesture that names the application touched a figure of the session'
 
 
 def test_focus_window_refuses_a_name_the_session_does_not_hold(qtbot):

@@ -2099,24 +2099,31 @@ class McpGuiCore:
         self.api.closeWindow(frame)
         return {'closed': key}
 
-    # ------------------------------------------------------- focus, readably
+    # ------------------------------------------------------- focus, shown
 
     def focus_window(self, window='app', width=None, height=None):
-        """Bring a window forward at a readable size -- the preparation of a
-        screenshot.
+        """Bring a window forward -- the user's "show me this" command.
 
-        `screenshot` paints the window whatever size it is; a figure drawn
-        behind the others, or taken off the screen, reads small in the
-        picture. This puts it back: shown (the hide rule of the close box is
-        undone through `setWindowVisible`), raised to the front, and resized
-        to `width` x `height` -- or to `DEFAULT_FIGURE_SIZE`, the same
-        constant the embed hands a frame that never got one
-        (`Viz_API.addPlotWidgetToMDI`). "app" is the main window: it is
-        raised and answers its own size, and no figure is touched.
+        Shown (the hide rule of the close box is undone through
+        `setWindowVisible`) and raised to the front. The window keeps
+        the size it holds when no side is named -- "montre-moi Plot1"
+        does not resize a window the user has placed -- and is sized
+        from `width` and `height` when those name pixels, a side left
+        out keeping the size the window holds on that side. "app" is the
+        main window: it is raised and answers its own size, and no figure
+        is touched.
 
-        `width` and `height` are named refusals when they are not positive
-        integers: a size is a pair of pixel counts, and a number the window
-        cannot hold is one the caller mislabeled.
+        This is not a default after a draw: a figure the loop drew or
+        named is a window of the session, in the *Windows* menu, and a
+        draw is not an ask to see it. It is called when the user asks
+        ("montre-moi Plot1", "ramène Plot1 devant", "je ne vois pas la
+        figure"), and before a requested capture whose window answers
+        small, where the readable size the ask names is what `width` and
+        `height` hold.
+
+        `width` and `height` are named refusals when they are not
+        positive integers: a size is a pair of pixel counts, and a number
+        the window cannot hold is one the caller mislabeled.
         """
         def side(name, value):
             try:
@@ -2124,7 +2131,7 @@ class McpGuiCore:
             except (TypeError, ValueError):
                 raise ValueError(
                     '%s=%r is not a pixel count: name it as an integer, '
-                    'or leave it out for the default size.'
+                    'or leave it out for the size the window holds.'
                     % (name, value))
             if number < 1:
                 raise ValueError(
@@ -2132,7 +2139,6 @@ class McpGuiCore:
                     'and up, or leave it out.' % (name, number, 1))
             return number
 
-        from imasviz.Viz_API import DEFAULT_FIGURE_SIZE
         target = self._resolveWindow(window)
         if window == 'app':
             target.raise_()
@@ -2142,20 +2148,19 @@ class McpGuiCore:
                     'visible': bool(target.isVisible()),
                     'size': [target.width(), target.height()]}
 
-        width = side('width', width) if width is not None else DEFAULT_FIGURE_SIZE[0]
-        height = side('height', height) if height is not None else DEFAULT_FIGURE_SIZE[1]
         visible = self.api.setWindowVisible(target, True)
+        # The shell is the window the user would see: it carries the
+        # title bar, so it is what is raised and sized -- the frame it
+        # holds follows through its own layout.
         shell = self.api.mdiWindowOf(target)
+        base = shell if shell is not None else target
+        if width is not None or height is not None:
+            width = side('width', width) if width is not None else base.width()
+            height = side('height', height) if height is not None else base.height()
+            base.resize(width, height)
+        base.raise_()
         if shell is not None:
-            # The shell is the window the user would see: it carries the
-            # title bar, so it is what is raised and resized -- the frame it
-            # holds follows through its own layout.
-            shell.resize(width, height)
-            shell.raise_()
-            shell.activateWindow()
-        else:
-            target.resize(width, height)
-            target.raise_()
+            base.activateWindow()
         size = target.size()
         return {'window': window,
                 'visible': bool(visible),

@@ -196,16 +196,6 @@ class WebSession:
 
             lines = []
             requested_windows = []
-            # The accepted final answer(s) of this turn: the one the loop
-            # emits on the path that accepts them (`finalAnswer`), not on
-            # a refusal or the max-turns stop. A figure it names by a key
-            # the session holds is an ask the turn owes its capture --
-            # the "ou nomme" half of the promise ("show the figures it
-            # traces or NAMES"), held mechanical here instead of on the
-            # model's deciding to call focus_window. Appending to a local
-            # list touches no widget, so the direct hand-off is the one
-            # this surface keeps for every such bridge.
-            final_texts = []
             # The figures the turn closes, by key: the `close_window` the
             # loop ran, or the `new_session` that closes every figure of
             # the session. The close runs on the application side (the
@@ -303,9 +293,6 @@ class WebSession:
                 outcome[0] = error
                 done.set()
 
-            def onFinalSlot(text):
-                final_texts.append(text)
-
             # `Qt.DirectConnection`, deliberately. These two callbacks touch no
             # widget -- they append to a local list and set a `threading.Event`
             # -- so they need no event loop to be delivered. A default (auto)
@@ -322,8 +309,6 @@ class WebSession:
             self.agent.askFinished.connect(onDone, Qt.DirectConnection)
             self.agent.gestureIssued.connect(onGestureSlot,
                                              Qt.DirectConnection)
-            self.agent.finalAnswer.connect(onFinalSlot,
-                                           Qt.DirectConnection)
             try:
                 thread = threading.Thread(target=self.agent.ask,
                                           args=(prompt, self.max_turns),
@@ -337,8 +322,7 @@ class WebSession:
                                      (self.agent.fullLine, onFullSlot),
                                      (self.agent.askFinished, onDone),
                                      (self.agent.gestureIssued,
-                                      onGestureSlot),
-                                     (self.agent.finalAnswer, onFinalSlot)):
+                                      onGestureSlot)):
                     try:
                         signal.disconnect(slot)
                     except (TypeError, RuntimeError):
@@ -348,10 +332,13 @@ class WebSession:
             # session's own, asked before the loop drew (`figure_keys
             # _before`) and now: the end of the turn names the
             # difference, and a figure an earlier turn drew stays in the
-            # files that turn left, not repeated into this one.
+            # files that turn left, not repeated into this one. A figure
+            # the answer only NAMES is not one the turn owes a capture --
+            # a show is the user's explicit command, and this surface
+            # answers it with the turn's own work, not a side effect.
             turn_dir, saved, refused, images, windows = self.dispatcher.call(
                 lambda: self._finishTurn(lines, requested_windows,
-                                         figure_keys_before, final_texts))
+                                         figure_keys_before))
 
             record = {'n': len(self.turns) + 1,
                       'prompt': prompt,
@@ -447,7 +434,7 @@ class WebSession:
         return removed
 
     def _finishTurn(self, lines, requested_windows=(),
-                    figure_keys_before=None, final_texts=()):
+                    figure_keys_before=None):
         """The part of a turn that runs on the GUI thread: the window off
         the screen, the images and the transcript on disk, the PNGs
         read back.
@@ -458,23 +445,19 @@ class WebSession:
         `figure_key` as the ask, "multiplie la courbe par 3" is the
         field repro), and the windows the turn asked to be captured
         (`requested_windows`, the `get_screenshot` of the loop, the
-        user's asks), which are its own even when the figure is an old
-        one: a capture is what a turn draws or asks for, and a figure an
+        `focus_window` the user's "montre-moi" reached, the user's
+        asks), which are its own even when the figure is an old one: a
+        capture is what a turn draws or asks for, and a figure an
         earlier turn drew stays in the files that turn left.
         `requestedCaptures` splits the asks for `saveShots`, which is
         where the interface stands (`app` and the case URIs are its
         `extras`), and refuses a figure key the session does not hold by
         naming it.
 
-        Beside all of those stand the figures the ACCEPTED final answer
-        names by key (`final_texts`, emitted by the loop on the path
-        that accepts them): the promise is "show the figures it traces
-        or NAMES", and it holds mechanical this way, not on the model's
-        deciding to call focus_window. The scan walks only the keys the
-        session holds NOW -- a figure the turn closed, or one the answer
-        invented, is not named, because a capture of it would be the
-        refusal the core earns. A refused turn has no final answer, and
-        so names nothing.
+        A figure the accepted answer only NAMES stands outside all of
+        that: a show is the user's explicit command (a `focus_window`
+        the ask reached, on its own line), not a side effect of the
+        text the turn ends on.
 
         Asked through the `GuiDispatcher`, because it asks the core to
         render (`screenshot` -> `QWidget.grab()`), and a thread that does
@@ -485,7 +468,6 @@ class WebSession:
         page's buttons.
         """
         from mcp_server.agent_mode import (requestedCaptures, saveShots)
-        from imasviz.VizAgent.agent import figuresNamedIn
 
         number = len(self.turns) + 1
         turn_dir = os.path.join(
@@ -512,10 +494,12 @@ class WebSession:
         figureKeysNow = {record['key']
                          for record in self.core.list_windows()
                          if record['key'] is not None}
-        namedFigures = figuresNamedIn('\n'.join(final_texts),
-                                      sorted(figureKeysNow))
+        # The turn is its own work, and its own asks: the figures it drew,
+        # the figures its gestures moved, and the windows asks reached --
+        # a figure the answer only names is outside that, and a show the
+        # user did not ask is not one this surface earns.
         figures = (figureKeysNow - (figure_keys_before or set())) \
-            | set(askedFigures) | set(namedFigures)
+            | set(askedFigures)
         saved, refused = saveShots(
             self.core, turn_dir, extras=extras, figures=figures)
         with open(os.path.join(turn_dir, 'transcript.txt'), 'w') as f:

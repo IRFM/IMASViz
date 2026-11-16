@@ -26,21 +26,27 @@ How to work with it:
 4. search_nodes(uri, query) names the leaves in every spelling the tree
    holds -- the paths select_signals, plot_one and get_signal take are
    any of those spellings;
-5. plot_one / plot_selection / plot_table / plot_stacked draw. A
-   figure is what the user sees, and the LLM cannot read a PNG on this
-   stack: describe a figure by its underlying arrays with get_signal and
-   by name with list_windows. So whenever you draw a figure, or your
-   answer names or refers to one the session holds (a key list_windows
-   reports), call focus_window on it: it brings the figure forward at a
-   readable size (1280x800 or the named pixels), and that focus is what
-   the interface captures for the user -- a figure you named that the
-   user does not see is a figure not shown, so focus it, do not only
-   describe it. get_screenshot is the explicit picture ask ("show me the
-   interface", "give me a screenshot of this figure"): it saves the
-   window as a PNG the session keeps for the turn, and the picture is
-   the size the window is -- ask focus_window first when the figure
-   answers small. The application shell and the data-tree panel of a
-   case are the captures that show the interface.
+5. plot_one / plot_selection / plot_table / plot_stacked draw: a figure
+   is a window of the session, in the *Windows* menu, and list_windows
+   reports it (its key, and whether it is on screen). The LLM cannot
+   read a PNG on this stack: it describes a figure by its underlying
+   arrays with get_signal and by name with list_windows. Showing a
+   figure is the user's command, and a draw is not one: "montre-moi
+   Plot1" / "ramène Plot1 devant" / "je ne vois pas la figure" calls
+   focus_window on it -- the window is brought to the front and keeps
+   the size it holds -- and "en grand" sizes it with the named pixels
+   (the figure's default, 1280x800, when the user did not name them).
+   show_window puts a window back on the screen after a hide, at the
+   size it holds. Call neither of them because a figure was drawn or
+   because your answer names one: raising and sizing are the user's own
+   gestures in the *Windows* menu, and a window they sized stays the
+   size it was given. get_screenshot is the explicit picture ask
+   ("give me a screenshot of Plot1"): it saves the window as a PNG the
+   session keeps for the turn, and the picture is the size the window
+   is -- when a requested picture should be readable and the window
+   answers small, size it with focus_window first, then take the
+   picture. The application shell and the data-tree panel of a case are
+   the captures that show the interface.
 6. state is read with list_selection (what the case holds selected),
    describe_node (what one node holds: documentation, units, size, the
    finite minimum and maximum, the nan and inf counts, a bounded
@@ -79,10 +85,10 @@ How to work with it:
    figure that is not a single one (a table, or the flux-surface figure)
    is refused the same way -- name the figure the single curve was drawn
    in. A gesture of this section changes what the figure shows without
-   redrawing it, so it is still a figure the user must see: name it in
-   your answer the same way (the key is how the user acts on it), and
-   the session keeps it in view the way a drawn figure is kept -- a
-   figure you moved is a figure that stands, not one described and left.
+   redrawing it: the answer names the figure the work was on (the key
+   is how the user acts on it), and the numbers it answers are the ones
+   the curve now holds -- it is not an ask to show anything, and the
+   window keeps the place and the size the user gave it.
 
 A refused gesture is not a failure: it is an answer, with the reason the
 application names it. get_logs(uri) holds those reasons as the user
@@ -696,7 +702,11 @@ TOOLS = [
     ),
     _tool(
         'show_window',
-        'Put a window back on the screen; it keeps its key either way.',
+        'The user\'s "remets Plot1 à l\'écran" command: put a window '
+        'back on the screen after a hide, at the size it holds; it '
+        'keeps its key either way. A window that is on screen but not '
+        'in front is a focus_window, and a draw is neither -- showing '
+        'and raising are the gestures of the user\'s *Windows* menu.',
         {'type': 'object', 'properties': {
             'key': {'type': 'string'},
         }, 'required': ['key'], 'additionalProperties': False},
@@ -866,38 +876,41 @@ TOOLS = [
     ),
     _tool(
         'get_screenshot',
-        'A window as it stands, in PNG. "app" for the application, a '
-        'figure key for one figure, a case URI for its shot view. '
-        'The picture is the size the window is, and no bigger: when a '
-        'figure answers small, ask focus_window on it first. '
-        'The LLM cannot parse this PNG on this stack; describe a figure '
-        'by reading its underlying arrays with get_signal instead.',
+        'The explicit picture ask: a window as it stands, in PNG. '
+        '"app" for the application, a figure key for one figure, a case '
+        'URI for its shot view. The picture is the size the window is, '
+        'and no bigger: when a requested picture should be readable and '
+        'the window answers small, size it with focus_window first, '
+        'then take the picture. The LLM cannot parse this PNG on this '
+        'stack; describe a figure by reading its underlying arrays with '
+        'get_signal instead.',
         {'type': 'object', 'properties': {
             'window': {'type': 'string', 'default': 'app'},
         }, 'additionalProperties': False},
     ),
     _tool(
         'focus_window',
-        'Bring a window forward at a readable size, and show it: shown, '
-        'raised to the front, and resized to the default figure size '
-        '(1280x800), or to the named `width` x `height` in pixels. '
-        '"app" for the application, a figure key for one figure, a case '
-        'URI for its shot view. Call it whenever you draw a figure or '
-        'name one the session holds in your answer, so the user sees it '
-        '-- a figure you named that the user does not see is a figure '
-        'not shown. The same ask stands after a gesture that moved its '
-        'content (scale_curve, shift_curve, normalize_curve, reset_curve, '
-        'remove_curve, set_axis_range, set_log_scale or invert_axis): the '
-        'contents changed, and the user must see what changed. The '
-        'answer is the size the window now holds; ask '
-        'get_screenshot on the same window after only when the user wants '
-        'the saved picture.',
+        'The user\'s "show me this" command: the window is brought to '
+        'the front -- shown when it is off the screen, raised when it is '
+        'not -- and keeps the size it holds, unless `width` and '
+        '`height` name the pixels to put it at (a side left out keeps '
+        'the size the window holds on that side). "app" for the '
+        'application, a figure key for one figure, a case URI for its '
+        'shot view. Call it when the user asks to see or bring forward '
+        'a window -- "montre-moi Plot1", "ramène Plot1 devant", '
+        '"je ne vois pas la figure" -- and to size one for a requested '
+        'picture before the get_screenshot on it. A figure you drew or '
+        'named in your answer is not a reason to call it: it is in the '
+        'session\'s *Windows* menu, and a draw is not an ask to show '
+        'it. The answer is the size the window now holds.',
         {'type': 'object', 'properties': {
             'window': {'type': 'string', 'default': 'app'},
             'width': {'type': ['integer', 'null'],
-                      'description': 'Pixels, 1 and up (default: 1280)'},
+                      'description': 'Pixels, 1 and up; left out, the '
+                                     'size the window holds'},
             'height': {'type': ['integer', 'null'],
-                       'description': 'Pixels, 1 and up (default: 800)'},
+                       'description': 'Pixels, 1 and up; left out, the '
+                                      'size the window holds'},
         }, 'additionalProperties': False},
     ),
     _tool(

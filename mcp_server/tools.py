@@ -679,18 +679,21 @@ def buildServer(core, dispatcher, name='imasviz'):
     def focus_window(window: str = 'app',
                      width: Optional[int] = None,
                      height: Optional[int] = None):
-        """Bring a window forward at a readable size -- the preparation of
-        a screenshot.
+        """Bring a window forward -- the caller's "show me this" command.
 
-        Shown, raised to the front, and resized to `width` x `height`
-        (named refusals when they are not positive integers), or to the
-        default figure size when either is left out. "app" for the
-        application, a figure key for one figure, a case URI for its shot
-        view. The same ask stands after a gesture that moved a figure's
-        content (scale_curve, shift_curve, normalize_curve, reset_curve,
-        remove_curve, the axes): the contents changed, and the reader
-        must see what changed. The answer is the size the window then
-        holds; ask get_screenshot on the same window to see it.
+        Shown when it is off the screen, raised to the front, and kept
+        at the size it holds unless `width` and `height` name the pixels
+        to put it at (a side left out keeps the size the window holds
+        on that side; both named refusals when they are not positive
+        integers). "app" for the application, a figure key for one
+        figure, a case URI for its shot view. A draw is not a reason to
+        call it -- a figure is a window of the session, in the *Windows*
+        menu -- and neither is a gesture that moved a figure's content
+        (scale_curve, shift_curve, normalize_curve, reset_curve,
+        remove_curve, the axes); the caller shows what it wants, when
+        it wants it. Called to make a requested picture readable, size
+        the window first and take the get_screenshot after. The answer
+        is the size the window then holds.
         """
         return _run(partial(core.focus_window, window,
                             width=width, height=height))

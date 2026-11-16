@@ -117,11 +117,12 @@ def caseTooltip(uris):
 
 
 #: The size the embed hands a figure window that settles below a readable
-#: size (`addPlotWidgetToMDI`) and the size `focus_window` puts a window
-#: back to (`imasviz.VizAgent.core`). A subwindow that settles small is the
+#: size (`addPlotWidgetToMDI`). A subwindow that settles small is the
 #: unreadable screenshot the user reported, and `QWidget.grab()` renders at
 #: whatever size the window is -- so this is the size that makes a freshly
 #: drawn figure a picture the page can serve and the user can read.
+#: Showing a window (`focus_window`) is not a resize: it keeps the size
+#: the user gave it, and only named pixels (`width`/`height`) move it.
 DEFAULT_FIGURE_SIZE = (1280, 800)
 
 

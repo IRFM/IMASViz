@@ -289,23 +289,34 @@ Ce que `viz_web` fait, et ce qu'il faut lui demander pour avoir des images :
   ne coûte **ni** fenêtre **ni** numéro, et `get_signal` avec la même adresse
   répond la même courbe — la figure qu'on *voit* et le nombre qu'on *lit*
   sont le même élément.
-- **L'agent montre maintenant d'office les figures qu'il trace ou nomme**
-  (c'est le correctif de la « paresse » : « une paresse à me montrer des
-  plots pourtant existants — si je lui dis *je ne vois pas*, il fait un
-  effort et finit par faire une capture qui marche »). Épinglé par `test_136`
-  dans le prompt (`tools.py`, item 5 + la description de `focus_window`) :
-  dès qu'il trace une figure ou en nomme une que la session porte, il appelle
-  `focus_window` dessus — et un focus *est* une demande de capture
-  (`web_session.py:216`, épinglé par `test_127`), donc la page l'affiche.
-  L'ancienne consigne « *only when the user asks for a capture* » lisait
-  « je ne vois pas » comme une demande et une question d'état comme un
-  silence — c'est d'où venait la paresse. `get_screenshot` reste la capture
-  PNG **explicite** (« donne-moi une capture de `Plot1` », « montre-moi
-  l'interface »).
-- **Une figure est capturée dans le tour qui la trace.** `viz_web/web_session.py`
-  (`_finishTurn`) sauve les figures que le tour **ajoute** à la session — les images
-  d'un tour ne sont pas répétées dans le tour suivant. C'est voulu : un tour qui ne
-  trace pas (mots uniquement, refus, `get_screenshot` seul) ne laisse pas de PNG.
+- **Montrer une figure est une commande de l'utilisateur, pas l'agent.**
+  L'agent trace ce qu'on lui demande ; la figure est une fenêtre de la
+  session, dans le menu *Windows*, et **montrer** (apporter au premier
+  plan, remonter) et **dimensionner** sont les gestes de l'utilisateur
+  dans ce menu. « *montre-moi `Plot1`* » / « *ramène `Plot1` devant* » /
+  « *je ne vois pas la figure* » → `focus_window`, qui montre ou ramène
+  **à la taille que la fenêtre porte déjà** — pixels nommés (« *en
+  grand* ») seulement quand on les nomme. Une figure tracée ou simplement
+  nommée dans la réponse n'est **ni montrée ni dimensionnée** de sa
+  propre initiative : c'est le *Windows* menu qui y répond. Épinglé par
+  `test_136` dans le prompt (`tools.py`, item 5 + la description de
+  `focus_window`) et le garde-fou inverse de `test_122` (un focus sans
+  pixels ne change pas la taille). `get_screenshot` reste la capture PNG
+  **explicite** (« donne-moi une capture de `Plot1` », « montre-moi
+  l'interface ») ; quand la fenêtre répond petite et qu'on demande une
+  image lisible, `focus_window` avec les pixels nommés, puis la capture.
+- **Une figure est capturée dans le tour qui la trace — ou la déplace —**
+  et dans celui qui **demande** de la voir. `viz_web/web_session.py`
+  (`_finishTurn`) et le REPL (`viz_cli/session.py`) sauvent les figures que
+  le tour **ajoute** à la session, celles que ses gestes **déplacent**
+  (`scale_curve` et ses sœurs posent le `figure_key`, lu en demande de
+  capture par `captureAsk`), et les fenêtres **explicitement** demandées
+  (`get_screenshot`, le `focus_window` d'un « montre-moi ») — les images
+  d'un tour ne sont pas répétées dans le tour suivant. C'est voulu : un
+  tour qui ne trace pas ni ne déplace (mots uniquement, refus) ne laisse
+  pas de PNG, et une figure que la réponse **nomme seulement** n'est
+  ré-capturée **nulle part** : la mention n'est pas un montrage, et son
+  PNG est déjà dans le dossier du tour qui l'a tracée.
 - **Un tour d'empilement redessine sur une figure déjà ouverte.** Son delta
   « nouvelles figures » est **vide** : `plot_one(…, into_figure_key=Plot1)` ne change
   pas la liste des figures, et le code le sait — `web_session.py` porte même le
@@ -355,7 +366,8 @@ Ce qui est vrai **maintenant**, et épinglé par `test_133` :
 - Le core est **un** : `imasviz/VizAgent/core.py` (`McpGuiCore`), ré-exporté par
   `mcp_server/core.py`. `plot_one` (l.757) et `get_signal` (l.1275) ont `along`,
   `indices`, `time`, `time_interp` ; `plot_slice` (l.1026) répond par
-  `DBEntry.get_slice` ; `focus_window` (l.1368) bring-forward à une taille lisible.
+  `DBEntry.get_slice` ; `focus_window` (l.1368) bring-forward, à la taille
+  que la fenêtre porte déjà (les pixels nommés quand on les nomme).
 - La surface MCP standalone (`mcp_server/tools.py`) **porte** la paire, après
   l'alignement : `plot_one` prend `along_time / into_figure_key / along / indices /
   time / time_interp`, `get_signal` prend `as_function_of_time / coordinate_index /
