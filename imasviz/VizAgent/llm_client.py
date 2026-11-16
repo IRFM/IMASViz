@@ -114,10 +114,17 @@ class LLMClient:
         self._model_resolved = True
         return self.model
 
-    def chat(self, messages, tools=None, max_tokens=2048, temperature=0.2):
+    def chat(self, messages, tools=None, max_tokens=8192, temperature=0.2):
         """One chat/completions call. Returns an ``LLMResponse``.
 
         Raises a named exception on refusal (see module docstring).
+
+        ``max_tokens`` defaults to 8192: the in-app model (a local 27B) writes
+        French prose with markdown tables and inline math before it answers,
+        and the refusal path in ``AgentLoop`` turns a truncated response into
+        a silent "nothing happened" on the user's screen rather than a
+        shorter-but-valid answer.  2048 was the first observed limit; on this
+        node the longest observed turn finished around 3 100 tokens.
         """
         model = self._resolveModel()
         payload = {
