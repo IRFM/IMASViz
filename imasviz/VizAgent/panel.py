@@ -50,6 +50,18 @@ from imasviz.VizAgent.QVizPromptHistory import QVizPromptHistory
 from imasviz.Viz_API import QVizClosableWindow
 from imasviz.VizUtils import FigureTypes, QVizGlobalValues
 
+# The width the panel's WINDOW must not exceed (pixels).
+#
+# The transcript is a ``QPlainTextEdit`` in ``NoWrap``, and a long single
+# line -- a REFUSAL sentence, a ``verbose`` tool line, an answer that
+# arrives without newlines -- carries the width it asks to its top level:
+# on a running display the panel widens to the widest line it has shown
+# and stays there, while offscreen does not propagate size hints and
+# cannot show it. Capping the window is the repair; keeping the transcript
+# ``NoWrap`` is what keeps that line readable -- it scrolls horizontally
+# instead of wrapping a tool output the user wanted to compare.
+MAX_WIDTH = 1000
+
 
 class QVizAgentPanel(QVizClosableWindow, QWidget):
     """One agent window: the transcript on top, and below it the prompt
@@ -164,6 +176,13 @@ class QVizAgentPanel(QVizClosableWindow, QWidget):
         self.setWindowTitle(
             'Agent — %s' % QVizGlobalValues.IMAS_VIZ_VERSION)
         self.resize(640, 520)
+        # The cap, not a resize: `resize` is where the window opens, and
+        # the cap is what a line cannot pass -- a NoWrap transcript
+        # widens the top level to its widest line and the window stays
+        # there (offscreen cannot show it: no size-hint propagation),
+        # and the cap is that ceiling. A line longer than the cap then
+        # scrolls in place instead of stretching the window.
+        self.setMaximumWidth(MAX_WIDTH)
 
         # Register in the session's figureframes (if the api provides it)
         if self.api is not None:

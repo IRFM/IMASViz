@@ -15,6 +15,9 @@ What it pins, on a scripted agent (no real LLM):
   that include the scripted LLM answer;
 * the input box sits below the transcript, so a scrolling answer stays
   readable;
+* the window is capped at ``MAX_WIDTH``: a long NoWrap line of the
+  transcript scrolls in place instead of stretching the window past
+  the reading width it opened at;
 * a refusal from the scripted agent is visible in the transcript with
   its ``REFUSAL`` prefix;
 * the *Windows* menu can reach the panel (it is in the session's
@@ -179,6 +182,46 @@ def test_panel_input_sits_below_the_transcript(qapp):
 
         assert indexOf(panel.transcript) < indexOf(panel.promptEdit)
         assert indexOf(panel.promptEdit) < indexOf(panel.buttonRow)
+    finally:
+        key = panel.figureKey
+        if key in api.figureframes:
+            del api.figureframes[key]
+
+
+def test_panel_width_is_capped(qapp):
+    """The panel's window is capped at ``MAX_WIDTH``.
+
+    The transcript is ``NoWrap``: a long single line -- a REFUSAL
+    sentence, a ``verbose`` tool line, an answer that arrives without
+    newlines -- is the line the window is reported to have widened to
+    in the field. The cap is that line's ceiling; a line past it
+    scrolls in place and the window keeps the width it opened at
+    (640). Offscreen cannot show the widening itself -- the platform
+    does not propagate size hints -- so what is pinned is the cap and
+    that a line past it still lands in the transcript and leaves the
+    width within it.
+    """
+    from imasviz.VizAgent.panel import QVizAgentPanel, MAX_WIDTH
+
+    llm = FakeLLMClient([
+        LLMResponse(content='ok', tool_calls=None, finish_reason='stop')
+    ])
+    agent = AgentLoop(
+        core=FakeCore(), llm=llm, dispatcher=FakeDispatcher())
+    api = make_api(qapp)
+    panel = QVizAgentPanel(main_window=None, api=api, agent=agent)
+    try:
+        # The cap is set on the panel itself, whatever the display.
+        assert MAX_WIDTH >= 640
+        assert panel.maximumWidth() == MAX_WIDTH
+        assert panel.width() <= MAX_WIDTH
+        # The line that reported it: wider than the cap, in the
+        # transcript, and the width kept within the ceiling.
+        line = 'REFUSAL — ' + ('un mot ' * 800).strip()
+        panel._appendTranscript(line)
+        assert line in panel.transcriptText()
+        assert panel.maximumWidth() == MAX_WIDTH
+        assert panel.width() <= MAX_WIDTH
     finally:
         key = panel.figureKey
         if key in api.figureframes:
