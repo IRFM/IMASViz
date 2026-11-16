@@ -339,13 +339,18 @@ class QVizEquilibriumFigure(QWidget):
         One panel per quantity in the order given, on the abscissa the read
         settled: they all run on the same one, which is what the stack
         (`QVizStackedPlot`) is, and what keeps a profile read against the
-        clock from masquerading as a radial one.
+        clock from masquerading as a radial one. The vertical range is
+        *not* shared (`sharedY=False`): the eight profiles are eight
+        different quantities whose ranges span about four orders of magnitude,
+        so a shared range would flatten the small ones under the first
+        panel's and lift the big ones off the screen -- each panel keeps its
+        own scale, the shared abscissa is what the stack is for.
         """
         if self._profilesStack is not None:
             raise ValueError('This figure already holds a stack of %d profile panels.'
                              % self._profilesStack.panelCount())
         from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizStackedPlot import QVizStackedPlot
-        stack = QVizStackedPlot(self)
+        stack = QVizStackedPlot(self, sharedY=False)
         for name, values, units in profiles:
             stack.plotRaw(x, values, name, name_units=units,
                           x_label=xLabel, x_units=xUnits)

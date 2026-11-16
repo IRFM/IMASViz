@@ -1378,10 +1378,15 @@ class McpGuiCore:
         -- and under the surface the stack holds, one panel per radial
         quantity the Equilibrium plugin draws (q, elongation,
         triangularities, j_tor, pressure, f_df_dpsi, dpressure_dpsi), all
-        on the common abscissa the read settled (`rho_tor_norm`), with the
-        group pan on. The global quantities of the slice (Ip, q95, q_axis,
-        li_3, W_mhd, axis position) are values of the answer, not a drawing:
-        the window has no axis to spread a scalar over.
+        on the common abscissa the read settled (`rho_tor_norm`). The
+        group pan is on for that abscissa (pan one, they all move), but the
+        vertical range is NOT shared: the eight quantities span about four
+        orders of magnitude, so a shared range would flatten the smallest
+        under the first panel's scale and lift the largest off the screen
+        (sharedY=False on the window's stack). The global quantities of the
+        slice (Ip, q95, q_axis, li_3, W_mhd, axis position) are values of
+        the answer, not a drawing: the window has no axis to spread a
+        scalar over.
         """
         try:
             requested = float(time)

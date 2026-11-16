@@ -14,7 +14,12 @@ share one abscissa and one vertical range: the point of the window is to compare
 how several quantities behave over the same span, so panning one panel moves the
 others and every curve is read against the same scale. A Table Plot View does
 the opposite -- one panel each, each on whatever axis it sits on -- and is the
-window to send a user to when the quantities do not agree.
+window to send a user to when the quantities do not agree. The exception to
+that sentence is the window that names it: `QVizEquilibriumFigure` stacks the
+eight radial profiles of one slice, and those are eight different quantities
+whose ranges span about four orders of magnitude -- so its panels share the
+abscissa and the pan in X (`sharedY=False`) and keep their own vertical range,
+which is the Table Plot View policy for the Y of a stack of such.
 
 That promise is what the two checkboxes and the refusal are for, and all three
 were broken in the old window:
@@ -52,11 +57,17 @@ from imasviz.VizGUI.VizPlot.VizPlotFrames.QVizPanel import (QVizPanel,
 class QVizStackedPlot(QWidget):
     """The panels of a Stacked Plot View, in the frame the api can manage."""
 
-    def __init__(self, parent=None, title=''):
+    def __init__(self, parent=None, title='', sharedY=True):
         super().__init__(parent)
         self.figureKey = None
         self.dataTreeView = None
         self._panels = []
+        # Whether the vertical range is shared across the panels (group pan in
+        # X always applies). Off for a stack of quantities whose ranges do not
+        # agree -- the equilibrium profiles (`QVizEquilibriumFigure`) -- where
+        # the shared abscissa is what the window is for and the one vertical
+        # range would flatten the small ones under the big ones.
+        self.sharedY = sharedY
         # The abscissa strategy the entry asked for: 'TIME', or 'DEFAULT' to let
         # each quantity answer for itself.
         self.plotAxis = 'DEFAULT'
@@ -158,15 +169,23 @@ class QVizStackedPlot(QWidget):
         return 1
 
     def applyLinkPolicy(self):
-        """Share the first panel's ranges, or hand every panel back its own."""
+        """Share the first panel's ranges, or hand every panel back its own.
+
+        The abscissa is the axis a stack is present for, so the X link follows
+        the checkbox. The vertical range is shared only when the window says
+        to (`sharedY`): a stack of different quantities keeps its own range per
+        panel even in group-pan mode, or the small ones are flattened under
+        the first panel's.
+        """
         if len(self._panels) < 2:
             return
         first = self._panels[0].plotItem().getViewBox()
         together = self.groupPanCheck.isChecked()
+        yTogether = together and self.sharedY
         for panel in self._panels[1:]:
             box = panel.plotItem().getViewBox()
             box.setXLink(first if together else None)
-            box.setYLink(first if together else None)
+            box.setYLink(first if yTogether else None)
 
     def applyXLabelsPolicy(self):
         """Which panels carry abscissa tick labels: the bottom one, or all.

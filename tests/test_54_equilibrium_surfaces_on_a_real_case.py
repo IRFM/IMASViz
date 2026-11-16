@@ -272,6 +272,21 @@ def test_entry_one_draws_the_surface_with_the_profiles_under_it(session):
     # The stack runs the eight profiles on the one abscissa they share.
     stack = frame.profilesStack()
     assert stack.abscissa is not None
+    # The eight profiles are eight different quantities (q, elongation,
+    # triangularities, j_tor, pressure, f_df_dpsi, dpressure_dpsi) whose ranges
+    # span orders of magnitude on this shot: the stack must not share one
+    # vertical range across them, or the small ones flatten and the big ones
+    # run off screen. The shared abscissa (X) is what the window keeps linked.
+    assert stack.sharedY is False, \
+        'the equilibrium profile stack must not share one vertical range'
+    import pyqtgraph as pg
+    first = stack.panels()[0].plotItem().getViewBox()
+    for panel in stack.panels()[1:]:
+        box = panel.plotItem().getViewBox()
+        assert box.linkedView(pg.ViewBox.XAxis) is first, \
+            'the profiles share the abscissa: group pan on X'
+        assert box.linkedView(pg.ViewBox.YAxis) is not first, \
+            'each profile keeps its own vertical scale'
     assert nonEmptyGrab(frame)
     assert session.api.casesServedBy(frame) == (CASE_URI,)
 
