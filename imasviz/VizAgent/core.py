@@ -2861,12 +2861,16 @@ class McpGuiCore:
 
         `curve` is `None` (every trace the window drew), an index in draw
         order (top of the legend to bottom), or a substring of a quantity's
-        name as read from its node. Refused by name: a window that holds no
-        curve, a curve index past the last it holds, a curve name it does not
-        hold, a curve selector that is not one of the three. For a curve
-        figure the `source` is the figure itself; for a window of panels, one
-        panel per curve. `record` is the window record the refusal or log
-        names, so the log line and the error both say which window it was.
+        name as read from its node. An index may be spelled as a string of
+        digits -- the schema says a 0-based index, and a model that sends it
+        as `"2"` means the third curve, not a name that holds the digit: it
+        takes the integer path and its range refusal. Refused by name: a
+        window that holds no curve, a curve index past the last it holds, a
+        curve name it does not hold, a curve selector that is not one of the
+        three. For a curve figure the `source` is the figure itself; for a
+        window of panels, one panel per curve. `record` is the window record
+        the refusal or log names, so the log line and the error both say
+        which window it was.
         """
         record, frame = self._windowForKey(figure_key)
         pairs = []
@@ -2884,6 +2888,12 @@ class McpGuiCore:
                 '"' + str(curve) + '" is a true/false answer; the curve to '
                 'work on is a name, a 0-based index, or left out for every '
                 'curve the figure holds.')
+        if isinstance(curve, str) and curve.strip().isdigit():
+            # The 0-based index the schema names, spelled as a string: it
+            # takes the integer path, so a name that holds the digit is
+            # not what a bare digit reaches -- a quantity named "psi=20"
+            # is still addressed by "psi=20", never by "2".
+            curve = int(curve.strip())
         if isinstance(curve, int):
             if not (0 <= curve < len(pairs)):
                 names = ', '.join(self._nodeLabel(p[0]) for p in pairs)

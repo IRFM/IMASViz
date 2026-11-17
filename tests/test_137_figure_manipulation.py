@@ -184,6 +184,31 @@ def test_curve_stats_refuses_an_unknown_name(curve_figure):
     assert 'time' in msg or 'ip' in msg, 'refusal should name the curves: %s' % msg
 
 
+def test_a_digit_string_is_the_index_not_a_name_fragment(curve_figure):
+    """`"0"` is the 0-based index the schema names, not a substring: the
+    reading it had before reached the ip curve, whose label alone holds
+    the digit (time_slice[0]) -- the wrong curve, silently, on a request
+    for the first one. Now both spellings reach the same curve, and a
+    digit string past the last is the out-of-range refusal of the integer
+    path, not a name search."""
+    session, _h, key, _frame = curve_figure
+    by_string = session.curve_stats(key, curve='0')
+    by_int = session.curve_stats(key, curve=0)
+    assert by_string['curves'][0]['name'] == by_int['curves'][0]['name']
+    assert 'time' in by_string['curves'][0]['name'].lower()
+    assert 'ip' in session.curve_stats(key, curve='1')['curves'][0]['name'].lower()
+    with pytest.raises(ValueError) as exc:
+        session.curve_stats(key, curve='5')
+    assert 'out of range' in str(exc.value), str(exc.value)
+    # the transform takes the same path
+    before = session.curve_stats(key, curve=1)
+    before_max = before['curves'][0]['max']
+    session.scale_curve(key, 2.0, curve='1')
+    verify = session.curve_stats(key, curve=1)
+    assert abs(verify['curves'][0]['max'] - before_max * 2.0) < 1e-6
+    session.reset_curve(key, curve=1)
+
+
 # ==================================================================== scale
 
 
