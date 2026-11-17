@@ -274,6 +274,14 @@ class AgentLoop(QObject):
         # state the guard below keys on.
         reports_written = set()
         closed_figures = set()
+        # The figures this request's successful calls did work on (a
+        # draw into them, a curve transform, an axis move), and the ones
+        # they read back (`curve_stats`, `export_curve`). A claim of work
+        # on a standing figure stands on one of the two, whatever the
+        # figure itself holds -- the fabricated-artifact guard keys on
+        # the figure's existence, which this one does not.
+        acted_on = set()
+        read_from = set()
 
         for turn in range(max_turns):
             if self._stop_requested:
@@ -372,6 +380,19 @@ class AgentLoop(QObject):
                             key = (args or {}).get('key')
                             if key:
                                 closed_figures.add(key)
+                        # The work and the reads of the request, per
+                        # figure: a claim of a change on a figure stands
+                        # on a successful call that did it (a draw into
+                        # the figure, a transform, an axis move) or one
+                        # that read it back -- grounded on the success,
+                        # the way the report path is: a refused call
+                        # grounds nothing.
+                        if name in _WORK_GESTURES:
+                            acted_on.update(
+                                _groundedFigureKeys(args, result))
+                        elif name in _READ_GESTURES:
+                            read_from.update(
+                                _groundedFigureKeys(args, result))
                     except Exception as e:
                         # The one call line that never hides, in any shape:
                         # it is the refusal the gesture names, and the mode
@@ -467,6 +488,33 @@ class AgentLoop(QObject):
                         'content': self._reanchor(user_prompt, last_action),
                     })
                     continue
+            # The claim of work on a figure that **stands**: the guards
+            # above passed it -- the key exists, and the answer does not
+            # wear the shape of a recited inventory -- yet no call of this
+            # request did the work the answer reports, and no read of the
+            # figure checked it: the state of a figure is what the call
+            # that changed it, or curve_stats, answers, not what was said.
+            # It runs after them, so a fabricated figure with its value
+            # table is met by the guard whose re-anchor sends the model to
+            # the read that would ground it first, and the claim of a
+            # change that never ran -- on a figure the session holds --
+            # is what falls to this one.
+            if tools_mode != 'off':
+                work_refusal = self._unperformedWorkRefusal(
+                    response.content, acted_on, read_from,
+                    closed_figures)
+                if work_refusal is not None and self._reanchors == 0:
+                    self._reanchors += 1
+                    self._emit('REFUSAL: %s' % work_refusal)
+                    messages.append({
+                        'role': 'user',
+                        'content': self._workReanchor(user_prompt),
+                    })
+                    continue
+                if work_refusal is not None:
+                    self._emit('REFUSAL: %s' % work_refusal)
+                    self.askFinished.emit(work_refusal)
+                    return
             if refusal is not None:
                 # Either it recites a case inventory it never read (the
                 # unfounded guard), or it deflects off the work it already did
@@ -691,6 +739,63 @@ class AgentLoop(QObject):
             'case_report(uri) -- and answer only from what those '
             'calls return. The request was: "%s".' % user_prompt)
 
+    def _unperformedWorkRefusal(self, content, acted_on, read_from,
+                                closed_figures):
+        """A change claimed on a figure this request neither worked on
+        nor read back is refused by name.
+
+        The shape the claims guards above do not reach: the figure
+        **stands**, so the fabricated-artifact guard passes the key,
+        yet the answer says a change landed on it that no call of this
+        request performed -- the field repro of a curve "added" to a
+        standing figure with no call at all, or a transform claimed
+        done after the call that would have done it was refused. The
+        ground a claim of work stands on is a call of the request: a
+        write that did it (``acted_on``) or a read that checked it
+        (``read_from``) -- a work the tools did not perform and a state
+        they did not read back are not facts of this session. The
+        honest shapes stand: a refusal reported for itself ("a été
+        refusée"), a self-correction ("je n'avais pas ajouté"), and a
+        state a read answered for.
+
+        Returns the refusal reason, or None when the answer may stand.
+        """
+        ungrounded = unperformedWorkOn(
+            content, set(acted_on) | set(read_from) | set(closed_figures))
+        if not ungrounded:
+            return None
+        keys = ', '.join(sorted(ungrounded))
+        return (
+            'the answer says work landed on %s -- a curve added, a '
+            'transform applied, an axis moved -- but no call of this '
+            'request did that work on that figure, and no read of the '
+            'figure checked it: the state of a figure is what the call '
+            'that changed it, or curve_stats, answers -- not what was '
+            'said. If the call ran and was refused, report the refusal '
+            'it named; otherwise do the work -- plot_one(uri, path, '
+            '...) with into_figure_key to add the curve, '
+            'scale_curve / shift_curve / normalize_curve for a '
+            'transform, set_axis_range / set_log_scale / invert_axis '
+            'for the axes -- or read it back with curve_stats, and '
+            'answer only from what those calls return.' % keys)
+
+    def _workReanchor(self, user_prompt):
+        """The one re-anchor for a claimed-but-unperformed work on a
+        standing figure: do the work or read it, then answer from the
+        calls.
+        """
+        return (
+            'Your answer claimed work on a figure that no call of this '
+            'request performed and no read of the figure verified. '
+            'An add the tools did not draw, a transform they did not '
+            'apply, a state they did not read back: none of it is a '
+            'fact of this session. Do the work -- plot_one(uri, path, '
+            '...) with into_figure_key to add the curve, the curve '
+            'transforms for a scale or a shift, the axis tools for a '
+            'range or a log -- or read the figure back with '
+            'curve_stats(figure_key) and answer only from what those '
+            'calls return. The request was: "%s".' % user_prompt)
+
     def _destructiveRefusal(self, name, user_prompt):
         """The named refusal a destructive gesture receives on a request
         that does not ask for it.
@@ -869,7 +974,7 @@ def _bareNames(text):
 # agent panel prefix is not a data figure and is not listed here.
 _FIGURE_KEY_PREFIXES = (
     'StackedPlotView:', 'TablePlotView:', 'EquiPlotView:', 'PlotView:',
-    'Image', 'Plot',
+    'EquiSurfaces:', 'Image', 'Plot',
 )
 _FIGURE_CONTENT_WORDS = (
     'shows', 'holds', 'contains', 'displays', 'value', 'values',
@@ -929,6 +1034,41 @@ def reportClaimed(text):
     return False
 
 
+def _figureKeyMentions(text, known):
+    """[(spelling, start, end)] of each figure key the text spells.
+
+    The kinds the session can produce are scanned (so a key on a fresh
+    session is read), then the keys the session names in ``known`` in
+    their own spelling. Longest kind first, and a boundary before the
+    stem and a digit after it, so a short stem ("plot") does not match
+    inside a longer key ("tableplotview:1") and "plot-view" is not a
+    key. The text is read lowercased, and the spellings are the ones
+    the session uses. Shared by the two claim guards, so the two read
+    the same key out of the same sentence.
+    """
+    text = (text or '').lower()
+    canonical = {}
+    for prefix in _FIGURE_KEY_PREFIXES:
+        canonical.setdefault(prefix.lower(), prefix)
+    for key in set(known or set()):
+        if key:
+            stem = re.sub(r'[0-9]+$', '', key)
+            if stem:
+                canonical.setdefault(stem.lower(), stem)
+    if not canonical:
+        return []
+    mentions = []
+    for stem, spelling in sorted(canonical.items(),
+                                 key=lambda pair: len(pair[1]),
+                                 reverse=True):
+        pat = r'(?<![0-9A-Za-z_])' + re.escape(stem) + \
+            r'\d+(?![0-9A-Za-z_])'
+        for m in re.finditer(pat, text):
+            mentions.append((spelling + m.group(0)[len(stem):],
+                             m.start(), m.end()))
+    return mentions
+
+
 def fabricatedFigureKeys(text, held, closed):
     """The figure keys the session does not hold and the answer presents
     with a content word, un-negated.
@@ -945,36 +1085,147 @@ def fabricatedFigureKeys(text, held, closed):
     text = (text or '').lower()
     ground = {k.lower() for k in (set(held or set()) | set(closed or set()))
               if k}
-    # Each lowercase kind stem maps to the spelling to report it in: the
-    # known kinds first, then the kind the session already holds (its own
-    # spelling wins). Longest kind first, so a short stem ("Plot") does
-    # not match inside a longer key ("TablePlotView:1"). Case-insensitive
-    # against the (lowercased) answer, reported in the real spelling.
-    canonical = {}
-    for prefix in _FIGURE_KEY_PREFIXES:
-        canonical.setdefault(prefix.lower(), prefix)
-    for key in (set(held or set()) | set(closed or set())):
-        if key:
-            stem = re.sub(r'[0-9]+$', '', key)
-            canonical.setdefault(stem.lower(), stem)
-    if not canonical:
+    if not any(word in text for word in _FIGURE_CONTENT_WORDS):
         return set()
     found = set()
-    for stem, spelling in sorted(canonical.items(),
-                                 key=lambda pair: len(pair[1]),
-                                 reverse=True):
-        pat = r'(?<![0-9A-Za-z_])' + re.escape(stem) + \
-            r'\d+(?![0-9A-Za-z_])'
-        for m in re.finditer(pat, text):
-            if m.group(0) in ground:
-                continue
-            if not any(word in text for word in _FIGURE_CONTENT_WORDS):
-                continue
-            window = text[max(0, m.start() - 40):m.end() + 40]
-            if any(neg in window for neg in _NEGATIONS):
-                continue
-            digits = re.search(r'\d+$', m.group(0)).group(0)
-            found.add(spelling + digits)
+    for spelling, start, end in _figureKeyMentions(
+            text, set(held or set()) | set(closed or set())):
+        if spelling.lower() in ground:
+            continue
+        window = text[max(0, start - 40):end + 40]
+        if any(neg in window for neg in _NEGATIONS):
+            continue
+        found.add(spelling)
+    return found
+
+
+# The change-claim words the work guard cross-checks against the calls
+# of the request: a verb the answer uses to say a draw, a curve
+# transform or an axis state LANDED on a figure -- "j'ai ajouté",
+# "tracée", "multipliée par 3", "en log", "pinned", "reset". These say
+# work is done, and the guard asks of the loop what call of this
+# request did the work on that figure, or read it back. A *description*
+# word ("montre", "contient") is not in this family on purpose:
+# describing a standing figure is what a read answers for, and the
+# ground it applies to is the read, not the write -- the same apartness
+# the content word and the assertion keep in the fabricated-artifact
+# guard. The French forms are matched as the accented stem they all
+# carry ("ajouté" is in "ajoutée"/"ajoutés"/"ajoutées" and not in
+# "ajouter"; "tracé" is not in "trace"), the English as word forms, so
+# "trace" (the noun) is not "traced" (the voice).
+_CHANGE_CLAIM_SUBSTRINGS = (
+    'ajout', 'tracé', 'multiplié', 'décalé', 'normalisé',
+    'réinitialisé', 'retiré', 'supprimé', 'inversé', 'restauré',
+    'échelle log', 'en log', 'logarithmique', 'borné',
+)
+_CHANGE_CLAIM_RE = re.compile(
+    r'\badded?\b|\btraced?\b|\bmultiplied\b|\bshifted?\b|'
+    r'\bnormalized?\b|\breset\b|\brestored?\b|\bremoved?\b|'
+    r'\binverted?\b|\bscaled?\b|\bpinned?\b|\blog\s?axis\b|\blog\s?scale\b')
+# A refusal or a failure word near the claim is the report of the loop
+# itself ("a été refusée", "n'a pas pu", "not able to") and stands on
+# whatever the figure is: the guard refuses the work *done*, not the
+# reason it was not. "n't" keeps its accent-free shape; "not" and
+# "pas" are worded, because "note" and "passer" carry them unaided.
+_CLAIM_NEGATIONS = tuple(neg for neg in _NEGATIONS if neg != 'not') + (
+    'refusé', 'échou', 'failed', 'could not', 'not able')
+_CLAIM_NEGATION_RE = re.compile(r'\bnot\b|\bpas\b|\bnever\b')
+# The gestures whose success grounds a claim of work on, or a read
+# back of, the figure they name: the draws (a curve into the figure, a
+# window of its own) and the curve transforms and the axis moves on
+# one side, the reads that answer for what a figure holds on the
+# other. A success is one that found its figure (`_windowForKey` is
+# what refuses a key it does not hold), so the ask of such a call is as
+# grounded as its answer.
+_WORK_GESTURES = frozenset((
+    'plot_one', 'plot_slice', 'plot_slice_all', 'plot_selection',
+    'plot_table', 'plot_stacked', 'equilibrium_surfaces',
+    'equilibrium_at_time', 'scale_curve', 'shift_curve',
+    'normalize_curve', 'reset_curve', 'remove_curve', 'set_axis_range',
+    'set_log_scale', 'invert_axis'))
+_READ_GESTURES = frozenset(('curve_stats', 'export_curve'))
+
+
+def _groundedFigureKeys(args, result):
+    """The figure keys a successful call stands behind.
+
+    The key the answer spells (``figure`` / ``window`` / ``figures``)
+    and the key the call asked of (``figure_key``, ``into_figure_key``):
+    a gesture that answered is one that found its figure, and a read
+    whose answer does not spell it (``export_curve`` names its file) is
+    grounded on the ask alone.
+    """
+    keys = []
+    for ask in ('figure_key', 'into_figure_key'):
+        value = (args or {}).get(ask)
+        if isinstance(value, str) and value:
+            keys.append(value)
+    if isinstance(result, dict):
+        for field in ('figure', 'window'):
+            value = result.get(field)
+            if isinstance(value, str) and value:
+                keys.append(value)
+        for value in result.get('figures') or ():
+            if isinstance(value, str):
+                keys.append(value)
+    return set(keys)
+
+
+def _changeClaimNear(text, start, end):
+    """Whether an un-negated change claim sits within reach of the
+    span [start, end) -- the sentence between the key and the verb is
+    what "sur Plot1, j'ai ajouté la température" reads as."""
+    mid = (start + end) / 2.0
+    claims = []
+    for token in _CHANGE_CLAIM_SUBSTRINGS:
+        i = 0
+        while True:
+            i = text.find(token, i)
+            if i < 0:
+                break
+            claims.append((i, i + len(token)))
+            i += 1
+    for m in _CHANGE_CLAIM_RE.finditer(text):
+        claims.append((m.start(), m.end()))
+    for claim_start, claim_end in claims:
+        if min(abs(claim_start - mid), abs(claim_end - mid)) > 60:
+            continue
+        window = text[max(0, claim_start - 40):claim_end + 40]
+        if any(neg in window for neg in _CLAIM_NEGATIONS) or \
+                _CLAIM_NEGATION_RE.search(window):
+            continue
+        return True
+    return False
+
+
+def unperformedWorkOn(text, ground):
+    """The figure keys the answer presents with a change claim -- a
+    curve added, a transform applied, an axis moved -- that no call of
+    the request stands behind.
+
+    ``ground`` is the union of the keys a call of this request worked
+    on (a draw into the figure, a curve transform, an axis move), read
+    back (``curve_stats``, ``export_curve``), or closed. A claim near a
+    grounded key stands; the rest is a claim of work the tools did not
+    do -- and it is refused by name, re-anchored once to do the work or
+    read it, refused again on a second claim. A refusal or a failure
+    word near the claim is the honest report of the call that was
+    refused, and it stands on whatever the figure is. A description
+    word is not in the claim family on purpose: "Plot1 montre la
+    pression" says a state, and the loop that says it is the one that
+    read it, not one that invented it.
+    """
+    text = (text or '').lower()
+    if not any(token in text for token in _CHANGE_CLAIM_SUBSTRINGS) and \
+            not _CHANGE_CLAIM_RE.search(text):
+        return set()
+    ground_low = {k.lower() for k in (ground or set()) if k}
+    found = set()
+    for spelling, start, end in _figureKeyMentions(text, ground):
+        if spelling.lower() in ground_low:
+            continue
+        if _changeClaimNear(text, start, end):
+            found.add(spelling)
     return found
 
 
