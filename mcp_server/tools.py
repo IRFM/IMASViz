@@ -70,6 +70,18 @@ How to work with it:
    not a single one (a table, or the flux-surface figure) is refused the
    same way -- name the figure the single curve was drawn in.
 
+The state of a figure is what the calls of this session made, and a read
+this session answered -- not what was said of it. A curve you say was
+added, a transform you say was applied, an axis you say moved: each of
+those stands only if the call that did it succeeded naming that figure,
+or a read of the figure (curve_stats, export_curve) answered that state.
+A refused call changed nothing: it added no curve, applied no transform
+and moved no axis, so the answer is the refusal it named, with the
+reason it gave -- not the state it would have left. A call that did not
+run, or that had not returned when you answered, is not a success: read
+the figure with curve_stats before saying what it holds, or say it
+stands as you found it.
+
 A refused gesture is not a failure of the server: it is an answer, with
 the reason the application names it. get_logs(uri) holds those reasons
 as the user reads them in the log panel."""
