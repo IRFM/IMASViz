@@ -286,6 +286,94 @@ def axesAddressing(axesSpec, along=None, indices=None):
     return abscissa, (abscissa == AB.TIME), slices
 
 
+# ------------------------------------------------------------------ figures
+#
+# `resolveFigureKey` is the one answer to "which window does the user mean
+# when they name a figure by the way a person names it". The held keys spell
+# the application's own kind and number (`Plot3`, `TablePlotView:1`,
+# `SlicesPlot3`); the user spells the number ("plot3", "3"), or the newest
+# ("la dernière figure"). The core reaches it before it shows a window or
+# grabs a frame (a show, a screenshot), and the capture of a turn reaches it
+# before it saves a PNG -- the two must resolve the same name to the same
+# key, or a "montre-moi plot3" that shows one figure would save another.
+#
+# A name that names several figures is not a guess to settle but an ask that
+# stands refused: the loop answers every such ask in words, and the caller
+# corrects the call with the one it meant.
+
+
+def _figureNumber(key):
+    """The number a figure key ends with: `Plot3` is 3, `TablePlotValue:1`
+    is 1, `EquiPlotView:12` is 12. No digits, no number -- the kind is a
+    word and the number is at its end."""
+    import re
+
+    found = re.findall(r'\d+', str(key))
+    return int(found[-1]) if found else None
+
+
+def _figureIsLast(reference):
+    """Whether a figure reference points at the newest: "last", "the last
+    figure", "la dernière figure". Asked of the reference as it stands, so
+    the caller spells it the way the user does."""
+    import re
+
+    text = (reference or ' ').strip().lower()
+    return bool(re.search(r'\blast\b', text)) or \
+        ('dernier' in text or 'dernière' in text or 'derniere' in text)
+
+
+def resolveFigureKey(name, held, order=None):
+    """The one held key a loose figure reference stands for.
+
+    `held` is the collection of the keys the session holds; `order`, when
+    named, is their creation order (earliest to latest) and is what a "last"
+    reference takes -- the newest figure -- and it is the order the caller
+    already keeps when it is left out. The same function serves the core
+    (where `held` is the session's own figure keys) and the capture of a
+    turn (where a stand-in holds what it holds), so the two cannot drift.
+
+    A key the session answers exactly is the one it is. A reference with a
+    number is the one figure the session holds at that number, the kind the
+    number already fixes, and the number the user spells however --
+    "plot3", "3", "figure 3". A reference with no number and not "last" is
+    the only open figure when there is one, and is refused, naming the
+    figures the session does hold, when there are several or when it can
+    hold only none of them.
+    """
+    held = list(held)
+    if name in held:
+        return name
+    if not held:
+        raise ValueError(
+            '%r is not a figure this session holds: it holds none open'
+            % (name,))
+    if _figureIsLast(name):
+        ordered = list(order) if order is not None else held
+        return ordered[-1]
+    import re
+
+    numbers = re.findall(r'\d+', (name or ' '))
+    if numbers:
+        number = int(numbers[-1])
+        matches = [key for key in held
+                   if _figureNumber(key) == number]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise ValueError(
+                '%r names several open figures -- %s -- name the one you '
+                'mean among them' % (name, ', '.join(sorted(matches))))
+        raise ValueError(
+            'no open figure is numbered %d -- the session holds: %s'
+            % (number, ', '.join(sorted(held))))
+    if len(held) == 1:
+        return held[0]
+    raise ValueError(
+        '%r does not name one of the open figures -- the session holds: %s'
+        % (name, ', '.join(sorted(held))))
+
+
 class McpGuiCore:
     """One application session: its cases, its selection, its windows.
 
@@ -3114,14 +3202,18 @@ class McpGuiCore:
     # ------------------------------------------------------------ screenshots
 
     def _resolveWindow(self, window):
-        """The widget holding a named window: the app, a figure key, a case URI.
+        """The widget holding a named window: the app, a figure, a case URI.
 
         The one reading `screenshot` and `focus_window` share: "app" is the
-        session's main window, a key is the frame registered under it, and a
-        URI is that case's shot view. A name none of the three holds is
-        refused from `list_windows` itself, the one the *Windows* menu
-        draws. The refusal names what IS open, so the model can see the
-        right key without inventing another guess.
+        session's main window, a figure is the frame registered under its key
+        -- or under the key the user names it by, "plot3" for `Plot3`, the
+        newest for "la dernière figure" -- and a URI is that case's shot
+        view. A name none of the three holds is refused from `list_windows`
+        itself, the one the *Windows* menu draws. The refusal names what IS
+        open, so the model can see the right key without inventing another
+        guess. The figure reference resolves against what is held, the same
+        `resolveFigureKey` the capture of a turn gives the PNG, so a show and
+        the picture it asks for answer the same figure.
         """
         if window == 'app':
             if self.main_window is None:
@@ -3131,6 +3223,19 @@ class McpGuiCore:
             return self.main_window
         if window in self.api.figureframes:
             return self.api.figureframes[window]
+        # A loose reference to a held figure ("plot3", "3", "la dernière")
+        # stands for the key it names, and is settled here rather than left
+        # to the caller to spell exactly right. A name it does not settle --
+        # and a case URI, which is not a figure -- falls through to the read
+        # below, whose refusal names what IS open.
+        if not (window or '').startswith('imas:'):
+            try:
+                key = resolveFigureKey(window, self.api.figureframes,
+                                       order=list(self.api.figureframes))
+            except ValueError:
+                key = None
+            if key is not None:
+                return self.api.figureframes[key]
         # Try as a case URI; _viewForUri raises when the case is not open,
         # which is the right outcome for a name that is neither a figure key
         # nor an open case.
