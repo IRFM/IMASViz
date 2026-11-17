@@ -484,6 +484,12 @@ details.tool summary strong { color: var(--accent-strong); }
       cap.appendChild(focus);
       cap.appendChild(shot);
     }
+    // The Delete belongs to every card, with or without a window: the
+    // picture is on disk under the request's directory either way, and
+    // the request that drew it is where the ask goes.
+    var del = el('button', { type: 'button', title: 'Delete this capture' }, ['Delete']);
+    del.addEventListener('click', function () { deleteShot(turn, name); });
+    cap.appendChild(del);
     card.appendChild(cap);
     return card;
   }
@@ -546,6 +552,35 @@ details.tool summary strong { color: var(--accent-strong); }
     }).catch(function (e) {
       appendLine('REFUSAL — the captures of the previous requests did not answer: ' + e, 'refusal');
     });
+  }
+
+  function deleteShot(turn, name) {
+    // The ask goes to the request the picture belongs to, by the name the
+    // card shows -- the same address the lightbox was served from. The
+    // answer is named in the transcript, refusal and success alike, and
+    // the gallery is rebuilt from the history after, so the card is gone
+    // when the user looks, or still there reading why it stayed.
+    appendLine('→ delete shot ' + name + ' (request ' + turn + ')');
+    return fetch(shotSrc(turn, name), { method: 'DELETE' })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok || j.error) {
+            appendLine('  ← REFUSAL — ' + (j.error || r.status), 'refusal');
+            return;
+          }
+          var left = (j.remaining || []).length;
+          appendLine('  ← deleted, ' + left + ' shot(s) left on request ' + turn);
+        });
+      })
+      .catch(function (e) {
+        appendLine('REFUSAL — ' + e, 'refusal');
+      })
+      .then(function () {
+        // The gallery is the history: asked again, whatever the server
+        // now says about this request is what the page shows.
+        buildGallery().catch(function () {});
+        refreshHealth();
+      });
   }
 
   function gesture(name, args) {

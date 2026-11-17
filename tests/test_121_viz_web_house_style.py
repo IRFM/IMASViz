@@ -195,6 +195,12 @@ def test_the_page_keeps_its_screenshots_and_can_act_on_them():
     assert 'image_windows' in text, 'the cards are not addressed to the window they show'
     assert 'focus_window' in text, 'no Focus button on the screenshot cards'
     assert 'get_screenshot' in text, 'no Screenshot button on the screenshot cards'
+    # And the one that takes it away: the card names the capture it
+    # stands on, and the ask goes to the address the picture was served
+    # from -- a page that can keep its pictures must be able to let one
+    # go, not only pile them up.
+    assert 'Delete' in text, 'no Delete button on the screenshot cards'
+    assert "method: 'DELETE'" in text, 'no DELETE to the shot address'
     # The enlargement, and the section the page calls it by.
     assert 'lightbox' in text, 'a picture has no way to be read full size'
     assert 'Screenshots' in text

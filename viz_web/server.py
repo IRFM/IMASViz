@@ -197,6 +197,31 @@ def buildApp(session):
         with open(path, 'rb') as f:
             return Response(f.read(), media_type='image/png')
 
+    async def shotDelete(request):
+        """Take one capture off the disk and off the turn's record.
+
+        A turn the session does not hold is a 404, the way the read
+        refuses it, and the refusals the session names -- a place where
+        a file is named, an image the record does not hold, the file
+        gone from disk -- are the 400s it reads back as a sentence.
+        """
+        number = _turnNumber(request)
+        record = next((one for one in session.turns if one['n'] == number), None)
+        if record is None:
+            return JSONResponse(
+                {'error': 'no such turn: this session holds %d.'
+                          % len(session.turns)}, status_code=404)
+        name = request.path_params['name']
+        try:
+            session.deleteShot(name, record)
+        except ValueError as e:
+            return JSONResponse({'error': str(e)}, status_code=400)
+        return JSONResponse({
+            'turn': number,
+            'deleted': name,
+            'remaining': record['image_files'],
+        })
+
     # ------------------------------------------------------------------ reports
 
     async def reportList(request):
@@ -260,6 +285,7 @@ def buildApp(session):
         Route('/api/turns', turnList, methods=['GET']),
         Route('/api/turns/{n}', turnOne, methods=['GET']),
         Route('/api/turns/{n}/shots/{name}', shot, methods=['GET']),
+        Route('/api/turns/{n}/shots/{name}', shotDelete, methods=['DELETE']),
         Route('/api/reports', reportList, methods=['GET']),
         Route('/api/reports/{name}', report, methods=['GET']),
         Route('/api/llm', llmGet, methods=['GET']),
