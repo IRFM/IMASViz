@@ -558,3 +558,86 @@ def test_turn_history_and_shot_read_back(qapp, tmp_path):
     # And a turn the session does not hold.
     ghost = makeRequest(client, qapp, 'GET', '/api/turns/9')
     assert ghost.status_code == 404
+
+
+def _turnWithOneShot(qapp, tmp_path):
+    """One turn that drew the one figure, and the record the turn left.
+
+    The same scripted loop the history test runs: `plot_one` opens
+    `SlicesPlot1`, and the end of the turn saves its one capture under
+    the turn's directory -- the shape the delete asks of."""
+    llm = ScriptedLLM([
+        LLMResponse(tool_calls=[
+            {'name': 'plot_one',
+             'args': {'uri': CASE_URI, 'path': 'core.ion[0].temp'}}],
+            content=''),
+        LLMResponse(content='La figure est tracée.', finish_reason='stop'),
+    ])
+    session, _ = build(qapp, tmp_path, llm=llm)
+    client = TestClient(buildApp(session), base_url='http://t')
+    makeRequest(client, qapp, 'POST', '/api/agent', json={'prompt': 'liste'})
+    assert len(session.turns) == 1
+    record = session.turns[0]
+    assert 'SlicesPlot1.png' in record['image_files']
+    return session, client, record
+
+
+def test_turn_shot_deleted_off_the_disk_and_the_record(qapp, tmp_path):
+    """`DELETE` of one capture: the file is gone from the disk, the name
+    from the turn's record, and the read that served it now refuses by
+    name. Deleting a capture is not deleting the turn: its directory and
+    its transcript stay, and the history keeps the (now empty) request."""
+    session, client, record = _turnWithOneShot(qapp, tmp_path)
+    shotFile = os.path.join(record['dir'], 'SlicesPlot1.png')
+    assert os.path.isfile(shotFile)
+
+    resp = makeRequest(client, qapp, 'DELETE',
+                       '/api/turns/1/shots/SlicesPlot1.png')
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body['deleted'] == 'SlicesPlot1.png'
+    assert body['remaining'] == []
+
+    # Off the disk, and off the record's image lists.
+    assert not os.path.isfile(shotFile)
+    assert 'SlicesPlot1.png' not in record['image_files']
+    assert record['image_windows'] == []
+    listing = makeRequest(client, qapp, 'GET', '/api/turns')
+    assert listing.json()['turns'][0]['image_files'] == []
+
+    # The read that served it now names what the turn holds.
+    shot = makeRequest(client, qapp, 'GET',
+                       '/api/turns/1/shots/SlicesPlot1.png')
+    assert shot.status_code == 404
+
+    # The turn still is: its transcript is what a capture is taken from.
+    assert os.path.isfile(os.path.join(record['dir'], 'transcript.txt'))
+    one = makeRequest(client, qapp, 'GET', '/api/turns/1')
+    assert one.status_code == 200
+
+
+def test_turn_shot_deletion_is_refused_by_name(qapp, tmp_path):
+    """The refusals, each in the words the session names them: an image
+    the record does not hold, a place where a file is named, and a turn
+    the session does not hold. Nothing is deleted on any of them."""
+    session, client, record = _turnWithOneShot(qapp, tmp_path)
+    shotFile = os.path.join(record['dir'], 'SlicesPlot1.png')
+
+    # An image this turn does not hold: refused, naming the ones it does.
+    bad = makeRequest(client, qapp, 'DELETE', '/api/turns/1/shots/none.png')
+    assert bad.status_code == 400
+    assert 'no such image' in bad.json()['error']
+    assert 'SlicesPlot1.png' in bad.json()['error']
+    assert os.path.isfile(shotFile), 'a refusal does not delete the rest'
+
+    # A place where a file is named: the guard the reports route carries.
+    place = makeRequest(client, qapp, 'DELETE', '/api/turns/1/shots/a\\b.png')
+    assert place.status_code == 400
+    assert 'place' in place.json()['error']
+    assert os.path.isfile(shotFile)
+
+    # And a turn the session does not hold, the way the read refuses it.
+    ghost = makeRequest(client, qapp, 'DELETE',
+                        '/api/turns/9/shots/SlicesPlot1.png')
+    assert ghost.status_code == 404
+    assert 'no such turn' in ghost.json()['error']

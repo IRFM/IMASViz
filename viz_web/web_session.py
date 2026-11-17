@@ -519,6 +519,41 @@ class WebSession:
                             'window': window})
         return turn_dir, saved, list(refused), images, windows
 
+    def deleteShot(self, name, record):
+        """One capture of one turn, taken off the disk and off the record.
+
+        `record` is the turn's own, found by its caller (the route refuses
+        the absent turn by name before it asks this). The record's own
+        `image_files` is the first guard -- a name it does not hold is
+        refused by naming the ones it does -- and the path containment the
+        second, the way the reports route guards its folder. Refusals are
+        `ValueError` with the reason, the value the route answers the page
+        with; a name this method holds is gone from the disk and from the
+        record's image lists both.
+        """
+        with self._lock:
+            if os.sep in name or '/' in name or '\\' in name \
+                    or name.startswith('.'):
+                raise ValueError('a shot name is a file, not a place: '
+                                 'name one.')
+            if name not in record['image_files']:
+                raise ValueError(
+                    'no such image on turn %s: it holds %s.'
+                    % (record['n'], record['image_files']))
+            base = os.path.realpath(record['dir'])
+            path = os.path.realpath(os.path.join(record['dir'], name))
+            if not path.startswith(base + os.sep) or not os.path.isfile(path):
+                raise ValueError('the image is not on disk: %s' % name)
+            os.remove(path)
+            record['image_files'] = [one for one in record['image_files']
+                                     if one != name]
+            record['image_windows'] = [
+                one for one in record.get('image_windows') or []
+                if one['name'] != name]
+            record['images'] = [
+                one for one in record.get('images') or []
+                if one['name'] != name]
+
     def stop(self):
         """Ask the loop to stop at the next turn boundary.
 
