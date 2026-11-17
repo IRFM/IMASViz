@@ -391,7 +391,10 @@ TOOLS = [
         'time_interp=true, the linear interpolation between the two slices '
         'that bracket the value (the answer then carries the exact value '
         'requested). `along_time` / `along` / `indices` and `time` are '
-        'refused together (two opposite readings).',
+        'refused together (two opposite readings). The answer carries the '
+        'figure key and `curves`, the exact list of the curves the figure '
+        'holds after the call: a claim that a curve is on that figure '
+        'stands on that list, not on memory of the call.',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'path': {'type': 'string'},

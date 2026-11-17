@@ -606,6 +606,41 @@ def test_export_curve_refuses_a_name_that_is_a_place(curve_figure):
         session.export_curve(key, name='sub/dir')
 
 
+# ==================================================================== the draw answer
+
+
+def test_the_draw_answer_names_the_curves_the_figure_holds(curve_figure):
+    """The `plot_one` answer is the verified state it names: after the call
+    it carries the figure key and `curves`, the exact list of the curves
+    the figure holds -- the one read off the window itself, so an answer
+    that says "la courbe est sur Plot7" stands on a list the window
+    gave, not on a memory of the call. A join reads the figure back after
+    the join: the first profile is still in the list, and the joined one
+    is beside it.
+
+    This section runs after every test that addresses the fixture's
+    figure, the way the fresh-figure sections do: the no-MDI embed keeps
+    only the newest window, and a figure drawn here is what releases the
+    fixture's -- a test that reached it afterwards would find no window."""
+    session, _h, _key, _frame = curve_figure
+    pressure = 'equilibrium.time_slice[0].profiles_1d.pressure'
+    first = session.plot_one(CASE_URI, pressure, along='psi')
+    assert first['figure'], 'the draw answers no key'
+    assert first['curves'], 'the draw answer names no curve'
+    assert any('profiles_1d.pressure' in c for c in first['curves']), \
+        first['curves']
+    jtor = 'equilibrium.time_slice[0].profiles_1d.j_tor'
+    second = session.plot_one(CASE_URI, jtor, along='psi',
+                              into_figure_key=first['figure'])
+    assert any('profiles_1d.pressure' in c for c in second['curves']), \
+        'the joined figure no longer holds the first profile: %r' \
+        % second['curves']
+    assert any('j_tor' in c for c in second['curves']), \
+        'the joined profile is not in the list the figure names: %r' \
+        % second['curves']
+    assert second['curves'] != first['curves']
+
+
 # ==================================================================== non-curve window refusals
 
 

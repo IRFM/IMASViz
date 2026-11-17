@@ -270,7 +270,10 @@ def buildServer(core, dispatcher, name='imasviz'):
         open curve figure (a superposition) instead of opening one. A
         quantity the read cannot answer, or an index past the extent the
         tree names, is refused with the reason the application names in
-        its log, not a silent 0.
+        its log, not a silent 0. The answer carries the figure key and
+        `curves`, the exact list of the curves the figure holds after the
+        call: a claim that a curve is on that figure stands on that list,
+        not on memory of the call.
         """
         kwargs = {'along_time': along_time,
                   'into_figure_key': into_figure_key,

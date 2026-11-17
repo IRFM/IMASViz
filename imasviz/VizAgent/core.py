@@ -847,7 +847,8 @@ class McpGuiCore:
         self._embedIfNew(command, frame)
         return {'figure': frame.figureKey,
                 'kind': type(frame).__name__,
-                'drawing': bool(frame.isDrawing())}
+                'drawing': bool(frame.isDrawing()),
+                'curves': self._figureCurves(frame)}
 
     def _plotOneAddressed(self, uri, path, along, indices, into_figure_key=None):
         """`plot_one` through the shared resolver.
@@ -951,7 +952,8 @@ class McpGuiCore:
         return {'figure': frame.figureKey,
                 'kind': type(frame).__name__,
                 'drawing': bool(frame.isDrawing()),
-                'opened_at': openedAt}
+                'opened_at': openedAt,
+                'curves': self._figureCurves(frame)}
 
     def _elementIsThePathRefusal(self, path, word):
         """The one axis a family member fixes is not a slider to move: the
@@ -2819,6 +2821,24 @@ class McpGuiCore:
             if label:
                 return label
         return str(node)
+
+    def _figureCurves(self, frame):
+        """The labels of every trace the window holds, in draw order --
+        the list an answer is allowed to name the figure by: after a draw
+        or a join it is what the window holds, read off the window's own
+        trace list, not recalled. A trace that answers through a node is
+        labelled like the curve family labels it, and a window that
+        answers none is an empty list -- the curve family's refusal names
+        the reason, this only says what is."""
+        labels = []
+        for source in self._sourcesOf(frame):
+            for node, _rank, _item in self._tracesOf(source):
+                if node is None:
+                    continue
+                label = self._nodeLabel(node)
+                if label and label not in labels:
+                    labels.append(label)
+        return labels
 
     def _logFor(self, cases, line):
         import logging
