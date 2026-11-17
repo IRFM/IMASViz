@@ -44,7 +44,7 @@ import re
 import threading
 
 from imasviz.VizAgent.agent import AgentLoop
-from imasviz.VizAgent.core import McpGuiCore
+from imasviz.VizAgent.core import McpGuiCore, resolveFigureKey
 from imasviz.VizAgent.dispatcher import GuiDispatcher
 from imasviz.VizAgent.llm_client import LLMClient
 
@@ -238,27 +238,42 @@ def saveShots(core, shots_dir, extras=(), figures=None):
             '%s is not a capture this run saves: the ones it holds '
             'beyond the figures are %s.'
             % (unknown, ', '.join(EXTRA_SHOTS)))
-    if figures is not None:
-        figures = set(figures)
     os.makedirs(shots_dir, exist_ok=True)
     saved = []
     refused = []
     targets = []
     if 'app' in extras:
         targets.append(('app', '00_app'))
+    # The held keys, in the order the session answers them: what a loose
+    # reference can resolve against, and the newest figure a "last" one
+    # points at.
     heldFigureKeys = set()
+    heldFigureOrder = []
     for record in core.list_windows():
         if record['key'] is not None:
             heldFigureKeys.add(record['key'])
-            if figures is None or record['key'] in figures:
-                targets.append((record['key'],
-                                record['key'].replace(':', '_')
-                                .replace('/', '_')))
-    if figures is not None:
-        for key in sorted(figures - heldFigureKeys):
-            refused.append(
-                '%s: the session holds no figure window by that key: it '
-                'is not captured' % key)
+            heldFigureOrder.append(record['key'])
+    # The figures a caller names are the ones saved: a name the session
+    # resolves -- exactly, or the way the user spells it ("plot3" for a
+    # Plot, the newest for "la dernière") -- is saved under the key it
+    # stands for, and a name it does not resolve is refused, named, so the
+    # caller reads why. The one-shot (`figures` left out) names none and
+    # saves every window the session still holds a key for.
+    if figures is None:
+        wantedKeys = set(heldFigureKeys)
+    else:
+        wantedKeys = set()
+        for raw in figures:
+            try:
+                wantedKeys.add(resolveFigureKey(
+                    raw, heldFigureKeys, order=heldFigureOrder))
+            except ValueError as reason:
+                refused.append('%s is not captured: %s' % (raw, reason))
+    for record in core.list_windows():
+        if record['key'] is not None and record['key'] in wantedKeys:
+            targets.append((record['key'],
+                            record['key'].replace(':', '_')
+                            .replace('/', '_')))
     if 'case-views' in extras:
         for record in core.list_windows():
             if record['key'] is not None:
