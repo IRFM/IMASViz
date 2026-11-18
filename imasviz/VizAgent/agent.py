@@ -274,6 +274,12 @@ class AgentLoop(QObject):
         # state the guard below keys on.
         reports_written = set()
         closed_figures = set()
+        # The journal-line gestures (`add_note` / `edit_note` / `delete_note`)
+        # that a call of this request actually ran, so the accepted answer
+        # may say a note was written without the note guard misreading a
+        # truthful reference as the confabulation it refuses. It stays empty
+        # while no such call ran -- the state the guard keys on.
+        journals_written = set()
         # The figures this request's successful calls did work on (a
         # draw into them, a curve transform, an axis move), and the ones
         # they read back (`curve_stats`, `export_curve`). A claim of work
@@ -380,6 +386,13 @@ class AgentLoop(QObject):
                             key = (args or {}).get('key')
                             if key:
                                 closed_figures.add(key)
+                        # The journal line, on the strength of the call that
+                        # earned it: a note the answer may say was written,
+                        # because a call of this request wrote it -- a note
+                        # no call wrote is what the guard refuses. Grounded
+                        # on the success -- a refused call grounds nothing.
+                        if name in SHARED_JOURNAL_GESTURES:
+                            journals_written.add(name)
                         # The work and the reads of the request, per
                         # figure: a claim of a change on a figure stands
                         # on a successful call that did it (a draw into
@@ -439,6 +452,28 @@ class AgentLoop(QObject):
                 if fab_refusal is not None:
                     self._emit('REFUSAL: %s' % fab_refusal)
                     self.askFinished.emit(fab_refusal)
+                    return
+            # A note the answer says was written, but that no call of this
+            # request wrote (add_note / edit_note / delete_note), is the
+            # journal-line confabulation: "j'ai ajouté la note au cahier",
+            # "I've added it to the journal" -- the line is said, not in the
+            # journal the user then looks for. Run in either branch (a journal
+            # gesture ran and none of them, or a read ran and no write), so it
+            # is not folded into the figure guard, which does not see a note.
+            if tools_mode != 'off':
+                note_refusal = self._unmadeNoteRefusal(
+                    response.content, journals_written)
+                if note_refusal is not None and self._reanchors == 0:
+                    self._reanchors += 1
+                    self._emit('REFUSAL: %s' % note_refusal)
+                    messages.append({
+                        'role': 'user',
+                        'content': self._noteReanchor(user_prompt),
+                    })
+                    continue
+                if note_refusal is not None:
+                    self._emit('REFUSAL: %s' % note_refusal)
+                    self.askFinished.emit(note_refusal)
                     return
             if not called_a_tool:
                 if tools_mode == 'off':
@@ -796,6 +831,57 @@ class AgentLoop(QObject):
             'curve_stats(figure_key) and answer only from what those '
             'calls return. The request was: "%s".' % user_prompt)
 
+    def _unmadeNoteRefusal(self, content, journals_written):
+        """A journal line claimed but not written this request, refused
+        by name.
+
+        The shape the figure and report guards do not reach: a note the
+        answer says is in the journal -- "j'ai ajouté la note au
+        cahier", "I've added it to the journal" -- but no call of this
+        request wrote it (``add_note`` / ``edit_note`` / ``delete_note``
+        all absent from ``journals_written``). The ground a claim of a
+        note stands on is a call of the request that wrote it, the way
+        a report stands on the ``plot_report`` that named its path; a
+        note no call wrote is the same kind of single-artifact
+        confabulation the report guard refuses. The honest shapes stand:
+        a note that was written (``journals_written`` non-empty), a
+        refusal reported for itself ("a été refusée", "je n'ai pas pu")
+        and a self-correction ("je n'avais pas ajouté") -- the negations
+        and the refusal words the other guards keep out are the same
+        ones ``noteClaimed`` reads.
+
+        Returns the refusal reason, or None when the answer may stand.
+        """
+        if journals_written:
+            return None
+        if not noteClaimed(content):
+            return None
+        return (
+            'the answer says a note was added to the journal, but no '
+            'call of this request wrote one: add_note, edit_note and '
+            'delete_note did not run this turn, so the line is not in '
+            'the journal -- the user will look for it and not find it. '
+            'Do the work instead: write it with add_note(scope, text, '
+            'author=..., ...) or change it with edit_note(scope, '
+            'note_id, ...) -- and answer only from what that call '
+            'returns. If the call was refused, report the refusal it '
+            'named.')
+
+    def _noteReanchor(self, user_prompt):
+        """The one re-anchor for a claimed-but-unwritten journal line:
+        write it or edit it, then answer from the call.
+        """
+        return (
+            'Your answer said a note was added or edited, but this '
+            'request called no journal gesture: the line is not in the '
+            'journal, and saying so is not the same as writing it. Do '
+            'the work -- add_note(scope, text, author=..., ...) for a '
+            'new line, edit_note(scope, note_id, ...) to change one -- '
+            'and answer only from what that call returns. If the user '
+            'asked for the shared journal, scope=\'shared\'; otherwise '
+            'it is the personal one. The request was: "%s".'
+            % user_prompt)
+
     def _destructiveRefusal(self, name, user_prompt):
         """The named refusal a destructive gesture receives on a request
         that does not ask for it.
@@ -1029,6 +1115,63 @@ def reportClaimed(text):
         if not any(voice in window for voice in _AGENT_VOICE):
             continue
         if any(neg in window for neg in _NEGATIONS):
+            continue
+        return True
+    return False
+
+
+# A note is a *line in a journal*, and the one reference the guard
+# keys on is that noun: "note", "cahier", "journal", "mémo". A claim is
+# a noun with a *write verb* near it and no negation -- the same
+# apartness the fabricated-artifact guard keeps between a report
+# claimed and one that was refused. The voice is a verb at a word
+# boundary (not a bare substring): "node"/"nodes" (tree paths) and
+# "address" do not read as "note" or "add", and "j'ai lu tes notes" is a
+# read with no write verb near the noun, so both stand out of the guard.
+# A negation near the noun -- "n'ai pas", "n'avais pas", "refusée",
+# and in English "not"/"never" -- is the honest refusal or
+# self-correction the guard lets stand.
+_NOTE_NOUN_RE = re.compile(
+    r'\bnotes?\b|\bcahier\b|\bjournal\b|\bmémo\b|\bmemo\b')
+_NOTE_VOICE_RE = re.compile(r'''
+    # French write verbs, as stems so the -ée / -és forms land
+    \bajout\w*
+  | \bnot(?:é|ée|er)\w*
+  | \binscrit\w*
+  | \benregistr\w*
+  | \bconsign\w*
+  | \brang(?:é|ée)s?
+  # English write verbs, at a word boundary so "add" is not "address"
+  | \badd(?:ed|ing)?\b
+  | \blogged\b
+  | \brecord(?:ed|ing)?\b
+  | \bnoted\b
+  | \b(?:kept|keep)s?\s+a\s+note\b
+  | \bsaved?\s+the\s+note\b
+  | \bwrote\b
+''', re.VERBOSE)
+_NOTE_NEGATION_RE = re.compile(
+    r'\bpas\b|\bnot\b|\bnever\b|\brefus\w*|\bimpossible\b')
+
+
+def noteClaimed(text):
+    """Whether the text asserts -- in the agent's own voice -- that a
+    note / a journal line was written, edited, or deleted.
+
+    A ``note`` / ``cahier`` / ``journal`` noun near a write verb and no
+    negation is the claim the guard refuses; a read ("j'ai lu tes
+    notes", "ton cahier contient déjà une note sur le flux"), a refusal
+    ("je n'ai pas pu la noter", "la note n'a pas été ajoutée", "la
+    publication au journal partagé a été refusée"), and a
+    self-correction ("je n'avais pas ajouté") are honest shapes and
+    stand out of the guard the way a report that was never written does.
+    """
+    text = (text or '').lower()
+    for m in _NOTE_NOUN_RE.finditer(text):
+        window = text[max(0, m.start() - 70):m.end() + 40]
+        if not _NOTE_VOICE_RE.search(window):
+            continue
+        if _NOTE_NEGATION_RE.search(window):
             continue
         return True
     return False
