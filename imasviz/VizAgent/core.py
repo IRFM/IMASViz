@@ -2606,21 +2606,78 @@ class McpGuiCore:
 
     # ---------------------------------------------------------------- journals
 
+    def _noteEmbedder(self):
+        """The ``text -> vector`` the journal index answers, or ``None``.
+
+        The one the preferences name (``AgentEmbedEndpoint`` /
+        ``AgentEmbedModel``), the ``EmbeddingClient`` the run built for it;
+        left unnamed, the index is served on the keyword alone (its text
+        is still kept in step, and a ``reindex_journals`` under a named
+        endpoint is the one that vectors it). A client the caller cannot
+        build is the ``None`` the search answers alone on the keyword —
+        the read is never one the endpoint is absent from."""
+        from imasviz.VizUtils import QVizPreferences
+        endpoint = (QVizPreferences.AgentEmbedEndpoint or '').strip()
+        if not endpoint:
+            return None
+        from imasviz.VizAgent.llm_client import EmbeddingClient
+        return EmbeddingClient()
+
+    def _syncJournalWrite(self, scope, answer, kind='add'):
+        """Keep the journal's index in step with a write the run answered.
+
+        ``answer`` is the one ``add_note`` / ``edit_note`` holds (a dict
+        the ``journals`` store handed back, the keys the note's fields),
+        and this upserts it under the journal's store (the text
+        ``journals_index.noteText`` composes: the title, the filters, the
+        body), re-embedding when the body moved and keeping it otherwise
+        (the ``rag_store.upsert`` incremental rule). The write the run is
+        answering is never one the index cost a refusal: a store the run
+        cannot open (the shared folder not named) or an embedder that
+        refuses are logged, and the note stands on the disk the writers
+        hold — the read falls to the keyword the journal ranks while the
+        index is not in step, and a ``reindex_journals`` is the one that
+        sets the two in step.
+        """
+        import logging
+        try:
+            from imasviz.VizAgent import journals_index
+            journals_index.upsertNote(
+                scope, answer, embedder=self._noteEmbedder())
+        except Exception as e:
+            logging.getLogger('logPanel').info(
+                'the %s %s of note %s did not keep its index in step: %s '
+                '(the note itself stands on the disk the writers hold)'
+                % (scope, kind, answer.get('id', '?'), e))
+
     def search_journals(self, scope=None, query=None, limit=20,
                         machine=None, campaign=None, shot=None,
                         date_from=None, date_to=None, author=None):
         """The RAG of the two journals.
 
         Two steps, in that order:
+        0. the eager index — the one ``add_note`` / ``edit_note`` /
+           ``delete_note`` keep in step and ``reindex_journals`` builds
+           (one SQLite per journal under ``~/.imasviz`` and the shared
+           folder) — is asked of first when it holds rows: the BM25 over
+           the notes' text fused with the cosine of the query against
+           the same (the ``rag_store``'s RRF). It answers
+           ``method: 'hybrid'`` / ``'embeddings'`` / ``'keyword'``, and
+           a store written under an embedder the run is not under
+           answers ``guarded`` with the ``guard_reason`` (vectors
+           ignored, keyword alone) — the one ``reindex_journals`` sets
+           right;
         1. the structured filter (``machine``/``campaign``/``shot``/
            ``date_from``/``date_to``/``author``) narrows to the notes
            that name each of the fields the caller asked of;
-        2. the ranking of what is left — by embeddings when the
+        2. the ranking of what is left — by the lazy cache when the
            ``AgentEmbedEndpoint`` preference is named and the endpoint
            answers (the cosine between the query's vector and each
            note's, through the local cache under the journal's folder),
            and by keyword (a light BM25, no dependency) when it is not
-           or when the endpoint does not answer.
+           or when the endpoint does not answer — the one the run holds
+           while a journal has not been indexed yet, the answer the
+           reader gets until a ``reindex_journals`` fills the store.
 
         An empty filter answer (a note the filters narrowed out) is the
         ``total: 0`` the answer holds, and a fallback from embeddings
@@ -2644,6 +2701,36 @@ class McpGuiCore:
                 'returned': min(total, limit), 'method': 'list',
                 'notes': [note.asSearchResult() for note in notes[:limit]],
             }
+        query = str(query).strip()
+        # The eager index — the one ``add_note`` / ``edit_note`` /
+        # ``delete_note`` keep in step and ``reindex_journals`` builds — is
+        # the ranking asked of first: the BM25 over the notes' text fused
+        # with the cosine of the query against the same, the one
+        # ``rag_store`` answers. A journal the run has not indexed is empty
+        # and the read falls to the keyword the ``journals`` store ranks
+        # (the lazy path below), the note the index did not reach being
+        # still the one the disk holds: the read does not pretend the index
+        # answered when it did not.
+        from imasviz.VizAgent import journals_index
+        include_ids = set(note.id for note in notes)
+        embedder = self._noteEmbedder()
+        indexed = journals_index.search(
+            scope=scope, include_ids=include_ids, query=query,
+            embedder=embedder, limit=limit)
+        if indexed.get('note_ids'):
+            by_id = {note.id: note for note in notes}
+            answer = {
+                'scope': scope or 'both', 'query': query, 'total': total,
+                'returned': min(total, len(indexed['note_ids'])),
+                'method': indexed['method'],
+                'indexed': True,
+                'notes': [by_id[rid].asSearchResult()
+                          for rid in indexed['note_ids'] if rid in by_id],
+            }
+            if indexed.get('guard_reason'):
+                answer['guarded'] = True
+                answer['guard_reason'] = indexed['guard_reason']
+            return answer
         from imasviz.VizUtils import QVizPreferences
         endpoint = (QVizPreferences.AgentEmbedEndpoint or '').strip()
         if endpoint:
@@ -2760,16 +2847,124 @@ class McpGuiCore:
                 'notes': [note.asSearchResult() for note in notes]}
 
     def journal_stats(self):
-        """The state of the two journals and the embeddings: the folder
-        the personal and the shared are each under (a ``refusal`` when
-        no folder is named / not a directory), the count of notes each
-        holds, and the state of the embeddings — is the endpoint named
-        in the preferences, and if so, what model it names. The caller
-        reads the refusal to decide whether the answer for the shared
-        one is a refusal, and the one the search asks of to decide the
-        method it will rank with (embeddings vs keyword)."""
+        """The state of the two journals, their embeddings, and their
+        indexes: the folder the personal and the shared are each under
+        (a ``refusal`` when no folder is named / not a directory), the
+        count of notes each holds, the state of the embeddings (is the
+        endpoint named in the preferences, and if so, what model it
+        names), and the one each journal's index holds — its file, its
+        rows and vectors, its ``embed_sig`` and ``dim``, and its
+        ``built_at`` (a ``refusal`` the same way when the shared folder
+        is not named). The caller reads those to decide the method a
+        run will rank with (index then keyword, embeddings then
+        keyword), and one ``reindex_journals`` sets the two in step."""
         from imasviz.VizAgent import journals
-        return journals.JournalStore.stats()
+        from imasviz.VizAgent import journals_index
+        stats = journals.JournalStore.stats()
+        try:
+            stats['indexes'] = journals_index.stats()
+        except Exception:
+            stats['indexes'] = {}
+        return stats
+
+    def reindex_journals(self, scope=None):
+        """The two (or the one) journals, in step with their indexes.
+
+        The eager rebuild the read asks of when an index is empty, stale
+        or guarded: it walks the notes the ``journals`` store holds,
+        upserts each into the journal's store (re-embedding only what
+        moved, under the endpoint the preferences name), and purges the
+        rows the store holds that the journal no longer keeps. The answer
+        is one line per journal it held (``upserted``/``kept``/``purged``/
+        ``total``), a ``refusal`` the one it could not open (the shared
+        folder not named), and the ``embedder_named`` flag — whether the
+        run vectorized this pass or kept the text alone for the keyword
+        (the embed the later run under a named endpoint will pay). A
+        journal the writer emptied on one side is not purged by it (an
+        empty source is not an ask to take the other writer's rows away);
+        that one answers ``skipped_empty``.
+        """
+        from imasviz.VizAgent import journals_index
+        embedder = self._noteEmbedder()
+        out = journals_index.reindex(scope=scope, embedder=embedder)
+        return {'scopes': out, 'embedder_named': embedder is not None}
+
+    # ---------------------------------------------------------------- documents
+
+    def _docsEmbedder(self):
+        """The ``text -> vector`` the documents corpus answers, or
+        ``None`` (the corpus served on the keyword alone). The one the
+        preferences name (``AgentEmbedEndpoint`` / ``AgentEmbedModel``);
+        left unnamed, the corpus is served on the keyword (a document's
+        text is still kept in step with the store, and the one a later
+        ``reindex_documents`` under a named endpoint pays to vector)."""
+        from imasviz.VizAgent import rag_docs
+        return rag_docs.docsEmbedder()
+
+    def list_documents(self):
+        """The documents the corpus reads: every ``.md``/``.txt``/``.pdf``
+        the folder ``AgentDocsDir`` names holds (its name, its size, its
+        date, and the ``rel`` the search answers by). A corpus run cannot
+        read (no folder named, the folder not a directory) is a refusal by
+        name, naming the one it could not read — the same shape the shared
+        journal answers for its folder."""
+        from imasviz.VizAgent import rag_docs
+        return {'documents': rag_docs.listDocuments()}
+
+    def read_document(self, rel):
+        """The full text of one document of the corpus, by its ``rel`` (the
+        one a search hits back by). Not in the corpus is a refusal by name,
+        naming the ones it does read; a document it does not read is the
+        same — the corpus does not cost a crash to a read it cannot answer."""
+        from imasviz.VizAgent import rag_docs
+        return {'rel': rel, 'text': rag_docs.readDocument(rel)}
+
+    def reindex_documents(self):
+        """The whole corpus, in step with the store: the one the user runs
+        on adding a document to the corpus folder, or changing the endpoint
+        (the two are then not the same space, and this sets them in step).
+        It walks the documents the corpus reads, upserts each (re-embedding
+        only what moved, under the endpoint the preferences name), and
+        purges the rows the store holds that the corpus no longer holds (a
+        document that left the folder). A corpus the run cannot read is a
+        refusal by name (``refusal`` in the answer); a corpus that holds no
+        document is kept as it was (``skipped_empty``, not emptied).
+        The ``embedder_named`` flag says whether the run vectorized this
+        pass or kept the text alone for the keyword."""
+        from imasviz.VizAgent import rag_docs
+        embedder = self._docsEmbedder()
+        out = rag_docs.reindex(embedder=embedder)
+        out['embedder_named'] = embedder is not None
+        return out
+
+    def search_documents(self, query, limit=8):
+        """The corpus's rank: the one a ``search_documents`` asks of. The
+        BM25 over the documents' chunks fused with the cosine of the query
+        against the same (the ``rag_store``'s RRF), one hit per chunk (the
+        document's ``rel``, the chunk's index, a snippet of its text). A
+        corpus the run cannot read is a refusal by name; a search that
+        hits no chunk is an ``empty`` the answer holds (not a crash, not a
+        guess). The answer holds the ``method`` (``hybrid`` /
+        ``embeddings`` / ``keyword`` / ``empty``) and, when a store's
+        ``embed_sig`` is not the one the run is under, the ``guarded``
+        flag with the ``guard_reason`` (vectors ignored, the keyword
+        stands, and the reason names the embedder so a
+        ``reindex_documents`` sets the two in step).
+        """
+        from imasviz.VizAgent import rag_docs
+        embedder = self._docsEmbedder()
+        return rag_docs.search(query, embedder=embedder, limit=limit)
+
+    def documents_stats(self):
+        """The state of the corpus: how many documents and chunks it
+        holds, its ``embed_sig`` and ``dim``, and its ``built_at``. A
+        corpus the run cannot read (no folder) answers a ``refusal`` the
+        caller reads as the one the index could not open, not a zero it
+        would read as empty. The caller reads those to decide the method a
+        run will rank with (index then keyword, embeddings then keyword),
+        and one ``reindex_documents`` sets the two in step."""
+        from imasviz.VizAgent import rag_docs
+        return rag_docs.stats()
 
     def add_note(self, scope, text, author=None, machine=None,
                  campaign=None, shot=None, date=None, title=None):
@@ -2784,9 +2979,19 @@ class McpGuiCore:
         write will cost.
         """
         from imasviz.VizAgent import journals
-        return journals.JournalStore.add_note(
+        answer = journals.JournalStore.add_note(
             scope, text, author=author, machine=machine, campaign=campaign,
             shot=shot, date=date, title=title)
+        # The eager index on the write: the note is in the journal's store
+        # the same turn it is on the disk, so the next search of it ranks
+        # the body the writer just wrote (the ``add_note`` of the run is
+        # the one the index answers, not one it recomputes on the read).
+        # A store the run cannot keep in step (the shared folder not
+        # named, the embedder refused) is logged and the write stands:
+        # the note is on the disk the writers hold, and the read falls to
+        # the keyword the journal ranks while the index is not in step.
+        self._syncJournalWrite(scope, answer, kind='add')
+        return answer
 
     def edit_note(self, scope, note_id, text=None, author=None, machine=None,
                   campaign=None, shot=None, date=None, title=None):
@@ -2798,9 +3003,14 @@ class McpGuiCore:
         an edit that empties either is the named refusal the add does
         not take, and the note on disk is not touched)."""
         from imasviz.VizAgent import journals
-        return journals.JournalStore.edit_note(
+        answer = journals.JournalStore.edit_note(
             scope, note_id, text=text, author=author, machine=machine,
             campaign=campaign, shot=shot, date=date, title=title)
+        # The eager index on the edit: the row keeps the id the edit kept,
+        # and its text is the one the edit wrote (re-embedded when the body
+        # moved, kept when it did not — the ``rag_store.upsert`` rule).
+        self._syncJournalWrite(scope, answer, kind='edit')
+        return answer
 
     def delete_note(self, scope, note_id):
         """One note of one journal, gone: the file and the cache entry
@@ -2809,7 +3019,22 @@ class McpGuiCore:
         the same rule the write is: a note the run deleted is one the
         next search does not rank, because its file is not there."""
         from imasviz.VizAgent import journals
-        return journals.JournalStore.delete_note(scope, note_id)
+        answer = journals.JournalStore.delete_note(scope, note_id)
+        # The eager index on the delete: the row leaves the journal's store
+        # the same turn the note's file does, so the next search does not
+        # rank the line the writer took out (the note the run deleted is
+        # one the index dropped, not one it recomputes).
+        note_id = answer.get('id', note_id)
+        try:
+            from imasviz.VizAgent import journals_index
+            journals_index.removeNote(scope, note_id)
+        except Exception as e:
+            import logging
+            logging.getLogger('logPanel').info(
+                'the %s journal could not drop its index row for %s: %s '
+                '(the note itself is gone from the disk the writers hold)'
+                % (scope, note_id, e))
+        return answer
 
     @staticmethod
     def curveStats(xy):

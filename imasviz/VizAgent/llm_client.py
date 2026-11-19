@@ -239,12 +239,74 @@ class EmbeddingClient:
         the fallback in the answer, not this client."""
         return self.embed(text)
 
-    def embed(self, text):
+    def probe(self):
+        """The one call that asks the endpoint for its dimension.
+
+        ``dal-rag``'s ``probe`` is the model: one short text, the
+        ``501`` read as "no embedding table" (a llama-server that was
+        not started with ``--embeddings`` answers ``501``), the
+        dimension of the one vector it answers read back. A refusal is
+        named: an endpoint not named, one that does not answer, one
+        that answers a body the client does not read — the same shape
+        ``embed`` refuses, because a probe that does not know its
+        dimension answers a search that could not rank."""
+        payload = {'input': ['probe']}
+        if self.model:
+            payload['model'] = self.model
+        body = json.dumps(payload).encode()
+        request = urllib.request.Request(
+            self.endpoint + '/embeddings',
+            data=body, method='POST',
+            headers={'Content-Type': 'application/json'})
+        if self.api_key:
+            request.add_header('Authorization', 'Bearer ' + self.api_key)
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) \
+                    as resp:
+                raw = resp.read().decode()
+        except urllib.error.HTTPError as e:
+            if e.code == 501:
+                raise RuntimeError(
+                    'the endpoint %s answers 501 for /embeddings: it was '
+                    'not started with an embedding table (e.g. '
+                    'llama-server --embeddings). Start it, or point '
+                    'AgentEmbedEndpoint at an endpoint that carries one.'
+                    % (self.endpoint or '(none named)'))
+            text = e.read().decode() if e.fp else ''
+            raise RuntimeError(
+                'the embeddings endpoint answered HTTP %d on the probe: '
+                '%s' % (e.code, text[:200]))
+        except urllib.error.URLError as e:
+            raise ConnectionError(
+                'the embeddings endpoint %s does not answer the probe: '
+                '%s' % (self.endpoint or '(none named)', e.reason))
+        except (TimeoutError, OSError) as e:
+            raise ConnectionError(
+                'the embeddings endpoint %s did not answer the probe: '
+                '%s' % (self.endpoint or '(none named)', e))
+        items = json.loads(raw).get('data')
+        if not isinstance(items, list) or not items \
+                or not isinstance(items[0], dict) \
+                or not isinstance(items[0].get('embedding'), list):
+            raise ValueError(
+                'the endpoint did not answer a vector to the probe: its '
+                'body holds no embedding to read the dimension from.')
+        return {'dim': len(items[0]['embedding'])}
+
+    def embed(self, text, input_type=None):
         """One text to its vector, the one OpenAI-compatible shape the
         servers on this stack answer. A text that does not vectorise
         (an empty one, or a shape the endpoint does not answer) is a
         named refusal, the rule ``LLMClient.chat`` applies to its
-        empty answer."""
+        empty answer.
+
+        ``input_type`` is the ``E5``-style side the text is on
+        (``'query'`` for a question being ranked, ``'passage'`` for a
+        note being indexed), the one ``dal-rag``'s ``embed_texts``
+        sends: an embedder that needs the two sides prefixed otherwise
+        silently degrades retrieval, and the one an endpoint that does
+        not know the field ignores, so a model that does not need it is
+        untouched by naming it."""
         text = (text or '').strip()
         if not text:
             raise ValueError(
@@ -259,6 +321,8 @@ class EmbeddingClient:
         payload = {'input': text}
         if self.model:
             payload['model'] = self.model
+        if input_type is not None:
+            payload['input_type'] = input_type
         body = json.dumps(payload).encode()
         request = urllib.request.Request(
             self.endpoint + '/embeddings',
@@ -270,13 +334,22 @@ class EmbeddingClient:
         return self._embedResponse(self._send(request, body),
                                    context=context)
 
-    def embed_batch(self, texts):
+    def embed_batch(self, texts, input_type=None):
         """Several texts to their vectors, in the order they were
-        asked. The journals do not use it in this run (one note at a
-        time), but the shape is the one a later ``rankByVector`` that
-        wants to ask of the endpoint a batch at once will hold, and the
-        refusal is the one ``embed`` has: an endpoint it does not
-        answer is a named error on the whole batch, not a half of it."""
+        asked (the response is re-ordered by its ``index`` field, the
+        one ``dal-rag``'s ``embed_texts`` sorts on, so a server that
+        answers out of order still hands the Nth vector back against
+        the Nth text). The journals use it to index a note's text at
+        once (the eager upsert); the shape the later ``Store.reindex``
+        wants to ask a whole batch at a time is the one this answers,
+        and the refusal is the one ``embed`` has: an endpoint it does
+        not answer is a named error on the whole batch, not a half of
+        it.
+
+        ``input_type`` is the same ``E5``-style side ``embed`` takes
+        (``'passage'`` for the indexed text), the one ``dal-rag``
+        sends on the indexing side so the query and the note meet in
+        the same space."""
         texts = [one for one in (texts or []) if (one or '').strip()]
         if not texts:
             raise ValueError('a batch that is empty does not vectorise.')
@@ -288,6 +361,8 @@ class EmbeddingClient:
         payload = {'input': texts}
         if self.model:
             payload['model'] = self.model
+        if input_type is not None:
+            payload['input_type'] = input_type
         body = json.dumps(payload).encode()
         request = urllib.request.Request(
             self.endpoint + '/embeddings',
@@ -341,8 +416,21 @@ class EmbeddingClient:
             raise ValueError(
                 'the embeddings endpoint did not answer %s: its body '
                 'holds no embedding to read.' % (context or 'this text'))
-        vectors = [item['embedding'] for item in items
-                   if isinstance(item, dict) and item.get('embedding')]
+        items = [item for item in items
+                 if isinstance(item, dict) and item.get('embedding')]
+        # Re-order by the ``index`` the server stamps each entry with, so
+        # the Nth vector comes back against the Nth text the caller asked
+        # (dal-rag sorts on this: a server that answers out of order would
+        # otherwise hand the wrong vector to the wrong note). An entry
+        # without an index keeps its position.
+        if batch:
+            def _order(item):
+                idx = item.get('index')
+                if isinstance(idx, int):
+                    return (0, idx)
+                return (1, 0)
+            items = sorted(items, key=_order)
+        vectors = [item['embedding'] for item in items]
         if not vectors:
             raise ValueError(
                 'the embeddings endpoint did not answer %s: its body '

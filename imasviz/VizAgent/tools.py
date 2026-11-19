@@ -89,6 +89,29 @@ How to work with it:
    is how the user acts on it), and the numbers it answers are the ones
    the curve now holds -- it is not an ask to show anything, and the
    window keeps the place and the size the user gave it.
+10. the lab notebook is what the journal tools answer: search_journals
+   ranks the notes (the personal one, the shared one, or both) by the
+   structured filters (machine, campaign, shot, date, author) and the
+   free text, read_note gives the full body of the one it names, and
+   add_note / edit_note / delete_note write it. A write to the shared
+   one is a visible line in a place everyone you share it with reads,
+   and it is asked for in the user's own words before it runs. When a
+   search answers `guarded` (the index was written under an embedding
+   endpoint the run is no longer under) or comes back with no note the
+   run wrote, reindex_journals is the one that sets the journal in step
+   with its index again -- it keeps the rows it has, re-embeds the ones
+   that moved, and drops the ones the journal no longer holds.
+11. the documents corpus is what the documents tools answer: the RAG over
+   the user's own markdown, text, and PDF files the folder AgentDocsDir
+   names holds. search_documents ranks their chunks by the question,
+   read_document gives the full text of the one it names, list_documents
+   names what the corpus reads, and reindex_documents is the one that
+   sets the corpus in step with its index -- the run asks of it after the
+   user has added a document to the corpus folder, or when the answer
+   comes back `guarded` (the index was written under an embedding
+   endpoint the run is no longer under). It keeps the rows it has,
+   re-embeds the ones that moved, and drops the ones that left the
+   folder.
 
 The state of a figure is what the calls of this exchange made, and a read
 this exchange answered -- not what was said of it. A curve you say was
@@ -1077,6 +1100,99 @@ TOOLS = [
             'scope': {'type': 'string', 'enum': ['personal', 'shared']},
             'note_id': {'type': 'string'},
         }, 'required': ['scope', 'note_id'], 'additionalProperties': False},
+    ),
+    _tool(
+        'reindex_journals',
+        'Put the journal(s) in step with their index: the run asks of '
+        'this when the index is empty (a fresh journal), stale (a note '
+        'written before it could be indexed), or guarded (the index was '
+        'written under an embedding endpoint the run is no longer '
+        'under — its vectors are in a different space than the query, '
+        'and this re-embeds them). It walks the notes the journal '
+        'holds, keeps the ones it already has, re-embeds the ones that '
+        'moved, and drops the ones the journal no longer holds. '
+        '`scope` names the one to run it on (or is left out for the '
+        'two at once), and the answer names, per journal, how many it '
+        'kept, how many it wrote, how many it dropped, and whether the '
+        'run vectorized this pass or kept the text for the keyword. '
+        'A write to the shared journal is a visible one in a place '
+        'everyone you share it with reads, and it is the loop that '
+        'asks for it in the user\'s own words before it runs.',
+        {'type': 'object', 'properties': {
+            'scope': {'type': ['string', 'null'],
+                      'enum': ['personal', 'shared', None],
+                      'description': 'the one journal to reindex; left '
+                                     'out, both are asked'},
+        }, 'additionalProperties': False},
+    ),
+    _tool(
+        'list_documents',
+        'The documents the in-app agent reads for its own RAG: the '
+        'markdown, text, and PDF files the folder AgentDocsDir names '
+        'holds (the name, the size, the date, the relative path a '
+        'search answers by). An answer is the corpus as named (a '
+        'folder with no document is an answer, and a folder not named '
+        'is a refusal that names it -- the same shape a shared-journal '
+        'without its folder answers).',
+        {'type': 'object', 'properties': {},
+         'additionalProperties': False},
+    ),
+    _tool(
+        'read_document',
+        'The full text of one document of the corpus, by its relative '
+        'path (the one a search_documents hit names). Not in the corpus '
+        'is a refusal by name, naming the ones it does read; a document '
+        'it does not read is the same. The one to ask when a search hit '
+        'is the one the reader wants to read in full.',
+        {'type': 'object', 'properties': {
+            'rel': {'type': 'string',
+                    'description': 'the relative path of the document '
+                                   'under the corpus folder'},
+        }, 'required': ['rel'], 'additionalProperties': False},
+    ),
+    _tool(
+        'reindex_documents',
+        'Put the documents corpus in step with its index: the run asks '
+        'of this when the user has added a document to the corpus '
+        'folder, when the embedding endpoint has changed (a store '
+        'written under another endpoint is guarded -- its vectors are '
+        'in a different space than the query), or when the index is '
+        'empty. It walks the documents the corpus reads, keeps the ones '
+        'it already has, re-embeds the ones that moved, and drops the '
+        'ones that left the folder. The answer names how many documents '
+        'and chunks it kept, wrote, dropped, and whether the run '
+        'vectorized this pass or kept the text for the keyword.',
+        {'type': 'object', 'properties': {},
+         'additionalProperties': False},
+    ),
+    _tool(
+        'search_documents',
+        'The in-app agent\'s RAG over the documents corpus: the ranked '
+        'chunks of the user\'s own markdown, text, and PDF files '
+        '(one hit per chunk, the document, the chunk, a snippet). The '
+        'one to ask when the question is about the user\'s own '
+        'writing, documents, or the corpus the AgentDocsDir folder '
+        'holds. The answer names the method it ranked with '
+        '(hybrid / embeddings / keyword / empty), and when a store was '
+        'written under another embedding endpoint it is "guarded" and '
+        'the keyword alone stands -- reindex_documents is the one that '
+        'sets them in step.',
+        {'type': 'object', 'properties': {
+            'query': {'type': 'string'},
+            'limit': {'type': 'integer',
+                      'description': 'how many chunks to answer; '
+                                     'left out, 8'},
+        }, 'required': ['query'], 'additionalProperties': False},
+    ),
+    _tool(
+        'documents_stats',
+        'The state of the documents corpus: how many documents and '
+        'chunks it holds, the embedding endpoint and model it was '
+        'written under, and when it was built. The one to ask when the '
+        'answer to "can the agent read my notes/documents" is "it is '
+        'not indexed yet" or "it was indexed under another endpoint".',
+        {'type': 'object', 'properties': {},
+         'additionalProperties': False},
     ),
 ]
 

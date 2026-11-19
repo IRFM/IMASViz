@@ -209,6 +209,16 @@ class QVizPreferences:
     # refusal by name: the shared journal has no folder to sit in until
     # this is set.
     SharedJournalDir = ''
+    # The documents corpus: the folder the in-app agent indexes for its
+    # own RAG over the user's notes and documents (test_150/151). The
+    # agent reads the markdown, text, and (when pymupdf is importable)
+    # the PDF under this folder, chunks them, and indexes them into one
+    # SQLite (the same rag_store the two journals carry) so the search
+    # ranks over the user's own writing, not just the two journals.
+    # Empty is a refusal by name: the corpus has no folder to read from
+    # until this is set (the journals still answer, and the search does
+    # not pretend the documents corpus answered when it is not named).
+    AgentDocsDir = ''
     # The agent's tools, and how its answer reads on the transcript. Three
     # shapes, and they are what the loop asks of the LLM:
     #   `hide`    -- the agent still runs its gestures, but the transcript
@@ -341,6 +351,7 @@ class QVizPreferences:
             option19 = "AgentEmbedEndpoint="
             option20 = "AgentEmbedModel="
             option21 = "SharedJournalDir="
+            option22 = "AgentDocsDir="
             userPreferencesFile = os.environ['HOME'] + '/.imasviz/preferences'
             if os.path.exists(userPreferencesFile):
                 with open(userPreferencesFile) as f:
@@ -422,6 +433,10 @@ class QVizPreferences:
                                 QVizPreferences.SharedJournalDir = \
                                     QVizPreferences.stripComment(
                                         line[len(option21):])
+                            elif line.startswith(option22):
+                                QVizPreferences.AgentDocsDir = \
+                                    QVizPreferences.stripComment(
+                                        line[len(option22):])
                         except ValueError as bad:
                             logging.warning('Ignoring %s in %s: %s',
                                             line.split('=', 1)[0],

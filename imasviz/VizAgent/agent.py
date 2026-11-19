@@ -69,7 +69,8 @@ DESTRUCTIVE_GESTURES = ('close_window', 'close_case', 'new_session')
 # request names the journal to put it in. A gesture the model reaches
 # for on a request that does not name the journal is refused by name,
 # the same rule DESTRUCTIVE_GESTURES applies.
-SHARED_JOURNAL_GESTURES = ('add_note', 'edit_note', 'delete_note')
+SHARED_JOURNAL_GESTURES = ('add_note', 'edit_note', 'delete_note',
+                           'reindex_journals')
 
 # A word (or pair) the user's request carries when it asks for a close
 # or a reset, in either language. Kept narrow on purpose: a gesture
@@ -929,6 +930,7 @@ class AgentLoop(QObject):
             'add_note': 'a line the writers all read',
             'edit_note': 'a line the writers all read',
             'delete_note': 'a line the writers all read',
+            'reindex_journals': 'an index the writers all read',
         }[name]
         return (
             'the %s gesture writes to the shared journal, and this '
