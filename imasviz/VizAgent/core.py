@@ -323,6 +323,29 @@ def _figureIsLast(reference):
         ('dernier' in text or 'dernière' in text or 'derniere' in text)
 
 
+# A loose reference with no number is a word a person uses for a figure --
+# in the languages the user speaks the window to. It is what separates "the
+# figure" from a name the session does not hold: the former is a reference
+# the sole open figure answers, the latter a fabricated key, and resolving a
+# fabricated key to the only window that happens to be open is a wrong guess
+# reaching a wrong window silently.
+_FIGURE_WORDS = frozenset((
+    'figure', 'figures', 'figure', 'figures', 'figure', 'figures',
+    'plot', 'plots', 'plot', 'plots', 'image', 'images', 'table', 'tables',
+    'stack', 'stacks', 'stacked', 'courbe', 'courbes', 'curve', 'curves',
+    'vue', 'fenetre', 'fenêtre', 'graph', 'graphe', 'graphique', 'graphiques',
+    'diagram', 'diagramme', 'diagrammes', 'schéma', 'schema'))
+
+
+def _figuresMention(name):
+    """Whether a figure reference names a figure: at least one word of it is
+    a word a person uses for a figure, in the languages the report is in."""
+    import re
+
+    words = re.findall(r'[a-zà-öø-ÿ]+', (name or ' ').lower())
+    return bool(words) and any(word in _FIGURE_WORDS for word in words)
+
+
 def resolveFigureKey(name, held, order=None):
     """The one held key a loose figure reference stands for.
 
@@ -336,10 +359,19 @@ def resolveFigureKey(name, held, order=None):
     A key the session answers exactly is the one it is. A reference with a
     number is the one figure the session holds at that number, the kind the
     number already fixes, and the number the user spells however --
-    "plot3", "3", "figure 3". A reference with no number and not "last" is
-    the only open figure when there is one, and is refused, naming the
-    figures the session does hold, when there are several or when it can
-    hold only none of them.
+    "plot3", "3", "figure 3". A reference with no number and not "last"
+    names a figure -- at least one word of it is a word a person uses for a
+    figure ("figure", "plot", "la table") -- and is the only open figure
+    when there is one.
+
+    A name no figure word in it mentions at all is not a reference but a
+    fabricated key, and it is refused, naming the figures the session does
+    hold -- handed over to the only window that happens to be open, the
+    wrong guess would reach a wrong window silently, and the model would
+    believe it asked for the window it named. When there are several open
+    figures the no-number name is refused the same way.
+    `tests/test_100` pins the refusal at the screenshot and `tests/test_146`
+    the loose side of the line.
     """
     held = list(held)
     if name in held:
@@ -367,7 +399,7 @@ def resolveFigureKey(name, held, order=None):
         raise ValueError(
             'no open figure is numbered %d -- the session holds: %s'
             % (number, ', '.join(sorted(held))))
-    if len(held) == 1:
+    if len(held) == 1 and _figuresMention(name):
         return held[0]
     raise ValueError(
         '%r does not name one of the open figures -- the session holds: %s'
