@@ -646,8 +646,10 @@ def test_the_draw_answer_names_the_curves_the_figure_holds(curve_figure):
 
 def test_set_axis_range_refuses_a_table_figure(curve_figure):
     """A Table Plot View draws its own panel per quantity, none of which is
-    a single figure a `getViewBox()` addresses -- the refusal is the
-    `_viewBoxOf` shape, naming what the window does instead."""
+    a single figure a range is pinned on -- and it is not a picture window
+    either, whose span `set_axis_range` now takes: the refusal names the
+    window, the shapes the gesture does address, and the move the caller
+    is left to make instead."""
     session, _h, _key, _frame = curve_figure
     session.unselect_all(CASE_URI)
     session.select_signals(CASE_URI, [IP_PATH])
@@ -657,8 +659,14 @@ def test_set_axis_range_refuses_a_table_figure(curve_figure):
     with pytest.raises(ValueError) as exc:
         session.set_axis_range(table_key, xmin=0, xmax=1)
     msg = str(exc.value)
-    assert 'no single figure' in msg or 'curve figure' in msg, \
-        'refusal should say the window draws no single figure: %s' % msg
+    assert table_key in msg, \
+        'refusal should name the window it refused: %s' % msg
+    assert 'not a single figure' in msg, \
+        'refusal should say the window is not the span the gesture pins: %s' \
+        % msg
+    assert 'the pictures of one quantity' in msg, \
+        'refusal should name the picture window the gesture does address: %s' \
+        % msg
 
 
 def test_set_log_scale_refuses_a_table_figure(curve_figure):

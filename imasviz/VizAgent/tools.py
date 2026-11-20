@@ -84,7 +84,10 @@ How to work with it:
    every one; a log on values that cross zero is refused by name, and a
    figure that is not a single one (a table, or the flux-surface figure)
    is refused the same way -- name the figure the single curve was drawn
-   in. A gesture of this section changes what the figure shows without
+   in. A picture window is addressed by the axis it holds, not the one it
+   drew: set_axis_range pins the span of each of its pictures (the time
+   zoom of a strip whose abscissa is a time is the x range, in the
+   seconds the time axis holds), A gesture of this section changes what the figure shows without
    redrawing it: the answer names the figure the work was on (the key
    is how the user acts on it), and the numbers it answers are the ones
    the curve now holds -- it is not an ask to show anything, and the
@@ -669,9 +672,12 @@ TOOLS = [
         'set_axis_range',
         'The window (the range) of a figure\'s axes, by name and number: '
         'pin `xmin`/`xmax` together, `ymin`/`ymax` together, or both; '
-        '`auto=true` clears the pins and re-fits. A partial pair is '
-        'refused (a range is two bounds); a window not a single figure is '
-        'refused by name.',
+        '`auto=true` clears the pins and re-fits. A curve figure takes one '
+        'axis set; a picture window takes the same span on each of its '
+        'pictures, and a time zoom of a strip whose abscissa is its time '
+        'is the `x` range, in the seconds the time axis holds. A partial '
+        'pair is refused (a range is two bounds); a table or stacked '
+        'window is refused by name.',
         {'type': 'object', 'properties': {
             'figure_key': {'type': 'string'},
             'xmin': {'type': ['number', 'null']},
@@ -681,6 +687,8 @@ TOOLS = [
             'auto': {'type': 'boolean', 'default': False},
         }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
+
+
     _tool(
         'set_log_scale',
         'A log axis, by name: `x`/`y` each `true` for log, `false` for '

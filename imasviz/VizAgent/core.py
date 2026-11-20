@@ -1857,15 +1857,17 @@ class McpGuiCore:
         pyqtgraph holds on screen after the call, returned so the caller
         reads the same numbers the figure shows.
 
-        A curve figure is one the axis set of; a table, a stacked view and
-        the flux-surface figure each draw their own and are not this one,
-        so naming one of them is refused by name, the shape that names the
-        figure the single curve was drawn in.
+        A curve figure takes one axis set. A picture window takes the same
+        span on the axis set of **each** of its pictures -- the window is
+        one scale and one span, so a time zoom of a strip whose abscissa is
+        its time is the `x` range, in the seconds its time axis holds, and
+        the answer reports that one span. A table and a stacked view keep
+        one axis set per panel and are refused by name.
         """
         import math
 
         record, frame = self._windowForKey(figure_key)
-        box = self._viewBoxOf(frame, figure_key)
+        boxes = self._viewBoxesOf(frame, figure_key)
 
         def finite(bound, value):
             if value is None:
@@ -1894,8 +1896,9 @@ class McpGuiCore:
                 'the auto ask or the manual one, not both.')
 
         if auto:
-            box.enableAutoRange()
-            xR, yR = box.state['viewRange']
+            for box in boxes:
+                box.enableAutoRange()
+            xR, yR = boxes[0].state['viewRange']
             self._logFor(record.cases,
                          'set_axis_range: %s re-fits (the auto range is '
                          'back on).' % figure_key)
@@ -1916,12 +1919,14 @@ class McpGuiCore:
             raise ValueError(
                 'The y range is inverted (%g >= %g): `ymin` must be less '
                 'than `ymax`.' % (ymin, ymax))
-        box.disableAutoRange()
-        if xmin is not None:
-            box.setXRange(xmin, xmax)
-        if ymin is not None:
-            box.setYRange(ymin, ymax)
-        xR, yR = box.state['viewRange']
+        for box in boxes:
+            box.disableAutoRange()
+        for box in boxes:
+            if xmin is not None:
+                box.setXRange(xmin, xmax)
+            if ymin is not None:
+                box.setYRange(ymin, ymax)
+        xR, yR = boxes[0].state['viewRange']
         self._logFor(record.cases,
                      'set_axis_range: %s pinned, x=%s, y=%s.'
                      % (figure_key,
@@ -3260,21 +3265,74 @@ class McpGuiCore:
             'The curve is a substring of a quantity name or a 0-based '
             'index into the traces the figure drew, not %r.' % (curve,))
 
-    def _viewBoxOf(self, frame, figure_key=None):
-        """The single axis set of a curve figure: `pgPlotWidget`'s ViewBox.
+    def _viewBoxesOf(self, frame, figure_key=None):
+        """One axis set per drawn picture: the one of a curve figure, or the
+        one of each picture of a picture window, in screen order.
 
-        A curve figure (a QVizCurvePlot) has one plot widget and one axis
-        set; a table and a stacked window have one panel per picture, and
-        the flux-surface figure draws its own plot inside a graphics
-        layout -- none of them have the single `pgPlotWidget.getViewBox()`
-        this asks for, and the refusal says why, so the caller learns the
-        window is not one the figure-axes tools address.
+        A picture window answers the span with **one** number pair and wears
+        it on all of its pictures: the window is one scale and one span, so
+        a time zoom of a strip whose abscissa is its time is the `x` range
+        in the seconds the time axis holds. A curve figure answers with its
+        single `pgPlotWidget.getViewBox()`. A table and a stacked view keep
+        one axis set per panel, and a picture window that has drawn nothing
+        has no axis set at all -- each refusal names the window and the
+        shape it holds, and the caller learns what to ask next.
         """
+        pictures = getattr(frame, 'plotItems', None)
+        if callable(pictures):
+            items = list(pictures())
+            if items:
+                boxes = []
+                for item in items:
+                    view = getattr(item, 'getViewBox', None)
+                    if view is None:
+                        raise ValueError(
+                            'The window "%s" holds pictures with no axis set '
+                            'a span can be set on, so a range cannot be '
+                            'pinned on them.' % (figure_key or 'this window'))
+                    boxes.append(view())
+                if boxes:
+                    return boxes
+            raise ValueError(
+                'The window "%s" is a picture window that drew no picture, '
+                'and a range needs the drawn picture to sit on: draw the '
+                'quantity first, and the span is the one set_axis_range '
+                'pins.' % (figure_key or 'this window'))
         pgPlot = getattr(frame, 'pgPlotWidget', None)
         if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
             raise ValueError(
-                'The window "%s" draws no single figure whose axes a range, '
-                'a log scale, or an inversion can be set on: a curve figure '
+                'The window "%s" is not a single figure whose span this '
+                'gesture pins: a figure of curves holds one axis set, and '
+                'a picture window takes the span of its pictures -- this '
+                'one is neither, its panels each keeping their own answer '
+                'on their own. Name the figure a curve was drawn in, or '
+                'the one the pictures of one quantity are drawn in.'
+                % (figure_key or 'this window'))
+        return [pgPlot.getViewBox()]
+
+    def _viewBoxOf(self, frame, figure_key=None):
+        """The single axis set of a curve figure: `pgPlotWidget`'s ViewBox.
+
+        The log and inversion gestures address curve figures: a table and a
+        stacked window have one panel per picture and keep their own, the
+        flux-surface figure draws inside a graphics layout, and a picture
+        window is the span of its own pictures -- the one `set_axis_range`
+        answers. Each refusal names the window the caller tried, and the
+        gesture that answers it, so the refusal the caller reads says what
+        to do next instead of repeating the call.
+        """
+        if callable(getattr(frame, 'plotItems', None)):
+            raise ValueError(
+                'The window "%s" is a picture window: the log and inversion '
+                'gestures address the figure a single curve was drawn in, '
+                'and this one holds pictures, whose span is the one '
+                'set_axis_range pins. Name the figure the curve was drawn '
+                'in.' % (figure_key or 'this window'))
+        pgPlot = getattr(frame, 'pgPlotWidget', None)
+        if pgPlot is None or not hasattr(pgPlot, 'getViewBox'):
+            raise ValueError(
+                'The window "%s" draws no single figure whose axes a log '
+                'scale or an inversion can be set on: a curve figure '
                 'does, and the table panels and the flux-surface figure do '
                 'not. Name the figure the single curve was drawn in.'
                 % (figure_key or 'this window'))

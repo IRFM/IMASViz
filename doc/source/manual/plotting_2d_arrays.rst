@@ -269,6 +269,11 @@ sub-window) and **Mouse Mode**, and the scene adds **Export...**, as described f
 1D plots in :ref:`plotting_1d_arrays`. To those the picture adds one IMASViz line,
 :guilabel:`Colour Scale...` (:ref:`above <2d_colour_scale>`).
 
+A zoom of a picture is a zoom of the window: the window is one scale and one span,
+so a span set on one picture -- a zoom in the time axis of a soft x-ray strip, for
+instance -- is the span of **each** picture it holds, in the units that axis
+carries on it, and the window answers that one span rather than one per picture.
+
 The :guilabel:`Configure Plot` dialog of a curve figure is not offered here: it
 dresses the traces one by one, and a picture has no trace to dress. What a picture
 has instead -- one map and one level range, for all the pictures of the window
