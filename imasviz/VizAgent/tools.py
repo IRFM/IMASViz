@@ -61,16 +61,21 @@ How to work with it:
    applies one (loading the IDSs the case would need), and
    save_selection / save_plot_configuration write the current
    selection / one Table Plot View out to a name.
-8. a report is self-contained HTML on disk, with the statistics of each
-   curve: plot_report names one window of curves (its image, one row per
-   trace it drew), and case_report names the whole loaded tree of a case
-   (one row per curve, in tree order). The file lands in
-   `~/.imasviz/reports` under the guard the configurations have; a window
-   or a case that has no curve to stat is refused by name. A report is
-   the one `plot_report` or `case_report` wrote: a final answer that
-   names a report file says it of a call this conversation made, and the
-   file it names is the path that call answered -- a report the tools did
-   not write is not one you say was written.
+8. a report is self-contained HTML on disk: plot_report names one window
+   of curves (its image, one row per curve it drew, with the statistics
+   of each), case_report names the whole loaded tree of a case (one row
+   per curve it holds, in tree order), and case_ids_report names the case
+   itself -- every IDS the case holds and the occurrences each holds, the
+   ones the user loaded, a header of the `ids_properties` values per
+   loaded occurrence, and the signals the tree holds for each: the ones
+   the tree carries as available (its own colouring test), a 0-D scalar
+   held by the dynamic array among them. The file lands in
+   `~/.imasviz/reports` under the guard the configurations have. A report
+   is the one `plot_report`, `case_report` or `case_ids_report` wrote: a
+   final answer that names a report file says it of a call this
+   conversation made, and the file it names is the path that call
+   answered -- a report the tools did not write is not one you say was
+   written.
 9. manipulating a figure is work on what it holds, by name of the figure
    and of the curve: scale_curve multiplies its value by a constant,
    shift_curve adds one, normalize_curve divides by its own peak/first/
@@ -960,6 +965,26 @@ TOOLS = [
         'not yet loaded is not a curve, so the answer says how many curves '
         'it gave and list_idss names what the case still holds. A case '
         'whose loaded tree has no curve is refused by name.',
+        {'type': 'object', 'properties': {
+            'uri': {'type': 'string'},
+            'name': {'type': ['string', 'null']},
+        }, 'required': ['uri'], 'additionalProperties': False},
+    ),
+    _tool(
+        'case_ids_report',
+        'The case itself as a self-contained HTML report on disk: every '
+        'IDS the case\'s data dictionary holds and the occurrences each '
+        'one holds, which of those the session loaded, and for each loaded '
+        'occurrence the header of its `ids_properties` values and '
+        'available signals -- the signals the tree holds for it, kept to '
+        'the ones the tree carries as available (the same test its own '
+        'colouring applies), a 0-D scalar held by the dynamic array '
+        'among them. The "inventaire du cas" / "what does this case '
+        'hold" report. A property the case leaves empty is named empty, '
+        'an occurrence without an available signal is named as such, and '
+        'a case that holds no data at all is refused by name. `name` is '
+        'the report name under '
+        '`~/.imasviz/reports` (a place, not a report, is refused).',
         {'type': 'object', 'properties': {
             'uri': {'type': 'string'},
             'name': {'type': ['string', 'null']},

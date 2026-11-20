@@ -706,6 +706,79 @@ def test_case_report_stats_the_loaded_tree_and_refuses_the_absent(core):
         session.case_report('imas:hdf5?path=/no/such/case', name='nope')
 
 
+def test_case_ids_report_inventories_the_case_the_same_way(core):
+    """`case_ids_report` writes the case itself under one page: the
+    summary of every IDS the case holds (the occurrences each holds and
+    the ones loaded), the header of each loaded occurrence -- the
+    ``ids_properties`` values read from the ``ids_properties`` structure
+    the loaded instance holds -- and its available signals: the signals
+    the tree holds for that occurrence, kept to the ones the tree
+    carries as available (its own colouring test), a 0-D scalar held by
+    the dynamic array among them.
+
+    Pinned at the state this file's run holds when it runs: the
+    equilibrium occurrence 0 and the ``core_profiles`` occurrence 0
+    both loaded -- so the summary names "loaded" for the two, and
+    "the case holds no data for it" and "not loaded" for the others,
+    without inventing a load.
+    """
+    session, home = core
+    answer = session.case_ids_report(CASE_URI, name='mcp_case_ids_report')
+    saved = answer['saved_to']
+    assert saved.endswith('mcp_case_ids_report.html'), saved
+    assert os.path.dirname(saved) == os.path.join(str(home), '.imasviz',
+                                                  'reports'), saved
+    assert os.path.exists(saved), saved
+    assert answer['idss'] >= 3, 'the summary names fewer IDSs than the case declares'
+    assert answer['loaded'] == 2, \
+        'this file has loaded equilibrium 0 and core_profiles 0 before this test'
+
+    with open(saved, encoding='utf-8') as file:
+        page = file.read()
+
+    # The summary: the case's own answer, IDS by IDS.
+    assert 'occurrences held' in page, 'the summary asks the case held'
+    assert 'occurrences loaded' in page, 'the summary asks the session loaded'
+    assert 'equilibrium' in page
+    assert 'core_profiles' in page
+    assert 'pulse_schedule' in page
+    # ...and the two occurrence sections this run loaded, each with its
+    # two sub-headings: the properties header and the signals.
+    assert 'equilibrium — occurrence 0' in page, \
+        'the section of the loaded occurrence is not headed'
+    assert 'core_profiles — occurrence 0' in page, \
+        'the other loaded occurrence has no section'
+    assert 'ids_properties</h3>' in page, 'the header is not headed'
+    assert 'Available signals' in page, 'the signals are not headed'
+    # The two states the loaded state sits between.
+    assert '>loaded</td>' in page, 'the loaded occurrence is not named loaded'
+    assert 'the case holds no data for it' in page, \
+        'an IDS the dictionary declares but the case does not fill is not named'
+    # ...and an IDS that holds data the session has not loaded (the state
+    # of this run: core_profiles at the point this test runs).
+    assert '>not loaded</td>' in page, \
+        'a held-but-not-loaded occurrence answers not loaded'
+
+    # The header of the loaded occurrence: the ids_properties values.
+    assert 'homogeneous_time' in page
+    assert 'INT_0D' in page
+    assert '3.35.0' in page, 'version_put.data_dictionary is not in the header'
+    assert 'provenance' in page
+    assert '(empty)' in page, 'a property the case leaves empty is named empty'
+
+    # The available signals of the loaded occurrence: the 0-D scalar
+    # held by the dynamic array -- the tree carries it as available
+    # (its own list), and the report names it with its scalar type,
+    # the same way the figure spread it along the clock.
+    assert 'global_quantities.ip' in page, \
+        'the 0-D scalar of the loaded occurrence is not a row'
+
+    # A case that is not open in this session is refused by name, the
+    # way every read of the case here refuses one.
+    with pytest.raises(ValueError, match='is not open in this session'):
+        session.case_ids_report('imas:hdf5?path=/no/such/case', name='nope')
+
+
 # ----------------------------------------- plotting one node, pinned by time
 
 
