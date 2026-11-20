@@ -87,7 +87,9 @@ How to work with it:
    in. A picture window is addressed by the axis it holds, not the one it
    drew: set_axis_range pins the span of each of its pictures (the time
    zoom of a strip whose abscissa is a time is the x range, in the
-   seconds the time axis holds), A gesture of this section changes what the figure shows without
+   seconds the time axis holds), set_image_window moves (start) or
+   resizes (count) the window of time slices the pictures sit on, and
+   A gesture of this section changes what the figure shows without
    redrawing it: the answer names the figure the work was on (the key
    is how the user acts on it), and the numbers it answers are the ones
    the curve now holds -- it is not an ask to show anything, and the
@@ -687,7 +689,31 @@ TOOLS = [
             'auto': {'type': 'boolean', 'default': False},
         }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
-
+    _tool(
+        'set_image_window',
+        'The window a picture window\'s pictures sit on: moved with '
+        '`start` (where it sits on the axis it reads across; the pictures '
+        'are re-read in place, the scale and the band stay put) and resized '
+        'with `count` (how many pictures it holds; the scale a hand settled '
+        'is not moved off by the rebuild). Name at least one. The answer '
+        'carries the axis, the start, the count, the extent the axis '
+        'holds and the label of each picture the window shows, the time it '
+        'is in seconds when the axis is the time. Refused by name: a window '
+        'that is not a picture window (the shape it holds, named), a '
+        'picture window that holds one picture, not a window of them (the '
+        'span of that one is set_axis_range), and an ask that names '
+        'neither bound.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'start': {'type': ['integer', 'null'],
+                      'description': 'where the window sits on the axis '
+                                     'it reads across (0-based element)'},
+            'count': {'type': ['integer', 'null'],
+                      'description': 'how many pictures the window '
+                                     'holds (1 up to the extent of '
+                                     'the axis)'},
+        }, 'required': ['figure_key'], 'additionalProperties': False},
+    ),
 
     _tool(
         'set_log_scale',

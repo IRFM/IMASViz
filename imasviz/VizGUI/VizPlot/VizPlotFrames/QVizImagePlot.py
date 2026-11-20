@@ -99,6 +99,9 @@ class QVizImagePlot(QWidget):
         # pictures cannot be out of date with respect to each other.
         self.sliceControls.changed.connect(self.refresh)
         self.framesControls.moved.connect(self.refresh)
+        # A start is a read of the pictures that are up; a count is a rebuild
+        # of them. The two go to two different destinations on purpose.
+        self.framesControls.countChanged.connect(self._onFramesCount)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -203,10 +206,35 @@ class QVizImagePlot(QWidget):
         # taken at the element the tree carries, clamped to where a window of
         # this many can sit, and the control has to show that same number.
         self.framesControls.setWindow(self._frames, self._count)
+        self._paint()
+        return self._count
+
+    def _paint(self):
+        """The window the controls hold, drawn picture by picture.
+
+        `plot` and `frameCount` both end here: the quantity is the one, and
+        the pictures are the start the window sits on and the count it holds,
+        in whatever way the controls hold them when this runs -- so a
+        rescale reads the window the rescale holds, and a first draw reads
+        it at the element the tree carries. The pictures, the bar, the
+        titles and the slice lines are all posed on that same read.
+
+        The colour scale settles over the pictures this call holds; the one
+        a hand put there is the caller's to put back after -- a rescale is
+        not a hand, and a span set for the question being asked is not
+        overruled by the pictures moving underneath it (see `frameCount`).
+        """
+        treeNode = self._treeNode
+        access = self.accessFor(treeNode)
+        axesSpec, _, _, plotted = access.plan(treeNode, self,
+                                              as_function_of_time=False)
+        drawn = [position for position in plotted
+                 if self._frames is None or position != self._frames.position]
 
         frames = self._read()
         if not any(np.asarray(handle.arrayValues).size for handle, _, _ in frames):
-            raise ValueError('Nothing to plot for "' + path +
+            raise ValueError('Nothing to plot for "' +
+                             self.dataPathOf(treeNode) +
                              '": no values in the image.')
 
         quantity = self.quantityLabel(treeNode)
@@ -239,7 +267,84 @@ class QVizImagePlot(QWidget):
                                         frames=None if self._frames is None
                                         else self._frames.position))
         self._poseSliceLines(quantity, axesSpec, drawn, frames[0][0])
+
+    def frameCount(self, count):
+        """How many pictures the window of this quantity sits on.
+
+        Not a re-plot: the quantity it is, the fixed axes it pins, the start
+        the user moved the window to and the scale a hand settled all stay
+        put -- what changes is the number of pictures the window holds and
+        the reach of the slider that moves it. The pictures are rebuilt on
+        the window the controls hold after the change (the same start, the
+        new count), so a scale nobody touched settles itself over the
+        pictures the window holds now, and the one a hand did put there is
+        moved back after the rebuild -- the span was set for the question
+        being asked, and the rebuild under it is not an answer to it.
+
+        Refused by name: a figure not read across an axis holds one picture,
+        not a window of them (the span of that picture is on the axis it
+        drew), and a count the window already holds is not a change and
+        costs no rebuild.
+        """
+        if self._frames is None:
+            raise ValueError(
+                'This figure holds one picture, not a window of them: it was '
+                'not read across an axis, so there is no count of pictures '
+                'to change, and the span of the one it holds sits on the '
+                'axis it drew.')
+        try:
+            count = int(count)
+        except (TypeError, ValueError):
+            raise ValueError(
+                'The window holds a whole number of pictures, not %r.'
+                % (count,))
+        if count < 1:
+            raise ValueError(
+                'The window holds at least one picture, not %d.' % count)
+        if self._frames.length is not None:
+            length = int(self._frames.length)
+            if count > length:
+                raise ValueError(
+                    'This axis holds %d elements: a window of %d pictures '
+                    'has none to draw past the last one.'
+                    % (length, count))
+        if count == self._count:
+            return self._count
+        # The scale a hand settled is not moved by the rebuild underneath it:
+        # it is put back after, and the one the window settles for itself is
+        # not (the pictures it was settled over are no longer the ones up).
+        keep = self._levels if self.colourScale.levelsTouched else None
+        self._count = count
+        self.framesControls.setWindow(self._frames, count)
+        # The lines and the panels below the pictures belong to the first of
+        # them: the rebuild takes them with the layout and poses them again,
+        # and a slice kept under one the window no longer holds is a record
+        # of a picture that is gone, not one the rebuild would carry over.
+        self.sliceLines.clear()
+        self.colourScale.dropEntries()
+        self._clearPictures()
+        self._paint()
+        if keep is not None:
+            self.setColourLevels(keep)
         return self._count
+
+    def _onFramesCount(self):
+        # The count is already the window's -- the box said it -- and the
+        # pictures follow it rather than the other way round.
+        self.frameCount(self.framesControls.count())
+
+    def _clearPictures(self):
+        """The pictures off the window, and the state they carried.
+
+        The controls stay, and so does a hand on them: a rebuild is what
+        follows, and it poses the pictures, the bar and the lines on the
+        same window it finds.
+        """
+        self.pgPlotWidget.clear()
+        self._pictures.clear()
+        self._screen.clear()
+        self.colorBar = None
+        self.plotItem = None
 
     def refresh(self):
         """Re-read the window the controls picked, updating the pictures in place.
@@ -300,6 +405,15 @@ class QVizImagePlot(QWidget):
 
     def framesKey(self):
         return None if self._frames is None else self._frames.key
+
+    def frameAxis(self):
+        """The axis the window reads across, with its length -- the one the
+        window's pictures are elements of, or None for the single picture."""
+        return self._frames
+
+    def treeNode(self):
+        """The quantity the window draws, the node it was planted on."""
+        return self._treeNode
 
     def addSlices(self, slices):
         self.sliceControls.setSlices(slices)

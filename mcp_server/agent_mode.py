@@ -134,6 +134,7 @@ EXTRA_SHOTS = ('app', 'case-views')
 #: the turn did to a figure.
 FIGURE_MUTATIONS = ('scale_curve', 'shift_curve', 'normalize_curve',
                     'reset_curve', 'remove_curve', 'set_axis_range',
+                    'set_image_window',
                     'set_log_scale', 'invert_axis')
 
 

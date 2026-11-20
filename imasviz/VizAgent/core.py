@@ -2044,6 +2044,152 @@ class McpGuiCore:
                 'xInverted': bool(state.get('xInverted', False)),
                 'yInverted': bool(state.get('yInverted', False))}
 
+    def set_image_window(self, figure_key, start=None, count=None):
+        """The window a figure's pictures sit on: moved, or resized, by name.
+
+        `start` is where the window sits on the axis it reads across -- the
+        pictures are re-read in place, one of them per element, and the scale
+        and the controls stay put while the window moves; `count` is how
+        many pictures the window holds and the resize rebuilds them on the
+        same start, the same pinned axes, and the scale a hand settled.
+        The ask names neither bound and is refused: a window someone moved
+        is named by where it sits and how wide it is, and an ask that says
+        nothing is not a move the window can answer.
+
+        The answer is the state the window holds after the call -- the axis
+        it reads across, its start and its count, the extent the axis holds,
+        and the label of each picture the window shows, the element it is
+        and, when the axis carries a value at that element (a time axis does),
+        the value it carries, so a window of three pictures answers the three
+        elements it holds and the answer is the same numbers the titles of
+        the pictures spell.
+
+        Refused by name, and each refusal says the shape of the window that
+        was tried and the gesture that answers the question instead of
+        repeating the one that failed: a window that is not an image window
+        has no pictures and no axis read across them; an image window that
+        holds a single picture has no window to move or resize, and the span
+        of that one picture is the axis range -- `set_axis_range` -- of the
+        axis it drew; a `start` or `count` past the extent the axis holds is
+        the extent itself, named, not a slip past it.
+        """
+        record, frame = self._windowForKey(figure_key)
+        pictures = getattr(frame, 'plotItems', None)
+        if not callable(pictures):
+            # Naming the shape the window holds is what tells the caller
+            # which gesture it asked -- the curves one, or the panels' own.
+            pgPlot = getattr(frame, 'pgPlotWidget', None)
+            if pgPlot is not None and hasattr(pgPlot, 'getViewBox'):
+                raise ValueError(
+                    'The window "%s" is a figure of curves: it holds traces, '
+                    'not a window of pictures, so there is no window to move '
+                    'or resize on it, and the span of its axes is the one '
+                    'set_axis_range pins. Name the figure the pictures were '
+                    'drawn in.' % figure_key)
+            raise ValueError(
+                'The window "%s" is not an image window: it is not a figure '
+                'of pictures, so there is no window of them to move or '
+                'resize, and the panels it holds each keep their own '
+                'answers. Name the figure the pictures were drawn in.'
+                % figure_key)
+        sl = getattr(frame, 'frameAxis', None)
+        sl = sl() if callable(sl) else None
+        if sl is None:
+            raise ValueError(
+                'The window "%s" holds one picture, not a window of them: '
+                'it was not read across an axis, so there is no window to '
+                'move or resize, and the span of the one it holds is what '
+                'set_axis_range pins on the axis it drew.' % figure_key)
+        controls = getattr(frame, 'framesControls', None)
+        if controls is None:
+            raise ValueError(
+                'The window "%s" is an image window but holds no control on '
+                'the axis it reads across, so the window there is not one '
+                'that can be moved or resized.' % figure_key)
+        if start is None and count is None:
+            raise ValueError(
+                'A window moved, or resized: `start` is where it sits on '
+                'the axis it reads across, `count` how many pictures it '
+                'holds -- and naming neither says nothing the window can '
+                'answer.')
+        if start is not None:
+            try:
+                start = int(start)
+            except (TypeError, ValueError):
+                raise ValueError(
+                    'The window sits on the axis its pictures are '
+                    'elements of, at a whole element: %r is not one.'
+                    % (start,))
+            if start < 0:
+                raise ValueError(
+                    'The window sits from element 0 of the axis its '
+                    'pictures are elements of, and %d is before it.'
+                    % start)
+            if length_known := (getattr(sl, 'length', None) is not None):
+                extent = int(sl.length)
+                if start >= extent:
+                    raise ValueError(
+                        'The axis this window reads across holds %d '
+                        'elements (0 to %d), and %d is past the last one: '
+                        'a window with no picture to draw would be blank '
+                        'to the eye and blank to the answer.'
+                        % (extent, extent - 1, start))
+
+        if count is not None:
+            # The resize is the window's own: it derives the slider's reach
+            # from the new count and rebuilds the pictures on the start the
+            # window holds, refusing by name a count the axis cannot hold.
+            frame.frameCount(count)
+        if start is not None:
+            frames = controls.setStart(start)
+            if frames is False:
+                raise ValueError(
+                    'The window "%s" has no control on the axis its '
+                    'pictures are elements of, so a position to sit it at '
+                    'is not one it holds.' % figure_key)
+
+        count_actual = int(controls.count())
+        start_actual = int(controls.start())
+        length = None if getattr(sl, 'length', None) is None \
+            else int(sl.length)
+        # The label of each picture the window shows -- the element it is,
+        # and the value the axis carries at that element when it carries
+        # one. A time axis does, and a window of three slices is the only
+        # way to compare them, so the answer says the three times, not
+        # three element ranks. The value is read once, and the label is
+        # posed on it per element, in the same shape the titles of the
+        # pictures spell.
+        axis = getattr(sl, 'axis', None)
+        values = None
+        if axis is not None and getattr(axis, 'is_time', False):
+            try:
+                from imasviz.VizDataAccess.QVizTensorDataAccess \
+                    import QVizTensorExtractor
+                node = frame.treeNode()
+                axesSpec = frame.accessFor(node).plan(
+                    node, frame, as_function_of_time=False)[0]
+                values = QVizTensorExtractor(node.getIDSRef()).timeBase(axesSpec)
+            except Exception:
+                values = None
+        images = []
+        for index in range(start_actual, start_actual + count_actual):
+            if values is not None:
+                from imasviz.VizDataAccess.QVizSlices import frameLabel
+                images.append(frameLabel(axis, index, values))
+            else:
+                images.append(index)
+        self._logFor(record.cases,
+                     'set_image_window: %s moved to start=%d, %d picture(s) '
+                     'of the %s it reads across.'
+                     % (figure_key, start_actual, count_actual,
+                        getattr(sl, 'label', 'axis')))
+        return {'window': figure_key,
+                'axis': getattr(sl, 'label', None),
+                'start': start_actual,
+                'count': count_actual,
+                'length': length,
+                'pictures': images}
+
     # -------------------------------- figures: read the numbers under the picture
 
     def curve_stats(self, figure_key, curve=None):

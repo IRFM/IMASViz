@@ -246,6 +246,181 @@ def test_the_span_refuses_no_axis_name(core):
 
 
 # --------------------------------------------------------------------------
+# set_image_window: the move, the resize, and the refusals that keep them real
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.ui
+def test_the_window_moves_and_the_answer_spells_the_pictures_it_holds(core):
+    session, window = core['core'], core['window']
+
+    answer = session.set_image_window('Image1', start=0)
+    assert answer['start'] == 0
+    assert answer['count'] == 3
+    assert answer['length'] == len(TIMES)
+    # The pictures were re-read in place, and the answer spells them --
+    # with the value the axis carries at each, because the axis carries it:
+    # a time axis does, so a window of time slices answers the three times.
+    assert answer['pictures'] == [
+        'time_slice 0 (t = 0 s)',
+        'time_slice 1 (t = 1 s)',
+        'time_slice 2 (t = 2 s)'], answer['pictures']
+    for position, timeIndex in enumerate(range(0, 3)):
+        np.testing.assert_array_equal(_picture(window, position),
+                                     _psi_values(timeIndex, TREE_SLICE))
+
+
+@pytest.mark.ui
+def test_the_window_resizes_to_fewer_pictures_and_the_controls_follow(core):
+    session, window = core['core'], core['window']
+
+    session.set_image_window('Image1', start=0, count=2)
+
+    assert window.imageCount() == 2
+    assert window.framesControls.count() == 2
+    assert window.framesControls.slider.maximum() == len(TIMES) - 2
+    assert window.framesControls.countBox.maximum() == len(TIMES)
+    # The pictures were rebuilt on the start the window held.
+    for position, timeIndex in enumerate(range(0, 2)):
+        np.testing.assert_array_equal(_picture(window, position),
+                                     _psi_values(timeIndex, TREE_SLICE))
+
+
+@pytest.mark.ui
+def test_the_window_resizes_to_more_pictures(core):
+    session, window = core['core'], core['window']
+
+    session.set_image_window('Image1', start=0, count=4)
+
+    assert window.imageCount() == 4
+    assert window.framesControls.slider.maximum() == len(TIMES) - 4
+    for position, timeIndex in enumerate(range(0, 4)):
+        np.testing.assert_array_equal(_picture(window, position),
+                                     _psi_values(timeIndex, TREE_SLICE))
+
+
+@pytest.mark.ui
+def test_the_resize_keeps_the_scale_a_hand_set(core):
+    """The scale a hand put on the window is not the window's to settle:
+    a resize rebuilds the pictures underneath it, and the one a hand did
+    put there is moved back after -- the span was set for the question
+    being asked, and the rebuild under it is not an answer to it. This is
+    the half of `frameCount` a window would forget without it."""
+    session, window = core['core'], core['window']
+
+    # A hand on the scale: what `levelMoved` records.
+    window.colourScale.levelsTouched = True
+    window.setColourLevels((4050., 4150.))
+
+    session.set_image_window('Image1', count=2)
+
+    assert window.colourLevels() == (4050., 4150.)
+    for image in window.images():
+        assert tuple(image.getLevels()) == (4050., 4150.)
+
+
+@pytest.mark.ui
+def test_the_resize_resettles_a_scale_nobody_touched(core):
+    """The opposite must not break: a scale nobody put there settles over
+    the pictures the window holds now -- a range settled over the three it
+    held before the resize would saturate the pictures that came in with it."""
+    session, window = core['core'], core['window']
+
+    before = window.colourLevels()
+
+    session.set_image_window('Image1', start=0, count=2)
+
+    # The two pictures the window holds now span a smaller range than all
+    # three: the settled scale is the one of the pictures it was settled
+    # over, and the ones that came in are inside it.
+    assert window.colourLevels() is not None
+    assert window.colourLevels()[0] <= before[0]
+    assert window.colourLevels()[1] <= before[1]
+
+
+@pytest.mark.ui
+def test_the_window_refuses_a_start_past_the_axis(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window('Image1', start=len(TIMES))
+    message = str(excinfo.value)
+    assert str(len(TIMES)) in message, \
+        'the refusal must name the extent the axis holds'
+    assert 'past' in message
+
+
+@pytest.mark.ui
+def test_the_window_refuses_a_negative_start(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window('Image1', start=-1)
+    assert 'before' in str(excinfo.value)
+
+
+@pytest.mark.ui
+def test_the_window_refuses_a_count_past_the_axis(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window('Image1', count=len(TIMES) + 1)
+    assert str(len(TIMES)) in str(excinfo.value)
+
+
+@pytest.mark.ui
+def test_the_window_refuses_neither_bound_named(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window('Image1')
+    assert '`start`' in str(excinfo.value) and '`count`' in str(excinfo.value)
+
+
+@pytest.mark.ui
+def test_a_single_picture_has_no_window_to_move(core):
+    """The reported shape, refused on the shape it holds: a window that
+    was not read across an axis holds one picture, not a window of them,
+    and the gesture that answers that window's span is named in the
+    refusal instead of the one that cannot take it."""
+    session = core['core']
+    single = core['single']
+    assert single.imageCount() == 1
+
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window('Image2', start=0)
+    message = str(excinfo.value)
+    assert 'one picture, not a window' in message
+    assert 'set_axis_range' in message, \
+        'the refusal must name the gesture that answers this shape'
+
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window('Image2', count=2)
+    assert 'set_axis_range' in str(excinfo.value)
+
+
+@pytest.mark.ui
+def test_the_count_box_is_the_gui_half_of_the_resize(core, qtbot):
+    """The same gesture the core takes, from the window itself: the box
+    beside the slider is bounded by the axis the window reads across, and
+    a change of it rebuilds the pictures the window holds -- the `moved`
+    the box does not emit is the count, and the count is the only thing
+    that says so."""
+    window = core['window']
+    box = window.framesControls.countBox
+
+    assert box.maximum() == len(TIMES)
+    assert box.minimum() == 1
+    assert box.value() == 3
+
+    emitted = []
+    window.framesControls.countChanged.connect(lambda: emitted.append(True))
+
+    box.setValue(2)
+    qtbot.waitUntil(lambda: len(emitted) == 1, timeout=2000)
+
+    assert window.imageCount() == 2
+    assert box.value() == 2
+    assert len(emitted) == 1
+
+
+# --------------------------------------------------------------------------
 # The shot that reported it: WEST 54924, soft_x_rays, the single-pictures strip
 # --------------------------------------------------------------------------
 
@@ -292,6 +467,32 @@ def strip_case(qapp, tmp_path_factory):
 
 @pytest.mark.case
 @pytest.mark.ui
+def test_the_strip_is_a_window_of_pictures_across_its_channels(strip_case):
+    """The shape the report came from, pinned on the shot it was taken
+    on: the band and the time are drawn inside the picture, and the
+    channels are the window the pictures sit on -- the control for it
+    is the frames window, and the bands of sliders hold none, because
+    the axes the band would pose are the ones the picture draws."""
+    frame = strip_case['frame']
+
+    assert frame.imageCount() == 3
+    axis = frame.frameAxis()
+    assert axis is not None, \
+        'the strip is read across its channels: the window of pictures'
+    assert axis.label == 'channel'
+    assert int(axis.length) == 45
+    assert frame.frameAxis().key[2] == 'channel'
+    # The band holds none: the axes a row would pose are drawn in the
+    # picture, and a slider under a drawn axis would move a window the
+    # picture already shows.
+    assert frame.sliceControls.rows() == []
+    assert frame.framesKey() is not None
+    assert 'channel' in frame.framesControls.labelText()
+    assert '0-2 / 44' in frame.framesControls.labelText()
+
+
+@pytest.mark.case
+@pytest.mark.ui
 def test_the_strip_time_zoom_is_the_x_span_of_each_picture(strip_case):
     """The report's ask, answered on the shape it took it on: the time
     is the abscissa of each picture, so a time zoom is the ``x`` span,
@@ -324,3 +525,43 @@ def test_the_strip_time_zoom_is_the_x_span_of_each_picture(strip_case):
         assert bool(frame.plotItems()[position].getViewBox()
                     .state['autoRange'][0]), \
             'picture %d keeps the pin the auto ask took off' % position
+
+
+@pytest.mark.case
+@pytest.mark.ui
+def test_the_strip_window_moves_and_resizes_across_its_channels(strip_case):
+    """The window the pictures sit on, asked by name: a move re-reads
+    the pictures in place and the answer spells them; a resize
+    rebuilds them on the start the window held, the controls following.
+    The channels are not a time axis, so the answer spells them by
+    what they are -- the element ranks they are -- and the slider
+    stops where the case's channels do."""
+    session, key, frame = strip_case['session'], strip_case['key'], strip_case['frame']
+
+    moved = session.set_image_window(key, start=7)
+    assert moved['axis'] == 'channel'
+    assert moved['start'] == 7
+    assert moved['count'] == 3
+    assert moved['length'] == 45
+    assert moved['pictures'] == [7, 8, 9]
+    assert 'channel 7' in frame.plotItems()[0].titleLabel.text
+    assert frame.framesControls.start() == 7
+    assert frame.framesControls.labelText().endswith('7-9 / 44')
+
+    resized = session.set_image_window(key, count=5)
+    assert resized['count'] == 5
+    assert frame.imageCount() == 5
+    assert frame.framesControls.countBox.maximum() == 45
+    # The window is on the axis it sits on: a start past it is refused
+    # with the extent, and a count past it is refused the same way.
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window(key, start=45)
+    assert '45' in str(excinfo.value) and 'past' in str(excinfo.value)
+    with pytest.raises(ValueError) as excinfo:
+        session.set_image_window(key, count=46)
+    assert '45' in str(excinfo.value)
+    # The gesture that takes the span of the axes the pictures draw is
+    # the one the resize does not take: the channels, not the seconds.
+    assert session.set_image_window(key, start=0)['start'] == 0
+    assert frame.framesControls.labelText().endswith('0-2 / 44') \
+        or frame.framesControls.labelText().endswith('0-4 / 44')

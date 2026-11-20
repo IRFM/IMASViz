@@ -225,6 +225,16 @@ class QVizImageColourScale(object):
             plotItem.getViewBox().menu.addAction(action)
             self._actions.append(action)
 
+    def dropEntries(self):
+        """The *Colour Scale...* lines off the pictures they were posed on.
+
+        A window that rebuilds its pictures -- `frameCount` does, when the
+        count moves -- deletes the view boxes these were parented on: keeping
+        the entries would hold dead pictures in memory for the rest of the
+        session, and the rebuild that follows poses fresh ones with `bind`.
+        """
+        self._actions = []
+
     # ------------------------------------------------------------------ answers
     def colourMap(self):
         return self.mapName

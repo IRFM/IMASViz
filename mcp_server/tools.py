@@ -465,12 +465,40 @@ def buildServer(core, dispatcher, name='imasviz'):
 
         Pin `xmin`/`xmax` together (the abscissa) and/or `ymin`/`ymax`
         (the ordinate); a partial ask (one bound of a pair) is refused
-        because a range is two. `auto=True` clears the pins and re-fits. A
-        window that is not a single figure is refused by name.
+        because a range is two. `auto=True` clears the pins and re-fits.
+        A curve figure takes one axis set; a picture window takes the same
+        span on the axis set of each of its pictures, so the time zoom of
+        a strip whose abscissa is its time is the `x` range, in the
+        seconds its time axis holds. A table and a stacked window keep
+        one axis set per panel and are refused by name.
         """
         return _run(partial(core.set_axis_range, figure_key,
                             xmin=xmin, xmax=xmax, ymin=ymin, ymax=ymax,
                             auto=auto))
+
+    @server.tool(name='set_image_window')
+    def set_image_window(figure_key: str, start: Optional[int] = None,
+                         count: Optional[int] = None):
+        """The window a picture window's pictures sit on: moved with
+        `start` (where it sits on the axis it reads across; the pictures
+        are re-read in place, the scale and the band stay put), and
+        resized with `count` (how many pictures it holds; the scale a hand
+        settled is not moved off by the rebuild). Name at least one of
+        the two.
+
+        The answer carries the axis it reads across, its start and count,
+        the extent the axis holds, and the label of each picture the
+        window shows (the element it is, and the value the axis carries
+        there when the axis is the time), so a window of three time slices
+        answers the three slices it holds by their time, not by rank. A
+        window that is not a picture window is refused by name (the shape
+        it holds, and the gesture the question it was asked belongs to);
+        so is one that holds a single picture, not a window of them (the
+        span of that one is `set_axis_range`), and an ask that names
+        neither the start nor the count of the window.
+        """
+        return _run(partial(core.set_image_window, figure_key,
+                            start=start, count=count))
 
     @server.tool(name='set_log_scale')
     def set_log_scale(figure_key: str, x: Optional[bool] = None,
