@@ -1013,6 +1013,59 @@ TOOLS = [
     ),
 
     _tool(
+        'campaign',
+        'The trend of one leaf across a series of shots, in campaign order. '
+        'The same leaf is read from each shot (the read a figure of that leaf '
+        'would draw), one value is taken per shot (at a named index of the '
+        'curve, or mean/max/min over it), and the trend over the shots '
+        'comes out: the per-shot values, the least-squares slope over the '
+        'shot index, first-to-last change, min and max with the shots they '
+        'came from, and the direction. A campaign of one shot, a shot the '
+        'case does not hold the leaf in, or a campaign of all-equal values '
+        'refuses in words -- each in the words that mean it.',
+        {'type': 'object', 'properties': {
+            'cases': {'type': 'array',
+                      'items': {'type': 'string'},
+                      'minItems': 2,
+                      'description': 'the shot URIs, in campaign order.'},
+            'path': {'type': 'string',
+                     'description': 'the leaf to read from each shot.'},
+            'at': {'type': ['integer', 'string', 'null'],
+                   'description': 'a 0-based index into the curve each shot '
+                                  'answers; name either this or `which`.'},
+            'which': {'type': ['string', 'null'],
+                      'enum': ['mean', 'max', 'min'],
+                      'description': 'mean / max / min over the curve each '
+                                     'shot answers; name either this or `at`.'},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null']},
+        }, 'required': ['cases', 'path'], 'additionalProperties': False},
+    ),
+
+    _tool(
+        'campaign_report',
+        'The campaign answer as a self-contained HTML page: the per-shot '
+        'table, the trend, and the line the shot values make across the '
+        'shots. The same read and the same `campaign` the facts run on -- '
+        'nothing is remembered from memory -- and the file lands under '
+        '~/.imasviz/reports like the other reports.',
+        {'type': 'object', 'properties': {
+            'cases': {'type': 'array',
+                      'items': {'type': 'string'},
+                      'minItems': 2},
+            'path': {'type': 'string'},
+            'at': {'type': ['integer', 'string', 'null']},
+            'which': {'type': ['string', 'null'],
+                      'enum': ['mean', 'max', 'min']},
+            'along': {'type': ['string', 'null']},
+            'indices': {'type': ['object', 'null']},
+            'name': {'type': ['string', 'null'],
+                     'description': 'the report name, without the .html. '
+                                    'Refused when it names a place.'},
+        }, 'required': ['cases', 'path'], 'additionalProperties': False},
+    ),
+
+    _tool(
         'export_curve',
         'Take a figure\'s drawn curve(s) out to a file: the values as they '
         'stand (a scale/shift/normalize is in the file). `format` csv or '

@@ -2963,6 +2963,196 @@ class McpGuiCore:
         x, y = self._readCurveSignal(uri, path, along, indices)
         return self._scalarCurve('pressure', uri, path, x, y)
 
+    # Trend / campaign: read the same leaf from several shots and say whether
+    # it is rising, falling, or flat. Neither the values nor the order come
+    # from this method: the caller names the shots, in campaign order, and the
+    # read is the same `get_signal` a figure of the same leaf would draw.
+    # A shot the case does not hold the leaf in is refused by name; a
+    # campaign of one, or of all-equal values, is refused too, because
+    # neither says rising or falling.
+
+    def _shotValue(self, uri, path, at, which, along, indices):
+        """The one value per shot the trend is asked of.
+
+        `at` is the 0-based index into the curve `get_signal` answers;
+        `which` is `'mean'`, `'max'`, or `'min'` over that curve. Name one
+        or the other, not both: the shot values the caller asked for and
+        the shot values the case holds are two different things, and the
+        trend must not mix them.
+        """
+        payload = self.get_signal(uri, path, along=along, indices=indices)
+        if not isinstance(payload, dict) or payload.get('kind') != 'curve':
+            kind = payload.get('kind') if isinstance(payload, dict) \
+                else type(payload).__name__
+            raise ValueError(
+                'shot %s answers %r for %s: a per-shot value is read off a '
+                'curve the case draws along one axis -- name it with `along` '
+                'and `indices` -- not a multi-array answer.'
+                % (uri, kind, path))
+        y = list(payload.get('y') or [])
+        if not y:
+            raise ValueError(
+                'shot %s answers no value for %s: name the axis or element '
+                'the case holds the leaf on.' % (uri, path))
+        if at is not None:
+            if isinstance(at, bool):
+                raise ValueError('`at` is a 0-based index into the curve '
+                                 'the shot answers, not a true/false flag.')
+            if isinstance(at, str) and at.strip().isdigit():
+                at = int(at.strip())
+            if not isinstance(at, int):
+                raise ValueError('`at` is a 0-based index into the curve '
+                                 'the shot answers, got %r.' % (at,))
+            if not (0 <= at < len(y)):
+                raise ValueError(
+                    'shot %s holds %d values for %s and at=%d is out of '
+                    'range (0 to %d).' % (uri, len(y), path, at, len(y) - 1))
+            value = float(y[at])
+        else:
+            which = (which or 'mean').strip().lower()
+            if which not in ('mean', 'max', 'min'):
+                raise ValueError('`which` is "mean", "max" or "min", '
+                                 'got %r.' % (which,))
+            finite = [v for v in y
+                      if v is not None and isinstance(v, (int, float))
+                      and v == v and abs(v) != float('inf')]
+            if not finite:
+                raise ValueError(
+                    'shot %s answers no finite value for %s: the case does '
+                    'not hold the leaf there, so there is no number to '
+                    'take the trend on.' % (uri, path))
+            if which == 'mean':
+                value = sum(finite) / len(finite)
+            elif which == 'max':
+                value = max(finite)
+            else:
+                value = min(finite)
+        return value
+
+    def campaign(self, cases, path, at=None, which='mean',
+                 along=None, indices=None):
+        """The trend of a leaf, across a series of shots, in campaign order.
+
+        `cases` is the list of shot URIs, in the order the campaign runs;
+        `path` the leaf to read from each shot; `at` the 0-based index into
+        the curve the shot answers, or `which` ('mean', 'max', 'min') over
+        that curve -- one of the two, not both. The answer carries the
+        per-shot values, the least-squares slope over the shot index, first
+        to last, min/max and the shots they came from, and a direction.
+        `cases` of one, a shot the case does not hold the leaf in, or a
+        campaign of all-equal values refuses by name -- each in the words
+        that mean it.
+        """
+        if not isinstance(cases, (list, tuple)):
+            raise ValueError('`cases` is the list of shot URIs, in campaign '
+                             'order, and %r is not one.' % (cases,))
+        if len(cases) < 2:
+            raise ValueError('a trend is asked of at least two shots; the '
+                             'campaign holds %d.' % len(cases))
+        if at is not None and which is not None and \
+                which != 'mean':
+            raise ValueError('name one of `at` or `which`: the shot-value '
+                             'the curve answers and the shot-value the '
+                             'caller asked for are two reads, and the trend '
+                             'runs on one of them, not a mix of the two.')
+        rows = []
+        for uri in cases:
+            value = self._shotValue(uri, path, at, which, along, indices)
+            rows.append({'uri': uri, 'value': value})
+        from imasviz.VizAnalysis.trend import trend as ask
+        trend = ask([r['value'] for r in rows],
+                    labels=[r['uri'] for r in rows])
+        self._logFor([r['uri'] for r in rows],
+                     'campaign on %s: %d shot(s) -- %s, change %g, '
+                     'slope %g per shot, min %g at shot %d, max %g at '
+                     'shot %d.'
+                     % (path, len(rows), trend['direction'],
+                        trend['change'], trend['slope'],
+                        trend['min'], trend['argmin'],
+                        trend['max'], trend['argmax']))
+        return {'path': path, 'rows': rows, 'trend': trend}
+
+    def campaign_report(self, cases, path, at=None, which='mean',
+                        along=None, indices=None, name=None):
+        """The campaign answer, as a self-contained HTML page: the per-shot
+        table, the trend, and the shape it makes across the shots. The file
+        lands under `~/.imasviz/reports` like the other reports."""
+        answer = self.campaign(cases, path, at=at, which=which,
+                               along=along, indices=indices)
+        out = self._namedReport(name, len(answer['rows']))
+        self._writeCampaignReport(out, leaf=path, rows=answer['rows'],
+                                   trend=answer['trend'])
+        self._logFor([r['uri'] for r in answer['rows']],
+                     'campaign_report wrote %s: %s, %s over %d shot(s).'
+                     % (out, path, answer['trend']['direction'],
+                        len(answer['rows'])))
+        return {'saved_to': out, 'trend': answer['trend']}
+
+    def _writeCampaignReport(self, path, leaf, rows, trend):
+        """The campaign page: the per-shot table, the trend numbers, and the
+        line the shot values make across the shots. Inline SVG, no fetch, the
+        same little style the other reports wear."""
+        import html
+
+        def show(value):
+            return ('%g' % float(value)) if isinstance(value, float) \
+                else str(value)
+
+        # one point per shot, across the width; values mapped to the height
+        # on the campaign's own min/max so the line shows the shape, even
+        # where the shots cluster
+        vmin, vmax = float(trend['min']), float(trend['max'])
+        span = (vmax - vmin) or 1.0
+        width, height, pad = 340, 120, 16
+        n = len(rows)
+        step_x = (width - 2 * pad) / max(1, n - 1)
+        step_y = (height - 2 * pad) / span
+        points = []
+        dots = []
+        for i, r in enumerate(rows):
+            x = pad + i * step_x
+            y = pad + (vmax - float(r['value'])) * step_y
+            points.append(('%g %g' % (x, y)))
+            dots.append('<circle cx="%g" cy="%g" r="2.5"/>' % (x, y))
+        parts = [
+            '<!doctype html>',
+            '<html lang="en"><head><meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, '
+            'initial-scale=1">',
+            '<title>%s</title><style>%s</style></head><body>' % (
+                html.escape('campaign of %s' % leaf), _REPORT_CSS),
+            '<h1>%s</h1>' % html.escape('campaign of %s' % leaf),
+            '<p class="sub">%d shot(s) · %s · change %s · slope %s/shot · '
+            'min %s (shot %d) · max %s (shot %d)</p>'
+            % (len(rows), trend['direction'], show(trend['change']),
+               show(trend['slope']), show(trend['min']), trend['argmin'],
+               show(trend['max']), trend['argmax']),
+            '<svg width="%d" height="%d" role="img" '
+            'aria-label="the trend of %s across the campaign">'
+            % (width, height, html.escape(leaf)),
+            '<line x1="%g" y1="%g" x2="%g" y2="%g" '
+            'stroke="#dde3e7" stroke-width="1"/>'
+            % (pad, height - pad, width - pad, height - pad),
+            '<polyline fill="none" stroke="#3a707a" stroke-width="1.5" '
+            'points="%s"/>' % ' '.join(points),
+            ' '.join(dots),
+            '</svg>',
+            '<table>',
+            '<tr><th>shot</th><th>value</th><th>uri</th></tr>',
+        ]
+        for i, r in enumerate(rows):
+            parts.append('<tr><td class="s">%d</td><td class="s">%s</td>'
+                         '<td class="q">%s</td></tr>'
+                         % (i, show(r['value']), html.escape(r['uri'])))
+        parts.append('</table>')
+        parts.append('</body></html>')
+        try:
+            with open(path, 'w', encoding='utf-8') as file:
+                file.write('\n'.join(parts))
+        except OSError as error:
+            raise ValueError('the report could not be written to %s: %s'
+                             % (path, error))
+
     def export_curve(self, figure_key, curve=None, format='csv', name=None):
         """The x/y of a figure's drawn curves, as a file.
 

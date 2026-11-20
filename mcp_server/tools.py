@@ -728,6 +728,38 @@ def buildServer(core, dispatcher, name='imasviz'):
         return _run(partial(core.total_pressure, uri, path, along=along,
                             indices=indices))
 
+    @server.tool(name='campaign')
+    def campaign(cases: list, path: str, at: Optional[int] = None,
+                 which: Optional[str] = 'mean', along: Optional[str] = None,
+                 indices: Optional[dict] = None):
+        """The trend of one leaf across a series of shots, in campaign order.
+
+        The same leaf, read from each shot (a figure's read of that leaf),
+        one value per shot (a named index into the curve, or mean/max/min
+        over it); the trend over the shots -- the per-shot values, the
+        least-squares slope over the shot index, first to last, min/max and
+        their shots, and the direction. A one-shot campaign, a shot without
+        the leaf, or an all-equal campaign refuses in words.
+        """
+        return _run(partial(core.campaign, cases, path, at=at,
+                            which=which, along=along, indices=indices))
+
+    @server.tool(name='campaign_report')
+    def campaign_report(cases: list, path: str, at: Optional[int] = None,
+                        which: Optional[str] = 'mean',
+                        along: Optional[str] = None,
+                        indices: Optional[dict] = None,
+                        name: Optional[str] = None):
+        """The campaign answer as a self-contained HTML page.
+
+        The per-shot table, the trend, and the line the values make across
+        the shots. The same read and the same `campaign` the facts run on;
+        the file lands under `~/.imasviz/reports`.
+        """
+        return _run(partial(core.campaign_report, cases, path, at=at,
+                            which=which, along=along, indices=indices,
+                            name=name))
+
     # -------------------------------------------------------------- windows
 
     @server.tool(name='list_windows')

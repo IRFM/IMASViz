@@ -18,7 +18,8 @@ already gives, so what is detected and what is plotted are the same read.
 
 from .spectra import (band_power, cross_correlation, greenwald_fraction,
                       spectrum)
+from .trend import trend
 
 __all__ = ['detect', 'peaks', 'transitions', 'period_stats',
            'spectrum', 'band_power', 'cross_correlation',
-           'greenwald_fraction']
+           'greenwald_fraction', 'trend']
