@@ -421,6 +421,85 @@ def test_the_count_box_is_the_gui_half_of_the_resize(core, qtbot):
 
 
 # --------------------------------------------------------------------------
+# set_slice_index: the row of the band, named, in its extent
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.ui
+def test_a_row_of_the_band_moves_the_slides_of_every_picture(core):
+    """The band row of the window, not the frame: the axis the pictures
+    are laid across is on screen, so a row of the band is the one the
+    band holds (here `profiles_2d`), and posing it, by name, re-reads
+    the window on the element it is posed at, on every picture of it."""
+    session, window = core['core'], core['window']
+
+    answer = session.set_slice_index('Image1', 'profiles_2d', 0)
+    assert answer['axis'] == 'profiles_2d'
+    assert answer['index'] == 0
+    assert answer['length'] == SLICES
+
+    for position, timeIndex in enumerate(WINDOW):
+        np.testing.assert_array_equal(_picture(window, position),
+                                     _psi_values(timeIndex, 0))
+
+
+@pytest.mark.ui
+def test_a_row_the_band_does_not_hold_is_refused_with_the_rest(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_slice_index('Image1', 'not_a_row', 0)
+    message = str(excinfo.value)
+    assert 'profiles_2d' in message, \
+        'the refusal must name the row the band holds'
+    assert 'no row' in message
+
+
+@pytest.mark.ui
+def test_the_axis_already_on_screen_is_refused_toward_set_image_window(core):
+    """The axis the pictures are laid across is on screen, one picture per
+    element: asking for a row of it is asking for what the window shows,
+    and the gesture that moves the window it shows is the one the refusal
+    points at -- a row of the band is not one for an axis the window
+    already shows."""
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_slice_index('Image1', 'time_slice', 0)
+    message = str(excinfo.value)
+    assert 'time_slice' in message, \
+        'the refusal must name the axis the window reads across'
+    assert 'set_image_window' in message, \
+        'the refusal must name the gesture that moves the window'
+
+
+@pytest.mark.ui
+def test_a_row_pasted_in_is_refused_at_its_name(core):
+    """The same row, named in the words the band does not spell it: a row is
+    the band's own naming of the axis, and a name the band does not hold
+    names none of them."""
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_slice_index('Image1', 'the band', 0)
+    assert 'no row' in str(excinfo.value)
+
+
+@pytest.mark.ui
+def test_an_index_past_the_extent_is_refused_with_the_bound(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_slice_index('Image1', 'profiles_2d', SLICES)
+    assert str(SLICES) in str(excinfo.value), \
+        'the refusal must name the extent the row holds'
+
+
+@pytest.mark.ui
+def test_a_non_integer_index_is_refused(core):
+    session = core['core']
+    with pytest.raises(ValueError) as excinfo:
+        session.set_slice_index('Image1', 'profiles_2d', 'a position')
+    assert 'whole number' in str(excinfo.value)
+
+
+# --------------------------------------------------------------------------
 # The shot that reported it: WEST 54924, soft_x_rays, the single-pictures strip
 # --------------------------------------------------------------------------
 
@@ -565,3 +644,22 @@ def test_the_strip_window_moves_and_resizes_across_its_channels(strip_case):
     assert session.set_image_window(key, start=0)['start'] == 0
     assert frame.framesControls.labelText().endswith('0-2 / 44') \
         or frame.framesControls.labelText().endswith('0-4 / 44')
+
+
+@pytest.mark.case
+@pytest.mark.ui
+def test_the_strip_refuses_a_slice_row_for_an_axis_it_draws(strip_case):
+    """The report's ask of the third gesture, on the shape the case
+    holds: the time is drawn inside the pictures, so a row for it would
+    put a slider under the axis the picture shows; the refusal names
+    the axis the window sits on, the gesture that moves it, and the
+    gesture that answers the span the report asked for."""
+    session, key = strip_case['session'], strip_case['key']
+
+    with pytest.raises(ValueError) as excinfo:
+        session.set_slice_index(key, 'time', 0)
+    message = str(excinfo.value)
+    assert 'channel' in message
+    assert 'set_image_window' in message
+    assert 'set_axis_range' in message, \
+        'the refusal must point at the span of the axis the report asked for'

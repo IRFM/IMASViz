@@ -500,6 +500,31 @@ def buildServer(core, dispatcher, name='imasviz'):
         return _run(partial(core.set_image_window, figure_key,
                             start=start, count=count))
 
+    @server.tool(name='set_slice_index')
+    def set_slice_index(figure_key: str, axis: str, index: int):
+        """A row of the slider band of a figure, posed at a named index:
+        `axis` the row in the words the band spells it (an array of
+        structures by its name -- `time_slice`, `profiles_2d` -- or the
+        coordinate it holds), and `index` the element it is posed at (a
+        0-based whole number, within the extent the row holds).
+
+        The window re-reads the one the row is posed at -- the same read
+        the slider drives, and the other rows of the band stay where they
+        are -- and the answer carries the rows of the band it holds and
+        the index each one is posed at, so one asks, reads, and confirms
+        in the same call. It addresses a curve figure that pins an axis
+        and an image window that pins one; a table and a stacked window
+        are refused by name, and so is a row the band does not hold (the
+        rows it does, named), and an index past the extent the row holds
+        (the bound it holds, named). A picture window whose pictures hold
+        the axis the gesture names holds no row for it: the axis is on
+        screen, one picture per element, and the refusal names
+        `set_image_window` (the start and count of that window) as the
+        gesture the question it was asked belongs to.
+        """
+        return _run(partial(core.set_slice_index, figure_key,
+                            axis=axis, index=index))
+
     @server.tool(name='set_log_scale')
     def set_log_scale(figure_key: str, x: Optional[bool] = None,
                       y: Optional[bool] = None):

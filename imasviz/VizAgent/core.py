@@ -2190,6 +2190,179 @@ class McpGuiCore:
                 'length': length,
                 'pictures': images}
 
+    def set_slice_index(self, figure_key, axis=None, index=None):
+        """The slider of a band, posed at a named index, on the window
+        that holds the band.
+
+        `axis` is the row of the band the gesture names -- `time_slice`,
+        `psi`, `profiles_2d` -- in the words the band spells the axis in,
+        and `index` is the element the row is posed at, the bound the row
+        holds being the one a refusal names when the index passes it. The
+        row moves the band the way the user moves it: the slider of the
+        row, and the window re-reads the one the row is posed at, without
+        the other rows moving under them.
+
+        The answer is the state the band holds after the call: the rows
+        it is, the one that moved, the index it is posed at, and its
+        length -- so the caller reads back the state the window holds,
+        and a row the band holds that the gesture did not move says so
+        in the answer, not in a guess.
+
+        Refused by name, each refusal saying the shape of the window
+        that was tried and the gesture that answers the question instead
+        of repeating the one that failed: a window not one the band of
+        the gesture sits on (a table keeps one answer per panel, and a
+        stacked window one per panel of the two); a window that is a
+        picture window but holds no band for it (a strip whose axis the
+        pictures were laid on is on screen, side by side, and is what
+        the `set_image_window` gesture moves and resizes -- there is no
+        row for an axis the window already shows); a window that holds
+        the band but not the axis it was asked to move (the rows it does
+        hold are the ones the refusal names, and the span of the axis it
+        drew is `set_axis_range`); an index outside the extent the row
+        holds (the bound it holds, named, not a slip past it).
+        """
+        record, frame = self._windowForKey(figure_key)
+
+        def _framesPointer():
+            # The axis the pictures are laid across: it is already on
+            # screen, one picture per element, so a row of a band would
+            # ask for what the window shows -- the window it sits on is
+            # what `set_image_window` moves and resizes. The frame axis
+            # is a QVizSlice; its `label` is the `sliceLabel` of the
+            # axis underneath it, already spelled the way the band
+            # spells the axes it holds.
+            sl_axis = getattr(frame, 'frameAxis', None)
+            sl_axis = sl_axis() if callable(sl_axis) else None
+            word = (str(sl_axis.label)
+                    if sl_axis is not None else 'the strip')
+            return ValueError(
+                'The window "%s" holds no row for that axis: its '
+                'pictures are the axis it reads across (here %s), one '
+                'picture per element, side by side, and the window '
+                'they sit on is what set_image_window moves (start) '
+                'and resizes (count) -- a row of a band is not one '
+                'for an axis the window already shows.'
+                % (figure_key, word))
+
+        def _frameAxisWord():
+            sl_axis = getattr(frame, 'frameAxis', None)
+            sl_axis = sl_axis() if callable(sl_axis) else None
+            return str(getattr(sl_axis, 'label', '')
+                       or '') if sl_axis is not None else ''
+
+        frames_key = getattr(frame, 'framesKey', None)
+        frames_key = frames_key() if callable(frames_key) else None
+        sliceControls = getattr(frame, 'sliceControls', None)
+        if sliceControls is None:
+            raise ValueError(
+                'The window "%s" is not one the band of sliders of the '
+                'gesture sits on: a curve figure of one axis is (the rows '
+                'of the band the gesture addresses), an image window is '
+                '(one row per axis it pins), and this one is not, holding '
+                'no band and no row to move. Name the curve figure, or '
+                'the image window, that holds the axis.' % figure_key)
+        rows = list(sliceControls.rows())
+        word = str(axis if axis is not None else '').strip().lower()
+        if not rows:
+            fa_word = _frameAxisWord()
+            if frames_key is not None:
+                if not word or word == fa_word:
+                    # The axis the gesture named is the one the window
+                    # is read across, or it is not one at all: the
+                    # refusal is the one that moves the window, and it
+                    # names the axis the window moves on.
+                    raise _framesPointer()
+                # The axis is drawn inside the pictures, where a slider
+                # would sit under it: it is on screen, not a control,
+                # and its span is the range set_axis_range pins on each
+                # of the pictures.
+                raise ValueError(
+                    'The window "%s" holds no row for that axis: it is '
+                    'drawn inside the pictures, and a slider under an '
+                    'axis that is on screen would move a window the '
+                    'picture already shows. Its pictures are the axis the '
+                    'window is read across (here %s), which is what '
+                    'set_image_window moves (start) and resizes (count); '
+                    'the span of the axis it drew is what set_axis_range '
+                    'pins, on each of its pictures.'
+                    % (figure_key, fa_word or 'the strip'))
+            raise ValueError(
+                'The window "%s" holds no band of sliders: the axes it '
+                'pins are none, so the axis the gesture names is not a '
+                'row of it, and the one it drew is on screen rather than '
+                'a control to move -- the span of the axes it drew is '
+                'what set_axis_range pins.' % figure_key)
+        if not word:
+            raise ValueError(
+                'The axis of the row to move is named in the words the '
+                'band spells the axes it holds, not the empty string: %s.'
+                % ', '.join(sorted(row.label for row in rows)))
+        if frames_key is not None and word == _frameAxisWord():
+            # The axis the pictures are laid across is already on
+            # screen: a row for it would ask for what they show.
+            raise _framesPointer()
+        exact = [row for row in rows
+                 if str(row.label).strip().lower() == word
+                 or str(row.key).strip().lower() == word]
+        if exact:
+            row = exact[0]
+        else:
+            partial = [row for row in rows
+                       if word in str(row.label).strip().lower()
+                       or word in str(row.key).strip().lower()]
+            if not partial:
+                raise ValueError(
+                    'The band of the window "%s" holds: %s -- "%s" names '
+                    'no row this band holds. Name one of the rows of the '
+                    'band this figure holds, in the words the band spells '
+                    'the axis it pins.'
+                    % (figure_key,
+                       ', '.join(sorted(row.label for row in rows)),
+                       axis))
+            if len(partial) > 1:
+                raise ValueError(
+                    '"%s" names several rows of the band of the window '
+                    '"%s": %s -- name the one, in full, that the gesture '
+                    'is moving.'
+                    % (axis, figure_key,
+                       ', '.join(sorted(row.label for row in partial))))
+            row = partial[0]
+        try:
+            index = int(index)
+        except (TypeError, ValueError):
+            raise ValueError(
+                'The index of the row "%s" is a whole number, not %r: the '
+                'row holds a range from 0 to its extent, and a value in '
+                'that range is what the row is posed at.'
+                % (row.label, index))
+        if row.length is not None:
+            bound = max(int(row.length), 1)
+            if index < 0 or index >= bound:
+                raise ValueError(
+                    'The row "%s" of the window "%s" holds an element '
+                    'from 0 to %d, and %d is outside it: the bound the '
+                    'row holds is the one the row holds, not a guess '
+                    'past the extent the tree names.'
+                    % (row.label, figure_key, bound - 1, index))
+        # The row moves and the window re-reads the one the row is posed
+        # at, in the place the row is posed to move it: the other rows of
+        # the band stay where they are, because the gesture is one row,
+        # one index, and the window is the one the slider of the row is
+        # the control of.
+        row.setIndex(index)
+        self._logFor(record.cases,
+                     'set_slice_index: %s posed the row "%s" at index %d '
+                     '(%s held, %d to %d).'
+                     % (figure_key, row.label, index,
+                        'the bound' if row.length is None
+                        else 'held', 0, max(int(row.length or 1), 1) - 1))
+        return {'window': figure_key,
+                'axis': row.label,
+                'index': int(row.index()),
+                'length': (None if row.length is None else int(row.length)),
+                'rows': {row2.label: int(row2.index()) for row2 in rows}}
+
     # -------------------------------- figures: read the numbers under the picture
 
     def curve_stats(self, figure_key, curve=None):

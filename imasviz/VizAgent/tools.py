@@ -89,7 +89,13 @@ How to work with it:
    zoom of a strip whose abscissa is a time is the x range, in the
    seconds the time axis holds), set_image_window moves (start) or
    resizes (count) the window of time slices the pictures sit on, and
-   A gesture of this section changes what the figure shows without
+   set_slice_index poses one of the slider rows of a band at the named
+   index; a window that holds a picture and not a window of them has no
+   window to move, and the refusal names it and the gesture that answers
+   the question the ask is asking (the span of the picture it drew, or
+   the window of the pictures it holds) -- a move refused by name has not
+   changed the window; the answer is what it held before the ask, as
+   before. A gesture of this section changes what the figure shows without
    redrawing it: the answer names the figure the work was on (the key
    is how the user acts on it), and the numbers it answers are the ones
    the curve now holds -- it is not an ask to show anything, and the
@@ -714,7 +720,30 @@ TOOLS = [
                                      'the axis)'},
         }, 'required': ['figure_key'], 'additionalProperties': False},
     ),
-
+    _tool(
+        'set_slice_index',
+        'A row of the slider band of a figure, posed at a named index: '
+        '`axis` the row in the words the band spells it (an array of '
+        'structures by its name -- `time_slice`, `profiles_2d` -- or the '
+        'coordinate it carries), `index` the element it is posed at. The '
+        'window re-reads the one the row is posed at, the other rows of '
+        'the band stay where they are; the answer carries the rows of the '
+        'band, the index the one moved is posed at and its extent. It '
+        'addresses a curve figure that pins an axis and an image window '
+        'that does; a table and a stacked window are refused by name, and '
+        'so is a row the band does not hold (the rows it does, named), and '
+        'an index past the extent the row holds (the bound it holds, '
+        'named). A picture window whose pictures sit on the axis the '
+        'gesture names holds no row for it, and the refusal names '
+        'set_image_window (start and count of that window) as the '
+        'gesture that answers the question the ask is asking.',
+        {'type': 'object', 'properties': {
+            'figure_key': {'type': 'string'},
+            'axis': {'type': 'string'},
+            'index': {'type': 'integer'},
+        }, 'required': ['figure_key', 'axis', 'index'],
+         'additionalProperties': False},
+    ),
     _tool(
         'set_log_scale',
         'A log axis, by name: `x`/`y` each `true` for log, `false` for '
